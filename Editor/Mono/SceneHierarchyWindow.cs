@@ -11,9 +11,10 @@ using UnityEngine.Scripting;
 namespace UnityEditor
 {
     [EditorWindowTitle(title = "Hierarchy", useTypeNameAsIconName = true)]
-    internal class SceneHierarchyWindow : SearchableEditorWindow, IHasCustomMenu, IPropertySourceOpener, IFramableContainer
+    internal class SceneHierarchyWindow : SearchableEditorWindow, IHasCustomMenu, IPropertySourceOpener, IFramableContainer, IHierarchyWindow
     {
-        public static SceneHierarchyWindow lastInteractedHierarchyWindow { get { return s_LastInteractedHierarchy; } }
+        public static SceneHierarchyWindow lastInteractedHierarchyWindow => s_LastInteractedHierarchy;
+        IHierarchyWindow IHierarchyWindow.LastInteractedHierarchyWindow => s_LastInteractedHierarchy;
         static SceneHierarchyWindow s_LastInteractedHierarchy;
         public static List<SceneHierarchyWindow> GetAllSceneHierarchyWindows() { return s_SceneHierarchyWindows; }
         static List<SceneHierarchyWindow> s_SceneHierarchyWindows = new List<SceneHierarchyWindow>();
@@ -278,22 +279,24 @@ namespace UnityEditor
             m_SceneHierarchy.DoWindowLockButton(rect);
         }
 
-        public void SetExpandedRecursive(int id, bool expand)
+        public void SetExpandedRecursive(EntityId id, bool expand)
         {
             m_SceneHierarchy.SetExpandedRecursive(id, expand);
         }
 
-        internal void SetExpanded(int id, bool expand)
+        internal void SetExpanded(EntityId id, bool expand)
         {
             m_SceneHierarchy.ExpandTreeViewItem(id, expand);
         }
 
-        public void FrameObject(EntityId instanceID, bool ping)
+        void IHierarchyWindow.SetExpanded(EntityId entityId, bool expanded) => SetExpanded(entityId, expanded);
+
+        public void FrameObject(EntityId entityId, bool ping)
         {
             // To be able to frame the object we need to clear the search filter
             SetSearchFilter("", SearchableEditorWindow.SearchMode.All, true);
             UnfocusSearchField();
-            m_SceneHierarchy.FrameObject(instanceID, ping);
+            m_SceneHierarchy.FrameObject(entityId, ping);
         }
 
         void OnSceneSelectionStateChanged(Scene selectedScene)
@@ -307,10 +310,7 @@ namespace UnityEditor
             m_SceneHierarchy.AddItemsToWindowMenu(menu);
         }
 
-        public void GetSelectedScenes(List<Scene> scenes)
-        {
-            m_SceneHierarchy.GetSelectedScenes(scenes);
-        }
+        public void GetSelectedScenes(List<Scene> scenes) => IHierarchyWindow.GetSelectedScenes(scenes);
 
         internal static void RebuildStageHeaderInAll()
         {
@@ -380,7 +380,7 @@ namespace UnityEditor
 
             if (go != null)
             {
-                sceneHierarchy.treeView?.Frame(go.GetInstanceID(), true, false);
+                sceneHierarchy.treeView?.Frame(go.GetEntityId(), true, false);
             }
 
             if (HierarchyPreferences.RenameNewObjects)

@@ -45,7 +45,7 @@ namespace UnityEngine.UIElements
             set => m_InterpolationDefaultValue = value;
         }
 
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
 
         internal FilterParameter defaultValue;
     }
@@ -175,11 +175,11 @@ namespace UnityEngine.UIElements
 
         /// <summary>The optional callback to prepare the material property block for the effect.</summary>
         /// <param name="mpb">The property block to fill from the callback.</param>
-        /// <param name="func">The input filter function value.</param>
-        public delegate void PrepareMaterialPropertyBlockDelegate(MaterialPropertyBlock mpb, FilterFunction func);
+        /// <param name="context">The context of the filter pass for which the function is being called.</param>
+        public delegate void ApplyFilterPassSettingsDelegate(MaterialPropertyBlock mpb, FilterPassContext context);
 
-        /// <summary>The optional callback to prepare the material property block for the effect.</summary>
-        public PrepareMaterialPropertyBlockDelegate prepareMaterialPropertyBlockCallback { get; set; }
+        /// <summary>The optional callback to apply the pass settings to the material property block.</summary>
+        public ApplyFilterPassSettingsDelegate applySettingsCallback { get; set; }
 
         /// <summary>The optional callback to compute the required read and write margins for the effect.</summary>
         /// <param name="func">The filter function value.</param>
@@ -191,6 +191,25 @@ namespace UnityEngine.UIElements
 
         /// <summary>The optional callback to compute the required write margins for the effect.</summary>
         public ComputeRequiredMarginsDelegate computeRequiredWriteMarginsCallback { get; set; }
+    }
+
+    /// <summary>The context of the filter.</summary>
+    public struct FilterPassContext
+    {
+        /// <summary>The filter function for which the specified pass is being executed.</summary>
+        public FilterFunction filterFunction { get; internal set; }
+
+        /// <summary>The filter pass that is being executed.</summary>
+        public PostProcessingPass postProcessingPass => filterFunction.GetDefinition().passes[filterPassIndex];
+
+        /// <summary>The index of the pass.</summary>
+        public int filterPassIndex { get; internal set; }
+
+        /// <summary>Indicates if sampling the source texture yields a color in the gamma color space.</summary>
+        public bool readsGamma { get; internal set; }
+
+        /// <summary>Indicates if the shader must return a color in the gamma color space.</summary>
+        public bool writesGamma { get; internal set; }
     }
 
     /// <summary>

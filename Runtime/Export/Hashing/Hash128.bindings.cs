@@ -32,9 +32,9 @@ namespace UnityEngine
             this.u64_1 = u64_1;
         }
 
-        [VisibleToOtherModules("UnityEditor.GraphToolkitModule")]
+        [VisibleToOtherModules("UnityEditor.GraphToolkitModule", "UnityEditor.BurstModule")]
         internal ulong u64_0;
-        [VisibleToOtherModules("UnityEditor.GraphToolkitModule")]
+        [VisibleToOtherModules("UnityEditor.GraphToolkitModule", "UnityEditor.BurstModule")]
         internal ulong u64_1;
 
         public bool isValid =>

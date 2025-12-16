@@ -37,6 +37,7 @@ namespace Unity.ProjectAuditor.Editor.SettingsAnalysis
             Fixer = (issue, analysisParams) =>
             {
                 RemoveFogStripping();
+                return true;
             },
 
             MessageFormat = "Graphics: Fog Mode '{0}' shader variants are always included in the build"

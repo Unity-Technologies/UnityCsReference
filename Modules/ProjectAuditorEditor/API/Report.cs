@@ -81,6 +81,11 @@ namespace Unity.ProjectAuditor.Editor
         /// True if the "Use Roslyn Analyzers" checkbox was ticked in Preferences > Project Auditor.
         /// </summary>
         public bool UseRoslynAnalyzers;
+
+        /// <summary>
+        /// The analyzed areas from the preferences.
+        /// </summary>
+        public SerializableEnum<ProjectAreaFlags> ProjectAreas;
     }
 
     /// <summary>
@@ -89,7 +94,7 @@ namespace Unity.ProjectAuditor.Editor
     [Serializable]
     public sealed class Report
     {
-        const string k_CurrentVersion = "1.0";
+        const string k_CurrentVersion = "1.1";
         const string k_SaveFileHeader = "PROJECT_AUDITOR_REPORT";
 
         [SerializeField]
@@ -108,7 +113,7 @@ namespace Unity.ProjectAuditor.Editor
         // Keeping this internal for now. Exposing this means exposing IssueLayout, which means exposing PropertyDefinition, which to be useful means exposing every enum that can
         // be passed to PropertyTypeUtil.FromCustom() (basically one per view). I'd love to find a more elegant way to do this.
         [Serializable]
-        class ModuleInfo
+        internal class ModuleInfo
         {
             // stephenm TODO: Comment (for all these fields... Assuming we do what the above comment says and expose this via an API of some sort)
             public string name;
@@ -119,6 +124,7 @@ namespace Unity.ProjectAuditor.Editor
 
             public string startTime;
             public string endTime;
+            public long durationMs;
 
             public AnalysisResult result;
         }
@@ -195,7 +201,8 @@ namespace Unity.ProjectAuditor.Editor
                 // It's not 2016 any more, but too many systems depend on operatingSystem thinking it is, so update mac's naming here
                 HostPlatform = SystemInfo.operatingSystem.Replace("Mac OS X", "macOS"),
 
-                UseRoslynAnalyzers = UserPreferences.UseRoslynAnalyzers
+                UseRoslynAnalyzers = UserPreferences.UseRoslynAnalyzers,
+                ProjectAreas = (ProjectAreaFlags)UserPreferences.ProjectAreasToAnalyze
             };
         }
 
@@ -380,8 +387,9 @@ namespace Unity.ProjectAuditor.Editor
         /// Load a Report from a JSON file at the specified path.
         /// </summary>
         /// <param name="path">File path of the report to load</param>
+        /// <param name="errorMessage">Error message if load fails</param>
         /// <returns>A loaded Report object</returns>
-        public static Report Load(string path, out string errorMessaage)
+        public static Report Load(string path, out string errorMessage)
         {
             string whole_file = File.ReadAllText(path);
 
@@ -391,18 +399,18 @@ namespace Unity.ProjectAuditor.Editor
 
             if (!header.Equals(k_SaveFileHeader))
             {
-                errorMessaage = "Invalid file format";
+                errorMessage = "Invalid file format";
                 return null;
             }
 
             string version = sr.ReadLine();
             if (!version.Equals(k_CurrentVersion))
             {
-                errorMessaage = $"Report file version is {version}, but this version of Project Auditor requires file version {k_CurrentVersion}";
+                errorMessage = $"Report file version is {version}, but this version of Project Auditor requires file version {k_CurrentVersion}";
                 return null;
             }
 
-            errorMessaage = "";
+            errorMessage = "";
             return JsonUtility.FromJson<Report>(sr.ReadToEnd());
         }
 
@@ -424,7 +432,21 @@ namespace Unity.ProjectAuditor.Editor
 
             info.startTime = Utils.Json.SerializeDateTime(startTime);
             info.endTime = Utils.Json.SerializeDateTime(endTime);
+            info.durationMs = (long)(endTime - startTime).TotalMilliseconds;
             info.result = analysisResult;
+        }
+
+        internal long CalculateIssueCategoryAnalysisDuration(IssueCategory category)
+        {
+            long result = 0;
+
+            foreach (ModuleInfo moduleInfo in moduleMetadata)
+            {
+                if (moduleInfo.categories.Any(c => c == category))
+                    result += moduleInfo.durationMs;
+            }
+
+            return result;
         }
 
         // Internal only: Data written by ProjectAuditor during analysis

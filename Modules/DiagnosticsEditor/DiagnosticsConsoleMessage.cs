@@ -11,19 +11,14 @@ using UnityEngine.UIElements;
 
 namespace UnityEditor
 {
-    internal class DiagnosticSwitchesConsoleMessage : ScriptableObject
+    internal class DiagnosticSwitchesConsoleMessage : ScriptableSingleton<DiagnosticSwitchesConsoleMessage>
     {
         private DiagnosticSwitch[] m_SwitchesInEffect;
-        public static DiagnosticSwitchesConsoleMessage Instance { get; private set; }
 
         [InitializeOnLoadMethod]
         public static void Init()
         {
-            Instance = Resources.FindObjectsOfTypeAll<DiagnosticSwitchesConsoleMessage>().FirstOrDefault();
-            if (Instance == null)
-            {
-                Instance = CreateInstance<DiagnosticSwitchesConsoleMessage>();
-            }
+            _ = instance;
         }
 
         public void OnEnable()
@@ -40,7 +35,12 @@ namespace UnityEditor
                 return;
 
             m_SwitchesInEffect = switchesInEffect;
-            Debug.RemoveLogEntriesByIdentifier(GetInstanceID());
+
+            // Note: RemoveLogEntriesByIdentifier should be using EntityId just like LogSticky
+            // Work is ongoing to get this fixed, so as a temporary solution we force the cast to int
+            // And this should be turned back into an EntityId asap so it's symmetrical with LogSticky
+            var fixme = (int)GetEntityId().GetRawData();
+            Debug.RemoveLogEntriesByIdentifier(fixme);
 
             if (m_SwitchesInEffect.Length > 0)
             {
@@ -57,7 +57,7 @@ namespace UnityEditor
                                 return report;
                             }));
 
-                Debug.LogSticky(GetInstanceID(), LogType.Warning, LogOption.NoStacktrace, message);
+                Debug.LogSticky(GetEntityId(), LogType.Warning, LogOption.NoStacktrace, message);
             }
         }
     }

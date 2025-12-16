@@ -593,7 +593,7 @@ namespace UnityEngine.UIElements.UIR
             IResolvedStyle style = ve.resolvedStyle;
             var borderRectSize = new Vector2(style.width, style.height);
 
-            var computedStyle = ve.computedStyle;
+            ref var computedStyle = ref ve.computedStyle;
             topLeft = ConvertBorderRadiusPercentToPoints(borderRectSize, computedStyle.borderTopLeftRadius);
             bottomLeft = ConvertBorderRadiusPercentToPoints(borderRectSize, computedStyle.borderBottomLeftRadius);
             topRight = ConvertBorderRadiusPercentToPoints(borderRectSize, computedStyle.borderTopRightRadius);

@@ -7,6 +7,7 @@ using UnityEngine.Rendering;
 using UnityEngine.Scripting;
 using System;
 using System.Collections.Generic;
+using System.Runtime.InteropServices;
 
 //Keep this namespace to be compatible with visual effect graph package 7.0.1
 //There was an unexpected useless "using UnityEngine.Experimental.VFX;" in VFXMotionVector.cs
@@ -80,7 +81,7 @@ namespace UnityEngine.VFX
         extern public static VFXBatchedEffectInfo GetBatchedEffectInfo([NotNull] VisualEffectAsset vfx);
 
         [FreeFunction(Name = "VFXManagerBindings::GetBatchedEffectInfos", HasExplicitThis = false)]
-        extern public static void GetBatchedEffectInfos([NotNull] List<VFXBatchedEffectInfo> infos);
+        extern public static void GetBatchedEffectInfos([NotNull][Out] List<VFXBatchedEffectInfo> infos);
 
         extern internal static VFXBatchInfo GetBatchInfo(VisualEffectAsset vfx, uint batchIndex);
 

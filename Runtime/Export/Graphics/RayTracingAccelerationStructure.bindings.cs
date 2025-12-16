@@ -134,7 +134,10 @@ namespace UnityEngine.Rendering
     [MovedFrom("UnityEngine.Experimental.Rendering")]
     public struct RayTracingInstanceMaterialCRC
     {
-        public int instanceID;
+        [Obsolete("instanceID is deprecated. Use entityId instead.")]
+        public int instanceID { get => entityId; set => entityId = value; }
+
+        [Serialization.FormerlySerializedAs(@"instanceID")] public EntityId entityId;
         public int crc;
     }
 
@@ -681,7 +684,7 @@ namespace UnityEngine.Rendering
             if (config.meshLod > 0 && config.meshLod >= config.mesh.lodCount)
                 throw new ArgumentOutOfRangeException("config.meshLod", "config.meshLod is out of range");
 
-            RenderInstancedDataLayout layout = new RenderInstancedDataLayout(typeof(T));
+            RenderInstancedDataLayout layout = Graphics.GetCachedRenderInstancedDataLayout(typeof(T));
 
             instanceCount = instanceCount == -1 ? instanceData.Length : instanceCount;
             startInstance = Math.Clamp(startInstance, 0, Math.Max(0, instanceData.Length - 1));
@@ -713,7 +716,7 @@ namespace UnityEngine.Rendering
             if (config.meshLod > 0 && config.meshLod >= config.mesh.lodCount)
                 throw new ArgumentOutOfRangeException("config.meshLod", "config.meshLod is out of range");
 
-            RenderInstancedDataLayout layout = new RenderInstancedDataLayout(typeof(T));
+            RenderInstancedDataLayout layout = Graphics.GetCachedRenderInstancedDataLayout(typeof(T));
 
             instanceCount = instanceCount == -1 ? instanceData.Count : instanceCount;
             startInstance = Math.Clamp(startInstance, 0, Math.Max(0, instanceData.Count - 1));
@@ -742,7 +745,7 @@ namespace UnityEngine.Rendering
             if (config.meshLod > 0 && config.meshLod >= config.mesh.lodCount)
                 throw new ArgumentOutOfRangeException("config.meshLod", "config.meshLod is out of range");
 
-            RenderInstancedDataLayout layout = new RenderInstancedDataLayout(typeof(T));
+            RenderInstancedDataLayout layout = Graphics.GetCachedRenderInstancedDataLayout(typeof(T));
 
             instanceCount = instanceCount == -1 ? instanceData.Length : instanceCount;
             startInstance = Math.Clamp(startInstance, 0, Math.Max(0, instanceData.Length - 1));
@@ -1061,7 +1064,7 @@ namespace UnityEngine.Rendering
             if (config.meshLod > 0 && config.meshLod >= config.mesh.lodCount)
                 throw new ArgumentOutOfRangeException("config.meshLod", "config.meshLod is out of range");
 
-            RenderInstancedDataLayout layout = new RenderInstancedDataLayout(typeof(T));
+            RenderInstancedDataLayout layout = Graphics.GetCachedRenderInstancedDataLayout(typeof(T));
 
             if (instanceData.Length > Graphics.kMaxDrawMeshInstanceCount)
                 throw new InvalidOperationException(String.Format("Instance count cannot exceed {0}.", Graphics.kMaxDrawMeshInstanceCount));

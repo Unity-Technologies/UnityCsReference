@@ -2,10 +2,8 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System;
 using System.Collections.Generic;
 using System.Linq;
-using Unity.GraphToolsAuthoringFramework.InternalEditorBridge;
 using UnityEditor.Overlays;
 using UnityEngine.UIElements;
 
@@ -15,7 +13,7 @@ namespace Unity.GraphToolkit.Editor
     /// Base class for overlay toolbars.
     /// </summary>
     [UnityRestricted]
-    internal class Toolbar : Overlay, ICreateToolbar
+    internal class Toolbar : ToolbarOverlay
     {
         /// <summary>
         /// Whether the overlay toolbar should be enabled or not.
@@ -27,13 +25,21 @@ namespace Unity.GraphToolkit.Editor
         /// </summary>
         protected GraphTool GraphTool => (containerWindow as GraphViewEditorWindow)?.GraphTool;
 
-        /// <inheritdoc />
-        public virtual IEnumerable<string> toolbarElements => GraphTool?.GetToolbarDefinition(this)?.ElementIds ?? Enumerable.Empty<string>();
+        GraphViewEditorWindow GraphEditorWindow => containerWindow as GraphViewEditorWindow;
 
         /// <inheritdoc />
-        public override VisualElement CreatePanelContent()
+        public override IEnumerable<string> toolbarElements
         {
-            return OverlayBridge.CreateOverlay(toolbarElements, containerWindow);
+            get
+            {
+                var window = GraphEditorWindow;
+                if (window != null)
+                {
+                    return window.GetToolbarDefinition(this)?.ElementIds;
+                }
+
+                return Enumerable.Empty<string>();
+            }
         }
 
         /// <summary>

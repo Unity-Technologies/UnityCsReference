@@ -150,7 +150,7 @@ namespace UnityEditor.ShortcutManagement
             // Register to the callbacks when we're adding the first client.
             if (s_Clients.Count == 0)
             {
-                GUIUtility.beforeEventProcessed += HandleKey;
+                GUIView.beforeEventProcessed += HandleKey;
                 // We need to delay updating the shortcuts to prevent the UI from refreshing before the click event is handled
                 // (e.g., when opening the shortcut manager by clicking on a shortcut).
                 // This update should also occur after the Clutch contexts are set.
@@ -206,7 +206,7 @@ namespace UnityEditor.ShortcutManagement
         {
             if (s_Clients.Count == 0)
             {
-                GUIUtility.beforeEventProcessed -= HandleKey;
+                GUIView.beforeEventProcessed -= HandleKey;
                 EditorApplication.shortcutHelperBarEventHandler -= UpdateShortcuts;
                 Selection.selectionChanged -= UpdateShortcuts;
                 SceneView.lastActiveSceneViewChanged -= SceneViewChanged;

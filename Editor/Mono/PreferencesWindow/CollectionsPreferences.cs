@@ -188,7 +188,7 @@ internal class JobsMenuProvider: SettingsProvider
         {
             doRestart = EditorUtility.DisplayDialog("Changing editor graphics jobs mode",
                 "You've changed the active graphics jobs mode. This requires a restart of the Editor.",
-                "Restart Editor", "Not now");
+                "Restart Editor", "Restart Later");
         }
         
         return doRestart;

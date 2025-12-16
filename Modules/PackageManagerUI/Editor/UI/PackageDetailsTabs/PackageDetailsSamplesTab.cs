@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine.UIElements;
@@ -17,15 +18,11 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private readonly IResourceLoader m_ResourceLoader;
         private readonly IPackageDatabase m_PackageDatabase;
-        private readonly ISelectionProxy m_Selection;
-        private readonly IAssetDatabaseProxy m_AssetDatabase;
         private readonly IApplicationProxy m_Application;
         private readonly IIOProxy m_IOProxy;
         public PackageDetailsSamplesTab(IUnityConnectProxy unityConnect,
             IResourceLoader resourceLoader,
             IPackageDatabase packageDatabase,
-            ISelectionProxy selection,
-            IAssetDatabaseProxy assetDatabase,
             IApplicationProxy application,
             IIOProxy iOProxy) : base(unityConnect)
         {
@@ -33,8 +30,6 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_DisplayName = L10n.Tr("Samples");
             m_ResourceLoader = resourceLoader;
             m_PackageDatabase = packageDatabase;
-            m_Selection = selection;
-            m_AssetDatabase = assetDatabase;
             m_Application = application;
             m_IOProxy = iOProxy;
 
@@ -48,8 +43,8 @@ namespace UnityEditor.PackageManager.UI.Internal
             if (version == null || version?.HasTag(PackageTag.BuiltIn) == true)
                 return false;
 
-            var samples = version.isInstalled || version.HasTag(PackageTag.Feature) ? m_PackageDatabase.GetSamples(version) : Enumerable.Empty<Sample>();
-            return samples?.Any() == true;
+            var samples = version.isInstalled || version.HasTag(PackageTag.Feature) ? m_PackageDatabase.GetSamples(version) : Array.Empty<Sample>();
+            return samples?.Count > 0;
         }
 
         protected override void RefreshContent(IPackageVersion version)
@@ -70,7 +65,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
             foreach (var sample in m_Samples.Where(s => !string.IsNullOrEmpty(s.displayName)))
             {
-                var sampleItem = new PackageDetailsSampleItem(m_Version, sample, m_Selection, m_AssetDatabase, m_Application, m_IOProxy);
+                var sampleItem = new PackageDetailsSampleItem(m_Version, sample, m_Application, m_IOProxy);
                 var sampleContainer = new VisualElement();
                 sampleContainer.AddClasses("sampleContainer");
 
@@ -86,7 +81,11 @@ namespace UnityEditor.PackageManager.UI.Internal
                     sampleInformationContainer.Add(sampleItem.descriptionLabel);
 
                 sampleContainer.Add(sampleInformationContainer);
-                sampleContainer.Add(sampleItem.importButton);
+
+                var actionButtonsContainer = new VisualElement { name = "actionButtonsContainer"};
+                actionButtonsContainer.Add(sampleItem.importButton);
+                actionButtonsContainer.Add(sampleItem.locateButton);
+                sampleContainer.Add(actionButtonsContainer);
 
                 samplesContainer.Add(sampleContainer);
                 sampleItem.importButton.SetEnabled(m_Version.isInstalled);
@@ -94,7 +93,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         }
 
         private readonly VisualElementCache m_Cache;
-        internal VisualElement samplesContainer => m_Cache.Get<VisualElement>("samplesContainer");
+        private VisualElement samplesContainer => m_Cache.Get<VisualElement>("samplesContainer");
         private HelpBox samplesErrorInfoBox => m_Cache.Get<HelpBox>("samplesErrorInfoBox");
     }
 }

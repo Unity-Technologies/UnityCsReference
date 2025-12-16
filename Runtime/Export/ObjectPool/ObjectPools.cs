@@ -21,7 +21,7 @@ namespace UnityEngine.Pool
         readonly Action<T> m_ActionOnDestroy;
         readonly int m_MaxSize; // Used to prevent catastrophic memory retention.
         internal bool m_CollectionCheck;
-        T m_FreshlyReleased;
+        internal T m_FreshlyReleased;
 
         /// <summary>
         /// The total number of active and inactive objects.

@@ -9,13 +9,18 @@ using UnityEngine.UIElements;
 
 namespace Unity.UIToolkit.Editor
 {
-    class PositionFoldout : VisualElement
+    sealed class PositionFoldout : VisualElement, INotifyCompositeStylePropertyChanged<StyleLength>
     {
         [Serializable]
         public new class UxmlSerializedData : VisualElement.UxmlSerializedData
         {
             public override object CreateInstance() => new PositionFoldout();
         }
+
+        static readonly BindingId topProperty = nameof(top);
+        static readonly BindingId rightProperty = nameof(right);
+        static readonly BindingId bottomProperty = nameof(bottom);
+        static readonly BindingId leftProperty = nameof(left);
 
         static readonly string k_FieldClassName = "unity-position-section";
 
@@ -34,9 +39,10 @@ namespace Unity.UIToolkit.Editor
             {
                 if (m_Top == value)
                     return;
+                var previousValue = m_Top;
                 m_Top = value;
                 Refresh();
-                NotifyPropertyChanged(nameof(top));
+                NotifyStylePropertyChanged(topProperty, previousValue, m_Top);
             }
         }
 
@@ -48,9 +54,10 @@ namespace Unity.UIToolkit.Editor
             {
                 if (m_Right == value)
                     return;
+                var previousValue = m_Right;
                 m_Right = value;
                 Refresh();
-                NotifyPropertyChanged(nameof(right));
+                NotifyStylePropertyChanged(rightProperty, previousValue, m_Right);
             }
         }
 
@@ -62,9 +69,10 @@ namespace Unity.UIToolkit.Editor
             {
                 if (m_Bottom == value)
                     return;
+                var previousValue = m_Bottom;
                 m_Bottom = value;
                 Refresh();
-                NotifyPropertyChanged(nameof(bottom));
+                NotifyStylePropertyChanged(bottomProperty, previousValue, m_Bottom);
             }
         }
 
@@ -76,9 +84,10 @@ namespace Unity.UIToolkit.Editor
             {
                 if (m_Left == value)
                     return;
+                var previousValue = m_Left;
                 m_Left = value;
                 Refresh();
-                NotifyPropertyChanged(nameof(left));
+                NotifyStylePropertyChanged(leftProperty, previousValue, m_Left);
             }
         }
 
@@ -129,7 +138,7 @@ namespace Unity.UIToolkit.Editor
             Refresh();
         }
 
-        protected void Refresh()
+        private void Refresh()
         {
             m_TopField.value = m_Top;
             m_RightField.value = m_Right;
@@ -151,6 +160,47 @@ namespace Unity.UIToolkit.Editor
         {
             m_Foldout.text = (value == Position.Absolute) ? "Anchors" : "Offsets";
             m_Foldout.EnableInClassList("relative", value == Position.Relative);
+        }
+
+        public void SetValue(BindingId id, StyleLength v, bool notify)
+        {
+            if (id == topProperty)
+            {
+                if (notify)
+                    top = v;
+                else
+                    m_Top = v;
+            }
+            else if (id == rightProperty)
+            {
+                if (notify)
+                    right = v;
+                else
+                    m_Right = v;
+            }
+            else if (id == bottomProperty)
+            {
+                if (notify)
+                    bottom = v;
+                else
+                    m_Bottom = v;
+            }
+            else if (id == leftProperty)
+            {
+                if (notify)
+                    left = v;
+                else
+                    m_Left = v;
+            }
+
+            if (!notify)
+                Refresh();
+        }
+
+        public void NotifyStylePropertyChanged(BindingId id, StyleLength previousValue, StyleLength newValue)
+        {
+            this.NotifyStylePropertyChanged(this, id, previousValue, newValue);
+            NotifyPropertyChanged(id);
         }
     }
 }

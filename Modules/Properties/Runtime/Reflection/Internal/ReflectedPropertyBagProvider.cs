@@ -117,7 +117,9 @@ namespace Unity.Properties.Internal
             return propertyBag;
         }
 
+#pragma warning disable RS0030 // This [Preserve] usage will be addressed by https://jira.unity3d.com/browse/UUM-128402
         [Preserve]
+#pragma warning restore RS0030
         void CreateProperty<TContainer, TValue>(IMemberInfo member, ReflectedPropertyBag<TContainer> propertyBag)
         {
             if (typeof(TValue).IsPointer)
@@ -128,30 +130,54 @@ namespace Unity.Properties.Internal
             propertyBag.AddProperty(new ReflectedMemberProperty<TContainer, TValue>(member, member.Name));
         }
 
-        [Preserve] IPropertyBag<TList> CreateIndexedCollectionPropertyBag<TList, TElement>() where TList : IList<TElement>
+#pragma warning disable RS0030 // This [Preserve] usage will be addressed by https://jira.unity3d.com/browse/UUM-128402
+        [Preserve]
+#pragma warning restore RS0030
+        IPropertyBag<TList> CreateIndexedCollectionPropertyBag<TList, TElement>() where TList : IList<TElement>
             => new IndexedCollectionPropertyBag<TList, TElement>();
 
-        [Preserve] IPropertyBag<TSet> CreateSetPropertyBag<TSet, TValue>() where TSet : ISet<TValue>
+#pragma warning disable RS0030 // This [Preserve] usage will be addressed by https://jira.unity3d.com/browse/UUM-128402
+        [Preserve]
+#pragma warning restore RS0030
+        IPropertyBag<TSet> CreateSetPropertyBag<TSet, TValue>() where TSet : ISet<TValue>
             => new SetPropertyBagBase<TSet, TValue>();
 
-        [Preserve] IPropertyBag<TDictionary> CreateKeyValueCollectionPropertyBag<TDictionary, TKey, TValue>() where TDictionary : IDictionary<TKey, TValue>
+#pragma warning disable RS0030 // This [Preserve] usage will be addressed by https://jira.unity3d.com/browse/UUM-128402
+        [Preserve]
+#pragma warning restore RS0030
+        IPropertyBag<TDictionary> CreateKeyValueCollectionPropertyBag<TDictionary, TKey, TValue>() where TDictionary : IDictionary<TKey, TValue>
             => new KeyValueCollectionPropertyBag<TDictionary, TKey, TValue>();
 
-        [Preserve] IPropertyBag<KeyValuePair<TKey, TValue>> CreateKeyValuePairPropertyBag<TKey, TValue>()
+#pragma warning disable RS0030 // This [Preserve] usage will be addressed by https://jira.unity3d.com/browse/UUM-128402
+        [Preserve]
+#pragma warning restore RS0030
+        IPropertyBag<KeyValuePair<TKey, TValue>> CreateKeyValuePairPropertyBag<TKey, TValue>()
             => new KeyValuePairPropertyBag<TKey, TValue>();
 
-        [Preserve] IPropertyBag<TElement[]> CreateArrayPropertyBag<TElement>()
+#pragma warning disable RS0030 // This [Preserve] usage will be addressed by https://jira.unity3d.com/browse/UUM-128402
+        [Preserve]
+#pragma warning restore RS0030
+        IPropertyBag<TElement[]> CreateArrayPropertyBag<TElement>()
             => new ArrayPropertyBag<TElement>();
 
-        [Preserve] IPropertyBag<List<TElement>> CreateListPropertyBag<TElement>()
+#pragma warning disable RS0030 // This [Preserve] usage will be addressed by https://jira.unity3d.com/browse/UUM-128402
+        [Preserve]
+#pragma warning restore RS0030
+        IPropertyBag<List<TElement>> CreateListPropertyBag<TElement>()
             => new ListPropertyBag<TElement>();
 
-        [Preserve] IPropertyBag<HashSet<TElement>> CreateHashSetPropertyBag<TElement>()
+#pragma warning disable RS0030 // This [Preserve] usage will be addressed by https://jira.unity3d.com/browse/UUM-128402
+        [Preserve]
+#pragma warning restore RS0030
+        IPropertyBag<HashSet<TElement>> CreateHashSetPropertyBag<TElement>()
             => new HashSetPropertyBag<TElement>();
 
-        [Preserve] IPropertyBag<Dictionary<TKey, TValue>> CreateDictionaryPropertyBag<TKey, TValue>()
+#pragma warning disable RS0030 // This [Preserve] usage will be addressed by https://jira.unity3d.com/browse/UUM-128402
+        [Preserve]
+#pragma warning restore RS0030
+        IPropertyBag<Dictionary<TKey, TValue>> CreateDictionaryPropertyBag<TKey, TValue>()
             => new DictionaryPropertyBag<TKey, TValue>();
-
+    
         static IEnumerable<MemberInfo> GetPropertyMembers(Type type)
         {
             do

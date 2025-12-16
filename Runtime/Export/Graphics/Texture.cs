@@ -1068,12 +1068,12 @@ namespace UnityEngine
             if (!isReadable) throw CreateNonReadableException(this);
 
             int stride = UnsafeUtility.SizeOf<T>();
-            ulong arrayLength = GetImageDataSize() / (ulong)stride;
+            ulong arrayLength = GetDataSize() / (ulong)stride;
 
             if (arrayLength > Int32.MaxValue) throw CreateNativeArrayLengthOverflowException();
 
             var array = NativeArrayUnsafeUtility.ConvertExistingDataToNativeArray<T>((void*)GetWritableImageData(0), (int)arrayLength, Allocator.None);
-            NativeArrayUnsafeUtility.SetAtomicSafetyHandle(ref array, Texture2D.GetSafetyHandle(this));
+            NativeArrayUnsafeUtility.SetAtomicSafetyHandle(ref array, GetSafetyHandle());
             return array;
         }
 
@@ -1586,7 +1586,7 @@ namespace UnityEngine
         {
             if (!isReadable) throw CreateNonReadableException(this);
             if (mipLevel < 0 || mipLevel >= mipmapCount) throw new ArgumentException("The passed in miplevel " + mipLevel + " is invalid. The valid range is 0 through  " + (mipmapCount - 1));
-            if (GetImageData().ToInt64() == 0) throw new UnityException($"Texture '{name}' has no data.");
+            if (GetWritableImageData().ToInt64() == 0) throw new UnityException($"Texture '{name}' has no data.");
 
             ulong chainOffset = GetPixelDataOffset(mipLevel);
             ulong arraySize = GetPixelDataSize(mipLevel);
@@ -1595,7 +1595,7 @@ namespace UnityEngine
 
             if (arrayLength > Int32.MaxValue) throw CreateNativeArrayLengthOverflowException();
 
-            IntPtr dataPtr = new IntPtr((long)((ulong)GetImageData() + chainOffset));
+            IntPtr dataPtr = new IntPtr((long)((ulong)GetWritableImageData() + chainOffset));
             var array = NativeArrayUnsafeUtility.ConvertExistingDataToNativeArray<T>((void*)dataPtr, (int)arrayLength, Allocator.None);
 
             NativeArrayUnsafeUtility.SetAtomicSafetyHandle(ref array, this.GetSafetyHandleForSlice(mipLevel));
@@ -1783,7 +1783,7 @@ namespace UnityEngine
 
             if (arrayLength > Int32.MaxValue) throw CreateNativeArrayLengthOverflowException();
 
-            IntPtr dataPtr = new IntPtr((long)((ulong)GetImageData() + (singleElementDataSize * (ulong)element + chainOffset)));
+            IntPtr dataPtr = new IntPtr((long)((ulong)GetWritableImageData() + (singleElementDataSize * (ulong)element + chainOffset)));
             var array = NativeArrayUnsafeUtility.ConvertExistingDataToNativeArray<T>((void*)dataPtr, (int)arrayLength, Allocator.None);
 
             NativeArrayUnsafeUtility.SetAtomicSafetyHandle(ref array, this.GetSafetyHandleForSlice(mipLevel, element));
@@ -1938,7 +1938,7 @@ namespace UnityEngine
 
             if (arrayLength > Int32.MaxValue) throw CreateNativeArrayLengthOverflowException();
 
-            IntPtr dataPtr = new IntPtr((long)((ulong)GetImageData() + (singleElementDataSize * (ulong)elementOffset + chainOffset)));
+            IntPtr dataPtr = new IntPtr((long)((ulong)GetWritableImageData() + (singleElementDataSize * (ulong)elementOffset + chainOffset)));
             var array = NativeArrayUnsafeUtility.ConvertExistingDataToNativeArray<T>((void*)dataPtr, (int)(arrayLength), Allocator.None);
 
             NativeArrayUnsafeUtility.SetAtomicSafetyHandle(ref array, this.GetSafetyHandleForSlice(mipLevel, (int)face, element));

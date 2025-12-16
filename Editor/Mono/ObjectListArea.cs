@@ -8,9 +8,7 @@ using UnityEditor.VersionControl;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEditorInternal;
-using AssetReference = UnityEditorInternal.InternalEditorUtility.AssetReference;
-using Object = UnityEngine.Object;
-using RenameOverlay = UnityEditor.RenameOverlay<int>;
+using UnityEngine.Serialization;
 
 namespace UnityEditor
 {
@@ -19,7 +17,7 @@ namespace UnityEditor
     {
         // Selection state
         public List<EntityId> m_SelectedInstanceIDs = new List<EntityId>();
-        public int m_LastClickedInstanceID;     // Used for navigation
+        public EntityId m_LastClickedEntityId;     // Used for navigation
         public bool m_HadKeyboardFocusLastEvent; // Needs to survive domain reloads to prevent setting selection on got keyboard focus
 
         // Expanded instanceIDs
@@ -164,28 +162,28 @@ namespace UnityEditor
             m_Groups.Add(m_LocalAssets);
         }
 
-        public void ShowObjectsInList(int[] instanceIDs)
+        public void ShowObjectsInList(EntityId[] entityIds)
         {
             // Clear search, etc.
             Init(m_TotalRect, HierarchyType.Assets, new SearchFilter(), false);
 
             // Set list manually
-            m_LocalAssets.ShowObjectsInList(instanceIDs);
+            m_LocalAssets.ShowObjectsInList(entityIds);
         }
 
-        internal void ShowObjectsInList(int[] instanceIDs, string[] rootPaths)
+        internal void ShowObjectsInList(EntityId[] entityIds, string[] rootPaths)
         {
             // Clear search, etc.
             Init(m_TotalRect, HierarchyType.Assets, new SearchFilter(), false);
 
             // Set list manually
-            m_LocalAssets.ShowObjectsInList(instanceIDs, rootPaths);
+            m_LocalAssets.ShowObjectsInList(entityIds, rootPaths);
         }
 
         // This method is being used by the EditorTests/Searching tests
         public string[] GetCurrentVisibleNames()
         {
-            var list = m_LocalAssets.GetVisibleNameAndInstanceIDs();
+            var list = m_LocalAssets.GetVisibleNameAndEntityIds();
             return list.Select(x => x.Key).ToArray();
         }
 
@@ -215,12 +213,12 @@ namespace UnityEditor
             SetupData(true);
         }
 
-        internal void InitForSearch(Rect rect, HierarchyType hierarchyType, SearchFilter searchFilter, bool checkThumbnails, Func<string, int> assetToInstanceId)
+        internal void InitForSearch(Rect rect, HierarchyType hierarchyType, SearchFilter searchFilter, bool checkThumbnails, Func<string, EntityId> assetToEntityId)
         {
-            InitForSearch(rect, hierarchyType, searchFilter, checkThumbnails, assetToInstanceId, SearchService.SearchSessionOptions.Default);
+            InitForSearch(rect, hierarchyType, searchFilter, checkThumbnails, assetToEntityId, SearchService.SearchSessionOptions.Default);
         }
 
-        internal void InitForSearch(Rect rect, HierarchyType hierarchyType, SearchFilter searchFilter, bool checkThumbnails, Func<string, int> assetToInstanceId, SearchService.SearchSessionOptions searchSessionOptions)
+        internal void InitForSearch(Rect rect, HierarchyType hierarchyType, SearchFilter searchFilter, bool checkThumbnails, Func<string, EntityId> assetToEntityId, SearchService.SearchSessionOptions searchSessionOptions)
         {
             var searchQuery = searchFilter.originalText;
             if (string.IsNullOrEmpty(searchQuery))
@@ -242,7 +240,7 @@ namespace UnityEditor
                     {
                         requiredTypeNames = searchFilter.classNames,
                         requiredTypes = searchFilter.classNames.Select(name =>
-                            TypeCache.GetTypesDerivedFrom<Object>()
+                            TypeCache.GetTypesDerivedFrom<UnityEngine.Object>()
                                 .FirstOrDefault(t => name == t.FullName || name == t.Name)),
                         searchFilter = searchFilter
                     };
@@ -254,9 +252,9 @@ namespace UnityEditor
                     if (newResults == null || !searchFilter.IsSearching())
                         return;
                     allResults.AddRange(newResults);
-                    InitListAreaWithItems(rect, hierarchyType, searchFilter, checkThumbnails, allResults, assetToInstanceId, searchSessionOptions);
+                    InitListAreaWithItems(rect, hierarchyType, searchFilter, checkThumbnails, allResults, assetToEntityId, searchSessionOptions);
                 });
-                InitListAreaWithItems(rect, hierarchyType, searchFilter, checkThumbnails, results, assetToInstanceId, searchSessionOptions);
+                InitListAreaWithItems(rect, hierarchyType, searchFilter, checkThumbnails, results, assetToEntityId, searchSessionOptions);
                 if (results != null)
                     allResults.AddRange(results);
                 m_SearchSessionHandler.EndSearch();
@@ -269,15 +267,15 @@ namespace UnityEditor
             }
         }
 
-        void InitListAreaWithItems(Rect rect, HierarchyType hierarchyType, SearchFilter searchFilter, bool checkThumbnails, IEnumerable<string> items, Func<string, int> assetToInstanceId, SearchService.SearchSessionOptions searchSessionOptions)
+        void InitListAreaWithItems(Rect rect, HierarchyType hierarchyType, SearchFilter searchFilter, bool checkThumbnails, IEnumerable<string> items, Func<string, EntityId> assetToEntityId, SearchService.SearchSessionOptions searchSessionOptions)
         {
             // When items is null, we fallback to default implementation. Current default search engine returns null.
             Init(rect, hierarchyType, items == null ? searchFilter : new SearchFilter(), checkThumbnails, searchSessionOptions);
             if (items != null && hierarchyType == HierarchyType.Assets)
             {
                 // We only support assets under "Assets" and "Packages"
-                var instanceIdSet = new HashSet<int>();
-                var uniqueInstanceIds = new List<int>();
+                var entityIdSet = new HashSet<EntityId>();
+                var uniqueEntityIds = new List<EntityId>();
                 var rootPaths = new List<string>();
                 var itemsTaken = 0;
                 foreach (var path in items)
@@ -302,13 +300,13 @@ namespace UnityEditor
                     if (reformattedPath == rootPath)
                         continue;
 
-                    var instanceId = assetToInstanceId(reformattedPath);
-                    if (instanceId == 0)
+                    var entityId = assetToEntityId(reformattedPath);
+                    if (entityId == EntityId.None)
                         continue;
 
-                    if (instanceIdSet.Add(instanceId))
+                    if (entityIdSet.Add(entityId))
                     {
-                        uniqueInstanceIds.Add(instanceId);
+                        uniqueEntityIds.Add(entityId);
                         rootPaths.Add(rootPath);
                         ++itemsTaken;
                     }
@@ -316,7 +314,7 @@ namespace UnityEditor
                     if (itemsTaken >= FilteredHierarchy.maxSearchAddCount)
                         break;
                 }
-                ShowObjectsInList(uniqueInstanceIds.ToArray(), rootPaths.ToArray());
+                ShowObjectsInList(uniqueEntityIds.ToArray(), rootPaths.ToArray());
             }
         }
 
@@ -382,11 +380,11 @@ namespace UnityEditor
             // For key navigation: Auto set selection to first element if selection is not shown currently when tabbing
             if (evt.keyCode == KeyCode.Tab && evt.type == EventType.KeyDown && !hasKeyboardFocus && !IsShowingAny(GetSelection()))
             {
-                AssetReference firstAssetReference;
-                if (m_LocalAssets.AssetReferenceAtIndex(0, out firstAssetReference))
+                EntityId assetIdToSelect;
+                if (m_LocalAssets.AssetIdAtIndex(0, out assetIdToSelect))
                 {
-                    m_LocalAssets.GetNewSelection(ref firstAssetReference, false, false);
-                    Selection.activeEntityId = firstAssetReference.entityId;
+                    m_LocalAssets.GetNewSelection(assetIdToSelect, false, false);
+                    Selection.activeEntityId = assetIdToSelect;
                 }
             }
 
@@ -405,7 +403,7 @@ namespace UnityEditor
                 m_FrameLastClickedItem = false;
                 double timeSinceLastDraw = EditorApplication.timeSinceStartup - m_LocalAssets.m_LastClickedDrawTime;
                 if (m_State.m_SelectedInstanceIDs.Count > 0 && timeSinceLastDraw < 0.2)
-                    Frame(m_State.m_LastClickedInstanceID, true, false);
+                    Frame(m_State.m_LastClickedEntityId, true, false);
             }
         }
 
@@ -504,13 +502,13 @@ namespace UnityEditor
             return m_State.m_RenameOverlay;
         }
 
-        internal void BeginNamingNewAsset(string newAssetName, int instanceID, bool isCreatingNewFolder)
+        internal void BeginNamingNewAsset(string newAssetName, EntityId entityId, bool isCreatingNewFolder)
         {
             m_State.m_NewAssetIndexInList = m_LocalAssets.IndexOfNewText(newAssetName, isCreatingNewFolder, foldersFirst);
             if (m_State.m_NewAssetIndexInList != -1)
             {
-                Frame(instanceID, true, false);
-                GetRenameOverlay().BeginRename(newAssetName, instanceID, 0f);
+                Frame(entityId, true, false);
+                GetRenameOverlay().BeginRename(newAssetName, entityId, 0f);
             }
             else
             {
@@ -528,13 +526,13 @@ namespace UnityEditor
             // Only allow renaming when one item is selected
             if (m_State.m_SelectedInstanceIDs.Count != 1)
                 return false;
-            int instanceID = m_State.m_SelectedInstanceIDs[0];
-            if (!InternalEditorUtility.CanRenameAsset(instanceID))
+            EntityId entityId = m_State.m_SelectedInstanceIDs[0];
+            if (!InternalEditorUtility.CanRenameAsset(entityId))
                 return false;
 
-            string name = m_LocalAssets.GetNameOfLocalAsset(instanceID);
+            string name = m_LocalAssets.GetNameOfLocalAsset(entityId);
 
-            return GetRenameOverlay().BeginRename(name, instanceID, delay);
+            return GetRenameOverlay().BeginRename(name, entityId, delay);
         }
 
         public void EndRename(bool acceptChanges)
@@ -550,7 +548,7 @@ namespace UnityEditor
         {
             // We are done renaming (user accepted/rejected, we lost focus etc, other grabbed renameOverlay etc.)
             string name = string.IsNullOrEmpty(GetRenameOverlay().name) ? GetRenameOverlay().originalName : GetRenameOverlay().name;
-            int instanceID = GetRenameOverlay().userData; // we passed in an instanceID as userData
+            EntityId entityId = GetRenameOverlay().userData; // we passed in an instanceID as userData
 
             try
             {
@@ -566,7 +564,7 @@ namespace UnityEditor
                 {
                     if (GetRenameOverlay().userAcceptedRename)
                     {
-                        ObjectNames.SetNameSmartWithInstanceID(instanceID, name);
+                        ObjectNames.SetNameSmartWithEntityId(entityId, name);
                     }
                 }
 
@@ -575,7 +573,7 @@ namespace UnityEditor
 
                 if (GetRenameOverlay().userAcceptedRename)
                 {
-                    Frame(instanceID, true, false); // frames existing assets (new ones could have instanceID 0)
+                    Frame(entityId, true, false); // frames existing assets (new ones could have instanceID 0)
                 }
             }
             catch (UnityException)
@@ -627,19 +625,9 @@ namespace UnityEditor
 
         public void SelectAll()
         {
-            List<EntityId> instanceIDs;
-            List<string> guids;
-            m_LocalAssets.GetAssetReferences(out instanceIDs, out guids);
-            if (instanceIDs.Count != 0)
-            {
-                var selectedInstanceIDs = InternalEditorUtility.TryGetInstanceIds(instanceIDs, guids, 0, instanceIDs.Count - 1);
-                if (selectedInstanceIDs == null)
-                {
-                    Debug.Log("Cannot select all because some assets being selected are in progress of being imported");
-                    return;
-                }
-            }
-            SetSelection(instanceIDs.ToArray(), false);
+            List<EntityId> assetIds;
+            m_LocalAssets.GetAssetIds(out assetIds);
+            SetSelection(assetIds.ToArray(), false);
         }
 
         public void SetSelection(EntityId[] selectedInstanceIDs, bool doubleClicked)
@@ -664,12 +652,12 @@ namespace UnityEditor
             if (m_State.m_SelectedInstanceIDs.Count > 0)
             {
                 // Only init last clicked instance if it is NOT part of our selection (we need it for navigation)
-                if (!m_State.m_SelectedInstanceIDs.Contains(m_State.m_LastClickedInstanceID))
-                    m_State.m_LastClickedInstanceID = m_State.m_SelectedInstanceIDs[m_State.m_SelectedInstanceIDs.Count - 1];
+                if (!m_State.m_SelectedInstanceIDs.Contains(m_State.m_LastClickedEntityId))
+                    m_State.m_LastClickedEntityId = m_State.m_SelectedInstanceIDs[m_State.m_SelectedInstanceIDs.Count - 1];
             }
             else
             {
-                m_State.m_LastClickedInstanceID = 0;
+                m_State.m_LastClickedEntityId = EntityId.None;
             }
         }
 
@@ -895,8 +883,8 @@ namespace UnityEditor
         void SetSelectedAssetByIdx(int selectedIdx)
         {
             // instanceID can be 0 if 'None' item is at index
-            AssetReference assetReference;
-            if (m_LocalAssets.AssetReferenceAtIndex(selectedIdx, out assetReference))
+            EntityId assetEntityId;
+            if (m_LocalAssets.AssetIdAtIndex(selectedIdx, out assetEntityId))
             {
                 Rect r = m_LocalAssets.m_Grid.CalcRect(selectedIdx, 0f);
                 ScrollToPosition(AdjustRectForFraming(r));
@@ -904,44 +892,44 @@ namespace UnityEditor
 
                 EntityId[] newSelection;
                 if (IsLocalAssetsCurrentlySelected())
-                    newSelection = m_LocalAssets.GetNewSelection(ref assetReference, false, true).ToArray(); // Handle multi selection
+                    newSelection = m_LocalAssets.GetNewSelection(assetEntityId, false, true).ToArray(); // Handle multi selection
                 else
-                    newSelection = m_LocalAssets.GetNewSelection(ref assetReference, false, false).ToArray();
+                    newSelection = m_LocalAssets.GetNewSelection(assetEntityId, false, false).ToArray();
 
                 SetSelection(newSelection, false);
-                m_State.m_LastClickedInstanceID = assetReference.entityId;
+                m_State.m_LastClickedEntityId = assetEntityId;
             }
         }
 
-        void Reveal(int instanceID)
+        void Reveal(EntityId entityId)
         {
-            if (!AssetDatabase.Contains((EntityId)instanceID))
+            if (!AssetDatabase.Contains(entityId))
                 return;
 
             // We only show one level of subassets so just expand parent asset
-            int mainAssetInstanceID = AssetDatabase.GetMainAssetEntityId(AssetDatabase.GetAssetPath((EntityId)instanceID));
-            bool isSubAsset = mainAssetInstanceID != instanceID;
+            EntityId mainAssetEntityId = AssetDatabase.GetMainAssetEntityId(AssetDatabase.GetAssetPath(entityId));
+            bool isSubAsset = mainAssetEntityId != entityId;
             if (isSubAsset)
-                m_LocalAssets.ChangeExpandedState(mainAssetInstanceID, true);
+                m_LocalAssets.ChangeExpandedState(mainAssetEntityId, true);
         }
 
         // Frames only local assets
-        public bool Frame(int instanceID, bool frame, bool ping)
+        public bool Frame(EntityId entityId, bool frame, bool ping)
         {
             int index = -1;
 
             // Check if it is an asset we are creating
             if (GetCreateAssetUtility().IsCreatingNewAsset() && m_State.m_NewAssetIndexInList != -1)
-                if (GetCreateAssetUtility().instanceID == instanceID)
+                if (GetCreateAssetUtility().entityId == entityId)
                     index = m_State.m_NewAssetIndexInList;
 
             // Ensure instanceID is visible
             if (frame)
-                Reveal(instanceID);
+                Reveal(entityId);
 
             // Check local assets
             if (index == -1)
-                index = m_LocalAssets.IndexOf(instanceID);
+                index = m_LocalAssets.IndexOf(entityId);
 
             if (index != -1)
             {
@@ -954,7 +942,7 @@ namespace UnityEditor
                 }
 
                 if (ping)
-                    BeginPing(instanceID);
+                    BeginPing(entityId);
                 return true;
             }
 
@@ -964,7 +952,7 @@ namespace UnityEditor
         int GetSelectedAssetIdx()
         {
             // Find index of selection
-            int offsetIdx = m_LocalAssets.IndexOf(m_State.m_LastClickedInstanceID);
+            int offsetIdx = m_LocalAssets.IndexOf(m_State.m_LastClickedEntityId);
             if (offsetIdx != -1)
                 return offsetIdx;
             return -1;
@@ -1006,10 +994,10 @@ namespace UnityEditor
 
         bool IsLocalAssetsCurrentlySelected()
         {
-            int currentSelectedInstanceID = m_State.m_SelectedInstanceIDs.FirstOrDefault();
-            if (currentSelectedInstanceID != 0)
+            EntityId currentSelectedEntityId = m_State.m_SelectedInstanceIDs.FirstOrDefault();
+            if (currentSelectedEntityId != EntityId.None)
             {
-                int index = m_LocalAssets.IndexOf(currentSelectedInstanceID);
+                int index = m_LocalAssets.IndexOf(currentSelectedEntityId);
                 return index != -1;
             }
 
@@ -1278,54 +1266,54 @@ namespace UnityEditor
             }
         }
 
-        public bool IsShowing(EntityId instanceID)
+        public bool IsShowing(EntityId entityId)
         {
-            return m_LocalAssets.IndexOf(instanceID) >= 0;
+            return m_LocalAssets.IndexOf(entityId) >= 0;
         }
 
-        public bool IsShowingAny(EntityId[] instanceIDs)
+        public bool IsShowingAny(EntityId[] entityIds)
         {
-            if (instanceIDs.Length == 0)
+            if (entityIds.Length == 0)
                 return false;
 
-            foreach (int instanceID in instanceIDs)
-                if (IsShowing(instanceID))
+            foreach (EntityId entityId in entityIds)
+                if (IsShowing(entityId))
                     return true;
 
             return false;
         }
 
-        protected Texture GetIconByInstanceID(int instanceID)
+        protected Texture GetIconByEntityId(EntityId entityId)
         {
             Texture icon = null;
-            if (instanceID != 0)
+            if (entityId != EntityId.None)
             {
-                string path = AssetDatabase.GetAssetPath((EntityId)instanceID);
+                string path = AssetDatabase.GetAssetPath(entityId);
                 icon = AssetDatabase.GetCachedIcon(path);
             }
             return icon;
         }
 
-        internal int GetAssetPreviewManagerID()
+        internal EntityId GetAssetPreviewManagerID()
         {
-            return m_Owner.GetInstanceID();
+            return m_Owner.GetEntityId();
         }
 
         // Pings only local assets
-        public void BeginPing(int instanceID)
+        public void BeginPing(EntityId entityId)
         {
             // Check local assets
-            int index =  m_LocalAssets.IndexOf(instanceID);
+            int index =  m_LocalAssets.IndexOf(entityId);
 
             if (index != -1)
             {
                 string name = null;
                 var hierarchyProperty = new HierarchyIterator(HierarchyType.Assets);
-                if (hierarchyProperty.Find(instanceID, null))
+                if (hierarchyProperty.Find(entityId, null))
                 {
                     name = hierarchyProperty.name;
                 }
-                var path = AssetDatabase.GetAssetPath((EntityId)instanceID);
+                var path = AssetDatabase.GetAssetPath(entityId);
                 if (string.IsNullOrEmpty(path))
                     return;
 
@@ -1333,7 +1321,7 @@ namespace UnityEditor
                 if (packageInfo != null)
                 {
                     hierarchyProperty = new HierarchyIterator(packageInfo.assetPath);
-                    if (hierarchyProperty.Find(instanceID, null))
+                    if (hierarchyProperty.Find(entityId, null))
                     {
                         name = hierarchyProperty.name;
                     }
@@ -1346,7 +1334,6 @@ namespace UnityEditor
                 m_pingIndex = index;
 
                 float vcPadding = s_VCEnabled ? k_ListModeVersionControlOverlayPadding : 0f;
-                var assetReference = new AssetReference() { entityId = instanceID };
                 var textClipping = m_LocalAssets.ListMode ? TextClipping.Overflow : TextClipping.Ellipsis;
                 GUIContent cont = new GUIContent(name);
                 string label = cont.text;
@@ -1359,7 +1346,7 @@ namespace UnityEditor
                     m_Ping.m_ContentRect.width = pingLabelSize.x + vcPadding + iconWidth;
                     m_Ping.m_ContentRect.height = pingLabelSize.y;
                     m_LeftPaddingForPinging = hierarchyProperty.isMainRepresentation ? LocalGroup.k_ListModeLeftPadding : LocalGroup.k_ListModeLeftPaddingForSubAssets;
-                    FilteredHierarchy.FilterResult res = m_LocalAssets.LookupByInstanceID(instanceID);
+                    FilteredHierarchy.FilterResult res = m_LocalAssets.LookupByInstanceID(entityId);
                     var icon = hierarchyProperty.icon;
                     m_Ping.m_ContentDraw = (Rect r) =>
                     {

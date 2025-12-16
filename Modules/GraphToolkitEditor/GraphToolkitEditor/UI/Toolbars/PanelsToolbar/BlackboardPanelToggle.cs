@@ -18,8 +18,16 @@ namespace Unity.GraphToolkit.Editor
     {
         public const string id = "GraphToolkit/Overlay Windows/Blackboard";
 
+        static readonly string k_CachedTooltipText =  L10n.Tr("Blackboard");
+
         /// <inheritdoc />
         protected override string WindowId => BlackboardOverlay.idValue;
+
+        /// <inheritdoc />
+        protected override string TooltipText => k_CachedTooltipText;
+
+        /// <inheritdoc />
+        protected override string ShortcutString => ShortcutToggleBlackboardEvent.GetShortcutString((containerWindow as GraphViewEditorWindow)?.GraphTool);
 
         /// <summary>
         /// Initializes a new instance of the <see cref="BlackboardPanelToggle"/> class.
@@ -27,8 +35,8 @@ namespace Unity.GraphToolkit.Editor
         public BlackboardPanelToggle()
         {
             name = "Blackboard";
-            tooltip = L10n.Tr("Blackboard");
             icon = EditorGUIUtilityBridge.LoadIcon($"{GraphElementHelper.k_IconFolder}PanelsToolbar/Blackboard.png");
+            UpdateInspectorTooltip();
         }
     }
 }

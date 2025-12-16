@@ -118,8 +118,8 @@ namespace Unity.GraphToolkit.Editor
 
         static Vector2 GetPortCenterInGraphPosition(Port port, GraphView graphView)
         {
-            var gvPos = new Vector2(graphView.resolvedStyle.translate.x, graphView.resolvedStyle.translate.y);
-            var gvScale = graphView.resolvedStyle.scale.value.x;
+            var gvPos = graphView.Pan;
+            var gvScale = graphView.Zoom;
 
             var connector = port.GetConnector();
             var localCenter = connector.layout.size * .5f;

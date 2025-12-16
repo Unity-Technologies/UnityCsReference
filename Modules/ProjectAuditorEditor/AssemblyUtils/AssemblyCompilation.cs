@@ -6,29 +6,13 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using Unity.ProjectAuditor.Editor.Utils;
 using UnityEditor;
 using UnityEditor.Compilation;
+using UnityEditorInternal;
 using UnityEngine;
 
 namespace Unity.ProjectAuditor.Editor.AssemblyUtils
 {
-    enum CompilerMessageType
-    {
-        /// <summary>
-        ///   <para>Error message.</para>
-        /// </summary>
-        Error,
-        /// <summary>
-        ///   <para>Warning message.</para>
-        /// </summary>
-        Warning,
-        /// <summary>
-        ///   <para>Info message.</para>
-        /// </summary>
-        Info
-    }
-
     struct CompilerMessage
     {
         /// <summary>
@@ -68,7 +52,10 @@ namespace Unity.ProjectAuditor.Editor.AssemblyUtils
 
         public string[] AssemblyNames;
         public CodeOptimization CodeOptimization = CodeOptimization.Release;
+        [Obsolete("Please use CodeAnalysisFlags instead", true)]
         public CompilationMode CompilationMode = CompilationMode.Player;
+        public CodeAnalysisFlags CodeAnalysisFlags = CodeAnalysisFlagsExtensions.Default;
+        internal CodeOwnerFlags CodeOwnerFlags = CodeOwnerFlags.User;
         public BuildTarget Platform = EditorUserBuildSettings.activeBuildTarget;
         public string[] RoslynAnalyzers;
 
@@ -92,68 +79,139 @@ namespace Unity.ProjectAuditor.Editor.AssemblyUtils
             m_OutputFolder = string.Empty;
         }
 
-        public AssemblyInfo[] Compile(IProgress progress = null)
+        public void Compile(out List<AssemblyInfo> compiledEditorAssemblyPaths, out List<AssemblyInfo> compiledPlayerAssemblyPaths, IProgress progress = null)
         {
-            var editorAssemblies = CompilationMode == CompilationMode.Editor || CompilationMode == CompilationMode.EditorPlayMode;
-            var assemblies = GetAssemblies(editorAssemblies);
+            GetAssemblies(out var editorAssemblies, out var playerAssemblies);
 
             if (AssemblyNames != null)
             {
-                var assembliesAndDependencies = new List<Assembly>();
-                foreach (var assembly in assemblies.Where(a => AssemblyNames.Contains(a.name)))
-                {
-                    CollectAssemblyDependencies(assembly, assembliesAndDependencies);
-                }
-
-                assemblies = assembliesAndDependencies.ToArray();
+                editorAssemblies = CollectAssemblyDependencies(editorAssemblies);
+                playerAssemblies = CollectAssemblyDependencies(playerAssemblies);
             }
 
-            IEnumerable<string> compiledAssemblyPaths;
-            if (editorAssemblies)
-                compiledAssemblyPaths = GetEditorAssemblies(assemblies);
-            else
-                compiledAssemblyPaths = CompilePlayerAssemblies(assemblies, progress);
+            IEnumerable<string> compiledPlayerPaths = CompilePlayerAssemblies(playerAssemblies.ToArray(), progress);
 
-            return compiledAssemblyPaths.Select(AssemblyInfoProvider.GetAssemblyInfoFromAssemblyPath).ToArray();
+            var editorPaths = editorAssemblies.Select(a => AssemblyInfoProvider.GetAssemblyInfoFromAssemblyPath(a.outputPath, true)).Distinct().ToList();
+            var playerPaths = compiledPlayerPaths.Select(p => AssemblyInfoProvider.GetAssemblyInfoFromAssemblyPath(p, false)).Distinct().ToList();
+
+            // If only auditing Unity code, remove all User assemblies (can't do this the other way around because User code depends on Unity code)
+            if ((CodeOwnerFlags & CodeOwnerFlags.All) == CodeOwnerFlags.Unity)
+            {
+                editorPaths = editorPaths.Where(p => p.IsUnityOwned).ToList();
+                playerPaths = playerPaths.Where(p => p.IsUnityOwned).ToList();
+            }
+
+            // Remove any duplicates
+            if (editorPaths.Count > 0 && playerPaths.Count > 0)
+                editorPaths = editorPaths.Where(e => !playerPaths.Any(p => p.Name == e.Name)).ToList();
+
+            // Add Unity assemblies
+            if ((CodeOwnerFlags & CodeOwnerFlags.Unity) != 0)
+                FindUnityModuleDLLs(editorPaths, playerPaths);
+
+            compiledEditorAssemblyPaths = editorPaths;
+            compiledPlayerAssemblyPaths = playerPaths;
         }
 
-        static Assembly[] GetAssemblies(bool editorAssemblies)
+        private void FindUnityModuleDLLs(List<AssemblyInfo> editorPaths, List<AssemblyInfo> playerPaths)
         {
-            var assemblies =
-                UnityEditor.Compilation.CompilationPipeline.GetAssemblies(editorAssemblies
-                    ? AssembliesType.Editor
-                    : AssembliesType.PlayerWithoutTestAssemblies);
+            string rootModuleDirectory = Path.GetDirectoryName(InternalEditorUtility.GetEditorAssemblyPath());
+            string modulePath = Path.Combine(rootModuleDirectory, "UnityEngine");
 
-            return assemblies;
+            if (!Directory.Exists(rootModuleDirectory))
+            {
+                Debug.LogError($"Unity Module root directory not found at: {rootModuleDirectory}");
+                return;
+            }
+            if (!Directory.Exists(modulePath))
+            {
+                Debug.LogError($"Unity Module directory not found at: {modulePath}");
+                return;
+            }
+
+            if ((CodeAnalysisFlags & CodeAnalysisFlags.Editor) != 0)
+                editorPaths.Add(AssemblyInfoProvider.GetAssemblyInfoFromUnityAssemblyPath(Path.Combine(rootModuleDirectory, "UnityEditor.dll"), true));
+            if ((CodeAnalysisFlags & CodeAnalysisFlags.Player) != 0)
+                playerPaths.Add(AssemblyInfoProvider.GetAssemblyInfoFromUnityAssemblyPath(Path.Combine(rootModuleDirectory, "UnityEngine.dll"), false));
+
+            string[] dllFiles = Directory.GetFiles(modulePath, "*.dll");
+            if (dllFiles.Length == 0)
+            {
+                Debug.LogError($"No Unity Module DLLs found in: {modulePath}");
+                return;
+            }
+
+            foreach (string dllFile in dllFiles)
+            {
+                string assemblyName = Path.GetFileNameWithoutExtension(dllFile);
+                bool editorAssembly = assemblyName.StartsWith("UnityEditor");
+
+                if (editorAssembly)
+                {
+                    if ((CodeAnalysisFlags & CodeAnalysisFlags.Editor) != 0)
+                        editorPaths.Add(AssemblyInfoProvider.GetAssemblyInfoFromUnityAssemblyPath(dllFile, true));
+                }
+                else
+                {
+                    if ((CodeAnalysisFlags & CodeAnalysisFlags.Player) != 0)
+                        playerPaths.Add(AssemblyInfoProvider.GetAssemblyInfoFromUnityAssemblyPath(dllFile, false));
+                }
+            }
         }
 
-        static void CollectAssemblyDependencies(Assembly assembly, List<Assembly> assembliesAndDependencies)
+        void GetAssemblies(out IReadOnlyCollection<Assembly> editorAssemblies, out IReadOnlyCollection<Assembly> playerAssemblies)
+        {
+            if ((CodeAnalysisFlags & CodeAnalysisFlags.Editor) != 0)
+            {
+                editorAssemblies = UnityEditor.Compilation.CompilationPipeline.GetAssemblies(AssembliesType.Editor);
+                editorAssemblies = editorAssemblies.Where(a => (a.flags & AssemblyFlags.EditorAssembly) != 0).ToArray();
+
+                if ((CodeAnalysisFlags & CodeAnalysisFlags.Tests) == 0)
+                {
+                    var result = new List<Assembly>(editorAssemblies.Count);
+                    foreach (var assembly in editorAssemblies)
+                    {
+                        var info = AssemblyInfoProvider.GetAssemblyInfoFromAssemblyPath(assembly.outputPath, (assembly.flags & AssemblyFlags.EditorAssembly) != 0);
+                        if (!info.IsTestAssembly)
+                            result.Add(assembly);
+                    }
+                    editorAssemblies = result;
+                }
+            }
+            else
+            {
+                editorAssemblies = Array.Empty<Assembly>();
+            }
+
+            if ((CodeAnalysisFlags & CodeAnalysisFlags.Player) != 0)
+            {
+                if ((CodeAnalysisFlags & CodeAnalysisFlags.Tests) != 0)
+                    playerAssemblies = UnityEditor.Compilation.CompilationPipeline.GetAssemblies(AssembliesType.Player);
+                else
+                    playerAssemblies = UnityEditor.Compilation.CompilationPipeline.GetAssemblies(AssembliesType.PlayerWithoutTestAssemblies);
+            }
+            else
+            {
+                playerAssemblies = Array.Empty<Assembly>();
+            }
+        }
+
+        IReadOnlyCollection<Assembly> CollectAssemblyDependencies(IReadOnlyCollection<Assembly> assemblies)
+        {
+            var assembliesAndDependencies = new List<Assembly>();
+            foreach (var assembly in assemblies.Where(a => AssemblyNames.Contains(a.name)))
+                CollectAssemblyDependenciesRecursive(assembly, assembliesAndDependencies);
+            return assembliesAndDependencies;
+        }
+
+        static void CollectAssemblyDependenciesRecursive(Assembly assembly, List<Assembly> assembliesAndDependencies)
         {
             if (!assembliesAndDependencies.Contains(assembly))
                 assembliesAndDependencies.Add(assembly);
+
             var missingDependencies = assembly.assemblyReferences.Where(d => !assembliesAndDependencies.Contains(d));
             foreach (var dependency in missingDependencies)
-            {
-                CollectAssemblyDependencies(dependency, assembliesAndDependencies);
-            }
-        }
-
-        IEnumerable<string> GetEditorAssemblies(IEnumerable<Assembly> assemblies)
-        {
-            if (CompilationMode == CompilationMode.EditorPlayMode)
-            {
-                // exclude Editor-Only Assemblies
-                assemblies = assemblies.Where(a => a.flags != AssemblyFlags.EditorAssembly);
-            }
-            return assemblies.Select(assembly => assembly.outputPath);
-        }
-
-        public static IEnumerable<string> GetAssemblyReferencePaths(CompilationMode compilationMode)
-        {
-            var editorAssemblies = compilationMode == CompilationMode.Editor || compilationMode == CompilationMode.EditorPlayMode;
-            var paths = GetAssemblies(editorAssemblies)
-                .SelectMany(a => a.compiledAssemblyReferences).Select(Path.GetDirectoryName).Distinct();
-            return paths;
+                CollectAssemblyDependenciesRecursive(dependency, assembliesAndDependencies);
         }
 
         IEnumerable<string> CompilePlayerAssemblies(Assembly[] assemblies, IProgress progress = null)
@@ -206,21 +264,15 @@ namespace Unity.ProjectAuditor.Editor.AssemblyUtils
                     RoslynAnalyzerDllPaths = RoslynAnalyzers ?? Array.Empty<string>()
                 };
 
-                switch (CompilationMode)
-                {
-                    case CompilationMode.Player:
-                        assemblyBuilder.flags = AssemblyBuilderFlags.None;
-                        break;
-                    case CompilationMode.DevelopmentPlayer:
-                        assemblyBuilder.flags = AssemblyBuilderFlags.DevelopmentBuild;
-                        break;
-                    case CompilationMode.Editor:
-                        assemblyBuilder.flags = AssemblyBuilderFlags.EditorAssembly;
-                        break;
-                }
-
                 // add asmdef-specific defines
                 var additionalDefines = new List<string>(assembly.defines.Except(assemblyBuilder.defaultDefines));
+
+                // DEVELOPMENT_BUILD
+                assemblyBuilder.flags = AssemblyBuilderFlags.None;
+                if ((CodeAnalysisFlags & CodeAnalysisFlags.DevelopmentBuild) != 0)
+                    assemblyBuilder.flags |= AssemblyBuilderFlags.DevelopmentBuild;
+                else
+                    additionalDefines.Remove("DEVELOPMENT_BUILD"); // Checking Development Build in the Build Profile, can cause this define to appear in assembly.defines!
 
                 // temp fix for UWP compilation error (failing to find references to Windows SDK assemblies)
                 additionalDefines.Remove("ENABLE_WINMD_SUPPORT");
@@ -238,7 +290,8 @@ namespace Unity.ProjectAuditor.Editor.AssemblyUtils
 
                 assemblyBuilder.referencesOptions = ReferencesOptions.UseEngineModules;
 
-                m_AssemblyCompilationTasks.Add(assemblyName, new AssemblyCompilationTask(assemblyBuilder)
+                bool editorAssembly = (assembly.flags & AssemblyFlags.EditorAssembly) != 0;
+                m_AssemblyCompilationTasks.Add(assemblyName, new AssemblyCompilationTask(assemblyBuilder, editorAssembly, CodeAnalysisFlags, CodeOwnerFlags)
                 {
                     OnCompilationFinished = (result =>
                     {

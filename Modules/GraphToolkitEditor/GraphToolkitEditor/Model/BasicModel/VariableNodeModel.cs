@@ -101,7 +101,7 @@ namespace Unity.GraphToolkit.Editor
         protected override void OnDefineNode(NodeDefinitionScope scope)
         {
             if (m_DeclarationModel != null && m_DeclarationModel.Modifiers.HasFlag(ModifierFlags.Write))
-                m_MainPortModel = scope.AddInputPort(k_MainPortName, DataType);
+                m_MainPortModel = scope.AddInputPort(k_MainPortName, DataType, options : PortModelOptions.NoEmbeddedConstant);
             else
                 m_MainPortModel = scope.AddOutputPort(k_MainPortName, m_DeclarationModel == null ? TypeHandle.MissingPort : DataType);
         }

@@ -1,5 +1,6 @@
 using System;
 using System.Runtime.InteropServices;
+using UnityEngine.Bindings;
 
 // typedef struct udm_hash
 // {
@@ -79,6 +80,13 @@ using udm_utf8string_const_accessor = Unity.DataModel.ConstUTF8String;
 using udm_reference = Unity.DataModel.Reference;
 using udm_const_reference = Unity.DataModel.Reference;
 
+// typedef struct udm_reference_field
+// {
+//     uint64_t index;
+// } udm_reference_field_t;
+using udm_reference_field = Unity.DataModel.ReferenceField;
+using udm_const_reference_field = Unity.DataModel.ReferenceField;
+
 // typedef struct udm_type_layout
 // {
 //     int8_t hasExplicitLayout;
@@ -108,6 +116,7 @@ using udm_vector_accessor = Unity.DataModel.Vector;
 // {
 //     const udm_schema_t*       element_schema;
 //     const udm_vector_field_t* field;
+//     const udm_reference_t*    references;
 // } udm_vector_const_accessor_t;
 using udm_vector_const_accessor = Unity.DataModel.ConstVector;
 
@@ -142,8 +151,9 @@ using udm_accessor = Unity.DataModel.Accessor;
 
 // typedef struct udm_const_accessor
 // {
-//     const udm_schema_t* schema;
-//     const void*         data;
+//     const udm_schema_t*         schema;
+//     const void*                 data;
+//     const udm_reference_t*      references;
 // } udm_const_accessor_t;
 using udm_const_accessor = Unity.DataModel.ConstAccessor;
 
@@ -157,7 +167,7 @@ using udm_schema_flags = Unity.DataModel.SchemaFlags;
 //     udm_utf8string_field_t   type_name;
 //     udm_type_id_t            type_id;
 //     uint64_t                 type_version;
-//     udm_underlying_type_id_t underlying_type_id;
+//     udm_type_id_t            underlying_type_id;
 
 //     uint64_t alignment;
 //     uint64_t size;                  // size of fixed length data
@@ -166,6 +176,7 @@ using udm_schema_flags = Unity.DataModel.SchemaFlags;
 
 //     udm_vector_field_t fields;
 //     udm_vector_field_t field_keys;
+//     udm_vector_field_t references;
 // } udm_schema_t;
 using udm_const_schema = Unity.DataModel.SchemaImpl;
 
@@ -199,6 +210,9 @@ using udm_object_collection_per_schema = Unity.DataModel.ObjectCollectionPerSche
 
 //     uint64_t external_document_ids_offset;
 //     uint64_t external_document_ids_count;
+
+//     uint64_t references_offset;
+//     uint64_t references_count;
 
 //     uint64_t object_collection_per_schema_offset;
 //     uint64_t object_collection_per_schema_count;
@@ -258,6 +272,7 @@ using udm_object_model_per_schema = Unity.DataModel.ObjectModelsPerSchema;
 //    const udm_schema_t* schema;
 //    const udm_object_model_pair_entry_t* data;
 //    uint64_t count;
+//    const udm_document_model_t* document_model;
 //} udm_const_object_model_per_schema_t;
 using udm_const_object_model_per_schema = Unity.DataModel.ConstObjectModelsPerSchema;
 
@@ -280,6 +295,7 @@ using udm_object_model_ecs_components = Unity.DataModel.ObjectModelEcsComponents
 // {
 //     const udm_object_model_schema_data_pair_t* entries;
 //     uint64_t count;
+//     const udm_document_model_t* document_model;
 // } udm_const_object_model_ecs_components_t;
 using udm_const_object_model_ecs_components = Unity.DataModel.ConstObjectModelEcsComponents;
 
@@ -302,6 +318,7 @@ using udm_schema_manager = System.IntPtr;
 
 namespace Unity.DataModel
 {
+    [VisibleToOtherModules]
     internal interface IUdmInterop
     {
         // Initialization -------------------------------------------
@@ -312,6 +329,10 @@ namespace Unity.DataModel
             IntPtr asset_database_register_schema);
         internal void udm_types_initialize(IntPtr schema_manager, IntPtr build_basic_schema);
         internal void cleanup();
+        internal unsafe uint udm_xxhash32(byte* data, ulong size);
+        internal unsafe udm_hash udm_xxh3_128(byte* data, ulong size);
+
+        [VisibleToOtherModules]
         unsafe internal IntPtr udm_get_schema_manager();
 
         // Memory -------------------------------------------
@@ -390,13 +411,15 @@ namespace Unity.DataModel
         unsafe internal void udm_schema_builder_add_field(udm_schema_builder_ptr schema_builder, string name, int explicit_offset, udm_const_accessor default_value, SchemaFieldFlags flags = default);
         unsafe internal ulong udm_schema_builder_get_fields_count(udm_const_schema_builder_ptr schema_builder);
         unsafe internal void udm_schema_builder_set_inline_text_serialization(udm_schema_builder_ptr schema_builder, int inline_text_serialization);
+        unsafe internal void udm_schema_builder_set_as_fixed_buffer(udm_schema_builder_ptr schema_builder, int is_fixed_buffer);
+        unsafe internal void udm_schema_builder_set_as_managed(udm_schema_builder_ptr schema_builder, int is_managed);
+        unsafe internal void udm_schema_builder_set_underlying_type_id(udm_schema_builder_ptr schema_builder, udm_const_type_id* underlying_type_id);
         unsafe internal udm_const_schema* udm_schema_builder_build_schema(udm_schema_builder_ptr schema_builder);
         unsafe internal udm_const_schema* udm_schema_builder_build_vector_schema(IntPtr schema_manager, udm_const_schema* element_schema, string type_name, udm_const_type_id* type_id, int is_managed);
         unsafe internal udm_const_schema* udm_schema_builder_build_map_schema(IntPtr schema_manager, udm_const_schema* key_schema, udm_const_schema* value_schema);
+        unsafe internal udm_const_schema* udm_schema_builder_build_basic_schema_with_underlying_type(IntPtr udm_schema_manager_ptr, udm_const_type_id* underlying_type_id, string type_name, udm_const_type_id* type_id, ulong type_version, int is_managed);
         unsafe internal void udm_schema_builder_delete(udm_schema_builder_ptr schema_builder);
         unsafe internal IntPtr get_schema_builder_build_basic_schema_function();
-        unsafe internal udm_const_schema* udm_schema_builder_build_basic_schema_with_underlying_type(IntPtr udm_schema_manager_ptr, udm_const_type_id* underlying_type_id, string type_name, udm_const_type_id* type_id, ulong type_version, int is_managed);
-
 
         // Document Model binary header
         internal unsafe int udm_binary_header_is_valid(udm_binary_header* header);
@@ -406,7 +429,7 @@ namespace Unity.DataModel
 
         // Document Model -------------------------------------------
         unsafe internal int udm_is_document_model_text(byte* text_data, ulong text_data_size);
-        
+
         internal unsafe udm_document_model_ptr udm_document_model_new();
         internal unsafe udm_const_document_model_ptr udm_document_model_new_from_text(byte* text_data, ulong text_data_size);
         internal unsafe udm_const_document_model_ptr udm_document_model_new_from_binary_header(udm_binary_header* header);
@@ -420,9 +443,13 @@ namespace Unity.DataModel
         unsafe internal udm_object_model udm_document_model_get_object_model(udm_document_model_ptr document_model, udm_object_id udmObjectId);
         unsafe internal udm_const_object_model udm_document_model_get_const_object_model(udm_const_document_model_ptr document_model, udm_object_id udmObjectId);
         unsafe internal ulong udm_document_model_get_objects_count(udm_const_document_model_ptr document_model);
+        unsafe internal void udm_document_model_extract_external_document_ids(udm_document_model_ptr document_model);
         unsafe internal udm_const_guid* udm_document_model_get_external_document_ids(udm_const_document_model_ptr document_model);
+        unsafe internal udm_reference* udm_document_model_get_references(udm_const_document_model_ptr document_model);
+        unsafe internal ulong udm_document_model_get_references_size(udm_const_document_model_ptr document_model);
         unsafe internal ulong udm_document_model_get_external_document_ids_size(udm_const_document_model_ptr document_model);
         unsafe internal ulong udm_document_model_get_dynamic_memory_usage(udm_const_document_model_ptr document_model);
+        unsafe internal void udm_document_model_set_reference(udm_document_model_ptr document_model, udm_reference_field* field, udm_reference reference);
 
         unsafe internal udm_object_model_iterator* udm_object_model_iterator_new(udm_document_model_ptr document_model);
         unsafe internal void udm_object_model_iterator_next(udm_object_model_iterator* object_model_it);
@@ -433,8 +460,6 @@ namespace Unity.DataModel
         unsafe internal void udm_const_object_model_iterator_next(udm_const_object_model_iterator* object_model_it);
         unsafe internal void udm_const_object_model_iterator_reset(udm_const_object_model_iterator* object_model_it);
         unsafe internal void udm_const_object_model_iterator_delete(udm_const_object_model_iterator* object_model_it);
-        unsafe internal void udm_document_model_extract_external_document_ids(udm_document_model_ptr document_model);
-        unsafe internal udm_reference* udm_document_model_get_references(udm_const_document_model_ptr document_model);
 
         unsafe internal udm_document_model_schema_iterator* udm_document_model_schema_iterator_new(udm_document_model_ptr document_model);
         unsafe internal void udm_document_model_schema_iterator_next(udm_document_model_schema_iterator* schema_it);

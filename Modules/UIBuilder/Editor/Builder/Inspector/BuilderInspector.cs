@@ -13,9 +13,7 @@ using UnityEditor;
 using UnityEditor.UIElements;
 using UnityEngine;
 using UnityEngine.Pool;
-using UnityEditor.UIElements.Debugger;
 using UnityEngine.UIElements.StyleSheets;
-using UnityEditor.UIElements.Bindings;
 
 namespace Unity.UI.Builder
 {
@@ -44,24 +42,19 @@ namespace Unity.UI.Builder
         // the selection is restored, the scroll position will still be zero.
         //
         // The solution here, which is definitely overkill, is to cache the previous
-        // s_MaxCachedScrollPositions m_ScrollView.contentContainer.layout.heights
+        // 5 (s_MaxCachedScrollPositions) number of selection types
         // and their associated scroll positions. Then, when we detect a
         // m_ScrollView.contentContainer GeometryChangeEvent, we look up our
-        // cache and restore the correct scroll position for this particular content
-        // height.
-        [Serializable]
-        struct CachedScrollPosition
-        {
-            public float scrollPosition;
-            public float maxScrollValue;
-        }
-        ScrollView m_ScrollView;
+        // cache and restore the correct scroll position for this particular type.
         static readonly int s_MaxCachedScrollPositions = 5;
-        [SerializeField] int m_CachedScrollPositionCount = 0;
         [SerializeField] int m_OldestScrollPositionIndex = 0;
-        [SerializeField] float[] m_CachedContentHeights = new float[s_MaxCachedScrollPositions];
-        [SerializeField] CachedScrollPosition[] m_CachedScrollPositions = new CachedScrollPosition[s_MaxCachedScrollPositions];
-        float contentHeight => m_ScrollView.contentContainer.layout.height;
+        [SerializeField] string[] m_CachedScrollTypes = new string[s_MaxCachedScrollPositions];
+        [SerializeField] float[] m_CachedScrollValues = new float[s_MaxCachedScrollPositions];
+
+        ScrollView m_ScrollView;
+        Vector2 m_PreviousContentSize;
+        bool m_IsChangingSelection;
+        IVisualElementScheduledItem m_ScheduledSelectionEnd;
 
         const float m_PreviewDefaultHeight = 200;
         const float m_PreviewMinHeight = 20;
@@ -274,7 +267,7 @@ namespace Unity.UI.Builder
             m_ScrollView.contentContainer.RegisterCallback<GeometryChangedEvent>(OnScrollViewContentGeometryChange);
             m_ScrollView.verticalScroller.valueChanged += (newValue) =>
             {
-                CacheScrollPosition(newValue, m_ScrollView.verticalScroller.highValue);
+                CacheScrollPosition(newValue);
                 SaveViewData();
             };
 
@@ -791,7 +784,6 @@ namespace Unity.UI.Builder
                 return;
             }
 
-
             if (isAttribute)
             {
                 var value = currentVisualElement.GetValueByReflection(attributeName);
@@ -823,6 +815,13 @@ namespace Unity.UI.Builder
                 {
                     var filterStyleField = field.GetFirstAncestorOfType<FilterStyleField>();
                     styleFields.RefreshStyleField(filterStyleField);
+                }
+                else if (id == StylePropertyId.UnityMaterial)
+                {
+                    var materialStyleField = field as MaterialDefinitionStyleField;
+                    if (materialStyleField == null)
+                        materialStyleField = field.GetFirstAncestorOfType<MaterialDefinitionStyleField>();
+                    styleFields.RefreshStyleField(materialStyleField);
                 }
                 else
                 {
@@ -1179,55 +1178,65 @@ namespace Unity.UI.Builder
 
         void OnScrollViewContentGeometryChange(GeometryChangedEvent evt)
         {
-            SetScrollerPositionFromSavedState();
-        }
-
-        void CacheScrollPosition(float currentScrollPosition, float currentMaxScrollValue)
-        {
-            // This avoid pushing legitimate cached positions out of the cache with
-            // short (nothing selected) content.
+            // Early out if the new size doesn't need scroll bars.
             if (!m_ScrollView.needsVertical)
                 return;
 
-            int index = -1;
-            for (int i = 0; i < m_CachedScrollPositionCount; ++i)
-                if (m_CachedContentHeights[i] == contentHeight)
+            if (m_PreviousContentSize == evt.newRect.size)
+            {
+                CacheScrollPosition(m_ScrollView.verticalScroller.value);
+            }
+            else
+            {
+                SetScrollerPositionFromSavedState();
+            }
+
+            m_PreviousContentSize = evt.newRect.size;
+        }
+
+        void CacheScrollPosition(float currentScrollPosition)
+        {
+            // This avoid pushing legitimate cached positions out of the cache with
+            // short (nothing selected) content.
+            if (!m_ScrollView.needsVertical || m_CurrentVisualElement == null || m_IsChangingSelection)
+                return;
+
+            var index = -1;
+            var currentElementType = m_CurrentVisualElement.GetType().ToString();
+            for (var i = 0; i < s_MaxCachedScrollPositions; ++i)
+            {
+                if (m_CachedScrollTypes[i] == currentElementType)
                 {
                     index = i;
                     break;
                 }
+            }
 
             if (index < 0)
             {
-                if (m_CachedScrollPositionCount < s_MaxCachedScrollPositions)
-                {
-                    index = m_CachedScrollPositionCount;
-                    m_CachedScrollPositionCount++;
-                }
-                else
-                {
-                    index = m_OldestScrollPositionIndex;
-                    m_OldestScrollPositionIndex = (m_OldestScrollPositionIndex + 1) % s_MaxCachedScrollPositions;
-                }
+                index = m_OldestScrollPositionIndex;
+                m_OldestScrollPositionIndex = (m_OldestScrollPositionIndex + 1) % s_MaxCachedScrollPositions;
             }
 
-            var cached = m_CachedScrollPositions[index];
-            cached.scrollPosition = currentScrollPosition;
-            cached.maxScrollValue = currentMaxScrollValue;
-            m_CachedScrollPositions[index] = cached;
-
-            m_CachedContentHeights[index] = contentHeight;
+            m_CachedScrollTypes[index] = currentElementType;
+            m_CachedScrollValues[index] = currentScrollPosition;
         }
 
         int GetCachedScrollPositionIndex()
         {
-            int index = -1;
-            for (int i = 0; i < m_CachedScrollPositionCount; ++i)
-                if (m_CachedContentHeights[i] == contentHeight)
+            if (m_CurrentVisualElement == null)
+                return -1;
+
+            var index = -1;
+            var currentElementType = m_CurrentVisualElement.GetType().ToString();
+            for (var i = 0; i < s_MaxCachedScrollPositions; ++i)
+            {
+                if (m_CachedScrollTypes[i] == currentElementType)
                 {
                     index = i;
                     break;
                 }
+            }
 
             return index;
         }
@@ -1236,11 +1245,21 @@ namespace Unity.UI.Builder
         {
             var index = GetCachedScrollPositionIndex();
             if (index < 0)
+            {
+                m_ScrollView.verticalScroller.value = 0;
                 return;
+            }
 
-            var cached = m_CachedScrollPositions[index];
-            m_ScrollView.verticalScroller.highValue = cached.maxScrollValue;
-            m_ScrollView.verticalScroller.value = cached.scrollPosition;
+            var cached = m_CachedScrollValues[index];
+            m_ScrollView.verticalScroller.value = cached;
+        }
+
+        // Used in tests.
+        internal void ClearCachedScrollPositions()
+        {
+            m_OldestScrollPositionIndex = 0;
+            m_CachedScrollTypes = new string[s_MaxCachedScrollPositions];
+            m_CachedScrollValues = new float[s_MaxCachedScrollPositions];
         }
 
         public void RefreshUI(bool refreshAttributes = true)
@@ -1398,8 +1417,18 @@ namespace Unity.UI.Builder
             }
         }
 
+        public void PreSaveDocument()
+        {
+            if (focusController is not { focusedElement: VisualElement focusedElement } || !Contains(focusedElement))
+                return;
+
+            PushDelayedValue(focusedElement);
+        }
+
         public void BeforeSelectionChanged()
         {
+            m_IsChangingSelection = true;
+
             if (focusController is not { focusedElement: VisualElement focusedElement } || !Contains(focusedElement))
                 return;
 
@@ -1418,6 +1447,11 @@ namespace Unity.UI.Builder
                 return;
             }
 
+            PushDelayedValue(focusedElement);
+        }
+
+        void PushDelayedValue(VisualElement focusedElement)
+        {
             // Ensures that the value in the field is committed before the selection changes.
             // For example, a user sets a value in the text field and then clicks on another element.
             var dimensionStyleField = focusedElement as DimensionStyleField;
@@ -1505,6 +1539,16 @@ namespace Unity.UI.Builder
             {
                 RefreshUI();
             }
+
+            m_ScheduledSelectionEnd?.Pause();
+            m_ScheduledSelectionEnd = schedule.Execute(SelectionChangeEnd);
+            m_ScheduledSelectionEnd.ExecuteLater(100);
+        }
+
+        void SelectionChangeEnd()
+        {
+            m_IsChangingSelection = false;
+            SetScrollerPositionFromSavedState();
         }
 
         private void OnPropertyChanged(PropertyChangedEvent evt)

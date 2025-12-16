@@ -13,7 +13,13 @@ namespace UnityEditor
     {
         [SerializeField]
         bool m_SnapEnabled;
-
+        
+        [SerializeField]
+        bool m_AngleSnapEnabled;
+        
+        [SerializeField]
+        bool m_ScaleSnapEnabled;
+        
         [SerializeField]
         SnapSettings m_SnapSettings = new SnapSettings();
 
@@ -21,6 +27,18 @@ namespace UnityEditor
         {
             get { return m_SnapEnabled; }
             set { m_SnapEnabled = value; }
+        }
+        
+        internal bool angleSnapEnabled
+        {
+            get { return m_AngleSnapEnabled; }
+            set { m_AngleSnapEnabled = value; }
+        }
+
+        internal bool scaleSnapEnabled
+        {
+            get { return m_ScaleSnapEnabled; }
+            set { m_ScaleSnapEnabled = value; }
         }
 
         internal SnapSettings snapSettings
@@ -58,18 +76,29 @@ namespace UnityEditor
 
         // gridSnapEnabled controls whether objects are rounded to absolute positions on the grid, as opposed to
         // incremental rounding from translation origin. this option is only applicable when the handle rotation
-        // is set to "Global."
+        // is set to "Global" or "Grid".
         public static bool gridSnapEnabled
         {
-            get => instance.snapSettings.snapToGrid;
+            get
+            {
+                var snapSettings = instance.snapSettings;
+                if (snapEnabled && snapSettings.snapToGrid && EditorGUI.actionKey)
+                    return false;
+                
+                return snapSettings.snapToGrid;
+            }
             set
             {
-                instance.snapSettings.snapToGrid = value;
-                gridSnapEnabledChanged?.Invoke();
+                var snapSettings = instance.snapSettings;
+                if (snapSettings.snapToGrid != value)
+                {
+                    snapSettings.snapToGrid = value;
+                    gridSnapEnabledChanged?.Invoke();
+                }
             }
         }
 
-        // snapEnabled is the general "is snap on" toggle. it controls all snapping; grid, increment, rotation, scale.
+        // snapEnabled is the general "is snap on" toggle.
         public static bool snapEnabled
         {
             get { return EditorGUI.actionKey ? !instance.snapEnabled : instance.snapEnabled; }
@@ -82,6 +111,32 @@ namespace UnityEditor
                 }
             }
         }
+        
+        public static bool angleSnapEnabled
+        {
+            get { return EditorGUI.actionKey ? !instance.angleSnapEnabled : instance.angleSnapEnabled; }
+            set
+            {
+                if (angleSnapEnabled != value)
+                {
+                    instance.angleSnapEnabled = value;
+                    angleSnapEnabledChanged?.Invoke();
+                }
+            }
+        }
+        
+        public static bool scaleSnapEnabled
+        {
+            get { return EditorGUI.actionKey ? !instance.scaleSnapEnabled : instance.scaleSnapEnabled; }
+            set
+            {
+                if (scaleSnapEnabled != value)
+                {
+                    instance.scaleSnapEnabled = value;
+                    scaleSnapEnabledChanged?.Invoke();
+                }
+            }
+        }
 
         // where the 'snapEnabled' properties are preference toggles, the 'snapActive' properties are what tells tools
         // when and which snapping modes should be be applied.
@@ -91,6 +146,10 @@ namespace UnityEditor
         public static event Action gridSnapEnabledChanged;
 
         public static event Action snapEnabledChanged;
+        
+        public static event Action angleSnapEnabledChanged;
+        
+        public static event Action scaleSnapEnabledChanged;
 
         internal static bool vertexSnapActive => Tools.vertexDragging;
 
@@ -101,23 +160,72 @@ namespace UnityEditor
 
         public static Vector3 gridSize
         {
-            get => GridSettings.size;
+            get => GridSettings.instance.gridSize;
             set
             {
-                if (GridSettings.size != value)
-                    GridSettings.size = value;
+                if (GridSettings.instance.gridSize != value)
+                    GridSettings.instance.gridSize = value;
             }
         }
 
+        public static Vector3 gridPosition
+        {
+            get => GridSettings.instance.position;
+            set
+            {
+                var gridSettings = GridSettings.instance;
+                if (gridSettings.position != value)
+                {
+                    // This is subject to change if we make modes public or remove them altogether
+                    if (value == Vector3.zero && gridSettings.rotation == Quaternion.identity && gridSettings.activeModeIndex == GridMode.Custom)
+                        gridSettings.ActivateMode(GridMode.World);
+                    else  if (value != Vector3.zero && gridSettings.activeModeIndex == GridMode.World)
+                        gridSettings.ActivateMode(GridMode.Custom);
+                    
+                    gridSettings.position = value;
+                }
+            }
+        }
+        
+        public static Quaternion gridRotation
+        {
+            get => GridSettings.instance.rotation;
+            set
+            {
+                var gridSettings = GridSettings.instance;
+                if (gridSettings.rotation != value)
+                {
+                    // This is subject to change if we expose modes public or remove them altogether
+                    if (value == Quaternion.identity && gridSettings.position == Vector3.zero && gridSettings.activeModeIndex == GridMode.Custom)
+                        gridSettings.ActivateMode(GridMode.World);
+                    else  if (value != Quaternion.identity && gridSettings.activeModeIndex == GridMode.World)
+                        gridSettings.ActivateMode(GridMode.Custom);
+                    
+                    gridSettings.rotation = value;
+                }
+            }
+        }
+
+        internal static Action<Vector3> moveChanged;
         internal static Action<float> rotateChanged;
         internal static Action<float> scaleChanged;
 
         public static Vector3 move
         {
-            get => gridSize;
-            set => gridSize = value;
+            get { return instance.snapSettings.incrementalSnapSize; }
+            set
+            {
+                var snapSettings = instance.snapSettings;
+                if (snapSettings.incrementalSnapSize != value)
+                {
+                    snapSettings.incrementalSnapSize = value;
+                    moveChanged?.Invoke(value);
+                }
+            }
         }
-
+        
+        internal static bool moveLinked => Mathf.Approximately(move.x, move.y) && Mathf.Approximately(move.x, move.z);
+        
         public static float rotate
         {
             get { return instance.snapSettings.rotation; }

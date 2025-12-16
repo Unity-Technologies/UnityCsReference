@@ -30,8 +30,8 @@ namespace UnityEditor.PackageManager.UI.Internal
         public override string displayName => L10n.Tr("My Assets");
         public override Icon icon => Icon.MyAssetsPage;
 
-        public override IEnumerable<PageFilters.Status> supportedStatusFilters => k_SupportedStatusFilters;
-        public override IEnumerable<PageSortOption> supportedSortOptions => k_SupportedSortOptions;
+        public override IReadOnlyCollection<PageFilters.Status> supportedStatusFilters => k_SupportedStatusFilters;
+        public override IReadOnlyCollection<PageSortOption> supportedSortOptions => k_SupportedSortOptions;
         public override RefreshOptions refreshOptions => RefreshOptions.Purchased | RefreshOptions.ImportedAssets | RefreshOptions.LocalInfo;
         public override PageCapability capability => PageCapability.RequireNetwork | PageCapability.RequireUserLoggedIn;
 

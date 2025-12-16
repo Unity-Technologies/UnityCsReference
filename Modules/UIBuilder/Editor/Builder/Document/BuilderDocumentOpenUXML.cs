@@ -869,9 +869,6 @@ namespace Unity.UI.Builder
             while (m_OpenUSSFiles.Count < styleSheetsUsed.Count)
                 m_OpenUSSFiles.Add(new BuilderDocumentOpenUSS());
 
-            // Make sure active stylesheet is still in the document.
-            ValidateActiveStyleSheet();
-
             for (int i = 0; i < styleSheetsUsed.Count; ++i)
             {
                 if (m_OpenUSSFiles[i].styleSheet == styleSheetsUsed[i] && m_OpenUSSFiles[i].backupStyleSheet != null)
@@ -887,6 +884,9 @@ namespace Unity.UI.Builder
                 var lastIndex = m_OpenUSSFiles.Count - 1;
                 RemoveStyleSheetFromLists(lastIndex);
             }
+
+            // Make sure active stylesheet is still in the document.
+            ValidateActiveStyleSheet();
 
             ReloadDocumentToCanvas(documentRootElement);
         }

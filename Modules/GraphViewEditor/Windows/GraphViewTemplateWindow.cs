@@ -34,6 +34,7 @@ namespace UnityEditor.Experimental.GraphView
         string customTemplateIcon { get; }
         GraphViewTemplateWindow.ISaveFileDialogHelper saveFileDialogHelper { get; set; }
 
+        void RaiseImportSampleDependencies(PackageManager.PackageInfo packageInfo, Sample sample);
         void RaiseTemplateUsed(GraphViewTemplateDescriptor usedTemplate);
         bool TryGetTemplate(string assetPath, out GraphViewTemplateDescriptor graphViewTemplate);
         bool TrySetTemplate(string assetPath, GraphViewTemplateDescriptor graphViewTemplate);
@@ -62,6 +63,7 @@ namespace UnityEditor.Experimental.GraphView
 
         private const float PackageManagerTimeout = 5f; // 5s
 
+        private static readonly List<string> s_HideInstallSampleButtonByTool = new ();
         private readonly List<TreeViewItemData<ITemplateDescriptor>> m_TemplatesTree = new ();
 
         private TreeView m_ListOfTemplates;
@@ -92,8 +94,8 @@ namespace UnityEditor.Experimental.GraphView
 
         private static void ShowInternal(CreateMode mode, ITemplateHelper templateHelper, Action<string, string> callback)
         {
-            var windowTitle = mode == CreateMode.Insert ? templateHelper.insertTemplateTitle : templateHelper.createNewAssetTitle;
-            var templateWindow = EditorWindow.GetWindow<GraphViewTemplateWindow>(true, windowTitle, false);
+            var templateWindow = EditorWindow.GetWindow<GraphViewTemplateWindow>(true, string.Empty, false);
+            templateWindow.titleContent = new GUIContent(mode == CreateMode.Insert ? templateHelper.insertTemplateTitle : templateHelper.createNewAssetTitle);
             templateWindow.Setup(mode, templateHelper, callback);
         }
 
@@ -109,14 +111,24 @@ namespace UnityEditor.Experimental.GraphView
 
             // Handle the install button here because we need the template helper
             m_InstallButton = rootVisualElement.Q<Button>("InstallButton");
-            if (!string.IsNullOrEmpty(m_TemplateHelper.learningSampleName))
+            if (!string.IsNullOrEmpty(m_TemplateHelper.learningSampleName)
+                && !s_HideInstallSampleButtonByTool.Contains(m_TemplateHelper.assetType)
+                && TryFindSample(m_TemplateHelper.learningSampleName, out var packageInfo, out var sample) && !sample.isImported)
             {
                 m_InstallButton.clicked += OnInstall;
-                m_InstallButton.enabledSelf = TryFindSample(m_TemplateHelper.learningSampleName, out var sample) && !sample.isImported;
+                m_InstallButton.parent.style.display = DisplayStyle.Flex;
+                var hideInstallButton = rootVisualElement.Q<Button>("HideInstallButton");
+                hideInstallButton.clicked += HideInstallButton;
             }
             else
             {
-                m_InstallButton.style.display = DisplayStyle.None;
+                m_InstallButton.parent.style.display = DisplayStyle.None;
+            }
+
+            var actionButton = rootVisualElement.Q<Button>("CreateButton");
+            if (m_CurrentMode == CreateMode.Insert)
+            {
+                actionButton.text = "Insert";
             }
         }
 
@@ -126,6 +138,7 @@ namespace UnityEditor.Experimental.GraphView
             var tpl = (VisualTreeAsset)EditorGUIUtility.Load("UXML/GraphView/TemplateWindow.uxml");
             tpl.CloneTree(rootVisualElement);
             rootVisualElement.AddStyleSheetPath("StyleSheets/GraphView/TemplateWindow.uss");
+            rootVisualElement.AddToClassList(EditorGUIUtility.isProSkin ? "dark" : "light");
 
             rootVisualElement.name = "VFXTemplateWindowRoot";
             rootVisualElement.Q<Button>("CreateButton").clicked += OnCreate;
@@ -206,10 +219,19 @@ namespace UnityEditor.Experimental.GraphView
 
         private void OnInstall()
         {
-            if (TryFindSample(m_TemplateHelper.learningSampleName, out var samplePackage))
+            if (TryFindSample(m_TemplateHelper.learningSampleName, out var packageInfo, out var samplePackage))
             {
+                // Workaround for UUM-63664
+                m_TemplateHelper.RaiseImportSampleDependencies(packageInfo, samplePackage);
                 m_InstallButton.enabledSelf = !samplePackage.Import(Sample.ImportOptions.HideImportWindow | Sample.ImportOptions.OverridePreviousImports);
             }
+        }
+
+        private void HideInstallButton()
+        {
+            m_InstallButton.parent.style.display = DisplayStyle.None;
+            // Todo: replace assetType by toolKey when the search PR has landed
+            s_HideInstallSampleButtonByTool.Add(m_TemplateHelper.assetType);
         }
 
         private void OnCreate()
@@ -224,7 +246,7 @@ namespace UnityEditor.Experimental.GraphView
             }
         }
 
-        private bool TryFindSample(string sampleName, out Sample sample)
+        private bool TryFindSample(string sampleName, out PackageManager.PackageInfo packageInfo, out Sample sample)
         {
             try
             {
@@ -235,26 +257,14 @@ namespace UnityEditor.Experimental.GraphView
                     Thread.Sleep(20);
                 }
 
-                if (searchRequest is { Result: { Length: 1 }, IsCompleted: true } && searchRequest.Result[0] is { } packageInfo)
+                if (searchRequest is { Result: { Length: 1 }, IsCompleted: true } && searchRequest.Result[0] is { } localPackageInfo)
                 {
-                    // Workaround for UUM-63664
-                    foreach (var extension in PackageManagerExtensions.Extensions)
-                    {
-                        try
-                        {
-                            extension.OnPackageSelectionChange(packageInfo);
-                        }
-                        catch (Exception e)
-                        {
-                            Debug.LogWarning($"An error occured while trying to select a package extension.\n{e.Message}");
-                        }
-                    }
-
                     foreach (var samplePackage in Sample.FindByPackage(m_TemplateHelper.packageInfoName, null))
                     {
                         if (string.Compare(samplePackage.displayName, sampleName, StringComparison.OrdinalIgnoreCase) ==
                             0)
                         {
+                            packageInfo = localPackageInfo;
                             sample = samplePackage;
                             return true;
                         }
@@ -270,6 +280,7 @@ namespace UnityEditor.Experimental.GraphView
                 Debug.LogWarning($"Something went wrong while trying to retrieve {sampleName} package info\n{ex.Message}");
             }
 
+            packageInfo = null;
             sample = default;
             return false;
         }
@@ -385,10 +396,9 @@ namespace UnityEditor.Experimental.GraphView
                     template.category = isBuiltIn ? m_TemplateHelper.builtInCategory : template.category;
                     template.order =  isBuiltIn ? 0 : 1;
                     template.assetGuid = guid;
-                    if (isBuiltIn)
-                    {
-                        template.icon = GetSkinIcon(template.icon);
-                    }
+
+                    var skinIcon = GetSkinIcon(template.icon);
+                    template.icon = skinIcon == null ? template.icon : skinIcon;
                     allTemplates.Add(template);
                 }
             }

@@ -78,7 +78,7 @@ namespace UnityEngine.UIElements
             get => m_EnumType;
         }
 
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
         internal bool includeObsoleteValues
         {
             get => m_IncludeObsoleteValues;

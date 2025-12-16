@@ -5,9 +5,11 @@
 using System;
 using System.Collections.Generic;
 using System.Text.RegularExpressions;
+using UnityEngine.Bindings;
 
 namespace UnityEditor.Scripting.Compilers
 {
+    [VisibleToOtherModules("UnityEditor.BurstModule")]
     internal abstract class CompilerOutputParserBase
     {
         protected static CompilerMessage CreateInternalCompilerErrorMessage(string[] compileroutput)

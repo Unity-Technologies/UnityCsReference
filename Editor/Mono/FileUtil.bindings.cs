@@ -179,7 +179,8 @@ namespace UnityEditor
         ///     }
         /// }
         /// </example>
+        [VisibleToOtherModules("UnityEditor.BurstModule")]
         [FreeFunction("PathToPhysicalAbsolutePath", IsThreadSafe = true)]
-        internal static extern string PathToAbsolutePath(string path);
+        public static extern string PathToAbsolutePath(string path);
     }
 }

@@ -42,8 +42,10 @@ namespace UnityEditorInternal
         string ConnectedTargetName { get; }
         bool ConnectedToEditor { get; }
 
+#pragma warning disable CS0618
         ProfilerProperty CreateProperty();
         ProfilerProperty CreateProperty(int sortType);
+#pragma warning restore CS0618
 
         void CloseModule(ProfilerModule module);
 

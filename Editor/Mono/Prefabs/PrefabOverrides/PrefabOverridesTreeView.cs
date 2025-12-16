@@ -5,26 +5,26 @@
 using System;
 using UnityEngine;
 using System.Collections.Generic;
+using Unity.Collections.LowLevel.Unsafe;
 using UnityEditor.IMGUI.Controls;
 using UnityEditor.SceneManagement;
 using UnityEditor.UIElements;
 using UnityEngine.UIElements;
 using Object = UnityEngine.Object;
-using TreeView = UnityEditor.IMGUI.Controls.TreeView<int>;
-using TreeViewItem = UnityEditor.IMGUI.Controls.TreeViewItem<int>;
-using TreeViewUtility = UnityEditor.IMGUI.Controls.TreeViewUtility<int>;
-using TreeViewState = UnityEditor.IMGUI.Controls.TreeViewState<int>;
+using TreeView = UnityEditor.IMGUI.Controls.TreeView<UnityEngine.EntityId>;
+using TreeViewItem = UnityEditor.IMGUI.Controls.TreeViewItem<UnityEngine.EntityId>;
+using TreeViewUtility = UnityEditor.IMGUI.Controls.TreeViewUtility<UnityEngine.EntityId>;
+using TreeViewState = UnityEditor.IMGUI.Controls.TreeViewState<UnityEngine.EntityId>;
 
 namespace UnityEditor
 {
     class PrefabOverridesTreeView : TreeView
     {
         PrefabOverrides m_AllModifications;
-        bool m_Debug = false;
         string m_PrefabAssetPath { get; set; }
         GameObject m_PrefabInstanceRoot { get; set; }
         GameObject m_PrefabAssetRoot { get; set; }
-        int m_LastShownPreviewWindowRowID = -1;
+        EntityId m_LastShownPreviewWindowRowID = EntityId.None;
         PrefabOverridesWindow m_Window;
 
         enum ToggleValue { FALSE, TRUE, MIXED }
@@ -32,7 +32,7 @@ namespace UnityEditor
 
         class PrefabOverridesTreeViewItem : TreeViewItem
         {
-            public PrefabOverridesTreeViewItem(int id, int depth, string displayName) : base(id, depth, displayName)
+            public PrefabOverridesTreeViewItem(EntityId id, int depth, string displayName) : base(id, depth, displayName)
             {
             }
 
@@ -145,36 +145,36 @@ namespace UnityEditor
                 PopupWindowWithoutFocus.Hide();
         }
 
-        void BuildPrefabOverridesPerObject(out Dictionary<int, PrefabOverrides> instanceIDToPrefabOverridesMap)
+        void BuildPrefabOverridesPerObject(out Dictionary<EntityId, PrefabOverrides> entityIdToPrefabOverridesMap)
         {
-            instanceIDToPrefabOverridesMap = new Dictionary<int, PrefabOverrides>();
+            entityIdToPrefabOverridesMap = new Dictionary<EntityId, PrefabOverrides>();
 
             foreach (var modifiedObject in m_AllModifications.objectOverrides)
             {
-                int instanceID = 0;
+                EntityId entityId = EntityId.None;
                 if (modifiedObject.instanceObject is GameObject)
-                    instanceID = modifiedObject.instanceObject.GetInstanceID();
+                    entityId = modifiedObject.instanceObject.GetEntityId();
                 else if (modifiedObject.instanceObject is Component)
-                    instanceID = ((Component)modifiedObject.instanceObject).gameObject.GetInstanceID();
+                    entityId = ((Component)modifiedObject.instanceObject).gameObject.GetEntityId();
 
-                if (instanceID != 0)
+                if (entityId != EntityId.None)
                 {
-                    PrefabOverrides modificationsForObject = GetPrefabOverridesForObject(instanceID, instanceIDToPrefabOverridesMap);
+                    PrefabOverrides modificationsForObject = GetPrefabOverridesForObject(entityId, entityIdToPrefabOverridesMap);
                     modificationsForObject.objectOverrides.Add(modifiedObject);
                 }
             }
 
             foreach (var addedGameObject in m_AllModifications.addedGameObjects)
             {
-                int instanceID = addedGameObject.instanceGameObject.GetInstanceID();
-                PrefabOverrides modificationsForObject = GetPrefabOverridesForObject(instanceID, instanceIDToPrefabOverridesMap);
+                EntityId entityId = addedGameObject.instanceGameObject.GetEntityId();
+                PrefabOverrides modificationsForObject = GetPrefabOverridesForObject(entityId, entityIdToPrefabOverridesMap);
                 modificationsForObject.addedGameObjects.Add(addedGameObject);
             }
 
             foreach (var removedGameObject in m_AllModifications.removedGameObjects)
             {
-                int instanceID = removedGameObject.parentOfRemovedGameObjectInInstance.gameObject.GetInstanceID();
-                PrefabOverrides modificationsForObject = GetPrefabOverridesForObject(instanceID, instanceIDToPrefabOverridesMap);
+                EntityId entityId = removedGameObject.parentOfRemovedGameObjectInInstance.gameObject.GetEntityId();
+                PrefabOverrides modificationsForObject = GetPrefabOverridesForObject(entityId, entityIdToPrefabOverridesMap);
                 modificationsForObject.removedGameObjects.Add(removedGameObject);
             }
 
@@ -183,8 +183,8 @@ namespace UnityEditor
                 // This is possible if there's a component with a missing script.
                 if (addedComponent.instanceComponent == null)
                     continue;
-                int instanceID = addedComponent.instanceComponent.gameObject.GetInstanceID();
-                PrefabOverrides modificationsForObject = GetPrefabOverridesForObject(instanceID, instanceIDToPrefabOverridesMap);
+                var entityId = addedComponent.instanceComponent.gameObject.GetEntityId();
+                PrefabOverrides modificationsForObject = GetPrefabOverridesForObject(entityId, entityIdToPrefabOverridesMap);
                 modificationsForObject.addedComponents.Add(addedComponent);
             }
 
@@ -193,8 +193,8 @@ namespace UnityEditor
                 // This is possible if there's a component with a missing script.
                 if (removedComponent.assetComponent == null)
                     continue;
-                int instanceID = removedComponent.containingInstanceGameObject.gameObject.GetInstanceID();
-                PrefabOverrides modificationsForObject = GetPrefabOverridesForObject(instanceID, instanceIDToPrefabOverridesMap);
+                EntityId entityId = removedComponent.containingInstanceGameObject.gameObject.GetEntityId();
+                PrefabOverrides modificationsForObject = GetPrefabOverridesForObject(entityId, entityIdToPrefabOverridesMap);
                 modificationsForObject.removedComponents.Add(removedComponent);
             }
         }
@@ -232,16 +232,24 @@ namespace UnityEditor
             // Inner prefab asset root.
             m_AllModifications = GetPrefabOverrides(m_PrefabInstanceRoot, false);
 
-            Dictionary<int, PrefabOverrides> instanceIDToPrefabOverridesMap;
-            BuildPrefabOverridesPerObject(out instanceIDToPrefabOverridesMap);
+            Dictionary<EntityId, PrefabOverrides> entityIdToPrefabOverridesMap;
+            BuildPrefabOverridesPerObject(out entityIdToPrefabOverridesMap);
 
-            var hiddenRoot = new TreeViewItem { id = 0, depth = -1, displayName = "Hidden Root" };
-            var idSequence = new IdSequence();
+            var hiddenRoot = new TreeViewItem { id = EntityId.None, depth = -1, displayName = "Hidden Root" };
 
             hasApplicableModifications = false;
-            hasModifications = AddTreeViewItemRecursive(hiddenRoot, m_PrefabInstanceRoot, instanceIDToPrefabOverridesMap, idSequence);
+            hasModifications = AddTreeViewItemRecursive(hiddenRoot, m_PrefabInstanceRoot, entityIdToPrefabOverridesMap);
             if (!hasModifications)
-                hiddenRoot.AddChild(new TreeViewItem { id = 1, depth = 0, displayName = "No Overrides" });
+            {
+                int noOverridesItemId = SessionState.GetInt("NoOverridesItemId", 0);
+                if (noOverridesItemId == 0)
+                {
+                    Debug.Assert(sizeof(int)==UnsafeUtility.SizeOf<EntityId>(), "EntityId is not the same size as int, update this code to use ulong");
+                    noOverridesItemId = (int)EntityId.AllocateNextLowestEntityId().GetRawData();
+                    SessionState.SetInt("NoOverridesItemId", noOverridesItemId);
+                }
+                hiddenRoot.AddChild(new TreeViewItem { id = EntityId.From(noOverridesItemId), depth = 0, displayName = "No Overrides" });
+            }
             else
             {
                 bool CanAnyPropertiesBeApplied()
@@ -261,34 +269,17 @@ namespace UnityEditor
                 hasApplicableModifications = CanAnyPropertiesBeApplied();
             }
 
-            if (m_Debug)
-                AddDebugItems(hiddenRoot, idSequence);
-
             return hiddenRoot;
         }
 
-        void AddDebugItems(TreeViewItem hiddenRoot, IdSequence idSequence)
-        {
-            var debugItem = new TreeViewItem(idSequence.get(), 0, "<Debug raw list of modifications>");
-            foreach (var mod in m_AllModifications.addedGameObjects)
-                debugItem.AddChild(new TreeViewItem(idSequence.get(), debugItem.depth + 1, mod.instanceGameObject.name + " (Added GameObject)"));
-            foreach (var mod in m_AllModifications.removedGameObjects)
-                debugItem.AddChild(new TreeViewItem(idSequence.get(), debugItem.depth + 1, mod.assetGameObject.name + " (Removed GameObject)"));
-            foreach (var mod in m_AllModifications.addedComponents)
-                debugItem.AddChild(new TreeViewItem(idSequence.get(), debugItem.depth + 1, mod.instanceComponent.GetType() + " (Added Component)"));
-            foreach (var mod in m_AllModifications.removedComponents)
-                debugItem.AddChild(new TreeViewItem(idSequence.get(), debugItem.depth + 1, mod.assetComponent.GetType() + " (Removed Component)"));
 
-            hiddenRoot.AddChild(new TreeViewItem()); // spacer
-            hiddenRoot.AddChild(debugItem);
-        }
 
         // Returns true if input gameobject or any of its descendants have modifications, otherwise returns false.
-        bool AddTreeViewItemRecursive(TreeViewItem parentItem, GameObject gameObject, Dictionary<int, PrefabOverrides> prefabOverrideMap, IdSequence idSequence)
+        bool AddTreeViewItemRecursive(TreeViewItem parentItem, GameObject gameObject, Dictionary<EntityId, PrefabOverrides> prefabOverrideMap)
         {
             var gameObjectItem = new PrefabOverridesTreeViewItem
                 (
-                gameObject.GetInstanceID(),
+                gameObject.GetEntityId(),
                 parentItem.depth + 1,
                 gameObject.name
                 );
@@ -298,7 +289,7 @@ namespace UnityEditor
             bool shouldAddGameObjectItemToParent = false;
 
             PrefabOverrides objectModifications;
-            prefabOverrideMap.TryGetValue(gameObject.GetInstanceID(), out objectModifications);
+            prefabOverrideMap.TryGetValue(gameObject.GetEntityId(), out objectModifications);
             if (objectModifications != null)
             {
                 // Added GameObject - note that this earlies out!
@@ -336,7 +327,7 @@ namespace UnityEditor
 
                     var componentItem = new PrefabOverridesTreeViewItem
                         (
-                        component.GetInstanceID(),
+                        component.GetEntityId(),
                         gameObjectItem.depth + 1,
                         ObjectNames.GetInspectorTitle(component)
                         );
@@ -386,7 +377,7 @@ namespace UnityEditor
 
                     var removedComponentItem = new PrefabOverridesTreeViewItem
                         (
-                        idSequence.get(),
+                        removedComponent.assetComponent.GetEntityId(),
                         gameObjectItem.depth + 1,
                         ObjectNames.GetInspectorTitle(removedComponent.assetComponent)
                         );
@@ -402,7 +393,7 @@ namespace UnityEditor
             foreach (Transform childTransform in gameObject.transform)
             {
                 var childGameObject = childTransform.gameObject;
-                shouldAddGameObjectItemToParent |= AddTreeViewItemRecursive(gameObjectItem, childGameObject, prefabOverrideMap, idSequence);
+                shouldAddGameObjectItemToParent |= AddTreeViewItemRecursive(gameObjectItem, childGameObject, prefabOverrideMap);
             }
 
             if (objectModifications != null)
@@ -423,7 +414,7 @@ namespace UnityEditor
 
                     var removedGameObjectItem = new PrefabOverridesTreeViewItem
                         (
-                        idSequence.get(),
+                        removedGameObject.assetGameObject.GetEntityId(),
                         gameObjectItem.depth + 1,
                         objectName
                         );
@@ -447,13 +438,13 @@ namespace UnityEditor
             return false;
         }
 
-        static PrefabOverrides GetPrefabOverridesForObject(int instanceID, Dictionary<int, PrefabOverrides> map)
+        static PrefabOverrides GetPrefabOverridesForObject(EntityId entityId, Dictionary<EntityId, PrefabOverrides> map)
         {
             PrefabOverrides modificationsForObject;
-            if (!map.TryGetValue(instanceID, out modificationsForObject))
+            if (!map.TryGetValue(entityId, out modificationsForObject))
             {
                 modificationsForObject = new PrefabOverrides();
-                map[instanceID] = modificationsForObject;
+                map[entityId] = modificationsForObject;
             }
             return modificationsForObject;
         }
@@ -517,12 +508,12 @@ namespace UnityEditor
                 m_Window.RefreshStatus();
         }
 
-        protected override void SelectionChanged(IList<int> selectedIds)
+        protected override void SelectionChanged(IList<EntityId> selectedIds)
         {
             DoPreviewPopup();
         }
 
-        protected override void SingleClickedItem(int id)
+        protected override void SingleClickedItem(EntityId id)
         {
             // Ensure preview is shown when clicking on an already selected item
             // (the preview might have been closed).
@@ -598,7 +589,7 @@ namespace UnityEditor
             public string propertyPath { get; set; }
         }
 
-        public PrefabOverride FindOverride(int itemId)
+        public PrefabOverride FindOverride(EntityId itemId)
         {
             var item = FindItem(itemId, rootItem) as PrefabOverridesTreeViewItem;
             if (item == null)
@@ -608,8 +599,8 @@ namespace UnityEditor
 
         class IdSequence
         {
-            public int get() { return m_NextId++; }
-            int m_NextId = 1;
+            public ulong get() { return m_NextId++; }
+            ulong m_NextId = 1;
         }
 
         class ComparisonViewPopup : PopupWindowContent

@@ -2,10 +2,8 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System;
 using System.Collections.Generic;
-using UnityEngine.UIElements.Layout;
-using UnityEngine.UIElements.StyleSheets;
+using System.Runtime.CompilerServices;
 
 namespace UnityEngine.UIElements
 {
@@ -61,27 +59,6 @@ namespace UnityEngine.UIElements
         internal static string DebugString<T>(this IStyleValue<T> styleValue)
         {
             return styleValue.keyword != StyleKeyword.Undefined ? $"{styleValue.keyword}" : $"{styleValue.value}";
-        }
-
-        internal static LayoutValue ToLayoutValue(this Length length)
-        {
-            if (length.IsAuto())
-                return LayoutValue.Auto();
-
-            // For max-width and max-height
-            if (length.IsNone())
-                return float.NaN;
-
-            switch (length.unit)
-            {
-                case LengthUnit.Pixel:
-                    return LayoutValue.Point(length.value);
-                case LengthUnit.Percent:
-                    return LayoutValue.Percent(length.value);
-                default:
-                    Debug.LogAssertion($"Unexpected unit '{length.unit}'");
-                    return float.NaN;
-            }
         }
 
         internal static Length ToLength(this StyleKeyword keyword)
@@ -173,8 +150,15 @@ namespace UnityEngine.UIElements
 
         internal static void CopyFrom<T>(this List<T> list, List<T> other)
         {
+            if (list == null)
+            {
+                Debug.Assert(other != null && other.Count > 0);
+                return;
+            }
             list.Clear();
-            list.AddRange(other);
+
+            if(other !=null)
+                list.AddRange(other);
         }
     }
 }

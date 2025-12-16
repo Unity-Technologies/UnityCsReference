@@ -74,8 +74,9 @@ namespace UnityEditor
         // If we want to use this paradigm long term, we should consider reducing the overhead of a managed call.
         // Returns true if we suppress event propagation.
         [RequiredByNativeCode]
-        static bool OnGlobalMouseOrKeyEvent(EventType type, KeyCode keyCode, Vector2 mousePosition)
+        static bool OnGlobalMouseOrKeyEvent(EventType type, KeyCode keyCode, float mousePositionX, float mousePositionY)
         {
+            var mousePosition = new Vector2(mousePositionX, mousePositionY);
             bool suppress = false;
 
             if (s_PopupWindowWithoutFocus == null)

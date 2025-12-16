@@ -6,8 +6,6 @@ using System.Collections.Generic;
 using System;
 using System.Reflection;
 using System.Runtime.CompilerServices;
-using System.Collections;
-
 
 using Unity.EntitiesLike;
 using UnityEngine;
@@ -16,6 +14,8 @@ namespace Unity.DataModel;
 
 internal static class RttiBuilder
 {
+    public class RttiNotFoundException(string message) : Exception(message);
+
     internal static Rtti CreateNativeRtti(Schema schema, Type managedType)
     {
         if (managedType == null)
@@ -40,9 +40,9 @@ internal static class RttiBuilder
         return RttiGroup.PureManaged;
     }
 
-    internal static Rtti CreateManagedRtti(Type type, Schema schema)
+    internal static Rtti CreateManagedRtti(Type type, Schema schema, out RttiGroup rttiGroup)
     {
-        var rttiGroup = CalculateManagedRttiGroup(type);
+        rttiGroup = CalculateManagedRttiGroup(type);
         if (rttiGroup == RttiGroup.PureEntity)
         {
             return new PureEntityRtti(type, schema);
@@ -52,21 +52,55 @@ internal static class RttiBuilder
             return new SimpleNativeTypeObjectRtti(type, schema);
         }
 
-        var transferData = GetRttiDataForSchema(type, schema, out bool isBlittable);
-        if(rttiGroup == RttiGroup.UnityObject)
+        if (rttiGroup == RttiGroup.UnityObject)
         {
             var nativeTypeID = UnityHybridObjectRtti.GetNativeTypeID(type);
             var nativeSchema = Schema.GetSchemaByType(nativeTypeID, 0);
-            return new UnityHybridObjectRtti(type, schema, nativeSchema, transferData);
+            // There must be a valid native schema.
+            // If there isn't, it could mean that the user is trying to extend a
+            // native abstract type (like Behaviour or Component)
+            if (nativeTypeID.IsValid() && !nativeSchema.IsValid())
+            {
+                Debug.LogError($"'{type}' requires a native class internally. '{type}' could be deriving directly from a class such as Behaviour or Component. Deriving from those classes is not supported for user types.");
+                return default;
+            }
+            return new UnityHybridObjectRtti(type, schema, nativeSchema, null);
         }
         else
         if (rttiGroup == RttiGroup.ImmutablePureManaged)
         {
-            return new ImmutablePureManagedObjectRtti(type, schema, transferData);
+            return new ImmutablePureManagedObjectRtti(type, schema, null);
         }
         else // RttiGroup.PureManaged
         {
-            return new PureManagedObjectRtti(type, schema, transferData, isBlittable);
+            return new PureManagedObjectRtti(type, schema, null, false);
+        }
+    }
+
+    internal static void AddCommandsToRtti(Type type, Schema schema, RttiGroup rttiGroup, ref Rtti rtti)
+    {
+        if (rttiGroup == RttiGroup.PureEntity || rttiGroup == RttiGroup.SimpleNativeType)
+        {
+            return;
+        }
+
+        var transferData = GetRttiDataForSchema(type, schema, out bool isBlittable);
+        if(rttiGroup == RttiGroup.UnityObject)
+        {
+            var hybridRtti = (UnityHybridObjectRtti)rtti;
+            hybridRtti.TransferData = transferData;
+        }
+        else
+        if (rttiGroup == RttiGroup.ImmutablePureManaged)
+        {
+            var immutableRtti = (ImmutablePureManagedObjectRtti)rtti;
+            immutableRtti.TransferData = transferData;
+        }
+        else // RttiGroup.PureManaged
+        {
+            var pureManagedRtti = (PureManagedObjectRtti)rtti;
+            pureManagedRtti.TransferData = transferData;
+            pureManagedRtti.IsBlittable = isBlittable;
         }
     }
 
@@ -81,6 +115,46 @@ internal static class RttiBuilder
         OptimiseDirectCopyRttiData(ref rttiList, isBlittable);
 
         return rttiList.ToArray();
+    }
+
+    private static void GetRttiDataForReference(
+        ulong runtimeOffset,
+        ulong modelOffset,
+        uint copySize,
+        Type type,
+        Schema schema,
+        uint fieldIndex,
+        ref List<RttiData> rttiList,
+        out bool isBlittable)
+    {
+        isBlittable = false;
+        if (type == typeof(EntityId) || type == typeof(Entity))
+        {
+            rttiList.Add(new RttiData(
+                runtimeOffset: runtimeOffset,
+                modelOffset: modelOffset,
+                copySize,
+                rttiDataType: RttiDataType.EntityId,
+                null,
+                schema,
+                fieldIndex)
+            );
+        }
+        else
+        {
+            rttiList.Add(new RttiData(
+                runtimeOffset: runtimeOffset,
+                modelOffset: modelOffset,
+                copySize,
+                rttiDataType: RttiDataType.Reference,
+                null,
+                schema,
+                fieldIndex)
+            );
+        }
+        // This will add close generic types, like for example HashSet<int>
+        // This could be removed if we implement more advanced references were we specify the generic hash and the generic parameters hashes.
+        RttiResolver.GetOrAddRTTI(type);
     }
 
     private static void GetRttiDataForSchema(
@@ -98,34 +172,7 @@ internal static class RttiBuilder
 
         if (schema.IsReference())
         {
-            isBlittable = false;
-            if (type == typeof(EntityId) || type == typeof(Entity))
-            {
-                rttiList.Add(new RttiData(
-                    runtimeOffset: runtimeOffset,
-                    modelOffset: modelOffset,
-                    copySize,
-                    rttiDataType: RttiDataType.EntityId,
-                    null,
-                    schema,
-                    fieldIndex)
-                );
-            }
-            else
-            {
-                rttiList.Add(new RttiData(
-                    runtimeOffset: runtimeOffset,
-                    modelOffset: modelOffset,
-                    copySize,
-                    rttiDataType: RttiDataType.Reference,
-                    null,
-                    schema,
-                    fieldIndex)
-                );
-            }
-            // This will add close generic types, like for example HashSet<int>
-            // This could be removed if we implement more advanced references were we specify the generic hash and the generic parameters hashes.
-            RttiResolver.GetOrAddRTTI(type);
+            GetRttiDataForReference(runtimeOffset, modelOffset, copySize, type, schema, fieldIndex, ref rttiList, out isBlittable);
         }
         else if (schema.GetFlags().HasFlag(SchemaFlags.IsFundamental) || schema.IsHash() || schema.IsGuid() || IsFixedBuffer(type))
         {
@@ -238,30 +285,28 @@ internal static class RttiBuilder
 
                 uint fieldPadding = CalculatePadding(index, allFieldsOrdered, schema.GetSize(), markedAsChunkSerializable, isBlittableSoFar, isAutoLayout, ref fieldRuntimeOffset, ref fieldModelOffset);
 
-                // We use IManagedRtti instead of PureManagedRtti as we could have IComponentData type fields (e.g. Unity.Entities.ComponentAuthoringBase)
-                IManagedRtti fieldRTTI = null;
-
-                if (!fieldSchema.IsReference())
+                // References are handled different here, because the field doesn't contain a value type
+                // of the type fieldType, but a reference to it.
+                if (fieldSchema.IsReference())
                 {
-                    fieldRTTI = (IManagedRtti)RttiResolver.GetOrAddRTTI(fieldType, fieldSchema);
-                }
-
-                if (fieldRTTI == null)
-                {
-                    // If we couldn't find an RTTI already, we need to calculate it
-                    GetRttiDataForSchema(
-                        runtimeOffset + fieldRuntimeOffset,
-                        modelOffset + fieldModelOffset,
-                        (uint)fieldSchema.GetSize() + fieldPadding,
-                        fieldType,
-                        fieldSchema,
-                        field.GetIndex(),
-                        ref rttiList,
-                        out bool fieldTypeIsBlittable);
+                    GetRttiDataForReference(runtimeOffset + fieldRuntimeOffset,
+                                            modelOffset + fieldModelOffset,
+                                            (uint)fieldSchema.GetSize() + fieldPadding,
+                                            fieldType,
+                                            fieldSchema,
+                                            field.GetIndex(),
+                                            ref rttiList,
+                                            out bool fieldTypeIsBlittable);
                     isBlittableSoFar &= fieldTypeIsBlittable;
                 }
                 else
                 {
+                    // We use IManagedRtti instead of PureManagedRtti as we could have IComponentData type fields (e.g. Unity.EntitiesLike.ComponentAuthoringBase)
+                    IManagedRtti fieldRTTI = (IManagedRtti)RttiResolver.GetOrAddRTTI(fieldType, fieldSchema);
+                    if (fieldRTTI == null)
+                    {
+                        throw new RttiNotFoundException($"Rtti expected and not found for {type.FullName}.{field.GetName().ToString()} ('{fieldType.FullName}')");
+                    }
                     isBlittableSoFar &= fieldRTTI.IsBlittable;
                     // We reuse the RTTI result that we got from a previous pass
                     var fieldTransferData = fieldRTTI.TransferData;

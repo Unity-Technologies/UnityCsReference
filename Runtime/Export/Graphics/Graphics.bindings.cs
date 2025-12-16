@@ -275,7 +275,7 @@ namespace UnityEngine
 
         [FreeFunction("DisplayInfoScripting::GetLayout")]
         [NativeConditional("PLATFORM_SUPPORTS_DISPLAYINFO_API")]
-        extern static void GetLayoutImpl(List<DisplayInfo> displayLayout);
+        extern static void GetLayoutImpl([Out] List<DisplayInfo> displayLayout);
 
         [FreeFunction("DisplayInfoScripting::GetResolutions")]
         [NativeConditional("PLATFORM_SUPPORTS_DISPLAYINFO_API")]
@@ -430,7 +430,7 @@ namespace UnityEngine
         extern static DisplayInfo GetMainWindowDisplayInfo();
 
         [FreeFunction("GetDisplayLayout")]
-        extern static void GetDisplayLayoutImpl(List<DisplayInfo> displayLayout);
+        extern static void GetDisplayLayoutImpl([Out] List<DisplayInfo> displayLayout);
 
         [FreeFunction("MoveMainWindow")]
         extern static AsyncOperation MoveMainWindowImpl(in DisplayInfo display, Vector2Int position);
@@ -990,13 +990,15 @@ namespace UnityEngine
     [StaticAccessor("GeometryUtilityScripting", StaticAccessorType.DoubleColon)]
     public sealed partial class GeometryUtility
     {
-        [NativeName("TestPlanesAABB")] extern private static bool Internal_TestPlanesAABB(Plane[] planes, in Bounds bounds);
+        [NativeName("TestPlanesAABB")] extern private static bool Internal_TestPlanesAABB(ReadOnlySpan<Plane> planes, in Bounds bounds);
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
-        public static bool TestPlanesAABB(Plane[] planes, Bounds bounds) => Internal_TestPlanesAABB(planes, in bounds);
+        public static bool TestPlanesAABB(Plane[] planes, Bounds bounds) => Internal_TestPlanesAABB(planes.AsSpan(), in bounds);
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
-        public static bool TestPlanesAABB(Plane[] planes, in Bounds bounds) => Internal_TestPlanesAABB(planes, in bounds);
+        public static bool TestPlanesAABB(Plane[] planes, in Bounds bounds) => Internal_TestPlanesAABB(planes.AsSpan(), in bounds);
+        [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
+        public static bool TestPlanesAABB(ReadOnlySpan<Plane> planes, in Bounds bounds) => Internal_TestPlanesAABB(planes, in bounds);
 
-        [NativeName("ExtractPlanes")]   extern private static void Internal_ExtractPlanes([Out] Plane[] planes, in Matrix4x4 worldToProjectionMatrix);
+        [NativeName("ExtractPlanes")] extern private static void Internal_ExtractPlanes(Span<Plane> planes, in Matrix4x4 worldToProjectionMatrix);
         [NativeName("CalculateBounds")] extern private static Bounds Internal_CalculateBounds(Vector3[] positions, in Matrix4x4 transform);
     }
 }

@@ -21,8 +21,16 @@ namespace Unity.GraphToolkit.Editor
         /// </summary>
         public const string id = "GraphToolkit/Overlay Windows/Inspector";
 
+        static readonly string k_CachedTooltipText = L10n.Tr("Graph Inspector");
+
         /// <inheritdoc />
         protected override string WindowId => ModelInspectorOverlay.idValue;
+
+        /// <inheritdoc />
+        protected override string TooltipText => k_CachedTooltipText;
+
+        /// <inheritdoc />
+        protected override string ShortcutString => ShortcutToggleInspectorEvent.GetShortcutString((containerWindow as GraphViewEditorWindow)?.GraphTool);
 
         /// <summary>
         /// Initializes a new instance of the <see cref="InspectorPanelToggle"/> class.
@@ -30,8 +38,8 @@ namespace Unity.GraphToolkit.Editor
         public InspectorPanelToggle()
         {
             name = "Inspector";
-            tooltip = L10n.Tr("Graph Inspector");
             icon = EditorGUIUtilityBridge.LoadIcon($"{GraphElementHelper.k_IconFolder}PanelsToolbar/Inspector.png");
+            UpdateInspectorTooltip();
         }
     }
 }

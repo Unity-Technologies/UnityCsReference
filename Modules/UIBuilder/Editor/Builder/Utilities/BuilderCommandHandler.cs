@@ -581,7 +581,7 @@ namespace Unity.UI.Builder
                 BuilderAssetUtilities.TransferAssetToAsset(m_PaneWindow.document, unpackedVEA, linkedVTACopy, false);
 
                 // Sync serialized data because attribute overrides have been updated
-                UxmlSerializer.SyncVisualTreeAssetSerializedData(new CreationContext(linkedVTACopy), false);
+                UxmlSerializer.CreateSerializedDataOverrides(linkedVTACopy);
 
                 elementsToUnpack.Remove(elementToUnpack);
 
@@ -603,7 +603,7 @@ namespace Unity.UI.Builder
             }
 
             // Sync serialized data because attribute overrides have been updated
-            UxmlSerializer.SyncVisualTreeAssetSerializedData(new CreationContext(m_PaneWindow.document.visualTreeAsset), false);
+            UxmlSerializer.CreateSerializedDataOverrides(m_PaneWindow.document.visualTreeAsset);
 
             m_Selection.NotifyOfHierarchyChange();
             m_PaneWindow.OnEnableAfterAllSerialization();

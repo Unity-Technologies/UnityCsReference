@@ -5,171 +5,178 @@ using System;
 
 namespace Unity.DataModel
 {
-[StructLayout(LayoutKind.Sequential)]
-internal struct UTF8StringField
-{
-    internal ulong Size;
-    internal long Location;
-
-    internal unsafe Span<byte> AsSpan()
+    [StructLayout(LayoutKind.Sequential)]
+    internal struct UTF8StringField
     {
-            return default;
-    }
+        internal ulong Size;
+        internal long Location;
 
-    internal readonly unsafe ReadOnlySpan<byte> AsReadOnlySpan()
-    {
-        return default;
-    }
-}
-
-[StructLayout(LayoutKind.Sequential)]
-internal unsafe struct UTF8String
-{
-    internal UTF8String(Accessor accessor)
-    {
-        Field = default;
-        DocumentModel = default;
-
-        Schema schema = accessor.GetSchema();
-        if (schema.IsValid() && schema.IsUTF8String())
+        internal unsafe Span<byte> AsSpan()
         {
-            Field = accessor.Data;
-            DocumentModel = accessor.DocumentModel;
+            byte* dataPtr = UnsafeHelper.AsBytePointer(ref this) + Location;
+            return new Span<byte>(dataPtr, (int)Size);
+        }
+
+        internal readonly unsafe ReadOnlySpan<byte> AsReadOnlySpan()
+        {
+            byte* dataPtr = UnsafeHelper.AsBytePointerFromReadOnly(in this)+ Location;
+            return new ReadOnlySpan<byte>(dataPtr, (int)Size);
         }
     }
 
-    internal ulong GetByteCount()
+    [StructLayout(LayoutKind.Sequential)]
+    internal unsafe struct UTF8String
     {
-        ThrowIfInvalid();
-        return GetByteCountInternalUnsafe();
-    }
-
-    private ulong GetByteCountInternalUnsafe()
-    {
-        return ((UTF8StringField*)Field)->Size;
-    }
-
-    internal ulong GetStringLength()
-    {
-        ThrowIfInvalid();
-        return GetStringLengthInternalUnsafe();
-    }
-
-    private ulong GetStringLengthInternalUnsafe()
-    {
-        fixed (UTF8String* stringAccessorPtr = &this)
+        internal UTF8String(Accessor accessor)
         {
-            return UdmInterop.Instance.udm_utf8string_string_length(stringAccessorPtr);
-        }
-    }
+            Field = default;
+            DocumentModel = default;
 
-    internal void Set(string value)
-    {
-        ThrowIfInvalid();
-        unsafe
+            Schema schema = accessor.GetSchema();
+            if (schema.IsValid() && schema.IsUTF8String())
+            {
+                Field = accessor.Data;
+                DocumentModel = accessor.DocumentModel;
+            }
+        }
+
+        internal ulong GetByteCount()
+        {
+            ThrowIfInvalid();
+            return GetByteCountInternalUnsafe();
+        }
+
+        private ulong GetByteCountInternalUnsafe()
+        {
+            return ((UTF8StringField*)Field)->Size;
+        }
+
+        internal ulong GetStringLength()
+        {
+            ThrowIfInvalid();
+            return GetStringLengthInternalUnsafe();
+        }
+
+        private ulong GetStringLengthInternalUnsafe()
         {
             fixed (UTF8String* stringAccessorPtr = &this)
             {
-                // Calculate the amount of bytes needed for the encoding
+                return UdmInterop.Instance.udm_utf8string_string_length(stringAccessorPtr);
+            }
+        }
+
+        internal void Set(string value)
+        {
+            ThrowIfInvalid();
+            unsafe
+            {
+                fixed (UTF8String* stringAccessorPtr = &this)
+                {
+                    // Calculate the amount of bytes needed for the encoding
+                    int byteCount = Encoding.UTF8.GetByteCount(value);
+                    UdmInterop.Instance.udm_utf8string_replace_uninitialized(stringAccessorPtr, (ulong)(byteCount));
+                    Encoding.UTF8.GetBytes(value.AsSpan(), AsSpan());
+                }
+            }
+        }
+
+        internal void Set(ConstUTF8String value)
+        {
+            ThrowIfInvalid();
+            var span = value.AsSpan();
+            var dataPtr = (byte*)UnsafeHelper.AsPointer(ref MemoryMarshal.GetReference(span));
+            fixed (UTF8String* stringAccessorPtr = &this)
+            {
+                UdmInterop.Instance.udm_utf8string_assign(stringAccessorPtr, dataPtr, (ulong)span.Length);
+            }
+        }
+
+        internal void SetBytes(byte[] value)
+        {
+            ThrowIfInvalid();
+
+            fixed (byte* memoryPtr = value)
+            {
+                fixed (UTF8String* stringAccessorPtr = &this)
+                {
+                    UdmInterop.Instance.udm_utf8string_assign(stringAccessorPtr, memoryPtr, (ulong)value.Length);
+                }
+            }
+        }
+
+        internal void Append(string value)
+        {
+            ThrowIfInvalid();
+            unsafe
+            {
                 int byteCount = Encoding.UTF8.GetByteCount(value);
-                UdmInterop.Instance.udm_utf8string_replace_uninitialized(stringAccessorPtr, (ulong)(byteCount));
-                Encoding.UTF8.GetBytes(value.AsSpan(), AsSpan());
+                fixed (UTF8String* stringAccessorPtr = &this)
+                {
+                    var originalSize = (int)GetByteCountInternalUnsafe();
+                    UdmInterop.Instance.udm_utf8string_append_uninitialized(stringAccessorPtr, (ulong)byteCount);
+                    var span = AsSpan().Slice(originalSize, byteCount);
+                    Encoding.UTF8.GetBytes(value.AsSpan(), span);
+                }
             }
         }
-    }
 
-    internal void Set(ConstUTF8String value)
-    {
-        ThrowIfInvalid();
-        var span = value.AsSpan();
-    }
-
-    internal void SetBytes(byte[] value)
-    {
-        ThrowIfInvalid();
-
-        fixed (byte* memoryPtr = value)
+        internal void Clear()
         {
+            ThrowIfInvalid();
             fixed (UTF8String* stringAccessorPtr = &this)
             {
-                UdmInterop.Instance.udm_utf8string_assign(stringAccessorPtr, memoryPtr, (ulong)value.Length);
+                UdmInterop.Instance.udm_utf8string_clear(stringAccessorPtr);
             }
         }
-    }
 
-    internal void Append(string value)
-    {
-        ThrowIfInvalid();
-        unsafe
+        internal void Reserve(ulong capacity)
         {
-            int byteCount = Encoding.UTF8.GetByteCount(value);
+            ThrowIfInvalid();
             fixed (UTF8String* stringAccessorPtr = &this)
             {
-                var originalSize = (int)GetByteCountInternalUnsafe();
-                UdmInterop.Instance.udm_utf8string_append_uninitialized(stringAccessorPtr, (ulong)byteCount);
-                var span = AsSpan().Slice(originalSize, byteCount);
-                Encoding.UTF8.GetBytes(value.AsSpan(), span);
+                UdmInterop.Instance.udm_utf8string_reserve(stringAccessorPtr, capacity);
             }
         }
-    }
 
-    internal void Clear()
-    {
-        ThrowIfInvalid();
-        fixed (UTF8String* stringAccessorPtr = &this)
+        public override string ToString()
         {
-            UdmInterop.Instance.udm_utf8string_clear(stringAccessorPtr);
+            ThrowIfInvalid();
+            return Encoding.UTF8.GetString(AsReadOnlySpanInternalUnsafe());
         }
-    }
 
-    internal void Reserve(ulong capacity)
-    {
-        ThrowIfInvalid();
-        fixed (UTF8String* stringAccessorPtr = &this)
+        internal Span<byte> AsSpan()
         {
-            UdmInterop.Instance.udm_utf8string_reserve(stringAccessorPtr, capacity);
+            ThrowIfInvalid();
+            return AsSpanInternalUnsafe();
         }
-    }
 
-    public override string ToString()
-    {
-        ThrowIfInvalid();
-        return Encoding.UTF8.GetString(AsReadOnlySpanInternalUnsafe());
-    }
+        private Span<byte> AsSpanInternalUnsafe()
+        {
+            return ((UTF8StringField*)Field)->AsSpan();
+        }
 
-    internal Span<byte> AsSpan()
-    {
-        ThrowIfInvalid();
-        return AsSpanInternalUnsafe();
-    }
-    
-    private Span<byte> AsSpanInternalUnsafe()
-    {
-        return ((UTF8StringField*)Field)->AsSpan();
-    }
+        internal ReadOnlySpan<byte> AsReadOnlySpan()
+        {
+            ThrowIfInvalid();
+            return AsReadOnlySpanInternalUnsafe();
+        }
 
-    internal ReadOnlySpan<byte> AsReadOnlySpan()
-    {
-        ThrowIfInvalid();
-        return AsReadOnlySpanInternalUnsafe();
+        private ReadOnlySpan<byte> AsReadOnlySpanInternalUnsafe()
+        {
+            return ((UTF8StringField*)Field)->AsReadOnlySpan();
+        }
+
+        internal bool IsValid() => Field != IntPtr.Zero;
+
+        internal void ThrowIfInvalid()
+        {
+            if (!IsValid())
+                throw new InvalidOperationException("Trying to use an invalid UTF8String");
+        }
+
+        // Pointers to blittable types are not considered blittable by the bindings generator
+        // internal UTF8StringField* Field;
+        internal IntPtr Field;
+        internal DocumentModel DocumentModel;
     }
-
-    private ReadOnlySpan<byte> AsReadOnlySpanInternalUnsafe()
-    {
-        return ((UTF8StringField*)Field)->AsReadOnlySpan();
-    }
-
-    internal bool IsValid() => Field != IntPtr.Zero;
-
-    internal void ThrowIfInvalid()
-    {
-        if (!IsValid())
-            throw new InvalidOperationException("Trying to use an invalid UTF8String");
-    }
-
-    // Pointers to blittable types are not considered blittable by the bindings generator
-    // internal UTF8StringField* Field;
-    internal IntPtr Field;
-    internal DocumentModel DocumentModel;
-}
 }

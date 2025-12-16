@@ -646,10 +646,6 @@ namespace UnityEditor
         [NativeProperty("FullscreenMode")]
         public static extern FullScreenMode fullScreenMode { get; set; }
 
-        [Obsolete("This API is obsolete, and should no longer be used. Please use XRManagerSettings in the XR Management package instead.")]
-        [StaticAccessor("PlayerSettingsBindings", StaticAccessorType.DoubleColon)]
-        public static extern bool virtualRealitySupported { get; set; }
-
         [NativeHeader("Runtime/Misc/PlayerSettings.h")]
         [StaticAccessor("GetPlayerSettings()", StaticAccessorType.Dot)]
         internal class PlayerSettings360StereoCapture
@@ -1542,12 +1538,6 @@ namespace UnityEditor
         [StaticAccessor("PlayerSettingsBindings", StaticAccessorType.DoubleColon)]
         internal static extern void SetSwitchGraphicsJobsSyncAfterKick(bool syncAfterKick);
 
-        [StaticAccessor("GetPlayerSettings()")]
-        public static extern bool GetWsaHolographicRemotingEnabled();
-
-        [StaticAccessor("GetPlayerSettings()")]
-        public static extern void SetWsaHolographicRemotingEnabled(bool enabled);
-
         // Xbox 360 Pix Texture Capture
         public static extern bool xboxPIXTextureCapture { get; }
 
@@ -1694,10 +1684,6 @@ namespace UnityEditor
         }
 
         internal static extern bool submitAnalytics { get; set; }
-
-        [Obsolete("Use VREditor.GetStereoDeviceEnabled instead")]
-        [StaticAccessor("PlayerSettingsBindings", StaticAccessorType.DoubleColon)]
-        public static extern bool stereoscopic3D { get; set; }
 
         // Defines whether the application will request audio focus, muting all other audio sources.
         public static extern bool muteOtherAudioSources { get; set; }

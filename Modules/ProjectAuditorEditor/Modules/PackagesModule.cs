@@ -23,23 +23,23 @@ namespace Unity.ProjectAuditor.Editor.Modules
         static readonly IssueLayout k_PackageLayout = new IssueLayout
         {
             Category = IssueCategory.Package,
-            Properties = new[]
-            {
+            Properties =
+            [
                 new PropertyDefinition { Type = PropertyType.Description, Name = "Package" },
                 new PropertyDefinition { Type = PropertyTypeUtil.FromCustom(PackageProperty.Name), Format = PropertyFormat.String, Name = "Name" },
                 new PropertyDefinition { Type = PropertyTypeUtil.FromCustom(PackageProperty.Version), Format = PropertyFormat.String, Name = "Version" },
                 new PropertyDefinition { Type = PropertyTypeUtil.FromCustom(PackageProperty.Source), Format = PropertyFormat.String, Name = "Source", IsDefaultGroup = true },
                 new PropertyDefinition { Type = PropertyType.Path, Format = PropertyFormat.String, Name = "Path" }
-            }
+            ]
         };
 
         public override string Name => "Packages";
 
-        public override IReadOnlyCollection<IssueLayout> SupportedLayouts => new IssueLayout[]
-        {
+        public override IReadOnlyCollection<IssueLayout> SupportedLayouts =>
+        [
             k_PackageLayout,
             SettingsModule.k_IssueLayout
-        };
+        ];
 
         public override AnalysisResult Audit(AnalysisParams analysisParams, IProgress progress = null)
         {
@@ -85,12 +85,12 @@ namespace Unity.ProjectAuditor.Editor.Modules
             var displayName = string.IsNullOrEmpty(package.displayName) ? package.name : package.displayName;
             var node = new PackageDependencyNode(displayName, dependencies);
             yield return context.CreateInsight(IssueCategory.Package, displayName)
-                .WithCustomProperties(new object[(int)PackageProperty.Num]
-                {
+                .WithCustomProperties(
+                [
                     package.name,
                     package.version,
                     package.source
-                })
+                ])
                 .WithDependencies(node)
                 .WithLocation(package.assetPath);
         }

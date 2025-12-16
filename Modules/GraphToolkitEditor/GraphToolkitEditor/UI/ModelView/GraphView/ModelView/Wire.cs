@@ -2,9 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System;
 using System.Collections.Generic;
-using System.Linq;
 using UnityEngine;
 using UnityEngine.UIElements;
 
@@ -133,6 +131,7 @@ namespace Unity.GraphToolkit.Editor
 
             m_WireControl.RegisterCallback<MouseLeaveEvent>(OnMouseLeaveWire);
             m_WireControl.RegisterCallback<MouseDownEvent>(OnMouseDownWire);
+            m_WireControl.RegisterCallback<GeometryChangedEvent>(OnGeometryChanged);
 
             Insert(0, m_WireControl);
         }
@@ -236,23 +235,23 @@ namespace Unity.GraphToolkit.Editor
         /// <param name="rootView">The <see cref="RootView"/> that contains the portals.</param>
         internal static List<(WireModel, Vector2, Vector2)> GetPortalsWireData(IEnumerable<WireModel> wires, RootView rootView)
         {
-            var wireData = wires.Select(
-                wireModel =>
-                {
-                    var outputPort = wireModel.FromPort.GetView<Port>(rootView);
-                    var inputPort = wireModel.ToPort.GetView<Port>(rootView);
-                    var outputNode = wireModel.FromPort.NodeModel.GetView<NodeView>(rootView);
-                    var inputNode = wireModel.ToPort.NodeModel.GetView<NodeView>(rootView);
-                    var wire = wireModel.GetView<Wire>(rootView);
+            List<(WireModel, Vector2, Vector2)> wireData = new();
 
-                    if (outputNode == null || inputNode == null || outputPort == null || inputPort == null || wire == null)
-                        return (null, Vector2.zero, Vector2.zero);
+            foreach (var wireModel in wires)
+            {
+                var outputPort = wireModel.FromPort.GetView<Port>(rootView);
+                var inputPort = wireModel.ToPort.GetView<Port>(rootView);
+                var outputNode = wireModel.FromPort.NodeModel.GetView<NodeView>(rootView);
+                var inputNode = wireModel.ToPort.NodeModel.GetView<NodeView>(rootView);
+                var wire = wireModel.GetView<Wire>(rootView);
 
-                    return (wireModel,
-                        outputPort.ChangeCoordinatesTo(wire.contentContainer, outputPort.layout.center),
-                        inputPort.ChangeCoordinatesTo(wire.contentContainer, inputPort.layout.center));
-                }
-                ).Where(tuple => tuple.Item1 != null).ToList();
+                if (outputNode == null || inputNode == null || outputPort == null || inputPort == null || wire == null)
+                    continue;
+
+                wireData.Add((wireModel,
+                    outputPort.ChangeCoordinatesTo(wire.contentContainer, outputPort.layout.center),
+                    inputPort.ChangeCoordinatesTo(wire.contentContainer, inputPort.layout.center)));
+            }
 
             return wireData;
         }

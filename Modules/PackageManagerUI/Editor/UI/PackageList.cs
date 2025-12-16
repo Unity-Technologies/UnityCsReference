@@ -157,7 +157,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             if (!args.isExplicitUserSelection)
                 currentView.ScrollToSelection();
 
-            if (args.selection.previousSelections.Count() == 1)
+            if (args.selection.previousSelections.Count == 1)
                 m_UpmCache.SetLoadAllVersions(args.selection.previousSelections.FirstOrDefault(), false);
         }
 
@@ -202,7 +202,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
             var page = m_PageManager.activePage;
             var selection = page.GetSelection();
-            if (!selection.Any() && selection.previousSelections.Any())
+            if (selection.Count == 0 && selection.previousSelections.Count > 0)
                 page.SetNewSelection(selection.previousSelections);
 
             if (rebuild)
@@ -282,7 +282,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 m_PageManager.activePage.UpdateSelectionIfCurrentSelectionIsInvalid();
         }
 
-        internal void OnFocus()
+        private void OnFocus()
         {
             currentView.ScrollToSelection();
         }

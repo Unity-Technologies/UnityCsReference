@@ -18,6 +18,7 @@ namespace UnityEditor.UIElements
         private readonly List<UxmlSerializedAttributeDescription> m_SerializedAttributes = new();
 
         private readonly Dictionary<string, int> m_UxmlNameToIndex = new();
+        private readonly Dictionary<string, List<int>> m_ObsoleteUxmlNameToIndexes = new();
         private readonly Dictionary<string, int> m_PropertyNameToIndex = new();
         private readonly HashSet<string> m_UxmlObjectFields = new();
         private Type m_SerializedDataType;
@@ -117,6 +118,13 @@ namespace UnityEditor.UIElements
             if (m_UxmlNameToIndex.TryGetValue(name, out var index))
                 return m_SerializedAttributes[index];
             return null;
+        }
+
+        public IEnumerable<UxmlSerializedAttributeDescription> FindAttributesWithObsoleteUxmlName(string name)
+        {
+            if (m_ObsoleteUxmlNameToIndexes.TryGetValue(name, out var indexes))
+                foreach (var index in indexes)
+                    yield return m_SerializedAttributes[index];
         }
 
         public UxmlSerializedAttributeDescription FindAttributeWithPropertyName(string name)
@@ -226,6 +234,14 @@ namespace UnityEditor.UIElements
                 m_SerializedAttributes.Add(uxmlAttributeDescription);
                 m_UxmlNameToIndex.Add(attDescription.uxmlName, nextIndex);
                 m_PropertyNameToIndex.Add(attDescription.cSharpName, nextIndex);
+
+                foreach(var obsoleteName in attDescription.obsoleteNames)
+                {
+                    if (m_ObsoleteUxmlNameToIndexes.TryGetValue(obsoleteName, out var indexes))
+                        indexes.Add(nextIndex);
+                    else
+                        m_ObsoleteUxmlNameToIndexes[obsoleteName] = new List<int> { nextIndex };
+                }
             }
         }
 
@@ -287,7 +303,8 @@ namespace UnityEditor.UIElements
             if (value != null && fieldInfo.GetCustomAttribute<UxmlObjectReferenceAttribute>() != null)
             {
                 // UxmlObject fields are not serialized directly, they use their corresponding UxmlSerializedData
-                value = UxmlSerializer.SerializeObject(value);
+                var desc = UxmlSerializedDataRegistry.GetDescription(value.GetType().FullName);
+                value = desc?.CreateDefaultSerializedData();
             }
 
             return true;

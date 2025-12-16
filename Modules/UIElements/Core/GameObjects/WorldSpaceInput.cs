@@ -183,24 +183,6 @@ internal static class WorldSpaceInput
         /// </remarks>
         public Vector3 localPoint;
 
-        // Assume elements come from distinct documents. DrawOrder within document isn't guaranteed by this comparison.
-        internal int CompareDrawOrder([NotNull] UIDocument otherDocument, float otherDistance)
-        {
-            if (document == null)
-                return 1;
-
-            var panelSortingOrder =
-                document.panelSettings.sortingOrder.CompareTo(otherDocument.panelSettings.sortingOrder);
-            if (panelSortingOrder != 0)
-                return panelSortingOrder;
-
-            var documentSortingOrder = document.sortingOrder.CompareTo(otherDocument.sortingOrder);
-            if (documentSortingOrder != 0)
-                return documentSortingOrder;
-
-            return distance.CompareTo(otherDistance);
-        }
-
         internal void ComputeCollisionData(Ray ray)
         {
             point = ray.origin + ray.direction * distance;
@@ -287,7 +269,7 @@ internal static class WorldSpaceInput
 
             // Early out if no element inside the box even has the potential to beat the best so far.
             // Raycast hit distance is always less or equal to pickedElement's distance.
-            if (bestSoFar.CompareDrawOrder(document, distance) <= 0)
+            if (distance >= bestSoFar.distance)
                 continue;
 
             // Pick closest element by draw order regardless of max distance. Distance is filtered at the next step.
@@ -298,7 +280,7 @@ internal static class WorldSpaceInput
             var pickedElement = Pick3D(document, worldRay, out distance);
 
             // Compare again with the real distance from the pickedElement
-            if (pickedElement != null && distance <= maxDistance && bestSoFar.CompareDrawOrder(document, distance) > 0)
+            if (pickedElement != null && distance <= maxDistance && distance < bestSoFar.distance)
             {
                 // Update the result but don't fast-forward the activeRay!
                 bestSoFar = new PickResult { collider = hit.collider, pickedElement = pickedElement, document = document, distance = distance };

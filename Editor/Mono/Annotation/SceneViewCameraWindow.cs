@@ -34,22 +34,25 @@ namespace UnityEditor
 
         GUIContent m_CameraSpeedSliderContent;
         GUIContent m_AccelerationEnabled;
+        GUIContent m_AccelerationSpeed;
         GUIContent[] m_MinMaxContent;
         GUIContent m_FieldOfView;
         GUIContent m_DynamicClip;
         GUIContent m_OcclusionCulling;
         GUIContent m_EasingEnabled;
+        GUIContent m_EasingDuration;
+        GUIContent m_SpeedModifier;
         GUIContent m_SceneCameraLabel = EditorGUIUtility.TrTextContent("Scene Camera");
-        GUIContent m_NavigationLabel = EditorGUIUtility.TrTextContent("Navigation");
+        GUIContent m_NavigationLabel = EditorGUIUtility.TrTextContent("Camera Navigation");
 
         readonly string k_ClippingPlaneWarning = L10n.Tr("Using extreme values between the near and far planes may cause rendering issues. In general, to get better precision move the Near plane as far as possible.");
 
-        const int kFieldCount = 13;
+        const int kFieldCount = 16;
         const int kWindowWidth = 290;
-        const int kContentPadding = 4;
+        const int kContentPadding = 5;
         const int k_HeaderSpacing = 2;
         const int kWindowHeight = ((int)EditorGUI.kSingleLineHeight) * kFieldCount + kContentPadding * 2 + k_HeaderSpacing * 2;
-        const float kPrefixLabelWidth = 120f;
+        const float kPrefixLabelWidth = 140f;
 
         // FOV values chosen to be the smallest and largest before extreme visual corruption
         const float k_MinFieldOfView = 4f;
@@ -69,12 +72,15 @@ namespace UnityEditor
         {
             m_SceneView = sceneView;
 
-            m_CameraSpeedSliderContent = EditorGUIUtility.TrTextContent("Camera Speed", "The current speed of the camera in the Scene view.");
-            m_AccelerationEnabled = EditorGUIUtility.TrTextContent("Camera Acceleration", "Check this to enable acceleration when moving the camera. When enabled, camera speed is evaluated as a modifier. With acceleration disabled, the camera is accelerated to the Camera Speed.");
+            m_CameraSpeedSliderContent = EditorGUIUtility.TrTextContent("Speed", "The current speed of the camera in the Scene view.");
+            m_AccelerationEnabled = EditorGUIUtility.TrTextContent("Acceleration", "Check this to enable acceleration when moving the camera. When enabled, camera speed is evaluated as a modifier. With acceleration disabled, the camera is accelerated to the Camera Speed.");
+            m_AccelerationSpeed = EditorGUIUtility.TrTextContent("Acceleration Speed", "The current acceleration speed of the camera in the Scene View");
             m_FieldOfView = EditorGUIUtility.TrTextContent("Field of View", "The height of the camera's view angle. Measured in degrees vertically, or along the local Y axis.");
             m_DynamicClip = EditorGUIUtility.TrTextContent("Dynamic Clipping", "Check this to enable camera's near and far clipping planes to be calculated relative to the viewport size of the Scene.");
             m_OcclusionCulling = EditorGUIUtility.TrTextContent("Occlusion Culling", "Check this to enable occlusion culling in the Scene view. Occlusion culling disables rendering of objects when they\'re not currently seen by the camera because they\'re hidden (occluded) by other objects.");
-            m_EasingEnabled = EditorGUIUtility.TrTextContent("Camera Easing", "Check this to enable camera movement easing. This makes the camera ease in when it starts moving and ease out when it stops.");
+            m_EasingEnabled = EditorGUIUtility.TrTextContent("Easing", "Check this to enable camera movement easing. This makes the camera ease in when it starts moving and ease out when it stops.");
+            m_EasingDuration = EditorGUIUtility.TrTextContent("Easing Duration", "Time taken for the camera to ease in when it starts moving and ease out when it stops.");
+            m_SpeedModifier = EditorGUIUtility.TrTextContent("Speed Modifier", "The modifier multiplied applied to the camera speed Scene View when holding down shift.");
             m_WindowSize = new Vector2(kWindowWidth, kWindowHeight);
             m_MinMaxContent = new[]
             {
@@ -148,10 +154,34 @@ namespace UnityEditor
             GUILayout.Label(m_NavigationLabel, EditorStyles.boldLabel);
 
             settings.easingEnabled = EditorGUILayout.Toggle(m_EasingEnabled, settings.easingEnabled);
+            {
+                using var scope = new EditorGUI.DisabledScope(!settings.easingEnabled);
+                EditorGUI.BeginChangeCheck();
+                float value = EditorGUILayout.Slider(m_EasingDuration, settings.easingDuration, SceneView.CameraSettings.kAbsoluteEasingDurationMin, SceneView.CameraSettings.kAbsoluteEasingDurationMax);
+                if (EditorGUI.EndChangeCheck())
+                    settings.easingDuration = value;
+            }
+
             settings.accelerationEnabled = EditorGUILayout.Toggle(m_AccelerationEnabled, settings.accelerationEnabled);
+            {
+                using var scope = new EditorGUI.DisabledScope(!settings.accelerationEnabled);
+                EditorGUI.BeginChangeCheck();
+                float value = EditorGUILayout.Slider(m_AccelerationSpeed, settings.accelerationSpeed, SceneView.CameraSettings.kAbsoluteAccelerationSpeedMin, SceneView.CameraSettings.kAbsoluteAccelerationSpeedMax);
+                if (EditorGUI.EndChangeCheck())
+                    settings.accelerationSpeed = value;
+            }
+
+            {
+                EditorGUI.BeginChangeCheck();
+                float value = EditorGUILayout.Slider(m_SpeedModifier, settings.speedModifier, SceneView.CameraSettings.kAbsoluteSpeedModifierMin, SceneView.CameraSettings.kAbsoluteSpeedModifierMax);
+                if (EditorGUI.EndChangeCheck())
+                    settings.speedModifier = value;
+            }
 
             EditorGUI.BeginChangeCheck();
-            float min = settings.speedMin, max = settings.speedMax, speed = settings.RoundSpeedToNearestSignificantDecimal(settings.speed);
+            float min = settings.speedMin;
+            float max = settings.speedMax;
+            float speed = settings.RoundSpeedToNearestSignificantDecimal(settings.speed);
             speed = EditorGUILayout.Slider(m_CameraSpeedSliderContent, speed, min, max);
             if (EditorGUI.EndChangeCheck())
                 settings.speed = settings.RoundSpeedToNearestSignificantDecimal(speed);

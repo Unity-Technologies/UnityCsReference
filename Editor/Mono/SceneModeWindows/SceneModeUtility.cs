@@ -224,10 +224,7 @@ namespace UnityEditor
                     allFlagsAreChanged ? "Do you want to " + (flagValue ? "enable" : "disable") + " the static flags for all the child objects as well?" : "Do you want to " + (flagValue ? "enable" : "disable") + " the " + ObjectNames.NicifyVariableName(flag.ToString()) + " flag for all the child objects as well?");
 
                 if (includeChildren == GameObjectUtility.ShouldIncludeChildren.Cancel)
-                {
-                    EditorGUIUtility.ExitGUI();
                     return false;
-                }
             }
 
             // filter out non GameObjects in targetObjects
@@ -290,14 +287,14 @@ namespace UnityEditor
             return allObjects.ToArray();
         }
 
-        internal static void SetLayer(GameObject gameObject, int value, string targetTitle)
+        internal static bool SetLayer(GameObject gameObject, int value, string targetTitle)
         {
             using var r = new RentSpan<GameObject>(1);
             r.Span[0] = gameObject;
-            SetLayer(r.Span, value, targetTitle);
+            return SetLayer(r.Span, value, targetTitle);
         }
 
-        internal static void SetLayer(ReadOnlySpan<GameObject> gameObjects, int layer, string targetTitle)
+        internal static bool SetLayer(ReadOnlySpan<GameObject> gameObjects, int layer, string targetTitle)
         {
             var includeChildren = GameObjectUtility.ShouldIncludeChildren.HasNoChildren;
 
@@ -305,7 +302,7 @@ namespace UnityEditor
             {
                 includeChildren = GameObjectUtility.DisplayUpdateChildrenDialog(L10n.Tr("Change Layer"), string.Format(L10n.Tr("Do you want to set layer to {0} for all child objects as well?"), InternalEditorUtility.GetLayerName(layer)));
                 if (includeChildren == GameObjectUtility.ShouldIncludeChildren.Cancel)
-                    return;
+                    return false;
             }
 
             var objects = GetObjectsSpan(gameObjects, includeChildren is GameObjectUtility.ShouldIncludeChildren.IncludeChildren);
@@ -314,6 +311,8 @@ namespace UnityEditor
             {
                 o.layer = layer;
             }
+
+            return true;
         }
     }
 }

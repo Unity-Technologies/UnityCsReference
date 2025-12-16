@@ -14,15 +14,9 @@ namespace UnityEngine.UIElements
     internal partial class UITKTextHandle
     {
         internal ATGTextEventHandler m_ATGTextEventHandler;
-        // int LinkID: The identifier for the link.
-        // TagType: Specifies the type of tag (either Hyperlink or Link).
-        // string Attribute: For Hyperlink, this is the 'href' attribute; for Link, it's the associated attribute.
-        List<(int, TagType, string)> m_Links;//Not clearing links would result in a leak of strings and enum, but no class, so no consideration for clearing the list at the moment
-        private List<(int, TagType, string)> Links => m_Links ??= new();
-        internal Color atgHyperlinkColor = Color.blue;
         bool uvsAreGenerated = false;
 
-        void ComputeNativeTextSize(in string textToMeasure, float width, float height, float? fontsize = null)
+        void ComputeNativeTextSize(in string textToMeasure, float width, VisualElement.MeasureMode widthMode, float height, VisualElement.MeasureMode heightMode, float? fontsize = null)
         {
             if (!ConvertUssToNativeTextGenerationSettings(textToMeasure, fontsize))
                 return;
@@ -31,8 +25,15 @@ namespace UnityEngine.UIElements
             if (string.IsNullOrEmpty(nativeSettings.text) && m_TextElement.isInputField)
                 nativeSettings.text = "\u200B";
 
-            nativeSettings.screenWidth = (float.IsNaN(width) || float.IsNegative(width)) ? TextLib.k_unconstrainedScreenSize : (int)(width * 64.0f);
-            nativeSettings.screenHeight = (float.IsNaN(height) || float.IsNegative(height)) ? TextLib.k_unconstrainedScreenSize : (int)(height * 64.0f);
+            if (widthMode == VisualElement.MeasureMode.Undefined || float.IsNaN(width) || float.IsNegative(width))
+                nativeSettings.screenWidth = TextLib.k_unconstrainedScreenSize;
+            else
+                nativeSettings.screenWidth = (int)(width * 64.0f);
+
+            if (heightMode == VisualElement.MeasureMode.Undefined || float.IsNaN(height) || float.IsNegative(height))
+                nativeSettings.screenHeight = TextLib.k_unconstrainedScreenSize;
+            else
+                nativeSettings.screenHeight = (int)(height * 64.0f);
 
             if (textGenerationInfo == IntPtr.Zero)
             {
@@ -69,30 +70,6 @@ namespace UnityEngine.UIElements
             return (textInfo, true);
         }
 
-        public void CacheTextGenerationInfo()
-        {
-            if (!useAdvancedText)
-            {
-                Debug.LogError("CacheTextGenerationInfo should only be called for ATG.");
-                return;
-
-            }
-
-            bool isCacheATG = m_TextHandleFlags.HasFlag(TextHandleFlags.IsCachedPermanentATG);
-            if (isCacheATG)
-                return;
-
-            // We need to recreate it with the good memory labels
-            if (textGenerationInfo != IntPtr.Zero)
-            {
-                TextGenerationInfo.Destroy(textGenerationInfo);
-                textGenerationInfo = IntPtr.Zero;
-            }
-
-            IsCachedPermanentATG = true;
-            textGenerationInfo = TextGenerationInfo.Create(IsCachedPermanent);
-        }
-
         public void ShapeText()
         {
             if (!ConvertUssToNativeTextGenerationSettings())
@@ -112,7 +89,7 @@ namespace UnityEngine.UIElements
             uvsAreGenerated = true;
         }
 
-        public bool HasMissingGlyphs(NativeTextInfo textInfo, ref Dictionary<int, HashSet<uint>> missingGlyphsPerFontAsset)
+        public bool HasMissingGlyphs(NativeTextInfo textInfo, ref Dictionary<EntityId, HashSet<uint>> missingGlyphsPerFontAsset)
         {
             return textLib.HasMissingGlyphs(textInfo, ref missingGlyphsPerFontAsset);
         }
@@ -134,25 +111,6 @@ namespace UnityEngine.UIElements
                 }
             }
             return (hasLink, hasHyperlink);
-        }
-
-        internal (TagType, string) ATGFindIntersectingLink(Vector2 point)
-        {
-
-            //This should probably be public, but it would require exposing TagType
-            Debug.Assert(useAdvancedText);
-            if (textGenerationInfo == IntPtr.Zero)
-            {
-                Debug.LogError("TextGenerationInfo pointer is null.");
-                return(TagType.Unknown, null);
-            }
-
-            int id = TextLib.FindIntersectingLink(point * GetPixelsPerPoint(), textGenerationInfo);
-
-            if (id == -1)
-                return (TagType.Unknown, null);
-
-            return (m_Links[id].Item2,   m_Links[id].Item3);
         }
 
         // Needs to be called on the main thread
@@ -177,14 +135,18 @@ namespace UnityEngine.UIElements
         {
             InitTextLib();
             var fa = TextUtilities.GetFontAsset(m_TextElement);
-            var style = m_TextElement.computedStyle;
+
+            if (fa == null)
+                return;
+
+            ref var style = ref m_TextElement.computedStyle;
             if (style.unityEditorTextRenderingMode == EditorTextRenderingMode.Bitmap)
             {
                 var effectiveFontsize = (int)Math.Round((style.fontSize.value) * GetPixelsPerPoint(), MidpointRounding.AwayFromZero);
                 nativeSettings.fontSize = effectiveFontsize * 64;
                 fa = GetCorrespondingBitmapFontAsset(fa, effectiveFontsize);
             }
-               
+
             TextUtilities.GetTextSettingsFrom(m_TextElement).UpdateNativeTextSettings();
             fa.EnsureNativeFontAssetIsCreated();
         }
@@ -193,7 +155,7 @@ namespace UnityEngine.UIElements
         internal bool ConvertUssToNativeTextGenerationSettings(string? textToMeasure = null, float? fontsize = null)
         {
             var scale = GetPixelsPerPoint();
-            var style = m_TextElement.computedStyle;
+            ref var style = ref m_TextElement.computedStyle;
 
             nativeSettings.preProcessFlags = PreProcessFlags.None;
             nativeSettings.text = m_TextElement.isElided && !TextLibraryCanElide() ? m_TextElement.elidedText : m_TextElement.renderedTextString;
@@ -201,8 +163,9 @@ namespace UnityEngine.UIElements
                 nativeSettings.text = textToMeasure;
             if (nativeSettings.text == null)
                 nativeSettings.text = "";
-            var effectiveFontsize = (int)Math.Round((fontsize ?? style.fontSize.value) * scale, MidpointRounding.AwayFromZero);
-            nativeSettings.fontSize = effectiveFontsize * 64;
+
+            var effectiveFontSize = (fontsize ?? style.fontSize.value) * scale;
+            nativeSettings.fontSize = (int)Math.Round(effectiveFontSize * 64.0f, MidpointRounding.AwayFromZero);
             nativeSettings.bestFit = style.unityTextAutoSize.mode == TextAutoSizeMode.BestFit;
             nativeSettings.maxFontSize = (int)(style.unityTextAutoSize.maxSize.value * 64.0f * scale);
             nativeSettings.minFontSize = (int)(style.unityTextAutoSize.minSize.value * 64.0f * scale);
@@ -256,7 +219,7 @@ namespace UnityEngine.UIElements
                 return false;
 
             if (style.unityEditorTextRenderingMode == EditorTextRenderingMode.Bitmap)
-                fa = GetCorrespondingBitmapFontAsset(fa, effectiveFontsize);
+                fa = GetCorrespondingBitmapFontAsset(fa, (int)Math.Round(effectiveFontSize, MidpointRounding.AwayFromZero));
 
             if (fa.atlasPopulationMode == AtlasPopulationMode.Static)
             {
@@ -267,6 +230,8 @@ namespace UnityEngine.UIElements
             nativeSettings.vertexPadding = (int)(GetVertexPadding(fa) * 64.0f);
             nativeSettings.fontAsset = fa.nativeFontAsset;
             nativeSettings.textSettings = TextUtilities.GetTextSettingsFrom(m_TextElement).nativeTextSettings;
+            // TODO: We should expose this to user. Possibly disable it by default.
+            nativeSettings.disableAdvancedFontFeatures = false;
 
             if (m_TextElement.enableRichText && RichTextTagParser.MayNeedParsing(nativeSettings.text))
             {
@@ -287,13 +252,13 @@ namespace UnityEngine.UIElements
         {
             var fa = TextUtilities.GetFontAsset(m_TextElement);
             fa.EnsureNativeFontAssetIsCreated();
-            var style = m_TextElement.computedStyle;
+            ref var style = ref m_TextElement.computedStyle;
 
             if (fa == null || fa.atlasPopulationMode == AtlasPopulationMode.Static || style.unityEditorTextRenderingMode != EditorTextRenderingMode.Bitmap)
                 return;
 
             var scale = GetPixelsPerPoint();
-            var effectiveFontsize = (int)(style.fontSize.value * scale);
+            var effectiveFontsize = (int)Math.Round((style.fontSize.value) * scale, MidpointRounding.AwayFromZero);
 
             GetCorrespondingBitmapFontAsset(fa, effectiveFontsize);
             GenerateBitmapFallbackFontAssets(effectiveFontsize, TextCore.Text.TextGenerationSettings.IsEditorTextRenderingModeRaster());
@@ -310,7 +275,7 @@ namespace UnityEngine.UIElements
             return fa;
         }
 
-        TextAsset GetICUAsset()
+        internal override TextAsset GetICUAsset()
         {
             if (m_TextElement.panel is null)
                 throw new InvalidOperationException("Text cannot be processed on elements not in a panel");
@@ -330,49 +295,5 @@ namespace UnityEngine.UIElements
             Debug.LogError("ICU Data not available. The data should be automatically assigned to the PanelSettings in the editor if the advanced text option is enable in the project settings. It will not be present on PanelSettings created at runtime, so make sure the build contains at least one PanelSettings asset");
             return null;
         }
-
-        //This method uses the asset in the editor if avialable, or try to find any asset that would be included in the resource folder for builds
-        internal static TextAsset GetICUAssetStaticFalback()
-        {
-            if (TextLib.GetICUAssetEditorDelegate != null)
-            {
-                //Editor will load the ICU library before the scene, so we need to check in the asset database as the asset may not be loaded yet.
-                var asset = TextLib.GetICUAssetEditorDelegate();
-                if (asset != null)
-                    return asset;
-            }
-            else
-            {
-                Debug.LogError("GetICUAssetEditorDelegate is null");
-            }
-            // Dont know about the panelSettings class existence here so we must filter by name
-            foreach (var t in Resources.FindObjectsOfTypeAll<UnityEngine.TextAsset>())
-            {
-                if (t.name == "icudt73l")
-                    return t;
-            }
-
-            return null;
-        }
-
-        static TextLib s_TextLib;
-
-
-        internal protected TextLib textLib
-        {
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get
-            {
-                InitTextLib();
-                return s_TextLib;
-            }
-        }
-
-        internal protected void InitTextLib()
-        {
-            s_TextLib ??= new TextLib(GetICUAsset().bytes);
-        }
     }
-
-
 }

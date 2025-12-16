@@ -14,7 +14,6 @@ using UnityEditor;
 using UnityEditor.Overlays;
 using UnityEditor.ShortcutManagement;
 using UnityEngine;
-using UnityEngine.Pool;
 using UnityEngine.Profiling;
 using UnityEngine.UIElements;
 using Debug = UnityEngine.Debug;
@@ -25,7 +24,7 @@ namespace Unity.GraphToolkit.Editor
     /// Base class for windows to edit graphs.
     /// </summary>
     [UnityRestricted]
-    internal abstract class GraphViewEditorWindow : EditorWindow, ISupportsOverlays, ISerializationCallbackReceiver
+    internal abstract partial class GraphViewEditorWindow : EditorWindow, ISupportsOverlays, ISerializationCallbackReceiver
     {
         const string k_SaveChangesMessage = @"Changes to an external graph currently opened in the breadcrumbs have not been saved:
 {0}
@@ -46,6 +45,10 @@ Would you like to save these changes?
 
         // Used only between OnDisable and OnDestroy
         List<GraphObject> m_AssetsToDestroy = new ();
+
+        Dictionary<Type, GTKOverlayWrapper> m_OverlayWrappers = new();
+
+        readonly List<Overlay> m_OverlaysHiddenByBlankPage = new();
 
         /// <summary>
         /// The path to the custom style sheet for the dark mode of this graph window.
@@ -158,7 +161,6 @@ Would you like to save these changes?
             if (graphObject != null)
             {
                 window.GraphTool.Dispatch(loadGraphCommand ?? new LoadGraphCommand(graphObject.GraphModel));
-                window.UpdateTooltips();
             }
 
             window.Focus();
@@ -219,7 +221,7 @@ Would you like to save these changes?
             }
         }
 
-        static int s_LastFocusedEditor = -1;
+        static EntityId s_LastFocusedEditor = EntityId.None;
 
         static int s_GraphViewNameCounter;
 
@@ -250,7 +252,6 @@ Would you like to save these changes?
 
         [SerializeField]
         Hash128 m_WindowHash;
-        bool m_OverlayHidden;
 
         public virtual IEnumerable<GraphView> GraphViews
         {
@@ -278,7 +279,7 @@ Would you like to save these changes?
         public BlackboardView BlackboardView
         {
             get => m_BlackboardView;
-            protected set => m_BlackboardView = value;
+            set => m_BlackboardView = value;
         }
 
         /// <summary>
@@ -308,7 +309,7 @@ Would you like to save these changes?
         /// </summary>
         protected GraphViewEditorWindow()
         {
-            s_LastFocusedEditor = GetInstanceID();
+            s_LastFocusedEditor = GetEntityId();
             m_WindowHash = Hash128Helpers.GenerateUnique();
         }
 
@@ -442,20 +443,6 @@ Would you like to save these changes?
             return new BlackboardViewSelection(rootViewModel.SelectionState, rootViewModel.BlackboardContentState, rootViewModel.ViewState, GraphTool.ClipboardProvider);
         }
 
-
-        internal BlackboardView CreateAndSetupBlackboardView()
-        {
-            var blackboardView = CreateBlackboardView();
-            if (blackboardView != null)
-            {
-                blackboardView.Initialize();
-                blackboardView.AddToClassList("unity-theme-env-variables");
-                blackboardView.RegisterCallback<TooltipEvent>((e) => e.StopPropagation());
-                RegisterView(m_BlackboardView);
-            }
-            return blackboardView;
-        }
-
         /// <summary>
         /// Creates a BlackboardView.
         /// </summary>
@@ -484,36 +471,9 @@ Would you like to save these changes?
 
         public virtual void UpdateTooltips()
         {
-            UpdateBlackboardToggleTooltip();
-            UpdateInspectorToggleTooltip();
-            UpdateMinimapToggleTooltip();
-        }
-
-        protected void UpdateBlackboardToggleTooltip()
-        {
-            var shortcutString = ShortcutToggleBlackboardEvent.GetShortcutString(GraphTool);
-            var toggle = rootVisualElement.panel?.visualTree.Q<BlackboardPanelToggle>();
-            if (toggle == null) return;
-            var tooltip = shortcutString != null ? $"Blackboard ({shortcutString})" : "Blackboard";
-            toggle.tooltip = tooltip;
-        }
-
-        protected void UpdateInspectorToggleTooltip()
-        {
-            var shortcutString = ShortcutToggleInspectorEvent.GetShortcutString(GraphTool);
-            var toggle = rootVisualElement.panel?.visualTree.Q<InspectorPanelToggle>();
-            if (toggle == null) return;
-            var tooltip = shortcutString != null ? $"Graph Inspector ({shortcutString})" : "Graph Inspector";
-            toggle.tooltip = tooltip;
-        }
-
-        protected void UpdateMinimapToggleTooltip()
-        {
-            var shortcutString = ShortcutToggleMinimapEvent.GetShortcutString(GraphTool);
-            var toggle = rootVisualElement.panel?.visualTree.Q<MiniMapPanelToggle>();
-            if (toggle == null) return;
-            var tooltip = shortcutString != null ? $"MiniMap ({shortcutString})" : "MiniMap";
-            toggle.tooltip = tooltip;
+            rootVisualElement.panel?.visualTree.Q<BlackboardPanelToggle>()?.UpdateInspectorTooltip();
+            rootVisualElement.panel?.visualTree.Q<InspectorPanelToggle>()?.UpdateInspectorTooltip();
+            rootVisualElement.panel?.visualTree.Q<MiniMapPanelToggle>()?.UpdateInspectorTooltip();
         }
 
         /// <summary>
@@ -525,19 +485,6 @@ Would you like to save these changes?
             return new MiniMapViewModel(GraphView);
         }
 
-        internal MiniMapView CreateAndSetupMiniMapView()
-        {
-            var miniMapView = CreateMiniMapView();
-            if (miniMapView != null)
-            {
-                miniMapView.Initialize();
-                miniMapView.AddToClassList("unity-theme-env-variables");
-                miniMapView.RegisterCallback<TooltipEvent>((e) => e.StopPropagation());
-                RegisterView(miniMapView);
-            }
-            return miniMapView;
-        }
-
         /// <summary>
         /// Creates a MiniMapView.
         /// </summary>
@@ -546,25 +493,6 @@ Would you like to save these changes?
         {
             var viewModel = CreateMiniMapViewModel();
             return new MiniMapView(this, GraphTool, viewModel);
-        }
-
-
-        internal ModelInspectorView CreateAndSetupInspectorView()
-        {
-            if (GraphTool == null)
-                return null;
-            var viewModel = CreateModelInspectorViewModel();
-            if (viewModel == null)
-                return null;
-            var modelInspectorView = CreateModelInspectorView(viewModel);
-            if (modelInspectorView != null)
-            {
-                modelInspectorView.Initialize();
-                modelInspectorView.AddToClassList("unity-theme-env-variables");
-                modelInspectorView.RegisterCallback<TooltipEvent>((e) => e.StopPropagation());
-                RegisterView(modelInspectorView);
-            }
-            return modelInspectorView;
         }
 
         /// <summary>
@@ -659,8 +587,6 @@ Would you like to save these changes?
         /// </summary>
         public virtual void SaveAll()
         {
-            var saved = false;
-
             if (GraphTool?.ToolState?.CurrentGraph != null)
             {
                 var openedGraphs = new List<GraphReference> { GraphTool.ToolState.CurrentGraph };
@@ -682,16 +608,12 @@ Would you like to save these changes?
                     var graphObject = GraphTool.ResolveGraphModelFromReference(openedGraph)?.GraphObject;
                     if (graphObject != null)
                     {
-                        saved = true;
                         graphObject.Save();
                     }
                 }
             }
 
-            if (saved)
-                SaveOverlayPositions();
-            else
-                AssetDatabase.SaveAssets();
+            AssetDatabase.SaveAssets();
         }
 
         /// <summary>
@@ -704,12 +626,11 @@ Would you like to save these changes?
                 var graphObject = GraphTool.ToolState.GraphModel?.GraphObject;
                 if (graphObject != null)
                 {
-                    SaveOverlayPositions();
                     graphObject.Save();
                     return;
                 }
             }
-            // No need to call SaveOverlayPositions; WindowAssetModificationWatcher will take care of it.
+            
             AssetDatabase.SaveAssets();
         }
 
@@ -728,8 +649,6 @@ Would you like to save these changes?
 
                 if (newGraphAsset != null)
                 {
-                    SaveOverlayPositions();
-
                     newGraphAsset.GraphModel.CloneGraph(graphObject.GraphModel);
                     newGraphAsset.Save();
                 }
@@ -849,21 +768,10 @@ Would you like to save these changes?
             rootVisualElement.AddToClassList("unity-theme-env-variables");
             rootVisualElement.AddToClassList("gtf-root");
 
-            // After a domain reload, all loaded objects will get reloaded and their OnEnable() called again
-            // It looks like all loaded objects are put in a deserialization/OnEnable() queue
-            // the previous graph's nodes/wires/... might be queued AFTER this window's OnEnable
-            // so relying on objects to be loaded/initialized is not safe
-            // hence, we need to defer the loading command. Since we can be here from multiple scenarios,
-            // i.e. EnterPlayMode, ProjectLoad, LayoutChanged, etc. or even just opening a new window
-            // and each can have their own order of execution wrt OnEnable() and AfterAssemblyReload,
-            // we therefore rely on EditorApplication.CallDelayed instead which will execute one tick later. We could load the
-            // last opened graph in an EditorApplication.update event, but those event are handled by the test runner, and it messes
-            // with some tests.
-            if( GraphTool.ToolState.HasLastOpenedGraph() )
-                EditorBridge.CallDelayed(LoadLastOpenedGraph);
             EditorApplication.update += EditorUpdate;
             EditorApplication.playModeStateChanged += OnPlayModeStateChanged;
             ShortcutManager.instance.shortcutBindingChanged += OnShortcutUpdated;
+            EditorApplication.delayCall += UpdateTooltips;
 
             m_GraphProcessingPendingLabel = new Label("Graph Processing Pending") { name = "graph-processing-pending-label" };
 
@@ -883,8 +791,6 @@ Would you like to save these changes?
             ShortcutBlocker = new ShortcutBlocker();
             ShortcutBlocker.Enable(this.GetBaseRootVisualElement());
 
-            RestoreOverlayPositions();
-
             // registering ValidateCommandEvent and ExecuteCommandEvent on the rootVisualElement should be sufficient but because of https://jira.unity3d.com/browse/UUM-79252, we need to use the panel.visualTree instead.
             void OnAttach(AttachToPanelEvent _)
             {
@@ -893,6 +799,9 @@ Would you like to save these changes?
                 rootVisualElement.panel.visualTree.RegisterCallback<ShortcutToggleBlackboardEvent>(OnShortcutToggleBlackboardEvent);
                 rootVisualElement.panel.visualTree.RegisterCallback<ShortcutToggleInspectorEvent>(OnShortcutToggleInspectorEvent);
                 rootVisualElement.panel.visualTree.RegisterCallback<ShortcutToggleMinimapEvent>(OnShortcutToggleMinimapEvent);
+
+                rootVisualElement.panel.visualTree.RegisterCallback<ShortcutFileSaveEvent>(OnShortcutFileSaveEvent);
+                rootVisualElement.panel.visualTree.RegisterCallback<ShortcutSaveAsEvent>(OnShortcutSaveAsEvent);
             }
             void OnDetach(DetachFromPanelEvent _)
             {
@@ -901,6 +810,9 @@ Would you like to save these changes?
                 rootVisualElement.panel.visualTree.UnregisterCallback<ShortcutToggleBlackboardEvent>(OnShortcutToggleBlackboardEvent);
                 rootVisualElement.panel.visualTree.UnregisterCallback<ShortcutToggleInspectorEvent>(OnShortcutToggleInspectorEvent);
                 rootVisualElement.panel.visualTree.UnregisterCallback<ShortcutToggleMinimapEvent>(OnShortcutToggleMinimapEvent);
+
+                rootVisualElement.panel.visualTree.UnregisterCallback<ShortcutFileSaveEvent>(OnShortcutFileSaveEvent);
+                rootVisualElement.panel.visualTree.UnregisterCallback<ShortcutSaveAsEvent>(OnShortcutSaveAsEvent);
             }
 
             // on a domain reload with the window opened, the panel is already attached to the rootVisualElement
@@ -927,6 +839,8 @@ Would you like to save these changes?
                 foreach (var stylesheetPath in CustomLightModeStylesheetPaths)
                     realRootElement.AddStyleSheetPath(stylesheetPath);
             }
+
+            CreateOverlayContents();
         }
 
         void CreateAndSetupGraphView()
@@ -1012,68 +926,22 @@ Would you like to save these changes?
                 minimapOverlay.displayed = !minimapOverlay.displayed;
         }
 
-        internal void SaveOverlayPositions()
+        protected void OnShortcutFileSaveEvent(ShortcutFileSaveEvent e)
         {
-            if (GraphTool == null)
-                return;
-            if(m_OverlayHidden) //We have temporarily hidden the overlays, so we don't want to save their positions ( and display state ). They have been saved before hiding them.
+            if (!m_Focused)
                 return;
 
-            SerializedValueDictionary<string, OverlaySaveData> allOverlaysSaveData = new();
-            foreach (var overlay in overlayCanvas.overlays)
-            {
-                var overlaySaveData = overlay.GetOverlaySaveData();
-                allOverlaysSaveData[overlay.id] = overlaySaveData;
-            }
-
-            var overlaySaveDataJson = JsonUtility.ToJson(allOverlaysSaveData);
-            GraphTool.Preferences.SetString(StringPref.OverlayPositions, overlaySaveDataJson);
+            Save();
+            e.StopPropagation();
         }
 
-        internal void RestoreOverlayPositions()
+        protected void OnShortcutSaveAsEvent(ShortcutSaveAsEvent evt)
         {
-            if (GraphTool == null)
+            if (!m_Focused)
                 return;
 
-            var savedPositions = GraphTool.Preferences.GetString(StringPref.OverlayPositions);
-            if (!string.IsNullOrEmpty(savedPositions))
-            {
-                var allOverlaysSaveData = JsonUtility.FromJson<SerializedValueDictionary<string, OverlaySaveData>>(savedPositions);
-                foreach (var overlay in overlayCanvas.overlays)
-                {
-                    if (allOverlaysSaveData.TryGetValue(overlay.id, out var overlaySaveData) && overlaySaveData != null && overlaySaveData.id == overlay.id)
-                    {
-                        overlayCanvas.RestoreOverlay(overlay, overlaySaveData);
-                    }
-                    else
-                    {
-                        overlayCanvas.RestoreOverlay(overlay, OverlayBridge.GetDefaultSaveData(overlay));
-                    }
-                }
-            }
-            else
-            {
-                ResetOverlayPositions();
-            }
-        }
-
-        internal void ShowOverlayMenuAtPosition(Vector2 menuPosition)
-        {
-            overlayCanvas.ShowOverlayMenuAtPosition(menuPosition);
-        }
-
-        internal void ResetOverlayPositions()
-        {
-            foreach (var overlay in overlayCanvas.overlays)
-            {
-                overlayCanvas.RestoreOverlay(overlay, OverlayBridge.GetDefaultSaveData(overlay));
-            }
-        }
-
-        internal void HardResetOverlayPositions()
-        {
-            GraphTool.Preferences.SetString(StringPref.OverlayPositions, "");
-            ResetOverlayPositions();
+            SaveAs();
+            evt.StopPropagation();
         }
 
         void OnPlayModeStateChanged(PlayModeStateChange value)
@@ -1089,12 +957,8 @@ Would you like to save these changes?
 
         protected virtual void OnDisable()
         {
+            RestoreHiddenOverlays();
             m_AssetsToDestroy.Clear();
-            var graphModel = GraphTool?.ToolState.GraphModel;
-            if (graphModel != null)
-            {
-                SaveOverlayPositions();
-            }
 
             UpdateWindowsWithSameCurrentGraph(true);
 
@@ -1146,7 +1010,7 @@ Would you like to save these changes?
 
         protected virtual void OnFocus()
         {
-            s_LastFocusedEditor = GetInstanceID();
+            s_LastFocusedEditor = GetEntityId();
 
             if (m_Focused)
                 return;
@@ -1176,7 +1040,7 @@ Would you like to save these changes?
 
             foreach (var window in windows)
             {
-                if (window.GetInstanceID() == s_LastFocusedEditor)
+                if (window.GetEntityId() == s_LastFocusedEditor)
                     continue;
 
                 var otherGraph = window.GraphTool?.ToolState?.CurrentGraph;
@@ -1293,13 +1157,12 @@ Would you like to save these changes?
                     if (m_GraphContainer.Contains(m_BlankPage))
                     {
                         m_GraphContainer.Remove(m_BlankPage);
+                        RestoreHiddenOverlays();
                     }
 
                     if (!m_GraphContainer.Contains(m_GraphView))
                     {
                         m_GraphContainer.Insert(0, m_GraphView);
-                        m_OverlayHidden = false;
-                        RestoreOverlayPositions();
                     }
 
                     if (!rootVisualElement.Contains(m_GraphProcessingPendingLabel))
@@ -1311,10 +1174,13 @@ Would you like to save these changes?
                 {
                     if (m_GraphContainer.Contains(m_GraphView))
                     {
-                        SaveOverlayPositions();
-                        m_OverlayHidden = true;
+                        m_OverlaysHiddenByBlankPage.Clear();
+
                         foreach (var overlay in overlayCanvas.overlays)
                         {
+                            if (overlay.displayed)
+                                m_OverlaysHiddenByBlankPage.Add(overlay);
+
                             overlay.displayed = false;
                         }
 
@@ -1332,6 +1198,16 @@ Would you like to save these changes?
                     }
                 }
             }
+        }
+
+        void RestoreHiddenOverlays()
+        {
+            foreach (var overlay in m_OverlaysHiddenByBlankPage)
+            {
+                overlay.displayed = true;
+            }
+
+            m_OverlaysHiddenByBlankPage.Clear();
         }
 
         protected virtual void UpdateOverlays()
@@ -1567,7 +1443,7 @@ Would you like to save these changes?
 
             foreach (var window in windows)
             {
-                if (window.GetInstanceID() != s_LastFocusedEditor)
+                if (window.GetEntityId() != s_LastFocusedEditor)
                 {
                     var otherGraph = window.GraphTool?.ToolState?.GraphModel;
                     if (otherGraph != null && currentAsset.GraphModel == otherGraph)
@@ -1662,6 +1538,15 @@ Would you like to save these changes?
             m_Views.Remove(view);
         }
 
+        public void UnregisterBlackboardView(BlackboardView view)
+        {
+            if (BlackboardView == view)
+            {
+                UnregisterView(view);
+                BlackboardView = null;
+            }
+        }
+
         void OnRootDetach(DetachFromPanelEvent e)
         {
             foreach (var view in m_Views)
@@ -1708,6 +1593,17 @@ Would you like to save these changes?
             // When opening a graph by clicking on a window tab, the graph view focus is lost to the IMGUIContainer of the window.
             // We try to get it back.
             UpdateGraphViewFocus();
+        }
+
+        internal class TestAccess
+        {
+            readonly GraphViewEditorWindow m_Window;
+            public TestAccess (GraphViewEditorWindow window)
+            {
+                m_Window = window;
+            }
+
+            public void Update() => m_Window.Update();
         }
     }
 }

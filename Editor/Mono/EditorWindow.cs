@@ -181,7 +181,7 @@ namespace UnityEditor
         // Mark the beginning area of all popup windows.
         public void BeginWindows()
         {
-            EditorGUIInternal.BeginWindowsForward(1, GetInstanceID());
+            EditorGUIInternal.BeginWindowsForward(1, GetEntityId());
         }
 
         // Close a window group started with EditorWindow::ref::BeginWindows

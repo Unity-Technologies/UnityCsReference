@@ -680,7 +680,7 @@ namespace UnityEngine
 
             public static void Extract(Light l, out Cookie cookie)
             {
-                cookie.entityId = l.cookie ? l.cookie.GetInstanceID() : EntityId.None;
+                cookie.entityId = l.cookie ? l.cookie.GetEntityId() : EntityId.None;
                 cookie.scale      = 1.0f;
                 cookie.sizes      = (l.type == UnityEngine.LightType.Directional && l.cookie) ? l.cookieSize2D : new Vector2(1.0f, 1.0f);
             }

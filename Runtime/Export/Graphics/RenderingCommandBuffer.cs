@@ -1033,7 +1033,7 @@ namespace UnityEngine.Rendering
         {
             if (values == null) throw new ArgumentNullException("values");
             if (values.Count == 0) throw new ArgumentException("Zero-sized array is not allowed.");
-            SetGlobalFloatArrayListImpl(nameID, values);
+            SetGlobalFloatArrayListImpl(nameID, NoAllocHelpers.CreateReadOnlySpan(values));
         }
 
         // T[] version
@@ -1052,7 +1052,7 @@ namespace UnityEngine.Rendering
         {
             if (values == null) throw new ArgumentNullException("values");
             if (values.Count == 0) throw new ArgumentException("Zero-sized array is not allowed.");
-            SetGlobalVectorArrayListImpl(nameID, values);
+            SetGlobalVectorArrayListImpl(nameID, NoAllocHelpers.CreateReadOnlySpan(values));
         }
 
         // T[] version
@@ -1071,7 +1071,7 @@ namespace UnityEngine.Rendering
         {
             if (values == null) throw new ArgumentNullException("values");
             if (values.Count == 0) throw new ArgumentException("Zero-sized array is not allowed.");
-            SetGlobalMatrixArrayListImpl(nameID, values);
+            SetGlobalMatrixArrayListImpl(nameID, NoAllocHelpers.CreateReadOnlySpan(values));
         }
 
         // T[] version

@@ -43,7 +43,10 @@ namespace Unity.ProjectAuditor.Editor.Modules
                     sampleSettings.loadType = AudioClipLoadType.Streaming;
                     audioImporter.SetOverrideSampleSettings(analysisParams.PlatformAsString, sampleSettings);
                     audioImporter.SaveAndReimport();
+                    return true;
                 }
+
+                return false;
             }
         };
 
@@ -74,9 +77,12 @@ namespace Unity.ProjectAuditor.Editor.Modules
                 {
                     audioImporter.forceToMono = true;
                     audioImporter.SaveAndReimport();
+                    return true;
                 }
+
+                return false;
             },
-            Platforms = new SerializableEnum<BuildTarget>[] { BuildTarget.Android, BuildTarget.iOS}
+            Platforms = [BuildTarget.Android, BuildTarget.iOS]
         };
 
         internal static readonly Descriptor k_AudioStereoClipWhichIsNotStreamingDescriptor = new Descriptor(
@@ -95,7 +101,10 @@ namespace Unity.ProjectAuditor.Editor.Modules
                 {
                     audioImporter.forceToMono = true;
                     audioImporter.SaveAndReimport();
+                    return true;
                 }
+
+                return false;
             }
         };
 
@@ -131,7 +140,7 @@ namespace Unity.ProjectAuditor.Editor.Modules
         )
         {
             MessageFormat = "AudioClip '{0}' Compressed clip could be optimized for mobile",
-            Platforms = new SerializableEnum<BuildTarget>[] {BuildTarget.Android, BuildTarget.iOS}
+            Platforms = [BuildTarget.Android, BuildTarget.iOS]
         };
 
         internal static readonly Descriptor k_Audio48kHzDescriptor = new Descriptor(
@@ -153,7 +162,10 @@ namespace Unity.ProjectAuditor.Editor.Modules
                     sampleSettings.sampleRateOverride = 48000;
                     audioImporter.SetOverrideSampleSettings(analysisParams.PlatformAsString, sampleSettings);
                     audioImporter.SaveAndReimport();
+                    return true;
                 }
+
+                return false;
             }
         };
 
@@ -175,7 +187,10 @@ namespace Unity.ProjectAuditor.Editor.Modules
                     sampleSettings.preloadAudioData = false;
                     audioImporter.SetOverrideSampleSettings(analysisParams.PlatformAsString, sampleSettings);
                     audioImporter.SaveAndReimport();
+                    return true;
                 }
+
+                return false;
             }
         };
 
@@ -195,7 +210,10 @@ namespace Unity.ProjectAuditor.Editor.Modules
                 {
                     audioImporter.loadInBackground = true;
                     audioImporter.SaveAndReimport();
+                    return true;
                 }
+
+                return false;
             }
         };
 
@@ -217,7 +235,10 @@ namespace Unity.ProjectAuditor.Editor.Modules
                     sampleSettings.compressionFormat = AudioCompressionFormat.Vorbis;
                     audioImporter.SetOverrideSampleSettings(analysisParams.PlatformAsString, sampleSettings);
                     audioImporter.SaveAndReimport();
+                    return true;
                 }
+
+                return false;
             }
         };
 

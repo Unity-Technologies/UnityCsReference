@@ -60,7 +60,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public event Action<IOperation> onListOperation = delegate {};
         public event Action<IOperation> onSearchAllOperation = delegate {};
-        public event Action<IOperation> onPackOperation;
+        public event Action<IOperation> onPackOperation = delegate {};
 
         [SerializeField]
         private UpmSearchOperation m_SearchOperation;
@@ -78,6 +78,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         [SerializeField]
         private UpmAddAndRemoveOperation m_AddAndRemoveOperation;
         private UpmAddAndRemoveOperation addAndRemoveOperation => CreateOperation(ref m_AddAndRemoveOperation);
+
         [SerializeField]
         private UpmEmbedOperation m_EmbedOperation;
         private UpmEmbedOperation embedOperation => CreateOperation(ref m_EmbedOperation);
@@ -157,6 +158,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         {
             if (isAddOrRemoveInProgress)
                 return;
+
             addAndRemoveOperation.AddById(packageId);
             SetupAddAndRemoveOperation();
         }
@@ -172,6 +174,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 tempPackageId = GetTempPackageIdFromPath(path);
                 addAndRemoveOperation.AddByPathOrUrl(tempPackageId);
                 SetupAddAndRemoveOperation();
+
                 return true;
             }
             catch (System.IO.IOException e)
@@ -209,6 +212,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         {
             if (isAddOrRemoveInProgress)
                 return;
+
             addAndRemoveOperation.AddByIds(versionIds);
             SetupAddAndRemoveOperation();
         }
@@ -237,7 +241,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             SetupAddAndRemoveOperation();
         }
 
-        private void SetupAddAndRemoveOperation()
+       private void SetupAddAndRemoveOperation()
         {
             var progressUpdates = addAndRemoveOperation.packageIdsToReset.Select(idOrName => (idOrName, PackageProgress.Resetting))
                 .Concat(addAndRemoveOperation.packageIdsToAdd.Select(idOrName => (idOrName, PackageProgress.Installing)))
@@ -246,6 +250,8 @@ namespace UnityEditor.PackageManager.UI.Internal
 
             if (addAndRemoveOperation.isSpecialInstall)
                 onSpecialInstallStart?.Invoke(addAndRemoveOperation.packageIdOrName);
+
+            addAndRemoveOperation.SetDryRunFunction(FindTrustIssuePackagesAndShowPopUp);
 
             addAndRemoveOperation.onProcessResult += OnProcessAddAndRemoveResult;
             addAndRemoveOperation.onOperationError += (_, error) =>
@@ -261,20 +267,56 @@ namespace UnityEditor.PackageManager.UI.Internal
             };
             addAndRemoveOperation.onOperationFinalized += _ =>
             {
+                var mainPackageInfo = addAndRemoveOperation.FindMainPackageInfoFromResult();
+                if (addAndRemoveOperation.isSpecialInstall)
+                    onSpecialInstallFinalize?.Invoke(addAndRemoveOperation.packageIdOrName, mainPackageInfo?.name ?? string.Empty);
+
                 var allIdOrNames = addAndRemoveOperation.packageIdsToAdd.Concat(addAndRemoveOperation.packageIdsToReset).Concat(addAndRemoveOperation.packagesNamesToRemove);
                 onPackagesProgressChange?.Invoke(allIdOrNames.Select(idOrName => (idOrName, PackageProgress.None)));
             };
             addAndRemoveOperation.logErrorInConsole = true;
         }
 
+       private bool FindTrustIssuePackagesAndShowPopUp(PackageCollection requestResult)
+       {
+            var invalidSignaturePackages = new List<PackageInfo>();
+            var missingSignaturePackages = new List<PackageInfo>();
+            var limitedTrustPackages = new List<PackageInfo>();
+
+            foreach (var info in requestResult)
+            {
+                if (info == null)
+                    continue;
+
+                var trustAndSignature = UpmPackageVersion.GetTrustAndSignature(info, true);
+                var currentlyInstalled = m_UpmCache.GetInstalledPackageInfo(info.name);
+                if (currentlyInstalled?.packageId == info.packageId && UpmPackageVersion.GetTrustAndSignature(currentlyInstalled, true) == trustAndSignature)
+                    continue;
+                switch (trustAndSignature)
+                {
+                    case TrustAndSignature.UntrustedInvalidSignature:
+                        invalidSignaturePackages.Add(info);
+                        break;
+                    case TrustAndSignature.UntrustedNoSignature:
+                        missingSignaturePackages.Add(info);
+                        break;
+                    case TrustAndSignature.LimitedTrust:
+                        limitedTrustPackages.Add(info);
+                        break;
+                }
+            }
+
+            if (invalidSignaturePackages.Count == 0 && missingSignaturePackages.Count == 0 && limitedTrustPackages.Count == 0)
+                return true;
+
+            return ActiveTrustWindow.ShowActiveTrustWindow(invalidSignaturePackages, missingSignaturePackages, limitedTrustPackages) == ActiveTrustReturnValue.InstallAnyway;
+        }
+
         private void OnProcessAddAndRemoveResult(Request<PackageCollection> request)
         {
-            var updatedInfos = m_UpmCache.SetInstalledPackageInfos(request.Result);
+            var updatedInfos = m_UpmCache.SetInstalledPackageInfos(request.Result, changedSource: PackagesChangedSource.AddAndRemove);
 
             var mainPackageInfo = addAndRemoveOperation.FindMainPackageInfoFromResult();
-            if (addAndRemoveOperation.isSpecialInstall)
-                onSpecialInstallFinalize?.Invoke(addAndRemoveOperation.packageIdOrName, mainPackageInfo?.name ?? string.Empty);
-
             if (updatedInfos.Count == 0 && mainPackageInfo?.source == PackageSource.Git)
                 Debug.Log(string.Format(L10n.Tr("{0} is already up-to-date."), mainPackageInfo.displayName));
             else if (updatedInfos.Count > 0)
@@ -322,6 +364,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         {
             if (isAddOrRemoveInProgress)
                 return;
+
             addAndRemoveOperation.RemoveByNames(new [] {packageName});
             SetupAddAndRemoveOperation();
         }
@@ -356,7 +399,6 @@ namespace UnityEditor.PackageManager.UI.Internal
                 return;
             embedOperation.Embed(packageName);
         }
-
 
         public void SearchAll(bool offlineMode = false)
         {
@@ -486,13 +528,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private T CreateOperation<T>(ref T operation) where T : UpmBaseOperation, new()
         {
-            if (operation != null)
-            {
-                operation.ResolveDependencies(m_ClientProxy, m_Application);
-                return operation;
-            }
-
-            operation = new T();
+            operation ??= new T();
             operation.ResolveDependencies(m_ClientProxy, m_Application);
             return operation;
         }

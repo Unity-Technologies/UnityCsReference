@@ -13,6 +13,7 @@ namespace UnityEditor
         public const bool defaultGridSnapEnabled = true;
         public const float defaultRotation = 15f;
         public const float defaultScale = 1f;
+        public const float defaultIncrementalSnapSize = 0.25f;
 
         [SerializeField]
         bool m_SnapToGrid = defaultGridSnapEnabled;
@@ -23,10 +24,19 @@ namespace UnityEditor
         [SerializeField]
         float m_Scale = defaultScale;
 
+        [SerializeField] 
+        Vector3 m_IncrementalSnapSize = new (defaultIncrementalSnapSize, defaultIncrementalSnapSize, defaultIncrementalSnapSize);
+
         public bool snapToGrid
         {
             get => m_SnapToGrid;
             set => m_SnapToGrid = value;
+        }
+        
+        public Vector3 incrementalSnapSize
+        {
+            get { return m_IncrementalSnapSize; }
+            set { m_IncrementalSnapSize = value; }
         }
 
         public float rotation

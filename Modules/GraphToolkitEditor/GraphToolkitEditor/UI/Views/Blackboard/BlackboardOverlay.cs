@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System;
 using UnityEditor.Overlays;
 using UnityEngine;
 using UnityEngine.UIElements;
@@ -19,9 +18,9 @@ namespace Unity.GraphToolkit.Editor
     {
         public const string idValue = "gtf-blackboard";
 
-        BlackboardView m_BlackboardView;
+        BlackboardView BlackboardView => OverlayWrapper?.RootView as BlackboardView;
 
-        public override RootView RootView => m_BlackboardView;
+        public override RootView RootView => BlackboardView;
 
         public BlackboardOverlay()
         {
@@ -33,23 +32,28 @@ namespace Unity.GraphToolkit.Editor
         public override VisualElement CreatePanelContent()
         {
             var window = containerWindow as GraphViewEditorWindow;
+
             if (window != null)
             {
-                if (m_BlackboardView != null)
-                    window.UnregisterView(m_BlackboardView);
-
-                m_BlackboardView?.Dispose();
-                m_BlackboardView = window.CreateAndSetupBlackboardView();
-                if (m_BlackboardView != null)
+                if (OverlayWrapper != null)
                 {
-                    return m_BlackboardView;
+                    window.UnregisterBlackboardView(BlackboardView);
+                    OverlayWrapper.DisposeRoot();
                 }
+
+                OverlayWrapper = window.CreateAndSetupBlackboardView();
+                if (OverlayWrapper != null)
+                    return OverlayWrapper;
             }
 
             var placeholder = new VisualElement();
+            if (OverlayWrapper != null)
+                OverlayWrapper.RootView = placeholder;
+
             placeholder.AddToClassList(BlackboardView.ussClassName);
             placeholder.AddPackageStylesheet("BlackboardView.uss");
-            return placeholder;
+
+            return OverlayWrapper ?? placeholder;
         }
 
         /// <inheritdoc />
@@ -57,15 +61,14 @@ namespace Unity.GraphToolkit.Editor
         {
             base.OnWillBeDestroyed();
 
-            if (m_BlackboardView != null)
+            if (OverlayWrapper != null)
             {
                 var window = containerWindow as GraphViewEditorWindow;
                 if (window != null)
-                    window.UnregisterView(m_BlackboardView);
+                    window.UnregisterView(BlackboardView);
 
-                m_BlackboardView.Dispose();
-
-                m_BlackboardView = null;
+                OverlayWrapper.DisposeRoot();
+                OverlayWrapper = null;
             }
         }
     }

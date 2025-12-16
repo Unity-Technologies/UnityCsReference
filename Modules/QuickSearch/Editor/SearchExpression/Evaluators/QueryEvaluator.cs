@@ -43,7 +43,7 @@ namespace UnityEditor.Search
         public static IEnumerable<SearchItem> RunQuery(SearchExpressionContext c, string queryText)
         {
             using (var context = new SearchContext(c.search.GetProviders(), queryText, c.search.options | SearchFlags.QueryString))
-            using (var results = SearchService.Request(context))
+            using (var results = SearchService.Request(context)) // Keep using SearchService.Request to avoid potential threading issues. SearchService.RequestEnumerator does not support multi-threading (or rather the providers don't).
             {
                 if (c.flags.HasFlag(SearchExpressionExecutionFlags.ThreadedEvaluation))
                 {

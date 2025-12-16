@@ -24,7 +24,8 @@ namespace UnityEngine
 
         public RuntimeInitializeLoadType loadType
         {
-            get { return m_LoadType; } private set { m_LoadType = value; }
+            get { return m_LoadType; }
+            private set { m_LoadType = value; }
         }
 
         RuntimeInitializeLoadType m_LoadType;

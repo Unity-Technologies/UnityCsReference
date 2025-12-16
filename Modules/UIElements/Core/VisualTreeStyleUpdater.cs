@@ -65,7 +65,14 @@ namespace UnityEngine.UIElements
     }
 
     [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
-    internal class VisualTreeStyleUpdater : BaseVisualTreeUpdater
+    internal class VisualTreeStyleUpdater : VisualTreeStyleUpdater<VisualTreeStyleUpdaterTraversal, NoOpStyleProfiler>
+    {
+    }
+
+    [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+    internal class VisualTreeStyleUpdater<TTraversal, TProfiler> : BaseVisualTreeUpdater
+        where TTraversal : VisualTreeStyleUpdaterTraversal<TProfiler>, new()
+        where TProfiler : struct, IStyleProfiler
     {
         private HashSet<VisualElement> m_ApplyStyleUpdateList = new HashSet<VisualElement>();
         private HashSet<VisualElement> m_TransitionPropertyUpdateList = new HashSet<VisualElement>();
@@ -73,9 +80,9 @@ namespace UnityEngine.UIElements
         private uint m_Version = 0;
         private uint m_LastVersion = 0;
 
-        private VisualTreeStyleUpdaterTraversal m_StyleContextHierarchyTraversal = new VisualTreeStyleUpdaterTraversal();
+        private TTraversal m_StyleContextHierarchyTraversal = new ();
 
-        public VisualTreeStyleUpdaterTraversal traversal
+        public TTraversal traversal
         {
             get => m_StyleContextHierarchyTraversal;
             set
@@ -143,8 +150,8 @@ namespace UnityEngine.UIElements
                 // Allow for transitions to be cancelled if matching transition property was removed.
                 if (ve.hasRunningAnimations || ve.hasCompletedAnimations)
                 {
-                    ComputedTransitionUtils.UpdateComputedTransitions(ref ve.computedStyle);
-                    m_StyleContextHierarchyTraversal.CancelAnimationsWithNoTransitionProperty(ve, ref ve.computedStyle);
+                    ComputedTransitionUtils.UpdateComputedTransitions(ref ve.computedStyle, out var computedTransitions);
+                    m_StyleContextHierarchyTraversal.CancelAnimationsWithNoTransitionProperty(computedTransitions, ve, ref ve.computedStyle);
                 }
             }
             m_TransitionPropertyUpdateList.Clear();
@@ -162,7 +169,7 @@ namespace UnityEngine.UIElements
             disposed = true;
         }
 
-        private void ApplyStyles()
+        protected void ApplyStyles()
         {
             Debug.Assert(visualTree.panel != null);
             m_IsApplyingStyles = true;
@@ -212,7 +219,10 @@ namespace UnityEngine.UIElements
     }
 
     [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
-    internal class VisualTreeStyleUpdaterTraversal : HierarchyTraversal
+    internal class VisualTreeStyleUpdaterTraversal : VisualTreeStyleUpdaterTraversal<NoOpStyleProfiler> { }
+
+    [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+    internal class VisualTreeStyleUpdaterTraversal<TStyleProfiler> : HierarchyTraversal where TStyleProfiler : struct, IStyleProfiler
     {
         private StyleVariableContext m_ProcessVarContext = new StyleVariableContext();
         private HashSet<VisualElement> m_UpdateList = new HashSet<VisualElement>();
@@ -329,26 +339,25 @@ namespace UnityEngine.UIElements
             if (updateElement)
             {
                 m_StyleMatchingContext.currentElement = element;
-                StyleSelectorHelper.FindMatches(m_StyleMatchingContext, m_TempMatchResults, originalStyleSheetCount - 1);
-
+                StyleSelectorHelper<TStyleProfiler>.FindMatches(m_StyleMatchingContext, m_TempMatchResults, originalStyleSheetCount - 1);
                 var newStyle = ProcessMatchedRules(element, m_TempMatchResults);
                 newStyle.Acquire();
 
                 if (element.hasInlineStyle)
                     element.inlineStyleAccess.ApplyInlineStyles(ref newStyle);
 
-                ComputedTransitionUtils.UpdateComputedTransitions(ref newStyle);
+                ComputedTransitionUtils.UpdateComputedTransitions(ref newStyle, out var computedTransitions);
 
                 if (element.hasRunningAnimations &&
                     !ComputedTransitionUtils.SameTransitionProperty(ref element.computedStyle, ref newStyle))
                 {
-                    CancelAnimationsWithNoTransitionProperty(element, ref newStyle);
+                    CancelAnimationsWithNoTransitionProperty(computedTransitions, element, ref newStyle);
                 }
 
-                if (newStyle.hasTransition && element.styleInitialized)
+                if (computedTransitions.Length > 0 && element.styleInitialized)
                 {
                     // Start the transitions. Note that the element still has its old style at this point.
-                    ProcessTransitions(element, ref element.computedStyle, ref newStyle);
+                    ProcessTransitions(computedTransitions, element, ref element.computedStyle, ref newStyle);
 
                     // Set entire new computed style but immediately force the animated values to be updated again.
                     element.SetComputedStyle(ref newStyle);
@@ -394,11 +403,11 @@ namespace UnityEngine.UIElements
             }
         }
 
-        private void ProcessTransitions(VisualElement element, ref ComputedStyle oldStyle, ref ComputedStyle newStyle)
+        private void ProcessTransitions(ComputedTransitionProperty[] computedTransitions, VisualElement element, ref ComputedStyle oldStyle, ref ComputedStyle newStyle)
         {
-            for (var i = newStyle.computedTransitions.Length - 1; i >= 0; i--)
+            for (var i = computedTransitions.Length - 1; i >= 0; i--)
             {
-                var t = newStyle.computedTransitions[i];
+                var t = computedTransitions[i];
 
                 // Need to skip inline styles because they take precedence over USS styles
                 if (element.hasInlineStyle && element.inlineStyleAccess.IsValueSet(t.id))
@@ -423,12 +432,12 @@ namespace UnityEngine.UIElements
         }
 
         private readonly List<StylePropertyId> m_AnimatedProperties = new List<StylePropertyId>();
-        internal void CancelAnimationsWithNoTransitionProperty(VisualElement element, ref ComputedStyle newStyle)
+        internal void CancelAnimationsWithNoTransitionProperty(ComputedTransitionProperty[] computedTransitions, VisualElement element, ref ComputedStyle newStyle)
         {
             element.styleAnimation.GetAllAnimations(m_AnimatedProperties);
             foreach (var id in m_AnimatedProperties)
             {
-                if (!newStyle.HasTransitionProperty(id))
+                if (!computedTransitions.HasTransitionProperty(id))
                     element.styleAnimation.CancelAnimation(id);
             }
             m_AnimatedProperties.Clear();

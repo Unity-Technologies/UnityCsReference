@@ -12,7 +12,6 @@ namespace UnityEngine.UIElements.HierarchyV2
 
         public LinkedListNode<RecycledItem> node { get; set; }
         public int index;
-        public float renderedHeight;
         public bool isLastItem;
         public const int k_UndefinedIndex = -1;
 
@@ -31,6 +30,10 @@ namespace UnityEngine.UIElements.HierarchyV2
             set
             {
                 var pos = m_Element.resolvedStyle.translate;
+
+                if (Mathf.Approximately(pos.y, value))
+                    return;
+
                 pos.y = value;
                 m_Element.style.translate= pos;
             }
@@ -39,6 +42,10 @@ namespace UnityEngine.UIElements.HierarchyV2
         public static RecycledItem AllocateItem(VisualElement element, CollectionView parent)
         {
             var item = s_ItemPool.Get();
+            element.style.position = Position.Absolute;
+            element.style.top = 0;
+            element.style.left = 0;
+            element.style.right = 0;
             item.Assign(element, parent);
             item.node = new LinkedListNode<RecycledItem>(item);
             return item;
@@ -57,21 +64,9 @@ namespace UnityEngine.UIElements.HierarchyV2
         public void Assign(VisualElement element, CollectionView parent)
         {
             m_CollectionView = parent;
-            renderedHeight = -1;
             this.element = element;
             index = k_UndefinedIndex;
             element.AddToClassList(BaseVerticalCollectionView.itemUssClassName);
-            element.RegisterCallback<GeometryChangedEvent>(OnSizeChange);
-        }
-
-        void OnSizeChange(GeometryChangedEvent evt)
-        {
-            renderedHeight = evt.newRect.height;
-
-            if (evt.layoutPass < 4)
-            {
-                UpdatePositions(this);
-            }
         }
 
         public static void UpdatePositions(RecycledItem item)
@@ -81,15 +76,15 @@ namespace UnityEngine.UIElements.HierarchyV2
 
             while (current != null)
             {
-                var currentRenderedHeight = current.Value.renderedHeight;
+                var itemHeight = current.Value.m_CollectionView.fixedItemHeight;
 
-                if (!float.IsNaN(currentRenderedHeight) && currentRenderedHeight > 0)
+                if (!float.IsNaN(itemHeight) && itemHeight > 0)
                 {
                     current.Value.UpdatePosition();
 
                     if (current.Next == null)
                     {
-                        current.Value.m_CollectionView.ItemPositionUpdated(current.Value);
+                        current.Value.m_CollectionView.UpdateScrollingRangeAfterLayout();
                     }
                 }
 
@@ -103,7 +98,7 @@ namespace UnityEngine.UIElements.HierarchyV2
 
             if (node.Previous != null)
             {
-                pos = node.Previous.Value.verticalOffset + node.Previous.Value.renderedHeight;
+                pos = node.Previous.Value.verticalOffset + m_CollectionView.fixedItemHeight;
             }
 
             if (!Mathf.Approximately(pos, verticalOffset))
@@ -117,7 +112,6 @@ namespace UnityEngine.UIElements.HierarchyV2
             if (element == null)
                 return;
 
-            element.UnregisterCallback<GeometryChangedEvent>(OnSizeChange);
             element.RemoveFromClassList(BaseVerticalCollectionView.itemUssClassName);
             element.RemoveFromHierarchy();
             SetSelected(false);

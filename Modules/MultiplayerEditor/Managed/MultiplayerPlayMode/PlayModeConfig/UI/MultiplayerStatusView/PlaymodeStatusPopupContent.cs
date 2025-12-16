@@ -151,7 +151,9 @@ namespace Unity.Multiplayer.PlayMode.Editor
                 if (instance is EditorInstanceDescription editorInstanceDescription)
                 {
                     instanceIcon.style.backgroundImage = EditorGUIUtility.FindTexture("UnityLogo");
-                    roleLabel.text = editorInstanceDescription.RoleMask.ToString();
+                    roleLabel.style.display = EditorMultiplayerManager.enableMultiplayerRoles ? DisplayStyle.Flex : DisplayStyle.None;
+                    if (EditorMultiplayerManager.enableMultiplayerRoles)
+                        roleLabel.text = editorInstanceDescription.RoleMask.ToString();
                     // Do not show run mode for the main editor
                     if (instance is MainEditorInstanceDescription)
                         m_RunModeIndicator.visible = false;

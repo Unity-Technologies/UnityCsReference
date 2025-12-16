@@ -1235,7 +1235,7 @@ namespace UnityEngine.TextCore.LowLevel
         }
 
         [NativeMethod(Name = "TextCore::FontEngine::TryAddGlyphsToTexture", IsThreadSafe = true, IsFreeFunction = true)]
-        extern static bool TryAddGlyphsToTexture_Internal_MultiThread([Out] GlyphMarshallingStruct[] glyphsToAdd, ref int glyphsToAddCount, [Out] GlyphMarshallingStruct[] glyphsAdded, ref int glyphsAddedCount,
+        extern static bool TryAddGlyphsToTexture_Internal_MultiThread([In, Out] GlyphMarshallingStruct[] glyphsToAdd, ref int glyphsToAddCount, [Out] GlyphMarshallingStruct[] glyphsAdded, ref int glyphsAddedCount,
             int padding, GlyphPackingMode packingMode, [Out] GlyphRect[] freeGlyphRects, ref int freeGlyphRectCount, [Out] GlyphRect[] usedGlyphRects, ref int usedGlyphRectCount,
             GlyphRenderMode renderMode, Texture2D texture);
 
@@ -1335,7 +1335,7 @@ namespace UnityEngine.TextCore.LowLevel
         [NativeMethod(Name = "TextCore::FontEngine::TryAddGlyphsToTexture", IsThreadSafe = true, IsFreeFunction = true)]
         extern static bool TryAddGlyphsToTexture_Internal(uint[] glyphIndex, int padding,
             GlyphPackingMode packingMode, [Out] GlyphRect[] freeGlyphRects, ref int freeGlyphRectCount, [Out] GlyphRect[] usedGlyphRects, ref int usedGlyphRectCount,
-            GlyphRenderMode renderMode, Texture2D texture, [Out] GlyphMarshallingStruct[] glyphs, ref int glyphCount);
+            GlyphRenderMode renderMode, Texture2D texture, [In, Out] GlyphMarshallingStruct[] glyphs, ref int glyphCount);
 
 
         // ================================================

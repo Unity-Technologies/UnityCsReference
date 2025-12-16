@@ -10,43 +10,84 @@ unsafe partial struct LayoutNode
 {
     public LayoutDirection LayoutDirection => Layout.Direction;
 
-    public float LayoutX => Layout.Position[(int) LayoutEdge.Left];
-    public float LayoutY => Layout.Position[(int) LayoutEdge.Top];
-    public float LayoutRight => Layout.Position[(int) LayoutEdge.Right];
-    public float LayoutBottom => Layout.Position[(int) LayoutEdge.Bottom];
+    public float LayoutX => Layout.Position[(int) LayoutLayoutEdge.Left];
+    public float LayoutY => Layout.Position[(int) LayoutLayoutEdge.Top];
+    public float LayoutRight => Layout.Position[(int) LayoutLayoutEdge.Right];
+    public float LayoutBottom => Layout.Position[(int) LayoutLayoutEdge.Bottom];
     public float LayoutWidth => Layout.Dimensions[(int) LayoutDimension.Width];
     public float LayoutHeight => Layout.Dimensions[(int) LayoutDimension.Height];
 
-    public float LayoutMarginLeft => GetLayoutValue(Layout.MarginBuffer, LayoutEdge.Left);
-    public float LayoutMarginTop => GetLayoutValue(Layout.MarginBuffer, LayoutEdge.Top);
-    public float LayoutMarginRight => GetLayoutValue(Layout.MarginBuffer, LayoutEdge.Right);
-    public float LayoutMarginBottom => GetLayoutValue(Layout.MarginBuffer, LayoutEdge.Bottom);
-    public float LayoutMarginStart => GetLayoutValue(Layout.MarginBuffer, LayoutEdge.Start);
-    public float LayoutMarginEnd => GetLayoutValue(Layout.MarginBuffer, LayoutEdge.End);
+    [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
+    public Rect GetLayoutRect()
+    {
+        if (IsUndefined)
+        {
+            return new(float.NaN, float.NaN, float.NaN, float.NaN);
+        }
 
-    public float LayoutPaddingLeft => GetLayoutValue(Layout.PaddingBuffer, LayoutEdge.Left);
-    public float LayoutPaddingTop => GetLayoutValue(Layout.PaddingBuffer, LayoutEdge.Top);
-    public float LayoutPaddingRight => GetLayoutValue(Layout.PaddingBuffer, LayoutEdge.Right);
-    public float LayoutPaddingBottom => GetLayoutValue(Layout.PaddingBuffer, LayoutEdge.Bottom);
-    public float LayoutPaddingStart => GetLayoutValue(Layout.PaddingBuffer, LayoutEdge.Start);
-    public float LayoutPaddingEnd => GetLayoutValue(Layout.PaddingBuffer, LayoutEdge.End);
+        var lyt = Layout;
+        return new Rect(lyt.Position[(int)LayoutLayoutEdge.Left],
+        lyt.Position[(int)LayoutLayoutEdge.Top],
+        lyt.Dimensions[(int)LayoutDimension.Width],
+        lyt.Dimensions[(int)LayoutDimension.Height]);
+    }
 
-    public float LayoutBorderLeft => GetLayoutValue(Layout.BorderBuffer, LayoutEdge.Left);
-    public float LayoutBorderTop => GetLayoutValue(Layout.BorderBuffer, LayoutEdge.Top);
-    public float LayoutBorderRight => GetLayoutValue(Layout.BorderBuffer, LayoutEdge.Right);
-    public float LayoutBorderBottom => GetLayoutValue(Layout.BorderBuffer, LayoutEdge.Bottom);
-    public float LayoutBorderStart => GetLayoutValue(Layout.BorderBuffer, LayoutEdge.Start);
-    public float LayoutBorderEnd => GetLayoutValue(Layout.BorderBuffer, LayoutEdge.End);
+    [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
+    public Vector2 GetLayoutSize()
+    {
+        if (IsUndefined)
+        {
+            return new(float.NaN, float.NaN);
+        }
+
+        var lyt = Layout;
+        return new Vector2(lyt.Dimensions[(int)LayoutDimension.Width],
+            lyt.Dimensions[(int)LayoutDimension.Height]);
+    }
+
+    [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
+    public Vector2 GetLayoutPosition()
+    {
+        if (IsUndefined)
+        {
+            return new(float.NaN, float.NaN);
+        }
+
+        var lyt = Layout;
+        return new Vector2(lyt.Position[(int)LayoutLayoutEdge.Left],
+            lyt.Position[(int)LayoutLayoutEdge.Top]);
+    }
+
+    public float LayoutMarginLeft => GetLayoutValue(Layout.MarginBuffer, LayoutLayoutEdge.Left);
+    public float LayoutMarginTop => GetLayoutValue(Layout.MarginBuffer, LayoutLayoutEdge.Top);
+    public float LayoutMarginRight => GetLayoutValue(Layout.MarginBuffer, LayoutLayoutEdge.Right);
+    public float LayoutMarginBottom => GetLayoutValue(Layout.MarginBuffer, LayoutLayoutEdge.Bottom);
+    public float LayoutMarginStart => GetLayoutValue(Layout.MarginBuffer, LayoutLayoutEdge.Start);
+    public float LayoutMarginEnd => GetLayoutValue(Layout.MarginBuffer, LayoutLayoutEdge.End);
+
+    public float LayoutPaddingLeft => GetLayoutValue(Layout.PaddingBuffer, LayoutLayoutEdge.Left);
+    public float LayoutPaddingTop => GetLayoutValue(Layout.PaddingBuffer, LayoutLayoutEdge.Top);
+    public float LayoutPaddingRight => GetLayoutValue(Layout.PaddingBuffer, LayoutLayoutEdge.Right);
+    public float LayoutPaddingBottom => GetLayoutValue(Layout.PaddingBuffer, LayoutLayoutEdge.Bottom);
+    public float LayoutPaddingStart => GetLayoutValue(Layout.PaddingBuffer, LayoutLayoutEdge.Start);
+    public float LayoutPaddingEnd => GetLayoutValue(Layout.PaddingBuffer, LayoutLayoutEdge.End);
+
+    public float LayoutBorderLeft => GetLayoutValue(Layout.BorderBuffer, LayoutLayoutEdge.Left);
+    public float LayoutBorderTop => GetLayoutValue(Layout.BorderBuffer, LayoutLayoutEdge.Top);
+    public float LayoutBorderRight => GetLayoutValue(Layout.BorderBuffer, LayoutLayoutEdge.Right);
+    public float LayoutBorderBottom => GetLayoutValue(Layout.BorderBuffer, LayoutLayoutEdge.Bottom);
+    public float LayoutBorderStart => GetLayoutValue(Layout.BorderBuffer, LayoutLayoutEdge.Start);
+    public float LayoutBorderEnd => GetLayoutValue(Layout.BorderBuffer, LayoutLayoutEdge.End);
 
     public float ComputedFlexBasis => Layout.ComputedFlexBasis;
 
     [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
-    float GetLayoutValue(float* buffer, LayoutEdge edge)
+    float GetLayoutValue(float* buffer, LayoutLayoutEdge edge)
     {
         return edge switch
         {
-            LayoutEdge.Left => Layout.Direction == LayoutDirection.RTL ? buffer[(int)LayoutEdge.End] : buffer[(int)LayoutEdge.Start],
-            LayoutEdge.Right => Layout.Direction == LayoutDirection.RTL ? buffer[(int)LayoutEdge.Start] : buffer[(int)LayoutEdge.End],
+            LayoutLayoutEdge.Left => Layout.Direction == LayoutDirection.RTL ? buffer[(int)LayoutLayoutEdge.End] : buffer[(int)LayoutLayoutEdge.Start],
+            LayoutLayoutEdge.Right => Layout.Direction == LayoutDirection.RTL ? buffer[(int)LayoutLayoutEdge.Start] : buffer[(int)LayoutLayoutEdge.End],
             _ => buffer[(int)edge]
         };
     }

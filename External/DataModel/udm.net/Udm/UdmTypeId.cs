@@ -45,15 +45,13 @@ internal struct UdmTypeId : IEquatable<UdmTypeId>
 
     internal static UdmTypeId HashBytes(byte[] bytes)
     {
-        //TODO: Once Nuget packages are supported
-        // comment this back in
-        //var xxHash = XxHash128.Hash(bytes);
-        //var uint64Data1 = BitConverter.ToUInt64(xxHash, 0);
-        //var uint64Data2 = BitConverter.ToUInt64(xxHash, 8);
-        
-        var str = Convert.ToBase64String(bytes);
-        var hash = (uint) str.GetHashCode();
-        return new UdmTypeId(hash, hash);
+        unsafe
+        {
+            fixed (byte* ptr = bytes)
+            {
+                return FromHash(UdmInterop.Instance.udm_xxh3_128(ptr, (ulong)bytes.Length));
+            }
+        }
     }
 
     internal readonly bool IsValid() => hash.IsValid();
@@ -61,6 +59,10 @@ internal struct UdmTypeId : IEquatable<UdmTypeId>
     internal string ToHex() => hash.ToHex();
 
     internal static UdmTypeId FromHex(string hex) => new UdmTypeId() { hash = DataModel.Hash.FromHex(hex) };
+
+    public override string ToString() => hash.ToHex();
+
+    internal static UdmTypeId FromHash(Hash hash) => new (hash.Uint64Data1, hash.Uint64Data2);
 }
 
 #nullable restore

@@ -6,8 +6,6 @@ using System;
 using System.Collections.Generic;
 using Unity.ProjectAuditor.Editor.Core;
 using Unity.ProjectAuditor.Editor.Utils;
-using UnityEditor;
-using UnityEngine.U2D;
 
 namespace Unity.ProjectAuditor.Editor.Modules
 {
@@ -24,7 +22,19 @@ namespace Unity.ProjectAuditor.Editor.Modules
         )
         {
             IsEnabledByDefault = true,
-            MessageFormat = "Sprite Atlas '{0}' has too much empty space ({1})"
+            MessageFormat = "Sprite Atlas '{0}' has too much empty space ({1})",
+            FixerLabel = "Open Sprite Atlas Analyzer",
+            Fixer = (issue, analysisParams) =>
+            {
+                Type analyzerUtilityType = Type.GetType("UnityEditor.U2D.Tooling.Analyzer.AnalyzerUtility, Unity.2D.Tooling.Editor, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null");
+                if (analyzerUtilityType != null)
+                {
+                    var analyzeFunction = analyzerUtilityType.GetMethod("OpenWindowAndAnalyze");
+                    analyzeFunction.Invoke(null, [ new string[] { issue.RelativePath } ]);
+                }
+
+                return false;
+            }
         };
 
 #pragma warning disable CS0649

@@ -18,6 +18,7 @@ namespace UnityEditor
     [NativeHeader("Editor/Mono/EditorUtility.bindings.h")]
     [NativeHeader("Editor/Mono/MonoEditorUtility.h")]
     [NativeHeader("Editor/Src/AssetPipeline/UnityExtensions.h")]
+    [NativeHeader("Editor/Src/EditorHelperApple.h")]
     [NativeHeader("Runtime/Shaders/ShaderImpl/ShaderUtilities.h")]
     partial class EditorUtility
     {
@@ -33,6 +34,9 @@ namespace UnityEditor
 
         [FreeFunction("RevealInFinder")]
         public static extern void RevealInFinder(string path);
+
+        [FreeFunction]
+        internal static extern string SanitizeProductNameForXcode(string name);
 
         [FreeFunction("RunOpenFolderPanel")]
         public static extern string OpenFolderPanel(string title, string folder, string defaultName);
@@ -195,6 +199,7 @@ namespace UnityEditor
         [FreeFunction("ShaderLab::UpdateGlobalShaderProperties")]
         public static extern void UpdateGlobalShaderProperties(float time);
 
+        [VisibleToOtherModules("UnityEditor.GraphToolkitModule")]
         [FreeFunction("GetInvalidFilenameChars")]
         internal static extern string GetInvalidFilenameChars();
 

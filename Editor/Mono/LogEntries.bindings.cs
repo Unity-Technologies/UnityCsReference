@@ -14,6 +14,7 @@ namespace UnityEditor
 {
     // To keep in sync with the enum in LogAssert.h
     [Flags]
+    [VisibleToOtherModules("UnityEditor.ProjectAuditorModule")]
     internal enum LogMessageFlags : int
     {
         kNoLogMessageFlags = 0,
@@ -67,7 +68,7 @@ namespace UnityEditor
     [NativeHeader("Editor/Src/EditorMonoConsole.h")]
     [NativeAsStruct]
     [StructLayout(LayoutKind.Sequential)]
-    [VisibleToOtherModules("UnityEditor.GraphToolkitModule")]
+    [VisibleToOtherModules("UnityEditor.GraphToolkitModule", "UnityEditor.ProjectAuditorModule")]
     internal partial class LogEntry
     {
         public string message;
@@ -105,7 +106,7 @@ namespace UnityEditor
     // All functions marked internal may not be called unless you call StartGettingEntries and EndGettingEntries
     [StaticAccessor("GetEditorMonoConsole()", StaticAccessorType.Dot)]
     [NativeHeader("Editor/Mono/LogEntries.bindings.h")]
-    [VisibleToOtherModules("UnityEditor.GraphToolkitModule")]
+    [VisibleToOtherModules("UnityEditor.GraphToolkitModule", "UnityEditor.ProjectAuditorModule")]
     internal sealed class LogEntries
     {
         public static extern void RowGotDoubleClicked(int index);
@@ -135,7 +136,7 @@ namespace UnityEditor
         public static extern bool GetEntryInternal(int row, [Out] LogEntry outputEntry);
 
         [FreeFunction]
-        internal static extern bool GetEntryTimestampInternal(int row, [In, Out] ref string outString);
+        internal static extern bool GetEntryTimestampInternal(int row, [Out] out string outString);
 
         [FreeFunction]
         internal static extern string GetCallstackFormattedSignatureInternal(MethodBase methodInfo);

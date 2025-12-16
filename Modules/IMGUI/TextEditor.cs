@@ -7,6 +7,7 @@ using UnityEngine.Bindings;
 using UnityEngine.Scripting;
 using System.Collections.Generic;
 using UnityEngine.TextCore.Text;
+using static UnityEngine.TextCore.RichTextTagParser;
 
 namespace UnityEngine
 {
@@ -79,13 +80,18 @@ namespace UnityEngine
             }
         }
 
+        private string emptyString
+        {
+            get => IMGUITextHandle.IsAdvancedTextEnabled() ? "" : GUIContent.k_ZeroWidthSpace;
+        }
+
         string m_TextWithWhitespace;
         internal string textWithWhitespace
         {
-            get => string.IsNullOrEmpty(m_TextWithWhitespace) ? GUIContent.k_ZeroWidthSpace : m_TextWithWhitespace;
+            get => string.IsNullOrEmpty(m_TextWithWhitespace) ? emptyString : m_TextWithWhitespace;
             set =>
                 //The NoWidthSpace unicode is added at the end of the string to make sure LineFeeds update the layout of the text.
-                m_TextWithWhitespace = value + GUIContent.k_ZeroWidthSpace;
+                m_TextWithWhitespace = value + emptyString;
         }
 
         public Rect position { get; set; }
@@ -142,7 +148,7 @@ namespace UnityEngine
         public TextEditor()
         {
             var style = GUIStyle.none;
-            m_TextHandle = IMGUITextHandle.GetTextHandle(style, position, textWithWhitespace, Color.white);
+            m_TextHandle = IMGUITextHandle.GetTextHandle(style, position, textWithWhitespace, Color.white, false);
             m_TextHandle.AddToPermanentCacheAndGenerateMesh();
             m_TextSelecting = new TextSelectingUtilities(m_TextHandle);
             m_TextEditing = new TextEditingUtilities(m_TextSelecting, m_TextHandle, m_Content.text);
@@ -181,49 +187,13 @@ namespace UnityEngine
         public bool HasClickedOnLink(Vector2 mousePosition, out string linkData)
         {
             var localMousePosition = mousePosition + scrollOffset;
-            linkData = "";
-            var intersectingLink = m_TextHandle.FindIntersectingLink(localMousePosition - new Vector2(position.x, position.y));
-            if (intersectingLink < 0)
-                return false;
-
-            var link = m_TextHandle.textInfo.linkInfo[intersectingLink];
-            if (link.linkId != null && link.linkIdLength > 0)
-            {
-                linkData = new string(link.linkId);
-                return true;
-            }
-            return false;
+            return m_TextHandle.HasClickedOnLink(localMousePosition - new Vector2(position.x, position.y), out linkData);
         }
 
         public bool HasClickedOnHREF(Vector2 mousePosition, out string href)
         {
             var localMousePosition = mousePosition + scrollOffset;
-            href = "";
-            var intersectingLink = m_TextHandle.FindIntersectingLink(localMousePosition - new Vector2(position.x, position.y));
-            if (intersectingLink < 0)
-                return false;
-
-            var link = m_TextHandle.textInfo.linkInfo[intersectingLink];
-            if (link.hashCode == (int)MarkupTag.HREF)
-            {
-                if (link.linkId != null && link.linkIdLength > 0)
-                {
-                    href = new string(link.linkId);
-                    if (!href.StartsWith("href"))
-                        return false;
-                    // Removes href="..."
-                    if (href.StartsWith("href=\"") || href.StartsWith("href=\'"))
-                        href = href.Substring(6, href.Length - 7);
-                    // Removes href=...
-                    else
-                        href = href.Substring(5, href.Length - 6);
-                    if (Uri.IsWellFormedUriString(href, UriKind.Absolute))
-                    {
-                        return true;
-                    }
-                }
-            }
-            return false;
+            return m_TextHandle.HasClickedOnHREF(localMousePosition - new Vector2(position.x, position.y), out href);
         }
 
         // Handle a key event.
@@ -417,7 +387,7 @@ namespace UnityEngine
 
         internal void UpdateTextHandle()
         {
-            m_TextHandle = IMGUITextHandle.GetTextHandle(style, style.padding.Remove(position), textWithWhitespace, Color.white);
+            m_TextHandle = IMGUITextHandle.GetTextHandle(style, style.padding.Remove(position), textWithWhitespace, Color.white, false);
             m_TextHandle.AddToPermanentCacheAndGenerateMesh();
             m_TextEditing.textHandle = m_TextHandle;
             m_TextSelecting.textHandle = m_TextHandle;
@@ -445,7 +415,7 @@ namespace UnityEngine
             localGraphicalCursorPos.y -= style.padding.top;
 
             // The size of the text, without any padding.
-            Vector2 contentSize = previousContentSize = style.GetPreferredSize(m_Content.textWithWhitespace, position);
+            Vector2 contentSize = previousContentSize = style.GetPreferredSize(IMGUITextHandle.IsAdvancedTextEnabled() ? m_Content.text : m_Content.textWithWhitespace, position);
 
             // If there is plenty of room, simply show entire string
             if (contentSize.x < viewRect.width)

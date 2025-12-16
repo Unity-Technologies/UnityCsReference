@@ -4,8 +4,8 @@
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using Unity.GraphToolkit.CSO;
+using UnityEngine.Pool;
 
 namespace Unity.GraphToolkit.Editor
 {
@@ -53,13 +53,24 @@ namespace Unity.GraphToolkit.Editor
                         using (var updater = m_HighlighterState.UpdateScope)
                         {
                             IEnumerable<GraphElementModel> selection = m_SelectionState.GetSelection(m_ToolState.GraphModel);
-                            if (m_SelectionFilter != null)
+                            using var disposeSelection = ListPool<DeclarationModel>.Get(out var filteredSelection);
+
+                            foreach (var model in selection)
                             {
-                                selection = selection.Select(m => m_SelectionFilter(m));
+                                if (m_SelectionFilter != null)
+                                {
+                                    var declaration = m_SelectionFilter(model);
+                                    if (declaration != null)
+                                        filteredSelection.Add(declaration);
+                                }
+                                else
+                                {
+                                    if (model is DeclarationModel declaration)
+                                        filteredSelection.Add(declaration);
+                                }
                             }
 
-                            IEnumerable<DeclarationModel> declarationModels = selection.OfType<DeclarationModel>();
-                            updater.SetHighlightedDeclarations(m_SelectionState.Guid, declarationModels);
+                            updater.SetHighlightedDeclarations(m_SelectionState.Guid, filteredSelection);
                         }
                     }
                 }

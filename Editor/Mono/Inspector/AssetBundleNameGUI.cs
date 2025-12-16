@@ -94,7 +94,7 @@ namespace UnityEditor
         {
             List<string> displayedOptions = new List<string>();
             displayedOptions.Add("None");
-            displayedOptions.Add("");  // seperator
+            displayedOptions.Add("");  // separator
 
             // Anyway to optimize this by caching GetAssetBundleNameFromAssets() and GetAllAssetBundleNames() when they actually change?
             // As we can change the assetBundle name by script, the UI needs to detect this kind of change.
@@ -102,9 +102,12 @@ namespace UnityEditor
             IEnumerable<string> assetBundleFromAssets = GetAssetBundlesFromAssets(assets, isVariant, out mixedValue);
 
             string[] assetBundles = isVariant ? AssetDatabase.GetAllAssetBundleVariants() : AssetDatabase.GetAllAssetBundleNamesWithoutVariant();
-            displayedOptions.AddRange(assetBundles);
+            if (assetBundles.Length > 0)
+            {
+                displayedOptions.AddRange(assetBundles);
+                displayedOptions.Add("");  // separator
+            }
 
-            displayedOptions.Add("");  // seperator
             int newAssetBundleIndex = displayedOptions.Count;
             displayedOptions.Add("New...");
 

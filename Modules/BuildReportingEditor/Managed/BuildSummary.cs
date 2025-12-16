@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using UnityEngine;
 using UnityEngine.Bindings;
 
 namespace UnityEditor.Build.Reporting
@@ -25,12 +26,20 @@ namespace UnityEditor.Build.Reporting
         ///<summary>The platform group the build was created for.</summary>
         ///<remarks>See <see cref="BuildTargetGroup" /> for possible values.</remarks>
         public BuildTargetGroup platformGroup { get; }
-        internal int subtarget { get; }
+        internal int subtarget { [VisibleToOtherModules("UnityEditor.BurstModule")] get; }
         ///<summary>The <see cref="BuildOptions" /> used for the build, as passed to <see cref="BuildPipeline.BuildPlayer" />.</summary>
         public BuildOptions options { get; }
-        internal BuildAssetBundleOptions assetBundleOptions { get; }
+
+        ///<summary>If the build is a ContentDirectory build this returns the <see cref="BuildContentOptions" /> passed to <see cref="BuildPipeline.BuildContentDirectory" />.</summary>
+        /*UCBP-PUBLIC*/ internal BuildContentOptions buildContentOptions { get; }
+
+        ///<summary>If the build is an AssetBundle build this returns the <see cref="BuildAssetBundleOptions" /> passed to <see cref="BuildPipeline.BuildAssetBundles" />.</summary>
+        /*UCBP-PUBLIC*/ internal BuildAssetBundleOptions assetBundleOptions { get; }
+
         ///<summary>The output path for the build, as provided to <see cref="BuildPipeline.BuildPlayer" />.</summary>
         public string outputPath { get; }
+        ///<summary>The platform-specific path of the Data folder for a player build. For AssetBundle builds, this value of this will be identical to the output path.</summary>
+        public string dataPath { get; }
         internal uint crc { get; }
         ///<summary>The total size of the build output, in bytes.</summary>
         public ulong totalSize { get; }
@@ -53,8 +62,9 @@ namespace UnityEditor.Build.Reporting
 
         ///<summary>The type of build.</summary>
         public BuildType buildType { get; }
+
+		// TODO: This should be deprecated, it was tracking use of Multi-process assetbundle building, removed in 6.4
         ///<summary>Whether the multi-process option was enabled for the build.</summary>
-        ///<seealso cref="EditorBuildSettings.UseParallelAssetBundleBuilding" />
         public bool multiProcessEnabled { get; }
 
         private T ParseSubtarget<T, S>() where T : Enum where S : Enum

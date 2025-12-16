@@ -36,6 +36,10 @@ namespace UnityEngine.UIElements
         /// </summary>
         static readonly string compositeUssClassName = "unity-composite-field";
         /// <summary>
+        /// USS class name of the visual input in elements of this type.
+        /// </summary>
+        static readonly string compositeFieldInputUssClassName = compositeUssClassName + "__input";
+        /// <summary>
         /// USS class name of the fields that make up the composite field in elements of this type.
         /// </summary>
         static readonly string compositeFieldUssClassName = compositeUssClassName + "__field";
@@ -71,6 +75,8 @@ namespace UnityEngine.UIElements
             : base(label, null)
         {
             AddToClassList(ussClassName);
+            AddToClassList(compositeUssClassName);
+            visualInput.AddToClassList(compositeFieldInputUssClassName);
 
             m_XField = new LengthField("X") { classList = { compositeFieldUssClassName } };
             m_YField = new LengthField("Y") { classList = { compositeFieldUssClassName } };
@@ -83,9 +89,7 @@ namespace UnityEngine.UIElements
             {
                 if (e.newValue != value.x)
                 {
-                    var newVal = value;
-                    newVal.x = e.newValue;
-                    value = newVal;
+                    value = new Translate(e.newValue, value.y, value.z);
                 }
             });
 
@@ -93,9 +97,7 @@ namespace UnityEngine.UIElements
             {
                 if (e.newValue != value.y)
                 {
-                    var newVal = value;
-                    newVal.y = e.newValue;
-                    value = newVal;
+                    value = new Translate(value.x, e.newValue, value.z);
                 }
             });
 
@@ -103,9 +105,7 @@ namespace UnityEngine.UIElements
             {
                 if (e.newValue != value.z)
                 {
-                    var newVal = value;
-                    newVal.z = e.newValue;
-                    value = newVal;
+                    value = new Translate(value.x, value.y, e.newValue);
                 }
             });
         }

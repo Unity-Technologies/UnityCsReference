@@ -67,8 +67,8 @@ namespace UnityEditor.PackageManager.UI.Internal
         }
 
         public abstract PageCapability capability { get; }
-        public abstract IEnumerable<PageFilters.Status> supportedStatusFilters { get; }
-        public abstract IEnumerable<PageSortOption> supportedSortOptions { get; }
+        public abstract IReadOnlyCollection<PageFilters.Status> supportedStatusFilters { get; }
+        public abstract IReadOnlyCollection<PageSortOption> supportedSortOptions { get; }
 
         [SerializeField]
         private bool m_IsActive;
@@ -145,7 +145,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                     removeList.Add(package);
             }
 
-            if (addList.Any() || updateList.Any() || removeList.Any())
+            if (addList.Count > 0 || updateList.Count > 0 || removeList.Count > 0)
             {
                 RebuildAndReorderVisualStates();
 
@@ -177,7 +177,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 changedVisualStates.Add(state);
             }
 
-            if (changedVisualStates.Any())
+            if (changedVisualStates.Count > 0)
                 TriggerOnVisualStateChange(changedVisualStates);
         }
 
@@ -198,13 +198,13 @@ namespace UnityEditor.PackageManager.UI.Internal
         // Returns true if SupportedStatusFilter changed
         public virtual bool RefreshSupportedStatusFiltersOnEntitlementPackageChange() => false;
 
-        protected virtual void TriggerOnListUpdate(IList<IPackage> added = null, IList<IPackage> updated = null, IList<IPackage> removed = null)
+        protected virtual void TriggerOnListUpdate(IReadOnlyCollection<IPackage> added = null, IReadOnlyCollection<IPackage> updated = null, IReadOnlyCollection<IPackage> removed = null)
         {
             added ??= Array.Empty<IPackage>();
             updated ??= Array.Empty<IPackage>();
             removed ??= Array.Empty<IPackage>();
-            var anyAddedOrUpdated = added.Any() || updated.Any();
-            if (!anyAddedOrUpdated && !removed.Any())
+            var anyAddedOrUpdated = added.Count > 0 || updated.Count > 0;
+            if (!anyAddedOrUpdated && removed.Count == 0)
                 return;
 
             var reorder = (capability & PageCapability.SupportLocalReordering) != 0 && anyAddedOrUpdated;
@@ -295,7 +295,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         {
             var previousFirstSelection = GetSelection().firstSelection;
             AmendSelection(Enumerable.Empty<string>(), toRemove, isExplicitUserSelection);
-            if (!GetSelection().Any())
+            if (GetSelection().Count == 0)
                 SetNewSelection(new[] { previousFirstSelection }, isExplicitUserSelection);
         }
 

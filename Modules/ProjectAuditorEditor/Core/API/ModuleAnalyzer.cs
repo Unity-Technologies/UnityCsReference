@@ -60,7 +60,7 @@ namespace Unity.ProjectAuditor.Editor.Core
                 var attribute = field.GetCustomAttribute<DiagnosticParameterAttribute>();
                 if (attribute != null)
                 {
-                    diagnosticParams.RegisterParameter(attribute.Name, attribute.UserFriendlyName, attribute.Tooltip, attribute.DefaultValue);
+                    diagnosticParams.RegisterParameter(attribute.Name, attribute.UserFriendlyName, attribute.Tooltip, attribute.DefaultValue, attribute.MinValue, attribute.MaxValue);
                 }
             }
         }

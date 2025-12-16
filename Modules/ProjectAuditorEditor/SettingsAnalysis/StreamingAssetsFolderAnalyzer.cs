@@ -23,7 +23,7 @@ namespace Unity.ProjectAuditor.Editor.SettingsAnalysis
             $"Try to move files outside this folder and use Asset Bundles or Addressables when possible."
         )
         {
-            Platforms = new SerializableEnum<BuildTarget>[] { BuildTarget.Android, BuildTarget.iOS},
+            Platforms = [BuildTarget.Android, BuildTarget.iOS],
             MessageFormat = "StreamingAssets folder contains {0} of data",
         };
 

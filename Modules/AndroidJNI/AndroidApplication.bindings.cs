@@ -54,8 +54,10 @@ namespace UnityEngine.Android
             }
         }
 
+        internal static AndroidWindowInsets currentWindowInsets => GetCurrentWindowInsets();
+
         private static AndroidConfiguration m_CurrentConfiguration;
-        private static AndroidInsets m_CurrentAndroidInsets;
+        private static AndroidWindowInsets m_CurrentWindowInsets;
 
         [RequiredByNativeCode(GenerateProxy = true)]
         private static void SetCurrentConfiguration(AndroidConfiguration config)
@@ -77,28 +79,39 @@ namespace UnityEngine.Android
         }
 
         [RequiredByNativeCode(GenerateProxy = true)]
-        private static void SetCurrentInsets(AndroidInsets insets)
+        private static void SetCurrentWindowInsets(AndroidWindowInsets insets)
         {
-            m_CurrentAndroidInsets = insets;
+            m_CurrentWindowInsets = insets;
         }
 
         [RequiredByNativeCode(GenerateProxy = true)]
-        private static AndroidInsets GetCurrentInsets()
+        private static AndroidWindowInsets GetCurrentWindowInsets()
         {
-            return m_CurrentAndroidInsets;
+            return m_CurrentWindowInsets;
         }
 
         [RequiredByNativeCode(GenerateProxy = true)]
-        private static void DispatchInsetsChanged()
+        private static void DispatchWindowInsetsChanged()
         {
-            onInsetsChanged?.Invoke(m_CurrentAndroidInsets);
+            onWindowInsetsChanged?.Invoke(m_CurrentWindowInsets);
         }
 
         public static AndroidConfiguration currentConfiguration => m_CurrentConfiguration;
 
         public static event Action<AndroidConfiguration> onConfigurationChanged;
-		
-		internal static event Action<AndroidInsets> onInsetsChanged;
+
+        internal static event Action<AndroidWindowInsets> onWindowInsetsChanged;
+
+        [RequiredByNativeCode(GenerateProxy = true)]
+        private static void DispatchOnMultiWindowModeChanged(bool newValue)
+        {
+            onMultiWindowModeChanged?.Invoke(newValue);
+        }
+
+        public static event Action<bool> onMultiWindowModeChanged;
+
+        public static extern bool isInMultiWindowMode { get; }
+
 
         public static void InvokeOnUIThread(Action action)
         {

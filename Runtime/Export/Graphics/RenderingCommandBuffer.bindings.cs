@@ -907,13 +907,13 @@ namespace UnityEngine.Rendering
         extern private bool ValidateAgainstExecutionFlags(CommandBufferExecutionFlags requiredFlags, CommandBufferExecutionFlags invalidFlags);
 
         [FreeFunction("RenderingCommandBuffer_Bindings::SetGlobalFloatArrayListImpl", HasExplicitThis = true)]
-        extern private void SetGlobalFloatArrayListImpl(int nameID, object values);
+        extern private void SetGlobalFloatArrayListImpl(int nameID, ReadOnlySpan<float> values);
 
         [FreeFunction("RenderingCommandBuffer_Bindings::SetGlobalVectorArrayListImpl", HasExplicitThis = true)]
-        extern private void SetGlobalVectorArrayListImpl(int nameID, object values);
+        extern private void SetGlobalVectorArrayListImpl(int nameID, ReadOnlySpan<Vector4> values);
 
         [FreeFunction("RenderingCommandBuffer_Bindings::SetGlobalMatrixArrayListImpl", HasExplicitThis = true)]
-        extern private void SetGlobalMatrixArrayListImpl(int nameID, object values);
+        extern private void SetGlobalMatrixArrayListImpl(int nameID, ReadOnlySpan<Matrix4x4> values);
 
         [FreeFunction("RenderingCommandBuffer_Bindings::SetGlobalFloatArray", HasExplicitThis = true, ThrowsException = true)]
         extern public void SetGlobalFloatArray(int nameID, [NotNull]float[] values);

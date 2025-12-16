@@ -28,6 +28,9 @@ namespace Unity.Collections
     {
         public NativeFixedLengthAttribute(int fixedLength) { FixedLength = fixedLength; }
         public int FixedLength;
+
+        [RequiredByNativeCode]
+        private int GetFixedLength() => FixedLength;
     }
 
     [RequiredByNativeCode]

@@ -253,6 +253,9 @@ namespace Unity.GraphToolkit.Editor
             if (panel == null)
                 return;
 
+            if (m_UpdateObserver == null)
+                return;
+
             var updateSelection = false;
             var updateCollapse = false;
             var shouldRebuildTreeView = false;
@@ -462,7 +465,7 @@ namespace Unity.GraphToolkit.Editor
 
                 var uiList = new List<ChildView>();
                 lastSelectedItem.AppendAllViews(this, null, uiList);
-                if (uiList.Any(ui => (ui as ModelView)?.Rename() ?? false))
+                if (uiList.HasAny(ui => (ui as ModelView)?.Rename() ?? false))
                 {
                     e.StopPropagation();
                 }

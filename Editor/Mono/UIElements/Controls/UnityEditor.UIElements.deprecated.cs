@@ -114,21 +114,6 @@ namespace UnityEditor.UIElements
         public new class UxmlTraits : BasePopupField<int, UxmlIntAttributeDescription>.UxmlTraits { }
     }
 
-    public partial class MaskField
-    {
-        /// <summary>
-        /// Instantiates a <see cref="MaskField"/> using the data read from a UXML file.
-        /// </summary>
-        [Obsolete("UxmlFactory is deprecated and will be removed. Use UxmlElementAttribute instead.", UxmlFactoryObsoleteIsError)]
-        public new class UxmlFactory : UxmlFactory<MaskField, UxmlTraits> { }
-
-        /// <summary>
-        /// Defines <see cref="UxmlTraits"/> for the <see cref="MaskField"/>.
-        /// </summary>
-        [Obsolete("UxmlTraits is deprecated and will be removed. Use UxmlElementAttribute instead.", UxmlTraitsObsoleteIsError)]
-        public new class UxmlTraits : BasePopupField<int, UxmlIntAttributeDescription>.UxmlTraits { }
-    }
-
     internal partial class MinMaxGradientField
     {
         [Obsolete("UxmlFactory is deprecated and will be removed. Use UxmlElementAttribute instead.", UxmlFactoryObsoleteIsError)]

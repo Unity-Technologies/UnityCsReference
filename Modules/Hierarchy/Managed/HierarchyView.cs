@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Text;
+using Unity.Profiling;
 using UnityEngine;
 using UnityEngine.Bindings;
 using UnityEngine.Pool;
@@ -59,6 +60,16 @@ namespace Unity.Hierarchy
             UpdateIncrementalTimed
         }
 
+        internal class TestHelper
+        {
+            public static int FirstUpdateStage => (int)UpdateStage.First;
+            public static int LastUpdateStage => (int)UpdateStage.Last;
+            public static int HierarchyUpdateStage => (int)UpdateStage.UpdatingHierarchy;
+            public static int CurrentUpdateStage(HierarchyView view) => (int)view.m_UpdateStage;
+            public static bool ViewUpdateNeeded(HierarchyView view) => view.UpdateNeeded;
+            public static bool HierarchyUpdateNeeded(HierarchyView view) => view.m_Hierarchy.UpdateNeeded;
+        }
+
         // Data
         Unity.Hierarchy.Hierarchy m_Hierarchy;
         HierarchyFlattened m_HierarchyFlattened;
@@ -68,7 +79,6 @@ namespace Unity.Hierarchy
         // Data update state
         UpdateStage m_UpdateStage = UpdateStage.First;
         readonly Stopwatch m_UpdateTimer = new();
-        readonly Stopwatch m_PostUpdateTimer = new();
         readonly CircularBuffer<Action> m_PostUpdateActionQueue = new(16);
 
         // UX elements
@@ -76,7 +86,7 @@ namespace Unity.Hierarchy
         readonly MultiColumnLayoutConfiguration m_MultiColumnLayoutConfiguration;
         readonly HierarchyViewItemColumn m_NameColumn;
         readonly HierarchyViewDragHandler m_DragHandler;
-        readonly VisualElement m_ListViewContentContainer;
+        readonly VisualElement m_ListViewScrollView;
 
         // UX update state
         VisualElement m_StyleContainer;
@@ -84,13 +94,13 @@ namespace Unity.Hierarchy
         readonly List<int> m_SelectedIndices = new(); // Used as a temporary buffer for converting indices to nodes
         bool m_SelectedIndicesChangedFromPointerDown;
         int m_LastMouseUpSelectionIndex;
-        internal bool m_IsRenamingItem;
+        internal bool m_IsRenamingItem => m_RenamingItem != null;
+        HierarchyViewItem m_RenamingItem;
         internal int m_RenameDelayMs;
 
-        /// <summary>
-        /// Returns the <see cref="VisualElement"/> used as the container for the styles and stylesheets of the <see cref="HierarchyView"/>.
-        /// </summary>
-        public VisualElement StyleContainer => m_StyleContainer;
+        // Profiler markers
+        readonly ProfilerMarker m_RefreshItemsProfilerMarker = new ProfilerMarker("HierarchyView.RefreshItems");
+        readonly ProfilerMarker m_SetSelectionMarker = new ProfilerMarker("HierarchyView.SetSelection");
 
         /// <summary>
         /// Delegate type used to handle <see cref="SourceHierarchyChanging"/> event.
@@ -118,13 +128,6 @@ namespace Unity.Hierarchy
         public event SourceHierarchyChangedEventHandler SourceHierarchyChanged;
 
         /// <summary>
-        /// This event is fired when the <see cref="HierarchyView"/> is initializing, typically allowing to load additional stylesheets and add styles to <see cref="StyleContainer"/>.
-        /// Internal because it is only used by HierarchyWindow to allow to statically customize the HierarchyView.
-        /// </summary>
-        [VisibleToOtherModules("UnityEditor.HierarchyModule")]
-        internal event Action Initializing;
-
-        /// <summary>
         /// This event is fired when a <see cref="HierarchyViewItem"/> is bound to a hierarchy view, allowing customization of the view item.
         /// </summary>
         public event Action<HierarchyViewItem> BindViewItem;
@@ -133,6 +136,11 @@ namespace Unity.Hierarchy
         /// This event is fired when a <see cref="HierarchyViewItem"/> is unbound from a hierarchy view, allowing cleanup of the view item.
         /// </summary>
         public event Action<HierarchyViewItem> UnbindViewItem;
+
+        /// <summary>
+        /// Event that is invoked when flags on hierarchy nodes are changed.
+        /// </summary>
+        public event HierarchyViewModel.FlagsChangedEventHandler FlagsChanged;
 
         /// <summary>
         /// Delegate type used to handle <see cref="PopulateContextMenu"/> event.
@@ -166,6 +174,13 @@ namespace Unity.Hierarchy
         public event GetTooltipEventHandler GetTooltip;
 
         /// <summary>
+        /// This event is fired when the <see cref="HierarchyView"/> is initializing, typically allowing to load additional stylesheets and add styles to <see cref="StyleContainer"/>.
+        /// Internal because it is only used by HierarchyWindow to allow to statically customize the HierarchyView.
+        /// </summary>
+        [VisibleToOtherModules("UnityEditor.HierarchyModule")]
+        internal event Action Initializing;
+
+        /// <summary>
         /// Gets the source hierarchy used to populate the hierarchy view.
         /// Use <see cref="SetSourceHierarchy"/> to change it.
         /// </summary>
@@ -183,6 +198,16 @@ namespace Unity.Hierarchy
         /// The underlying <see cref="HierarchyViewModel"/> of this <see cref="HierarchyView"/>.
         /// </summary>
         public HierarchyViewModel ViewModel => m_HierarchyViewModel;
+
+        /// <summary>
+        /// The <see cref="CollectionView"/> used to display the hierarchy.
+        /// </summary>
+        internal CollectionView ListView => m_CollectionView;
+
+        /// <summary>
+        /// Returns the <see cref="VisualElement"/> used as the container for the styles and stylesheets of the <see cref="HierarchyView"/>.
+        /// </summary>
+        public VisualElement StyleContainer => m_StyleContainer;
 
         /// <summary>
         /// Get or set the filter used to display the hierarchy.
@@ -242,11 +267,6 @@ namespace Unity.Hierarchy
         }
 
         /// <summary>
-        /// The <see cref="CollectionView"/> used to display the hierarchy.
-        /// </summary>
-        internal CollectionView ListView => m_CollectionView;
-
-        /// <summary>
         /// Gets the <see cref="MultiColumnLayoutConfiguration"/> used to configure the columns and layout of the hierarchy view.
         /// </summary>
         internal MultiColumnLayoutConfiguration ListViewLayoutConfiguration => m_MultiColumnLayoutConfiguration;
@@ -256,16 +276,6 @@ namespace Unity.Hierarchy
         internal bool ExecutePostUpdateActionsNeeded => m_PostUpdateActionQueue.Count > 0;
         internal HierarchyViewDragHandler DragHandler => m_DragHandler;
         internal HierarchyViewItemColumn NameColumn => m_NameColumn;
-
-        internal class TestHelper
-        {
-            public static int FirstUpdateStage => (int)UpdateStage.First;
-            public static int LastUpdateStage => (int)UpdateStage.Last;
-            public static int HierarchyUpdateStage => (int)UpdateStage.UpdatingHierarchy;
-            public static int CurrentUpdateStage(HierarchyView view) => (int)view.m_UpdateStage;
-            public static bool ViewUpdateNeeded(HierarchyView view) => view.UpdateNeeded;
-            public static bool HierarchyUpdateNeeded(HierarchyView view) => view.m_Hierarchy.UpdateNeeded;
-        }
 
         /// <summary>
         /// Create a new instance of the <see cref="HierarchyView"/>.
@@ -308,10 +318,9 @@ namespace Unity.Hierarchy
 
             m_CollectionView.layoutConfiguration = m_MultiColumnLayoutConfiguration;
 
-            var listViewInnerScrollView = m_CollectionView.scrollView;
-            m_ListViewContentContainer = listViewInnerScrollView.contentContainer;
-            m_ListViewContentContainer.RegisterCallback<ClickEvent>(OnClickEvent);
-            m_ListViewContentContainer.RegisterCallback<NavigationCancelEvent>(OnNavigationCancel);
+            m_ListViewScrollView = m_CollectionView.scrollView;
+            m_ListViewScrollView.RegisterCallback<ClickEvent>(OnClickEvent);
+            m_ListViewScrollView.RegisterCallback<NavigationCancelEvent>(OnNavigationCancel);
 
             // UX update state
             m_StyleContainer = new();
@@ -320,7 +329,7 @@ namespace Unity.Hierarchy
             this.Add(m_StyleContainer);
 
             m_LastMouseUpSelectionIndex = -1;
-            m_IsRenamingItem = false;
+            SetRenamingItem(null);
             m_RenameDelayMs = k_RenamingDelayMs;
         }
 
@@ -349,9 +358,13 @@ namespace Unity.Hierarchy
 
             HierarchyLogging.Log($"HierarchyView({GetHashCode():X}).SetSourceHierarchy(hierarchy={hierarchy?.GetHashCode():X}, flags={defaultFlags})");
 
-            // Unregister handler created event
+            // Unregister events
             if (m_Hierarchy != null)
                 m_Hierarchy.HandlerCreated -= OnHandlerCreated;
+            if (m_HierarchyViewModel != null)
+                m_HierarchyViewModel.FlagsChanged -= FlagsChanged;
+            if (m_CollectionView != null)
+                m_CollectionView.BeforeRefreshingItems -= UpdateData;
 
             // Invoke source hierarchy changing
             SourceHierarchyChanging?.Invoke(m_Hierarchy, hierarchy, defaultFlags);
@@ -363,7 +376,7 @@ namespace Unity.Hierarchy
             Reset();
 
             // Reset UX update state
-            m_IsRenamingItem = false;
+            SetRenamingItem(null);
             m_LastMouseUpSelectionIndex = -1;
             m_SelectedIndicesChangedFromPointerDown = false;
             m_SelectedIndices.Clear();
@@ -402,9 +415,7 @@ namespace Unity.Hierarchy
             m_HierarchyViewModel = new HierarchyViewModel(m_HierarchyFlattened, defaultFlags);
 
             // Force update data to ensure list view reads valid data when we set the items source
-            m_Hierarchy.Update();
-            m_HierarchyFlattened.Update();
-            m_HierarchyViewModel.Update();
+            UpdateData();
 
             // Update the list view items source
             m_CollectionView.itemsSource = m_HierarchyViewModel.AsReadOnlyList();
@@ -416,8 +427,16 @@ namespace Unity.Hierarchy
             // Invoke source hierarchy changed
             SourceHierarchyChanged?.Invoke(hierarchy, defaultFlags);
 
-            // Register handler created event
+            // Register events
             m_Hierarchy.HandlerCreated += OnHandlerCreated;
+            m_HierarchyViewModel.FlagsChanged += FlagsChanged;
+
+            // Subscribe to BeforeRefreshingItems and calling UpdateData to make sure the data
+            // of Hierarchy, Flattened and ViewModel, alongside all handlers state are up to date for the collection view
+            // to iterate over it.
+            // We had a case where a node was removed from the GameObjectHandler mapping but the node was
+            // still in the hierarchy because the command list was not done being processed.
+            m_CollectionView.BeforeRefreshingItems += UpdateData;
         }
 
         /// <summary>
@@ -460,64 +479,473 @@ namespace Unity.Hierarchy
         }
 
         /// <summary>
-        /// Initialize the view with styles and stylesheets provided by <see cref="HierarchyNodeTypeHandler.OnBindView(HierarchyView)"/>.
+        /// Selects the specified node.
         /// </summary>
-        [VisibleToOtherModules("UnityEditor.HierarchyModule")]
-        internal void Initialize()
+        /// <param name="node">The hierarchy node.</param>
+        public void Select(in HierarchyNode node)
         {
-            BindHandlers();
-            try
+            m_HierarchyViewModel.SetFlags(in node, HierarchyNodeFlags.Selected);
+            Update();
+        }
+
+        /// <summary>
+        /// Selects the specified nodes.
+        /// </summary>
+        /// <param name="nodes">The hierarchy nodes.</param>
+        public void Select(ReadOnlySpan<HierarchyNode> nodes)
+        {
+            m_HierarchyViewModel.SetFlags(nodes, HierarchyNodeFlags.Selected);
+            Update();
+        }
+
+        /// <summary>
+        /// Selects the specified node and all ancestors or descendants recursively.
+        /// </summary>
+        /// <param name="node">The hierarchy node.</param>
+        /// <param name="direction">The direction of traversal.</param>
+        public void SelectRecursive(in HierarchyNode node, HierarchyTraversalDirection direction = HierarchyTraversalDirection.Children)
+        {
+            m_HierarchyViewModel.SetFlagsRecursive(in node, HierarchyNodeFlags.Selected, direction);
+            Update();
+        }
+
+        /// <summary>
+        /// Selects the specified nodes and all their ancestors or descendants recursively.
+        /// </summary>
+        /// <param name="nodes">The hierarchy nodes.</param>
+        /// <param name="direction">The direction of traversal.</param>
+        public void SelectRecursive(ReadOnlySpan<HierarchyNode> nodes, HierarchyTraversalDirection direction = HierarchyTraversalDirection.Children)
+        {
+            m_HierarchyViewModel.SetFlagsRecursive(nodes, HierarchyNodeFlags.Selected, direction);
+            Update();
+        }
+
+        /// <summary>
+        /// Select all nodes in the hierarchy.
+        /// </summary>
+        /// <param name="exposedOnly">
+        /// When <see langword="true"/>, selects only exposed nodes (excludes hidden or unreachable nodes).
+        /// When <see langword="false"/>, selects all nodes regardless of exposure state.
+        /// <b>Note:</b> Nodes outside the viewport are still selected if they are exposed.
+        /// </param>
+        public void SelectAll(bool exposedOnly)
+        {
+            if (exposedOnly)
+                m_HierarchyViewModel.SetFlags(m_HierarchyViewModel.AsReadOnlySpan(), HierarchyNodeFlags.Selected);
+            else
+                m_HierarchyViewModel.SetFlags(HierarchyNodeFlags.Selected);
+            Update();
+        }
+
+        /// <summary>
+        /// Sets the current selection to a single node, making all other nodes unselected.
+        /// </summary>
+        /// <param name="node">The hierarchy node.</param>
+        public void SetSelection(in HierarchyNode node)
+        {
+            using (var _ = new HierarchyViewModelFlagsChangeScope(m_HierarchyViewModel))
             {
-                Initializing?.Invoke();
+                m_HierarchyViewModel.ClearFlags(HierarchyNodeFlags.Selected);
+                m_HierarchyViewModel.SetFlags(in node, HierarchyNodeFlags.Selected);
             }
-            catch (Exception ex)
+            Update();
+        }
+
+        /// <summary>
+        /// Sets the current selection to the specified nodes, making all other nodes unselected.
+        /// </summary>
+        /// <param name="nodes">The hierarchy nodes.</param>
+        public void SetSelection(ReadOnlySpan<HierarchyNode> nodes)
+        {
+            using (var _ = new HierarchyViewModelFlagsChangeScope(m_HierarchyViewModel))
             {
-                UnityEngine.Debug.LogException(ex);
+                m_HierarchyViewModel.ClearFlags(HierarchyNodeFlags.Selected);
+                m_HierarchyViewModel.SetFlags(nodes, HierarchyNodeFlags.Selected);
+            }
+            Update();
+        }
+
+        /// <summary>
+        /// Determines if the specified node is selected.
+        /// </summary>
+        /// <param name="node">The hierarchy node.</param>
+        /// <returns><see langword="true"/> if the specified node is selected; <see langword="false"/> otherwise.</returns>
+        public bool IsSelected(in HierarchyNode node)
+        {
+            return m_HierarchyViewModel.HasFlags(in node, HierarchyNodeFlags.Selected);
+        }
+
+        /// <summary>
+        /// Determine if the specified node, or any of its ancestors, is selected.
+        /// </summary>
+        /// <param name="node">The hierarchy node.</param>
+        public bool IsSelectedOrAnyAncestorSelected(in HierarchyNode node)
+        {
+            // todo: reimplement in native
+            var currentNode = node;
+            while (true)
+            {
+                if (currentNode == m_Hierarchy.Root)
+                    return false;
+
+                if (IsSelected(in currentNode))
+                    return true;
+
+                currentNode = m_HierarchyViewModel.GetParent(in currentNode);
             }
         }
 
         /// <summary>
-        /// Reset the view to its initial state.
+        /// Toggles the selection state of the specified node.
         /// </summary>
-        internal void Reset()
+        /// <param name="node">The hierarchy node.</param>
+        public void ToggleSelected(in HierarchyNode node)
         {
-            HierarchyLogging.Log($"HierarchyView({GetHashCode():X}).{nameof(Reset)}()");
-
-            // Unbind handlers
-            UnbindHandlers();
-
-            // Remove then style container
-            m_StyleContainer.Remove(m_CollectionView);
-            m_StyleContainer.RemoveFromHierarchy();
-
-            // Make a new style container
-            m_StyleContainer = new VisualElement();
-            m_StyleContainer.AddToClassList(k_HierarchyViewStyleContainerStyleName);
-            m_StyleContainer.Add(m_CollectionView);
-            Add(m_StyleContainer);
+            m_HierarchyViewModel.ToggleFlags(in node, HierarchyNodeFlags.Selected);
+            Update();
         }
 
         /// <summary>
-        /// Expand nodes' parents and scroll to the first node.
+        /// Toggles the selection state of the specified nodes.
         /// </summary>
-        /// <param name="nodes">Nodes to frame.</param>
-        public void FrameNodes(ReadOnlySpan<HierarchyNode> nodes)
+        /// <param name="nodes">The hierarchy nodes.</param>
+        public void ToggleSelected(ReadOnlySpan<HierarchyNode> nodes)
         {
-            HierarchyLogging.Log($"HierarchyView({GetHashCode():X}).FrameNodes(nodes={HierarchyLogging.ToString(nodes)})");
-            if (nodes.Length == 0)
-                return;
-
-            ExpandParents(nodes);
-            m_HierarchyViewModel.Update();
-            UpdateListView();
-            ScrollToNode(in nodes[0]);
+            m_HierarchyViewModel.ToggleFlags(nodes, HierarchyNodeFlags.Selected);
+            Update();
         }
 
         /// <summary>
-        /// Expand the node's parents and scroll to the node.
+        /// Toggles the selection state of the specified node and all its ancestors or descendants recursively.
+        /// </summary>
+        /// <param name="node">The hierarchy node.</param>
+        /// <param name="direction">The direction of traversal.</param>
+        public void ToggleSelectedRecursive(in HierarchyNode node, HierarchyTraversalDirection direction = HierarchyTraversalDirection.Children)
+        {
+            m_HierarchyViewModel.ToggleFlagsRecursive(in node, HierarchyNodeFlags.Selected, direction);
+            Update();
+        }
+
+        /// <summary>
+        /// Toggles the selection state of the specified nodes and all their ancestors or descendants recursively.
+        /// </summary>
+        /// <param name="nodes">The hierarchy nodes.</param>
+        /// <param name="direction">The direction of traversal.</param>
+        public void ToggleSelectedRecursive(ReadOnlySpan<HierarchyNode> nodes, HierarchyTraversalDirection direction = HierarchyTraversalDirection.Children)
+        {
+            m_HierarchyViewModel.ToggleFlagsRecursive(nodes, HierarchyNodeFlags.Selected, direction);
+            Update();
+        }
+
+        /// <summary>
+        /// Toggles the selection state of the current selection.
+        /// </summary>
+        public void ToggleSelection()
+        {
+            m_HierarchyViewModel.ToggleFlags(HierarchyNodeFlags.Selected);
+            Update();
+        }
+
+        /// <summary>
+        /// Clears the selection state of the specified node.
+        /// </summary>
+        /// <param name="node">The hierarchy node.</param>
+        public void Deselect(in HierarchyNode node)
+        {
+            m_HierarchyViewModel.ClearFlags(in node, HierarchyNodeFlags.Selected);
+            Update();
+        }
+
+        /// <summary>
+        /// Clears the selection state of the specified nodes.
+        /// </summary>
+        /// <param name="nodes">The hierarchy nodes.</param>
+        public void Deselect(ReadOnlySpan<HierarchyNode> nodes)
+        {
+            m_HierarchyViewModel.ClearFlags(nodes, HierarchyNodeFlags.Selected);
+            Update();
+        }
+
+        /// <summary>
+        /// Clears the selection state of the specified node and all its ancestors or descendants recursively.
+        /// </summary>
+        /// <param name="node">The hierarchy node.</param>
+        /// <param name="direction">The direction of traversal.</param>
+        public void DeselectRecursive(in HierarchyNode node, HierarchyTraversalDirection direction = HierarchyTraversalDirection.Children)
+        {
+            m_HierarchyViewModel.ClearFlagsRecursive(in node, HierarchyNodeFlags.Selected, direction);
+            Update();
+        }
+
+        /// <summary>
+        /// Clears the selection state of the specified nodes and all their ancestors or descendants recursively.
+        /// </summary>
+        /// <param name="nodes">The hierarchy nodes.</param>
+        /// <param name="direction">The direction of traversal.</param>
+        public void DeselectRecursive(ReadOnlySpan<HierarchyNode> nodes, HierarchyTraversalDirection direction = HierarchyTraversalDirection.Children)
+        {
+            m_HierarchyViewModel.ClearFlagsRecursive(nodes, HierarchyNodeFlags.Selected, direction);
+            Update();
+        }
+
+        /// <summary>
+        /// Clears the current selection, making all nodes unselected.
+        /// </summary>
+        public void DeselectAll()
+        {
+            m_HierarchyViewModel.ClearFlags(HierarchyNodeFlags.Selected);
+            Update();
+        }
+
+        /// <summary>
+        /// Expands the specified node.
+        /// </summary>
+        /// <param name="node">The hierarchy node.</param>
+        public void Expand(in HierarchyNode node)
+        {
+            m_HierarchyViewModel.SetFlags(in node, HierarchyNodeFlags.Expanded);
+            Update();
+        }
+
+        /// <summary>
+        /// Expands the specified nodes.
+        /// </summary>
+        /// <param name="nodes">The hierarchy nodes.</param>
+        public void Expand(ReadOnlySpan<HierarchyNode> nodes)
+        {
+            m_HierarchyViewModel.SetFlags(nodes, HierarchyNodeFlags.Expanded);
+            Update();
+        }
+
+        /// <summary>
+        /// Expands the specified node and all its ancestors or descendants recursively.
+        /// </summary>
+        /// <param name="node">The hierarchy node.</param>
+        /// <param name="direction">The direction of traversal.</param>
+        public void ExpandRecursive(in HierarchyNode node, HierarchyTraversalDirection direction = HierarchyTraversalDirection.Children)
+        {
+            m_HierarchyViewModel.SetFlagsRecursive(in node, HierarchyNodeFlags.Expanded, direction);
+            Update();
+        }
+
+        /// <summary>
+        /// Expands the specified nodes and all their ancestors or descendants recursively.
+        /// </summary>
+        /// <param name="nodes">The hierarchy nodes.</param>
+        /// <param name="direction">The direction of traversal.</param>
+        public void ExpandRecursive(ReadOnlySpan<HierarchyNode> nodes, HierarchyTraversalDirection direction = HierarchyTraversalDirection.Children)
+        {
+            m_HierarchyViewModel.SetFlagsRecursive(nodes, HierarchyNodeFlags.Expanded, direction);
+            Update();
+        }
+
+        /// <summary>
+        /// Expands all nodes in the hierarchy.
+        /// </summary>
+        public void ExpandAll()
+        {
+            m_HierarchyViewModel.SetFlags(HierarchyNodeFlags.Expanded);
+            Update();
+        }
+
+        /// <summary>
+        /// Determines if the specified node is expanded.
+        /// </summary>
+        /// <param name="node">The hierarchy node.</param>
+        /// <returns><see langword="true"/> if the specified node is expanded, <see langword="false"/> otherwise.</returns>
+        public bool IsExpanded(in HierarchyNode node)
+        {
+            return m_HierarchyViewModel.HasFlags(in node, HierarchyNodeFlags.Expanded);
+        }
+
+        /// <summary>
+        /// Collapse the specified node.
+        /// </summary>
+        /// <param name="node">The hierarchy node.</param>
+        public void Collapse(in HierarchyNode node)
+        {
+            m_HierarchyViewModel.ClearFlags(in node, HierarchyNodeFlags.Expanded);
+            Update();
+        }
+
+        /// <summary>
+        /// Collapse the specified nodes.
+        /// </summary>
+        /// <param name="nodes">The hierarchy nodes.</param>
+        public void Collapse(ReadOnlySpan<HierarchyNode> nodes)
+        {
+            m_HierarchyViewModel.ClearFlags(nodes, HierarchyNodeFlags.Expanded);
+            Update();
+        }
+
+        /// <summary>
+        /// Collapse the specified node and all its ancestors or descendants recursively.
+        /// </summary>
+        /// <param name="node">The hierarchy node.</param>
+        /// <param name="direction">The direction of traversal.</param>
+        public void CollapseRecursive(in HierarchyNode node, HierarchyTraversalDirection direction = HierarchyTraversalDirection.Children)
+        {
+            m_HierarchyViewModel.ClearFlagsRecursive(in node, HierarchyNodeFlags.Expanded, direction);
+            Update();
+        }
+
+        /// <summary>
+        /// Collapse the specified nodes and all their ancestors or descendants recursively.
+        /// </summary>
+        /// <param name="nodes">The hierarchy nodes.</param>
+        /// <param name="direction">The direction of traversal.</param>
+        public void CollapseRecursive(ReadOnlySpan<HierarchyNode> nodes, HierarchyTraversalDirection direction = HierarchyTraversalDirection.Children)
+        {
+            m_HierarchyViewModel.ClearFlagsRecursive(nodes, HierarchyNodeFlags.Expanded, direction);
+            Update();
+        }
+
+        /// <summary>
+        /// Collapse all nodes in the hierarchy.
+        /// </summary>
+        public void CollapseAll()
+        {
+            m_HierarchyViewModel.ClearFlags(HierarchyNodeFlags.Expanded);
+            Update();
+        }
+
+        /// <summary>
+        /// Determine if the specified node is collapsed.
+        /// </summary>
+        /// <param name="node">The hierarchy node.</param>
+        /// <returns><see langword="true"/> if the specified node is collapsed, <see langword="false"/> otherwise.</returns>
+        public bool IsCollapsed(in HierarchyNode node)
+        {
+            return m_HierarchyViewModel.DoesNotHaveFlags(in node, HierarchyNodeFlags.Expanded);
+        }
+
+        /// <summary>
+        /// Shows the specified node.
+        /// </summary>
+        /// <param name="node">The hierarchy node.</param>
+        public void Show(in HierarchyNode node)
+        {
+            m_HierarchyViewModel.ClearFlags(in node, HierarchyNodeFlags.Hidden);
+            Update();
+        }
+
+        /// <summary>
+        /// Shows the specified nodes.
+        /// </summary>
+        /// <param name="nodes">The hierarchy nodes.</param>
+        public void Show(ReadOnlySpan<HierarchyNode> nodes)
+        {
+            m_HierarchyViewModel.ClearFlags(nodes, HierarchyNodeFlags.Hidden);
+            Update();
+        }
+
+        /// <summary>
+        /// Shows the specified node and all its ancestors or descendants recursively.
+        /// </summary>
+        /// <param name="node">The hierarchy node.</param>
+        /// <param name="direction">The direction of traversal.</param>
+        public void ShowRecursive(in HierarchyNode node, HierarchyTraversalDirection direction = HierarchyTraversalDirection.Children)
+        {
+            m_HierarchyViewModel.ClearFlagsRecursive(in node, HierarchyNodeFlags.Hidden, direction);
+            Update();
+        }
+
+        /// <summary>
+        /// Shows the specified nodes and all their ancestors or descendants recursively.
+        /// </summary>
+        /// <param name="nodes">The hierarchy nodes.</param>
+        /// <param name="direction">The direction of traversal.</param>
+        public void ShowRecursive(ReadOnlySpan<HierarchyNode> nodes, HierarchyTraversalDirection direction = HierarchyTraversalDirection.Children)
+        {
+            m_HierarchyViewModel.ClearFlagsRecursive(nodes, HierarchyNodeFlags.Hidden, direction);
+            Update();
+        }
+
+        /// <summary>
+        /// Shows all nodes in the hierarchy.
+        /// </summary>
+        public void ShowAll()
+        {
+            m_HierarchyViewModel.ClearFlags(HierarchyNodeFlags.Hidden);
+            Update();
+        }
+
+        /// <summary>
+        /// Determines if the specified node is shown.
+        /// </summary>
+        /// <param name="node">The hierarchy node.</param>
+        /// <returns><see langword="true"/> if the specified node is shown, <see langword="false"/> otherwise.</returns>
+        public bool IsShown(in HierarchyNode node)
+        {
+            return m_HierarchyViewModel.DoesNotHaveFlags(in node, HierarchyNodeFlags.Hidden);
+        }
+
+        /// <summary>
+        /// Hides the specified node.
+        /// </summary>
+        /// <param name="node">The hierarchy node.</param>
+        public void Hide(in HierarchyNode node)
+        {
+            m_HierarchyViewModel.SetFlags(in node, HierarchyNodeFlags.Hidden);
+            Update();
+        }
+
+        /// <summary>
+        /// Hides the specified nodes.
+        /// </summary>
+        /// <param name="nodes">The hierarchy nodes.</param>
+        public void Hide(ReadOnlySpan<HierarchyNode> nodes)
+        {
+            m_HierarchyViewModel.SetFlags(nodes, HierarchyNodeFlags.Hidden);
+            Update();
+        }
+
+        /// <summary>
+        /// Hides the specified node and all its ancestors or descendants recursively.
+        /// </summary>
+        /// <param name="node">The hierarchy node.</param>
+        /// <param name="direction">The direction of traversal.</param>
+        public void HideRecursive(in HierarchyNode node, HierarchyTraversalDirection direction = HierarchyTraversalDirection.Children)
+        {
+            m_HierarchyViewModel.SetFlagsRecursive(in node, HierarchyNodeFlags.Hidden, direction);
+            Update();
+        }
+
+        /// <summary>
+        /// Hides the specified nodes and all their ancestors or descendants recursively.
+        /// </summary>
+        /// <param name="nodes">The hierarchy nodes.</param>
+        /// <param name="direction">The direction of traversal.</param>
+        public void HideRecursive(ReadOnlySpan<HierarchyNode> nodes, HierarchyTraversalDirection direction = HierarchyTraversalDirection.Children)
+        {
+            m_HierarchyViewModel.SetFlagsRecursive(nodes, HierarchyNodeFlags.Hidden, direction);
+            Update();
+        }
+
+        /// <summary>
+        /// Hides all nodes in the hierarchy.
+        /// </summary>
+        public void HideAll()
+        {
+            m_HierarchyViewModel.SetFlags(HierarchyNodeFlags.Hidden);
+            Update();
+        }
+
+        /// <summary>
+        /// Determines if the specified node is hidden.
+        /// </summary>
+        /// <param name="node">The hierarchy node.</param>
+        /// <returns><see langword="true"/> if the specified node is hidden, <see langword="false"/> otherwise.</returns>
+        public bool IsHidden(in HierarchyNode node)
+        {
+            return m_HierarchyViewModel.HasFlags(in node, HierarchyNodeFlags.Hidden);
+        }
+
+        /// <summary>
+        /// Frame the specified node, expanding its ancestors and scrolling to it.
         /// </summary>
         /// <param name="node">Node to frame.</param>
-        public void FrameNode(in HierarchyNode node)
+        public void Frame(in HierarchyNode node)
         {
             HierarchyLogging.Log($"HierarchyView({GetHashCode():X}).FrameNode({node})");
             if (node == HierarchyNode.Null || node == m_Hierarchy.Root)
@@ -530,206 +958,19 @@ namespace Unity.Hierarchy
         }
 
         /// <summary>
-        /// Delegate type for the HierarchyViewFlagChangedEvent
+        /// Frame the specified nodes, expanding their ancestors and scrolling to the first node.
         /// </summary>
-        /// <param name="evt">The event</param>
-        public delegate void HierarchyViewFlagChangedEventHandler(HierarchyViewFlagChangedEvent evt);
-
-        /// <summary>
-        /// Event fired when a node's flags are changed.
-        /// </summary>
-        public event HierarchyViewFlagChangedEventHandler OnFlagsChanged;
-
-        /// <summary>
-        /// Clears the specified flags on all hierarchy nodes.
-        /// </summary>
-        /// <param name="flags">The hierarchy node flags.</param>
-        public void ClearFlags(HierarchyNodeFlags flags)
+        /// <param name="nodes">Nodes to frame.</param>
+        public void Frame(ReadOnlySpan<HierarchyNode> nodes)
         {
-            m_HierarchyViewModel.ClearFlags(flags);
-            OnFlagsChanged?.Invoke(new HierarchyViewFlagChangedEvent(HierarchyViewFlagChangedEventType.Clear, flags));
-            Update();
-        }
+            HierarchyLogging.Log($"HierarchyView({GetHashCode():X}).FrameNodes(nodes={HierarchyLogging.ToString(nodes)})");
+            if (nodes.Length == 0)
+                return;
 
-        /// <summary>
-        /// Clears the specified flags on the hierarchy node.
-        /// </summary>
-        /// <param name="node">The hierarchy node.</param>
-        /// <param name="flags">The hierarchy node flags.</param>
-        public void ClearFlags(in HierarchyNode node, HierarchyNodeFlags flags)
-        {
-            m_HierarchyViewModel.ClearFlags(in node, flags);
-            OnFlagsChanged?.Invoke(new HierarchyViewFlagChangedEvent(HierarchyViewFlagChangedEventType.Clear, flags, node));
-            Update();
-        }
-
-        /// <summary>
-        /// Clears the specified flags on the hierarchy nodes.
-        /// </summary>
-        /// <remarks>
-        /// Null or invalid nodes are ignored.
-        /// </remarks>
-        /// <param name="nodes">The hierarchy nodes.</param>
-        /// <param name="flags">The hierarchy node flags.</param>
-        public void ClearFlags(ReadOnlySpan<HierarchyNode> nodes, HierarchyNodeFlags flags)
-        {
-            m_HierarchyViewModel.ClearFlags(nodes, flags);
-            OnFlagsChanged?.Invoke(new HierarchyViewFlagChangedEvent(HierarchyViewFlagChangedEventType.Clear, flags, nodes));
-            Update();
-        }
-
-        /// <summary>
-        /// Clears the specified flags recursively on the hierarchy node.
-        /// </summary>
-        /// <param name="node">The hierarchy node.</param>
-        /// <param name="flags">The hierarchy node flags.</param>
-        /// <param name="direction">The direction of the recursion operation.</param>
-        public void ClearFlagsRecursive(in HierarchyNode node, HierarchyNodeFlags flags, HierarchyTraversalDirection direction)
-        {
-            m_HierarchyViewModel.ClearFlagsRecursive(in node, flags, direction);
-            OnFlagsChanged?.Invoke(new HierarchyViewFlagChangedEvent(HierarchyViewFlagChangedEventType.Clear, flags, node, true));
-            Update();
-        }
-
-        /// <summary>
-        /// Clears the specified flags recursively on the hierarchy nodes.
-        /// </summary>
-        /// <param name="nodes">The hierarchy nodes.</param>
-        /// <param name="flags">The hierarchy node flags.</param>
-        /// <param name="direction">The direction of the recursion operation.</param>
-        public void ClearFlagsRecursive(ReadOnlySpan<HierarchyNode> nodes, HierarchyNodeFlags flags, HierarchyTraversalDirection direction)
-        {
-            m_HierarchyViewModel.ClearFlagsRecursive(nodes, flags, direction);
-            OnFlagsChanged?.Invoke(new HierarchyViewFlagChangedEvent(HierarchyViewFlagChangedEventType.Clear, flags, nodes, true));
-            Update();
-        }
-
-        /// <summary>
-        /// Sets the specified flags on all hierarchy nodes.
-        /// </summary>
-        /// <param name="flags">The hierarchy node flags.</param>
-        public void SetFlags(HierarchyNodeFlags flags)
-        {
-            m_HierarchyViewModel.SetFlags(flags);
-            OnFlagsChanged?.Invoke(new HierarchyViewFlagChangedEvent(HierarchyViewFlagChangedEventType.Set, flags));
-            Update();
-        }
-
-        /// <summary>
-        /// Sets the specified flags on the hierarchy node.
-        /// </summary>
-        /// <param name="node">The hierarchy node.</param>
-        /// <param name="flags">The hierarchy node flags.</param>
-        public void SetFlags(in HierarchyNode node, HierarchyNodeFlags flags)
-        {
-            m_HierarchyViewModel.SetFlags(in node, flags);
-            OnFlagsChanged?.Invoke(new HierarchyViewFlagChangedEvent(HierarchyViewFlagChangedEventType.Set, flags, node));
-            Update();
-        }
-
-        /// <summary>
-        /// Sets the specified flags on the hierarchy nodes.
-        /// </summary>
-        /// <remarks>
-        /// Null or invalid nodes are ignored.
-        /// </remarks>
-        /// <param name="nodes">The hierarchy nodes.</param>
-        /// <param name="flags">The hierarchy node flags.</param>
-        public void SetFlags(ReadOnlySpan<HierarchyNode> nodes, HierarchyNodeFlags flags)
-        {
-            m_HierarchyViewModel.SetFlags(nodes, flags);
-            OnFlagsChanged?.Invoke(new HierarchyViewFlagChangedEvent(HierarchyViewFlagChangedEventType.Set, flags, nodes));
-            Update();
-        }
-
-        /// <summary>
-        /// Sets the specified flags recursively on the hierarchy node.
-        /// </summary>
-        /// <param name="node">The hierarchy node.</param>
-        /// <param name="flags">The hierarchy node flags.</param>
-        /// <param name="direction">The direction of the recursion operation.</param>
-        public void SetFlagsRecursive(in HierarchyNode node, HierarchyNodeFlags flags, HierarchyTraversalDirection direction)
-        {
-            m_HierarchyViewModel.SetFlagsRecursive(in node, flags, direction);
-            OnFlagsChanged?.Invoke(new HierarchyViewFlagChangedEvent(HierarchyViewFlagChangedEventType.Set, flags, node, true));
-            Update();
-        }
-
-        /// <summary>
-        /// Sets the specified flags recursively on the hierarchy nodes.
-        /// </summary>
-        /// <param name="nodes">The hierarchy nodes.</param>
-        /// <param name="flags">The hierarchy node flags.</param>
-        /// <param name="direction">The direction of the recursion operation.</param>
-        public void SetFlagsRecursive(ReadOnlySpan<HierarchyNode> nodes, HierarchyNodeFlags flags, HierarchyTraversalDirection direction)
-        {
-            m_HierarchyViewModel.SetFlagsRecursive(nodes, flags, direction);
-            OnFlagsChanged?.Invoke(new HierarchyViewFlagChangedEvent(HierarchyViewFlagChangedEventType.Set, flags, nodes, true));
-            Update();
-        }
-
-        /// <summary>
-        /// Toggles the specified flags on all hierarchy nodes.
-        /// </summary>
-        /// <param name="flags">The hierarchy node flags.</param>
-        public void ToggleFlags(HierarchyNodeFlags flags)
-        {
-            m_HierarchyViewModel.ToggleFlags(flags);
-            OnFlagsChanged?.Invoke(new HierarchyViewFlagChangedEvent(HierarchyViewFlagChangedEventType.Toggle, flags));
-            Update();
-        }
-
-        /// <summary>
-        /// Toggles the specified flags on the hierarchy node.
-        /// </summary>
-        /// <param name="node">The hierarchy node.</param>
-        /// <param name="flags">The hierarchy node flags.</param>
-        public void ToggleFlags(in HierarchyNode node, HierarchyNodeFlags flags)
-        {
-            m_HierarchyViewModel.ToggleFlags(in node, flags);
-            OnFlagsChanged?.Invoke(new HierarchyViewFlagChangedEvent(HierarchyViewFlagChangedEventType.Toggle, flags, node));
-            Update();
-        }
-
-        /// <summary>
-        /// Toggles the specified flags on the hierarchy nodes.
-        /// </summary>
-        /// <remarks>
-        /// Null or invalid nodes are ignored.
-        /// </remarks>
-        /// <param name="nodes">The hierarchy nodes.</param>
-        /// <param name="flags">The hierarchy node flags.</param>
-        public void ToggleFlags(ReadOnlySpan<HierarchyNode> nodes, HierarchyNodeFlags flags)
-        {
-            m_HierarchyViewModel.ToggleFlags(nodes, flags);
-            OnFlagsChanged?.Invoke(new HierarchyViewFlagChangedEvent(HierarchyViewFlagChangedEventType.Toggle, flags, nodes));
-            Update();
-        }
-
-        /// <summary>
-        /// Toggles the specified flags recursively on the hierarchy node.
-        /// </summary>
-        /// <param name="node">The hierarchy node.</param>
-        /// <param name="flags">The hierarchy node flags.</param>
-        /// <param name="direction">The direction of the recursion operation.</param>
-        public void ToggleFlagsRecursive(in HierarchyNode node, HierarchyNodeFlags flags, HierarchyTraversalDirection direction)
-        {
-            m_HierarchyViewModel.ToggleFlagsRecursive(in node, flags, direction);
-            OnFlagsChanged?.Invoke(new HierarchyViewFlagChangedEvent(HierarchyViewFlagChangedEventType.Toggle, flags, node, true));
-            Update();
-        }
-
-        /// <summary>
-        /// Toggles the specified flags recursively on the hierarchy nodes.
-        /// </summary>
-        /// <param name="nodes">The hierarchy nodes.</param>
-        /// <param name="flags">The hierarchy node flags.</param>
-        /// <param name="direction">The direction of the recursion operation.</param>
-        public void ToggleFlagsRecursive(ReadOnlySpan<HierarchyNode> nodes, HierarchyNodeFlags flags, HierarchyTraversalDirection direction)
-        {
-            m_HierarchyViewModel.ToggleFlagsRecursive(nodes, flags, direction);
-            OnFlagsChanged?.Invoke(new HierarchyViewFlagChangedEvent(HierarchyViewFlagChangedEventType.Toggle, flags, nodes, true));
-            Update();
+            ExpandParents(nodes);
+            m_HierarchyViewModel.Update();
+            UpdateListView();
+            ScrollToNode(in nodes[0]);
         }
 
         /// <summary>
@@ -784,7 +1025,7 @@ namespace Unity.Hierarchy
         }
 
         /// <summary>
-        /// Create a set of columns from a list of columns and cell descriptors.  If a viewState is passed, all the
+        /// Create a set of columns from a list of columns and cell descriptors. If a viewState is passed, all the
         /// columns default order, width and visibility will be overridden by the viewState.
         /// </summary>
         /// <param name="columnDescriptors">Column Descriptors uses to create the HierarchyViewColumn</param>
@@ -900,6 +1141,46 @@ namespace Unity.Hierarchy
             return windowState;
         }
 
+        /// <summary>
+        /// Initialize the view with styles and stylesheets provided by <see cref="HierarchyNodeTypeHandler.OnBindView(HierarchyView)"/>.
+        /// </summary>
+        [VisibleToOtherModules("UnityEditor.HierarchyModule")]
+        internal void Initialize()
+        {
+            HierarchyLogging.Log($"HierarchyView({GetHashCode():X}).{nameof(Initialize)}()");
+
+            BindHandlers();
+            try
+            {
+                Initializing?.Invoke();
+            }
+            catch (Exception ex)
+            {
+                UnityEngine.Debug.LogException(ex);
+            }
+        }
+
+        /// <summary>
+        /// Reset the view to its initial state.
+        /// </summary>
+        internal void Reset()
+        {
+            HierarchyLogging.Log($"HierarchyView({GetHashCode():X}).{nameof(Reset)}()");
+
+            // Unbind handlers
+            UnbindHandlers();
+
+            // Remove then style container
+            m_StyleContainer.Remove(m_CollectionView);
+            m_StyleContainer.RemoveFromHierarchy();
+
+            // Make a new style container
+            m_StyleContainer = new VisualElement();
+            m_StyleContainer.AddToClassList(k_HierarchyViewStyleContainerStyleName);
+            m_StyleContainer.Add(m_CollectionView);
+            Add(m_StyleContainer);
+        }
+
         [VisibleToOtherModules("UnityEditor.HierarchyModule")]
         internal void EnqueuePostUpdateAction(Action action)
         {
@@ -939,7 +1220,7 @@ namespace Unity.Hierarchy
         internal int GetIndexFromWorldPosition(Vector2 worldPos, float offset = 0)
         {
             var offsetWorldPosition = new Vector3(worldPos.x, worldPos.y - offset, 0f);
-            var localPosition = m_ListViewContentContainer.WorldToLocal(offsetWorldPosition);
+            var localPosition = m_ListViewScrollView.WorldToLocal(offsetWorldPosition);
             return GetIndexFromLocalPosition(localPosition);
         }
 
@@ -961,9 +1242,16 @@ namespace Unity.Hierarchy
             if (hierarchyView == null)
                 return;
 
+            if (m_IsRenamingItem)
+            {
+                var itemName = m_RenamingItem.Q<HierarchyViewItemName>();
+                itemName?.CancelRename();
+                SetRenamingItem(null);
+            }
+
             evt.StopImmediatePropagation();
 
-            var localposition = hierarchyView.ChangeCoordinatesTo(m_ListViewContentContainer, evt.localMousePosition);
+            var localposition = hierarchyView.ChangeCoordinatesTo(m_ListViewScrollView, evt.localMousePosition);
             var itemIndex = GetIndexFromLocalPosition(localposition);
             var item = GetHierarchyViewItemFromIndex(itemIndex);
             // item == null if user right-clicks in empty space of HierarchyView.
@@ -995,19 +1283,39 @@ namespace Unity.Hierarchy
         }
 
         [VisibleToOtherModules("UnityEditor.HierarchyModule")]
-        internal void PingNode(in HierarchyNode node)
+        internal void PingNode(HierarchyNode node)
         {
             HierarchyLogging.Log($"HierarchyView({GetHashCode():X}).PingNode({node})");
-            // Expand node parents
+            if (node == HierarchyNode.Null || node == m_Hierarchy.Root)
+                return;
+
+            // If the node is invalid, we cannot ping it.
+            if (!m_Hierarchy.Exists(in node))
+                return;
+
             ExpandParents(in node);
-            m_HierarchyViewModel.Update();
-            UpdateListView();
+
+            // After expanding parents, need full update again since ExpandParents marks hierarchy as dirty
+            Update();
 
             var index = m_HierarchyViewModel.IndexOf(in node);
             if (index < 0)
                 return;
 
             m_CollectionView.ScrollToItem(index);
+
+            EnqueuePostUpdateAction(() =>
+            {
+                schedule.Execute(() => DoPingAnimation(node));
+            });
+        }
+
+        void DoPingAnimation(HierarchyNode node)
+        {
+            var index = m_HierarchyViewModel.IndexOf(in node);
+            if (index < 0)
+                return;
+
             var item = GetHierarchyViewItemFromIndex(index);
             if (item == null)
                 return;
@@ -1098,6 +1406,23 @@ namespace Unity.Hierarchy
             m_HierarchyViewModel.SetFlagsRecursive(parents.Span, HierarchyNodeFlags.Expanded, HierarchyTraversalDirection.Parents);
         }
 
+        internal void SelectChildrenAndExpandRecursive()
+        {
+            var count = m_HierarchyViewModel.HasFlagsCount(HierarchyNodeFlags.Selected);
+            if (count == 0)
+                return;
+
+            using var nodes = new RentSpanUnmanaged<HierarchyNode>(count);
+            m_HierarchyViewModel.GetNodesWithFlags(HierarchyNodeFlags.Selected, nodes);
+            m_HierarchyViewModel.SetFlagsRecursive(nodes, HierarchyNodeFlags.Selected | HierarchyNodeFlags.Expanded, HierarchyTraversalDirection.Children);
+            Update();
+        }
+
+        internal void SetRenamingItem(HierarchyViewItem item)
+        {
+            m_RenamingItem = item;
+        }
+
         void BindHandlers()
         {
             HierarchyLogging.Log($"HierarchyView({GetHashCode():X}).BindHandlers()");
@@ -1172,7 +1497,7 @@ namespace Unity.Hierarchy
             if (!m_SelectedIndicesChangedFromPointerDown)
                 return;
 
-            InvokeFlagsChanged(HierarchyViewFlagChangedEventType.Set, HierarchyNodeFlags.Selected);
+            FlagsChanged?.Invoke(HierarchyNodeFlags.Selected);
             m_SelectedIndicesChangedFromPointerDown = false;
         }
 
@@ -1206,7 +1531,7 @@ namespace Unity.Hierarchy
                     break;
             }
 
-            m_ListViewContentContainer.Focus();
+            m_ListViewScrollView.Focus();
 
             if (shouldStopPropagation)
                 evt.StopPropagation();
@@ -1233,23 +1558,20 @@ namespace Unity.Hierarchy
                         break;
                 }
 
-                m_ListViewContentContainer.Focus();
+                m_ListViewScrollView.Focus();
             }
             else
             {
-                var item = GetHierarchyViewItemFromIndex(selectedIndex);
-                if (item == null)
-                    return;
-
-                ref readonly var currentNode = ref m_HierarchyViewModel[selectedIndex];
                 switch (evt.direction)
                 {
                     case NavigationMoveEvent.Direction.Right:
-                        SetExpandedState(currentNode, true, evt.altKey);
-                        break;
-
                     case NavigationMoveEvent.Direction.Left:
-                        SetExpandedState(currentNode, false, evt.altKey);
+                        var count = m_HierarchyViewModel.HasFlagsCount(HierarchyNodeFlags.Selected);
+                        using (var selectedNodes = new RentSpanUnmanaged<HierarchyNode>(count))
+                        {
+                            m_HierarchyViewModel.GetNodesWithFlags(HierarchyNodeFlags.Selected, selectedNodes);
+                            SetExpandedState(selectedNodes, evt.direction == NavigationMoveEvent.Direction.Right, evt.altKey);
+                        }
                         break;
 
                     default:
@@ -1264,7 +1586,9 @@ namespace Unity.Hierarchy
 
         void OnNavigationCancel(NavigationCancelEvent evt)
         {
-            ClearFlags(HierarchyNodeFlags.Cut);
+            m_HierarchyViewModel.ClearFlags(HierarchyNodeFlags.Cut);
+            Update();
+
             evt.StopImmediatePropagation();
         }
 
@@ -1275,7 +1599,9 @@ namespace Unity.Hierarchy
             if (target != m_CollectionView.scrollView.contentContainer)
                 return;
 
-            ClearFlags(HierarchyNodeFlags.Selected);
+            m_HierarchyViewModel.ClearFlags(HierarchyNodeFlags.Selected);
+            Update();
+
             m_LastMouseUpSelectionIndex = -1;
             evt.StopImmediatePropagation();
         }
@@ -1334,7 +1660,7 @@ namespace Unity.Hierarchy
             m_SelectedIndices.Clear();
 
             // Override hierarchy view model selection
-            using (var _ = new HierarchyViewModelFlagsChangeScope(m_HierarchyViewModel))
+            using (var _ = new HierarchyViewModelFlagsChangeScope(m_HierarchyViewModel, notify: false))
             {
                 m_HierarchyViewModel.ClearFlags(HierarchyNodeFlags.Selected);
                 m_HierarchyViewModel.SetFlags(nodes.Span, HierarchyNodeFlags.Selected);
@@ -1349,7 +1675,7 @@ namespace Unity.Hierarchy
             }
 
             // Change global selection
-            InvokeFlagsChanged(HierarchyViewFlagChangedEventType.Set, HierarchyNodeFlags.Selected);
+            FlagsChanged?.Invoke(HierarchyNodeFlags.Selected);
         }
 
         void OnBindItem(HierarchyViewItem item)
@@ -1362,16 +1688,34 @@ namespace Unity.Hierarchy
             if (isExpanded)
             {
                 if (recurse)
-                    SetFlagsRecursive(in node, HierarchyNodeFlags.Expanded, HierarchyTraversalDirection.Children);
+                    ExpandRecursive(in node, HierarchyTraversalDirection.Children);
                 else
-                    SetFlags(in node, HierarchyNodeFlags.Expanded);
+                    Expand(in node);
             }
             else
             {
                 if (recurse)
-                    ClearFlagsRecursive(in node, HierarchyNodeFlags.Expanded, HierarchyTraversalDirection.Children);
+                    CollapseRecursive(in node, HierarchyTraversalDirection.Children);
                 else
-                    ClearFlags(in node, HierarchyNodeFlags.Expanded);
+                    Collapse(in node);
+            }
+        }
+
+        void SetExpandedState(ReadOnlySpan<HierarchyNode> nodes, bool isExpanded, bool recurse)
+        {
+            if (isExpanded)
+            {
+                if (recurse)
+                    ExpandRecursive(nodes, HierarchyTraversalDirection.Children);
+                else
+                    Expand(nodes);
+            }
+            else
+            {
+                if (recurse)
+                    CollapseRecursive(nodes, HierarchyTraversalDirection.Children);
+                else
+                    Collapse(nodes);
             }
         }
 
@@ -1385,19 +1729,25 @@ namespace Unity.Hierarchy
             HierarchyLogging.Log($"HierarchyView({GetHashCode():X}).UpdateListView()");
 
             // Refresh the list view
-            m_CollectionView.RefreshItems();
-
-            // Refresh selected items
-            var selectedCount = m_HierarchyViewModel.HasAllFlagsCount(HierarchyNodeFlags.Selected);
-            if (selectedCount == 0)
+            using (m_RefreshItemsProfilerMarker.Auto())
             {
-                SetListViewSelectionWithoutNotify(Array.Empty<int>());
+                m_CollectionView.RefreshItems();
             }
-            else
+
+            using (m_SetSelectionMarker.Auto())
             {
-                using var indices = new RentSpanUnmanaged<int>(selectedCount);
-                m_HierarchyViewModel.GetIndicesWithAllFlags(HierarchyNodeFlags.Selected, indices);
-                SetListViewSelectionWithoutNotify(indices);
+                // Refresh selected items
+                var selectedCount = m_HierarchyViewModel.HasFlagsCount(HierarchyNodeFlags.Selected);
+                if (selectedCount == 0)
+                {
+                    SetListViewSelectionWithoutNotify(Array.Empty<int>());
+                }
+                else
+                {
+                    using var indices = new RentSpanUnmanaged<int>(selectedCount);
+                    m_HierarchyViewModel.GetIndicesWithFlags(HierarchyNodeFlags.Selected, indices);
+                    SetListViewSelectionWithoutNotify(indices);
+                }
             }
 
             // Store last version
@@ -1408,6 +1758,12 @@ namespace Unity.Hierarchy
         void SetListViewSelectionWithoutNotify(Span<int> selection)
         {
             HierarchyLogging.Log($"HierarchyView({GetHashCode():X}).SetListViewSelectionWithoutNotify(selection={HierarchyLogging.ToString<int>(selection)})");
+
+            if (selection.Length == 0)
+            {
+                m_CollectionView.SetSelectionWithoutNotify(new ReadOnlySpan<int>());
+                return;
+            }
 
             using var filteredSelection = new RentSpanUnmanaged<int>(selection.Length);
             var filteredSelectionLength = 0;
@@ -1614,22 +1970,16 @@ namespace Unity.Hierarchy
             return callAgain || UpdateNeeded;
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal void InvokeFlagsChanged(HierarchyViewFlagChangedEventType type, HierarchyNodeFlags flags)
+        void UpdateData()
         {
-            OnFlagsChanged?.Invoke(new HierarchyViewFlagChangedEvent(type, flags));
-        }
+            if (m_Hierarchy is { IsCreated: true })
+                m_Hierarchy.Update();
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal void InvokeFlagsChanged(HierarchyViewFlagChangedEventType type, HierarchyNodeFlags flags, ReadOnlySpan<HierarchyNode> nodes, bool recursive = false)
-        {
-            OnFlagsChanged?.Invoke(new HierarchyViewFlagChangedEvent(type, flags, nodes, recursive));
-        }
+            if (m_HierarchyFlattened is { IsCreated: true })
+                m_HierarchyFlattened.Update();
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal void InvokeFlagsChanged(HierarchyViewFlagChangedEventType type, HierarchyNodeFlags flags, in HierarchyNode node, bool recursive = false)
-        {
-            OnFlagsChanged?.Invoke(new HierarchyViewFlagChangedEvent(type, flags, in node, recursive));
+            if (m_HierarchyViewModel is { IsCreated: true })
+                m_HierarchyViewModel.Update();
         }
     }
 

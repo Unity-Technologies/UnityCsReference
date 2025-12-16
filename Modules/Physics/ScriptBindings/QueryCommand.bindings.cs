@@ -36,12 +36,15 @@ namespace UnityEngine
     [StructLayout(LayoutKind.Sequential)]
     public struct ColliderHit
     {
-        private int m_ColliderInstanceID;
+        private EntityId m_ColliderEntityId;
 
-        public int instanceID => m_ColliderInstanceID;
+        public EntityId entityId => m_ColliderEntityId;
+
+        [System.Obsolete("instanceID is deprecated, use entityId instead.", false)]
+        public int instanceID => m_ColliderEntityId;
 
         // note this is a main-thread only API
-        public Collider collider => Object.FindObjectFromInstanceID(instanceID) as Collider;
+        public Collider collider => Object.FindObjectFromInstanceID(entityId) as Collider;
     }
 
     [NativeHeader("Modules/Physics/BatchCommands/RaycastCommand.h")]
@@ -115,7 +118,7 @@ namespace UnityEngine
             this.queryParameters = queryParameters;
         }
 
-        public SpherecastCommand(PhysicsScene physicsScene, Vector3 origin,  float radius, Vector3 direction, QueryParameters queryParameters, float distance = float.MaxValue)
+        public SpherecastCommand(PhysicsScene physicsScene, Vector3 origin, float radius, Vector3 direction, QueryParameters queryParameters, float distance = float.MaxValue)
         {
             this.origin = origin;
             this.direction = direction;
@@ -288,10 +291,11 @@ namespace UnityEngine
     [NativeHeader("Runtime/Jobs/ScriptBindings/JobsBindingsTypes.h")]
     public struct ClosestPointCommand
     {
+        [System.Obsolete("ClosestPointCommand(Vector3, int, Vector3, Quaternion, Vector3) is obsolete. Use ClosestPointCommand(Vector3, EntityId, Vector3, Quaternion, Vector3) instead.")]
         public ClosestPointCommand(Vector3 point, int colliderInstanceID, Vector3 position, Quaternion rotation, Vector3 scale)
         {
             this.point = point;
-            this.colliderInstanceID = colliderInstanceID;
+            this.colliderEntityId = colliderInstanceID;
             this.position = position;
             this.rotation = rotation;
             this.scale = scale;
@@ -300,14 +304,29 @@ namespace UnityEngine
         public ClosestPointCommand(Vector3 point, Collider collider, Vector3 position, Quaternion rotation, Vector3 scale)
         {
             this.point = point;
-            this.colliderInstanceID = collider.GetInstanceID();
+            this.colliderEntityId = collider.GetEntityId();
+            this.position = position;
+            this.rotation = rotation;
+            this.scale = scale;
+        }
+
+        public ClosestPointCommand(Vector3 point, EntityId colliderEntityId, Vector3 position, Quaternion rotation, Vector3 scale)
+        {
+            this.point = point;
+            this.colliderEntityId = colliderEntityId;
             this.position = position;
             this.rotation = rotation;
             this.scale = scale;
         }
 
         public Vector3 point { get; set; }
-        public int colliderInstanceID { get; set; }
+        public EntityId colliderEntityId { get; set; }
+        [System.Obsolete("colliderInstanceID is deprecated, use colliderEntityId instead.", false)]
+        public int colliderInstanceID
+        {
+            get { return colliderEntityId; }
+            set { colliderEntityId = value; }
+        }
         public Vector3 position { get; set; }
         public Quaternion rotation { get; set; }
         public Vector3 scale { get; set; }

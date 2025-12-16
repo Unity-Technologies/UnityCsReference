@@ -5,12 +5,14 @@
 using System;
 using System.Buffers;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using UnityEngine;
 using UnityEditor.Profiling;
 using UnityEngine.Pool;
 using UnityEngine.Search;
 using UnityEngine.UIElements;
+using Debug = UnityEngine.Debug;
 
 namespace UnityEditor.Search
 {
@@ -19,7 +21,7 @@ namespace UnityEditor.Search
         const int k_ResetSelectionIndex = -1;
         internal const double resultViewUpdateThrottleDelay = 0.05d;
 
-        private int m_ViewId;
+        private EntityId m_ViewId;
         private bool m_Disposed = false;
         private SearchViewState m_ViewState;
         private IResultView m_ResultView;
@@ -31,6 +33,7 @@ namespace UnityEditor.Search
         private bool m_SyncSearch;
         private SearchPreviewManager m_PreviewManager;
         private int m_TextureCacheSize;
+        IEnumerator<SearchItem> m_FetchRequestEnumerator;
 
         // UITK
         private VisualElement m_ResultViewContainer;
@@ -139,7 +142,7 @@ namespace UnityEditor.Search
         public IEnumerable<SearchItem> items => m_FilteredItems;
         public bool searchInProgress => context.searchInProgress;
 
-        public SearchView(SearchViewState viewState, int viewId)
+        public SearchView(SearchViewState viewState, EntityId viewId)
         {
             using (new EditorPerformanceTracker("SearchView.ctor"))
             {
@@ -199,15 +202,12 @@ namespace UnityEditor.Search
         {
             using var tracker = new EditorPerformanceTracker("SearchView.FetchItems");
 
-            // Make sure we don't use SearchFlags.Sorted when fetching items
-            var wasSorted = context.options.HasAny(SearchFlags.Sorted);
-            context.options &= ~SearchFlags.Sorted;
-
             if (m_SyncSearch)
                 NotifySyncSearch(currentGroup, UnityEditor.SearchService.SearchService.SyncSearchEvent.SyncSearch);
 
             context.ClearErrors();
             m_FilteredItems.Clear();
+            m_FetchRequestEnumerator?.Dispose();
             ClearSelection();
 
             var hostWindow = this.GetSearchHostWindow();
@@ -217,11 +217,76 @@ namespace UnityEditor.Search
             if (context.options.HasAny(SearchFlags.Debug))
                 Debug.Log($"[{context.sessionId}] Running query {context.searchText}");
             RefreshContent(RefreshFlags.QueryStarted, false);
-            SearchService.Request(context, OnIncomingItems, OnQueryRequestFinished);
+            m_FetchRequestEnumerator = SearchService.RequestEnumerator(context);
+        }
 
-            // Put back the flag if it was already applied.
-            if (wasSorted)
-                context.options |= SearchFlags.Sorted;
+        public void Update()
+        {
+            if (m_FetchRequestEnumerator == null)
+                return;
+
+            using var _ = ListPool<SearchItem>.Get(out var tempItems);
+            while (m_FetchRequestEnumerator.MoveNext())
+            {
+                if (m_FetchRequestEnumerator.Current != null)
+                    tempItems.Add(m_FetchRequestEnumerator.Current);
+            }
+
+            if (tempItems.Count > 0)
+                OnIncomingItems(context, tempItems);
+            m_FetchRequestEnumerator.Dispose();
+            m_FetchRequestEnumerator = null;
+            OnQueryRequestFinished(context);
+        }
+
+        public bool UpdateIncremental()
+        {
+            if (m_FetchRequestEnumerator == null)
+                return false;
+
+            if (m_FetchRequestEnumerator.MoveNext())
+            {
+                var current = m_FetchRequestEnumerator.Current;
+                if (current != null)
+                {
+                    if (OnIncomingItem_NoRefresh(context, current))
+                        RefreshContent(RefreshFlags.ItemsChanged);
+                }
+                return true;
+            }
+
+            m_FetchRequestEnumerator.Dispose();
+            m_FetchRequestEnumerator = null;
+            OnQueryRequestFinished(context);
+            return false;
+        }
+
+        public bool UpdateIncrementalTimed(TimeSpan timeLimit)
+        {
+            if (m_FetchRequestEnumerator == null)
+                return false;
+
+            var timeStamp = Stopwatch.GetTimestamp();
+            var needsRefresh = false;
+            while (m_FetchRequestEnumerator.MoveNext())
+            {
+                if (m_FetchRequestEnumerator.Current != null)
+                    needsRefresh |= OnIncomingItem_NoRefresh(context, m_FetchRequestEnumerator.Current);
+                var elapsed = TimeSpan.FromTicks(Stopwatch.GetTimestamp() - timeStamp);
+                if (elapsed > timeLimit)
+                {
+                    if (needsRefresh)
+                        RefreshContent(RefreshFlags.ItemsChanged);
+                    return true;
+                }
+            }
+
+            if (needsRefresh)
+                RefreshContent(RefreshFlags.ItemsChanged);
+            m_FetchRequestEnumerator.Dispose();
+            m_FetchRequestEnumerator = null;
+            OnQueryRequestFinished(context);
+            return false;
         }
 
         public override string ToString() => context.searchText;
@@ -247,7 +312,7 @@ namespace UnityEditor.Search
             m_Disposed = true;
         }
 
-        int ISearchView.GetViewId()
+        EntityId ISearchView.GetViewId()
         {
             return m_ViewId;
         }
@@ -315,9 +380,6 @@ namespace UnityEditor.Search
 
                 if (nextView == null)
                     return false;
-
-                if (nextView is not SearchTableView)
-                    m_FilteredItems.Sort();
 
                 m_ResultView = nextView;
                 UpdatePreviewManagerCacheSize();
@@ -410,6 +472,15 @@ namespace UnityEditor.Search
                 RefreshContent(RefreshFlags.ItemsChanged);
         }
 
+        bool OnIncomingItem_NoRefresh(SearchContext context, SearchItem item)
+        {
+            var countBefore = m_FilteredItems.TotalCount;
+            if (m_ViewState.filterHandler != null && !m_ViewState.filterHandler(item))
+                return false;
+            m_FilteredItems.AddItem(item);
+            return m_FilteredItems.TotalCount != countBefore;
+        }
+
         private void OnQueryRequestFinished(SearchContext context)
         {
             m_FilteredItems.SortAllGroups();
@@ -431,7 +502,7 @@ namespace UnityEditor.Search
             for (int index = 0; index < results.Count; index++)
             {
                 var item = results[index];
-                if (Array.IndexOf(viewState.selectedIds, item.GetInstanceId()) != -1)
+                if (Array.IndexOf(viewState.selectedIds, item.GetEntityId()) != -1)
                 {
                     indexesToSelect.Add(index);
                     if (indexesToSelect.Count == viewState.selectedIds.Length)
@@ -460,7 +531,7 @@ namespace UnityEditor.Search
             if (!multiselect && newSelection.Length > 1)
                 newSelection = newSelection.Slice(newSelection.Length - 1, 1);
 
-            var selectedIds = new List<int>();
+            var selectedIds = new List<EntityId>();
             var lastIndexAdded = k_ResetSelectionIndex;
 
             m_Selection.Clear();
@@ -470,7 +541,7 @@ namespace UnityEditor.Search
                 if (!IsItemValid(idx))
                     continue;
 
-                selectedIds.Add(m_FilteredItems[idx].GetInstanceId());
+                selectedIds.Add(m_FilteredItems[idx].GetEntityId());
                 m_Selection.Add(idx);
                 lastIndexAdded = idx;
             }

@@ -161,7 +161,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 EditorApplication.update += Progress;
         }
 
-        private void OnError(UIError error)
+        protected void OnError(UIError error)
         {
             if (logErrorInConsole && !error.HasAttribute(UIError.Attribute.DetailInConsole))
             {
@@ -189,7 +189,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             onOperationSuccess?.Invoke(this);
         }
 
-        private void OnFinalize()
+        protected void OnFinalize()
         {
             EditorApplication.update -= Progress;
             onOperationFinalized?.Invoke(this);

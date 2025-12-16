@@ -17,7 +17,7 @@ using TreeViewState = UnityEditor.IMGUI.Controls.TreeViewState<int>;
 
 namespace UnityEditor
 {
-    [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+    [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.ProjectAuditorModule")]
     internal class SettingsWindow : EditorWindow, IHasCustomMenu
     {
         [SerializeField] private Vector2 m_PosLeft;
@@ -661,6 +661,7 @@ namespace UnityEditor
             return settingsWindows.FirstOrDefault(settingsWindow => settingsWindow.m_Scope == scopes);
         }
 
+        [VisibleToOtherModules("UnityEditor.ProjectAuditorModule")]
         internal class GUIScope : GUI.Scope
         {
             float m_LabelWidth;

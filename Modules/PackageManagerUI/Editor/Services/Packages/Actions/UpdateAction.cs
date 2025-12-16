@@ -19,7 +19,7 @@ internal class UpdateAction : UpdateActionBase
 
     public override IPackageVersion GetUpdateTarget(IPackageVersion version) => version?.package?.versions.suggestedUpdate ?? version;
 
-    protected override bool TriggerActionImplementation(IList<IPackage> packages)
+    protected override bool TriggerActionImplementation(IReadOnlyCollection<IPackage> packages)
     {
         var primaryVersions = new List<IPackageVersion>();
         var updateTargets = new List<IPackageVersion>();

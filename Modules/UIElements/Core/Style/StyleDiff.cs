@@ -131,12 +131,19 @@ namespace UnityEngine.UIElements
         [CreateProperty(ReadOnly = true)]
         public bool isUxmlOverridden => uxmlValue.isInlined || binding != null;
 
+        EqualityComparer<TComputedValue> m_ComputedValueComparer;
+        public EqualityComparer<TComputedValue> computedValueComparer
+        {
+            get => m_ComputedValueComparer ?? EqualityComparer<TComputedValue>.Default;
+            set => m_ComputedValueComparer = value;
+        }
+
         public bool Equals(StylePropertyData<TInline, TComputedValue> other)
         {
             return id == other.id &&
                    EqualityComparer<TInline>.Default.Equals(inlineValue, other.inlineValue) &&
                    uxmlValue.Equals(other.uxmlValue) &&
-                   EqualityComparer<TComputedValue>.Default.Equals(computedValue, other.computedValue) &&
+                   computedValueComparer.Equals(computedValue, other.computedValue) &&
                    binding == other.binding &&
                    selector.Equals(other.selector);
         }
@@ -206,6 +213,37 @@ namespace UnityEngine.UIElements
     [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
     internal sealed partial class StyleDiff : INotifyBindablePropertyChanged, IDataSourceViewHashProvider, IDisposable
     {
+        class ListEqualityComparer<T, V> : EqualityComparer<T>
+            where T : List<V>
+        {
+            public new static ListEqualityComparer<T, V> Default = new ListEqualityComparer<T, V>();
+
+            public override bool Equals(T x, T y)
+            {
+                if (x == null ^ y == null)
+                    return false;
+
+                if (x == null)
+                    return true;
+
+                if (x.Count != y.Count)
+                    return false;
+
+                for (var i = 0; i < x.Count; ++i)
+                {
+                    if (!EqualityComparer<V>.Default.Equals(x[i], y[i]))
+                        return false;
+                }
+
+                return true;
+            }
+
+            public override int GetHashCode(T obj)
+            {
+                return obj.GetHashCode();
+            }
+        }
+
         static readonly ProfilerMarker s_StyleDiffRefreshProfilerMarker = new ProfilerMarker("StyleDiff.Refresh()");
         internal static readonly MemoryLabel k_MemoryLabel = new (nameof(UIElements), $"Style.{nameof(StyleDiff)}");
 
@@ -220,12 +258,12 @@ namespace UnityEngine.UIElements
         {
             public readonly StyleDiff diff;
             public readonly StyleSheet styleSheet;
-            public readonly Dictionary<string, UxmlData> uxmlData;
+            public readonly Dictionary<StylePropertyId, UxmlData> uxmlData;
 
             public ResolutionContext(
                 StyleDiff diff,
                 StyleSheet inline,
-                Dictionary<string, UxmlData> uxmlData)
+                Dictionary<StylePropertyId, UxmlData> uxmlData)
             {
                 this.diff = diff;
                 styleSheet = inline;
@@ -284,22 +322,19 @@ namespace UnityEngine.UIElements
 
 
             using var marker = s_StyleDiffRefreshProfilerMarker.Auto();
-            using var uxmlDataHandle = DictionaryPool<string, UxmlData>.Get(out var uxmlData);
+            using var uxmlDataHandle = DictionaryPool<StylePropertyId, UxmlData>.Get(out var uxmlData);
 
             if ((flags & StyleDiffAdditionalDataFlags.UxmlInlineProperties) == StyleDiffAdditionalDataFlags.UxmlInlineProperties && null != styleRule)
             {
                 foreach (var property in styleRule.properties)
                 {
-                    if (StylePropertyUtil.ussNameToCSharpName.TryGetValue(property.name, out var csharpName) && csharpName != property.name)
+                    if (property.id == StylePropertyId.Custom)
                     {
-                        var d = uxmlData.GetValueOrDefault(csharpName);
-                        uxmlData[csharpName] = UxmlData.WithProperty(d, property);
+                        // [TODO] Support variables in the style diff
+                        continue;
                     }
-
-                    {
-                        var d = uxmlData.GetValueOrDefault(csharpName);
-                        uxmlData[property.name] = UxmlData.WithProperty(d, property);
-                    }
+                    var d = uxmlData.GetValueOrDefault(property.id);
+                    uxmlData[property.id] = UxmlData.WithProperty(d, property);
                 }
             }
 
@@ -314,21 +349,36 @@ namespace UnityEngine.UIElements
                     if (path.Length == 2 && path[0].IsName && string.CompareOrdinal(path[0].Name, "style") == 0 && path[1].IsName)
                     {
                         var styleNamePart = path[1].Name;
-                        var d = uxmlData.GetValueOrDefault(styleNamePart);
-                        uxmlData[styleNamePart] = UxmlData.WithBindingInfo(d, info);
+                        if (StylePropertyUtil.propertyNameToStylePropertyId.TryGetValue(styleNamePart, out var id) ||
+                            (StylePropertyUtil.cSharpNameToUssName.TryGetValue(styleNamePart, out var propertyName) &&
+                            StylePropertyUtil.propertyNameToStylePropertyId.TryGetValue(propertyName, out id)))
+                        {
+                            var d = uxmlData.GetValueOrDefault(id);
+                            uxmlData[id] = UxmlData.WithBindingInfo(d, info);
+                        }
                     }
                 }
             }
 
             if ((flags & StyleDiffAdditionalDataFlags.Selectors) == StyleDiffAdditionalDataFlags.Selectors)
             {
-                using var handle = DictionaryPool<string, SelectorMatchRecord>.Get(out var propertyToMatchRecord);
+                using var handle = DictionaryPool<StylePropertyId, SelectorMatchRecord>.Get(out var propertyToMatchRecord);
                 FindMatchingRules(currentTarget, propertyToMatchRecord);
 
                 foreach (var record in propertyToMatchRecord)
                 {
-                    var d = uxmlData.GetValueOrDefault(record.Key);
-                    uxmlData[record.Key] = UxmlData.WithSelector(d, record.Value);
+                    var propertyId = record.Key;
+                    var d = uxmlData.GetValueOrDefault(propertyId);
+                    uxmlData[propertyId] = UxmlData.WithSelector(d, record.Value);
+                    if (StyleDebug.IsShorthandProperty(propertyId))
+                    {
+                        using var listHandle = ListPool<StylePropertyId>.Get(out var longHandPropertyIds);
+                        StyleDebug.PopulateLonghandPropertyIds(propertyId, longHandPropertyIds);
+                        foreach (var longHandId in longHandPropertyIds)
+                        {
+                            uxmlData[longHandId] = UxmlData.WithSelector(d, record.Value);
+                        }
+                    }
                 }
             }
 
@@ -336,7 +386,7 @@ namespace UnityEngine.UIElements
             Refresh(currentTarget, in context);
         }
 
-        private void FindMatchingRules(VisualElement element, Dictionary<string, SelectorMatchRecord> propertyToMatchRecord)
+        private void FindMatchingRules(VisualElement element, Dictionary<StylePropertyId, SelectorMatchRecord> propertyToMatchRecord)
         {
             m_MatchedRules.FindMatchingRules(element);
             for (var i = 0; i < m_MatchedRules.matchRecords.Count; ++i)
@@ -346,9 +396,7 @@ namespace UnityEngine.UIElements
                 for (var j = 0; j < properties.Length; ++j)
                 {
                     var property = properties[j];
-                    if (StylePropertyUtil.ussNameToCSharpName.TryGetValue(property.name, out var csharpName) && csharpName != property.name)
-                        propertyToMatchRecord[csharpName] = record;
-                    propertyToMatchRecord[property.name] = record;
+                    propertyToMatchRecord[property.id] = record;
                 }
             }
         }
@@ -358,16 +406,18 @@ namespace UnityEngine.UIElements
             string propertyName,
             in TInline inlineStyle,
             in TComputed computedStyle,
-            in ResolutionContext context)
+            in ResolutionContext context,
+            EqualityComparer<TComputed> computedValueEqualityComparer = null)
         {
             var property = new StylePropertyData<TInline, TComputed>
             {
                 id = id,
                 inlineValue = inlineStyle,
                 computedValue = computedStyle,
+                computedValueComparer = computedValueEqualityComparer
             };
 
-            if (!context.uxmlData.TryGetValue(propertyName, out var uxmlData))
+            if (!context.uxmlData.TryGetValue(id, out var uxmlData))
                 return property;
 
             var inlined = null != uxmlData.inlineProperty;
@@ -391,7 +441,7 @@ namespace UnityEngine.UIElements
                 id = id,
             };
 
-            if (!context.uxmlData.TryGetValue(propertyName, out var uxmlData))
+            if (!context.uxmlData.TryGetValue(id, out var uxmlData))
                 return property;
 
             var inlined = null != uxmlData.inlineProperty;

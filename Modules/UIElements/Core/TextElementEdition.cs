@@ -335,8 +335,12 @@ namespace UnityEngine.UIElements
                     RegisterCallbackOnce<FocusEvent>(_ =>
                     {
                         // Don't react after event was disposed and we didn't get focus for any reason.
-                        if (evt.timestamp == evtTimestamp)
-                            elementPanel?.contextualMenuManager?.DisplayMenu(evt, this);
+                        if (evt.timestamp != evtTimestamp)
+                            return;
+
+                        // Repaint the panel now because they won't get another chance when the menu is up
+                        var menu = new DropdownMenu { repaintPanelBeforeDisplay = true };
+                        elementPanel?.contextualMenuManager?.DisplayMenu(evt, this, menu);
                     });
                 }
                 else
@@ -512,17 +516,24 @@ namespace UnityEngine.UIElements
             set => m_HidePlaceholderTextOnFocus = value;
         }
 
-        internal bool showPlaceholderText
+        internal bool needsPlaceholderIfTextIsEmpty
         {
             get
             {
                 var isPlaceholderVisible = m_PlaceholderText.Length > 0;
                 var shouldHideOnFocus = edition.hidePlaceholderOnFocus && hasFocus;
+                return isPlaceholderVisible && !shouldHideOnFocus;
+            }
+        }
+
+        internal bool showPlaceholderText
+        {
+            get
+            {
+                if (!needsPlaceholderIfTextIsEmpty)
+                    return false;
+
                 var isTextEmpty = string.IsNullOrEmpty(text);
-
-                if (!isPlaceholderVisible) return false;
-                if (shouldHideOnFocus) return false;
-
                 return isTextEmpty;
             }
         }

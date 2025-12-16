@@ -239,9 +239,11 @@ namespace UnityEditorInternal.FrameDebuggerInternal
             internal const string k_WarningMultiThreadedMsg = "The Frame Debugger requires multi-threaded renderer. If this error persists, try starting the Editor with -force-gfx-mt command line argument.";
             internal const string k_WarningLinuxOpenGLMsg = k_WarningMultiThreadedMsg + " On Linux, the editor does not support a multi-threaded renderer when using OpenGL.";
             internal const string k_DescriptionString = "Frame Debugger lets you step through draw calls and see how exactly frame is rendered. Click Enable!";
-            internal const string k_PlaymodeViewsErrorString = "Frame Debugger requires at least one available Game (Play Mode) window.\n" +
+            internal const string k_PlaymodeViewsErrorStringEditor = "Frame Debugger requires at least one available Game (Play Mode) window.\n" +
                                                                "- If no Game windows are open, please open a Game window to continue.\n" +
                                                                "- If the Frame Debugger is docked in the same tab group as a Game window, undock one of them before proceeding.";
+            internal const string k_ErrorInvalidPlayerGUID = "Player GUID is invalid.";
+            internal const string k_WarningPlayerNotSendingData = "No response from player. \nTry: Focus the player window, verify it's a Development Build, and check it uses MultiThreaded, LegacyJobified, or NativeGraphicsJobs threading mode.";
 
             internal static readonly GUIContent s_RenderTargetText = EditorGUIUtility.TrTextContent("RenderTarget");
             internal static readonly GUIContent s_CopyEventText = EditorGUIUtility.TrTextContent("Copy Event Info");

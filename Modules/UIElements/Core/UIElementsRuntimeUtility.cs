@@ -4,7 +4,6 @@
 
 using System;
 using System.Collections.Generic;
-using Unity.Profiling;
 using UnityEngine.TextCore.Text;
 using UnityEngine.Bindings;
 using UnityEngine.UIElements.Layout;
@@ -18,8 +17,6 @@ namespace UnityEngine.UIElements
         public static event Action<BaseRuntimePanel> onCreatePanel;
         public static event Action<BaseRuntimePanel> onWillDestroyPanel;
 
-        internal static Func<bool> IsEditingPrefab = null;
-
         static UIElementsRuntimeUtility()
         {
             Canvas.externBeginRenderOverlays = BeginRenderOverlays;
@@ -31,7 +28,7 @@ namespace UnityEngine.UIElements
 
         public static EventBase CreateEvent(Event systemEvent)
         {
-            return UIElementsUtility.CreateEvent(systemEvent, systemEvent.rawType);
+            return UIElementsIMGUIUtility.CreateEvent(systemEvent, systemEvent.rawType);
         }
 
         public delegate BaseRuntimePanel CreateRuntimePanelDelegate(ScriptableObject ownerObject);
@@ -39,27 +36,27 @@ namespace UnityEngine.UIElements
         public static BaseRuntimePanel FindOrCreateRuntimePanel(ScriptableObject ownerObject,
             CreateRuntimePanelDelegate createDelegate)
         {
-            if (UIElementsUtility.TryGetPanel(ownerObject.GetInstanceID(), out Panel cachedPanel))
+            if (UIElementsUtility.TryGetPanel(ownerObject.GetEntityId(), out Panel cachedPanel))
             {
                 if (cachedPanel is BaseRuntimePanel runtimePanel)
                     return runtimePanel;
-                RemoveCachedPanelInternal(ownerObject.GetInstanceID()); // Maybe throw exception instead?
+                RemoveCachedPanelInternal(ownerObject.GetEntityId()); // Maybe throw exception instead?
             }
 
             var panel = createDelegate(ownerObject);
             panel.IMGUIEventInterests = new EventInterests {wantsMouseMove = true, wantsMouseEnterLeaveWindow = true};
-            RegisterCachedPanelInternal(ownerObject.GetInstanceID(), panel);
+            RegisterCachedPanelInternal(ownerObject.GetEntityId(), panel);
             onCreatePanel?.Invoke(panel);
             return panel;
         }
 
         public static void DisposeRuntimePanel(ScriptableObject ownerObject)
         {
-            if (UIElementsUtility.TryGetPanel(ownerObject.GetInstanceID(), out var panel))
+            if (UIElementsUtility.TryGetPanel(ownerObject.GetEntityId(), out var panel))
             {
                 onWillDestroyPanel?.Invoke((BaseRuntimePanel)panel);
                 panel.Dispose();
-                RemoveCachedPanelInternal(ownerObject.GetInstanceID());
+                RemoveCachedPanelInternal(ownerObject.GetEntityId());
             }
         }
 
@@ -83,9 +80,9 @@ namespace UnityEngine.UIElements
 
         private static bool s_RegisteredPlayerloopCallback = false;
 
-        private static void RegisterCachedPanelInternal(int instanceID, IPanel panel)
+        private static void RegisterCachedPanelInternal(EntityId entityId, IPanel panel)
         {
-            UIElementsUtility.RegisterCachedPanel(instanceID, panel as Panel);
+            UIElementsUtility.RegisterCachedPanel(entityId, panel as Panel);
             s_PanelOrderingOrDrawInCameraDirty = true;
             if (!s_RegisteredPlayerloopCallback)
             {
@@ -95,9 +92,9 @@ namespace UnityEngine.UIElements
             }
         }
 
-        private static void RemoveCachedPanelInternal(int instanceID)
+        private static void RemoveCachedPanelInternal(EntityId entityId)
         {
-            UIElementsUtility.RemoveCachedPanel(instanceID);
+            UIElementsUtility.RemoveCachedPanel(entityId);
 
             s_PanelOrderingOrDrawInCameraDirty = true;
 

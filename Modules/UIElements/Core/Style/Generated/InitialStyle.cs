@@ -35,7 +35,7 @@ namespace UnityEngine.UIElements.StyleSheets
             s_InitialStyle.layoutData.Write().alignSelf = Align.Auto;
             s_InitialStyle.layoutData.Write().aspectRatio = StyleKeyword.Auto.ToStyleRatio();
             s_InitialStyle.visualData.Write().backgroundColor = Color.clear;
-            s_InitialStyle.visualData.Write().backgroundImage = default(Background);
+            s_InitialStyle.visualData.Write().backgroundImage = default(EntityId);
             s_InitialStyle.visualData.Write().backgroundPositionX = BackgroundPosition.Initial();
             s_InitialStyle.visualData.Write().backgroundPositionY = BackgroundPosition.Initial();
             s_InitialStyle.visualData.Write().backgroundRepeat = BackgroundRepeat.Initial();
@@ -56,7 +56,7 @@ namespace UnityEngine.UIElements.StyleSheets
             s_InitialStyle.inheritedData.Write().color = Color.black;
             s_InitialStyle.rareData.Write().cursor = default(Cursor);
             s_InitialStyle.layoutData.Write().display = DisplayStyle.Flex;
-            s_InitialStyle.visualData.Write().filter = new List<FilterFunction>();
+            s_InitialStyle.rareData.Write().filter = new List<FilterFunction>();
             s_InitialStyle.layoutData.Write().flexBasis = StyleKeyword.Auto.ToLength();
             s_InitialStyle.layoutData.Write().flexDirection = FlexDirection.Column;
             s_InitialStyle.layoutData.Write().flexGrow = 0f;
@@ -76,7 +76,7 @@ namespace UnityEngine.UIElements.StyleSheets
             s_InitialStyle.layoutData.Write().minHeight = StyleKeyword.Auto.ToLength();
             s_InitialStyle.layoutData.Write().minWidth = StyleKeyword.Auto.ToLength();
             s_InitialStyle.visualData.Write().opacity = 1f;
-            s_InitialStyle.visualData.Write().overflow = OverflowInternal.Visible;
+            s_InitialStyle.layoutData.Write().overflow = OverflowInternal.Visible;
             s_InitialStyle.layoutData.Write().paddingBottom = 0f;
             s_InitialStyle.layoutData.Write().paddingLeft = 0f;
             s_InitialStyle.layoutData.Write().paddingRight = 0f;
@@ -125,7 +125,7 @@ namespace UnityEngine.UIElements.StyleSheets
         public static Align alignSelf => s_InitialStyle.layoutData.Read().alignSelf;
         public static Ratio aspectRatio => s_InitialStyle.layoutData.Read().aspectRatio;
         public static Color backgroundColor => s_InitialStyle.visualData.Read().backgroundColor;
-        public static Background backgroundImage => s_InitialStyle.visualData.Read().backgroundImage;
+        public static EntityId backgroundImage => s_InitialStyle.visualData.Read().backgroundImage;
         public static BackgroundPosition backgroundPositionX => s_InitialStyle.visualData.Read().backgroundPositionX;
         public static BackgroundPosition backgroundPositionY => s_InitialStyle.visualData.Read().backgroundPositionY;
         public static BackgroundRepeat backgroundRepeat => s_InitialStyle.visualData.Read().backgroundRepeat;
@@ -146,7 +146,7 @@ namespace UnityEngine.UIElements.StyleSheets
         public static Color color => s_InitialStyle.inheritedData.Read().color;
         public static Cursor cursor => s_InitialStyle.rareData.Read().cursor;
         public static DisplayStyle display => s_InitialStyle.layoutData.Read().display;
-        public static List<FilterFunction> filter => s_InitialStyle.visualData.Read().filter;
+        public static List<FilterFunction> filter => s_InitialStyle.rareData.Read().filter;
         public static Length flexBasis => s_InitialStyle.layoutData.Read().flexBasis;
         public static FlexDirection flexDirection => s_InitialStyle.layoutData.Read().flexDirection;
         public static float flexGrow => s_InitialStyle.layoutData.Read().flexGrow;
@@ -166,7 +166,7 @@ namespace UnityEngine.UIElements.StyleSheets
         public static Length minHeight => s_InitialStyle.layoutData.Read().minHeight;
         public static Length minWidth => s_InitialStyle.layoutData.Read().minWidth;
         public static float opacity => s_InitialStyle.visualData.Read().opacity;
-        public static OverflowInternal overflow => s_InitialStyle.visualData.Read().overflow;
+        public static OverflowInternal overflow => s_InitialStyle.layoutData.Read().overflow;
         public static Length paddingBottom => s_InitialStyle.layoutData.Read().paddingBottom;
         public static Length paddingLeft => s_InitialStyle.layoutData.Read().paddingLeft;
         public static Length paddingRight => s_InitialStyle.layoutData.Read().paddingRight;

@@ -27,6 +27,8 @@ using System.Runtime.CompilerServices;
 [assembly: InternalsVisibleTo("Unity.Motion.Editor.Tests")]
 [assembly: InternalsVisibleTo("Unity.Motion.Hybrid.Tests")]
 [assembly: InternalsVisibleTo("Unity.Motion.StateMachine.Tests")]
+[assembly: InternalsVisibleTo("Unity.ShaderGraph2.Editor")]
+[assembly: InternalsVisibleTo("Unity.ShaderGraph2.Tests")]
 
 // Test Samples
 [assembly: InternalsVisibleTo("Unity.GraphToolkit.Samples.BlackboardSample")]

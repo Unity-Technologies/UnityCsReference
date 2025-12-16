@@ -35,12 +35,20 @@ namespace UnityEngine.LowLevelPhysics2D
         /// <summary>
         /// A body is one of these three body types, Dynamic, Kinematic or Static, each of which determines how the body behaves in the simulation.
         /// </summary>
-        public RigidbodyType2D bodyType { readonly get => m_BodyType; set => m_BodyType = value; }
+        public PhysicsBody.BodyType type { readonly get => m_BodyType; set => m_BodyType = value; }
+
+        /// <undoc/>
+        [Obsolete("PhysicsBodyDefinition.bodyType has been deprecated. Please use PhysicsBodyDefinition.type instead.", false)]
+        public RigidbodyType2D bodyType { readonly get => (RigidbodyType2D)m_BodyType; set => m_BodyType = (PhysicsBody.BodyType)value; }
 
         /// <summary>
         /// The degrees of freedom constraints (locks) for the body of Linear X, Linear Y and Rotation Z.
         /// </summary>
-        public RigidbodyConstraints2D bodyConstraints { readonly get => m_BodyConstraints; set => m_BodyConstraints = value; }
+        public PhysicsBody.BodyConstraints constraints { readonly get => m_BodyConstraints; set => m_BodyConstraints = value; }
+
+        /// <undoc/>
+        [Obsolete("PhysicsBodyDefinition.bodyConstraints has been deprecated. Please use PhysicsBodyDefinition.constraints instead.", false)]
+        public RigidbodyConstraints2D bodyConstraints { readonly get => (RigidbodyConstraints2D)m_BodyConstraints; set => m_BodyConstraints = (PhysicsBody.BodyConstraints)value; }
 
         /// <summary>
         /// The method used to Write the body pose to the Transform.
@@ -121,8 +129,8 @@ namespace UnityEngine.LowLevelPhysics2D
 
         #region Internal
 
-        [SerializeField] RigidbodyType2D m_BodyType;
-        [SerializeField] RigidbodyConstraints2D m_BodyConstraints;
+        [SerializeField] PhysicsBody.BodyType m_BodyType;
+        [SerializeField] PhysicsBody.BodyConstraints m_BodyConstraints;
         [SerializeField] PhysicsBody.TransformWriteMode m_TransformWriteMode;
         [SerializeField] Vector2 m_Position;
         [SerializeField] PhysicsRotate m_Rotation;

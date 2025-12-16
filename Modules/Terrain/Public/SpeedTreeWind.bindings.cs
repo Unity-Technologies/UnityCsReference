@@ -41,7 +41,7 @@ namespace UnityEngine.Rendering
     [StaticAccessor("GetSpeedTreeWindManager()", StaticAccessorType.Dot)]
     internal static class SpeedTreeWindManager
     {
-        public static extern void UpdateWindAndWriteBufferWindParams(ReadOnlySpan<int> renderersID, SpeedTreeWindParamsBufferIterator windParams, bool history);
+        public static extern void UpdateWindAndWriteBufferWindParams(ReadOnlySpan<EntityId> renderersID, SpeedTreeWindParamsBufferIterator windParams, bool history);
     }
 
     [UsedByNativeCode]

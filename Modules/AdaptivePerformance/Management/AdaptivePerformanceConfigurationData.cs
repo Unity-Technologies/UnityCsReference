@@ -28,10 +28,11 @@ namespace UnityEngine.AdaptivePerformance
         public string displayName { get; set; }
 
         /// <summary>
-        /// The key that will be used to store the singleton instance of these settings within EditorBuildSettings.
-        /// For more information, see the <see href="https://docs.unity3d.com/ScriptReference/EditorBuildSettings.html">EditorBuildSettings</see> scripting
-        /// API documentation.
+        /// The key used to store the singleton instance of these settings within `EditorBuildSettings`.
         /// </summary>
+        /// <remarks>
+        /// To access the configuration settings instance, retrieve the object from [[EditorBuildSettings]] using this key.
+        /// </remarks>
         public string buildSettingsKey { get; set; }
 
         private AdaptivePerformanceConfigurationDataAttribute() {}

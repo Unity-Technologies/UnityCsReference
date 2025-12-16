@@ -197,6 +197,8 @@ namespace UnityEditor
         public static CallbackFunction update;
 
         private static DelegateWithPerformanceTracker<CallbackFunction> m_UpdateEvent = new DelegateWithPerformanceTracker<CallbackFunction>($"{nameof(EditorApplication)}.{nameof(update)}");
+
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
         internal static event CallbackFunction tick;
 
         public static event Func<bool> wantsToQuit
@@ -216,7 +218,7 @@ namespace UnityEditor
         public static CallbackFunction delayCall;
         private static DelegateWithPerformanceTracker<CallbackFunction> m_DelayCallEvent = new DelegateWithPerformanceTracker<CallbackFunction>($"{nameof(EditorApplication)}.{nameof(delayCall)}");
 
-        [VisibleToOtherModules("UnityEditor.GraphToolkitModule")]
+        [VisibleToOtherModules("UnityEditor.BurstModule")]
         internal static Action CallDelayed(CallbackFunction action, double delaySeconds = 0.0f)
         {
             var startTime = DateTime.UtcNow;

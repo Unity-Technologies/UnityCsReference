@@ -97,6 +97,8 @@ sealed class AudioContainerWindow : EditorWindow
     VisualElement m_CountRandomizationButtonImage;
     MinMaxSlider m_CountRandomizationRangeSlider;
     Vector2Field m_CountRandomizationRangeField;
+    readonly Vector2 m_CountRandomizationBounds = new(-10, 10);
+
     Label m_AutomaticTriggerModeLabel;
     Label m_LoopLabel;
 
@@ -768,7 +770,7 @@ sealed class AudioContainerWindow : EditorWindow
 
         element.SetEnabled(true);
         audioClipField.RegisterCallback<DragPerformEvent>(OnListDragPerform);
-        audioClipField.AssetElementInstanceID = listElement.GetInstanceID();
+        audioClipField.AssetElementEntityId = listElement.GetEntityId();
 
         var serializedObject = new SerializedObject(listElement);
 
@@ -1026,7 +1028,7 @@ sealed class AudioContainerWindow : EditorWindow
             {
                 var field = clipFields[j];
 
-                if (field.AssetElementInstanceID == playables[i].settings.element.GetInstanceID())
+                if (field.AssetElementEntityId == playables[i].settings.element.GetEntityId())
                 {
                     field.Progress = playable.GetClipPositionSec() / playable.GetClip().length;
                     clipFields.RemoveAt(j);
@@ -1162,6 +1164,8 @@ sealed class AudioContainerWindow : EditorWindow
     {
         m_TimeRandomizationButton.clicked += OnTimeRandomizationButtonClicked;
         m_CountRandomizationButton.clicked += OnCountRandomizationButtonClicked;
+        m_CountRandomizationRangeSlider.RegisterCallback<ChangeEvent<Vector2>>(OnCountRandomizationRangeChanged, TrickleDown.TrickleDown);
+        m_CountRandomizationRangeSlider.RegisterCallback<MouseCaptureOutEvent>(OnCountSliderMouseUp, TrickleDown.TrickleDown);
         m_TimeSlider.RegisterValueChangedCallback(OnTimeChanged);
         m_TimeRandomizationRangeField.RegisterValueChangedCallback(OnTimeRandomizationRangeChanged);
         m_TimeRandomizationRangeSlider.RegisterValueChangedCallback(OnTimeRandomizationRangeChanged);
@@ -1174,6 +1178,9 @@ sealed class AudioContainerWindow : EditorWindow
 
         if (m_CountRandomizationButton != null)
             m_CountRandomizationButton.clicked -= OnCountRandomizationButtonClicked;
+
+        m_CountRandomizationRangeSlider?.UnregisterCallback<ChangeEvent<Vector2>>(OnCountRandomizationRangeChanged);
+        m_CountRandomizationRangeSlider?.UnregisterCallback<MouseCaptureOutEvent>(OnCountSliderMouseUp, TrickleDown.TrickleDown);
 
         m_TimeSlider?.UnregisterValueChangedCallback(OnTimeChanged);
         m_TimeRandomizationRangeField?.UnregisterValueChangedCallback(OnTimeRandomizationRangeChanged);
@@ -1341,6 +1348,30 @@ sealed class AudioContainerWindow : EditorWindow
         var newButtonStateString = !State.AudioContainer.loopCountRandomizationEnabled ? "Enabled" : "Disabled";
         Undo.RecordObject(State.AudioContainer, $"Modified Count Randomization {newButtonStateString} in {State.AudioContainer.name}");
         State.AudioContainer.loopCountRandomizationEnabled = !State.AudioContainer.loopCountRandomizationEnabled;
+    }
+
+    void OnCountRandomizationRangeChanged(ChangeEvent<Vector2> evt)
+    {
+
+        // always stop propagation to stop decimals coming through, we will apply the value in OnCountSliderMouseUp
+        // This stops jittering of the slider/field
+        evt.StopImmediatePropagation();
+
+        var roundedAndClampedValue = new Vector2(
+            Mathf.Clamp(Mathf.RoundToInt(evt.newValue.x), m_CountRandomizationBounds.x, 0.0f),
+            Mathf.Clamp(Mathf.RoundToInt(evt.newValue.y), 0.0f, m_CountRandomizationBounds.y)
+        );
+
+        m_CountRandomizationRangeSlider.SetValueWithoutNotify(roundedAndClampedValue);
+        m_CountRandomizationRangeField.SetValueWithoutNotify(roundedAndClampedValue);
+
+    }
+
+    void OnCountSliderMouseUp(MouseCaptureOutEvent evt)
+    {
+        var property = State.SerializedObject.FindProperty("m_LoopCountRandomizationRange");
+        property.vector2Value = m_CountRandomizationRangeSlider.value;
+        State.SerializedObject.ApplyModifiedProperties();
     }
 
     void OnAudioMasterMuteChanged(bool isMuted)

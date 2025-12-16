@@ -14,9 +14,10 @@ namespace UnityEditor.PackageManager.UI.Internal
     [Serializable]
     internal class AssetStoreDownloadOperation : IOperation
     {
+        public const string k_AssetStoreDownloadPrefix = "content__";
+        // The internal modifier is used (instead of private) to give our test project access to these properties/methods
         internal static readonly string k_DownloadErrorMessage = L10n.Tr("The download could not be completed. See details in console.");
         internal static readonly string k_AbortErrorMessage = L10n.Tr("The download could not be canceled. Please try again.");
-        internal static readonly string k_AssetStoreDownloadPrefix = "content__";
         internal static readonly string k_NotPurchasedErrorMessage = L10n.Tr("The Asset Store package you are trying to download is not available to the current Unity account. If you purchased this asset from the Asset Store using a different account, use that Unity account to sign into the Editor.");
         internal static readonly string k_ForbiddenErrorMessage = L10n.Tr("The Asset Store package couldn't be downloaded at this time. Please try again later. Should the issue persist, please contact our <a href=\"https://support.unity.com\">customer support</a> for assistance.");
         private static readonly string k_ConsoleLogPrefix = L10n.Tr("[Package Manager Window]");

@@ -48,5 +48,8 @@ namespace Unity.GraphToolkit.Editor
         /// </summary>
         /// <param name="graphModel">The graph model to initialize.</param>
         public virtual void InitBasicGraph(GraphModel graphModel) { }
+
+        // Called on local subgraphs before GraphModel.OnEnable. Needed for the mini API to work.
+        internal virtual void InitLocalSubgraphsPreOnEnable(GraphModel graphModel) { }
     }
 }

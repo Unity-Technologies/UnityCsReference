@@ -31,7 +31,7 @@ namespace UnityEditor.PackageManager.UI.Internal
     {
         public AssetStoreDownloadInfo ParseDownloadInfo(IDictionary<string, object> rawInfo)
         {
-            if (rawInfo?.Any() != true)
+            if (rawInfo == null || rawInfo.Count == 0)
                 return null;
 
             try

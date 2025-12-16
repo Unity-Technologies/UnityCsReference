@@ -425,7 +425,8 @@ namespace UnityEditor.UIElements
                 valueCache[i] = currentValue;
             }
 
-            Vector3 scale = new Vector3(m_Content.layout.width, m_Content.layout.height);
+            var contentSize = m_Content.layoutSize;
+            Vector3 scale = new Vector3(contentSize.x, contentSize.y);
 
             var yStartValue = (!Mathf.Approximately(minValue, maxValue)) ? 1.0f : 0.5f;
             vertices[0] = vertices[1] = Vector3.Scale(new Vector3(0, yStartValue - Mathf.InverseLerp(minValue, maxValue, valueCache[0]), 0), scale);
@@ -488,11 +489,11 @@ namespace UnityEditor.UIElements
 
             if (Mathf.Approximately(minValue, maxValue))
             {
-                m_ZeroIndicator.style.top = m_Content.layout.height * Mathf.InverseLerp(-1, 1, minValue);
+                m_ZeroIndicator.style.top = m_Content.layoutSize.y * Mathf.InverseLerp(-1, 1, minValue);
             }
             else
             {
-                m_ZeroIndicator.style.top = m_Content.layout.height * (yStartValue - Mathf.InverseLerp(minValue, maxValue, 0));
+                m_ZeroIndicator.style.top = m_Content.layoutSize.y * (yStartValue - Mathf.InverseLerp(minValue, maxValue, 0));
             }
         }
 
@@ -513,8 +514,9 @@ namespace UnityEditor.UIElements
 
             m_TextureDirty = false;
 
-            int previewWidth = (int)visualInput.layout.width;
-            int previewHeight = (int)visualInput.layout.height;
+            var inputSize = visualInput.layoutSize;
+            int previewWidth = (int)inputSize.x;
+            int previewHeight = (int)inputSize.y;
 
             // The default range is (0,0,-1,-1), see AnimationCurvePreviewCache.cpp
             // This will mimic the IMGUI curve since the range will be calculated by the CurvePreview if the range is at the default value...

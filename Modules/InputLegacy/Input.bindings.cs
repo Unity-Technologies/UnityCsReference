@@ -280,14 +280,6 @@ namespace UnityEngine
         }
     }
 
-    [NativeHeader("Runtime/Camera/Camera.h")]
-    // This is needed to internally call Physics/Physics2D using an interface if available, so we don't have a hard dependency on Physics.
-    internal class CameraRaycastHelper
-    {
-        [FreeFunction("CameraScripting::RaycastTry")]   extern internal static GameObject RaycastTry(Camera cam, Ray ray, float distance, int layerMask);
-        [FreeFunction("CameraScripting::RaycastTry2D")] extern internal static GameObject RaycastTry2D(Camera cam, Ray ray, float distance, int layerMask);
-    }
-
     // Burst-compatible unmanaged string calls can not be in UnityEngine namespace (UnityEngine.Internal is okay)
     namespace Internal
     {

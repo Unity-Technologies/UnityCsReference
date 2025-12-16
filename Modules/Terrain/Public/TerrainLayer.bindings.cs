@@ -12,8 +12,14 @@ namespace UnityEngine
     // NOTE: keep in sync with TerrainLayer::SmoothnessSource in TerrainLayer.h
     public enum TerrainLayerSmoothnessSource
     {
-        Constant,
-        DiffuseAlphaChannel
+        [InspectorName("Constant * Diffuse Alpha")]
+        ConstantMultipliedByDiffuseAlpha = 0,
+
+        [InspectorName("Diffuse Alpha Channel")]
+        DiffuseAlphaChannel = 1,
+
+        [InspectorName("Constant Only")]
+        ConstantOnly = 2
     }
 
     [StructLayout(LayoutKind.Sequential)]

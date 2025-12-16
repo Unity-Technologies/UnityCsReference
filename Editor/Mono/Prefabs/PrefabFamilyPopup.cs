@@ -31,7 +31,7 @@ namespace UnityEditor
         ObjectListArea m_ListArea;
         ObjectListAreaState m_ListAreaState = new ObjectListAreaState() { m_GridSize = 56 };
         SavedInt m_SavedGridSize = new SavedInt("PrefabFamilyPopup.GridSize", 56);
-        int[] m_Results = null;
+        EntityId[] m_Results = null;
         Delayer m_Debounce;
         SearchFilter m_SearchFilter;
         string m_SearchFilterString = "";
@@ -186,8 +186,8 @@ namespace UnityEditor
 
                 items.Add(new AncestorItem { assetPath = assetPath, overrideCount = -1 });
 
-                var instanceID = AssetDatabase.GetMainAssetEntityId(assetPath);
-                currentGUID = PrefabUtility.GetVariantParentGUID(instanceID);
+                var entityId = AssetDatabase.GetMainAssetEntityId(assetPath);
+                currentGUID = PrefabUtility.GetVariantParentGUID(entityId);
             }
 
             return items.ToArray();
@@ -509,12 +509,12 @@ namespace UnityEditor
 
             m_ListArea.Init(rect, HierarchyType.Assets, new SearchFilter(), true, SearchService.SearchSessionOptions.Default);
             m_Enumerator = FindInAllAssets(m_SearchFilter);
-            m_Results = new int[0];
+            m_Results = new EntityId[0];
         }
 
         void Search()
         {
-            var newResults = new List<int>();
+            var newResults = new List<EntityId>();
 
             var maxAddCount = k_MaxSearchIterationPerFrame;
             while (--maxAddCount >= 0)
@@ -525,11 +525,11 @@ namespace UnityEditor
                     break;
                 }
 
-                var currentInstanceID = m_Enumerator.Current.entityId;
-                var variantParentGUID = PrefabUtility.GetVariantParentGUID(currentInstanceID);
+                var currentEntityId = m_Enumerator.Current.entityId;
+                var variantParentGUID = PrefabUtility.GetVariantParentGUID(currentEntityId);
                 if (variantParentGUID == m_TargetGUID)
                 {
-                    newResults.Add(currentInstanceID);
+                    newResults.Add(currentEntityId);
                 }
             }
 

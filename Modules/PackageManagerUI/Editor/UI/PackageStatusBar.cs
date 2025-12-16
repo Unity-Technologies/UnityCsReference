@@ -16,6 +16,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             public override object CreateInstance() => new PackageStatusBar();
         }
 
+        // The internal modifier is used (instead of private) to give our test project access to these properties/methods
         internal static readonly string k_OfflineErrorMessage = L10n.Tr("You seem to be offline");
 
         private enum StatusType { Normal, Loading, Error }
@@ -195,6 +196,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             SetStatusMessage(StatusType.Normal, label);
         }
 
+        // The internal modifier is used (instead of private) to give our test project access to these properties/methods
         internal void OnCheckUpdateProgress()
         {
             if (m_PageManager.activePage.id != MyAssetsPage.k_Id)

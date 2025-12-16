@@ -29,7 +29,7 @@ namespace UnityEditor.ShortcutManagement
                 $"Are you sure you want to delete the shortcut profile '{profileName}'?";
             deleteProfilePromptWindow.m_Action = action;
 
-            deleteProfilePromptWindow.ShowWindow();
+            deleteProfilePromptWindow.ShowWindow(GetWindow<ShortcutManagerWindow>());
         }
 
         void OnEnable()

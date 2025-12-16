@@ -166,7 +166,7 @@ namespace UnityEditor.Search
                 }
             }
 
-            GUIUtility.GetControlID(target.GetInstanceID(), FocusType.Passive);
+            GUIUtility.GetControlID(target.GetEntityId().GetHashCode(), FocusType.Passive);
             EditorGUIUtility.ResetGUIState();
             GUI.color = playModeTintColor;
 

@@ -85,9 +85,35 @@ namespace UnityEngine.UIElements
             return int.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out var i) ? i : defaultValue;
         }
 
+        public static bool TryParse(string value, out int result, out string error)
+        {
+            try
+            {
+                result = int.Parse(value, NumberStyles.Integer, CultureInfo.InvariantCulture);
+                error = null;
+                return true;
+            }
+            catch (Exception ex)
+            {
+                error =  ex.Message;
+                result = default;
+                return false;
+            }
+        }
+
         public static uint ParseUint(string value, uint defaultValue = default)
         {
             return uint.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out var i) ? i : defaultValue;
+        }
+
+        public static long ParseLong(string value, long defaultValue = default)
+        {
+            return long.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out var i) ? i : defaultValue;
+        }
+
+        public static ulong ParseULong(string value, ulong defaultValue = default)
+        {
+            return ulong.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out var i) ? i : defaultValue;
         }
 
         public static Angle ParseAngle(string value, Angle defaultValue = default)

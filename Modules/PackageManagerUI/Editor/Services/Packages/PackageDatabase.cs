@@ -26,9 +26,9 @@ namespace UnityEditor.PackageManager.UI.Internal
         IEnumerable<IPackageVersion> GetDirectReverseDependencies(IPackageVersion version);
         IEnumerable<IPackageVersion> GetFeaturesThatUseThisPackage(IPackageVersion version);
         IPackage[] GetCustomizedDependencies(IPackageVersion version, CustomizedDependencyType dependencyType);
-        IEnumerable<Sample> GetSamples(IPackageVersion version);
+        IReadOnlyCollection<Sample> GetSamples(IPackageVersion version);
         void OnPackagesModified(IList<IPackage> modified, bool isProgressUpdated = false);
-        void UpdatePackages(IList<IPackage> toAddOrUpdate = null, IList<string> toRemove = null);
+        void UpdatePackages(IReadOnlyCollection<IPackage> toAddOrUpdate = null, IReadOnlyCollection<string> toRemove = null, PackagesChangedSource changedSource = PackagesChangedSource.Other);
         void FinalizePackageUniqueId(string tempUniqueId, string finalizedUniqueId);
 
         void ClearSamplesCache();
@@ -45,6 +45,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         // To avoid unnecessary cloning of packages, preUpdate is now set to be optional, the list is either empty or the same size as the postUpdate list
         public IList<IPackage> preUpdate = Array.Empty<IPackage>();
         public IList<IPackage> progressUpdated = Array.Empty<IPackage>();
+        public PackagesChangedSource packagesChangedSource = PackagesChangedSource.Other;
     }
 
     [Serializable]
@@ -62,7 +63,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         // we added m_Feature to speed up reverse dependencies lookup
         private readonly Dictionary<string, IPackage> m_Features = new();
 
-        private readonly Dictionary<string, IEnumerable<Sample>> m_ParsedSamples = new();
+        private readonly Dictionary<string, IReadOnlyCollection<Sample>> m_ParsedSamples = new();
 
         [SerializeField]
         private Package[] m_SerializedPackages = Array.Empty<Package>();
@@ -79,7 +80,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_IOProxy = RegisterDependency(ioProxy);
         }
 
-        public bool isEmpty => !m_Packages.Any();
+        public bool isEmpty => m_Packages.Count == 0;
 
         public IEnumerable<IPackage> allPackages => m_Packages.Values;
 
@@ -232,11 +233,12 @@ namespace UnityEditor.PackageManager.UI.Internal
             }).ToArray() ?? Array.Empty<IPackage>();
         }
 
-        public IEnumerable<Sample> GetSamples(IPackageVersion version)
+        public IReadOnlyCollection<Sample> GetSamples(IPackageVersion version)
         {
-            var packageInfo = version != null ? m_UpmCache.GetBestMatchPackageInfo(version.name, version.isInstalled, version.versionString) : null;
+            // Null check for version.package is necessary for domain reload test that uses the UpmPackageVersion directly without a package without mocking it
+            var packageInfo = version != null ? m_UpmCache.GetBestMatchPackageInfo(version.name, version.package?.product?.id ?? 0, version.isInstalled, version.versionString) : null;
             if (packageInfo == null || packageInfo.version != version.version?.ToString())
-                return Enumerable.Empty<Sample>();
+                return Array.Empty<Sample>();
 
             if (m_ParsedSamples.TryGetValue(version.uniqueId, out var parsedSamples))
                 return parsedSamples;
@@ -257,7 +259,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_SerializedPackages = m_Packages.Values.Cast<Package>().ToArray();
         }
 
-        private void TriggerOnPackagesChanged(IList<IPackage> added = null, IList<IPackage> removed = null, IList<IPackage> updated = null, IList<IPackage> preUpdate = null, IList<IPackage> progressUpdated = null)
+        private void TriggerOnPackagesChanged(IList<IPackage> added = null, IList<IPackage> removed = null, IList<IPackage> updated = null, IList<IPackage> preUpdate = null, IList<IPackage> progressUpdated = null, PackagesChangedSource changedSource = PackagesChangedSource.Other)
         {
             added ??= Array.Empty<IPackage>();
             updated ??= Array.Empty<IPackage>();
@@ -268,7 +270,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             if (added.Count + updated.Count + removed.Count + preUpdate.Count + progressUpdated.Count <= 0)
                 return;
 
-            onPackagesChanged?.Invoke(new PackagesChangeArgs { added = added, updated = updated, removed = removed, preUpdate = preUpdate, progressUpdated = progressUpdated });
+            onPackagesChanged?.Invoke(new PackagesChangeArgs { added = added, updated = updated, removed = removed, preUpdate = preUpdate, progressUpdated = progressUpdated, packagesChangedSource = changedSource});
         }
 
         public void OnPackagesModified(IList<IPackage> modified, bool isProgressUpdated = false)
@@ -276,11 +278,11 @@ namespace UnityEditor.PackageManager.UI.Internal
             TriggerOnPackagesChanged(updated: modified, progressUpdated: isProgressUpdated ? modified : null);
         }
 
-        public void UpdatePackages(IList<IPackage> toAddOrUpdate = null, IList<string> toRemove = null)
+        public void UpdatePackages(IReadOnlyCollection<IPackage> toAddOrUpdate = null, IReadOnlyCollection<string> toRemove = null, PackagesChangedSource changedSource = PackagesChangedSource.Other)
         {
             toAddOrUpdate ??= Array.Empty<IPackage>();
             toRemove ??= Array.Empty<string>();
-            if (!toAddOrUpdate.Any() && !toRemove.Any())
+            if (toAddOrUpdate.Count == 0 && toRemove.Count == 0)
                 return;
 
             var featuresWithDependencyChange = new Dictionary<string, IPackage>();
@@ -327,7 +329,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                     RemovePackage(packageUniqueId);
                 }
             }
-            TriggerOnPackagesChanged(added: packagesAdded, removed: packagesRemoved, preUpdate: packagesPreUpdate, updated: packagesUpdated, progressUpdated: packageProgressUpdated);
+            TriggerOnPackagesChanged(added: packagesAdded, removed: packagesRemoved, preUpdate: packagesPreUpdate, updated: packagesUpdated, progressUpdated: packageProgressUpdated, changedSource: changedSource);
         }
 
         public void FinalizePackageUniqueId(string tempUniqueId, string finalizedUniqueId)

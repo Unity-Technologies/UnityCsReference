@@ -4,9 +4,9 @@
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using Unity.GraphToolkit.CSO;
 using UnityEngine;
+using UnityEngine.Pool;
 
 namespace Unity.GraphToolkit.Editor
 {
@@ -32,7 +32,11 @@ namespace Unity.GraphToolkit.Editor
             /// <param name="displayInInspector">Should this selection change trigger a refresh of the inspector target.</param>
             public void SelectElements(IEnumerable<GraphElementModel> graphElementModels, bool select, bool displayInInspector = true)
             {
-                SelectElements(graphElementModels.Select(m => m.Guid), select, displayInInspector);
+                using var dispose = ListPool<Hash128>.Get(out var elementGuids);
+                foreach (var graphElementModel in graphElementModels)
+                    elementGuids.Add(graphElementModel.Guid);
+
+                SelectElements(elementGuids, select, displayInInspector);
             }
 
             /// <summary>
@@ -59,7 +63,20 @@ namespace Unity.GraphToolkit.Editor
                 var currentSelection = new HashSet<Hash128>(m_State.m_SelectionHashes);
                 if (select)
                 {
-                    m_State.m_SelectionHashes = m_State.m_SelectionHashes.Concat(graphElementModelGuids).Distinct().ToList();
+                    List<Hash128> toAdd = new();
+                    foreach (var graphElementModelGuid in graphElementModelGuids)
+                    {
+                        if (!toAdd.Contains(graphElementModelGuid))
+                            toAdd.Add(graphElementModelGuid);
+                    }
+
+                    foreach (var elementGuid in m_State.m_SelectionHashes)
+                    {
+                        if (!toAdd.Contains(elementGuid))
+                            toAdd.Add(elementGuid);
+                    }
+
+                    m_State.m_SelectionHashes = toAdd;
                 }
                 else
                 {
@@ -70,7 +87,7 @@ namespace Unity.GraphToolkit.Editor
                 }
 
                 currentSelection.SymmetricExceptWith(m_State.m_SelectionHashes);
-                if (currentSelection.Any())
+                if (currentSelection.Count > 0)
                 {
                     m_State.CurrentChangeset.ChangedModels.UnionWith(currentSelection);
                     m_State.SetUpdateType(UpdateType.Partial);

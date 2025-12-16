@@ -22,7 +22,7 @@ namespace UnityEditor.AI
 
         static NavMeshEditorHelpers()
         {
-            var packagePath = Path.GetFullPath("Packages/com.unity.ai.navigation/package.json");
+            var packagePath = FileUtil.PathToAbsolutePath("Packages/com.unity.ai.navigation/package.json");
             isPackageInstalled = File.Exists(packagePath);
 
             // open the agent settings if the package was just installed via the dialog box in OpenAgentSettings()

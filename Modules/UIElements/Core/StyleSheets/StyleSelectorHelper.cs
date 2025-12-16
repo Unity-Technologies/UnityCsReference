@@ -78,7 +78,7 @@ namespace UnityEngine.UIElements.StyleSheets
     }
 
     // Pure functions for the central logic of selector application
-    static class StyleSelectorHelper
+    class StyleSelectorHelper<TProfilerType> where TProfilerType : struct, IStyleProfiler
     {
         // This internal flag can be enabled to validate that the Bloom filter never rejects cases where
         // the exhaustive search returns a valid match. This is disabled by default, and is enabled from
@@ -231,9 +231,11 @@ namespace UnityEngine.UIElements.StyleSheets
         static void TestSelectorLinkedList(StyleComplexSelector currentComplexSelector,
             List<SelectorMatchRecord> matchedSelectors, StyleMatchingContext context, ref SelectorMatchRecord record)
         {
+            ref TProfilerType profiler = ref StyleProfilerStorage<TProfilerType>.InstanceByRef;
             {
                 while (currentComplexSelector != null)
                 {
+                    profiler.BeginMatchingSelector(currentComplexSelector);
                     bool isCandidate = true;
                     bool isMatchRightToLeft = false;
 
@@ -259,6 +261,7 @@ namespace UnityEngine.UIElements.StyleSheets
                         matchedSelectors.Add(record);
                     }
 
+                    profiler.EndMatchingSelector(currentComplexSelector, isMatchRightToLeft, isCandidate);
                     currentComplexSelector = currentComplexSelector.nextInTable;
                 }
             }
@@ -313,6 +316,8 @@ namespace UnityEngine.UIElements.StyleSheets
 
             Debug.Assert(context.currentElement != null, "context.currentElement != null");
 
+            ref TProfilerType profiler = ref StyleProfilerStorage<TProfilerType>.InstanceByRef;
+            profiler.BeginMatchingElement(context.currentElement);
             var toggleRoot = false;
             var processedStyleSheets = HashSetPool<StyleSheet>.Get();
             var workItems = ListPool<SelectorWorkItem>.Get();
@@ -331,11 +336,18 @@ namespace UnityEngine.UIElements.StyleSheets
                     workItems.Add(new (StyleSheet.OrderedSelectorType.Class, classList[i]));
                 }
 
+                int workItemsCount = workItems.Count;
+
                 for (var i = context.styleSheetCount - 1; i >= 0; --i)
                 {
                     var styleSheet = context.GetStyleSheetAt(i);
+
                     if (!processedStyleSheets.Add(styleSheet))
                         continue;
+
+                    styleSheet.RebuildIfNecessary();
+
+                    profiler.BeginMatchingStyleSheet(styleSheet);
 
                     // If the sheet is added on the element consider it as :root
                     if (i > parentSheetIndex)
@@ -348,7 +360,7 @@ namespace UnityEngine.UIElements.StyleSheets
 
                     var record = new SelectorMatchRecord(styleSheet, i);
 
-                    for (int j = 0; j < workItems.Count; j++)
+                    for (int j = 0; j < workItemsCount; j++)
                     {
                         var item = workItems[j];
 
@@ -366,6 +378,8 @@ namespace UnityEngine.UIElements.StyleSheets
                     }
 
                     TestSelectorLinkedList(styleSheet.firstWildCardSelector, matchedSelectors, context, ref record);
+
+                    profiler.EndMatchingStyleSheet(styleSheet);
                 }
 
                 if (toggleRoot)
@@ -378,4 +392,6 @@ namespace UnityEngine.UIElements.StyleSheets
             }
         }
     }
+
+    class StyleSelectorHelper : StyleSelectorHelper<NoOpStyleProfiler> { }
 }

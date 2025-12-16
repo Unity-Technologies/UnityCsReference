@@ -48,8 +48,14 @@ namespace UnityEditor
             {
                 return;
             }
+            var lifecycleHooksJson = Path.Combine(path, "LifecycleHooks.json");
+            if (!m_DirectoryIO.Exists(path) || !m_FileIO.Exists(lifecycleHooksJson))
+            {
+                return;
+            }
 
             m_FileIO.Copy(sourceRuntimeInitializeOnLoads, Path.Combine(jsonPath, "RuntimeInitializeOnLoads.json"), true);
+            m_FileIO.Copy(lifecycleHooksJson, Path.Combine(jsonPath, "LifecycleHooks.json"), true);
         }
     }
 }

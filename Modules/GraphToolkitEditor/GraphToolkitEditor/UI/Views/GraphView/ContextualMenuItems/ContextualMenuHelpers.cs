@@ -112,7 +112,6 @@ namespace Unity.GraphToolkit.Editor.ContextualMenuItems
         internal static ContextualMenuItem createStickyNoteItem = new(ContextualMenuCategory.OrganizationalElements, "Create Sticky Note");
         internal static ContextualMenuItem createEmptyLocalSubgraphItem = new(ContextualMenuCategory.OrganizationalElements, "Create Empty Local Subgraph");
         internal static ContextualMenuItem selectAllItem = new(ContextualMenuCategory.Organization, "Select All");
-        internal static ContextualMenuItem showOverlayMenuItem = new(ContextualMenuCategory.External, "Show Overlay Menu");
 
         // Node menu items:
         internal static ContextualMenuItem editSubtitleItem = new(ContextualMenuCategory.Modifications, "Edit Subtitle");
@@ -175,5 +174,10 @@ namespace Unity.GraphToolkit.Editor.ContextualMenuItems
         internal static ContextualMenuItem smartResizeItem = new(ContextualMenuCategory.Modifications, "Smart Resize");
         internal static ContextualMenuItem reorderPlacematItem = new(ContextualMenuCategory.Modifications, "Reorder Placemat");
         internal static ContextualMenuItem selectAllPlacematContentsItem = new(ContextualMenuCategory.Organization, "Select All Placemat Contents");
+
+        // Portals menu items:
+        internal static ContextualMenuItem createOppositePortalItem = new(ContextualMenuCategory.Conversions, "Create Opposite Portal");
+        internal static ContextualMenuItem revertToWireItem = new(ContextualMenuCategory.Conversions, "Revert to Wire");
+        internal static ContextualMenuItem revertAllToWiresItem = new(ContextualMenuCategory.Conversions, "Revert All to Wire");
     }
 }

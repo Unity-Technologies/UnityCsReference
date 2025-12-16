@@ -154,21 +154,24 @@ namespace UnityEngine.UIElements
 
                     if (ave != null && bve != null)
                     {
-                        if (ave.layout.position.x < bve.layout.position.x)
+                        var aveLayout = ave.layout;
+                        var bveLayout = bve.layout;
+
+                        if (aveLayout.x < bveLayout.x)
                         {
                             return -1;
                         }
-                        else if (ave.layout.position.x > bve.layout.position.x)
+                        else if (aveLayout.x > bveLayout.x)
                         {
                             return 1;
                         }
                         else
                         {
-                            if (ave.layout.position.y < bve.layout.position.y)
+                            if (aveLayout.y < bveLayout.y)
                             {
                                 return -1;
                             }
-                            else if (ave.layout.position.y > bve.layout.position.y)
+                            else if (aveLayout.y > bveLayout.y)
                             {
                                 return 1;
                             }
@@ -185,21 +188,24 @@ namespace UnityEngine.UIElements
 
                     if (ave != null && bve != null)
                     {
-                        if (ave.layout.position.y < bve.layout.position.y)
+                        var aveLayout = ave.layout;
+                        var bveLayout = bve.layout;
+
+                        if (aveLayout.y < bveLayout.y)
                         {
                             return -1;
                         }
-                        else if (ave.layout.position.y > bve.layout.position.y)
+                        else if (aveLayout.y > bveLayout.y)
                         {
                             return 1;
                         }
                         else
                         {
-                            if (ave.layout.position.x < bve.layout.position.x)
+                            if (aveLayout.x < bveLayout.x)
                             {
                                 return -1;
                             }
-                            else if (ave.layout.position.x > bve.layout.position.x)
+                            else if (aveLayout.x > bveLayout.x)
                             {
                                 return 1;
                             }

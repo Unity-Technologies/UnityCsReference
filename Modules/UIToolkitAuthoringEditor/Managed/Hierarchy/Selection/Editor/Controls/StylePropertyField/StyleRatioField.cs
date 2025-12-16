@@ -46,6 +46,21 @@ namespace Unity.UIToolkit.Editor
             labelElement.AddToClassList(labelUssClassName);
             visualInput.AddToClassList(inputUssClassName);
         }
+
+        protected override RatioField CreateValueField()
+        {
+            return new RatioField();
+        }
+
+        protected override StyleRatio CreateStyleValue(Ratio v)
+        {
+            return v;
+        }
+
+        internal override bool EqualsCurrentValue(StyleRatio v)
+        {
+            return value == v;
+        }
     }
 }
 

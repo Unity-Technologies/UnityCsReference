@@ -11,7 +11,6 @@ using static Unity.UI.Builder.BuilderUxmlAttributesView;
 
 namespace Unity.UI.Builder
 {
-    [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
     internal static class VisualElementExtensions
     {
         public static bool HasLinkedAttributeDescription(this VisualElement ve)

@@ -21,12 +21,12 @@ namespace UnityEditor.UIElements
 
     internal abstract class BaseLiveReloadAssetTracker<T> : ILiveReloadAssetTracker<T> where T : ScriptableObject
     {
-        protected Dictionary<int, AssetTracking<T>> m_TrackedAssets = new Dictionary<int, AssetTracking<T>>();
-        protected List<int> m_RemovedAssets = new List<int>();
+        protected Dictionary<EntityId, AssetTracking<T>> m_TrackedAssets = new Dictionary<EntityId, AssetTracking<T>>();
+        protected List<EntityId> m_RemovedAssets = new List<EntityId>();
 
         public int StartTrackingAsset(T asset)
         {
-            int assetId = asset.GetInstanceID();
+            EntityId assetId = asset.GetEntityId();
 
             if (m_TrackedAssets.TryGetValue(assetId, out var tracking))
             {
@@ -49,7 +49,7 @@ namespace UnityEditor.UIElements
 
         public void StopTrackingAsset(T asset)
         {
-            int assetId = asset.GetInstanceID();
+            EntityId assetId = asset.GetEntityId();
 
             if (!m_TrackedAssets.ContainsKey(assetId))
             {
@@ -68,7 +68,7 @@ namespace UnityEditor.UIElements
 
         public bool IsTrackingAsset(T asset)
         {
-            return m_TrackedAssets.ContainsKey(asset.GetInstanceID());
+            return m_TrackedAssets.ContainsKey(asset.GetEntityId());
         }
 
         public bool IsTrackingAsset(string assetPath)
@@ -113,7 +113,7 @@ namespace UnityEditor.UIElements
 
         public void UpdateAssetTrackerCounts(T asset, int newDirtyCount, int newElementCount, int newInlinePropertiesCount, int newAttributePropertiesDirtyCount)
         {
-            if (m_TrackedAssets.TryGetValue(asset.GetInstanceID(), out var assetTracking))
+            if (m_TrackedAssets.TryGetValue(asset.GetEntityId(), out var assetTracking))
             {
                 assetTracking.m_LastDirtyCount = newDirtyCount;
                 assetTracking.m_LastElementCount = newElementCount;
@@ -200,7 +200,7 @@ namespace UnityEditor.UIElements
 
             foreach (var changedAsset in changedAssets)
             {
-                int assetId = changedAsset.GetInstanceID();
+                EntityId assetId = changedAsset.GetEntityId();
                 if (m_TrackedAssets.ContainsKey(assetId))
                 {
                     return true;

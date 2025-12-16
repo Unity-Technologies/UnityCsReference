@@ -21,21 +21,21 @@ namespace Unity.ProjectAuditor.Editor.Modules
         static readonly IssueLayout k_MaterialLayout = new IssueLayout
         {
             Category = IssueCategory.Material,
-            Properties = new[]
-            {
+            Properties =
+            [
                 new PropertyDefinition { Type = PropertyType.Description, Name = "Name", LongName = "Material Name" },
                 new PropertyDefinition { Type = PropertyTypeUtil.FromCustom(MaterialProperty.Shader), Format = PropertyFormat.String, Name = "Shader", IsDefaultGroup = true },
                 new PropertyDefinition { Type = PropertyType.Path, Name = "Source Asset", MaxAutoWidth = 500 }
-            }
+            ]
         };
 
         public override string Name => "Materials";
 
-        public override IReadOnlyCollection<IssueLayout> SupportedLayouts => new IssueLayout[]
-        {
+        public override IReadOnlyCollection<IssueLayout> SupportedLayouts =>
+        [
             k_MaterialLayout,
             AssetsModule.k_IssueLayout
-        };
+        ];
 
         public override AnalysisResult Audit(AnalysisParams analysisParams, IProgress progress = null)
         {
@@ -70,10 +70,10 @@ namespace Unity.ProjectAuditor.Editor.Modules
                     context.Name = context.Material.name;
 
                 issues.Add(context.CreateInsight(IssueCategory.Material, context.Material.name)
-                    .WithCustomProperties(new object[(int)MaterialProperty.Num]
-                    {
+                    .WithCustomProperties(
+                    [
                         context.Material.shader.name
-                    })
+                    ])
                     .WithLocation(new Location(assetPath)));
 
                 foreach (var analyzer in analyzers)

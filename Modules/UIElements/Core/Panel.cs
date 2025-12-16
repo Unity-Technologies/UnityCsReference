@@ -520,7 +520,7 @@ namespace UnityEngine.UIElements
                     panelDebug = null;
                 }
                 if (ownerObject != null)
-                    UIElementsUtility.RemoveCachedPanel(ownerObject.GetInstanceID());
+                    UIElementsUtility.RemoveCachedPanel(ownerObject.GetEntityId());
 
                 PointerDeviceState.RemovePanelData(this);
             }

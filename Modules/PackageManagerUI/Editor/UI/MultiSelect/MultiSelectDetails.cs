@@ -73,7 +73,8 @@ namespace UnityEditor.PackageManager.UI.Internal
             Add(root);
             cache = new VisualElementCache(root);
 
-            lockedPackagesInfoBox.Q<Button>().clickable.clicked += OnDeselectLockedSelectionsClicked;
+            lockedPackagesInfoBox.buttonText = L10n.Tr("Deselect all locked packages");
+            lockedPackagesInfoBox.onButtonClicked += OnDeselectLockedSelectionsClicked;
 
             InitializeFoldouts();
         }
@@ -187,7 +188,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             foreach (var foldoutElement in allFoldoutElements)
                 foldoutElement.Refresh();
 
-            UIUtils.SetElementDisplay(infoBoxContainer, m_UnlockFoldout.packages.Any());
+            UIUtils.SetElementDisplay(infoBoxContainer, m_UnlockFoldout.packages.Count > 0);
             return true;
         }
 

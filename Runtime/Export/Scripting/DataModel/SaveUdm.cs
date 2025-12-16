@@ -20,7 +20,7 @@ internal static class SaveUdm
     private static readonly ProfilerMarker s_SerializeCallMarker = new ProfilerMarker("Serialize");
     private static readonly ProfilerMarker s_RemappingMarker = new ProfilerMarker("Remapping");
 
-    internal static DocumentModel CreateDocumentFromLiveObjectsInternal(ReadOnlySpan<UdmWriteData> objectsToWrite, ReadOnlySpan<EntityId> pureEntitiesIds, SerializeInstructionFlags options, bool remapInstanceIds, bool preserveUnresolvedInstanceIds, string resourcePath = "", GUID assetGUID = default, bool serializeEcsData = true)
+    internal static DocumentModel CreateDocumentFromLiveObjectsInternal(ReadOnlySpan<UdmWriteData> objectsToWrite, ReadOnlySpan<EntityId> pureEntitiesIds, SerializeInstructionFlags options, bool remapInstanceIds, bool preserveUnresolvedInstanceIds, string resourcePath = "", UnityEngine.GUID assetGUID = default, bool serializeEcsData = true)
     {
         var document = DocumentModel.CreateNew();
 
@@ -51,7 +51,7 @@ internal static class SaveUdm
     }
 
     [RequiredByNativeCode]
-    internal static IntPtr CreateDocumentFromLiveObjectsInternalBindings(UdmWriteData[] objectsToWrite, EntityId[] pureEntitiesIds, ulong options, bool remapInstanceIds, bool preserveUnresolvedInstanceIds, string resourcePath, GUID assetGUID, bool serializeEcsData)
+    internal static IntPtr CreateDocumentFromLiveObjectsInternalBindings(UdmWriteData[] objectsToWrite, EntityId[] pureEntitiesIds, ulong options, bool remapInstanceIds, bool preserveUnresolvedInstanceIds, string resourcePath, UnityEngine.GUID assetGUID, bool serializeEcsData)
     {
         SerializeInstructionFlags serializeOptions = (SerializeInstructionFlags)options;
 
@@ -80,6 +80,33 @@ internal static class SaveUdm
 
     private static SerializeContext BuildSerializeContext(DocumentModel documentModel, string resourcePath, NoCollisionUDMObjectIDGenerator udmObjectIDGenerator, ReadOnlySpan<UdmWriteData> objectsToWrite, ReadOnlySpan<EntityId> pureEntitiesIds, SerializeInstructionFlags options, bool serializeEcsData)
     {
-        return null;
+        EntityManager entityManager = default;
+        if (ActiveGameObjectWorld.World != null)
+        {
+            entityManager = ActiveGameObjectWorld.World.EntityManager;
+        }
+        SerializeContext serializeContext = new SerializeContext(documentModel, options, udmObjectIDGenerator, entityManager, serializeEcsData);
+        if (options.HasFlag(SerializeInstructionFlags.ResolveStreamedResourceSources))
+        {
+            serializeContext.ResourcePath = resourcePath;
+        }
+
+        foreach (var writeData in objectsToWrite)
+        {
+            UnityEngine.Object obj = Resources.EntityIdToObject(writeData.instanceId);
+            if (obj == null)
+            {
+                continue;
+            }
+            serializeContext.AddUnityObjectForSerialization(obj, writeData.instanceId, writeData.objectId, writeData.isStrippedObject != 0);
+            udmObjectIDGenerator.AddUsedUDMObjectID(writeData.objectId);
+        }
+
+        foreach (var entityId in pureEntitiesIds)
+        {
+            serializeContext.AddEntityForSerialization(entityId, udmObjectIDGenerator.NextUDMObjectID());
+        }
+
+        return serializeContext;
     }
 }

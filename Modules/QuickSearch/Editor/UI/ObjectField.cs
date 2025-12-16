@@ -387,7 +387,7 @@ namespace UnityEditor.Search
                 newSearchViewState.title = title;
             }
             if (m_OriginalObject)
-                newSearchViewState.selectedIds = new int[] { m_OriginalObject.GetInstanceID() };
+                newSearchViewState.selectedIds = new EntityId[] { m_OriginalObject.GetEntityId() };
             SearchService.ShowPicker(newSearchViewState);
             SearchAnalytics.SendEvent(null, SearchAnalytics.GenericEventType.QuickSearchPickerOpens, searchContext.searchText, "object", "objectfield");
         }
@@ -975,11 +975,11 @@ namespace UnityEditor.Search
                 item => SendTrackingEvent(item, id), objType.ToString(), objType, searchViewFlags);
             if (property != null && property.propertyType == SerializedPropertyType.ObjectReference && property.objectReferenceValue)
             {
-                searchViewState.selectedIds = new int[] { property.objectReferenceValue.GetInstanceID() };
+                searchViewState.selectedIds = new EntityId[] { property.objectReferenceValue.GetEntityId() };
             }
             else if (originalObject)
             {
-                searchViewState.selectedIds = new int[] { originalObject.GetInstanceID() };
+                searchViewState.selectedIds = new EntityId[] { originalObject.GetEntityId() };
             }
             SearchAnalytics.SendEvent(null, SearchAnalytics.GenericEventType.QuickSearchPickerOpens, context.searchText, "object", "objectfield");
             SearchService.ShowPicker(searchViewState);

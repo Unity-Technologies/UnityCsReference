@@ -22,8 +22,8 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private const int k_RotationSpeed = 360; // Euler degrees per second
         private const double k_PaintInterval = 0.125f; // Time interval to repaint
-        static private int s_Rotation;
-        static private double s_LastRotationTime;
+        private static int s_Rotation;
+        private static double s_LastRotationTime;
         private static readonly List<LoadingSpinner> s_CurrentSpinners = new List<LoadingSpinner>();
         public LoadingSpinner()
         {
@@ -66,7 +66,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             started = true;
             UIUtils.SetElementDisplay(this, true);
 
-            if (!s_CurrentSpinners.Any())
+            if (s_CurrentSpinners.Count == 0)
                 EditorApplication.update += UpdateProgress;
             s_CurrentSpinners.Add(this);
         }
@@ -80,13 +80,13 @@ namespace UnityEditor.PackageManager.UI.Internal
             UIUtils.SetElementDisplay(this, false);
 
             s_CurrentSpinners.Remove(this);
-            if (!s_CurrentSpinners.Any())
+            if (s_CurrentSpinners.Count == 0)
                 EditorApplication.update -= UpdateProgress;
         }
 
         public static void ClearAllSpinners()
         {
-            if (!s_CurrentSpinners.Any())
+            if (s_CurrentSpinners.Count == 0)
                 return;
 
             s_CurrentSpinners.Clear();

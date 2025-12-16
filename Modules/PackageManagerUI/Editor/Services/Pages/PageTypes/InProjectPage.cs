@@ -20,7 +20,7 @@ internal class InProjectPage : SimplePage
 
     [SerializeField]
     private PageFilters.Status[] m_SupportedStatusFilters = Array.Empty<PageFilters.Status>();
-    public override IEnumerable<PageFilters.Status> supportedStatusFilters => m_SupportedStatusFilters;
+    public override IReadOnlyCollection<PageFilters.Status> supportedStatusFilters => m_SupportedStatusFilters;
 
     public override RefreshOptions refreshOptions => RefreshOptions.UpmList | RefreshOptions.ImportedAssets | RefreshOptions.LocalInfo;
     public override PageCapability capability => PageCapability.DynamicEntitlementStatus | PageCapability.SupportLocalReordering;

@@ -134,7 +134,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 }
             }
 
-            UIUtils.SetElementDisplay(m_TabHeaderDropdown, m_TabHeaderDropdown.menu.MenuItems().Any());
+            UIUtils.SetElementDisplay(m_TabHeaderDropdown, m_TabHeaderDropdown.menu.MenuItems().Count > 0);
         }
 
         // use HashSet since if selected ID is in the middle of tabs, order can't be preserved anyway- and since order is known internally through m_ValidTabIds, use HashSet for fast lookup

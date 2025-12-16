@@ -46,11 +46,11 @@ namespace UnityEditor.PackageManager.UI.Internal
             var orderBy = ToQueryString(sortOption);
             if (!string.IsNullOrEmpty(orderBy))
                 stringBuilder.Append($"&{orderBy}");
-            if (labels?.Any() ?? false)
+            if (labels?.Count > 0)
                 stringBuilder.Append($"&tagging={string.Join(",", labels.Select(label => Uri.EscapeDataString(label)).ToArray())}");
-            if (categories?.Any() ?? false)
+            if (categories?.Count > 0)
                 stringBuilder.Append($"&categories={string.Join(",", categories.Select(cat => Uri.EscapeDataString(cat)).ToArray())}");
-            if (productIds?.Any() ?? false)
+            if (productIds?.Count > 0)
                 stringBuilder.Append($"&ids={string.Join(",", productIds.ToArray())}");
             return stringBuilder.ToString();
         }

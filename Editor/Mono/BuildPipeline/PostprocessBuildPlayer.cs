@@ -81,6 +81,31 @@ namespace UnityEditor
             return manifestPath;
         }
 
+        internal static string[] GetPreviousContentBuildMetadataLocations()
+        {
+            // A previous ContentDirectory build can be provided so that types that it uses
+            // are retained.  Normally this requires a custom build script calling BuildPlayer and passing in the
+            // correct BuildMetadata directories.
+
+            // But this special case exists to automatically detect a ContentDirectory build that is located
+            // directly in the root of the StreamingAssets folder and to feed that type information into the build.
+            if (Directory.Exists(StreamingAssets))
+            {
+                var tmpPath = Path.Combine(StreamingAssets, "BuildManifestHash.txt");
+                if (File.Exists(tmpPath))
+                {
+                    // Find the build metadata folder for the most recent build into the StreamingAssets folder.
+                    string metadataLocation = BuildMetadata.GetDirectory(StreamingAssets);
+                    if (metadataLocation != String.Empty)
+                    {
+                        return new string[] { metadataLocation };
+                    }
+                }
+            }
+            return null;
+        }
+
+
         [RequiredByNativeCode]
         static public string PrepareForBuild(BuildPlayerOptions buildOptions)
         {
@@ -221,7 +246,7 @@ namespace UnityEditor
                         catch (DeploymentOperationFailedException e)
                         {
                             launchResult = e.launchResult;
-                            exceptions.Add(e);     
+                            exceptions.Add(e);
                         }
 
                         launches.Add(launchResult);

@@ -8,6 +8,7 @@ using UnityEngine.SceneManagement;
 using System.Collections.Generic;
 using UnityEditor.Animations;
 using UnityEngine.Bindings;
+using System.Runtime.InteropServices;
 
 namespace UnityEditor
 {
@@ -168,9 +169,9 @@ namespace UnityEditor
         [FreeFunction("UnityEditor::StateMachineTransitionCopyPaste::HasParametersInPasteboard")]
         public static extern bool HasStateMachineTransitionDataInPasteboard();
 
-        public static extern bool AreAllParametersInDestination(UnityEngine.Object transition, AnimatorController controller, List<string> missingParameters);
+        public static extern bool AreAllParametersInDestination(UnityEngine.Object transition, AnimatorController controller, [Out] List<string> missingParameters);
 
-        public static extern bool DestinationHasCompatibleParameterTypes(UnityEngine.Object transition, AnimatorController controller, List<string> mismatchedParameters);
+        public static extern bool DestinationHasCompatibleParameterTypes(UnityEngine.Object transition, AnimatorController controller, [Out] List<string> mismatchedParameters);
 
         public static extern bool CanPasteParametersToTransition(UnityEngine.Object transition, AnimatorController controller);
 
@@ -305,6 +306,19 @@ namespace UnityEditor
                 return s_registryValidationDisabled;
             }
             set { s_registryValidationDisabled = value; }
+        }
+
+        private static bool s_packageTrustValidationDisabled;
+
+        public static bool IsPackageTrustValidationDisabled
+        {
+            get
+            {
+                if (!IsSourceBuild())
+                    return false;
+                return s_packageTrustValidationDisabled;
+            }
+            set { s_packageTrustValidationDisabled = value; }
         }
 
         [FreeFunction("GetEditorPlayerLoop().GetFrameTimeForEachLoop")]

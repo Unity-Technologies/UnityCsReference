@@ -47,6 +47,7 @@ using System.Runtime.CompilerServices;
 [assembly: InternalsVisibleTo("Unity.Modules.CoreEditor.ObjectNames.Tests.Editor")]
 [assembly: InternalsVisibleTo("Unity.Modules.CoreEditor.TreeViewExamples.Tests.Editor")]
 [assembly: InternalsVisibleTo("Unity.Modules.CoreEditor.ObjectFactory.Tests.Editor")]
+[assembly: InternalsVisibleTo("Unity.Modules.CoreEditor.AssetType.Tests.Editor")]
 [assembly: InternalsVisibleTo("Unity.Modules.AssetDatabase.AssetPostProcessor.Tests.Editor")]
 [assembly: InternalsVisibleTo("UnityEditor.iOS.Extensions.Common")]
 [assembly: InternalsVisibleTo("UnityEditor.Apple.Extensions.Common")]
@@ -84,6 +85,8 @@ using System.Runtime.CompilerServices;
 [assembly: InternalsVisibleTo("Unity.Modules.DrivenProperties.Tests.Editor")]
 [assembly: InternalsVisibleTo("Unity.Modules.CoreEditor.SceneHierarchy.Tests.Editor")]
 [assembly: InternalsVisibleTo("Unity.Modules.CoreEditor.SceneHierarchy.Tests.Common")]
+[assembly: InternalsVisibleTo("Unity.Modules.CoreEditor.DragAndDrop.Tests.Editor")]
+
 
 [assembly: InternalsVisibleTo("Unity.Modules.Core.Tests.ColorPicker")]
 [assembly: InternalsVisibleTo("Unity.Modules.Core.Tests.TreeViewControl")]
@@ -98,6 +101,7 @@ using System.Runtime.CompilerServices;
 [assembly: InternalsVisibleTo("Unity.Modules.Core.TextureStreaming.Tests.Editor")]
 [assembly: InternalsVisibleTo("Unity.Modules.CoreEditor.TextureGenerator.Tests.Editor")]
 [assembly: InternalsVisibleTo("Unity.Modules.Streaming.Tests.Editor")]
+[assembly: InternalsVisibleTo("Unity.Modules.PackageManagerUI.Tests.Editor")]
 
 
 [assembly: InternalsVisibleTo("UnityEngine.Networking")]
@@ -163,6 +167,7 @@ using System.Runtime.CompilerServices;
 [assembly: InternalsVisibleTo("Unity.RenderPipelines.Universal.2D.Runtime")]
 [assembly: InternalsVisibleTo("Unity.RenderPipelines.Universal.2D.Editor.Overrides")]
 [assembly: InternalsVisibleTo("UnityEngine.TestTools.Graphics.Contexts")]
+[assembly: InternalsVisibleTo("Unity.2D.Common.Editor")]
 [assembly: InternalsVisibleTo("Unity.2D.Sprite.Editor")]
 [assembly: InternalsVisibleTo("Unity.2D.Sprite.EditorTests")]
 [assembly: InternalsVisibleTo("Universal2DGraphicsTests")]
@@ -255,9 +260,18 @@ using System.Runtime.CompilerServices;
 [assembly: InternalsVisibleTo("Unity.Modules.GI.LightingDataAsset.Tests.Editor")]
 [assembly: InternalsVisibleTo("Unity.Transform.Tests.Runtime")]
 [assembly: InternalsVisibleTo("Unity.Transform.Tests.Editor")]
+[assembly: InternalsVisibleTo("Unity.Modules.GI.LightProbes.Tests.Runtime")]
 [assembly: InternalsVisibleTo("Unity.Transform.Tests.Internals")]
 [assembly: InternalsVisibleTo("Unity.Hierarchy.PerformanceTests")]
 [assembly: InternalsVisibleTo("Unity.Modules.AssetBundle.AssetBundles.Tests.Runtime")]
 [assembly: InternalsVisibleTo("BuildPipelineTestUtilities")]
+[assembly: InternalsVisibleTo("BuildPipelineTestUtilities-UnityEngine")]
+[assembly: InternalsVisibleTo("ContentDirectoryUtilities")]
+[assembly: InternalsVisibleTo("ContentBuildTests")]
 [assembly: InternalsVisibleTo("Unity.Modules.Core.EditorUtils.Tests.Editor")]
+[assembly: InternalsVisibleTo("Unity.Modules.SceneTemplateEditor.Tests.Editor")]
+[assembly: InternalsVisibleTo("UnityEngine.SchemaManagerManaged")]
+// Tests/SRPTests/Projects/MultipleSRP_Tests - needed for DiagnosticSwitch class
+[assembly: InternalsVisibleTo("Unity.RenderPipelines.Multiple_SRP.EditorTests")]
+
 

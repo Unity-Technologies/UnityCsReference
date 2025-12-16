@@ -13,7 +13,6 @@ namespace UnityEditor.PackageManager.UI.Internal
 
     internal class PackageManagerWindowRoot : VisualElement, IWindow
     {
-        private const string k_SelectedInInspectorClassName = "selectedInInspector";
         public const string k_FocusedClassName = "focus";
 
         private readonly IResourceLoader m_ResourceLoader;
@@ -86,7 +85,6 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_AssetStoreCachePathProxy.onConfigChanged += OnAssetStoreCacheConfigChange;
 
             EditorApplication.focusChanged += OnFocusChanged;
-            m_Selection.onSelectionChanged += RefreshSelectedInInspectorClass;
 
             m_PageManager.onSelectionChanged += OnPageSelectionChange;
             RefreshMainContainerContent();
@@ -94,8 +92,6 @@ namespace UnityEditor.PackageManager.UI.Internal
             focusable = true;
             RegisterCallback<AttachToPanelEvent>(OnAttachToPanel);
             RegisterCallback<DetachFromPanelEvent>(OnDetachFromPanel);
-
-            RefreshSelectedInInspectorClass();
         }
 
         public void OnCreateGUI()
@@ -218,7 +214,6 @@ namespace UnityEditor.PackageManager.UI.Internal
             packageStatusbar.OnDisable();
             sidebar.OnDisable();
             EditorApplication.focusChanged -= OnFocusChanged;
-            m_Selection.onSelectionChanged -= RefreshSelectedInInspectorClass;
             m_PageManager.onSelectionChanged -= OnPageSelectionChange;
 
             m_PackageManagerPrefs.sidebarWidth = sidebar.layout.width;
@@ -285,14 +280,6 @@ namespace UnityEditor.PackageManager.UI.Internal
                 mainContainerSplitter.RemoveFromClassList(k_FocusedClassName);
                 sidebar.AddToClassList(k_FocusedClassName);
             }, TrickleDown.TrickleDown);
-        }
-
-        private void RefreshSelectedInInspectorClass()
-        {
-            if (m_Selection.activeObject is PackageSelectionObject)
-                AddToClassList(k_SelectedInInspectorClassName);
-            else
-                RemoveFromClassList(k_SelectedInInspectorClassName);
         }
 
         public void OpenAddPackageByNameDropdown(string url)

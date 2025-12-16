@@ -12,10 +12,11 @@ namespace UnityEditor.PackageManager.UI.Internal;
 
 internal class SelectionWindowRow : VisualElement
 {
-    private static Texture2D s_FolderIcon;
-    internal static Texture2D folderIcon => s_FolderIcon ??= EditorGUIUtility.FindTexture(EditorResources.folderIconName);
+    // The internal modifier is used (instead of private) to give our test project access to these properties/methods
+    internal static Texture2D s_FolderIcon = EditorGUIUtility.FindTexture(EditorResources.folderIconName);
 
     private static readonly string k_RemoveIconTooltip = L10n.Tr("Remove");
+    // The internal modifier is used (instead of private) to give our test project access to these properties/methods
     internal static readonly string k_InfoLabel = L10n.Tr("moved");
     internal static readonly string k_InfoLabelTooltip = L10n.Tr("This asset was moved. The original location is {0}.");
 
@@ -72,7 +73,7 @@ internal class SelectionWindowRow : VisualElement
     private void RefreshFileIcon(SelectionWindowData.Node node)
     {
         var icon = node.isFolder
-            ? folderIcon
+            ? s_FolderIcon
             : InternalEditorUtility.GetIconForFile(!string.IsNullOrEmpty(node.path)
                 ? node.path
                 : "unknown.txt");

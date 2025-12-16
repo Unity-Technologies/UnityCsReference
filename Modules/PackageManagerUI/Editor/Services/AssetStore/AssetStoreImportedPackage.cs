@@ -11,7 +11,7 @@ using UnityEngine;
 namespace UnityEditor.PackageManager.UI.Internal
 {
     [Serializable]
-    internal class AssetStoreImportedPackage : IEnumerable<Asset>
+    internal class AssetStoreImportedPackage : IReadOnlyCollection<Asset>
     {
         public long productId => latestAssetOrigin?.productId ?? 0;
         public string displayName => latestAssetOrigin?.packageName ?? "";
@@ -31,6 +31,8 @@ namespace UnityEditor.PackageManager.UI.Internal
                 return m_LatestAssetOrigin;
             }
         }
+
+        public int Count => m_ImportedAssets.Count;
 
         [SerializeField]
         private List<Asset> m_ImportedAssets;

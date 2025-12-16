@@ -106,7 +106,7 @@ namespace UnityEngine.Rendering
         extern private unsafe RendererList CreateUIOverlayRendererList_Internal([NotNull] Camera camera, UISubset uiSubset);
         extern private unsafe RendererList CreateWireOverlayRendererList_Internal([NotNull] Camera camera);
 
-        extern private unsafe void PrepareRendererListsAsync_Internal(object rendererLists);
+        extern private unsafe void PrepareRendererListsAsync_Internal(ReadOnlySpan<RendererList> rendererLists);
         extern private RendererListStatus QueryRendererListStatus_Internal(RendererList handle);
     }
 }

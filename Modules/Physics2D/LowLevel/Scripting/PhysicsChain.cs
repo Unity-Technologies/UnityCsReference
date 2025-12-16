@@ -146,13 +146,21 @@ namespace UnityEngine.LowLevelPhysics2D
         /// Defines the method used when mixing the friction values of two shapes to form a shape contact.
         /// This is assigned to the current <see cref="LowLevelPhysics2D.PhysicsShape.surfaceMaterial"/>.
         /// </summary>
-        public readonly PhysicsMaterialCombine2D frictionCombine { get => PhysicsChain_GetFrictionCombine(this); set => PhysicsChain_SetFrictionCombine(this, value); }
+        public readonly PhysicsShape.SurfaceMaterial.MixingMode frictionMixing { get => PhysicsChain_GetFrictionMixing(this); set => PhysicsChain_SetFrictionMixing(this, value); }
+
+        /// <undoc/>
+        [Obsolete("PhysicsChain.frictionCombine has been deprecated. Please use PhysicsChain.frictionMixing instead.", false)]
+        public readonly PhysicsMaterialCombine2D frictionCombine { get => (PhysicsMaterialCombine2D)frictionMixing; set => frictionMixing = (PhysicsShape.SurfaceMaterial.MixingMode)value; }
 
         /// <summary>
         /// Defines the method used when mixing the friction values of two shapes to form a shape contact.
         /// This is assigned to the current <see cref="LowLevelPhysics2D.PhysicsShape.surfaceMaterial"/>.
         /// </summary>
-        public readonly PhysicsMaterialCombine2D bouncinessCombine { get => PhysicsChain_GetBouncinessCombine(this); set => PhysicsChain_SetBouncinessCombine(this, value); }
+        public readonly PhysicsShape.SurfaceMaterial.MixingMode bouncinessMixing { get => PhysicsChain_GetBouncinessMixing(this); set => PhysicsChain_SetBouncinessMixing(this, value); }
+
+        /// <undoc/>
+        [Obsolete("PhysicsChain.bouncinessCombine has been deprecated. Please use PhysicsChain.bouncinessMixing instead.", false)]
+        public readonly PhysicsMaterialCombine2D bouncinessCombine { get => (PhysicsMaterialCombine2D)bouncinessMixing; set => bouncinessMixing = (PhysicsShape.SurfaceMaterial.MixingMode)value; }
 
         /// <summary>
         /// Get the number of Chain segments that this chain has created and owns.
@@ -204,7 +212,7 @@ namespace UnityEngine.LowLevelPhysics2D
         public readonly bool isOwned => PhysicsChain_IsOwned(this);
 
         /// <summary>
-        /// Get/Set the <see cref="UnityEngine.MonoBehaviour"/> that callbacks for the shapes owned by this chain will be sent to.
+        /// Get/Set the <see cref="System.Object"/> that callbacks for the shapes owned by this chain will be sent to.
         /// 
         /// This includes the following events:
         /// 
@@ -215,7 +223,7 @@ namespace UnityEngine.LowLevelPhysics2D
         ///- A <see cref="LowLevelPhysics2D.PhysicsEvents.ContactBeginEvent"/> with call <see cref="LowLevelPhysics2D.PhysicsCallbacks.IContactCallback"/>.
         ///- A <see cref="LowLevelPhysics2D.PhysicsEvents.ContactEndEvent"/> with call <see cref="LowLevelPhysics2D.PhysicsCallbacks.IContactCallback"/>.
         /// </summary>
-        public readonly MonoBehaviour callbackTarget { get => PhysicsChain_GetCallbackTarget(this); set => PhysicsChain_SetCallbackTarget(this, value); }
+        public readonly System.Object callbackTarget { get => PhysicsChain_GetCallbackTarget(this); set => PhysicsChain_SetCallbackTarget(this, value); }
 
         /// <summary>
         /// Get/Set <see cref="LowLevelPhysics2D.PhysicsUserData"/> that can be used for any purpose.

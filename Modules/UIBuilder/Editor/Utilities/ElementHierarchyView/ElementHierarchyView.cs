@@ -1159,8 +1159,26 @@ namespace Unity.UI.Builder
                 }
                 else
                 {
-                    id = nextId;
-                    nextId++;
+                    // If the item is a Stylesheet, use the stable ID to keep expanded state.
+                    var styleSheet = element.GetStyleSheet();
+                    if (styleSheet != null)
+                    {
+                        id = styleSheet.GetEntityId().GetHashCode();
+
+                        // Nesting can cause the same stylesheet to be loaded twice in the tree.
+                        var owningUxmlPath = element.GetProperty(BuilderConstants.ExplorerItemLinkedUXMLFileName) as string;
+                        var isPartOfParentDocument = !string.IsNullOrEmpty(owningUxmlPath);
+                        if (isPartOfParentDocument)
+                        {
+                            id += nextId * 397;
+                            nextId++;
+                        }
+                    }
+                    else
+                    {
+                        id = nextId;
+                        nextId++;
+                    }
                 }
 
                 var item = new TreeViewItem(id, element);

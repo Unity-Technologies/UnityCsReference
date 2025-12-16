@@ -22,6 +22,12 @@ namespace UnityEngine
         }
 
         [RequiredByNativeCode]
+        unsafe static public object InvokeGetCurrent(IEnumerator enumerator)
+        {
+            return enumerator.Current;
+        }
+
+        [RequiredByNativeCode]
         static public object InvokeMember(object behaviour, string name, object variable)
         {
             // We need these stubs because methods marked with [RequiredByNativeCode] must match between scripting backends

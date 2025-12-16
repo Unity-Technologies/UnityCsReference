@@ -239,7 +239,7 @@ abstract class BaseExposedPropertyDrawer : UnityEditor.PropertyDrawer
                 // If PropertyName already exists, re-use it UUM-25160
                 if (String.IsNullOrEmpty(m_Item.exposedPropertyNameString) || String.IsNullOrEmpty(m_Item.exposedPropertyName.stringValue))
                 {
-                    var str = UnityEditor.GUID.Generate().ToString();
+                    var str = UnityEngine.GUID.Generate().ToString();
                     m_Item.exposedPropertyNameString = str;
                     m_Item.exposedPropertyName.stringValue = str;
                     m_Item.propertyMode = ExposedPropertyMode.NamedGUID;
@@ -409,7 +409,7 @@ class ExposedReferencePropertyDrawer : BaseExposedPropertyDrawer
     internal static void SetReferenceValueMenuItem(IExposedPropertyTable exposedPropertyTable,
         SerializedProperty exposedName, Object currentValue)
     {
-        var guid = UnityEditor.GUID.Generate();
+        var guid = UnityEngine.GUID.Generate();
         exposedName.stringValue = guid.ToString();
         exposedName.serializedObject.ApplyModifiedProperties();
         var newPropertyName = new PropertyName(exposedName.stringValue);

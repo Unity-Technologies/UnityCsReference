@@ -18,7 +18,7 @@ namespace UnityEditor.AnimationWindowBuiltin
         public float time = 0;
         public string functionName = "";
         public string stringParam = "";
-        public int objectParam = 0;
+        public EntityId objectParam = EntityId.None;
         public float floatParam = 0;
         public int intParam = 0;
         public SendMessageOptions messageOptions = SendMessageOptions.RequireReceiver;
@@ -28,7 +28,7 @@ namespace UnityEditor.AnimationWindowBuiltin
             time = e.time;
             functionName = e.functionName;
             stringParam = e.stringParameter;
-            objectParam = e.objectReferenceParameter ? e.objectReferenceParameter.GetInstanceID() : 0;
+            objectParam = e.objectReferenceParameter ? e.objectReferenceParameter.GetEntityId() : EntityId.None;
             floatParam = e.floatParameter;
             intParam = e.intParameter;
             messageOptions = e.messageOptions;

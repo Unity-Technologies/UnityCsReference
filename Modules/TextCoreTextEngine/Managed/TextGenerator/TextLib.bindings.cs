@@ -14,7 +14,7 @@ namespace UnityEngine.TextCore.Text
 {
     [StructLayout(LayoutKind.Sequential)]
     [NativeHeader("Modules/TextCoreTextEngine/Native/TextLib.h")]
-    [VisibleToOtherModules("UnityEngine.UIElementsModule", "Unity.UIElements.PlayModeTests")]
+    [VisibleToOtherModules("UnityEngine.UIElementsModule", "Unity.UIElements.PlayModeTests", "UnityEngine.IMGUIModule")]
     internal class TextLib
     {
         public const int k_unconstrainedScreenSize = -1;
@@ -35,7 +35,7 @@ namespace UnityEngine.TextCore.Text
             return textInfo;
         }
 
-        public bool HasMissingGlyphs(NativeTextInfo textInfo, ref Dictionary<int, HashSet<uint>> missingGlyphsPerFontAsset)
+        public bool HasMissingGlyphs(NativeTextInfo textInfo, ref Dictionary<EntityId, HashSet<uint>> missingGlyphsPerFontAsset)
         {
             Span<ATGMeshInfo> meshInfosSpan = textInfo.meshInfos;
             bool hasMissingGlyphs = false;
@@ -85,6 +85,7 @@ namespace UnityEngine.TextCore.Text
             Span<ATGMeshInfo> meshInfosSpan = textInfo.meshInfos;
 
             int meshInfoIndex = 0;
+            bool trackColors = hasMultipleColorsByMesh != null;
 
             foreach (ref var meshInfo in meshInfosSpan)
             {
@@ -144,7 +145,7 @@ namespace UnityEngine.TextCore.Text
                     var glyphID = textElementInfo.glyphID;
                     Glyph glyph = null;
                     int spriteIndex = 0;
-                    
+
                     if (isSprite)
                     {
                         spriteIndex = glyphID - '\uE000';
@@ -160,12 +161,15 @@ namespace UnityEngine.TextCore.Text
                             continue;
                     }
 
-                    var currentColor = textElementInfo.topLeft.color;
-                    if (previousColor.HasValue && previousColor.Value != currentColor)
+                    if (trackColors)
                     {
-                        hasMultipleColors = true;
+                        var currentColor = textElementInfo.topLeft.color;
+                        if (previousColor.HasValue && previousColor.Value != currentColor)
+                        {
+                            hasMultipleColors = true;
+                        }
+                        previousColor = currentColor;
                     }
-                    previousColor = currentColor;
 
                     var glyphRect = glyph.glyphRect;
 
@@ -211,9 +215,10 @@ namespace UnityEngine.TextCore.Text
                         textElementInfo.topRight.uv0 = topRightUV * textElementInfo.topRight.uv0 + bottomLeftUV * (Vector2.one - textElementInfo.topRight.uv0);
                         textElementInfo.bottomRight.uv0 = topRightUV * textElementInfo.bottomRight.uv0 + bottomLeftUV * (Vector2.one - textElementInfo.bottomRight.uv0);
                     }
-                    
+
                 }
-                hasMultipleColorsByMesh.Add(hasMultipleColors);
+                if (trackColors)
+                    hasMultipleColorsByMesh.Add(hasMultipleColors);
                 meshInfoIndex++;
             }
         }
@@ -233,6 +238,12 @@ namespace UnityEngine.TextCore.Text
         [NativeMethod(Name = "TextLib::GetCharacterCount")]
         static public extern int GetCharacterCount(IntPtr textGenerationInfo);
 
+        [NativeMethod(Name = "TextLib::GetNumCharactersThatFitWithinWidth")]
+        static public extern int GetNumCharactersThatFitWithinWidth(IntPtr textGenerationInfo, int width);
+
+        [NativeMethod(Name = "TextLib::GetHyperlinkRects")]
+        static public extern Rect[] GetHyperlinkRects(IntPtr textGenerationInfo);
+
         internal static class BindingsMarshaller
         {
             public static IntPtr ConvertToNative(TextLib textLib) => textLib.m_Ptr;
@@ -241,7 +252,7 @@ namespace UnityEngine.TextCore.Text
         public static Func<UnityEngine.TextAsset> GetICUAssetEditorDelegate;
     }
 
-    [VisibleToOtherModules("UnityEngine.UIElementsModule")]
+    [VisibleToOtherModules("UnityEngine.IMGUIModule", "UnityEngine.UIElementsModule")]
     internal static class TextGenerationInfo
     {
         public static int CurrentGenerationIteration { get; private set; }

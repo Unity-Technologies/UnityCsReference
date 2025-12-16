@@ -10,7 +10,7 @@ using UnityEngine.UIElements;
 
 namespace Unity.UIToolkit.Editor
 {
-    class SpacingBoxModel : VisualElement
+    sealed class SpacingBoxModel : VisualElement
     {
         static readonly string UssPathNoExt = "UIToolkitAuthoring/Inspector/Controls/StyleSectionsBoxModel";
         static readonly string StyleFieldUssPathNoExt = "UIToolkitAuthoring/Inspector/Controls/StyleField";
@@ -113,7 +113,8 @@ namespace Unity.UIToolkit.Editor
 
             m_PaddingBox = new BoxModelField<StyleLength, BoxModelEditableLabel>(BoxType.Padding, true, m_ContentBox,
                 m_TopTextFieldPaddingContainer, m_BottomTextFieldPaddingContainer,
-                m_LeftTextFieldPaddingContainer, m_RightTextFieldPaddingContainer);
+                m_LeftTextFieldPaddingContainer, m_RightTextFieldPaddingContainer,
+                () => new BoxModelEditableLabel());
             m_PaddingBox.tooltip = BoxType.Padding.ToString();
             m_PaddingBox.AddToClassList(BoxModelClassName);
             m_PaddingBox.AddToClassList(ContainerPaddingClassName);
@@ -135,7 +136,8 @@ namespace Unity.UIToolkit.Editor
 
             m_MarginBox = new BoxModelField<StyleLength, BoxModelEditableLabel>(BoxType.Margin, true, m_BorderBox,
                 m_TopTextFieldMarginContainer, m_BottomTextFieldMarginContainer,
-                m_LeftTextFieldMarginContainer, m_RightTextFieldMarginContainer);
+                m_LeftTextFieldMarginContainer, m_RightTextFieldMarginContainer,
+                () => new BoxModelEditableLabel());
 
             m_MarginBox.tooltip = BoxType.Margin.ToString();
             m_MarginBox.AddToClassList(BoxModelClassName);
@@ -188,7 +190,7 @@ namespace Unity.UIToolkit.Editor
         }
     }
 
-    internal class SpacingBoxModelField : OverrideRow
+    internal sealed class SpacingBoxModelField : OverrideRow, INotifyCompositeStylePropertyChanged<StyleLength>
     {
         [UnityEngine.Internal.ExcludeFromDocs, Serializable]
         public new class UxmlSerializedData : OverrideRow.UxmlSerializedData
@@ -202,17 +204,17 @@ namespace Unity.UIToolkit.Editor
             public override object CreateInstance() => new SpacingBoxModelField();
         }
 
-        const string PaddingTopFieldName = "paddingTop";
-        const string PaddingRightFieldName = "paddingRight";
-        const string PaddingBottomFieldName = "paddingBottom";
-        const string PaddingLeftFieldName = "paddingLeft";
+        static readonly BindingId marginTopProperty = nameof(marginTop);
+        static readonly BindingId marginRightProperty = nameof(marginRight);
+        static readonly BindingId marginBottomProperty = nameof(marginBottom);
+        static readonly BindingId marginLeftProperty = nameof(marginLeft);
 
-        const string MarginTopFieldName = "marginTop";
-        const string MarginRightFieldName = "marginRight";
-        const string MarginBottomFieldName = "marginBottom";
-        const string MarginLeftFieldName = "marginLeft";
+        static readonly BindingId paddingTopProperty = nameof(paddingTop);
+        static readonly BindingId paddingRightProperty = nameof(paddingRight);
+        static readonly BindingId paddingBottomProperty = nameof(paddingBottom);
+        static readonly BindingId paddingLeftProperty = nameof(paddingLeft);
 
-        private SpacingBoxModel m_SpacingField;
+        private readonly SpacingBoxModel m_SpacingField;
 
         internal SpacingBoxModel spacingField => m_SpacingField;
 
@@ -235,12 +237,12 @@ namespace Unity.UIToolkit.Editor
                 if (m_MarginTop == value)
                     return;
 
+                var previousValue = m_MarginTop;
                 m_MarginTop = value;
                 m_SpacingField.marginBox.topField.SetValueWithoutNotify(value);
 
                 Refresh();
-
-                NotifyPropertyChanged(nameof(marginTop));
+                NotifyStylePropertyChanged(marginTopProperty, previousValue, m_MarginTop);
             }
         }
 
@@ -253,12 +255,12 @@ namespace Unity.UIToolkit.Editor
                 if (m_MarginRight == value)
                     return;
 
+                var previousValue = m_MarginRight;
                 m_MarginRight = value;
                 m_SpacingField.marginBox.rightField.SetValueWithoutNotify(value);
 
                 Refresh();
-
-                NotifyPropertyChanged(nameof(marginRight));
+                NotifyStylePropertyChanged(marginRightProperty, previousValue, m_MarginRight);
             }
         }
 
@@ -271,12 +273,12 @@ namespace Unity.UIToolkit.Editor
                 if (m_MarginBottom == value)
                     return;
 
+                var previousValue = m_MarginBottom;
                 m_MarginBottom = value;
                 m_SpacingField.marginBox.bottomField.SetValueWithoutNotify(value);
 
                 Refresh();
-
-                NotifyPropertyChanged(nameof(marginBottom));
+                NotifyStylePropertyChanged(marginBottomProperty, previousValue, m_MarginBottom);
             }
         }
 
@@ -289,12 +291,12 @@ namespace Unity.UIToolkit.Editor
                 if (m_MarginLeft == value)
                     return;
 
+                var previousValue = m_MarginBottom;
                 m_MarginLeft = value;
                 m_SpacingField.marginBox.leftField.SetValueWithoutNotify(value);
 
                 Refresh();
-
-                NotifyPropertyChanged(nameof(marginLeft));
+                NotifyStylePropertyChanged(marginLeftProperty, previousValue, m_MarginBottom);
             }
         }
 
@@ -307,12 +309,12 @@ namespace Unity.UIToolkit.Editor
                 if (m_PaddingTop == value)
                     return;
 
+                var previousValue = m_PaddingTop;
                 m_PaddingTop = value;
                 m_SpacingField.paddingBox.topField.SetValueWithoutNotify(value);
 
                 Refresh();
-
-                NotifyPropertyChanged(nameof(paddingTop));
+                NotifyStylePropertyChanged(paddingTopProperty, previousValue, m_PaddingTop);
             }
         }
 
@@ -325,12 +327,12 @@ namespace Unity.UIToolkit.Editor
                 if (m_PaddingRight == value)
                     return;
 
+                var previousValue = m_PaddingRight;
                 m_PaddingRight = value;
                 m_SpacingField.paddingBox.rightField.SetValueWithoutNotify(value);
 
                 Refresh();
-
-                NotifyPropertyChanged(nameof(paddingRight));
+                NotifyStylePropertyChanged(paddingRightProperty, previousValue, m_PaddingRight);
             }
         }
 
@@ -343,12 +345,12 @@ namespace Unity.UIToolkit.Editor
                 if (m_PaddingBottom == value)
                     return;
 
+                var previousValue = m_PaddingBottom;
                 m_PaddingBottom = value;
                 m_SpacingField.paddingBox.bottomField.SetValueWithoutNotify(value);
 
                 Refresh();
-
-                NotifyPropertyChanged(nameof(paddingBottom));
+                NotifyStylePropertyChanged(paddingBottomProperty, previousValue, m_PaddingBottom);
             }
         }
 
@@ -361,12 +363,12 @@ namespace Unity.UIToolkit.Editor
                 if (m_PaddingLeft == value)
                     return;
 
+                var previousValue = m_PaddingLeft;
                 m_PaddingLeft = value;
                 m_SpacingField.paddingBox.leftField.SetValueWithoutNotify(value);
 
                 Refresh();
-
-                NotifyPropertyChanged(nameof(paddingLeft));
+                NotifyStylePropertyChanged(paddingLeftProperty, previousValue, m_PaddingLeft);
             }
         }
 
@@ -374,15 +376,15 @@ namespace Unity.UIToolkit.Editor
         {
             m_SpacingField = new SpacingBoxModel();
 
-            spacingField.marginBox.topField.RegisterCallback<ChangeEvent<StyleLength>>((evt) => marginTop = evt.newValue);
-            spacingField.marginBox.rightField.RegisterCallback<ChangeEvent<StyleLength>>((evt) => marginRight = evt.newValue);
-            spacingField.marginBox.bottomField.RegisterCallback<ChangeEvent<StyleLength>>((evt) => marginBottom = evt.newValue);
-            spacingField.marginBox.leftField.RegisterCallback<ChangeEvent<StyleLength>>((evt) => marginLeft = evt.newValue);
+            spacingField.marginBox.topField.RegisterCallback<ChangeEvent<StyleLength>>(evt => marginTop = evt.newValue);
+            spacingField.marginBox.rightField.RegisterCallback<ChangeEvent<StyleLength>>(evt => marginRight = evt.newValue);
+            spacingField.marginBox.bottomField.RegisterCallback<ChangeEvent<StyleLength>>(evt => marginBottom = evt.newValue);
+            spacingField.marginBox.leftField.RegisterCallback<ChangeEvent<StyleLength>>(evt => marginLeft = evt.newValue);
 
-            spacingField.paddingBox.topField.RegisterCallback<ChangeEvent<StyleLength>>((evt) => paddingTop = evt.newValue);
-            spacingField.paddingBox.rightField.RegisterCallback<ChangeEvent<StyleLength>>((evt) => paddingRight = evt.newValue);
-            spacingField.paddingBox.bottomField.RegisterCallback<ChangeEvent<StyleLength>>((evt) => paddingBottom = evt.newValue);
-            spacingField.paddingBox.leftField.RegisterCallback<ChangeEvent<StyleLength>>((evt) => paddingLeft = evt.newValue);
+            spacingField.paddingBox.topField.RegisterCallback<ChangeEvent<StyleLength>>(evt => paddingTop = evt.newValue);
+            spacingField.paddingBox.rightField.RegisterCallback<ChangeEvent<StyleLength>>(evt => paddingRight = evt.newValue);
+            spacingField.paddingBox.bottomField.RegisterCallback<ChangeEvent<StyleLength>>(evt => paddingBottom = evt.newValue);
+            spacingField.paddingBox.leftField.RegisterCallback<ChangeEvent<StyleLength>>(evt => paddingLeft = evt.newValue);
 
             Add(m_SpacingField);
         }
@@ -391,6 +393,99 @@ namespace Unity.UIToolkit.Editor
         {
             spacingField.marginBox.UpdateUnitFromFields();
             spacingField.paddingBox.UpdateUnitFromFields();
+        }
+
+        public void SetValue(BindingId id, StyleLength v, bool notify)
+        {
+            if (id == marginTopProperty)
+            {
+                if (notify)
+                    marginTop = v;
+                else
+                {
+                    m_MarginTop = v;
+                    m_SpacingField.marginBox.topField.SetValueWithoutNotify(v);
+                }
+            }
+            else if (id == marginRightProperty)
+            {
+                if (notify)
+                    marginRight = v;
+                else
+                {
+                    m_MarginRight = v;
+                    m_SpacingField.marginBox.rightField.SetValueWithoutNotify(v);
+                }
+            }
+            else if (id == marginBottomProperty)
+            {
+                if (notify)
+                    marginBottom = v;
+                else
+                {
+                    m_MarginBottom = v;
+                    m_SpacingField.marginBox.bottomField.SetValueWithoutNotify(v);
+                }
+            }
+            else if (id == marginLeftProperty)
+            {
+                if (notify)
+                    marginLeft = v;
+                else
+                {
+                    m_MarginLeft = v;
+                    m_SpacingField.marginBox.leftField.SetValueWithoutNotify(v);
+                }
+            }
+            else if (id == paddingTopProperty)
+            {
+                if (notify)
+                    paddingTop = v;
+                else
+                {
+                    m_PaddingTop = v;
+                    m_SpacingField.paddingBox.topField.SetValueWithoutNotify(v);
+                }
+            }
+            else if (id == paddingRightProperty)
+            {
+                if (notify)
+                    paddingRight = v;
+                else
+                {
+                    m_PaddingRight = v;
+                    m_SpacingField.paddingBox.rightField.SetValueWithoutNotify(v);
+                }
+            }
+            else if (id == paddingBottomProperty)
+            {
+                if (notify)
+                    paddingBottom = v;
+                else
+                {
+                    m_PaddingBottom = v;
+                    m_SpacingField.paddingBox.bottomField.SetValueWithoutNotify(v);
+                }
+            }
+            else if (id == paddingLeftProperty)
+            {
+                if (notify)
+                    paddingLeft = v;
+                else
+                {
+                    m_PaddingLeft = v;
+                    m_SpacingField.paddingBox.leftField.SetValueWithoutNotify(v);
+                }
+            }
+
+            if (!notify)
+                Refresh();
+        }
+
+        public void NotifyStylePropertyChanged(BindingId id, StyleLength previousValue, StyleLength newValue)
+        {
+            this.NotifyStylePropertyChanged(this, id, previousValue, newValue);
+            NotifyPropertyChanged(id);
         }
     }
 }

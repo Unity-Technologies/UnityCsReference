@@ -9,14 +9,14 @@ using UnityEngine.Bindings;
 
 namespace UnityEngine.TextCore.Text
 {
-    [VisibleToOtherModules("UnityEngine.UIElementsModule")]
+    [VisibleToOtherModules("UnityEngine.UIElementsModule", "UnityEngine.IMGUIModule")]
     [StructLayout(LayoutKind.Sequential)]
     [NativeHeader("Modules/TextCoreTextEngine/Native/ATGMeshInfo.h")]
     internal struct ATGMeshInfo
     {
         private IntPtr m_TextElementInfosPtr;
         private int m_TextElementCount;
-        public int textAssetId;
+        public EntityId textAssetId;
 
         public unsafe Span<NativeTextElementInfo> textElementInfos
         {

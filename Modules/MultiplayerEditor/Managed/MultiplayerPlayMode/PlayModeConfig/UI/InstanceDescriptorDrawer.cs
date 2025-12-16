@@ -172,6 +172,11 @@ namespace Unity.Multiplayer.PlayMode.Editor
                 // not needed anymore but keep it because maybe we reenable it.
                 if (property.name.Contains("m_Role"))
                 {
+                    if (!EditorMultiplayerManager.enableMultiplayerRoles)
+                    {
+                        continue;
+                    }
+
                     var dropdown = new PopupField<MultiplayerRoleFlags>() { label = "Multiplayer Role" , name = k_MultiplayerAdditionalRolePopupName};
 
                     dropdown.choices = new((MultiplayerRoleFlags[])Enum.GetValues(typeof(MultiplayerRoleFlags)));

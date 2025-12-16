@@ -27,7 +27,7 @@ namespace Unity.ProjectAuditor.Editor.InstructionAnalyzers
             )
         {
             MessageFormat = "'{0}' usage",
-            Platforms = new SerializableEnum<BuildTarget>[] { BuildTarget.WebGL }
+            Platforms = [BuildTarget.WebGL]
         };
 
         internal static readonly Descriptor k_DescriptorSystemThreading = new Descriptor
@@ -40,7 +40,7 @@ namespace Unity.ProjectAuditor.Editor.InstructionAnalyzers
             )
         {
             MessageFormat = "'{0}' usage",
-            Platforms = new SerializableEnum<BuildTarget>[] { BuildTarget.WebGL }
+            Platforms = [BuildTarget.WebGL]
         };
 
         internal static readonly Descriptor k_DescriptorMicrophone = new Descriptor
@@ -53,7 +53,7 @@ namespace Unity.ProjectAuditor.Editor.InstructionAnalyzers
             )
         {
             MessageFormat = "'{0}' usage",
-            Platforms = new SerializableEnum<BuildTarget>[] { BuildTarget.WebGL }
+            Platforms = [BuildTarget.WebGL]
         };
 
         readonly OpCode[] m_OpCodes =

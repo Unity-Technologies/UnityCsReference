@@ -10,6 +10,8 @@ using UnityEditor.UIElements.Text;
 using UnityEngine;
 using UnityEngine.UIElements;
 using UnityEngine.UIElements.Layout;
+using UnityEngine.UIElements.UIR;
+using static UnityEngine.UIElements.DragEventsProcessor;
 using TextElement = UnityEngine.UIElements.TextElement;
 
 namespace UnityEditor.UIElements.Debugger
@@ -74,8 +76,6 @@ namespace UnityEditor.UIElements.Debugger
         [SerializeField]
         private bool m_ShowRepaintOverlay = false;
 
-        [SerializeField]
-        private bool m_ShowDrawStats = false;
 
         [SerializeField]
         private bool m_BreakBatches = false;
@@ -141,18 +141,6 @@ namespace UnityEditor.UIElements.Debugger
                 if (m_ShowRepaintOverlay == value)
                     return;
                 m_ShowRepaintOverlay = value;
-                onStateChange?.Invoke();
-            }
-        }
-
-        public bool showDrawStats
-        {
-            get { return m_ShowDrawStats; }
-            set
-            {
-                if (m_ShowDrawStats == value)
-                    return;
-                m_ShowDrawStats = value;
                 onStateChange?.Invoke();
             }
         }
@@ -327,7 +315,6 @@ namespace UnityEditor.UIElements.Debugger
         private ToolbarToggle m_PickToggle;
         private ToolbarToggle m_ShowLayoutToggle;
         private ToolbarToggle m_RepaintOverlayToggle;
-        private ToolbarToggle m_ShowDrawStatsToggle;
         private ToolbarToggle m_BreakBatchesToggle;
         private ToolbarToggle m_ShowWireframeToggle;
         private ToolbarButton m_TextureAtlasViewerButton;
@@ -430,13 +417,6 @@ namespace UnityEditor.UIElements.Debugger
 
             if (Unsupported.IsDeveloperMode())
             {
-                m_ShowDrawStatsToggle = new ToolbarToggle { name = "drawStatsToggle", text = "Draw Stats Overlay" };
-                m_ShowDrawStatsToggle.RegisterValueChangedCallback(e => { m_Context.showDrawStats = e.newValue; });
-                m_Toolbar.Add(m_ShowDrawStatsToggle);
-            }
-
-            if (Unsupported.IsDeveloperMode())
-            {
                 m_BreakBatchesToggle = new ToolbarToggle { name = "breakBatchesToggle", text = "Break Batches", tooltip = "Useful when taking captures with RenderDoc" };
                 m_BreakBatchesToggle.RegisterValueChangedCallback(e => { m_Context.breakBatches = e.newValue; });
                 m_Toolbar.Add(m_BreakBatchesToggle);
@@ -468,7 +448,7 @@ namespace UnityEditor.UIElements.Debugger
             m_ScrollView.Add(new TextDebugger(m_Context.selection));
             m_ScrollView.Add(new LayoutDebuggerTab(m_Context.selection));
             m_ScrollView.Add(new RenderDataDebuggerTab(m_Context.selection));
-            m_ScrollView.Add(new PanelTab(m_Context.selection));
+            m_ScrollView.Add(new PanelTab(m_Context.selection, ()=>GetRepaintUpdater(context.selection.panel) ));
             
             splitter.Add(m_ScrollView);
 
@@ -651,13 +631,84 @@ namespace UnityEditor.UIElements.Debugger
             readonly TextField cacheSummary;
 
 
-            public PanelTab(DebuggerSelection debuggerSelection) : base("Panel", debuggerSelection, true )
+            //For stats:
+            readonly Func<UIRRepaintUpdater> m_getRepaintUpdater;
+            readonly TextField m_ElementsAdded;
+            readonly TextField m_ElemenstsRemoved;
+            readonly TextField m_MeshAllocated;
+            readonly TextField m_MeshAllocUpdated;
+            readonly TextField m_ClipUpdateRoots;
+            readonly TextField m_ClipUpdateTotal;
+            readonly TextField m_OpacitiyUpdateRoots;
+            readonly TextField m_OpacityUpdateTotal;
+            readonly TextField m_OpacityIDUpdate;
+            readonly TextField m_XFormUpdateRoots;
+            readonly TextField m_XformUpdateTotal;
+            readonly TextField m_XformedByBone;
+            readonly TextField m_XformedBySkipping;
+            readonly TextField m_XformedByNudging;
+            readonly TextField m_XformedByRepaint;
+            readonly TextField m_VisualUpdateRoots;
+            readonly TextField m_VisualUpdateTotal;
+            readonly TextField m_VisualUpdateFlats;
+            readonly TextField m_DirtyProcesed;
+            readonly TextField m_GroupXFormUpdates;
+
+            readonly TextField m_FrameIndex;
+            readonly TextField m_CommandCount;
+            readonly TextField m_SkipCmdCounts;
+            readonly TextField m_DrawCommands;
+            readonly TextField m_DisableCommands;
+            readonly TextField m_DrawRanges;
+            readonly TextField m_DrawRangeCalls;
+            readonly TextField m_MaterialSets;
+            readonly TextField m_StencilChanges;
+            readonly TextField m_ImmediateDraws;
+            readonly TextField m_TotalTriangles;
+
+            public PanelTab(DebuggerSelection debuggerSelection, Func<UIRRepaintUpdater> getRepaintUpdater ) : base("Panel", debuggerSelection, true )
             {
                 Add(nameField = new TextField("Owner Name") { isReadOnly = true });
                 Add(panelSettings = new ObjectField("Owner/Panel Settings") { allowSceneObjects = false});
                 Add(scale = new TextField("Scale") { isReadOnly = true });
                 Add(m_totalVisualElements = new TextField("Total Visual Elements") { isReadOnly = true });
                 Add(cacheSummary = new TextField("Cache Summary") { isReadOnly = true, multiline = true });
+
+                m_getRepaintUpdater = getRepaintUpdater;
+                Foldout RenderStatsFoldout = new Foldout(){text ="Visual Updater Statistics"};
+                RenderStatsFoldout.Add(m_ElementsAdded = new("Elements added") { isReadOnly = true });
+                RenderStatsFoldout.Add(m_ElemenstsRemoved = new("Elements removed") { isReadOnly = true });
+                RenderStatsFoldout.Add(m_MeshAllocated = new("Mesh allocs allocated") { isReadOnly = true });
+                RenderStatsFoldout.Add(m_MeshAllocUpdated = new("Mesh allocs updated") { isReadOnly = true });
+                RenderStatsFoldout.Add(m_ClipUpdateRoots = new("Clip update roots") { isReadOnly = true });
+                RenderStatsFoldout.Add(m_ClipUpdateTotal = new("Clip update total") { isReadOnly = true });
+                RenderStatsFoldout.Add(m_OpacitiyUpdateRoots = new("Opacity update roots") { isReadOnly = true });
+                RenderStatsFoldout.Add(m_OpacityUpdateTotal = new("Opacity update total") { isReadOnly = true });
+                RenderStatsFoldout.Add(m_OpacityIDUpdate = new("Opacity ID update") { isReadOnly = true });
+                RenderStatsFoldout.Add(m_XFormUpdateRoots = new("Xform update roots") { isReadOnly = true });
+                RenderStatsFoldout.Add(m_XformUpdateTotal = new("Xform update total") { isReadOnly = true });
+                RenderStatsFoldout.Add(m_XformedByBone = new("Xformed by bone") { isReadOnly = true });
+                RenderStatsFoldout.Add(m_XformedBySkipping = new("Xformed by skipping") { isReadOnly = true });
+                RenderStatsFoldout.Add(m_XformedByNudging = new("Xformed by nudging") { isReadOnly = true });
+                RenderStatsFoldout.Add(m_XformedByRepaint = new("Xformed by repaint") { isReadOnly = true });
+                RenderStatsFoldout.Add(m_VisualUpdateRoots = new("Visual update roots") { isReadOnly = true });
+                RenderStatsFoldout.Add(m_VisualUpdateTotal = new("Visual update total") { isReadOnly = true });
+                RenderStatsFoldout.Add(m_VisualUpdateFlats = new("Visual update flats") { isReadOnly = true });
+                RenderStatsFoldout.Add(m_DirtyProcesed = new("Dirty processed") { isReadOnly = true });
+                RenderStatsFoldout.Add(m_GroupXFormUpdates = new("Group-xform updates") { isReadOnly = true });
+
+                RenderStatsFoldout.Add(m_FrameIndex = new("Frame index") { isReadOnly = true });
+                RenderStatsFoldout.Add(m_CommandCount = new("Command count") { isReadOnly = true });
+                RenderStatsFoldout.Add(m_SkipCmdCounts = new("Skip cmd counts") { isReadOnly = true });
+                RenderStatsFoldout.Add(m_DrawCommands = new("Draw commands") { isReadOnly = true });
+                RenderStatsFoldout.Add(m_DisableCommands = new("Disable commands") { isReadOnly = true });
+                RenderStatsFoldout.Add(m_DrawRanges = new("Draw ranges") { isReadOnly = true });
+                RenderStatsFoldout.Add(m_DrawRangeCalls = new("Draw range calls") { isReadOnly = true });
+                RenderStatsFoldout.Add(m_MaterialSets = new("Material sets") { isReadOnly = true });
+                RenderStatsFoldout.Add(m_StencilChanges = new("Stencil changes") { isReadOnly = true });
+                RenderStatsFoldout.Add(m_ImmediateDraws = new("Immediate draws") { isReadOnly = true });
+                RenderStatsFoldout.Add(m_TotalTriangles = new("Total triangles") { isReadOnly = true });
+                Add(RenderStatsFoldout);
             }
 
             protected override void Refresh()
@@ -671,6 +722,64 @@ namespace UnityEditor.UIElements.Debugger
                     m_totalVisualElements.text = $" { panel.visualTree.Query<VisualElement>().ToList().Count.ToString()}, {panel.visualTree.Query<VisualElement>().Where(e => e.resolvedStyle.display == DisplayStyle.Flex).ToList().Count.ToString()} diplayNone";
 
                     cacheSummary.text = string.Join(", ", CollectCache(panel.visualTree));
+
+                    //Stats :
+                    var treeManager = m_getRepaintUpdater().renderTreeManager;
+                    bool realDevice = treeManager.device as UIRenderDevice != null;
+                    ChainBuilderStats stats = treeManager.statsByRef;
+
+                    m_ElementsAdded.text = stats.elementsAdded.ToString();
+                    m_ElemenstsRemoved.text = stats.elementsRemoved.ToString();
+                    m_MeshAllocated.text = stats.newMeshAllocations.ToString();
+                    m_MeshAllocUpdated.text = stats.updatedMeshAllocations.ToString();
+                    m_ClipUpdateRoots.text = stats.recursiveClipUpdates.ToString();
+                    m_ClipUpdateTotal.text = stats.recursiveClipUpdatesExpanded.ToString();
+                    m_OpacitiyUpdateRoots.text = stats.recursiveOpacityUpdates.ToString();
+                    m_OpacityUpdateTotal.text = stats.recursiveOpacityUpdatesExpanded.ToString();
+                    m_OpacityIDUpdate.text = stats.opacityIdUpdates.ToString();
+                    m_XFormUpdateRoots.text = stats.recursiveTransformUpdates.ToString();
+                    m_XformUpdateTotal.text = stats.recursiveTransformUpdatesExpanded.ToString();
+                    m_XformedByBone.text = stats.boneTransformed.ToString();
+                    m_XformedBySkipping.text = stats.skipTransformed.ToString();
+                    m_XformedByNudging.text = stats.nudgeTransformed.ToString();
+                    m_XformedByRepaint.text = stats.visualUpdateTransformed.ToString();
+                    m_VisualUpdateRoots.text = stats.recursiveVisualUpdates.ToString();
+                    m_VisualUpdateTotal.text = stats.recursiveVisualUpdatesExpanded.ToString();
+                    m_VisualUpdateFlats.text = stats.nonRecursiveVisualUpdates.ToString();
+                    m_DirtyProcesed.text = stats.dirtyProcessed.ToString();
+                    m_GroupXFormUpdates.text = stats.groupTransformElementsChanged.ToString();
+
+                    if (realDevice)
+                    {
+                        var drawStats = (treeManager.device as UIRenderDevice).GatherDrawStatistics();
+                        m_FrameIndex.text = drawStats.currentFrameIndex.ToString();
+                        m_CommandCount.text = drawStats.commandCount.ToString();
+                        m_SkipCmdCounts.text = drawStats.skippedCommandCount.ToString();
+                        m_DrawCommands.text = drawStats.drawCommandCount.ToString();
+                        m_DisableCommands.text = drawStats.disableCommandCount.ToString();
+                        m_DrawRanges.text = drawStats.drawRangeCount.ToString();
+                        m_DrawRangeCalls.text = drawStats.drawRangeCallCount.ToString();
+                        m_MaterialSets.text = drawStats.materialSetCount.ToString();
+                        m_StencilChanges.text = drawStats.stencilRefChanges.ToString();
+                        m_ImmediateDraws.text = drawStats.immediateDraws.ToString();
+                        m_TotalTriangles.text = (drawStats.totalIndices / 3).ToString();
+                    }
+                    else
+                    {
+
+                        m_FrameIndex.style.display = DisplayStyle.None;
+                        m_CommandCount.style.display = DisplayStyle.None;
+                        m_SkipCmdCounts.style.display = DisplayStyle.None;
+                        m_DrawCommands.style.display = DisplayStyle.None;
+                        m_DisableCommands.style.display = DisplayStyle.None;
+                        m_DrawRanges.style.display = DisplayStyle.None;
+                        m_DrawRangeCalls.style.display = DisplayStyle.None;
+                        m_MaterialSets.style.display = DisplayStyle.None;
+                        m_StencilChanges.style.display = DisplayStyle.None;
+                        m_ImmediateDraws.style.display = DisplayStyle.None;
+                        m_TotalTriangles.style.display = DisplayStyle.None;
+                    }
+
                 }
             }
 
@@ -684,6 +793,8 @@ namespace UnityEditor.UIElements.Debugger
 
                 return array;
             }
+
+
         }
 
 
@@ -736,8 +847,19 @@ namespace UnityEditor.UIElements.Debugger
                 }
                 else if (textElement.uitkTextHandle.IsAdvancedTextEnabledForElement())
                 {
-                    m_GenerationSettings.text = "Advanced Text is not yet supported by this foldout";
                     var handle = textElement.uitkTextHandle;
+                    if (handle.ConvertUssToNativeTextGenerationSettings())
+                    {
+                        var settings = handle.nativeSettings;
+                        m_GenerationSettings.text = settings.ToString();
+
+                    }
+                    else
+                    {
+                        m_GenerationSettings.text = "Failed to get Text Generation Settings";
+
+                    }
+
                     m_fontAsset.value = null;
                     m_textSettings.value = null;
                     m_CacheInfo.text = handle.ATGMeasuredWidth.HasValue ? $"Measured:{handle.ATGMeasuredWidth} Rounded:{handle.ATGRoundedWidth} PixelPerPoint:{handle.LastPixelPerPoint}" : "No cache";
@@ -854,7 +976,6 @@ namespace UnityEditor.UIElements.Debugger
             m_PickToggle.SetValueWithoutNotify(m_Context.pickElement);
             m_ShowLayoutToggle.SetValueWithoutNotify(m_Context.showLayoutBound);
             m_RepaintOverlayToggle?.SetValueWithoutNotify(m_Context.showRepaintOverlay);
-            m_ShowDrawStatsToggle?.SetValueWithoutNotify(m_Context.showDrawStats);
             m_BreakBatchesToggle?.SetValueWithoutNotify(m_Context.breakBatches);
             m_ShowWireframeToggle?.SetValueWithoutNotify(m_Context.showWireframe);
             m_ShowTextMetrics?.SetValueWithoutNotify( m_Context.showTextMetrics);
@@ -932,7 +1053,6 @@ namespace UnityEditor.UIElements.Debugger
             var updater = GetRepaintUpdater(context.selection.panel);
             if (updater != null)
             {
-                updater.drawStats = context.showDrawStats;
                 updater.breakBatches = context.breakBatches;
             }
         }
@@ -1286,5 +1406,7 @@ namespace UnityEditor.UIElements.Debugger
                 AddWireframeOverlayRecursive(child);
             }
         }
+
+       
     }
 }

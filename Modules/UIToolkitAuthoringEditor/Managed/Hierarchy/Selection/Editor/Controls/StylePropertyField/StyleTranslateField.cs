@@ -58,5 +58,20 @@ namespace Unity.UIToolkit.Editor
             labelElement.AddToClassList(labelUssClassName);
             visualInput.AddToClassList(inputUssClassName);
         }
+
+        protected override TranslateField CreateValueField()
+        {
+            return new TranslateField();
+        }
+
+        protected override StyleTranslate CreateStyleValue(Translate v)
+        {
+            return v;
+        }
+
+        internal override bool EqualsCurrentValue(StyleTranslate v)
+        {
+            return value == v;
+        }
     }
 }

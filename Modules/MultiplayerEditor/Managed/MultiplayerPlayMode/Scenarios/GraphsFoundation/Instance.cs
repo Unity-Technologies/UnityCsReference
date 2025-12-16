@@ -27,14 +27,13 @@ namespace Unity.Multiplayer.PlayMode.Editor
         [SerializeField] private string m_Name;
         [SerializeField] private string m_InstanceDescriptionType;
         [SerializeField] private CancellationTokenSource m_FreeRunCancelTokenSource;
-        [SerializeField] private bool m_HasCompleted;
         [SerializeField] private bool m_HasDeployedAndRun;
         [SerializeField] private string m_BuildTarget;
         [SerializeField] private bool m_Drifted;
         [SerializeField] private RunModeState m_RunModeState;
         [SerializeField] private string m_MultiplayerRole;
         [SerializeField] private InstanceStatusData m_StatusData;
-        [SerializeReference] private PlayModeController m_PlayModeController;
+        [SerializeField] private InstanceController m_InstanceController;
         [SerializeReference] private InstanceDescription m_InstanceDescription;
 
         // TODO: MTT-10016 Migrate towards a single Monitoring Task per instance.
@@ -43,7 +42,7 @@ namespace Unity.Multiplayer.PlayMode.Editor
         internal event Action<Instance, InstanceStatusData> StatusRefreshed;
 
         internal string Name => m_Name;
-        internal PlayModeController Controller => m_PlayModeController;
+        internal InstanceController Controller => m_InstanceController;
         internal InstanceStatusData StatusData => m_StatusData;
         internal ExecutionGraph GetExecutionGraph() => m_ExecutionGraph;
         internal List<Task> GetCurrentMonitoringTasksForScenario() => m_CurrentMonitoringTasks;
@@ -72,23 +71,23 @@ namespace Unity.Multiplayer.PlayMode.Editor
                     return;
 
                 m_RunModeState = value;
-                RefreshAndNotifyStatus();
+                Reset();
             }
         }
 
         internal Task<Scenario.ValidationResult> ValidateForRunningAsync(CancellationToken cancellationToken)
         {
-            return m_PlayModeController.ValidateForRunningAsync(cancellationToken);
+            return m_InstanceController.ValidateForRunningAsync(cancellationToken);
         }
 
         internal static Instance Create()
         {
             var description = new MainEditorInstanceDescription() { Name = "Main Editor" };
-            var controller = new EditorInstanceController(description);
+            var controller = MainEditorController.CreateInstance(description);
             return Create(description, controller);
         }
 
-        internal static Instance Create(InstanceDescription description, PlayModeController playModeController)
+        internal static Instance Create(InstanceDescription description, InstanceController playModeController)
         {
             Assert.IsNotNull(description, "InstanceDescription cannot be null");
             Assert.IsNotNull(playModeController, "PlayModeController cannot be null");
@@ -97,7 +96,7 @@ namespace Unity.Multiplayer.PlayMode.Editor
             var instance = new Instance();
             var executionGraph = new ExecutionGraph();
             executionGraph.StatusRefreshed += instance.OnGraphStatusRefreshed;
-            instance.m_PlayModeController = playModeController;
+            instance.m_InstanceController = playModeController;
             instance.m_InstanceDescription = description;
             instance.m_ExecutionGraph = executionGraph;
             instance.m_InstanceDescriptionType = description.InstanceTypeName;
@@ -135,7 +134,6 @@ namespace Unity.Multiplayer.PlayMode.Editor
         {
             // Reset the instance properties for a new run
             m_HasDeployedAndRun = false;
-            m_HasCompleted = false;
             m_CurrentMonitoringTasks.Clear();
             m_StatusData = default;
 
@@ -342,7 +340,6 @@ namespace Unity.Multiplayer.PlayMode.Editor
 
             m_FreeRunCancelTokenSource.Cancel();
             m_FreeRunCancelTokenSource = null;
-            m_HasCompleted = true;
             m_Drifted = false;
         }
 
@@ -353,7 +350,7 @@ namespace Unity.Multiplayer.PlayMode.Editor
 
         internal bool IsActive()
         {
-            return m_ExecutionGraph.HasStarted && !m_HasCompleted;
+            return m_StatusData.OverallStatus.State is ExecutionState.Running or ExecutionState.Active;
         }
 
         internal async Task<ExecutionGraph.ExecutionResult> RunOrResumeAsync(ExecutionStage executionStage,
@@ -382,7 +379,6 @@ namespace Unity.Multiplayer.PlayMode.Editor
         {
             m_HasDeployedAndRun = true;
             await Task.WhenAll(GetCurrentMonitoringTasksForScenario());
-            m_HasCompleted = true;
             m_FreeRunCancelTokenSource = null;
         }
 

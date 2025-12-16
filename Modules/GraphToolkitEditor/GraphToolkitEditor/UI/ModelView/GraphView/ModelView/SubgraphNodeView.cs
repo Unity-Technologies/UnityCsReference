@@ -34,7 +34,6 @@ namespace Unity.GraphToolkit.Editor
 
         Color m_TabBorderColor;
         Color m_TabColor;
-        Color m_DefaultTabColor;
         VisualElement m_TabElement;
         VisualElement m_HideTabBottomBorderElement;
         VisualElement m_TabDraggableAreaElement;
@@ -49,8 +48,8 @@ namespace Unity.GraphToolkit.Editor
             clickable.activators.Add(new ManipulatorActivationFilter { button = MouseButton.LeftMouse, clickCount = 2 });
             this.AddManipulator(clickable);
 
-            m_DefaultTabColor = new Color(107 / 255f, 204 / 255f, 134 / 255f, 1f);
-            m_TabColor = m_DefaultTabColor;
+            if (Model is SubgraphNodeModel subgraphNodeModel && subgraphNodeModel.GetSubgraphModel() != null)
+                m_TabColor = subgraphNodeModel.DefaultColor;
         }
 
         /// <inheritdoc/>
@@ -127,7 +126,7 @@ namespace Unity.GraphToolkit.Editor
                 var color = subgraphNodeModel.ElementColor.Color;
                 if (color != m_TabColor)
                 {
-                    m_TabColor = subgraphNodeModel.ElementColor.HasUserColor ? subgraphNodeModel.ElementColor.Color : m_DefaultTabColor;
+                    m_TabColor = subgraphNodeModel.ElementColor.HasUserColor ? subgraphNodeModel.ElementColor.Color : subgraphNodeModel.DefaultColor;
                     m_TabElement.MarkDirtyRepaint();
                 }
             }

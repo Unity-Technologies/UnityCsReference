@@ -6,7 +6,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Unity.GraphToolkit.Editor;
-using Unity.GraphToolkit.InternalBridge;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.UIElements;
@@ -299,7 +298,14 @@ namespace Unity.GraphToolkit.ItemLibrary.Editor
             iconTexture.AddToClassList(itemCategoryIconClassName);
             iconElement.Add(iconTexture);
 
-            if (!string.IsNullOrEmpty(treeItem.StyleName))
+            if (!string.IsNullOrEmpty(treeItem.IconPath))
+            {
+                // If there is a custom icon path for the item's icon, use it
+                var iconImage = EditorGUIUtility.IconContent(treeItem.IconPath).image as Texture2D;
+                if (iconImage != null)
+                    iconTexture.image = iconImage;
+            }
+            else if (!string.IsNullOrEmpty(treeItem.StyleName))
             {
                 // If there is a style name for the item's icon, use it
                 iconTexture.AddToClassList(GetItemCustomClassName(treeItem) + CategoryIconSuffix);
@@ -363,16 +369,16 @@ namespace Unity.GraphToolkit.ItemLibrary.Editor
             if (itemView == null)
                 return;
 
-            if (!TryAddTypeIcon(icon, itemView))
-            {
-                if (!TryAddSubgraphIcon(icon, itemView))
-                {
-                    // Last resort: try to get an icon with the item name
-                    var itemName = itemView.Name.ToKebabCase();
-                    icon.AddToClassList(GraphElementHelper.iconUssClassName.WithUssModifier(itemName));
-                    icon.AddToClassList(customItemClassName + "-" + itemName + CategoryIconSuffix);
-                }
-            }
+            // Try to get icon from the type if any.
+            if (TryAddTypeIcon(icon, itemView)) return;
+
+            // Try to get the icon if it is a subgraph.
+            if (TryAddSubgraphIcon(icon, itemView)) return;
+
+            // Last resort: try to get an icon with the item name.
+            var itemName = itemView.Name.ToKebabCase();
+            icon.AddToClassList(GraphElementHelper.iconUssClassName.WithUssModifier(itemName));
+            icon.AddToClassList(customItemClassName + "-" + itemName + CategoryIconSuffix);
         }
 
         bool TryAddTypeIcon(VisualElement iconElement, IItemView itemView)
@@ -566,7 +572,7 @@ namespace Unity.GraphToolkit.ItemLibrary.Editor
 
             m_LastItemViewClicked = selectedItemView;
 
-            if (!selectedItems.Any())
+            if (!selectedItems.HasAny())
                 m_ItemChosenCallback(null);
             else
                 OnModelViewSelectionChange?.Invoke(selectedItems
@@ -726,6 +732,7 @@ namespace Unity.GraphToolkit.ItemLibrary.Editor
         {
             public ICategoryView Parent => null;
             public string StyleName => null;
+            public string IconPath => null;
             public int Depth => 0;
             public string GetPath() => null;
             public string Name => "Indexing databases...";

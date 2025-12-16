@@ -42,7 +42,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         }
 
 
-        public virtual bool isFilterSet => status != Status.None || categories.Any() || labels.Any();
+        public virtual bool isFilterSet => status != Status.None || categories.Count > 0 || labels.Count > 0;
 
         public PageFilters Clone()
         {

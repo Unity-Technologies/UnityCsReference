@@ -79,7 +79,7 @@ namespace UnityEditorInternal
             // Property may be disposed
             try
             {
-                return serializedProperty?.propertyPath + serializedProperty.serializedObject.targetObject.GetInstanceID() + (GUIView.current?.nativeHandle.ToInt32() ?? -1);
+                return serializedProperty?.propertyPath + serializedProperty.serializedObject.targetObject.GetEntityId() + (GUIView.current?.nativeHandle.ToInt32() ?? -1);
             }
             catch (NullReferenceException)
             {

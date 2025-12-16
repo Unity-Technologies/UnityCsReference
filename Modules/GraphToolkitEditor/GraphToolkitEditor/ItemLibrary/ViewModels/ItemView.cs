@@ -35,6 +35,9 @@ namespace Unity.GraphToolkit.ItemLibrary.Editor
         /// </summary>
         public override string StyleName => Item.StyleName;
 
+        /// <inheritdoc />
+        public override string IconPath => Item.IconPath;
+
         /// <summary>
         /// Get the port to which this item will be connected to.
         /// </summary>

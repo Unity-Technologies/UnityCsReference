@@ -8,8 +8,7 @@ using UnityEngine.Scripting;
 namespace UnityEngine.AdaptivePerformance
 {
     /// <summary>
-    /// General settings container used to house the instance of the active settings, as well as the manager
-    /// instance used to load the loaders with.
+    /// A `ScriptableObject` that contains global settings applicable to all Adaptive Performance providers.
     /// </summary>
     public class AdaptivePerformanceGeneralSettings : ScriptableObject
     {
@@ -99,12 +98,6 @@ namespace UnityEngine.AdaptivePerformance
             }
         }
 
-        void Awake()
-        {
-            s_RuntimeSettingsInstance = this;
-            Application.quitting += Quit;
-            DontDestroyOnLoad(s_RuntimeSettingsInstance);
-        }
 
         static void Quit()
         {
@@ -121,8 +114,7 @@ namespace UnityEngine.AdaptivePerformance
             s_RuntimeSettingsInstance = null;
         }
 
-        [RequiredByNativeCode(optional: false)]
-        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterAssembliesLoaded)] //keep for editor module
+        [RequiredByNativeCode(optional: true)]
         internal static void AttemptInitializeAdaptivePerformanceGeneralSettingsOnLoad()
         {
             AdaptivePerformanceGeneralSettings instance = AdaptivePerformanceGeneralSettings.Instance;
@@ -132,8 +124,7 @@ namespace UnityEngine.AdaptivePerformance
             instance.InitAdaptivePerformance();
         }
 
-        [RequiredByNativeCode(optional: false)]
-        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSplashScreen)] //keep for editor module
+        [RequiredByNativeCode(optional: true)]
         internal static void AttemptStartAdaptivePerformanceGeneralSettingsOnBeforeSplashScreen()
         {
             AdaptivePerformanceGeneralSettings instance = AdaptivePerformanceGeneralSettings.Instance;
@@ -161,6 +152,10 @@ namespace UnityEngine.AdaptivePerformance
             m_AdaptivePerformanceManager.automaticLoading = false;
             m_AdaptivePerformanceManager.automaticRunning = false;
             m_AdaptivePerformanceManager.InitializeLoaderSync();
+
+            if (m_AdaptivePerformanceManager.activeLoader == null)
+                return;
+
             m_ProviderIntialized = true;
         }
 

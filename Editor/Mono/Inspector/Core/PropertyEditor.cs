@@ -100,10 +100,10 @@ namespace UnityEditor
         const int k_CreateInspectorElementTargetUpdateTime = 5;
 
         [SerializeField] protected List<Object> m_ObjectsLockedBeforeSerialization = new List<Object>();
-        [SerializeField] protected List<int> m_InstanceIDsLockedBeforeSerialization = new List<int>();
+        [SerializeField] protected List<EntityId> m_EntityIdsLockedBeforeSerialization = new List<EntityId>();
         [SerializeField] protected PreviewResizer m_PreviewResizer = new PreviewResizer();
         [SerializeField] protected LabelGUI m_LabelGUI = new LabelGUI();
-        [SerializeField] protected int m_LastInspectedObjectInstanceID = -1;
+        [SerializeField] protected EntityId m_LastInspectedObjectEntityId = EntityId.None;
         [SerializeField] protected float m_LastVerticalScrollValue = 0;
         [SerializeField] protected string m_GlobalObjectId = "";
         [SerializeField] protected InspectorMode m_InspectorMode = InspectorMode.Normal;
@@ -111,7 +111,7 @@ namespace UnityEditor
         private static readonly List<PropertyEditor> m_AllPropertyEditors = new List<PropertyEditor>();
         private Object m_InspectedObject;
         private static PropertyEditor s_LastPropertyEditor;
-        protected int m_LastInitialEditorInstanceID;
+        protected EntityId m_LastInitialEditorEntityId;
         protected Component[] m_ComponentsInPrefabSource;
         protected HashSet<Component> m_RemovedComponents;
         protected HashSet<Component> m_SuppressedComponents;
@@ -424,7 +424,7 @@ namespace UnityEditor
             ClearPreviewables();
 
             // save vertical scroll position
-            m_LastInspectedObjectInstanceID = GetInspectedObject()?.GetInstanceID() ?? -1;
+            m_LastInspectedObjectEntityId = GetInspectedObject()?.GetEntityId() ?? EntityId.None;
             m_LastVerticalScrollValue = m_ScrollView?.verticalScroller.value ?? 0;
 
             EditorApplication.focusChanged -= OnFocusChanged;
@@ -1008,7 +1008,7 @@ namespace UnityEditor
 
         private void ExtractPrefabComponents()
         {
-            m_LastInitialEditorInstanceID = m_Tracker.activeEditors.Length == 0 ? 0 : m_Tracker.activeEditors[0].GetInstanceID();
+            m_LastInitialEditorEntityId = m_Tracker.activeEditors.Length == 0 ? EntityId.None: m_Tracker.activeEditors[0].GetEntityId();
 
             m_ComponentsInPrefabSource = null;
             m_RemovedComponentDict = null;
@@ -1162,7 +1162,7 @@ namespace UnityEditor
             m_TypeSelectionList = null;
             m_FirstInitialize = false;
             editorsWithImportedObjectLabel.Clear();
-            m_LastInitialEditorInstanceID = 0;
+            m_LastInitialEditorEntityId = EntityId.None;
 
             if (m_RemovedPrefabComponentsElement != null)
             {
@@ -1843,7 +1843,7 @@ namespace UnityEditor
             {
                 if (m_PreviousPreviewExpandedState)
                 {
-                    UIEventRegistration.MakeCurrentIMGUIContainerDirty();
+                    UIElementsIMGUIUtility.MakeCurrentIMGUIContainerDirty();
                     m_PreviousPreviewExpandedState = false;
                 }
                 m_PreviousFooterHeight = previewSize;
@@ -1866,7 +1866,7 @@ namespace UnityEditor
 
             if (m_PreviousFooterHeight >= 0f && !FloatComparer.s_ComparerWithDefaultTolerance.Equals(previewSize, m_PreviousFooterHeight))
             {
-                UIEventRegistration.MakeCurrentIMGUIContainerDirty();
+                UIElementsIMGUIUtility.MakeCurrentIMGUIContainerDirty();
             }
 
             m_PreviousFooterHeight = previewSize;
@@ -2197,7 +2197,7 @@ namespace UnityEditor
             if (editorsElement == null)
                 return;
 
-            Dictionary<int, IEditorElement> mapping = null;
+            Dictionary<EntityId, IEditorElement> mapping = null;
 
             var selection = new HashSet<int>(Selection.entityIds.ToIntArray());
             if (m_DrawnSelection.SetEquals(selection))
@@ -2228,7 +2228,7 @@ namespace UnityEditor
 
             Editor.m_AllowMultiObjectAccess = true;
 
-            if (editors.Length > 0 && editors[0].GetInstanceID() != m_LastInitialEditorInstanceID)
+            if (editors.Length > 0 && editors[0].GetEntityId() != m_LastInitialEditorEntityId)
                 OnTrackerRebuilt();
             if (m_RemovedComponents == null)
                 ExtractPrefabComponents(); // needed after assembly reload (due to HashSet not being serializable)
@@ -2272,7 +2272,7 @@ namespace UnityEditor
                         // Adds an empty IMGUIContainer to prevent infinite repainting (case 1264833).
                         // EXCEPT for the ParticleSystemRenderer, because it prevents the ParticleSystem inspector
                         // from working correctly when setting the Material for its renderer (case 1308966).
-                        if (!(editor.target is ParticleSystemRenderer) && (mapping == null || !mapping.TryGetValue(editor.target.GetInstanceID(),
+                        if (!(editor.target is ParticleSystemRenderer) && (mapping == null || !mapping.TryGetValue(editor.target.GetEntityId(),
                             out var culledEditorContainer)))
                         {
                             culledEditorContainer =
@@ -2286,7 +2286,7 @@ namespace UnityEditor
                         continue;
                     }
 
-                    if (mapping == null || !mapping.TryGetValue(editors[editorIndex].target.GetInstanceID(), out var editorContainer))
+                    if (mapping == null || !mapping.TryGetValue(editors[editorIndex].target.GetEntityId(), out var editorContainer))
                     {
                         editorContainer = new UIElements.EditorElement(editorIndex, this, editors);
                         editorsElement.Add(editorContainer as VisualElement);
@@ -2332,12 +2332,12 @@ namespace UnityEditor
 
         private void RestoreVerticalScrollIfNeeded()
         {
-            if (m_LastInspectedObjectInstanceID == -1)
+            if (m_LastInspectedObjectEntityId == EntityId.None)
                 return;
-            var inspectedObjectInstanceID = GetInspectedObject()?.GetInstanceID() ?? -1;
-            if (inspectedObjectInstanceID == m_LastInspectedObjectInstanceID && inspectedObjectInstanceID != -1)
+            var inspectedObjectInstanceID = GetInspectedObject()?.GetEntityId() ?? EntityId.None;
+            if (inspectedObjectInstanceID == m_LastInspectedObjectEntityId && inspectedObjectInstanceID != EntityId.None)
                 m_ScrollView.verticalScroller.value = m_LastVerticalScrollValue;
-            m_LastInspectedObjectInstanceID = -1; // reset to make sure the restore occurs once
+            m_LastInspectedObjectEntityId = EntityId.None; // reset to make sure the restore occurs once
         }
 
         void OnPrefabInstanceUnpacked(GameObject unpackedPrefabInstance, PrefabUnpackMode unpackMode)
@@ -2643,9 +2643,9 @@ namespace UnityEditor
                 GUI.DrawTexture(position, EditorGUIUtility.whiteTexture);
         }
 
-        private Dictionary<int, IEditorElement> ProcessEditorElementsToRebuild(Editor[] editors)
+        private Dictionary<EntityId, IEditorElement> ProcessEditorElementsToRebuild(Editor[] editors)
         {
-            Dictionary<int, IEditorElement> editorToElementMap = new Dictionary<int, IEditorElement>();
+            Dictionary<EntityId, IEditorElement> editorToElementMap = new Dictionary<EntityId, IEditorElement>();
             var currentElements = editorsElement.Children().OfType<IEditorElement>().ToList();
             if ((editors.Length == 0) || (rootVisualElement.panel == null && currentElements.Count == 0))
             {
@@ -2696,7 +2696,7 @@ namespace UnityEditor
                 currentElement.Reinit(newEditorsIndex, editors);
                 if (!InspectorElement.disabledThrottling)
                     m_EditorElementUpdater.Add(currentElement);
-                editorToElementMap[ed.target.GetInstanceID()] = currentElement;
+                editorToElementMap[ed.target.GetEntityId()] = currentElement;
                 ++newEditorsIndex;
                 ++previousEditorsIndex;
             }

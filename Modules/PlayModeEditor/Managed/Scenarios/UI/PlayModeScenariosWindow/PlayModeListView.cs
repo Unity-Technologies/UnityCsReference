@@ -27,8 +27,8 @@ namespace Unity.PlayMode.Editor
         {
             name = "playmode-list-view";
 
-            PlayModeScenarioUtils.ConfigurationAddedOrRemoved -= RefreshList;
-            PlayModeScenarioUtils.ConfigurationAddedOrRemoved += RefreshList;
+            RegisterCallback<AttachToPanelEvent>(OnAttachToPanel);
+            RegisterCallback<DetachFromPanelEvent>(OnDetachFromPanel);
 
             m_ListView = new ListView { fixedItemHeight = 16, selectionType = SelectionType.Single };
             m_ListView.selectionChanged += OnItemSelected;
@@ -40,7 +40,11 @@ namespace Unity.PlayMode.Editor
             m_NewItemTextField.OnFinishEdit += s =>
             {
                 m_NewItemTextField.style.display = new StyleEnum<DisplayStyle>(DisplayStyle.None);
-                PlayModeScenarioUtils.CreatePlayModeConfig(s, m_NewItemTextField.userData as Type);
+                var newConfig = PlayModeScenarioUtils.CreatePlayModeConfig(s, m_NewItemTextField.userData as Type);
+                if (newConfig != null)
+                {
+                    TrySelect(newConfig);
+                }
             };
 
             m_NewItemTextField.OnEdit += s =>
@@ -63,6 +67,17 @@ namespace Unity.PlayMode.Editor
             Add(m_ListView);
             RefreshList();
             styleSheets.Add(EditorGUIUtility.LoadRequired(k_Stylesheet) as StyleSheet);
+        }
+
+        private void OnAttachToPanel(AttachToPanelEvent evt)
+        {
+            PlayModeScenarioUtils.AssetsChanged -= RefreshList;
+            PlayModeScenarioUtils.AssetsChanged += RefreshList;
+        }
+
+        private void OnDetachFromPanel(DetachFromPanelEvent evt)
+        {
+            PlayModeScenarioUtils.AssetsChanged -= RefreshList;
         }
 
         internal bool TrySelect(PlayModeScenario scenario)

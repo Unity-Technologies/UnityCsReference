@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Collections.Generic;
 using Unity.Collections;
 using UnityEngine.Experimental.Rendering;
 
@@ -65,13 +66,14 @@ namespace UnityEngine.UIElements.UIR
             if (isGroupTransform)
                 mgc.entryRecorder.PushGroupMatrix(mgc.parentEntry);
 
-            bool setsMaterial = ve.resolvedStyle.unityMaterial != null;
+            var matDef = ve.resolvedStyle.unityMaterial;
+            bool setsMaterial = matDef.material != null;
             bool mustPopClipping = false;
 
             if (ve.visible)
             {
                 if (setsMaterial)
-                    mgc.entryRecorder.PushDefaultMaterial(mgc.parentEntry, ve.resolvedStyle.unityMaterial.material);
+                    mgc.entryRecorder.PushDefaultMaterial(mgc.parentEntry, matDef);
 
                 DrawVisualElementBackground(mgc);
                 DrawVisualElementBorder(mgc);
@@ -91,7 +93,7 @@ namespace UnityEngine.UIElements.UIR
                 if (isClippingWithScissors || isClippingWithStencil)
                 {
                     if (setsMaterial)
-                        mgc.entryRecorder.PushDefaultMaterial(mgc.parentEntry, ve.resolvedStyle.unityMaterial.material);
+                        mgc.entryRecorder.PushDefaultMaterial(mgc.parentEntry, matDef);
 
                     mustPopClipping = true;
                     PushVisualElementClipping(mgc);
@@ -106,7 +108,7 @@ namespace UnityEngine.UIElements.UIR
             if (mustPopClipping)
             {
                 if (setsMaterial)
-                    mgc.entryRecorder.PushDefaultMaterial(mgc.parentEntry, ve.resolvedStyle.unityMaterial.material);
+                    mgc.entryRecorder.PushDefaultMaterial(mgc.parentEntry, matDef);
 
                 PopVisualElementClipping(mgc);
 
@@ -184,11 +186,13 @@ namespace UnityEngine.UIElements.UIR
             var ve = mgc.visualElement;
             var renderData = mgc.renderData;
 
-            if (ve.layout.width <= UIRUtility.k_Epsilon || ve.layout.height <= UIRUtility.k_Epsilon)
+            var veSize = ve.layoutSize;
+            if (veSize.x <= UIRUtility.k_Epsilon || veSize.y <= UIRUtility.k_Epsilon)
                 return;
 
-            var style = ve.computedStyle;
+            ref var style = ref ve.computedStyle;
 
+            var veRect = new Rect(0, 0, veSize.x, veSize.y);
             // UUM-40007 Store the cached background color. This will prevent the DynamicColor from forcing a
             // full repaint if the color didn't actually change.
             var backgroundColor = style.backgroundColor;
@@ -199,7 +203,7 @@ namespace UnityEngine.UIElements.UIR
                 // Draw solid color background
                 var rectParams = new MeshGenerator.RectangleParams
                 {
-                    rect = ve.rect,
+                    rect = veRect,
                     uv = new Rect(0, 0, 1, 1),
                     color = backgroundColor,
                     colorPage = ColorPage.Init(m_RenderTreeManager, renderData.backgroundColorID),
@@ -231,7 +235,7 @@ namespace UnityEngine.UIElements.UIR
                 out radiusParams.topRightRadius,
                 out radiusParams.bottomRightRadius);
 
-            var background = style.backgroundImage;
+            var background = Background.From(style.backgroundImage);
             if (background.texture != null || background.sprite != null || background.vectorImage != null || background.renderTexture != null)
             {
                 // Draw background image (be it from a texture or a vector image)
@@ -253,7 +257,7 @@ namespace UnityEngine.UIElements.UIR
                         (Mathf.RoundToInt(slices.w) != 0);
 
                     rectParams = MeshGenerator.RectangleParams.MakeTextured(
-                        ve.rect,
+                        veRect,
                         new Rect(0, 0, 1, 1),
                         background.texture,
                         areSlicesPresent ? (validScaleMode ? scaleMode : ScaleMode.StretchToFill) : ScaleMode.ScaleToFit,
@@ -266,7 +270,7 @@ namespace UnityEngine.UIElements.UIR
                     bool useRepeat = !validScaleMode || (scaleMode == ScaleMode.ScaleAndCrop);
 
                     rectParams = MeshGenerator.RectangleParams.MakeSprite(
-                        ve.rect,
+                        veRect,
                         new Rect(0, 0, 1, 1),
                         background.sprite,
                         useRepeat ? ScaleMode.StretchToFill : scaleMode,
@@ -285,7 +289,7 @@ namespace UnityEngine.UIElements.UIR
                 else if (background.renderTexture != null)
                 {
                     rectParams = MeshGenerator.RectangleParams.MakeTextured(
-                        ve.rect,
+                        veRect,
                         new Rect(0, 0, 1, 1),
                         background.renderTexture,
                         ScaleMode.ScaleToFit,
@@ -300,7 +304,7 @@ namespace UnityEngine.UIElements.UIR
                     bool useRepeat = !validScaleMode || (scaleMode == ScaleMode.ScaleAndCrop);
 
                     rectParams = MeshGenerator.RectangleParams.MakeVectorTextured(
-                        ve.rect,
+                        veRect,
                         new Rect(0, 0, 1, 1),
                         background.vectorImage,
                         useRepeat ? ScaleMode.StretchToFill : scaleMode,
@@ -370,7 +374,9 @@ namespace UnityEngine.UIElements.UIR
             var ve = mgc.visualElement;
             var renderData = mgc.renderData;
 
-            if (ve.layout.width >= UIRUtility.k_Epsilon && ve.layout.height >= UIRUtility.k_Epsilon)
+            var veSize = ve.layoutSize;
+
+            if (veSize.x >= UIRUtility.k_Epsilon && veSize.y >= UIRUtility.k_Epsilon)
             {
                 var style = ve.resolvedStyle;
                 if (style.borderLeftColor != Color.clear && style.borderLeftWidth > 0.0f ||
@@ -380,7 +386,7 @@ namespace UnityEngine.UIElements.UIR
                 {
                     var borderParams = new MeshGenerator.BorderParams
                     {
-                        rect = ve.rect,
+                        rect = new Rect(0,0,veSize.x, veSize.y),
                         leftColor = style.borderLeftColor,
                         topColor = style.borderTopColor,
                         rightColor = style.borderRightColor,
@@ -423,7 +429,8 @@ namespace UnityEngine.UIElements.UIR
         {
             var ve = mgc.visualElement;
 
-            if (ve.layout.width <= UIRUtility.k_Epsilon || ve.layout.height <= UIRUtility.k_Epsilon)
+            var veSize = ve.layoutSize;
+            if (veSize.x <= UIRUtility.k_Epsilon || veSize.y <= UIRUtility.k_Epsilon)
                 return;
 
             var resolvedStyle = ve.resolvedStyle;
@@ -436,7 +443,7 @@ namespace UnityEngine.UIElements.UIR
 
             var rp = new MeshGenerator.RectangleParams()
             {
-                rect = ve.rect,
+                rect = new Rect(0,0,veSize.x, veSize.y),
                 color = Color.white,
 
                 // Adjust the radius of the inner masking shape

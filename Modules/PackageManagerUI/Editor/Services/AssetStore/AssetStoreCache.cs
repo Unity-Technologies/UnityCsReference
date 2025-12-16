@@ -306,7 +306,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 // When local info gets updated, we want to remove the cached update info so that we check update for the new local info
                 m_UpdateInfos.Remove(info.productId);
             }
-            if (addedOrUpdatedLocalInfos.Any() || oldLocalInfos.Any())
+            if (addedOrUpdatedLocalInfos.Count > 0 || oldLocalInfos.Count > 0)
                 onLocalInfosChanged?.Invoke(addedOrUpdatedLocalInfos, oldLocalInfos.Values);
         }
 
@@ -341,7 +341,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 m_UpdateInfos[info.productId] = info;
             }
 
-            if (updateInfosChanged.Any())
+            if (updateInfosChanged.Count > 0)
                 onUpdateInfosChanged?.Invoke(updateInfosChanged);
         }
 
@@ -362,7 +362,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 m_ImportedAssets[asset.importedPath] = asset;
             }
 
-            if (modifiedProductIds.Any())
+            if (modifiedProductIds.Count > 0)
                 RefreshImportedPackageList(modifiedProductIds);
         }
 
@@ -399,7 +399,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 }
             }
 
-            if (addedOrUpdatedPackages.Any() || removedPackages.Any())
+            if (addedOrUpdatedPackages.Count > 0 || removedPackages.Count > 0)
                 onImportedPackagesChanged?.Invoke(addedOrUpdatedPackages.Values, removedPackages);
         }
     }

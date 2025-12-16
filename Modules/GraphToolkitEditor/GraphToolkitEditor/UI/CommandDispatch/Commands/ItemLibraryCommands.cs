@@ -382,15 +382,10 @@ namespace Unity.GraphToolkit.Editor
                     else if (creationData.NodeLibraryItem.Data is NodeItemLibraryData nodeData && nodeData.SubgraphReference != default && !nodeData.SubgraphReference.HasAssetReference)
                     {
                         var subGraphModel = graphModel.ResolveGraphModelFromReference(nodeData.SubgraphReference);
-                        // If the node to create is a local subgraph node.
-                        var localSubgraph = graphModel.CreateLocalSubgraph(
-                            subGraphModel.GetType(),
-                            subGraphModel.Name);
+                        var localSubgraph = graphModel.DuplicateLocalSubGraph(subGraphModel, subGraphModel.Name);
 
                         if (localSubgraph is null)
                             continue;
-
-                        localSubgraph.CloneGraph(subGraphModel, true);
 
                         createdElement = graphModel.CreateSubgraphNode(
                             localSubgraph,
@@ -537,13 +532,13 @@ namespace Unity.GraphToolkit.Editor
                     }
 
                     // Delete old wires
-                    if (wiresToDelete.Any())
+                    if (wiresToDelete.HasAny())
                         graphModel.DeleteWires(wiresToDelete);
                 }
                 graphUpdater.MarkUpdated(changeScope.ChangeDescription);
             }
 
-            if (elementsToSelect.Any())
+            if (elementsToSelect.HasAny())
             {
                 var selectionHelper = new GlobalSelectionCommandHelper(selectionState);
                 using (var undoStateUpdater = undoState.UpdateScope)

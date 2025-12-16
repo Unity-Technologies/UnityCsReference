@@ -82,7 +82,7 @@ namespace UnityEngine.UIElements
             Vector2 measuredSize = Vector2.zero;
             if (widthMode != VisualElement.MeasureMode.Exactly || heightMode != VisualElement.MeasureMode.Exactly)
             {
-                measuredSize = te.uitkTextHandle.ComputeTextSize(textToMeasure, width, height, fontsize);
+                measuredSize = te.uitkTextHandle.ComputeTextSize(textToMeasure, width, widthMode, height, heightMode, fontsize);
             }
 
             return PostProcessMeasuredSize(te, measuredSize, width, widthMode, height, heightMode, pixelsPerPoint);
@@ -113,11 +113,11 @@ namespace UnityEngine.UIElements
                 return ve.computedStyle.unityFontDefinition.fontAsset as FontAsset;
 
             var textSettings = GetTextSettingsFrom(ve);
-            if (ve.computedStyle.unityFontDefinition.font != null)
+            if (!Equals(ve.computedStyle.unityFontDefinition.font, null))
                 return textSettings.GetCachedFontAsset(ve.computedStyle.unityFontDefinition.font);
-            else if (ve.computedStyle.unityFont != null)
+            else if (!Equals(ve.computedStyle.unityFont, null))
                 return textSettings.GetCachedFontAsset(ve.computedStyle.unityFont);
-            else if (textSettings != null)
+            else if (!Equals(textSettings, null))
                 return textSettings.defaultFontAsset;
             return null;
         }
@@ -167,7 +167,7 @@ namespace UnityEngine.UIElements
                 return new TextCoreSettings();
 
             var resolvedStyle = ve.resolvedStyle;
-            var computedStyle = ve.computedStyle;
+            ref var computedStyle = ref ve.computedStyle;
             TextShadow textShadow = computedStyle.textShadow;
 
             float factor = TextHandle.ConvertPixelUnitsToTextCoreRelativeUnits(computedStyle.fontSize.value, fontAsset);
@@ -175,9 +175,13 @@ namespace UnityEngine.UIElements
             float outlineWidth = Mathf.Clamp(resolvedStyle.unityTextOutlineWidth * factor, 0.0f, 1.0f);
             float underlaySoftness = Mathf.Clamp(textShadow.blurRadius * factor, 0.0f, 1.0f);
 
-            float underlayOffsetX = textShadow.offset.x < 0 ? Mathf.Max(textShadow.offset.x * factor, -1.0f) : Mathf.Min(textShadow.offset.x * factor, 1.0f);
-            float underlayOffsetY = textShadow.offset.y < 0 ? Mathf.Max(textShadow.offset.y * factor, -1.0f) : Mathf.Min(textShadow.offset.y * factor, 1.0f);
-            Vector2 underlayOffset = new Vector2(underlayOffsetX, underlayOffsetY);
+            Vector2 underlayOffset = textShadow.offset * factor;
+            float offsetMax = 1.0f - underlaySoftness;
+            if (underlayOffset.magnitude > offsetMax)
+            {
+                // Clamps the offset to the atlas padding capacity
+                underlayOffset = underlayOffset.normalized * offsetMax;
+            }
 
             Color faceColor, underlayColor, outlineColor;
             if (ignoreColors)

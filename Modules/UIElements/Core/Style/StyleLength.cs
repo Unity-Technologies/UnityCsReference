@@ -87,6 +87,14 @@ namespace UnityEngine.UIElements
 
         internal StyleLength(Length v, StyleKeyword keyword)
         {
+            // UIE-1584: NaN pixels is OK for Length in general but not in the Style pipeline. Silently converting to None.
+            if (float.IsNaN(v.value))
+            {
+                m_Keyword = StyleKeyword.None;
+                m_Value = Length.None();
+                return;
+            }
+
             m_Keyword = keyword;
             m_Value = v;
 

@@ -131,7 +131,7 @@ namespace Unity.Hierarchy.Editor
             throw new NotSupportedException();
         }
 
-        int ISearchView.GetViewId()
+        EntityId ISearchView.GetViewId()
         {
             throw new NotSupportedException();
         }

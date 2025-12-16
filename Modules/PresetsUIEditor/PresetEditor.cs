@@ -42,8 +42,8 @@ namespace UnityEditor.Presets
             public UnityObject reference;
             public Hash128 presetHash;
         }
-        static Dictionary<int, ReferenceCount> s_References = new Dictionary<int, ReferenceCount>();
-        List<int> m_PresetsInstanceIds = new List<int>();
+        static Dictionary<EntityId, ReferenceCount> s_References = new Dictionary<EntityId, ReferenceCount>();
+        List<EntityId> m_PresetsInstanceIds = new List<EntityId>();
 
         Editor m_InternalEditor = null;
         ICoupledEditor m_CoupledEditor = null;
@@ -70,17 +70,17 @@ namespace UnityEditor.Presets
         {
             foreach (var o in targets)
             {
-                var instanceID = o.GetInstanceID();
-                if (s_References.ContainsKey(instanceID))
+                var entityId = o.GetEntityId();
+                if (s_References.ContainsKey(entityId))
                 {
-                    var presetHash = s_References[instanceID].presetHash;
+                    var presetHash = s_References[entityId].presetHash;
                     var currentHash = AssetDatabase.GetAssetDependencyHash(AssetDatabase.GetAssetOrScenePath(o));
 
                     // The asset changed on disk. Update the reference.
                     if (presetHash != currentHash)
                     {
-                        s_References[instanceID].presetHash = currentHash;
-                        s_References[instanceID].reference = (o as Preset)?.GetReferenceObject();
+                        s_References[entityId].presetHash = currentHash;
+                        s_References[entityId].reference = (o as Preset)?.GetReferenceObject();
                     }
                 }
             }
@@ -310,7 +310,7 @@ namespace UnityEditor.Presets
                     }
 
                     ReferenceCount reference = null;
-                    var referenceRegistered = s_References.TryGetValue(p.GetInstanceID(), out reference);
+                    var referenceRegistered = s_References.TryGetValue(p.GetEntityId(), out reference);
                     if (!referenceRegistered || reference.reference == null)
                     {
                         reference = new ReferenceCount()
@@ -323,15 +323,15 @@ namespace UnityEditor.Presets
                         reference.reference.name = p.name;
                         if (referenceRegistered)
                         {
-                            s_References[p.GetInstanceID()] = reference;
+                            s_References[p.GetEntityId()] = reference;
                         }
                         else
                         {
-                            s_References.Add(p.GetInstanceID(), reference);
+                            s_References.Add(p.GetEntityId(), reference);
                         }
                     }
 
-                    m_PresetsInstanceIds.Add(p.GetInstanceID());
+                    m_PresetsInstanceIds.Add(p.GetEntityId());
                     reference.count++;
                     objs[index] = reference.reference;
                 }
@@ -342,7 +342,7 @@ namespace UnityEditor.Presets
                 //Coming back from an assembly reload... our references are probably broken and we need to fix them.
                 for (var index = 0; index < targets.Length; index++)
                 {
-                    var instanceID = targets[index].GetInstanceID();
+                    var instanceID = targets[index].GetEntityId();
                     ReferenceCount reference = null;
                     if (!s_References.TryGetValue(instanceID, out reference))
                     {

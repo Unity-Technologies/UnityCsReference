@@ -21,6 +21,6 @@ namespace UnityEditor
         public int subtarget { get; set; }
         public BuildOptions options { get; set; }
         public string[] extraScriptingDefines { get; set; }
+        /*UCBP-PUBLIC*/ internal string[] previousBuildMetadataLocations { get; set; }
     }
-
 }

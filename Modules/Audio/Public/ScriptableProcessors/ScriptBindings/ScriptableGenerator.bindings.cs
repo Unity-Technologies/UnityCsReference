@@ -270,13 +270,13 @@ namespace UnityEngine.Audio
         /// <remarks>
         /// This primarily contains the amount of frames actually written into the passed-in <see cref="ChannelBuffer"/>.
         /// </remarks>
-        /// <seealso cref="GeneratorInstance.Process"/>
+        /// <seealso cref="RealtimeContext.Process"/>
         public ref struct Result
         {
             internal int m_ProcessedFrames;
 
             /// <summary>
-            /// Number of frames processed by the <see cref="GeneratorInstance"/> in <see cref="GeneratorInstance.Process"/>.
+            /// Number of frames processed by the <see cref="GeneratorInstance"/> in <see cref="RealtimeContext.Process"/>.
             /// </summary>
             public int processedFrames => m_ProcessedFrames;
 
@@ -290,7 +290,7 @@ namespace UnityEngine.Audio
         }
 
         /// <summary>
-        /// Additional arguments passed to the <see cref="GeneratorInstance.Process"/> method.
+        /// Additional arguments passed to the <see cref="RealtimeContext.Process"/> method.
         /// </summary>
         public ref struct Arguments
         {
@@ -375,7 +375,7 @@ namespace UnityEngine.Audio
             /// <returns>
             /// A <see cref="Result"/> struct indicating amongst other things how many frames were actually written into <paramref name="buffer"/>.
             /// </returns>
-            /// <seealso cref="GeneratorInstance.Process"/>
+            /// <seealso cref="RealtimeContext.Process"/>
             public Result Process(in RealtimeContext context, ProcessorInstance.Pipe pipe, ChannelBuffer buffer, Arguments args);
         }
 
@@ -387,80 +387,6 @@ namespace UnityEngine.Audio
         {
             internal ProcessorHeader Processor;
             internal Configuration Configuration;
-        }
-
-        /// <summary>
-        /// Manually process this particular <see cref="GeneratorInstance"/>.
-        /// </summary>
-        /// <remarks>
-        /// In most use cases, you would not call this directly, but rather have the audio system call it for you.
-        /// If you are yourself nesting a <see cref="GeneratorInstance"/> inside another <see cref="ProcessorInstance"/>, you would call this.
-        /// </remarks>
-        /// <param name="context">
-        /// The <see cref="RealtimeContext"/> associated with this call. You either get this from your own callback,
-        /// or from <see cref="ControlContext.Manual.BeginMix"/>.
-        /// </param>
-        /// <param name="args">
-        /// Additional arguments passed along, which can be default-initialized.</param>
-        /// <param name="buffer">
-        /// The buffer the <see cref="GeneratorInstance"/> will put its processing result into.
-        /// </param>
-        /// <returns>
-        /// A <see cref="Result"/> struct indicating amongst other things how many frames were actually written into <paramref name="buffer"/>.
-        /// </returns>
-        /// <seealso cref="IRealtime.Process"/>
-        public Result Process(in RealtimeContext context, ChannelBuffer buffer, Arguments args)
-        {
-            ScriptableProcessorBindings.ValidateCanProcess(m_ProcessorInstance.Handle, context);
-
-            fixed (float* writeBuffer = buffer.Buffer)
-            {
-                fixed (RealtimeContext* pContext = &context)
-                {
-                    var processArguments = new IGeneratorProcessorExtensions.ProcessArguments
-                    {
-                        AudioBuffer = writeBuffer,
-                        Context = pContext,
-                        FrameCount = buffer.frameCount
-                    };
-
-                    m_ProcessorInstance.Header->InvokeProcessor(ProcessorFunction.Process, &processArguments);
-
-                    return processArguments.Result;
-                }
-            }
-
-        }
-
-        /// <summary>
-        /// Manually configure this <see cref="GeneratorInstance"/> with the given <paramref name="format"/>.
-        /// </summary>
-        /// <remarks>
-        /// Nested <see cref="GeneratorInstance"/>s must be manually configured,
-        /// and this call is only valid on nested <see cref="ProcessorInstance"/>s.
-        /// </remarks>
-        /// <seealso cref="ControlContext.AllocateGenerator"/>
-        public void Configure(ControlContext context, in AudioFormat format)
-        {
-            ScriptableProcessorBindings.PerformRecursiveConfigure(
-                m_ProcessorInstance.Handle,
-                context.Header,
-                format.audioConfiguration
-            );
-        }
-
-        /// <summary>
-        /// Manually update this <see cref="GeneratorInstance"/>.
-        /// </summary>
-        /// <remarks>
-        /// This is only valid on nested <see cref="ProcessorInstance"/>s.
-        /// You must always update any nested <see cref="ProcessorInstance"/>s you have created.
-        /// </remarks>
-        /// <seealso cref="ControlContext.AllocateGenerator"/>
-        /// <seealso cref="GeneratorInstance.Configure"/>
-        public void Update(ControlContext context)
-        {
-            ScriptableProcessorBindings.PerformRecursiveUpdate(m_ProcessorInstance.Handle, context.Header);
         }
 
         /// <summary>

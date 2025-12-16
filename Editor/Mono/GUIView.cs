@@ -2,15 +2,14 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using UnityEngine;
-using System.Runtime.InteropServices;
 using System;
-using UnityEngine.Bindings;
+using System.Runtime.InteropServices;
+using UnityEngine;
 using UnityEngine.Scripting;
-
+using UnityEngine.UIElements;
+using UnityEngine.Bindings;
 using FrameCapture = UnityEngine.Apple.FrameCapture;
 using FrameCaptureDestination = UnityEngine.Apple.FrameCaptureDestination;
-using UnityEngine.UIElements;
 
 namespace UnityEditor
 {
@@ -28,6 +27,7 @@ namespace UnityEditor
 
         protected EventInterests m_EventInterests;
 
+        [VisibleToOtherModules("UnityEditor.BurstModule")]
         internal bool SendEvent(Event e)
         {
             int depth = SavedGUIState.Internal_GetGUIDepth();
@@ -43,6 +43,38 @@ namespace UnityEditor
                 var retval = Internal_SendEvent(e);
                 return retval;
             }
+        }
+
+        // This callback function allows to peek at events before they
+        // are processed in order to clean any dangling state left after
+        // an event was unexpectedly used.
+        internal static Action<EventType, KeyCode, EventModifiers> beforeEventProcessed;
+
+        // Instead of allocating a new Event object every time
+        // we reuse this instance and copy event data into it
+        private static Event m_Event = new Event();
+
+        //This method uses the old way of resolving the panel but it should use the member data of the GUIView instead of being static
+        [RequiredByNativeCode]
+        internal static void ProcessEvent(EntityId entityId, IntPtr nativeEventPtr, out bool result)
+        {
+            result = false;
+            m_Event.CopyFromPtr(nativeEventPtr);
+
+            if (beforeEventProcessed != null)
+            {
+                beforeEventProcessed.Invoke(m_Event.type, m_Event.keyCode, m_Event.modifiers);
+            }
+
+            if (nativeEventPtr != IntPtr.Zero && UIElementsUtility.TryGetPanel(entityId, out Panel panel))
+            {
+
+                if (panel.ownerObject is IWindowModel windowModel)
+                {
+                    result = windowModel.windowBackend.ProcessEvent(m_Event);
+                }
+            }
+
         }
 
         // Call into C++ here to move the underlying NSViews around

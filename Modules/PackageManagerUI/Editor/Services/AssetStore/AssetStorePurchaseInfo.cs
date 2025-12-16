@@ -33,7 +33,7 @@ namespace UnityEditor.PackageManager.UI.Internal
     {
         public AssetStorePurchaseInfo ParsePurchaseInfo(IDictionary<string, object> rawInfo)
         {
-            if (rawInfo?.Any() != true)
+            if (rawInfo == null || rawInfo.Count == 0)
                 return null;
 
             try

@@ -10,6 +10,7 @@ using UnityEditor;
 using UnityEditor.Build.Reporting;
 using UnityEngine;
 using UnityEditor.Build.Profile;
+using UnityEditor.Multiplayer.Internal;
 using System.Collections.Generic;
 using Unity.Profiling;
 
@@ -94,6 +95,8 @@ namespace Unity.Multiplayer.PlayMode.Editor
             var buildPath = GetInput(BuildPath);
             var buildProfile = GetInput(Profile);
 
+            // Save the original product name to restore it later
+            var originalProductName = PlayerSettings.productName;
 
             // Save the currently active build target, it's sub-target and the multiplayer role in case of they would be modified by the build.
             var previousProfile = InternalUtilities.BuildProfileState.FromActiveSettings();
@@ -102,6 +105,11 @@ namespace Unity.Multiplayer.PlayMode.Editor
             BuildReport report;
             try
             {
+                // Modify product name to include multiplayer role for window title
+                var role = MultiplayerRolesSettings.instance.GetMultiplayerRoleForBuildProfile(buildProfile);
+                var roleText = InternalUtilities.GetMultiplayerRoleDisplayText(role);
+                PlayerSettings.productName = $"{originalProductName} ({roleText})";
+
                 // Build the player with the specified build profile.
                 report = BuildPipeline.BuildPlayer(
                     new BuildPlayerWithProfileOptions
@@ -109,31 +117,34 @@ namespace Unity.Multiplayer.PlayMode.Editor
                         buildProfile = buildProfile,
                         locationPathName = InternalUtilities.AddBuildExtension(buildPath, buildProfile),
                     });
-
+                
                 if (report == null)
                     throw new Exception("BuildPipeline.BuildPlayer failed to generate a build report. The build artifact is likely corrupted.");
                 if (report.summary.result != BuildResult.Succeeded)
                 {
                     throw new Exception(report.SummarizeErrors());
                 }
+
+                // If the build is successful, set the node outputs
+                var outputPath = Path.GetDirectoryName(report.summary.outputPath);
+                var executablePath = ExtractExecutablePath(report);
+                SetOutput(OutputPath, outputPath);
+                SetOutput(ExecutablePath, executablePath);
+                SetOutput(RelativeExecutablePath, Path.GetRelativePath(outputPath, executablePath));
+                SetOutput(BuildHash, ComputeBuildHash(outputPath));
+                SetOutput(BuildReport, report);
             }
             catch (Exception e)
             {
-                InternalUtilities.BuildProfileState.Restore(previousProfile);
                 Debug.LogException(e);
                 throw;
             }
-
-            var outputPath = Path.GetDirectoryName(report.summary.outputPath);
-            var executablePath = ExtractExecutablePath(report);
-            SetOutput(OutputPath, outputPath);
-            SetOutput(ExecutablePath, executablePath);
-            SetOutput(RelativeExecutablePath, Path.GetRelativePath(outputPath, executablePath));
-            SetOutput(BuildHash, ComputeBuildHash(outputPath));
-            SetOutput(BuildReport, report);
-
-            // Restore the active build target, it's sub-target and the multiplayer role to the state they were prior to the build.
-            InternalUtilities.BuildProfileState.Restore(previousProfile);
+            finally
+            {
+                // Restore original product name and build profile state
+                PlayerSettings.productName = originalProductName;
+                InternalUtilities.BuildProfileState.Restore(previousProfile);
+            }
         }
 
         private static readonly ProfilerMarker s_ComputeBuildHash = new("EditorBuildNode.ComputeBuildHash");

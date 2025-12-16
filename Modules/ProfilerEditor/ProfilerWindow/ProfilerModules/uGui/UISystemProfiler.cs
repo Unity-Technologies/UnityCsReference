@@ -182,11 +182,11 @@ namespace UnityEditor
             bool first = true;
             if (m_UGUIProfilerTreeViewState != null && Event.current.type == EventType.Repaint)
             {
-                IList<int> selection = m_TreeViewControl.GetSelection();
+                IList<EntityId> selection = m_TreeViewControl.GetSelection();
                 if (selection.Count > 0)
                 {
-                    IList<TreeViewItem> selectedRows = m_TreeViewControl.GetRowsFromIDs(selection);
-                    foreach (TreeViewItem row in selectedRows)
+                    IList<TreeViewItem<EntityId>> selectedRows = m_TreeViewControl.GetRowsFromIDs(selection);
+                    foreach (TreeViewItem<EntityId> row in selectedRows)
                     {
                         Texture2D image = null;
                         var batch = row as UISystemProfilerTreeView.BatchTreeViewItem;

@@ -52,7 +52,7 @@ namespace UnityEditor
         private string[] m_AssetBundleNames = new string[0];
         [SerializeField]
         [DataMember]
-        private int[] m_ReferencingInstanceIDs = new int[0];
+        private EntityId[] m_ReferencingEntityIds = new EntityId[0];
         [SerializeField]
         [DataMember]
         private SceneHandle[] m_SceneHandles;
@@ -97,7 +97,7 @@ namespace UnityEditor
         public string[] classNames { get { return m_ClassNames; } set { m_ClassNames = value; }}
         public string[] assetLabels { get { return m_AssetLabels; } set { m_AssetLabels = value; }}
         public string[] assetBundleNames { get { return m_AssetBundleNames; } set { m_AssetBundleNames = value; }}
-        public int[] referencingInstanceIDs { get { return m_ReferencingInstanceIDs; } set { m_ReferencingInstanceIDs = value; }}
+        public EntityId[] referencingEntityIds { get { return m_ReferencingEntityIds; } set { m_ReferencingEntityIds = value; }}
         public SceneHandle[] sceneHandles { get { return m_SceneHandles; } set { m_SceneHandles = value; }}
         public bool showAllHits { get { return m_ShowAllHits; } set { m_ShowAllHits = value; }}
         public bool skipHidden { get { return m_SkipHidden; } set { m_SkipHidden = value; }}
@@ -110,6 +110,8 @@ namespace UnityEditor
         public bool anyWithAssetOrigin { get { return m_AnyWithAssetOrigin; } set { m_AnyWithAssetOrigin = value; }}
         public string originalText { get => m_OriginalText; set => m_OriginalText = value; }
         public ImportLogFlags importLogFlags { get => m_ImportLogFlags; set => m_ImportLogFlags = value; }
+        // Note: by default ADB search assumes all type searching uses a boolean implicit OR: t:Texture t:AudioClip => t:Texture OR t:AudioClip
+        // This switch make the ADB search use an explicit AND instead: t:Texture t:AudioClip => t:Texture AND t:AudioClip
         internal bool filterByTypeIntersection { get => m_FilterByTypeIntersection; set => m_FilterByTypeIntersection = value; }
 
         public void ClearSearch()
@@ -119,7 +121,7 @@ namespace UnityEditor
             m_ClassNames = new string[0];
             m_AssetLabels = new string[0];
             m_AssetBundleNames = new string[0];
-            m_ReferencingInstanceIDs = new int[0];
+            m_ReferencingEntityIds = new EntityId[0];
             m_SceneHandles = new SceneHandle[0];
             m_Globs = new string[0];
             m_ProductIds = new int[0];
@@ -143,7 +145,7 @@ namespace UnityEditor
                 !IsNullOrEmpty(m_AssetBundleNames) ||
                 !IsNullOrEmpty(m_Globs) ||
                 !IsNullOrEmpty(m_ProductIds) ||
-                !IsNullOrEmpty(m_ReferencingInstanceIDs) ||
+                !IsNullOrEmpty(m_ReferencingEntityIds) ||
                 m_ImportLogFlags != ImportLogFlags.None;
 
             bool foldersActive = !IsNullOrEmpty(m_Folders);
@@ -218,9 +220,9 @@ namespace UnityEditor
                 changed = true;
             }
 
-            if (newFilter.m_ReferencingInstanceIDs != m_ReferencingInstanceIDs)
+            if (newFilter.m_ReferencingEntityIds != m_ReferencingEntityIds)
             {
-                m_ReferencingInstanceIDs = newFilter.m_ReferencingInstanceIDs;
+                m_ReferencingEntityIds = newFilter.m_ReferencingEntityIds;
                 changed = true;
             }
 
@@ -296,8 +298,8 @@ namespace UnityEditor
             if (m_ClassNames != null && m_ClassNames.Length > 0)
                 result += "[Types: " + m_ClassNames[0] + " (" + m_ClassNames.Length + ")]";
 
-            if (m_ReferencingInstanceIDs != null && m_ReferencingInstanceIDs.Length > 0)
-                result += "[RefIDs: " + m_ReferencingInstanceIDs[0] + "]";
+            if (m_ReferencingEntityIds != null && m_ReferencingEntityIds.Length > 0)
+                result += "[RefIDs: " + m_ReferencingEntityIds[0] + "]";
 
             if (m_Folders != null && m_Folders.Length > 0)
                 result += "[Folders: " + m_Folders[0] + "]";

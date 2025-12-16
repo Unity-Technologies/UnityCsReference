@@ -8,6 +8,7 @@ using System.Runtime.InteropServices;
 using Unity.Collections;
 using Unity.Jobs;
 using Unity.Profiling;
+using UnityEngine.TextCore;
 using UnityEngine.TextCore.LowLevel;
 using UnityEngine.TextCore.Text;
 using UnityEngine.UIElements.UIR;
@@ -32,7 +33,7 @@ internal class ATGTextJobSystem
         public List<bool> hasMultipleColorsByMesh = new();
         // Key: FontAsset ID
         // Value: Set of missing glyphs (glyphID) for that font asset.
-        public Dictionary<int, HashSet<uint>> missingGlyphsPerFontAsset = new();
+        public Dictionary<EntityId, HashSet<uint>> missingGlyphsPerFontAsset = new();
         public bool hasMissingGlyphs;
 
         public void Clear()
@@ -76,9 +77,9 @@ internal class ATGTextJobSystem
            null,
            false);
 
-    static UnityEngine.Pool.ObjectPool<Dictionary<int, HashSet<uint>>> s_AggregatedMissingGlyphsPool = new(() =>
+    static UnityEngine.Pool.ObjectPool<Dictionary<EntityId, HashSet<uint>>> s_AggregatedMissingGlyphsPool = new(() =>
     {
-        var inst = new Dictionary<int, HashSet<uint>>();
+        var inst = new Dictionary<EntityId, HashSet<uint>>();
         return inst;
     }, null,
         (dict) =>
@@ -104,6 +105,20 @@ internal class ATGTextJobSystem
         m_GenerateTextJobifiedCallback = GenerateTextJobified;
         m_PopulateGlyphsCallback = PopulateGlyphs;
         m_AddDrawEntriesCallback = AddDrawEntries;
+    }
+
+
+    static void PrepareTextElementForJobsOnMainThread(TextElement textElement)
+    {
+        textElement.uitkTextHandle.EnsureIsReadyForJobs();
+
+        // Unity Font object needs a call to GetCachedFontAsset() which needs to be called from the main thread.
+        if (textElement.computedStyle.unityFontDefinition.fontAsset == null)
+            textElement.uitkTextHandle.ConvertUssToNativeTextGenerationSettings();
+
+        // Pre-load font assets from font tags before jobs
+        if (textElement.enableRichText)
+            RichTextTagParser.PreloadFontAssetsFromTags(textElement.renderedTextString, TextUtilities.GetTextSettingsFrom(textElement));
     }
 
     List<TextElement> m_PrepareShapingDataList = new();
@@ -147,13 +162,9 @@ internal class ATGTextJobSystem
             if (textElement.layoutNode.IsDirty)
             {
                 if (TextUtilities.IsAdvancedTextEnabledForElement(textElement) // Only advanced text elements need shaping
-                    && TextElement.AnySizeAutoOrNone(textElement.computedStyle)) // Only elements without fixed width/height get measured
+                    && TextElement.AnySizeAutoOrNone(ref textElement.computedStyle)) // Only elements without fixed width/height get measured
                 {
-                    textElement.uitkTextHandle.EnsureIsReadyForJobs();
-                    // Unity Font object needs a call to GetCachedFontAsset() which needs to be called from the main thread.
-                    if (textElement.computedStyle.unityFontDefinition.fontAsset == null)
-                        textElement.uitkTextHandle.ConvertUssToNativeTextGenerationSettings();
-  
+                    PrepareTextElementForJobsOnMainThread(textElement);
                     m_PrepareShapingDataList.Add(textElement);
                 }
             }
@@ -259,11 +270,7 @@ internal class ATGTextJobSystem
         {
             var textData = textJobDatas[i];
             var textElement = textData.textElement;
-            textElement.uitkTextHandle.EnsureIsReadyForJobs();
-
-            // Unity Font object needs a call to GetCachedFontAsset() which needs to be called from the main thread.
-            if (textElement.computedStyle.unityFontDefinition.fontAsset == null)
-                textElement.uitkTextHandle.ConvertUssToNativeTextGenerationSettings();
+            PrepareTextElementForJobsOnMainThread(textElement);
         }
 
         // This ensures Fallbacks are properly created.
@@ -288,7 +295,7 @@ internal class ATGTextJobSystem
     static List<uint> s_GlyphsToAddBuffer = new List<uint>();
     void PopulateGlyphs(MeshGenerationContext mgc, object _)
     {
-        Dictionary<int, HashSet<uint>> allUniqueMissingGlyphs = s_AggregatedMissingGlyphsPool.Get();
+        Dictionary<EntityId, HashSet<uint>> allUniqueMissingGlyphs = s_AggregatedMissingGlyphsPool.Get();
         bool hasMissingGlyphs = false;
         foreach (var managedJobData in textJobDatas)
         {
@@ -440,7 +447,7 @@ internal class ATGTextJobSystem
 
                     bool hasGradientScale = !isSprite && fa.atlasRenderMode != GlyphRenderMode.SMOOTH && fa.atlasRenderMode != GlyphRenderMode.COLOR;
                     // TODO, update once ATG supports SpriteAssets
-                    bool isDynamicColor = /*meshInfo.applySDF &&*/ !hasMultipleColors && (RenderEvents.NeedsColorID(visualElement) || (hasGradientScale && RenderEvents.NeedsTextCoreSettings(visualElement)));
+                    bool isDynamicColor = /*meshInfo.applySDF &&*/ visualElement.PostProcessTextVertices == null && !hasMultipleColors && (RenderEvents.NeedsColorID(visualElement) || (hasGradientScale && RenderEvents.NeedsTextCoreSettings(visualElement)));
 
                     alloc.AllocateTempMesh(vertexCount, indexCount, out var vertices, out var indices);
 

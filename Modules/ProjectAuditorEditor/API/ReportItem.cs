@@ -254,7 +254,7 @@ namespace Unity.ProjectAuditor.Editor
         /// <returns>True if the issue's Severity is Major or Critical. Otherwise, returns false.</returns>
         internal bool IsMajorOrCritical()
         {
-            return Severity == Severity.Critical || Severity == Severity.Major;
+            return Severity == Severity.Critical || Severity == Severity.Major || Severity == Severity.Error;
         }
 
         /// <summary>

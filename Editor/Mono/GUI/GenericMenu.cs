@@ -7,6 +7,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine.Pool;
 using Unity.Scripting.LifecycleManagement;
+using UnityEngine.Bindings;
 
 namespace UnityEditor
 {
@@ -151,6 +152,7 @@ namespace UnityEditor
             EditorUtility.DisplayCustomMenuWithSeparatorsWithScreenSpacePosition(position, titles, enabled, separator, (int[])selected.ToArray(typeof(int)), CatchMenu, null, true, allowDuplicateNames, shouldDiscardMenuOnSecondClick);
         }
 
+        [VisibleToOtherModules("UnityEditor.BurstModule")]
         // Display as a popup with /selectedIndex/. How this behaves depends on the platform (on Mac, it'll try to scroll the menu to the right place)
         internal void Popup(Rect position, int selectedIndex)
         {

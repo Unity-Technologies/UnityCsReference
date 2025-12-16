@@ -214,7 +214,7 @@ namespace Unity.GraphToolkit.Editor
         {
             foreach (var node in GraphModel.NodeModels.OfType<VariableNodeModel>())
             {
-                if (ReferenceEquals(node.VariableDeclarationModel, this) && node.GetPorts().Any(t => t.IsConnected()))
+                if (ReferenceEquals(node.VariableDeclarationModel, this) && node.GetPorts().HasAny(t => t.IsConnected()))
                     return true;
             }
 

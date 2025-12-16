@@ -128,13 +128,19 @@ internal sealed class StyleInspectorElement : VisualElement, IVisualElementChang
                     return;
                 m_StyleDiff = new StyleDiff();
                 dataSource = m_StyleDiff;
-                Refresh();
+                if (m_Element != null)
+                    AcquireSelection(m_Element);
+                else
+                    Refresh();
+
                 break;
             }
             case DetachFromPanelEvent detachFromPanelEvent:
             {
                 if (detachFromPanelEvent.originPanel == null)
                     return;
+                if (m_Element != null)
+                    ReleaseSelection(m_Element);
                 dataSource = null;
                 m_StyleDiff.Dispose();
                 m_StyleDiff = null;

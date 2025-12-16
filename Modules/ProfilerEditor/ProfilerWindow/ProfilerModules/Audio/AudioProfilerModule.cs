@@ -151,7 +151,9 @@ namespace UnityEditorInternal.Profiling
                     if (m_AudioProfilerDSPView == null)
                         m_AudioProfilerDSPView = new AudioProfilerDSPView();
 
+#pragma warning disable CS0618
                     ProfilerProperty property = ProfilerWindow.CreateProperty();
+#pragma warning restore CS0618
                     if (property != null &&
                         property.frameDataReady)
                     {
@@ -177,7 +179,9 @@ namespace UnityEditorInternal.Profiling
                     if (m_AudioProfilerClipViewBackend == null)
                         m_AudioProfilerClipViewBackend = new AudioProfilerClipViewBackend(m_AudioProfilerClipTreeViewState);
 
+#pragma warning disable CS0618
                     ProfilerProperty property = ProfilerWindow.CreateProperty();
+#pragma warning restore CS0618
                     if (property == null)
                         return;
                     if (!property.frameDataReady)
@@ -234,7 +238,9 @@ namespace UnityEditorInternal.Profiling
                     if (m_AudioProfilerGroupViewBackend == null)
                         m_AudioProfilerGroupViewBackend = new AudioProfilerGroupViewBackend(m_AudioProfilerGroupTreeViewState);
 
+#pragma warning disable CS0618
                     ProfilerProperty property = ProfilerWindow.CreateProperty();
+#pragma warning restore CS0618
                     if (property == null)
                         return;
                     if (!property.frameDataReady)
@@ -250,7 +256,9 @@ namespace UnityEditorInternal.Profiling
                             if (sourceItems != null && sourceItems.Length > 0)
                             {
                                 var items = new List<AudioProfilerGroupInfoWrapper>();
+#pragma warning disable CS0618
                                 var parentMapping = new Dictionary<int, AudioProfilerGroupInfo>();
+#pragma warning restore CS0618
                                 foreach (var s in sourceItems)
                                     parentMapping.Add(s.uniqueId, s);
                                 foreach (var s in sourceItems)

@@ -30,6 +30,9 @@ namespace UnityEditor.Build.Profile.Elements
             m_ActiveIndicator = this.Q<Label>("profile-list-label-active");
             m_ActiveIndicator.text = TrText.active;
             SetActiveIndicator(false);
+
+            // Ensures that the original tooltip isn't overwritten when the label is elided.
+            m_Text.displayTooltipWhenElided = false;
         }
 
         internal void Set(string displayName, Texture2D icon)

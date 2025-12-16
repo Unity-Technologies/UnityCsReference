@@ -287,7 +287,7 @@ namespace UnityEngine.UIElements
             var previousMeasuredWidth = layoutMeasuredWidth;
             var previousMeasuredHeight = layoutMeasuredHeight;
 
-            UIElementsUtility.BeginContainerGUI(cache, evt, this);
+            UIElementsIMGUIUtility.BeginContainerGUI(cache, evt, this);
 
             // For the IMGUI, we need to update the GUI.color with the actual play mode tint ...
             // In fact, this is taken from EditorGUIUtility.ResetGUIState().
@@ -491,7 +491,7 @@ namespace UnityEngine.UIElements
                     // This will copy Event.current into evt. End the container by now since the container
                     // should end at this point no matter an exception occured or not.
                     // Not ending the container will make the GUIDepth off by 1.
-                    UIElementsUtility.EndContainerGUI(evt, layoutSize);
+                    UIElementsIMGUIUtility.EndContainerGUI(evt, layoutSize);
 
                     RestoreGlobals();
                 }

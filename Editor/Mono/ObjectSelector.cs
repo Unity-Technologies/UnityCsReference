@@ -110,7 +110,7 @@ namespace UnityEditor
 
         bool m_SelectionCancelled;
         bool m_PreventSetSelectionOnClose;
-        EntityId m_LastSelectedInstanceId = 0;
+        EntityId m_LastSelectedInstanceId = EntityId.None;
         readonly SearchService.ObjectSelectorSearchSessionHandler m_SearchSessionHandler = new SearchService.ObjectSelectorSearchSessionHandler();
         readonly SearchSessionOptions m_LegacySearchSessionOptions = new SearchSessionOptions { legacyOnly = true };
 
@@ -196,16 +196,16 @@ namespace UnityEditor
 
         // used by AI-toolkit to set the selection without user interaction.
         [UsedImplicitly]
-        public static void SetSelection(int instanceID)
+        public static void SetSelection(EntityId entityId)
         {
             if (s_SharedObjectSelector)
-                s_SharedObjectSelector.SetSelectionInternal(instanceID);
+                s_SharedObjectSelector.SetSelectionInternal(entityId);
         }
 
         // This will notify for a selection change but without repainting the window
-        void SetSelectionInternal(int instanceID)
+        void SetSelectionInternal(EntityId entityId)
         {
-            SetSelectedInstanceID(instanceID);
+            SetSelectedInstanceID(entityId);
             NotifySelectionChanged(false);
             m_PreventSetSelectionOnClose = true;
         }
@@ -216,14 +216,14 @@ namespace UnityEditor
         }
 
         // Internal for test purposes only
-        internal int GetInternalSelectedInstanceID()
+        internal EntityId GetInternalSelectedInstanceID()
         {
             if (m_ListArea == null)
                 InitIfNeeded();
             EntityId[] selection = IsUsingTreeView() ? m_ObjectTreeWithSearch.GetSelection() : m_ListArea.GetSelection();
             if (selection.Length >= 1)
                 return selection[0];
-            return 0;
+            return EntityId.None;
         }
 
         EntityId GetSelectedInstanceID()
@@ -231,14 +231,14 @@ namespace UnityEditor
             return m_LastSelectedInstanceId;
         }
 
-        void SetSelectedInstanceID(int instanceID)
+        void SetSelectedInstanceID(EntityId entityId)
         {
-            m_LastSelectedInstanceId = instanceID;
+            m_LastSelectedInstanceId = entityId;
             if (m_ListArea == null)
                 return;
 
-            if (instanceID != 0)
-                m_ListArea.m_SelectedObjectIcon = AssetDatabase.GetCachedIcon(AssetDatabase.GetAssetPath((EntityId)instanceID));
+            if (entityId != EntityId.None)
+                m_ListArea.m_SelectedObjectIcon = AssetDatabase.GetCachedIcon(AssetDatabase.GetAssetPath(entityId));
             else
                 m_ListArea.m_SelectedObjectIcon = null;
         }
@@ -384,10 +384,10 @@ namespace UnityEditor
                 foreach (var type in requiredTypes)
                 {
                     var asset = AssetDatabase.LoadAssetAtPath(s, type);
-                    if (asset != null && asset.GetInstanceID() != 0)
-                        return asset.GetInstanceID();
+                    if (asset != null && asset.GetEntityId() != EntityId.None)
+                        return asset.GetEntityId();
                 }
-                return 0;
+                return EntityId.None;
             }, m_LegacySearchSessionOptions);
         }
 
@@ -514,7 +514,7 @@ namespace UnityEditor
             m_SkipHiddenPackages = true;
             m_AllowedIDs = allowedEntityIds;
             m_ObjectBeingEdited = objectBeingEdited;
-            SetSelectedInstanceID(obj?.GetInstanceID() ?? 0);
+            SetSelectedInstanceID(obj?.GetEntityId() ?? EntityId.None);
             m_SelectionCancelled = false;
             m_PreventSetSelectionOnClose = false;
             m_ShowNoneItem = showNoneItem;
@@ -575,7 +575,7 @@ namespace UnityEditor
 
                 Action<UnityObject> onSelectionChanged = selectedObj =>
                 {
-                    SetSelectedInstanceID(selectedObj == null ? 0 : selectedObj.GetInstanceID());
+                    SetSelectedInstanceID(selectedObj == null ? EntityId.None : selectedObj.GetEntityId());
                     NotifySelectionChanged(false);
                 };
                 Action<UnityObject, bool> onSelectorClosed = (selectedObj, canceled) =>
@@ -591,12 +591,12 @@ namespace UnityEditor
                     {
                         // Undo changes we have done in the ObjectSelector
                         Undo.RevertAllDownToGroup(m_ModalUndoGroup);
-                        SetSelectedInstanceID(0);
+                        SetSelectedInstanceID(EntityId.None);
                         m_SelectionCancelled = true;
                     }
                     else if (!m_PreventSetSelectionOnClose) // prevent re-set selection if it has been set programmatically before closing
                     {
-                        SetSelectedInstanceID(selectedObj == null ? 0 : selectedObj.GetInstanceID());
+                        SetSelectedInstanceID(selectedObj == null ? EntityId.None : selectedObj.GetEntityId());
                         NotifySelectionChanged(false);
                     }
 
@@ -649,7 +649,7 @@ namespace UnityEditor
             // Initial selection
             var initialSelection = obj != null ? obj.GetEntityId() : EntityId.None;
 
-            if (initialSelection != 0)
+            if (initialSelection != EntityId.None)
             {
                 var assetPath = AssetDatabase.GetAssetPath(initialSelection);
                 if (m_SkipHiddenPackages && !PackageManagerUtilityInternal.IsPathInVisiblePackage(assetPath))
@@ -665,7 +665,7 @@ namespace UnityEditor
                 // To frame the selected item we need to wait to initialize the search until our window has been setup
                 InitIfNeeded();
                 m_ListArea.InitSelection(new[] { initialSelection });
-                if (initialSelection != 0)
+                if (initialSelection != EntityId.None)
                     m_ListArea.Frame(initialSelection, true, false);
             }
 
@@ -977,7 +977,7 @@ namespace UnityEditor
             // Clear selection so that object field doesn't grab it
             m_ListArea?.InitSelection(new EntityId[0]);
             m_ObjectTreeWithSearch.Clear();
-            SetSelectedInstanceID(0);
+            SetSelectedInstanceID(EntityId.None);
             m_SelectionCancelled = true;
             m_EditedProperty = null;
 

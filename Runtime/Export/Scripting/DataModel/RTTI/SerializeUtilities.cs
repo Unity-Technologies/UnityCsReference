@@ -7,8 +7,9 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Reflection;
 using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 using UnityEngine;
+
+using Unsafe = Unity.DataModel.UnsafeHelper;
 
 namespace Unity.DataModel;
 
@@ -59,36 +60,26 @@ internal static class SerializeUtilities
     private class ByteWrapper
     {
         internal byte firstByte;
-
-        internal ByteWrapper(byte _firstByte)
-        {
-            firstByte = _firstByte;
-        }
     }
 
     private static ref byte GetBasePointerObject<T>(ref T data)
     {
-        var handle = GCHandle.Alloc(data, GCHandleType.Pinned);
-        unsafe
-        {
-            byte* ptr = (byte*)handle.AddrOfPinnedObject().ToPointer();
-            return ref *ptr;
-        }
+        return ref Unsafe.As<T, byte>(ref data);
     }
 
     private static ref byte GetBasePointerContent<T>(ref T data)
     {
-        var handle = GCHandle.Alloc(data, GCHandleType.Pinned);
-        unsafe
-        {
-            byte* ptr = (byte*)handle.AddrOfPinnedObject().ToPointer();
-            return ref *ptr;
-        }
+        ref ByteWrapper byteWrapper = ref Unsafe.As<T, ByteWrapper>(ref data);
+        return ref byteWrapper.firstByte;
     }
 
     internal static ref byte GetBasePointerForUdm<T>(ref T data)
     {
-        if (data is string || data is IList || data is Array)
+        if (data is string || data is Array)
+            return ref GetBasePointerObject(ref data);
+
+        // List<T> should get the pointer to the object, but anything inheriting from List<T> should be treated like a class
+        if (data.GetType().IsGenericType && data.GetType().GetGenericTypeDefinition() == typeof(List<>))
             return ref GetBasePointerObject(ref data);
 
         if (data.GetType().IsClass || IsBoxed(data))

@@ -77,7 +77,7 @@ internal class LegacyFormatDropdownButton : BaseDropdownButton<GenericDropdownMe
         var mainActionIndex = FindMainActionIndex(visibleItems, true);
         if (mainActionIndex == -1)
         {
-            if (version.importedAssets?.Any() == true)
+            if (version.importedAssets?.Count > 0)
             {
                 SetIcon(Icon.Installed);
                 text = k_InProjectText;

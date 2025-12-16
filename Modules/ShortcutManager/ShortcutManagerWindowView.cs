@@ -77,6 +77,7 @@ namespace UnityEditor.ShortcutManagement
         public void RefreshShortcutList()
         {
             m_ShortcutsTable.Rebuild();
+            ShortcutSelectionChanged(m_ShortcutsTable.selectedItems);
         }
 
         void RefreshListSelection()
@@ -399,24 +400,26 @@ namespace UnityEditor.ShortcutManagement
                 }
             }
 
-            PromptWindow.Show(L10n.Tr("Create profile"),
+            PromptWindow.Show(L10n.Tr("Create Profile"),
                 L10n.Tr("Create a shortcut profile"),
                 L10n.Tr("Enter the name of the profile you want to create"),
-                L10n.Tr("Profile Name:"),
+                L10n.Tr("Profile Name"),
                 L10n.Tr(newProfileName),
                 L10n.Tr("Create"),
+                EditorWindow.GetWindow<ShortcutManagerWindow>(),
                 m_ViewController.CanCreateProfile,
                 m_ViewController.CreateProfile);
         }
 
         void OnRenameProfileClicked()
         {
-            PromptWindow.Show(L10n.Tr("Rename profile"),
+            PromptWindow.Show(L10n.Tr("Rename Profile"),
                 L10n.Tr("Rename a shortcut profile"),
                 string.Format(L10n.Tr("Enter the new name you want to give the profile '{0}'"), m_ViewController.activeProfile),
-                L10n.Tr("Profile Name:"),
+                L10n.Tr("Profile Name"),
                 m_ViewController.activeProfile,
                 L10n.Tr("Rename"),
+                EditorWindow.GetWindow<ShortcutManagerWindow>(),
                 m_ViewController.CanRenameActiveProfile,
                 m_ViewController.RenameActiveProfile,
                 400f, 200f);

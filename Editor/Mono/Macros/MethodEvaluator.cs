@@ -91,7 +91,7 @@ namespace UnityEditor.Macros
                 {
                     try
                     {
-                        var assembly = Assembly.LoadFrom(dllPath);
+                        var assembly = CurrentAssemblies.LoadFromPath(dllPath);
                         if (assembly != null && assembly.GetTypes().Any(t => t.Name == args.Name))
                             return assembly;
                     }
@@ -113,7 +113,7 @@ namespace UnityEditor.Macros
             var assemblyDirectory = Path.GetDirectoryName(assemblyFile);
             // AssemblyResolve may be called from the context of Default AssemblyLoadContext
             // That breaks Code Reload on CoreCLR
-            var assembly = Assembly.LoadFrom(assemblyFile);
+            var assembly = CurrentAssemblies.LoadFromPath(assemblyFile);
             var method = assembly.GetType(typeName, true).GetMethod(methodName,
                 BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static,
                 null, paramTypes, null);
@@ -178,7 +178,7 @@ namespace UnityEditor.Macros
             {
                 // Avoid loading assemblies which are already loaded - empty path means that this type is in system assembly.
                 if (!string.IsNullOrEmpty(evalDataParcel.KnownTypeAssemblyPaths[i]) && File.Exists(evalDataParcel.KnownTypeAssemblyPaths[i]))
-                    Assembly.LoadFrom(evalDataParcel.KnownTypeAssemblyPaths[i]);
+                    CurrentAssemblies.LoadFromPath(evalDataParcel.KnownTypeAssemblyPaths[i]);
 
                 var type = Type.GetType(evalDataParcel.KnownTypeNames[i]);
                 if (type == null)

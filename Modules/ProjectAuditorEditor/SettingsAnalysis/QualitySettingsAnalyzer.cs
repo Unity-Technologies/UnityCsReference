@@ -55,6 +55,7 @@ namespace Unity.ProjectAuditor.Editor.SettingsAnalysis
             Fixer = (issue, analysisParams) =>
             {
                 EnableStreamingMipmap(issue.GetCustomPropertyInt32(0));
+                return true;
             },
 
             DocumentationUrl = "https://docs.unity3d.com/Manual/TextureStreaming.html",

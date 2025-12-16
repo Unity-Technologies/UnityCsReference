@@ -53,7 +53,7 @@ namespace UnityEditor
         // Search
         readonly Delayer debounce;
         readonly SearchFilter searchFilter;
-        int[] results = null;
+        EntityId[] results = null;
         string searchFilterString = "";
         IEnumerator<HierarchyIterator> enumerator = null;
 
@@ -505,12 +505,12 @@ namespace UnityEditor
 
             listArea.Init(rect, HierarchyType.Assets, new SearchFilter(), true, SearchService.SearchSessionOptions.Default);
             enumerator = FindInAllAssets(searchFilter);
-            results = new int[0];
+            results = new EntityId[0];
         }
 
         void Search()
         {
-            var newResults = new List<int>();
+            var newResults = new List<EntityId>();
 
             var maxAddCount = k_MaxSearchIterationPerFrame;
             while (--maxAddCount >= 0)
@@ -530,7 +530,7 @@ namespace UnityEditor
                     child = AssetDatabase.LoadAssetAtPath<Material>(path);
                 }
                 if (child != null && child.parent == target)
-                    newResults.Add(child.GetInstanceID());
+                    newResults.Add(child.GetEntityId());
             }
 
             int newElements = newResults.Count;

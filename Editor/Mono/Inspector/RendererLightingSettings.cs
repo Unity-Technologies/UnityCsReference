@@ -331,8 +331,8 @@ namespace UnityEditor
 
                     if ((m_Renderers != null) && (m_Renderers.Length > 0))
                     {
-                        ShowAtlasGUI(m_Renderers[0].GetInstanceID(), true, true);
-                        ShowAtlasGUI(m_Renderers[0].GetInstanceID(), true, false);
+                        ShowAtlasGUI(m_Renderers[0].GetEntityId(), true, true);
+                        ShowAtlasGUI(m_Renderers[0].GetEntityId(), true, false);
                         ShowRealtimeLMGUI(m_Renderers[0]);
 
                         DisplayMeshWarning();
@@ -429,8 +429,8 @@ namespace UnityEditor
                         if (GUI.enabled && m_Terrains.Length == 1 && m_Terrains[0].terrainData != null)
                             ShowBakePerformanceWarning(m_Terrains[0]);
 
-                        ShowAtlasGUI(m_Terrains[0].GetInstanceID(), false, true);
-                        ShowAtlasGUI(m_Terrains[0].GetInstanceID(), false, false);
+                        ShowAtlasGUI(m_Terrains[0].GetEntityId(), false, true);
+                        ShowAtlasGUI(m_Terrains[0].GetEntityId(), false, false);
                         ShowRealtimeLMGUI(m_Terrains[0]);
                     }
 
@@ -559,17 +559,17 @@ namespace UnityEditor
             ShowClampedSizeInLightmapGUI(lightmapScale, cachedSurfaceArea, isSSD);
         }
 
-        void ShowAtlasGUI(int instanceID, bool isMeshRenderer, bool useInteractiveLightBakingData)
+        void ShowAtlasGUI(EntityId entityId, bool isMeshRenderer, bool useInteractiveLightBakingData)
         {
             const int InfluenceOnlyIndex = 0xFFFE; // kLightmapIndexInfluenceOnly
             const int NotLightmappedIndex = 0xFFFF; // kLightmapIndexNotLightmapped
 
             int lightmapIndex = useInteractiveLightBakingData ?
-                InteractiveLightBaking.GetLightmapIndexFromRenderer(instanceID) :
+                InteractiveLightBaking.GetLightmapIndexFromRenderer(entityId) :
                 (m_LightmapIndex?.intValue ?? NotLightmappedIndex);
 
             Vector4 lightmapST = useInteractiveLightBakingData ?
-                InteractiveLightBaking.GetLightmapSTFromRenderer(instanceID) :
+                InteractiveLightBaking.GetLightmapSTFromRenderer(entityId) :
                 new Vector4(m_LightmapTilingOffsetX.floatValue, m_LightmapTilingOffsetY.floatValue, m_LightmapTilingOffsetZ.floatValue, m_LightmapTilingOffsetW.floatValue);
 
             // If lightmap index is missing, or renderer is not lightmapped, hide this gui
@@ -580,11 +580,11 @@ namespace UnityEditor
             if (useInteractiveLightBakingData && !Lightmapping.shouldBakeInteractively)
                 return;
 
-            Hash128 contentHash = LightmapVisualizationUtility.GetBakedGITextureHash(lightmapIndex, 0, GITextureType.Baked, useInteractiveLightBakingData);
+            Hash128 contentHash = LightmapVisualizationUtility.GetBakedGITextureHash(lightmapIndex, EntityId.None, GITextureType.Baked, useInteractiveLightBakingData);
 
             // if we need to fetch a new texture
             if (m_CachedBakedTexture.texture == null || m_CachedBakedTexture.contentHash != contentHash)
-                m_CachedBakedTexture = LightmapVisualizationUtility.GetBakedGITexture(lightmapIndex, 0, GITextureType.Baked, useInteractiveLightBakingData);
+                m_CachedBakedTexture = LightmapVisualizationUtility.GetBakedGITexture(lightmapIndex, EntityId.None, GITextureType.Baked, useInteractiveLightBakingData);
 
             if (m_CachedBakedTexture.texture == null)
                 return;
@@ -600,7 +600,7 @@ namespace UnityEditor
 
             GUILayout.BeginHorizontal();
 
-            DrawLightmapPreview(m_CachedBakedTexture.texture, false, instanceID, useInteractiveLightBakingData);
+            DrawLightmapPreview(m_CachedBakedTexture.texture, false, entityId, useInteractiveLightBakingData);
 
             GUILayout.BeginVertical();
 
@@ -634,10 +634,10 @@ namespace UnityEditor
         void ShowRealtimeLMGUI(Terrain terrain)
         {
             Hash128 inputSystemHash;
-            if (terrain == null || !Lightmapping.GetInputSystemHash(terrain.GetInstanceID(), out inputSystemHash) || inputSystemHash == new Hash128())
+            if (terrain == null || !Lightmapping.GetInputSystemHash(terrain.GetEntityId(), out inputSystemHash) || inputSystemHash == new Hash128())
                 return; // early return since we don't have any lightmaps for it
 
-            if (!UpdateRealtimeTexture(inputSystemHash, terrain.GetInstanceID()))
+            if (!UpdateRealtimeTexture(inputSystemHash, terrain.GetEntityId()))
                 return;
 
             showRealtimeLightmap.value = EditorGUILayout.Foldout(showRealtimeLightmap.value, Styles.realtimeLM, true);
@@ -649,7 +649,7 @@ namespace UnityEditor
 
             GUILayout.BeginHorizontal();
 
-            DrawLightmapPreview(m_CachedRealtimeTexture.texture, true, terrain.GetInstanceID(), false);
+            DrawLightmapPreview(m_CachedRealtimeTexture.texture, true, terrain.GetEntityId(), false);
 
             GUILayout.BeginVertical();
 
@@ -676,10 +676,10 @@ namespace UnityEditor
         void ShowRealtimeLMGUI(Renderer renderer)
         {
             Hash128 inputSystemHash;
-            if (renderer == null || !Lightmapping.GetInputSystemHash(renderer.GetInstanceID(), out inputSystemHash) || inputSystemHash == new Hash128())
+            if (renderer == null || !Lightmapping.GetInputSystemHash(renderer.GetEntityId(), out inputSystemHash) || inputSystemHash == new Hash128())
                 return; // early return since we don't have any lightmaps for it
 
-            if (!UpdateRealtimeTexture(inputSystemHash, renderer.GetInstanceID()))
+            if (!UpdateRealtimeTexture(inputSystemHash, renderer.GetEntityId()))
                 return;
 
             showRealtimeLightmap.value = EditorGUILayout.Foldout(showRealtimeLightmap.value, Styles.realtimeLM, true);
@@ -691,7 +691,7 @@ namespace UnityEditor
 
             GUILayout.BeginHorizontal();
 
-            DrawLightmapPreview(m_CachedRealtimeTexture.texture, true, renderer.GetInstanceID(), false);
+            DrawLightmapPreview(m_CachedRealtimeTexture.texture, true, renderer.GetEntityId(), false);
 
             GUILayout.BeginVertical();
 
@@ -733,7 +733,7 @@ namespace UnityEditor
             GUILayout.Space(5);
         }
 
-        bool UpdateRealtimeTexture(Hash128 inputSystemHash, int instanceId)
+        bool UpdateRealtimeTexture(Hash128 inputSystemHash, EntityId entityId)
         {
             if (inputSystemHash == new Hash128())
                 return false;
@@ -750,7 +750,7 @@ namespace UnityEditor
             return true;
         }
 
-        private void DrawLightmapPreview(Texture2D texture, bool realtimeLightmap, int instanceId, bool useInteractiveLightBakingData)
+        private void DrawLightmapPreview(Texture2D texture, bool realtimeLightmap, EntityId entityId, bool useInteractiveLightBakingData)
         {
             GUILayout.Space(Styles.previewPadding);
 
@@ -764,7 +764,7 @@ namespace UnityEditor
                 if ((buttonRect.Contains(Event.current.mousePosition) && Event.current.clickCount == 1) ||
                     (rect.Contains(Event.current.mousePosition) && Event.current.clickCount == 2))
                 {
-                    LightmapPreviewWindow.CreateLightmapPreviewWindow(instanceId, realtimeLightmap, false, useInteractiveLightBakingData);
+                    LightmapPreviewWindow.CreateLightmapPreviewWindow(entityId, realtimeLightmap, useInteractiveLightBakingData);
                 }
                 else if (rect.Contains(Event.current.mousePosition) && Event.current.clickCount == 1)
                 {

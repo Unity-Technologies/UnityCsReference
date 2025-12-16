@@ -49,5 +49,20 @@ namespace Unity.UIToolkit.Editor
             labelElement.AddToClassList(labelUssClassName);
             visualInput.AddToClassList(inputUssClassName);
         }
+
+        protected override CursorField CreateValueField()
+        {
+            return new CursorField();
+        }
+
+        protected override StyleCursor CreateStyleValue(Cursor v)
+        {
+            return v;
+        }
+
+        internal override bool EqualsCurrentValue(StyleCursor v)
+        {
+            return value == v;
+        }
     }
 }

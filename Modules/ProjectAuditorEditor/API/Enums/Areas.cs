@@ -10,7 +10,7 @@ namespace Unity.ProjectAuditor.Editor
     /// Which area(s) of a project may be affected by a ReportItem.
     /// </summary>
     [Flags]
-    public enum Areas
+    public enum Areas : int
     {
         /// <summary>
         /// Indicates some error with the Descriptor data: A descriptor should never match no areas.
@@ -53,7 +53,7 @@ namespace Unity.ProjectAuditor.Editor
         Memory = 1 << 6,
 
         /// <summary>
-        /// Quality. For example, using deprecated APIs that might be removed in the future
+        /// Quality. For example, using preview packages, or settings that negatively affect visual quality
         /// </summary>
         Quality = 1 << 7,
 
@@ -68,11 +68,9 @@ namespace Unity.ProjectAuditor.Editor
         Support = 1 << 9,
 
         /// <summary>
-        /// Allocation Ignore Void Return
-        /// For the rules which analyze memory allocated by Unity API calls, ignore calls with a void return type because they do not allocate memory
-        /// See https://jira.unity3d.com/browse/PROFB-318 for more details
+        /// Upgrade. For example, issues that may prevent you from upgrading to a newer version of Unity.
         /// </summary>
-        MemoryIgnoreVoidReturn = 1 << 10,
+        Upgrade = 1 << 10,
 
         // Add new items in alphabetical order and adjust the values (including "All") accordingly.
         // Areas are serialised as strings, so it doesn't matter if the values change between package versions so long as old reports have been saved.

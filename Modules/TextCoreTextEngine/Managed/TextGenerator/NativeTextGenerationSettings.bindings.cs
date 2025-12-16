@@ -26,10 +26,10 @@ namespace UnityEngine.TextCore
         public TextOverflow overflow;
         public LanguageDirection languageDirection;
         public int vertexPadding; // Encoded in Fixed Point.
-        [VisibleToOtherModules("UnityEngine.UIElementsModule")]
+        [VisibleToOtherModules("UnityEngine.UIElementsModule", "UnityEngine.IMGUIModule")]
         internal HorizontalAlignment horizontalAlignment;
 
-        [VisibleToOtherModules("UnityEngine.UIElementsModule")]
+        [VisibleToOtherModules("UnityEngine.UIElementsModule", "UnityEngine.IMGUIModule")]
         internal VerticalAlignment verticalAlignment;
 
         public int fontSize;        // Encoded in Fixed Point.
@@ -49,6 +49,9 @@ namespace UnityEngine.TextCore
         public int paragraphSpacing;        // Encoded in Fixed Point.
 
         public PreProcessFlags preProcessFlags;
+
+        public bool disableAdvancedFontFeatures;
+        public bool richTextEnabled;
 
         public bool hasLink => textSpans != null && Array.Exists(textSpans, span => span.linkID != -1);
 
@@ -135,6 +138,8 @@ namespace UnityEngine.TextCore
             wordSpacing = tgs.wordSpacing;
             paragraphSpacing = tgs.paragraphSpacing;
             preProcessFlags = tgs.preProcessFlags;
+            disableAdvancedFontFeatures = tgs.disableAdvancedFontFeatures;
+            richTextEnabled = tgs.richTextEnabled;
         }
 
         public override string ToString()
@@ -178,11 +183,42 @@ namespace UnityEngine.TextCore
                 $"{nameof(characterSpacing)}: {characterSpacing}\n" +
                 $"{nameof(paragraphSpacing)}: {paragraphSpacing}\n" +
                 $"{nameof(wordSpacing)}: {wordSpacing}\n" +
-                $"{nameof(preProcessFlags)}: {preProcessFlags}\n";
+                $"{nameof(preProcessFlags)}: {preProcessFlags}\n" +
+                $"{nameof(disableAdvancedFontFeatures)}: {disableAdvancedFontFeatures}\n" +
+                $"{nameof(richTextEnabled)}: {richTextEnabled}\n";
+        }
+
+
+        // TODO : It's not ideal to have GetHashCode both in C# and C++. We would ideally keep only C++, but because of the string marshalling involved this is too costly for IMGUI.
+        // Remove this once we have a free interop to native.
+        public override int GetHashCode()
+        {
+            unchecked
+            {
+                int hash = 17;
+                hash = hash * 23 + fontAsset.GetHashCode();
+                hash = hash * 23 + textSettings.GetHashCode();
+                hash = hash * 23 + (text != null ? text.GetHashCode() : 0);
+                hash = hash * 23 + screenWidth;
+                hash = hash * 23 + screenHeight;
+                hash = hash * 23 + fontSize;
+                hash = hash * 23 + fontStyle.GetHashCode();
+                hash = hash * 23 + fontWeight.GetHashCode();
+                hash = hash * 23 + wordWrapEnabled.GetHashCode();
+                hash = hash * 23 + overflow.GetHashCode();
+                hash = hash * 23 + languageDirection.GetHashCode();
+                hash = hash * 23 + horizontalAlignment.GetHashCode();
+                hash = hash * 23 + verticalAlignment.GetHashCode();
+                hash = hash * 23 + bestFit.GetHashCode();
+                hash = hash * 23 + disableAdvancedFontFeatures.GetHashCode();
+                hash = hash * 23 + color.GetHashCode();
+                hash = hash * 23 + richTextEnabled.GetHashCode();
+                return hash;
+            }
         }
     }
 
-    [VisibleToOtherModules( "UnityEngine.UIElementsModule")]
+    [VisibleToOtherModules( "UnityEngine.UIElementsModule", "UnityEngine.IMGUIModule")]
     [StructLayout(LayoutKind.Sequential)]
     internal struct TextSpan
     {
@@ -223,7 +259,7 @@ namespace UnityEngine.TextCore
         }
     }
 
-    [VisibleToOtherModules("UnityEngine.UIElementsModule")]
+    [VisibleToOtherModules("UnityEngine.UIElementsModule", "UnityEngine.IMGUIModule")]
     internal enum HorizontalAlignment
     {
         Left,
@@ -232,7 +268,7 @@ namespace UnityEngine.TextCore
         Justified
     }
 
-    [VisibleToOtherModules("UnityEngine.UIElementsModule")]
+    [VisibleToOtherModules("UnityEngine.UIElementsModule", "UnityEngine.IMGUIModule")]
     internal enum VerticalAlignment
     {
         Top,
@@ -251,7 +287,7 @@ namespace UnityEngine.TextCore
     /// <summary>
     /// Indicates the directionality of the element's text.
     /// </summary>
-    [VisibleToOtherModules("UnityEngine.UIElementsModule")]
+    [VisibleToOtherModules("UnityEngine.UIElementsModule", "UnityEngine.IMGUIModule")]
     internal enum LanguageDirection
     {
         /// <summary>
@@ -264,7 +300,7 @@ namespace UnityEngine.TextCore
         RTL
     }
 
-    [VisibleToOtherModules("UnityEngine.UIElementsModule")]
+    [VisibleToOtherModules("UnityEngine.UIElementsModule", "UnityEngine.IMGUIModule")]
     internal enum WhiteSpace
     {
         Normal,
@@ -273,7 +309,7 @@ namespace UnityEngine.TextCore
         PreWrap
     }
 
-    [VisibleToOtherModules("UnityEngine.UIElementsModule")]
+    [VisibleToOtherModules("UnityEngine.UIElementsModule", "UnityEngine.IMGUIModule")]
     internal enum PreProcessFlags
     {
         None,
@@ -281,7 +317,7 @@ namespace UnityEngine.TextCore
         ParseEscapeSequences
     }
 
-    [VisibleToOtherModules("UnityEngine.UIElementsModule")]
+    [VisibleToOtherModules("UnityEngine.UIElementsModule", "UnityEngine.IMGUIModule")]
     internal enum TextOverflow
     {
         Clip,

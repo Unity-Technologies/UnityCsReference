@@ -25,7 +25,7 @@ internal class AddAction : PackageAction
         m_PackageDatabase = packageDatabase;
     }
 
-    protected override bool TriggerActionImplementation(IList<IPackage> packages)
+    protected override bool TriggerActionImplementation(IReadOnlyCollection<IPackage> packages)
     {
         var primaryVersions = packages.Select(p => p.versions.primary).ToArray();
         if(!m_OperationDispatcher.Install(primaryVersions))
@@ -64,7 +64,7 @@ internal class AddAction : PackageAction
             }
         }
 
-        if (packagesToUninstall?.Any() == true)
+        if (packagesToUninstall?.Length > 0)
         {
             m_OperationDispatcher.InstallAndResetDependencies(version, packagesToUninstall);
             PackageManagerWindowAnalytics.SendEvent("installAndReset", version);

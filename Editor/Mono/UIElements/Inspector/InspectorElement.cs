@@ -171,11 +171,6 @@ namespace UnityEditor.UIElements
         VisualElement m_ContextWidthElement;
 
         /// <summary>
-        /// Event handler for animation recording events.
-        /// </summary>
-        System.Action m_AnimationRecordingHandler;
-
-        /// <summary>
         /// Gets or sets the editor backing this inspector element.
         /// </summary>
         internal Editor editor => m_Editor;
@@ -426,16 +421,6 @@ namespace UnityEditor.UIElements
 
         void ClearInspectorElement()
         {
-            // Unregister animation recording event handler
-            if (m_AnimationRecordingHandler != null)
-            {
-                AnimationMode.onAnimationRecordingStart -= m_AnimationRecordingHandler;
-                AnimationMode.onAnimationRecordingStop -= m_AnimationRecordingHandler;
-                AnimationMode.onAnimationPlaybackStart -= m_AnimationRecordingHandler;
-                AnimationMode.onAnimationPlaybackStop -= m_AnimationRecordingHandler;
-                m_AnimationRecordingHandler = null;
-            }
-
             // Clear any previously generated element.
             m_InspectorElement?.RemoveFromHierarchy();
 
@@ -690,17 +675,26 @@ namespace UnityEditor.UIElements
             }
 
             // Always try to re-use the imgui container if possible.
-            var inspector = m_InspectorElement as IMGUIContainer ?? new IMGUIContainer();
 
-            // Register for animation recording events to repaint this specific IMGUI inspector
-            if (inspector != m_InspectorElement) // Only register for new containers
+            if (m_InspectorElement is not IMGUIContainer inspector)
             {
-                m_AnimationRecordingHandler = () => inspector.MarkDirtyRepaint();
-                
-                AnimationMode.onAnimationRecordingStart += m_AnimationRecordingHandler;
-                AnimationMode.onAnimationRecordingStop += m_AnimationRecordingHandler;
-                AnimationMode.onAnimationPlaybackStart += m_AnimationRecordingHandler;
-                AnimationMode.onAnimationPlaybackStop += m_AnimationRecordingHandler;
+                inspector = new IMGUIContainer();
+
+                inspector.RegisterCallback<AttachToPanelEvent>(e =>
+                {
+                    AnimationMode.onAnimationRecordingStart += inspector.MarkDirtyRepaint;
+                    AnimationMode.onAnimationRecordingStop += inspector.MarkDirtyRepaint;
+                    AnimationMode.onAnimationPlaybackStart += inspector.MarkDirtyRepaint;
+                    AnimationMode.onAnimationPlaybackStop += inspector.MarkDirtyRepaint;
+                });
+
+                inspector.RegisterCallback<DetachFromPanelEvent>(e =>
+                {
+                    AnimationMode.onAnimationRecordingStart -= inspector.MarkDirtyRepaint;
+                    AnimationMode.onAnimationRecordingStop -= inspector.MarkDirtyRepaint;
+                    AnimationMode.onAnimationPlaybackStart -= inspector.MarkDirtyRepaint;
+                    AnimationMode.onAnimationPlaybackStop -= inspector.MarkDirtyRepaint;
+                });
             }
 
             m_IgnoreOnInspectorGUIErrors = false;
@@ -862,7 +856,7 @@ namespace UnityEditor.UIElements
             // too tall an inspector on the first layout calculation
             while (displayElement != null && (float.IsNaN(inspectorWidth) || inspectorWidth == 0))
             {
-                inspectorWidth = displayElement.layout.width;
+                inspectorWidth = displayElement.layoutSize.x;
                 displayElement = displayElement.hierarchy.parent;
             }
 

@@ -10,7 +10,6 @@ using Unity.ProjectAuditor.Editor.Utils;
 using UnityEditor;
 using UnityEditor.IMGUI.Controls;
 using UnityEngine;
-using UnityEngine.Profiling;
 
 using TreeView = UnityEditor.IMGUI.Controls.TreeView<int>;
 using TreeViewItem = UnityEditor.IMGUI.Controls.TreeViewItem<int>;
@@ -185,10 +184,8 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
             m_Rows.Clear();
 
             // find all issues matching the filters and make an array out of them
-            Profiler.BeginSample("IssueTable.Match");
-            var filteredItems = m_TreeViewItemIssues.Where(item => m_View.Match(item.Value.ReportItem)).ToArray();
-            var allIssues = m_TreeViewItemIssues.Where(item => m_View.PackageFilterMatch(item.Value.ReportItem)).ToArray();
-            Profiler.EndSample();
+            var allIssues = m_TreeViewItemIssues.Values.ToArray();
+            var filteredItems = allIssues.Where(item => m_View.Match(item.ReportItem)).ToArray();
 
             m_NumMatchingIssues = filteredItems.Length;
             if (m_NumMatchingIssues == 0)
@@ -203,35 +200,34 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
                     group.children.Clear();
             }
 
-            Profiler.BeginSample("IssueTable.BuildRows");
             if (!hasSearch && !m_FlatView)
             {
-                var groupedItemQuery = allIssues.GroupBy(i => i.Value.ReportItem.GetPropertyGroup(m_Layout.Properties[groupPropertyIndex]));
+                var groupedItemQuery = allIssues.GroupBy(i => i.ReportItem.GetPropertyGroup(m_Layout.Properties[groupPropertyIndex]));
 
                 groupNameItemLookup.Clear();
                 groupNameItemLookupIgnored.Clear();
 
                 foreach (var filteredItem in filteredItems)
                 {
-                    string filteredItemName = filteredItem.Value.GroupName;
+                    string filteredItemName = filteredItem.GroupName;
                     if (!groupNameItemLookup.ContainsKey(filteredItemName))
                     {
                         groupNameItemLookup[filteredItemName] = new List<IssueTableItem>();
                     }
 
-                    groupNameItemLookup[filteredItemName].Add(filteredItem.Value);
+                    groupNameItemLookup[filteredItemName].Add(filteredItem);
                 }
 
                 foreach (var issue in allIssues)
                 {
-                    string filteredItemName = issue.Value.GroupName;
+                    string filteredItemName = issue.GroupName;
                     if (!groupNameItemLookupIgnored.ContainsKey(filteredItemName))
                     {
                         groupNameItemLookupIgnored[filteredItemName] = new List<IssueTableItem>();
                     }
 
-                    if (issue.Value.ReportItem.IsIgnored)
-                        groupNameItemLookupIgnored[filteredItemName].Add(issue.Value);
+                    if (issue.ReportItem.IsIgnored)
+                        groupNameItemLookupIgnored[filteredItemName].Add(issue);
                 }
 
                 foreach (var groupedItems in groupedItemQuery)
@@ -273,15 +269,13 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
             {
                 foreach (var item in filteredItems)
                 {
-                    var group = m_TreeViewItemGroupsLookup[item.Value.GroupName];
-                    group.AddChild(item.Value);
+                    var group = m_TreeViewItemGroupsLookup[item.GroupName];
+                    group.AddChild(item);
 
-                    m_Rows.Add(item.Value);
+                    m_Rows.Add(item);
                 }
             }
             SortIfNeeded(m_Rows);
-
-            Profiler.EndSample();
 
             return m_Rows;
         }

@@ -4,7 +4,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using UnityEngine;
 using UnityEngine.Assertions;
 using UnityEngine.Serialization;
@@ -41,7 +40,17 @@ namespace Unity.GraphToolkit.Editor
         public override IReadOnlyList<IGroupItemModel> Items => m_Items;
 
         /// <inheritdoc />
-        public override IEnumerable<GraphElementModel> DependentModels => base.DependentModels.Concat(GetGraphElementModels());
+        public override IEnumerable<GraphElementModel> DependentModels
+        {
+            get
+            {
+                foreach (var model in base.DependentModels)
+                    yield return model;
+
+                foreach (var model in GetGraphElementModels())
+                    yield return model;
+            }
+        }
 
         /// <inheritdoc />
         public override IGraphElementContainer Container => ParentGroup;
@@ -128,10 +137,8 @@ namespace Unity.GraphToolkit.Editor
         {
             base.OnAfterDeserialize();
 
-            if (m_Items.Any(t => t == null))
-            {
-                m_Items = m_Items.Where(t => t != null).ToList();
-            }
+            m_Items.RemoveAll(t => t == null);
+
             foreach (var item in m_Items)
             {
                 item.ParentGroup = this;
@@ -150,9 +157,12 @@ namespace Unity.GraphToolkit.Editor
         public override bool Repair()
         {
             var dirty = m_Items.RemoveAll(t => t == null) != 0;
-            foreach (var item in m_Items.OfType<GroupModel>())
+            foreach (var item in m_Items)
             {
-                dirty |= item.Repair();
+                if (item is not GroupModel groupModel)
+                    continue;
+
+                dirty |= groupModel.Repair();
             }
 
             return dirty;

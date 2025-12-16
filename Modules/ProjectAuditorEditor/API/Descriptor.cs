@@ -82,7 +82,12 @@ namespace Unity.ProjectAuditor.Editor
         /// <summary>
         /// Optional Auto-Fixer
         /// </summary>
-        public Action<ReportItem, AnalysisParams> Fixer;
+        public Func<ReportItem, AnalysisParams, bool> Fixer;
+
+        /// <summary>
+        /// The Auto-Fixer can have a custom label
+        /// </summary>
+        public string FixerLabel;
 
         /// <summary>
         /// Name of the type (namespace and class/struct) of a known code API issue.
@@ -97,6 +102,12 @@ namespace Unity.ProjectAuditor.Editor
         public string Method;
 
         /// <summary>
+        /// Return type of a known code API issue. See https://jira.unity3d.com/browse/PROFB-318 for more details on why this is useful.
+        /// </summary>
+        [NonSerialized]
+        public string ReturnType;
+
+        /// <summary>
         /// The evaluated value of a know code API issue.
         /// </summary>
         [NonSerialized]
@@ -106,6 +117,7 @@ namespace Unity.ProjectAuditor.Editor
         {
             // only for json serialization purposes.
             MessageFormat = string.Empty;
+            FixerLabel = string.Empty;
             Type = string.Empty;
             Method = string.Empty;
             DefaultSeverity = Severity.Moderate;
@@ -159,8 +171,7 @@ namespace Unity.ProjectAuditor.Editor
             if (Fixer == null)
                 return;
 
-            Fixer(issue, analysisParams);
-            issue.WasFixed = true;
+            issue.WasFixed = Fixer(issue, analysisParams);
         }
 
         /// <summary>Returns the hash code for the Descriptor's Issue ID.</summary>

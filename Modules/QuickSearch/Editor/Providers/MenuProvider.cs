@@ -63,7 +63,7 @@ namespace UnityEditor.Search.Providers
                 {
                     if (item.label == null)
                     {
-                        var menuName = Utils.GetNameFromPath(item.id);
+                        var menuName = Utils.GetFileName(item.id);
                         var enabled = Menu.GetEnabled(item.id);
                         var @checked = Menu.GetChecked(item.id);
                         item.label = $"{menuName}{(enabled ? "" : " (disabled)")} {(@checked ? "\u2611" : "")}";

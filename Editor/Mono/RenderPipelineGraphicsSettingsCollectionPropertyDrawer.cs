@@ -62,9 +62,10 @@ namespace UnityEditor.Rendering.GraphicsSettingsInspectors
                 if (type == null || !typeof(IRenderPipelineGraphicsSettings).IsAssignableFrom(type))
                     return null;
 
-                // If GraphicsSettings is hidden, discard it
+                // If GraphicsSettings is hidden or obsolete, discard it
                 bool hidden = type.GetCustomAttribute<HideInInspector>() != null;
-                if (!Unsupported.IsDeveloperMode() && hidden)
+                bool obsolete =  type.GetCustomAttribute<ObsoleteAttribute>() != null;
+                if (!Unsupported.IsDeveloperMode() && hidden || obsolete)
                     return null;
 
                 return new SettingsInfo()
@@ -78,7 +79,7 @@ namespace UnityEditor.Rendering.GraphicsSettingsInspectors
 
         void DrawHelpButton(VisualElement root, string helpURL)
         {
-            if (string.IsNullOrEmpty(helpURL))
+            if (!string.IsNullOrEmpty(helpURL))
             {
                 var button = new Button(Background.FromTexture2D(EditorGUIUtility.LoadIcon("_Help")), () => Help.BrowseURL(helpURL));
                 root.Add(button);

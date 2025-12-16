@@ -108,8 +108,16 @@ namespace Unity.ProjectAuditor.Editor
                 // incremental analysis
                 var reportCategories = report.SessionInfo.Categories.ToValuesList();
                 reportCategories.AddRange(categories);
+                
                 report.SessionInfo.Categories = reportCategories.Distinct().ToSerializableArray();
                 report.SessionInfo.UseRoslynAnalyzers = UserPreferences.UseRoslynAnalyzers;
+                report.SessionInfo.ProjectAreas |= analysisParams.ExistingReportProjectAreas;
+
+                if ((analysisParams.ExistingReportProjectAreas & ProjectAreaFlags.Code) != 0)
+                {
+                    report.SessionInfo.CodeAnalysisFlags = analysisParams.CodeAnalysisFlags;
+                    report.SessionInfo.CodeOwnerFlags = analysisParams.CodeOwnerFlags;
+                }
 
                 foreach (var category in categories)
                 {
@@ -121,7 +129,7 @@ namespace Unity.ProjectAuditor.Editor
             if (!analysisParams.SupportedBuildTarget(BuildPipeline.GetBuildTargetGroup(platform), platform))
             {
                 // Error and early out if the user has request analysis of a platform which the Unity Editor doesn't have installed support for
-                Debug.LogError($"[{ProjectAuditor.DisplayName}] Build target {platform} is not supported in this Unity Editor");
+                Debug.LogError($"[{DisplayName}] Build target {platform} is not supported in this Unity Editor");
                 analysisParams.OnCompleted(report);
                 return;
             }
@@ -134,7 +142,7 @@ namespace Unity.ProjectAuditor.Editor
             {
                 // early out if, for any reason, there are no registered Modules
                 analysisParams.OnCompleted(report);
-                Debug.LogWarning($"[{ProjectAuditor.DisplayName}] Could not find any registered modules.");
+                Debug.LogWarning($"[{DisplayName}] Could not find any registered modules.");
                 return;
             }
 
@@ -158,9 +166,9 @@ namespace Unity.ProjectAuditor.Editor
                         if (analysisResult == AnalysisResult.Cancelled)
                             isCancelled = true;
                         else if (analysisResult == AnalysisResult.Failure)
-                            Debug.Log($"[{ProjectAuditor.DisplayName}] Module {module.Name} failed.");
+                            Debug.Log($"[{DisplayName}] Module {module.Name} failed.");
                         if (logTimingsInfo)
-                            Debug.Log($"[{ProjectAuditor.DisplayName}] Module {module.Name} analysis took: " +
+                            Debug.Log($"[{DisplayName}] Module {module.Name} analysis took: " +
                                 (moduleEndTime - moduleStartTime).TotalMilliseconds / 1000.0 + " seconds.");
 
                         report.RecordModuleInfo(module, moduleStartTime, moduleEndTime, analysisResult);
@@ -172,9 +180,9 @@ namespace Unity.ProjectAuditor.Editor
                         {
                             stopwatch.Stop();
                             if (isCancelled)
-                                Debug.Log($"[{ProjectAuditor.DisplayName}] Analysis was cancelled by the user.");
+                                Debug.Log($"[{DisplayName}] Analysis was cancelled by the user.");
                             if (logTimingsInfo)
-                                Debug.Log($"[{ProjectAuditor.DisplayName}] Analysis took: " + stopwatch.ElapsedMilliseconds / 1000.0f +
+                                Debug.Log($"[{DisplayName}] Analysis took: " + stopwatch.ElapsedMilliseconds / 1000.0f +
                                     " seconds.");
 
                             // finally, call the user's OnCompleted callback
@@ -193,13 +201,13 @@ namespace Unity.ProjectAuditor.Editor
                 }
                 catch (Exception e)
                 {
-                    Debug.LogError($"[{ProjectAuditor.DisplayName}] Module {module.Name} failed: " + e.Message + " " + e.StackTrace);
+                    Debug.LogError($"[{DisplayName}] Module {module.Name} failed: " + e.Message + " " + e.StackTrace);
                     moduleParams.OnModuleCompleted(AnalysisResult.Failure);
                 }
             }
 
             if (logTimingsInfo)
-                Debug.Log($"[{ProjectAuditor.DisplayName}] Time to interactive: " + stopwatch.ElapsedMilliseconds / 1000.0f + " seconds.");
+                Debug.Log($"[{DisplayName}] Time to interactive: " + stopwatch.ElapsedMilliseconds / 1000.0f + " seconds.");
         }
 
         /// <summary>
@@ -224,9 +232,9 @@ namespace Unity.ProjectAuditor.Editor
             if (numIssues > 0)
             {
                 if (UserPreferences.FailBuildOnIssues)
-                    Debug.LogError($"[{ProjectAuditor.DisplayName}] Analysis found " + numIssues + " issues");
+                    Debug.LogError($"[{DisplayName}] Analysis found " + numIssues + " issues");
                 else
-                    Debug.Log($"[{ProjectAuditor.DisplayName}] Analysis found " + numIssues + " issues");
+                    Debug.Log($"[{DisplayName}] Analysis found " + numIssues + " issues");
             }
 
             EditorApplication.update -= DelayedPostBuildAudit;
@@ -239,7 +247,7 @@ namespace Unity.ProjectAuditor.Editor
         /// It's possible to extend Project Auditor's analysis capabilities without modifying the package, by adding new custom Modules and Analyzers to your project code.
         /// Custom analyzers may wish to report entirely new issue categories. This method is how those new categories are declared for use.
         /// </remarks>
-        /// <param name="report">A custom category name.</param>
+        /// <param name="name">A custom category name.</param>
         /// <returns>A value representing the custom category.</returns>
         internal static IssueCategory GetOrRegisterCategory(string name)
         {

@@ -337,7 +337,8 @@ namespace UnityEngine.Animations
             if (bindType == (int)BindType.ObjectReference)
             {
                 Debug.LogWarning("Please Use GetEntityId directly to get the value of an ObjectReference PropertyStreamHandle.");
-                return GetEntityId(stream);
+                Debug.Assert(sizeof(int)==UnsafeUtility.SizeOf<EntityId>(), "EntityId is not the same size as int, update this code to use ulong");
+                return (int)GetEntityId(stream).GetRawData();
             }
             if (bindType != (int)BindType.Int && bindType != (int)BindType.DiscreetInt)
                 throw new InvalidOperationException("GetValue type doesn't match PropertyStreamHandle bound type.");
@@ -350,7 +351,8 @@ namespace UnityEngine.Animations
             if (bindType == (int)BindType.ObjectReference)
             {
                 Debug.LogWarning("Please Use SetEntityId directly to set the value of an ObjectReference PropertyStreamHandle.");
-                SetEntityId(stream, value);
+                Debug.Assert(sizeof(int)==UnsafeUtility.SizeOf<EntityId>(), "EntityId is not the same size as int, update this code to use ulong");
+                SetEntityId(stream, EntityId.From(value));
                 return;
             }
 

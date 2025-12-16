@@ -94,10 +94,13 @@ namespace UnityEditor
         public static OnCurveWasModified onCurveWasModified;
 
         [RequiredByNativeCode]
-        private static void Internal_CallOnCurveWasModified(AnimationClip clip, EditorCurveBinding binding, CurveModifiedType type)
+        private static void Internal_CallOnCurveWasModified(AnimationClip clip, IntPtr bindingPtr, CurveModifiedType type)
         {
             if (onCurveWasModified != null)
+            {
+                var binding = BindingPtrToBinding(bindingPtr);
                 onCurveWasModified(clip, binding, type);
+            }
         }
 
         [RequiredByNativeCode]
@@ -211,9 +214,7 @@ namespace UnityEditor
         extern private static Type Internal_PropertyModificationToEditorCurveBinding(PropertyModification modification, [NotNull] GameObject gameObject, out EditorCurveBinding binding);
         extern internal static PropertyModification EditorCurveBindingToPropertyModification(EditorCurveBinding binding, [NotNull] GameObject gameObject);
 
-        [return: UnityMarshalAs(NativeType.ScriptingObjectPtr)]
         extern public static EditorCurveBinding[] GetCurveBindings([NotNull] AnimationClip clip);
-        [return: UnityMarshalAs(NativeType.ScriptingObjectPtr)]
         extern public static EditorCurveBinding[] GetObjectReferenceCurveBindings([NotNull] AnimationClip clip);
 
         [return: UnityMarshalAs(NativeType.ScriptingObjectPtr)]
@@ -495,6 +496,11 @@ namespace UnityEditor
         public static void SetAnimationType(AnimationClip clip, ModelImporterAnimationType type) {}
 
 
+        [NativeThrows]
         extern public static GenericBinding[] EditorCurveBindingsToGenericBindings(EditorCurveBinding[] editorCurveBindings);
+
+        extern internal static EditorCurveBinding[] BindingsArrayPtrToBindingsArray(/* core::vector<MonoEditorCurveBinding>* */ IntPtr bindingsPtr);
+        extern internal static void CopyBindingsArrayToBindingsArrayPtr(EditorCurveBinding[] source, /* core::vector<MonoEditorCurveBinding>* */ IntPtr destPtr);
+        extern internal static EditorCurveBinding BindingPtrToBinding(/* MonoEditorCurveBinding* */ IntPtr bindingPtr);
     }
 }

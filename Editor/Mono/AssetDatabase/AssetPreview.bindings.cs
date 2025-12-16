@@ -13,12 +13,12 @@ namespace UnityEditor
     [NativeHeader("Editor/Src/Utility/ObjectImages.h")]
     public sealed class AssetPreview
     {
-        private const int kSharedClientID = 0;
+        private static readonly EntityId kSharedClientID = EntityId.None;
 
         public static Texture2D GetAssetPreview(Object asset)
         {
             if (asset != null)
-                return GetAssetPreview(asset.GetInstanceID());
+                return GetAssetPreview(asset.GetEntityId());
             return null;
         }
 
@@ -28,10 +28,10 @@ namespace UnityEditor
         }
 
         [FreeFunction("AssetPreviewBindings::GetAssetPreview")]
-        internal static extern Texture2D GetAssetPreview(EntityId entityId, int clientID);
+        internal static extern Texture2D GetAssetPreview(EntityId entityId, EntityId clientID);
 
         [FreeFunction("AssetPreviewBindings::HasAssetPreview")]
-        internal static extern bool HasAssetPreview(EntityId entityId, int clientID);
+        internal static extern bool HasAssetPreview(EntityId entityId, EntityId clientID);
 
         internal static Texture2D GetAssetPreviewFromGUID(string guid)
         {
@@ -39,7 +39,7 @@ namespace UnityEditor
         }
 
         [FreeFunction("AssetPreviewBindings::GetAssetPreviewFromGUID")]
-        internal static extern Texture2D GetAssetPreviewFromGUID(string guid, int clientID);
+        internal static extern Texture2D GetAssetPreviewFromGUID(string guid, EntityId clientID);
 
         [Obsolete("IsLoadingAssetPreview(int instanceID) is deprecated. Use IsLoadingAssetPreview(EntityId entityId) instead.")]
         public static bool IsLoadingAssetPreview(int instanceID)
@@ -53,7 +53,7 @@ namespace UnityEditor
         }
 
         [FreeFunction("AssetPreviewBindings::IsLoadingAssetPreview")]
-        internal static extern bool IsLoadingAssetPreview(EntityId entityId, int clientID);
+        internal static extern bool IsLoadingAssetPreview(EntityId entityId, EntityId clientID);
 
         public static bool IsLoadingAssetPreviews()
         {
@@ -61,7 +61,7 @@ namespace UnityEditor
         }
 
         [FreeFunction("AssetPreviewBindings::IsLoadingAssetPreviews")]
-        internal static extern bool IsLoadingAssetPreviews(int clientID);
+        internal static extern bool IsLoadingAssetPreviews(EntityId clientID);
 
         internal static bool HasAnyNewPreviewTexturesAvailable()
         {
@@ -69,7 +69,7 @@ namespace UnityEditor
         }
 
         [FreeFunction("AssetPreviewBindings::HasAnyNewPreviewTexturesAvailable")]
-        internal static extern bool HasAnyNewPreviewTexturesAvailable(int clientID);
+        internal static extern bool HasAnyNewPreviewTexturesAvailable(EntityId clientID);
 
         public static void SetPreviewTextureCacheSize(int size)
         {
@@ -77,13 +77,13 @@ namespace UnityEditor
         }
 
         [FreeFunction("AssetPreviewBindings::SetPreviewTextureCacheSize")]
-        internal static extern void SetPreviewTextureCacheSize(int size, int clientID);
+        internal static extern void SetPreviewTextureCacheSize(int size, EntityId clientID);
 
         [FreeFunction("AssetPreviewBindings::ClearTemporaryAssetPreviews")]
         internal static extern void ClearTemporaryAssetPreviews();
 
         [FreeFunction("AssetPreviewBindings::DeletePreviewTextureManagerByID")]
-        internal static extern void DeletePreviewTextureManagerByID(int clientID);
+        internal static extern void DeletePreviewTextureManagerByID(EntityId clientID);
 
         public static Texture2D GetMiniThumbnail(Object obj)
         {

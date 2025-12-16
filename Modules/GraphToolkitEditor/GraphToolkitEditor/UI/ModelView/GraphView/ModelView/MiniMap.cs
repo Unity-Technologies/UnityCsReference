@@ -5,7 +5,6 @@
 using System;
 using System.Collections.Generic;
 using System.Globalization;
-using System.Linq;
 using Unity.GraphToolkit.InternalBridge;
 using UnityEditor;
 using UnityEngine;
@@ -326,13 +325,16 @@ namespace Unity.GraphToolkit.Editor
             // ... then the other elements
             GraphModel.GetGraphElementModels().GetAllViews(GraphView,
                 elem => (!(elem is GraphElement ge) || ge.ShowInMiniMap && ge.visible) && !(elem is Placemat), k_DrawElementsAllUIs);
-            foreach (var elem in k_DrawElementsAllUIs.OfType<GraphElement>())
+            foreach (var elem in k_DrawElementsAllUIs)
             {
-                var elemRect = CalculateElementRect(elem);
+                if (elem is not GraphElement graphElement)
+                    continue;
+
+                var elemRect = CalculateElementRect(graphElement);
                 PathRectangle(painter, elemRect);
-                painter.fillColor = elem.MinimapColor;
+                painter.fillColor = graphElement.MinimapColor;
                 painter.Fill();
-                painter.strokeColor = elem.IsSelected() ? m_SelectedElementColor : elem.ShouldBeHighlighted() ? m_HighlightedElementColor : elem.MinimapColor;
+                painter.strokeColor = graphElement.IsSelected() ? m_SelectedElementColor : graphElement.ShouldBeHighlighted() ? m_HighlightedElementColor : graphElement.MinimapColor;
                 painter.Stroke();
             }
             k_DrawElementsAllUIs.Clear();
@@ -364,17 +366,20 @@ namespace Unity.GraphToolkit.Editor
 
             GraphModel.GetGraphElementModels().GetAllViews(GraphView,
                 elem => elem != null, k_OnMouseDownAllUIs);
-            foreach (var child in k_OnMouseDownAllUIs.OfType<GraphElement>())
+            foreach (var child in k_OnMouseDownAllUIs)
             {
-                var isSelectable = child.GraphElementModel?.IsSelectable() ?? false;
+                if (child is not GraphElement graphElement)
+                    continue;
+
+                var isSelectable = graphElement.GraphElementModel?.IsSelectable() ?? false;
                 if (!isSelectable)
                 {
                     continue;
                 }
 
-                if (CalculateElementRect(child).Contains(mousePosition))
+                if (CalculateElementRect(graphElement).Contains(mousePosition))
                 {
-                    GraphView.DispatchFrameAndSelectElementsCommand(true, child);
+                    GraphView.DispatchFrameAndSelectElementsCommand(true, graphElement);
                     e.StopPropagation();
                     break;
                 }

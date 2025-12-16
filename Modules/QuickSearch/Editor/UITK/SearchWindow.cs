@@ -28,6 +28,7 @@ namespace UnityEditor.Search
         IEnumerable<SearchItem> FetchItems();
         void AddProvidersToMenu(GenericMenu menu);
         void AddItemsToMenu(GenericMenu menu);
+        void Update();
     }
 
     [EditorWindowTitle(title="Search")]
@@ -46,6 +47,7 @@ namespace UnityEditor.Search
         private const string k_SideBarWidthKey = "Search.SidebarWidth";
         private const string k_DetailsWidthKey = "Search.DetailsWidth";
         private static readonly string k_CheckWindowKeyName = $"{typeof(SearchWindow).FullName}h";
+        static readonly TimeSpan k_MaxUpdateTime = TimeSpan.FromMilliseconds(16);
 
         private static EditorWindow s_FocusedWindow;
         private static SearchViewState s_GlobalViewState = null;
@@ -144,7 +146,23 @@ namespace UnityEditor.Search
             guiCreated = true;
         }
 
-        int ISearchView.GetViewId()
+        public void SetCustomPanelConfig(SearchWindowCustomPanelConfig config)
+        {
+            if (config != null && !config.isValid)
+                config = null;
+
+            viewState.customPanelConfig = config;
+            if (m_CustomPanelContainer != null)
+                m_CustomPanelContainer.config = config;
+        }
+
+        public void Update()
+        {
+            if (guiCreated && m_SearchView != null)
+                m_SearchView.UpdateIncrementalTimed(k_MaxUpdateTime);
+        }
+        
+        EntityId ISearchView.GetViewId()
         {
             return ((ISearchView)m_SearchView).GetViewId();
         }
@@ -294,7 +312,7 @@ namespace UnityEditor.Search
             if (groupBar != null)
                 resultContainer.Add(groupBar);
 
-            m_CustomPanelContainer = new SearchWindowCustomPanel(this, this);
+            m_CustomPanelContainer = new SearchWindowCustomPanel(this, m_SearchView);
             m_CustomPanelContainer.config = m_ViewState.customPanelConfig;
             resultContainer.Add(m_CustomPanelContainer);
 
@@ -417,33 +435,37 @@ namespace UnityEditor.Search
             var queryContext = CreateQueryContext(query);
             var possibleTextQuery = query as SearchQuery;
             var queryViewState = query.GetViewState();
+            var needToRebindCustomPanel = false;
             if (possibleTextQuery == null || !possibleTextQuery.isTextOnlyQuery)
             {
-                // TODO Optim: this might rebuild the table + RefreshViewContent
+                // TODO OptimSearchEvents: this might rebuild the table + RefreshViewContent
+                
+                // If our current state has a "locked" panel we do not want to assign over it:
+                needToRebindCustomPanel = state.CanAssignCustomPanelConfig();
                 viewState.Assign(queryViewState);
             }
             viewState.flags &= ~SearchViewFlags.ContextSwitchPreservedMask;
             viewState.flags |= preservedViewFlags;
             viewState.queryBuilderEnabled = queryBuilderEnabled;
 
-            // TODO Optim: this might rebuild the table + RefreshViewContent
+            // TODO OptimSearchEvents: this might rebuild the table + RefreshViewContent
             m_SearchView.UpdateViewAndEmitDisplayModeChange();
 
-            // TODO Optim: Set the context. This will trigger a synchronous: SearchView.Refresh which in turn can do *multiple*
+            // TODO OptimSearchEvents: Set the context. This will trigger a synchronous: SearchView.Refresh which in turn can do *multiple*
             //      SearchView.fetchItems, SearchView.RefreshContent, SearchView.DisplayModeChhange, other SearchView.Refresh, BuildColumns
-            // TODO Optim: This will also trigger an async ContextChanged which will trigger: multiple SearchView.Refresh, ColumnRebuild....
+            // TODO OptimSearchEvents: This will also trigger an async ContextChanged which will trigger: multiple SearchView.Refresh, ColumnRebuild....
             SetContext(queryContext, true);
             if (!viewState.hideTabs)
             {
-                // TODO Optim: This will perform a RefreshContent.
+                // TODO OptimSearchEvents: This will perform a RefreshContent.
                 SelectGroup(SearchUtils.GetValidGroupForState(viewState, viewState.group));
             }
-            // Only bind the config if it exists in the loaded ViewState to avoid removing an existing CustomPanel.
-            if (queryViewState.customPanelConfig != null && queryViewState.customPanelConfig.isValid)
+
+            if (needToRebindCustomPanel)
             {
-                m_CustomPanelContainer.config = queryViewState.customPanelConfig;
+                SetCustomPanelConfig(queryViewState.customPanelConfig);
             }
-            
+
             if (!query.IsTemporaryQuery())
                 activeQuery = query;
             SearchQueryAsset.AddToRecentSearch(query);
@@ -527,7 +549,7 @@ namespace UnityEditor.Search
                 SearchSettings.SortActionsPriority();
 
                 m_SearchMonitorView = SearchMonitor.GetView();
-                m_SearchView = new SearchView(m_ViewState, GetInstanceID());
+                m_SearchView = new SearchView(m_ViewState, GetEntityId());
 
                 UpdateWindowTitle();
 

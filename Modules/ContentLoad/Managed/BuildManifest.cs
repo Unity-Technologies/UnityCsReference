@@ -33,8 +33,6 @@ namespace UnityEngine.Loading
         public long Identifier; // LocalIdentifierInFileType
     }
 
-    // UCBP-Backport
-    /*
     [Serializable]
     [StructLayout(LayoutKind.Sequential)]
     internal struct LoadableSceneEntry
@@ -43,7 +41,7 @@ namespace UnityEngine.Loading
         public string Path;
         public int SerializedFile; // Index into BuildManifest.SerializedFiles
     }
-    */
+
     [Serializable]
     [StructLayout(LayoutKind.Sequential)]
     internal struct Resource
@@ -62,27 +60,11 @@ namespace UnityEngine.Loading
         // Currently based on the cluster or guid of the source
         public string ID;
         public bool IsBuiltIn;      // Whether to use the PersistentManager fallback for Content Files
-
-        public int Archive;         // Index into BuildManifest.Archives, or -1 when the serialized file is not inside an Archive
-
         // Xxhash3 of the content of the SerializedFile. Used for the filename(+".cf") and for lookup into UDS
         public string ContentHash;
 
         public Resource[] Resources; // Array of resource files with content hash ex: .resS, GI, .resources
         public int[] SerializedFileDependencies; // Indexes into BuildManifest.SerializedFiles.  These dependencies must be loaded prior to loading this file.
-    }
-
-    [Serializable]
-    [StructLayout(LayoutKind.Sequential)]
-    internal struct Archive
-    {
-        public int Index; // Index of this entry in BuildManifest.Archives
-        public string FileName; // Path relative to the build output folder
-
-        public int CompressionType;
-        public uint CRC;
-        public string ContentHash; // Hash128 in string form
-        public int[] SerializedFiles; // Index into SerializedFiles array for the SerializedFiles located inside this archive
     }
 
     // The build manifest stores information about the result of a build, specifically structured to support the functionality of the ContentLoadManager.
@@ -98,9 +80,8 @@ namespace UnityEngine.Loading
     {
         public LoadableKeyEntry[] LoadableKeys;
         public LoadableMapEntry[] Loadables;
-        // UCBP-Backport public LoadableSceneEntry[] LoadableScenes;
+        public LoadableSceneEntry[] LoadableScenes;
         public SerializedFile[] SerializedFiles;
-        public Archive[] Archives;
 
         public static BuildManifest LoadAtPath(string path)
         {

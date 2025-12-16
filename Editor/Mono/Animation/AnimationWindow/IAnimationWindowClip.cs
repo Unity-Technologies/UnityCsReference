@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using UnityEditorInternal;
+using UnityEngine;
 
 namespace UnityEditor
 {
@@ -14,7 +15,7 @@ namespace UnityEditor
     interface IAnimationWindowClip : IEquatable<IAnimationWindowClip>
     {
         string name { get; }
-        int id { get; }
+        EntityId id { get; }
         bool isValid { get; }
         bool isReadOnly { get; }
         float frameRate { get; }

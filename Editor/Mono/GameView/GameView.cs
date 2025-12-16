@@ -13,7 +13,6 @@ using UnityEngine.Rendering;
 using System.Linq;
 using System.Collections.Generic;
 using JetBrains.Annotations;
-using UnityEditorInternal.VR;
 using UnityEngine.XR;
 using FrameCapture = UnityEngine.Apple.FrameCapture;
 using FrameCaptureDestination = UnityEngine.Apple.FrameCaptureDestination;
@@ -252,7 +251,7 @@ namespace UnityEditor
             get
             {
                 var targetSizeCached = targetRenderSize;
-                return EditorGUIUtility.PixelsToPoints(new Rect(-0.5f * targetSizeCached, targetSizeCached));
+                return EditorGUIUtility.PixelsToPoints(new Rect(-0.5f * targetSizeCached, targetSizeCached), backingScale);
             }
         }
 
@@ -809,7 +808,7 @@ namespace UnityEditor
 
         private float ScaleThatFitsTargetInView(Vector2 targetInPixels, Vector2 viewInPoints)
         {
-            var targetInPoints = EditorGUIUtility.PixelsToPoints(targetInPixels);
+            var targetInPoints = EditorGUIUtility.PixelsToPoints(targetInPixels, backingScale);
             var viewToTargetRatio = new Vector2(viewInPoints.x / targetInPoints.x, viewInPoints.y / targetInPoints.y);
             return Mathf.Min(viewToTargetRatio.x, viewToTargetRatio.y);
         }

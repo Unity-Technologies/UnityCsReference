@@ -41,7 +41,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public virtual void Refresh()
         {
-            var isVisible = m_Packages.Any();
+            var isVisible = m_Packages.Count > 0;
             UIUtils.SetElementDisplay(this, isVisible);
             if (!isVisible)
                 return;

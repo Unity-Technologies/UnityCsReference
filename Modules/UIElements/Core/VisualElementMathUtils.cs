@@ -12,7 +12,7 @@ namespace UnityEngine.UIElements
     {
         Vector3 positionWithLayout
         {
-            get { return ResolveTranslate() + (Vector3)layout.min; }
+            get { return ResolveTranslate() + (Vector3)layoutPosition; }
         }
 
         internal void GetPivotedMatrixWithLayout(out Matrix4x4 result)

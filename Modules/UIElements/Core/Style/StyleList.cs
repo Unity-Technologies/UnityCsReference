@@ -68,6 +68,9 @@ namespace UnityEngine.UIElements
             if (lhs.m_Keyword != rhs.m_Keyword)
                 return false;
 
+            if (lhs.m_Keyword == StyleKeyword.Null)
+                return true;
+
             var list1 = lhs.m_Value;
             var list2 = rhs.m_Value;
             if (ReferenceEquals(list1, list2))

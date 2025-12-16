@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
 using System.Runtime.CompilerServices;
 using UnityEngine;
 using UnityEngine.Bindings;
@@ -10,6 +11,7 @@ using UnityEngine.Bindings;
 // Additional Build Functionality, exposed for testing and other internal usage
 
 [assembly: InternalsVisibleTo("BuildPipelineTestUtilities")]
+[assembly: InternalsVisibleTo("ContentDirectoryUtilities")]
 
 namespace UnityEditor.Build.Content
 {
@@ -37,5 +39,7 @@ namespace UnityEditor.Build.Content
 
         [StaticAccessor("BuildPipeline", StaticAccessorType.DoubleColon)]
         public static extern bool TryGetVersionByName(string name, BuildTarget target, out Hash128 outVersion);
+
+        public unsafe extern static Hash128 X3HashData(byte* input, UInt64 len);
     }
 }

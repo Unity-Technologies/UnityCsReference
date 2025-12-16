@@ -345,7 +345,7 @@ namespace UnityEditor
                         }
 
                         GUIUtility.ExitGUI();
-                        
+
                         // AssetDatabase.StopAssetEditing() invokes OnEnable(), which invalidates all the serialized properties, so we must return.
                         return true;
                     }
@@ -445,7 +445,7 @@ namespace UnityEditor
         {
             //Select any material properties which are marked as "missing"
             int[] missingMaterialIndexes = m_ExternalObjectsCache.Values.Select((extObj, index) => new { extObj, index })
-                .Where(x => x.extObj.property != null && x.extObj.property.objectReferenceValue == null && x.extObj.property.objectReferenceEntityIdValue != 0)
+                .Where(x => x.extObj.property != null && x.extObj.property.objectReferenceValue == null && x.extObj.property.objectReferenceEntityIdValue != EntityId.None)
                 .Select(x => x.index)
                 .ToArray();
 
@@ -587,7 +587,7 @@ namespace UnityEditor
                     {
                         if (ExtractTexturesGUI())
                             return;
-                            
+
                         if (ExtractMaterialsGUI())
                             return;
                     }

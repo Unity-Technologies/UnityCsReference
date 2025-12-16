@@ -44,11 +44,6 @@ unsafe struct LayoutList<T> : IDisposable
         }
     }
 
-    public LayoutList()
-    {
-        m_Data = null;
-    }
-
     public LayoutList(int initialCapacity)
     {
         m_Data = (Data*)UnsafeUtility.Malloc(UnsafeUtility.SizeOf<Data>(), 16, s_Label);

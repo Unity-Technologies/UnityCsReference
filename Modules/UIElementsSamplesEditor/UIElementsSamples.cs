@@ -118,7 +118,9 @@ namespace UnityEditor.UIElements.Samples
                     new TreeViewItemData<SampleTreeItem>(nextId++, new SampleTreeItem("Radio Button Group", RadioButtonGroupSnippet.Create)),
                     // Tab
                     new TreeViewItemData<SampleTreeItem>(nextId++, new SampleTreeItem("Tab View", TabViewSnippet.Create)),
-                    new TreeViewItemData<SampleTreeItem>(nextId++, new SampleTreeItem("Help Box", HelpBoxSnippet.Create)), // Not in UI Builder
+                    new TreeViewItemData<SampleTreeItem>(nextId++, new SampleTreeItem("Help Box", HelpBoxSnippet.Create)),
+                    new TreeViewItemData<SampleTreeItem>(nextId++, new SampleTreeItem("Mask", MaskFieldSnippet.Create)),
+                    new TreeViewItemData<SampleTreeItem>(nextId++, new SampleTreeItem("Mask64", Mask64FieldSnippet.Create)),
                 }),
                 new TreeViewItemData<SampleTreeItem>(nextId++, new SampleTreeItem("Numeric Fields", MakeNumericFieldsPanel), new List<TreeViewItemData<SampleTreeItem>>()
                 {
@@ -148,8 +150,6 @@ namespace UnityEditor.UIElements.Samples
                 new TreeViewItemData<SampleTreeItem>(nextId++, new SampleTreeItem("Choice Fields (Editor Only)", MakeChoiceFieldsPanel), new List<TreeViewItemData<SampleTreeItem>>()
                 {
                     new TreeViewItemData<SampleTreeItem>(nextId++, new SampleTreeItem("Tag", TagFieldSnippet.Create)),
-                    new TreeViewItemData<SampleTreeItem>(nextId++, new SampleTreeItem("Mask", MaskFieldSnippet.Create)),
-                    new TreeViewItemData<SampleTreeItem>(nextId++, new SampleTreeItem("Mask64", Mask64FieldSnippet.Create)),
                     new TreeViewItemData<SampleTreeItem>(nextId++, new SampleTreeItem("Layer", LayerFieldSnippet.Create)),
                     new TreeViewItemData<SampleTreeItem>(nextId++, new SampleTreeItem("Layer Mask", LayerMaskFieldSnippet.Create)),
                     new TreeViewItemData<SampleTreeItem>(nextId++, new SampleTreeItem("Enum Flags", EnumFlagsFieldSnippet.Create)),
@@ -247,9 +247,10 @@ namespace UnityEditor.UIElements.Samples
 
         private VisualElement MakeControlsPanel(SampleTreeItem item)
         {
+            var choices = new List<string> { "Option 1", "Option 2", "Option 3" };
             var scrollView = new ScrollView();
-
             var container = new VisualElement();
+
             scrollView.Add(container);
             container.AddToClassList(k_CategoryPanelClassName);
 
@@ -266,7 +267,31 @@ namespace UnityEditor.UIElements.Samples
 
             container.Add(new Scroller(0, 100, (v) => { }, SliderDirection.Horizontal));
             container.Add(new TextField("TextField"));
-            // Foldout
+            container.Add(new Slider("Slider"));
+            container.Add(new SliderInt("Slider (Int)"));
+            container.Add(new MinMaxSlider("Min-Max Slider"));
+            container.Add(new DropdownField("Dropdown Field", choices, 0));
+            container.Add(new EnumField("Enum Field", TextAlignment.Center));
+
+            var groupBox = new GroupBox();
+            groupBox.Add(new RadioButton("Radio Button 1"));
+            groupBox.Add(new RadioButton("Radio Button 2"));
+            container.Add(groupBox);
+
+            container.Add(new RadioButtonGroup("Radio Button Group", choices));
+
+            var tabView = new TabView();
+            var tabOne = new Tab("One");
+            tabOne.Add(new Label("Tab one content.") { style = { marginTop = 10 } });
+            tabView.Add(tabOne);
+            var tabTwo = new Tab("Two");
+            tabTwo.Add(new Label("Tab two content.") { style = { marginTop = 10 } });
+            tabView.Add(tabTwo);
+            container.Add(tabView);
+
+            container.Add(new HelpBox("This is an Info HelpBox.", HelpBoxMessageType.Info));
+            container.Add(new MaskField("Mask", choices, 1));
+            container.Add(new Mask64Field("Mask64", choices, 1));
 
             return scrollView;
         }
@@ -345,8 +370,6 @@ namespace UnityEditor.UIElements.Samples
             container.Add(new EnumField("Enum", TextAlignment.Center));
             container.Add(new PopupField<string>("Popup", choices, 0));
             container.Add(new TagField("Tag", "Player"));
-            container.Add(new MaskField("Mask", choices, 1));
-            container.Add(new Mask64Field("Mask64", choices, 1));
             container.Add(new LayerField("Layer"));
             container.Add(new LayerMaskField("LayerMask"));
 

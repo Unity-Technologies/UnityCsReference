@@ -4,7 +4,6 @@
 
 using UnityEngine;
 using System;
-using UnityEditor.ShortcutManagement;
 using UObject = UnityEngine.Object;
 
 namespace UnityEditor
@@ -119,7 +118,7 @@ namespace UnityEditor
                     m_ActiveViewpoint.Position + (m_ActiveViewpoint.Rotation * Vector3.forward) * m_SceneView.CalcCameraDist(),
                     m_ActiveViewpoint.Rotation,
                     m_SceneView.size,
-                    false,
+                    m_SceneView.in2DMode,
                     true);
             }
 
@@ -349,7 +348,9 @@ namespace UnityEditor
 
         void AlignSceneViewToViewpoint()
         {
-            m_SceneView.rotation = activeViewpoint.Rotation;
+            if (!m_SceneView.in2DMode)
+                m_SceneView.rotation = activeViewpoint.Rotation;
+
             m_SceneView.pivot = activeViewpoint.Position + activeViewpoint.Rotation * new Vector3(0, 0, m_SceneView.cameraDistance);
         }
     }

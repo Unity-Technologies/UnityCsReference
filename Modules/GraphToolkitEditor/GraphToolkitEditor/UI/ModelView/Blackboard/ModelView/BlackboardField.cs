@@ -211,7 +211,7 @@ namespace Unity.GraphToolkit.Editor
 
         void GenerateBorderVisualContent(MeshGenerationContext mgc)
         {
-            if (!this.GetHoverPseudoState() && !IsSelected() && !IsHighlighted())
+            if (!this.hasHoverPseudoState && !IsSelected() && !IsHighlighted())
                 return;
 
             var capsuleRect = m_Capsule.parent.ChangeCoordinatesTo(m_SelectionBorder, m_Capsule.localBound);
@@ -221,7 +221,7 @@ namespace Unity.GraphToolkit.Editor
 
             painter2D.strokeColor = color;
 
-            float lineWidth = this.GetHoverPseudoState() && IsSelected() ? 2 : 1;
+            float lineWidth = this.hasHoverPseudoState && IsSelected() ? 2 : 1;
             painter2D.lineWidth = lineWidth;
 
             capsuleRect.x -= lineWidth * 0.5f;
@@ -251,7 +251,7 @@ namespace Unity.GraphToolkit.Editor
                 painter2D.LineTo(new Vector2(capsuleRect.xMax, capsuleRect.y));
             }
 
-            if (m_PropertyView != null && Expanded)
+            if (m_PropertyView != null && Expanded && !ClassListContains(BlackboardVariablePropertyView.hiddenUssClassName))
             {
                 var propertyRect = m_PropertyView.parent.ChangeCoordinatesTo(m_SelectionBorder, m_PropertyView.localBound);
 
@@ -414,7 +414,9 @@ namespace Unity.GraphToolkit.Editor
                 }
 
                 bool isExpanded = Expanded;
-                EnableInClassList(expandedUssClassName, isExpanded);
+
+                // If the property view is hidden, do not show expanded state.
+                EnableInClassList(expandedUssClassName, !ClassListContains(BlackboardVariablePropertyView.hiddenUssClassName) && isExpanded);
                 m_CollapseButton?.SetValueWithoutNotify(!isExpanded);
 
                 if (m_WasExpanded != isExpanded)
@@ -431,6 +433,15 @@ namespace Unity.GraphToolkit.Editor
                     tooltip = (Model as VariableDeclarationModelBase)?.Tooltip ?? string.Empty;
                 }
             }
+        }
+
+        internal void HidePropertyView(bool hide)
+        {
+            EnableInClassList(BlackboardVariablePropertyView.hiddenUssClassName, hide);
+
+            // If the property view is hidden, do not show expanded state.
+            if (Expanded)
+                EnableInClassList(expandedUssClassName, !hide);
         }
 
         /// <inheritdoc />
@@ -455,9 +466,7 @@ namespace Unity.GraphToolkit.Editor
                 }
             }
 
-            // If there are properties, there should be a collapse button.
-            if (m_PropertyView?.PartList.GetPart(BlackboardVariablePropertyView.inspectorPartName) is FieldsInspector inspectorField && !inspectorField.IsEmpty)
-                AddCollapseButton();
+            AddCollapseButton();
         }
 
         protected void AddCollapseButton()

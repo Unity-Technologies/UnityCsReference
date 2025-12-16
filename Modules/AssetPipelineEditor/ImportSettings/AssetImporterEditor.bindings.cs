@@ -18,7 +18,7 @@ namespace UnityEditor.AssetImporters
         [FreeFunction]
         private static extern bool ReleaseInspectorCopy(EntityId instanceID, Editor editor);
         [FreeFunction]
-        private static extern void FixCacheCount(EntityId instanceID, int[] editors);
+        private static extern void FixCacheCount(EntityId instanceID, EntityId[] editors);
         [FreeFunction]
         private static extern int GetInspectorCopyCount(EntityId instanceID);
         [FreeFunction("IsMetaDataSerializationEqual")]

@@ -150,6 +150,12 @@ namespace UnityEditor
                         p => Clipboard.hasHash128,
                         p => p.hash128Value = Clipboard.hash128Value);
                     break;
+                case SerializedPropertyType.GUID:
+                    SetupAction(property, menu, evt,
+                        p => Clipboard.guidValue = p.guidValue,
+                        p => Clipboard.hasGuid,
+                        p => p.guidValue = Clipboard.guidValue);
+                    break;
                 case SerializedPropertyType.EntityId:
                     SetupAction(property, menu, evt,
                         p => Clipboard.entityIdValue = p.entityIdValue,

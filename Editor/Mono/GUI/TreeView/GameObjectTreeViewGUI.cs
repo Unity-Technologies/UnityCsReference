@@ -62,11 +62,11 @@ namespace UnityEditor
         internal static OnHeaderGUIDelegate OnPostHeaderGUI = null;
 
         // Cache asset paths for managed VCS implementations.
-        private Dictionary<int, string> m_HierarchyPrefabToAssetPathMap;
+        private Dictionary<EntityId, string> m_HierarchyPrefabToAssetPathMap;
         // Cache Asset instances for native VCS implementations which have different API.
-        private Dictionary<int, Asset[]> m_HierarchyPrefabToAssetIDMap;
+        private Dictionary<EntityId, Asset[]> m_HierarchyPrefabToAssetIDMap;
 
-        internal event Action<bool, int, string, string> renameEnded;
+        internal event Action<bool, EntityId, string, string> renameEnded;
 
         GameObjectTreeViewDataSource dataSource
         {
@@ -100,8 +100,8 @@ namespace UnityEditor
                 k_BaseIndent += indentWidth;// Add an extra indent to match GameObjects under a SceneHeader as this makes room for additional UI.
             }
 
-            m_HierarchyPrefabToAssetPathMap = new Dictionary<int, string>();
-            m_HierarchyPrefabToAssetIDMap = new Dictionary<int, Asset[]>();
+            m_HierarchyPrefabToAssetPathMap = new Dictionary<EntityId, string>();
+            m_HierarchyPrefabToAssetIDMap = new Dictionary<EntityId, Asset[]>();
         }
 
         private void SceneVisibilityManagerOnVisibilityChanged()
@@ -314,10 +314,10 @@ namespace UnityEditor
         override protected void RenameEnded()
         {
             bool userAcceptedRename = GetRenameOverlay().userAcceptedRename;
-            int instanceID = GetRenameOverlay().userData;
+            EntityId entityId = GetRenameOverlay().userData;
             string name = string.IsNullOrEmpty(GetRenameOverlay().name) ? GetRenameOverlay().originalName : GetRenameOverlay().name;
             string originalname = GetRenameOverlay().originalName;
-            renameEnded?.Invoke(userAcceptedRename, instanceID, name, originalname);
+            renameEnded?.Invoke(userAcceptedRename, entityId, name, originalname);
         }
 
         private bool isDragging
@@ -770,11 +770,11 @@ namespace UnityEditor
                     GameObjectStyles.rightArrow.fixedWidth,
                     GameObjectStyles.rightArrow.fixedHeight);
 
-                int instanceID = item.id;
-                GUIContent content = buttonRect.Contains(Event.current.mousePosition) ? PrefabStageUtility.GetPrefabButtonContent(instanceID) : GUIContent.none;
+                EntityId entityId = item.id;
+                GUIContent content = buttonRect.Contains(Event.current.mousePosition) ? PrefabStageUtility.GetPrefabButtonContent(entityId) : GUIContent.none;
                 if (GUI.Button(buttonRect, content, GameObjectStyles.rightArrow))
                 {
-                    GameObject go = EditorUtility.EntityIdToObject(instanceID) as GameObject;
+                    GameObject go = EditorUtility.EntityIdToObject(entityId) as GameObject;
                     string assetPath = PrefabUtility.GetPrefabAssetPathOfNearestInstanceRoot(go);
                     if (string.IsNullOrWhiteSpace(assetPath)) //In case its a broken prefab
                         assetPath = PrefabUtility.GetAssetPathOfSourcePrefab(go);

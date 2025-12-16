@@ -10,6 +10,7 @@ namespace Unity.ProjectAuditor.Editor
     /// <remarks>
     /// Setting the compilation mode can affect how long analysis takes, which assemblies are analysed and whether certain scripting define symbols are considered.
     /// </remarks>
+    [System.Obsolete("Please use CodeAnalysisFlags instead", true)]
     public enum CompilationMode
     {
         /// <summary>

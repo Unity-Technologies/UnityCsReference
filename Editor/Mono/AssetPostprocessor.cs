@@ -749,11 +749,12 @@ namespace UnityEditor
         }
 
         [RequiredByNativeCode]
-        static EditorCurveBinding[] PostprocessGameObjectWithAnimatedUserProperties(GameObject go, EditorCurveBinding[] bindings)
+        static void PostprocessGameObjectWithAnimatedUserProperties(GameObject go, IntPtr bindingsPtr)
         {
+            var bindings = AnimationUtility.BindingsArrayPtrToBindingsArray(bindingsPtr);
             object[] args = { go, bindings };
             CallPostProcessMethods("OnPostprocessGameObjectWithAnimatedUserProperties", args);
-            return bindings;
+            AnimationUtility.CopyBindingsArrayToBindingsArrayPtr(bindings, bindingsPtr);
         }
 
         [RequiredByNativeCode]

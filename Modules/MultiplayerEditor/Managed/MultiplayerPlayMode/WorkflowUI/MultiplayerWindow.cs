@@ -20,6 +20,9 @@ namespace Unity.Multiplayer.PlayMode.Editor
     {
         public MainView MainView { get; private set; }
         public HelpBox DisabledHelpBox;
+        private bool m_IsNarrowWindow;
+        private const float k_WindowMinWidth = 275f;
+        private const float k_WindowMinHeight = 400f;
 
         void OnFocus()
         {
@@ -33,6 +36,9 @@ namespace Unity.Multiplayer.PlayMode.Editor
                 DestroyImmediate(this);
                 return;
             }
+
+            // Set minimum window size to prevent UI overlapping issues for non-docked mppm window
+            minSize = new Vector2(k_WindowMinWidth, k_WindowMinHeight);
 
             DisabledHelpBox = new HelpBox("Play Mode is currently managed by Play Mode Scenarios. Please use the dropdown next to the play button to change scenarios, " +
                                           "and use the configuration window to modify the scenario settings." + "\n" + "\n" +
@@ -52,7 +58,8 @@ namespace Unity.Multiplayer.PlayMode.Editor
             DisabledHelpBox.style.marginTop = 8;
             DisabledHelpBox.style.marginBottom = 10;
             DisabledHelpBox.style.alignSelf = Align.Auto;
-            DisabledHelpBox.style.height = 95;
+            DisabledHelpBox.style.height = StyleKeyword.Auto;
+            DisabledHelpBox.style.flexShrink = 0;
 
             ScenarioManagerProvider.instance.ConfigAssetChanged += () =>
             {
@@ -67,7 +74,36 @@ namespace Unity.Multiplayer.PlayMode.Editor
                     }
                 }
             };
+            // handles domain reload for narrow window UI
+            ApplyNarrowWindowClass(position.width, true);
+
+            // listen for window size changes to handle narrow window UI
+            rootVisualElement.RegisterCallback<GeometryChangedEvent>(OnWindowSizeChanged);
+
             MultiplayerWindowController.ShouldStartWindow = true;
+        }
+
+        void OnWindowSizeChanged(GeometryChangedEvent evt)
+        {
+            ApplyNarrowWindowClass(evt.newRect.width);
+        }
+
+        void ApplyNarrowWindowClass(float width, bool initialize = false)
+        {
+            var isNarrow = width < k_WindowMinWidth;
+            if (!initialize && isNarrow == m_IsNarrowWindow)
+                return;
+
+            m_IsNarrowWindow = isNarrow;
+
+            if (isNarrow)
+            {
+                MainView?.AddToClassList("player-view__window--narrow");
+            }
+            else
+            {
+                MainView?.RemoveFromClassList("player-view__window--narrow");
+            }
         }
     }
 
@@ -200,6 +236,8 @@ namespace Unity.Multiplayer.PlayMode.Editor
                     });
                     view.ActiveUpdatedEvent += newValue =>
                     {
+                        ShouldUpdateUI = true;
+
                         if (newValue)
                         {
                             if (!EditorApplication.isPlaying && !EditorSceneManager.SaveCurrentModifiedScenesIfUserWantsTo())
@@ -219,8 +257,6 @@ namespace Unity.Multiplayer.PlayMode.Editor
                         {
                             player.Deactivate(out _);
                         }
-
-                        ShouldUpdateUI = true;
                     };
                     view.PlayerTagDropdown.RegisterValueChangedCallback(evt =>
                     {

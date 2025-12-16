@@ -26,7 +26,7 @@ namespace UnityEngine.UIElements.StyleSheets
 
         internal static Dictionary<string, string> ussNameToCSharpName
         {
-            [UnityEngine.Bindings.VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+            [UnityEngine.Bindings.VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
             get => s_UssNameToCSharpName;
         }
 

@@ -34,18 +34,63 @@ namespace Unity.GraphToolkit.Editor
         {
             m_Root = new VisualElement { pickingMode = PickingMode.Ignore };
 
-            string ussClass = m_ParentClassName.WithUssElement("category");
+            var ussClass = m_ParentClassName.WithUssElement("category");
 
             m_Root.AddToClassList(ussClass);
             m_Root.AddToClassList(ussClass.WithUssModifier(m_TopCategory ? "top" : "bottom"));
+
+            if(m_Model is AbstractNodeModel model)
+                m_Root.style.backgroundColor = model.ElementColor.HasUserColor ? model.ElementColor.Color : model.DefaultColor;
 
             parent.Add(m_Root);
         }
 
         /// <inheritdoc />
-        public override void UpdateUIFromModel(UpdateFromModelVisitor visitor) { }
+        public override void UpdateUIFromModel(UpdateFromModelVisitor visitor)
+        {
+            if (m_Model is AbstractNodeModel model)
+                UpdateLineColorFromModel(visitor, model);
+        }
+
+        /// <summary>
+        /// When handling a style change for a context node, this method updates the color line based on the model's color.
+        /// </summary>
+        /// <param name="visitor"></param>
+        /// <param name="nodeModel"></param>
+        /// <returns>Returns true if the Root's background color is set</returns>
+        bool UpdateLineColorFromModel(UpdateFromModelVisitor visitor, AbstractNodeModel nodeModel)
+        {
+            if (m_Root == null)
+                return false;
+
+            if (visitor.ChangeHints.HasChange(ChangeHint.Style))
+            {
+                if (nodeModel.ElementColor.HasUserColor)
+                {
+                    m_Root.style.backgroundColor = nodeModel.ElementColor.Color;
+                    return true;
+                }
+
+                m_Root.style.backgroundColor = nodeModel.DefaultColor;
+            }
+
+            return false;
+        }
 
         /// <inheritdoc />
         public override bool SupportsCulling() => false;
+
+        public class TestAccess
+        {
+            public readonly CategoryPart categoryPart;
+
+            public TestAccess(CategoryPart categoryPart)
+            {
+                this.categoryPart = categoryPart;
+            }
+
+            public bool UpdateLineColorFromModel(UpdateFromModelVisitor visitor, AbstractNodeModel nodeModel) => categoryPart.UpdateLineColorFromModel(visitor, nodeModel);
+            public void BuildUI(VisualElement container) => categoryPart.BuildUI(container);
+        }
     }
 }

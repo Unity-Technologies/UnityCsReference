@@ -4,7 +4,9 @@
 
 using System;
 using System.Runtime.InteropServices;
+using UnityEngine;
 using UnityEngine.Bindings;
+using Object = System.Object;
 
 namespace UnityEditor.LightBaking
 {
@@ -80,10 +82,10 @@ namespace UnityEditor.LightBaking
         {
             if (map == null)
                 return "";
-            int instanceID = map.GetInstanceInstanceID(instanceIndex);
-            if (instanceID == 0)
+            EntityId entityId = map.GetInstanceInstanceID(instanceIndex);
+            if (entityId == EntityId.None)
                 return "";
-            Object obj = EditorUtility.EntityIdToObject(instanceID);
+            Object obj = EditorUtility.EntityIdToObject(entityId);
             if (obj == null)
                 return "";
             else if (obj is UnityEngine.GameObject go)

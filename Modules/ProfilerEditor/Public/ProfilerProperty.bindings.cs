@@ -12,6 +12,7 @@ using UnityEngine.Serialization;
 
 namespace UnityEditorInternal
 {
+    [Obsolete("AudioProfilerGroupInfo type is deprecated.")]
     [System.Serializable]
     [UsedByNativeCode]
     [StructLayout(LayoutKind.Sequential)]
@@ -22,7 +23,11 @@ namespace UnityEditorInternal
         [Obsolete("assetInstanceId is deprecated. Use assetEntityId instead.")]
         public int assetInstanceId { get => assetEntityId; set => assetEntityId = value; }
 
-        public int objectInstanceId;
+        [FormerlySerializedAs("objectInstanceId")]
+        public EntityId objectEntityId;
+        [Obsolete("objectInstanceId is deprecated. Use objectEntityId instead.")]
+        public int objectInstanceId { get => objectEntityId; set => objectEntityId = value; }
+
         public int assetNameOffset;
         public int objectNameOffset;
         public int parentId;
@@ -39,6 +44,7 @@ namespace UnityEditorInternal
         public float frequency;
     }
 
+    [Obsolete("AudioProfilerDSPInfo type is deprecated.")]
     [System.Serializable]
     [UsedByNativeCode]
     [StructLayout(LayoutKind.Sequential)]
@@ -60,6 +66,7 @@ namespace UnityEditorInternal
         public float absoluteAudibility;
     }
 
+    [Obsolete("AudioProfilerClipInfo type is deprecated.")]
     [System.Serializable]
     [UsedByNativeCode]
     [StructLayout(LayoutKind.Sequential)]
@@ -95,31 +102,46 @@ namespace UnityEditorInternal
         Unknown = 128,
     }
 
+    [Obsolete("UISystemProfilerInfo type is deprecated.")]
     [System.Serializable]
     [UsedByNativeCode]
     [StructLayout(LayoutKind.Sequential)]
     public struct UISystemProfilerInfo
     {
-        public int objectInstanceId;
+        [Obsolete("objectInstanceId is deprecated. Use objectEntityId instead.")]
+        public int objectInstanceId {get => objectEntityId; set => objectEntityId = value; }
+        [FormerlySerializedAs("objectInstanceId")]
+        public EntityId objectEntityId;
         public int objectNameOffset;
-        public int parentId;
+        [Obsolete("objectInstanceId is deprecated. Use objectEntityId instead.")]
+        public int parentId {get => parentEntityId; set => parentEntityId = value; }
+        [FormerlySerializedAs("parentId")]
+        public EntityId parentEntityId;
         public int batchCount;
         public int totalBatchCount;
         public int vertexCount;
         public int totalVertexCount;
         public bool isBatch;
         public BatchBreakingReason batchBreakingReason;
-        public int instanceIDsIndex;
-        public int instanceIDsCount;
+        [Obsolete("instanceIDsIndex is deprecated. Use entityIdsIndex instead.")]
+        public int instanceIDsIndex {get => entityIdsIndex; set => entityIdsIndex = value; }
+        [FormerlySerializedAs("instanceIDsIndex")]
+        public int entityIdsIndex;
+
+        [Obsolete("instanceIDsCount is deprecated. Use entityIdsCount instead.")]
+        public int instanceIDsCount {get => entityIdsCount; set => entityIdsCount = value; }
+        [FormerlySerializedAs("instanceIDsCount")]
+
+        public int entityIdsCount;
         public int renderDataIndex;
         public int renderDataCount;
     }
 
-
+    [Obsolete("ProfilerProperty is deprecated. Use UnityEditor.Profiling.RawFrameDataView or UnityEditor.Profiling.HierarchyFrameDataView instead.")]
     [NativeHeader("Modules/ProfilerEditor/ProfilerHistory/ProfilerProperty.h")]
     [NativeHeader("Runtime/Interfaces/IUISystem.h")]
     [StructLayout(LayoutKind.Sequential)]
-    public partial class ProfilerProperty : IDisposable
+    public class ProfilerProperty : IDisposable
     {
         private IntPtr m_Ptr;
 
@@ -152,7 +174,9 @@ namespace UnityEditorInternal
 
         public extern bool onlyShowGPUSamples { get; set; }
 
-        public extern int[] instanceIDs { get; }
+        [Obsolete("instanceIDs is deprecated. Use entityIds instead.")]
+        public int[] instanceIDs => entityIds.AsIntArray();
+        public extern EntityId[] entityIds { get; }
 
         public extern string GetTooltip(int column);
 
@@ -195,6 +219,8 @@ namespace UnityEditorInternal
 
         public extern string GetUISystemEventMarkerNameByOffset(int offset);
 
+        public extern EntityId[] GetUISystemBatchEntityIds();
+        [Obsolete("GetUISystemBatchInstanceIDs is deprecated. Use GetUISystemBatchEntityIds instead.")]
         public extern int[] GetUISystemBatchInstanceIDs();
 
         [StaticAccessor("GetIUISystem()", StaticAccessorType.Arrow)]

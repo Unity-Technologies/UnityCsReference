@@ -75,7 +75,7 @@ namespace UnityEditor.UIElements.Debugger
             layoutInfo.contentContainer.style.alignContent = Align.Center;
             layoutInfo.contentContainer.style.justifyContent = Justify.SpaceAround;
             layoutInfo.contentContainer.style.flexShrink = 0;
-            
+
             layoutInfo.Add(m_BoxModelView = new BoxModelView());
             layoutInfo.Add(m_LayoutInfo = new LayoutInfo() { style = { flexShrink = 0, minWidth = 420 } });
             Add(layoutInfo);
@@ -190,7 +190,7 @@ namespace UnityEditor.UIElements.Debugger
             readonly TextField m_bindingPath;
             private ListView m_ClassList;
 
-            
+
 
             public AttributesSection(DebuggerSelection debuggerSelection):base("Attributes", debuggerSelection, false)
             {
@@ -221,7 +221,7 @@ namespace UnityEditor.UIElements.Debugger
                 m_enabled.Add(new Label() { name = k_enabledLabelName });
                 m_enabled.RegisterValueChangedCallback((v) => { if (m_SelectedElement != null) { m_SelectedElement.SetEnabled(v.newValue); } });
 
-                Add(m_foccusable = new TextField("Focussable") { isReadOnly = true });
+                Add(m_foccusable = new TextField("Focusable") { isReadOnly = true });
 
                 Add(m_tabIndex = new IntegerField("Tab Index"));
                 m_tabIndex.RegisterCallback<ChangeEvent<int>>((v) => { if (m_SelectedElement != null) { m_SelectedElement.tabIndex = v.newValue; } });
@@ -255,7 +255,7 @@ namespace UnityEditor.UIElements.Debugger
 
                     onAdd = (t) => m_SelectedElement.AddToClassList("newStyle"),
 
-                }); 
+                });
 
             }
 
@@ -397,7 +397,7 @@ namespace UnityEditor.UIElements.Debugger
                                 InternalEditorUtility.OpenFileAtLineExternal(sheet, 0, 0);
                         }
                     }
-                
+
                     EditorGUILayout.EndVertical();
                     EditorGUILayout.EndHorizontal();
             }

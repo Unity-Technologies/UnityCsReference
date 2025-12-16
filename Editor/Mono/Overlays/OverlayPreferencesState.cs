@@ -34,6 +34,7 @@ namespace UnityEditor
                 if (GUILayout.Button("Use Default", GUILayout.Width(120)))
                 {
                     OverlayPrefs.RevertToDefaultColor(windowType);
+                    OverlayPrefs.DeleteOverlayKey(windowType);
                 }
 
                 EditorGUILayout.Space();

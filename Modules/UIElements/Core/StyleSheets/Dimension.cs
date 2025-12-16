@@ -40,6 +40,12 @@ namespace UnityEngine.UIElements.StyleSheets
 
         public Length ToLength()
         {
+            // UIE-1584: NaN pixels is OK for Length in general but not in the Style pipeline. Silently converting to None.
+            if (float.IsNaN(value))
+            {
+                return Length.None();
+            }
+
             var lengthUnit = unit == Unit.Percent ? LengthUnit.Percent : LengthUnit.Pixel;
             return new Length(value, lengthUnit);
         }

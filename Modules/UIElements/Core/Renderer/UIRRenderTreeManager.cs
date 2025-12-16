@@ -351,8 +351,6 @@ namespace UnityEngine.UIElements.UIR
 
             RenderSingleTree(m_RootRenderTree, null, RectInt.zero, Rect.zero);
 
-            if (drawStats)
-                DrawStats();
         }
 
         void RenderNestedTrees()
@@ -373,6 +371,8 @@ namespace UnityEngine.UIElements.UIR
             bool shouldResetRT = false;
             RenderTexture oldRT = null;
 
+            float pixelsPerPoint = panel.scaledPixelsPerPoint;
+
             Rect scissor;
             if (renderTree == m_RootRenderTree)
             {
@@ -388,6 +388,9 @@ namespace UnityEngine.UIElements.UIR
                 Camera.SetupCurrent(null);
                 RenderTexture.active = nestedTreeRT;
                 shouldResetRT = true;
+
+                // Filters are rendered in an unscaled render target, so we force the pixelsPerPoint to 1.
+                pixelsPerPoint = 1.0f;
 
                 var viewport = UIRUtility.CastToRect(nestedTreeViewport);
 
@@ -410,7 +413,7 @@ namespace UnityEngine.UIElements.UIR
                 vectorImageManager?.atlas,
                 shaderInfoAllocator.atlas,
                 scissor,
-                panel.scaledPixelsPerPoint,
+                pixelsPerPoint,
                 false,
                 textureSlotCount,
                 (nestedTreeRT != null),
@@ -758,49 +761,6 @@ namespace UnityEngine.UIElements.UIR
             }
         }
 
-        void DrawStats()
-        {
-            bool realDevice = device as UIRenderDevice != null;
-            float y_off = 12;
-            var rc = new Rect(30, 60, 1000, 100);
-            GUI.Box(new Rect(20, 40, 200, realDevice ? 380 : 256), "UI Toolkit Draw Stats");
-            GUI.Label(rc, "Elements added\t: " + m_Stats.elementsAdded); rc.y += y_off;
-            GUI.Label(rc, "Elements removed\t: " + m_Stats.elementsRemoved); rc.y += y_off;
-            GUI.Label(rc, "Mesh allocs allocated\t: " + m_Stats.newMeshAllocations); rc.y += y_off;
-            GUI.Label(rc, "Mesh allocs updated\t: " + m_Stats.updatedMeshAllocations); rc.y += y_off;
-            GUI.Label(rc, "Clip update roots\t: " + m_Stats.recursiveClipUpdates); rc.y += y_off;
-            GUI.Label(rc, "Clip update total\t: " + m_Stats.recursiveClipUpdatesExpanded); rc.y += y_off;
-            GUI.Label(rc, "Opacity update roots\t: " + m_Stats.recursiveOpacityUpdates); rc.y += y_off;
-            GUI.Label(rc, "Opacity update total\t: " + m_Stats.recursiveOpacityUpdatesExpanded); rc.y += y_off;
-            GUI.Label(rc, "Opacity ID update\t: " + m_Stats.opacityIdUpdates); rc.y += y_off;
-            GUI.Label(rc, "Xform update roots\t: " + m_Stats.recursiveTransformUpdates); rc.y += y_off;
-            GUI.Label(rc, "Xform update total\t: " + m_Stats.recursiveTransformUpdatesExpanded); rc.y += y_off;
-            GUI.Label(rc, "Xformed by bone\t: " + m_Stats.boneTransformed); rc.y += y_off;
-            GUI.Label(rc, "Xformed by skipping\t: " + m_Stats.skipTransformed); rc.y += y_off;
-            GUI.Label(rc, "Xformed by nudging\t: " + m_Stats.nudgeTransformed); rc.y += y_off;
-            GUI.Label(rc, "Xformed by repaint\t: " + m_Stats.visualUpdateTransformed); rc.y += y_off;
-            GUI.Label(rc, "Visual update roots\t: " + m_Stats.recursiveVisualUpdates); rc.y += y_off;
-            GUI.Label(rc, "Visual update total\t: " + m_Stats.recursiveVisualUpdatesExpanded); rc.y += y_off;
-            GUI.Label(rc, "Visual update flats\t: " + m_Stats.nonRecursiveVisualUpdates); rc.y += y_off;
-            GUI.Label(rc, "Dirty processed\t: " + m_Stats.dirtyProcessed); rc.y += y_off;
-            GUI.Label(rc, "Group-xform updates\t: " + m_Stats.groupTransformElementsChanged); rc.y += y_off;
 
-            if (!realDevice)
-                return;
-
-            rc.y += y_off;
-            var drawStats = ((UIRenderDevice)device).GatherDrawStatistics();
-            GUI.Label(rc, "Frame index\t: " + drawStats.currentFrameIndex); rc.y += y_off;
-            GUI.Label(rc, "Command count\t: " + drawStats.commandCount); rc.y += y_off;
-            GUI.Label(rc, "Skip cmd counts\t: " + drawStats.skippedCommandCount); rc.y += y_off;
-            GUI.Label(rc, "Draw commands\t: " + drawStats.drawCommandCount); rc.y += y_off;
-            GUI.Label(rc, "Disable commands\t: " + drawStats.disableCommandCount); rc.y += y_off;
-            GUI.Label(rc, "Draw ranges\t: " + drawStats.drawRangeCount); rc.y += y_off;
-            GUI.Label(rc, "Draw range calls\t: " + drawStats.drawRangeCallCount); rc.y += y_off;
-            GUI.Label(rc, "Material sets\t: " + drawStats.materialSetCount); rc.y += y_off;
-            GUI.Label(rc, "Stencil changes\t: " + drawStats.stencilRefChanges); rc.y += y_off;
-            GUI.Label(rc, "Immediate draws\t: " + drawStats.immediateDraws); rc.y += y_off;
-            GUI.Label(rc, "Total triangles\t: " + (drawStats.totalIndices / 3)); rc.y += y_off;
-        }
     }
 }

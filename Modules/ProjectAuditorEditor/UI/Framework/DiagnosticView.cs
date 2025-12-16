@@ -16,9 +16,12 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
     internal class DiagnosticView : AnalysisView
     {
         public override string Description => $"A list of {m_Desc.DisplayName} issues found in the project.";
+        public override bool OnlyCriticalIssues() { return m_OnlyCriticalIssues; }
 
         Vector2 m_DetailsScrollPos;
         Vector2 m_RecommendationScrollPos;
+
+        bool m_OnlyCriticalIssues;
 
         public DiagnosticView(ViewManager viewManager) : base(viewManager)
         {
@@ -134,7 +137,8 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
                 {
                     GUI.enabled = selectedIssues.Any(i => !i.WasFixed);
 
-                    DrawActionButton(GUI.enabled ? Contents.QuickFix : Contents.QuickFixDone, () =>
+                    var content = string.IsNullOrEmpty(descriptor.FixerLabel) ? Contents.QuickFix : EditorGUIUtility.TrTempContent(descriptor.FixerLabel);
+                    DrawActionButton(GUI.enabled ? content : Contents.QuickFixDone, () =>
                     {
                         foreach (var issue in selectedIssues)
                         {
@@ -197,12 +201,8 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
             {
                 EditorGUILayout.LabelField("Show :", GUILayout.ExpandWidth(true), GUILayout.Width(80));
 
-                var wasShowingCritical = m_ViewStates.onlyCriticalIssues;
-                m_ViewStates.onlyCriticalIssues = EditorGUILayout.ToggleLeft("Only Major/Critical",
-                    m_ViewStates.onlyCriticalIssues, GUILayout.Width(170));
-
-                if (wasShowingCritical != m_ViewStates.onlyCriticalIssues)
-                    m_ViewManager.OnMajorOrCriticalIssuesVisibilityChanged?.Invoke(m_ViewStates.onlyCriticalIssues);
+                var wasShowingCritical = m_OnlyCriticalIssues;
+                m_OnlyCriticalIssues = EditorGUILayout.ToggleLeft("Only Major/Critical", m_OnlyCriticalIssues, GUILayout.Width(170));
 
                 var guiContent = m_Table.showIgnoredIssues
                     ? Contents.ShowIgnoredIssuesButton
@@ -250,9 +250,6 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
                 {
                     exporter.Export(path, m_Layout.Category, (issue) =>
                     {
-                        if (!PackageFilterMatch(issue))
-                            return false;
-
                         if (!issue.Id.IsValid())
                             return false;
 

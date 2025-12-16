@@ -3,7 +3,6 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using System.Collections.Generic;
 using Unity.UIToolkit.Editor;
 using UnityEditor;
 using UnityEngine;
@@ -14,7 +13,7 @@ namespace Unity.UI.Builder
     class BuilderLibraryTreeItem
     {
         public string name { get; }
-        public Type type { get; }
+        public Type type => item?.libraryType.type;
         public bool isHeader { get; set; }
         public bool hasPreview { get; set; }
         public VisualTreeAsset sourceAsset { get; }
@@ -28,10 +27,15 @@ namespace Unity.UI.Builder
         public Background lightSkinIcon { get; private set; }
         public Background darkSkinLargeIcon { get; private set; }
         public Background lightSkinLargeIcon { get; private set; }
+        internal LibraryItem item { get; set; }
 
         public BuilderLibraryTreeItem(
-            string name, string iconName, Type type, Func<VisualElement> makeVisualElementCallback,
-            Func<VisualTreeAsset, VisualElementAsset, VisualElement, VisualElementAsset> makeElementAssetCallback = null, VisualTreeAsset asset = null)
+            string name,
+            string iconName,
+            Type type,
+            Func<VisualElement> makeVisualElementCallback,
+            Func<VisualTreeAsset, VisualElementAsset, VisualElement, VisualElementAsset> makeElementAssetCallback = null,
+            VisualTreeAsset asset = null)
         {
             this.name = name;
             this.makeVisualElementCallback = makeVisualElementCallback;
@@ -40,12 +44,16 @@ namespace Unity.UI.Builder
             if (sourceAsset != null)
                 sourceAssetPath = AssetDatabase.GetAssetPath(sourceAsset);
 
-            this.type = type;
-            if (!string.IsNullOrEmpty(iconName))
+            if (type != null)
             {
-                AssignIcon(iconName);
-                if (icon == null)
-                    AssignIcon("VisualElement");
+                item = LibraryContent.GetDefaultLibraryItem(type);
+                // Cache the builder icons.
+                if (item != null)
+                {
+                    icon = item.icon;
+                    largeIcon = item.largeIcon;
+                    AssignIcon();
+                }
             }
         }
 
@@ -60,24 +68,15 @@ namespace Unity.UI.Builder
             return (name + type?.FullName).GetHashCode();
         }
 
-        void AssignIcon(string iconName)
+        void AssignIcon()
         {
-            darkSkinLargeIcon = UIResources.GetIconForType(type, UIResources.RequestSize.Px32, 1.0f, UIResources.EditorTheme.Dark);
-            lightSkinLargeIcon = UIResources.GetIconForType(type, UIResources.RequestSize.Px32, 1.0f, UIResources.EditorTheme.Light);
+            var itemType = type.DeclaringType ?? type;
 
-            darkSkinIcon = UIResources.GetIconForType(type, UIResources.RequestSize.Px16, 1.0f, UIResources.EditorTheme.Dark);
-            lightSkinIcon = UIResources.GetIconForType(type, UIResources.RequestSize.Px16, 1.0f, UIResources.EditorTheme.Light);
+            darkSkinLargeIcon = UIResources.GetIconForType(itemType, UIResources.RequestSize.Px32, 1.0f, UIResources.EditorTheme.Dark);
+            lightSkinLargeIcon = UIResources.GetIconForType(itemType, UIResources.RequestSize.Px32, 1.0f, UIResources.EditorTheme.Light);
 
-            if (EditorGUIUtility.isProSkin)
-            {
-                icon = darkSkinIcon;
-                largeIcon = darkSkinLargeIcon;
-            }
-            else
-            {
-                icon = lightSkinIcon;
-                largeIcon = lightSkinLargeIcon;
-            }
+            darkSkinIcon = UIResources.GetIconForType(itemType, UIResources.RequestSize.Px16, 1.0f, UIResources.EditorTheme.Dark);
+            lightSkinIcon = UIResources.GetIconForType(itemType, UIResources.RequestSize.Px16, 1.0f, UIResources.EditorTheme.Light);
         }
 
         Texture2D LoadIcon(string resourceBasePath, string iconName)

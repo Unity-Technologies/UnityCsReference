@@ -4,11 +4,14 @@
 
 using System;
 using System.Runtime.InteropServices;
+using Unity.Collections;
+using Unity.Collections.LowLevel.Unsafe;
+using UnityEngine.UIElements.Unmanaged;
 
 namespace UnityEngine.UIElements.Layout;
 
 [StructLayout(LayoutKind.Sequential)]
-struct LayoutNodeData
+unsafe struct LayoutNodeData
 {
     [Flags]
     internal enum FlexStatus
@@ -36,16 +39,28 @@ struct LayoutNodeData
         MaxViolation = 1 << 5,
     }
 
-    public FixedBuffer2<LayoutValue> ResolvedDimensions;
+    public static LayoutNodeData Default;
+
+    static LayoutNodeData()
+    {
+        Default =
+            new()
+            {
+                ResolvedDimensions = LayoutDefaults.DimensionValuesUnit,
+                Status = FlexStatus.IsDirty,
+            };
+    }
+
+    public FixedBuffer2<Length> ResolvedDimensions;
     float TargetSize;
     public int ManagedOwnerIndex;
     public int LineIndex;
 
-    public LayoutHandle Config;
-    public LayoutHandle Parent;
-    public LayoutHandle NextChild;
+    public UnmanagedDataHandle Config;
+    public UnmanagedDataHandle Parent;
+    public UnmanagedDataHandle NextChild;
 
-    public LayoutList<LayoutHandle> Children;
+    public LayoutList<UnmanagedDataHandle> Children;
     private FlexStatus Status;
 
     public bool HasNewLayout

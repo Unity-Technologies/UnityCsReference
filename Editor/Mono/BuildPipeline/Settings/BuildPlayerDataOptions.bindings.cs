@@ -12,5 +12,6 @@ namespace UnityEditor
         public int subtarget { get; set; }
         public BuildOptions options { get; set; }
         public string[] extraScriptingDefines { get; set; }
+        public string[] previousBuildMetadataLocations { get; set; }
     }
 }

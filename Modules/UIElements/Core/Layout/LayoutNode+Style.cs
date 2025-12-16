@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System;
 
 namespace UnityEngine.UIElements.Layout;
 
@@ -10,532 +9,252 @@ partial struct LayoutNode
 {
     public LayoutDirection StyleDirection
     {
-        get => Style.Direction;
-        set
-        {
-            if (Style.Direction == value)
-                return;
-
-            Style.Direction = value;
-            MarkDirty();
-        }
+        get => ReadOnlyStyle.Direction;
+        set => Style.Direction = value;
     }
 
     public LayoutFlexDirection FlexDirection
     {
-        get => Style.FlexDirection;
-        set
-        {
-            if (Style.FlexDirection == value)
-                return;
-
-            Style.FlexDirection = value;
-            MarkDirty();
-        }
+        get => ReadOnlyStyle.FlexDirection;
+        set => Style.FlexDirection = value;
     }
 
     public LayoutJustify JustifyContent
     {
-        get => Style.JustifyContent;
-        set
-        {
-            if (Style.JustifyContent == value)
-                return;
-
-            Style.JustifyContent = value;
-            MarkDirty();
-        }
+        get => ReadOnlyStyle.JustifyContent;
+        set => Style.JustifyContent = value;
     }
 
     public LayoutDisplay Display
     {
-        get => Style.Display;
-        set
-        {
-            if (Style.Display == value)
-                return;
-
-            Style.Display = value;
-            MarkDirty();
-        }
+        get => ReadOnlyStyle.Display;
+        set => Style.Display = value;
     }
 
     public LayoutAlign AlignItems
     {
-        get => Style.AlignItems;
-        set
-        {
-            if (Style.AlignItems == value)
-                return;
-
-            Style.AlignItems = value;
-            MarkDirty();
-        }
+        get => ReadOnlyStyle.AlignItems;
+        set => Style.AlignItems = value;
     }
 
     public LayoutAlign AlignSelf
     {
-        get => Style.AlignSelf;
-        set
-        {
-            if (Style.AlignSelf == value)
-                return;
-
-            Style.AlignSelf = value;
-            MarkDirty();
-        }
+        get => ReadOnlyStyle.AlignSelf;
+        set => Style.AlignSelf = value;
     }
 
     public LayoutAlign AlignContent
     {
-        get => Style.AlignContent;
-        set
-        {
-            if (Style.AlignContent == value)
-                return;
-
-            Style.AlignContent = value;
-            MarkDirty();
-        }
+        get => ReadOnlyStyle.AlignContent;
+        set => Style.AlignContent = value;
     }
 
     public LayoutPositionType PositionType
     {
-        get => Style.PositionType;
-        set
-        {
-            if (Style.PositionType == value)
-                return;
-
-            Style.PositionType = value;
-            MarkDirty();
-        }
+        get => ReadOnlyStyle.PositionType;
+        set => Style.PositionType = value;
     }
 
     public LayoutWrap Wrap
     {
-        get => Style.FlexWrap;
-        set
-        {
-            if (Style.FlexWrap == value)
-                return;
-
-            Style.FlexWrap = value;
-            MarkDirty();
-        }
+        get => ReadOnlyStyle.FlexWrap;
+        set => Style.FlexWrap = value;
     }
 
     public float FlexGrow
     {
-        get => Style.FlexGrow;
-        set => SetValue(ref Style.FlexGrow, value);
+        get => ReadOnlyStyle.FlexGrow;
+        set => Style.FlexGrow = value;
     }
 
     public float FlexShrink
     {
-        get => Style.FlexShrink;
-        set => SetValue(ref Style.FlexShrink, value);
+        get => ReadOnlyStyle.FlexShrink;
+        set => Style.FlexShrink = value;
     }
 
-    public LayoutValue FlexBasis
+    public Length FlexBasis
     {
-        get => Style.FlexBasis;
-        set => SetStyleValueUnit(ref Style.FlexBasis, value);
+        get => ReadOnlyStyle.FlexBasis;
+        set => Style.FlexBasis = value;
     }
 
-    public LayoutValue Width
+    public Length Width
     {
-        get => Style.dimensions[(int)LayoutDimension.Width];
-        set => SetStyleValueUnit(ref Style.dimensions[(int)LayoutDimension.Width], value);
+        get => ReadOnlyStyle.Dimensions[(int)LayoutDimension.Width];
+        set => Style.Dimensions[(int)LayoutDimension.Width] = value;
     }
 
-    public LayoutValue Height
+    public Length Height
     {
-        get => Style.dimensions[(int)LayoutDimension.Height];
-        set => SetStyleValueUnit(ref Style.dimensions[(int)LayoutDimension.Height], value);
+        get => ReadOnlyStyle.Dimensions[(int)LayoutDimension.Height];
+        set => Style.Dimensions[(int)LayoutDimension.Height] = value;
     }
 
-    public LayoutValue MaxWidth
+    public Length MaxWidth
     {
-        get => Style.maxDimensions[(int)LayoutDimension.Width];
-        set => SetStyleValue(ref Style.maxDimensions[(int)LayoutDimension.Width], value);
+        get => ReadOnlyStyle.MaxDimensions[(int)LayoutDimension.Width];
+        set => Style.MaxDimensions[(int)LayoutDimension.Width] = value;
     }
 
-    public LayoutValue MaxHeight
+    public Length MaxHeight
     {
-        get => Style.maxDimensions[(int)LayoutDimension.Height];
-        set => SetStyleValue(ref Style.maxDimensions[(int)LayoutDimension.Height], value);
+        get => ReadOnlyStyle.MaxDimensions[(int)LayoutDimension.Height];
+        set => Style.MaxDimensions[(int)LayoutDimension.Height] = value;
     }
 
-    public LayoutValue MinWidth
+    public Length MinWidth
     {
-        get => Style.minDimensions[(int)LayoutDimension.Width];
-        set => SetStyleValue(ref Style.minDimensions[(int)LayoutDimension.Width], value);
+        get => ReadOnlyStyle.MinDimensions[(int)LayoutDimension.Width];
+        set => Style.MinDimensions[(int)LayoutDimension.Width] = value;
     }
 
-    public LayoutValue MinHeight
+    public Length MinHeight
     {
-        get => Style.minDimensions[(int)LayoutDimension.Height];
-        set => SetStyleValue(ref Style.minDimensions[(int)LayoutDimension.Height], value);
+        get => ReadOnlyStyle.MinDimensions[(int)LayoutDimension.Height];
+        set => Style.MinDimensions[(int)LayoutDimension.Height] = value;
     }
 
     public float AspectRatio
     {
-        get => Style.AspectRatio;
-        set => SetValue(ref Style.AspectRatio, value);
+        get => ReadOnlyStyle.AspectRatio;
+        set => Style.AspectRatio = value;
     }
 
     public LayoutOverflow Overflow
     {
-        get => Style.Overflow;
-        set
-        {
-            if (Style.Overflow == value)
-                return;
-
-            Style.Overflow = value;
-            MarkDirty();
-        }
+        get => ReadOnlyStyle.Overflow;
+        set => Style.Overflow = value;
     }
 
-    public LayoutValue Left
+    public Length Left
     {
-        get => Style.position[(int)LayoutEdge.Left];
-        set => SetStyleEdgePosition(LayoutEdge.Left, value);
+        get => ReadOnlyStyle.Position[(int)LayoutStyleEdge.Left];
+        set => Style.Position[(int)LayoutStyleEdge.Left] = value;
     }
 
-    public LayoutValue Top
+    public Length Top
     {
-        get => Style.position[(int)LayoutEdge.Top];
-        set => SetStyleEdgePosition(LayoutEdge.Top, value);
+        get => ReadOnlyStyle.Position[(int)LayoutStyleEdge.Top];
+        set => Style.Position[(int)LayoutStyleEdge.Top] = value;
     }
 
-    public LayoutValue Right
+    public Length Right
     {
-        get => Style.position[(int)LayoutEdge.Right];
-        set => SetStyleEdgePosition(LayoutEdge.Right, value);
+        get => ReadOnlyStyle.Position[(int)LayoutStyleEdge.Right];
+        set => Style.Position[(int)LayoutStyleEdge.Right] = value;
     }
 
-    public LayoutValue Bottom
+    public Length Bottom
     {
-        get => Style.position[(int)LayoutEdge.Bottom];
-        set => SetStyleEdgePosition(LayoutEdge.Bottom, value);
+        get => ReadOnlyStyle.Position[(int)LayoutStyleEdge.Bottom];
+        set => Style.Position[(int)LayoutStyleEdge.Bottom] = value;
     }
 
-    public LayoutValue Start
+    public Length MarginLeft
     {
-        get => Style.position[(int)LayoutEdge.Start];
-        set => SetStyleEdgePosition(LayoutEdge.Start, value);
+        get => ReadOnlyStyle.Margin[(int)LayoutStyleEdge.Left];
+        set => Style.Margin[(int)LayoutStyleEdge.Left] = value;
     }
 
-    public LayoutValue End
+    public Length MarginTop
     {
-        get => Style.position[(int)LayoutEdge.End];
-        set => SetStyleEdgePosition(LayoutEdge.End, value);
+        get => ReadOnlyStyle.Margin[(int)LayoutStyleEdge.Top];
+        set => Style.Margin[(int)LayoutStyleEdge.Top] = value;
     }
 
-    public LayoutValue MarginLeft
+    public Length MarginRight
     {
-        get => Style.margin[(int)LayoutEdge.Left];
-        set => SetStyleEdgeMargin(LayoutEdge.Left, value);
+        get => ReadOnlyStyle.Margin[(int)LayoutStyleEdge.Right];
+        set => Style.Margin[(int)LayoutStyleEdge.Right] = value;
     }
 
-    public LayoutValue MarginTop
+    public Length MarginBottom
     {
-        get => Style.margin[(int)LayoutEdge.Top];
-        set => SetStyleEdgeMargin(LayoutEdge.Top, value);
+        get => ReadOnlyStyle.Margin[(int)LayoutStyleEdge.Bottom];
+        set => Style.Margin[(int)LayoutStyleEdge.Bottom] = value;
     }
 
-    public LayoutValue MarginRight
+    public Length MarginHorizontal
     {
-        get => Style.margin[(int)LayoutEdge.Right];
-        set => SetStyleEdgeMargin(LayoutEdge.Right, value);
+        set => MarginLeft = MarginRight = value;
     }
 
-    public LayoutValue MarginBottom
+    public Length MarginVertical
     {
-        get => Style.margin[(int)LayoutEdge.Bottom];
-        set => SetStyleEdgeMargin(LayoutEdge.Bottom, value);
+        set => MarginTop = MarginBottom = value;
     }
 
-    public LayoutValue MarginStart
+    public Length Margin
     {
-        get => Style.margin[(int)LayoutEdge.Start];
-        set => SetStyleEdgeMargin(LayoutEdge.Start, value);
+        set => MarginHorizontal = MarginVertical = value;
     }
 
-    public LayoutValue MarginEnd
+    public Length PaddingLeft
     {
-        get => Style.margin[(int)LayoutEdge.End];
-        set => SetStyleEdgeMargin(LayoutEdge.End, value);
+        get => ReadOnlyStyle.Padding[(int)LayoutStyleEdge.Left];
+        set => Style.Padding[(int)LayoutStyleEdge.Left] = value;
     }
 
-    public LayoutValue MarginHorizontal
+    public Length PaddingTop
     {
-        get => Style.margin[(int)LayoutEdge.Horizontal];
-        set => SetStyleEdgeMargin(LayoutEdge.Horizontal, value);
+        get => ReadOnlyStyle.Padding[(int)LayoutStyleEdge.Top];
+        set => Style.Padding[(int)LayoutStyleEdge.Top] = value;
     }
 
-    public LayoutValue MarginVertical
+    public Length PaddingRight
     {
-        get => Style.margin[(int)LayoutEdge.Vertical];
-        set => SetStyleEdgeMargin(LayoutEdge.Vertical, value);
+        get => ReadOnlyStyle.Padding[(int)LayoutStyleEdge.Right];
+        set => Style.Padding[(int)LayoutStyleEdge.Right] = value;
     }
 
-    public LayoutValue Margin
+    public Length PaddingBottom
     {
-        get => Style.margin[(int)LayoutEdge.All];
-        set => SetStyleEdgeMargin(LayoutEdge.All, value);
+        get => ReadOnlyStyle.Padding[(int)LayoutStyleEdge.Bottom];
+        set => Style.Padding[(int)LayoutStyleEdge.Bottom] = value;
     }
 
-    public LayoutValue PaddingLeft
+    public Length PaddingHorizontal
     {
-        get => Style.padding[(int)LayoutEdge.Left];
-        set => SetStyleEdgePadding(LayoutEdge.Left, value);
+        set => PaddingLeft = PaddingRight = value;
     }
 
-    public LayoutValue PaddingTop
+    public Length PaddingVertical
     {
-        get => Style.padding[(int)LayoutEdge.Top];
-        set => SetStyleEdgePadding(LayoutEdge.Top, value);
+        set => PaddingTop = PaddingBottom = value;
     }
 
-    public LayoutValue PaddingRight
+    public Length Padding
     {
-        get => Style.padding[(int)LayoutEdge.Right];
-        set => SetStyleEdgePadding(LayoutEdge.Right, value);
-    }
-
-    public LayoutValue PaddingBottom
-    {
-        get => Style.padding[(int)LayoutEdge.Bottom];
-        set => SetStyleEdgePadding(LayoutEdge.Bottom, value);
-    }
-
-    public LayoutValue PaddingStart
-    {
-        get => Style.padding[(int)LayoutEdge.Start];
-        set => SetStyleEdgePadding(LayoutEdge.Start, value);
-    }
-
-    public LayoutValue PaddingEnd
-    {
-        get => Style.padding[(int)LayoutEdge.End];
-        set => SetStyleEdgePadding(LayoutEdge.End, value);
-    }
-
-    public LayoutValue PaddingHorizontal
-    {
-        get => Style.padding[(int)LayoutEdge.Horizontal];
-        set => SetStyleEdgePadding(LayoutEdge.Horizontal, value);
-    }
-
-    public LayoutValue PaddingVertical
-    {
-        get => Style.padding[(int)LayoutEdge.Vertical];
-        set => SetStyleEdgePadding(LayoutEdge.Vertical, value);
-    }
-
-    public LayoutValue Padding
-    {
-        get => Style.padding[(int)LayoutEdge.All];
-        set => SetStyleEdgePadding(LayoutEdge.All, value);
+        set => PaddingHorizontal = PaddingVertical = value;
     }
 
     public float BorderLeftWidth
     {
-        get => Style.border[(int) LayoutEdge.Left].Value;
-        set => StyleEdgeSetPoint(ref Style.border[(int)LayoutEdge.Left], value);
+        get => ReadOnlyStyle.Border[(int)LayoutStyleEdge.Left];
+        set => Style.Border[(int)LayoutStyleEdge.Left] = value;
     }
 
     public float BorderTopWidth
     {
-        get => Style.border[(int) LayoutEdge.Top].Value;
-        set => StyleEdgeSetPoint(ref Style.border[(int)LayoutEdge.Top], value);
+        get => ReadOnlyStyle.Border[(int)LayoutStyleEdge.Top];
+        set => Style.Border[(int)LayoutStyleEdge.Top] = value;
     }
 
     public float BorderRightWidth
     {
-        get => Style.border[(int) LayoutEdge.Right].Value;
-        set => StyleEdgeSetPoint(ref Style.border[(int)LayoutEdge.Right], value);
+        get => ReadOnlyStyle.Border[(int)LayoutStyleEdge.Right];
+        set => Style.Border[(int)LayoutStyleEdge.Right] = value;
     }
 
     public float BorderBottomWidth
     {
-        get => Style.border[(int) LayoutEdge.Bottom].Value;
-        set => StyleEdgeSetPoint(ref Style.border[(int)LayoutEdge.Bottom], value);
-    }
-
-    public float BorderStartWidth
-    {
-        get => Style.border[(int) LayoutEdge.Start].Value;
-        set => StyleEdgeSetPoint(ref Style.border[(int)LayoutEdge.Start], value);
-    }
-
-    public float BorderEndWidth
-    {
-        get => Style.border[(int) LayoutEdge.End].Value;
-        set => StyleEdgeSetPoint(ref Style.border[(int)LayoutEdge.End], value);
+        get => ReadOnlyStyle.Border[(int)LayoutStyleEdge.Bottom];
+        set => Style.Border[(int)LayoutStyleEdge.Bottom] = value;
     }
 
     public float BorderWidth
     {
-        get => Style.border[(int) LayoutEdge.All].Value;
-        set => StyleEdgeSetPoint(ref Style.border[(int)LayoutEdge.All], value);
-    }
-
-    void SetValue(ref float currentValue, float newValue)
-    {
-        if (currentValue.Equals(newValue))
-            return;
-
-        currentValue = newValue;
-        MarkDirty();
-    }
-
-    void SetStyleValue(ref LayoutValue currentValue, LayoutValue newValue)
-    {
-        if (newValue.Unit == LayoutUnit.Percent)
-        {
-            SetStyleValuePercent(ref currentValue, newValue);
-        }
-        else
-        {
-            SetStyleValuePoint(ref currentValue, newValue);
-        }
-    }
-
-    void SetStyleValueUnit(ref LayoutValue currentValue, LayoutValue newValue)
-    {
-        if (newValue.Unit == LayoutUnit.Percent)
-        {
-            SetStyleValuePercent(ref currentValue, newValue);
-        }
-        else if (newValue.Unit == LayoutUnit.Auto)
-        {
-            SetStyleValueAuto(ref currentValue);
-        }
-        else
-        {
-            SetStyleValuePoint(ref currentValue, newValue);
-        }
-    }
-
-    void SetStyleValuePoint(ref LayoutValue currentValue, LayoutValue newValue)
-    {
-        if (float.IsNaN(currentValue.Value) && float.IsNaN(newValue.Value) && newValue.Unit == currentValue.Unit)
-        {
-            return;
-        }
-
-        if (currentValue.Value != newValue.Value || currentValue.Unit != LayoutUnit.Point)
-        {
-            if (float.IsNaN(newValue.Value))
-                currentValue = LayoutValue.Auto();
-            else
-                currentValue = LayoutValue.Point(newValue.Value);
-
-            MarkDirty();
-        }
-    }
-
-    void SetStyleValuePercent(ref LayoutValue currentValue, LayoutValue newValue)
-    {
-        if (currentValue.Value != newValue.Value || currentValue.Unit != LayoutUnit.Percent)
-        {
-            if (float.IsNaN(newValue.Value))
-                currentValue = LayoutValue.Auto();
-            else
-                currentValue = newValue;
-
-            MarkDirty();
-        }
-    }
-
-    void SetStyleValueAuto(ref LayoutValue currentValue)
-    {
-        if (currentValue.Unit != LayoutUnit.Auto)
-        {
-            currentValue = LayoutValue.Auto();
-            MarkDirty();
-        }
-    }
-
-    void SetStyleEdgePosition(LayoutEdge edge, LayoutValue value)
-    {
-        if (value.Unit == LayoutUnit.Percent)
-        {
-            StyleEdgeSetPercent(ref Style.position[(int)edge], value.Value);
-        }
-        else
-        {
-            StyleEdgeSetPoint(ref Style.position[(int)edge], value.Value);
-        }
-    }
-
-    void SetStyleEdgeMargin(LayoutEdge edge, LayoutValue value)
-    {
-        if (value.Unit == LayoutUnit.Percent)
-        {
-            StyleEdgeSetPercent(ref Style.margin[(int)edge], value.Value);
-        }
-        else if (value.Unit == LayoutUnit.Auto)
-        {
-            StyleEdgeSetAuto(ref Style.margin[(int)edge]);
-        }
-        else
-        {
-            StyleEdgeSetPoint(ref Style.margin[(int)edge], value.Value);
-        }
-    }
-
-    void SetStyleEdgePadding(LayoutEdge edge, LayoutValue value)
-    {
-        if (value.Unit == LayoutUnit.Percent)
-        {
-            StyleEdgeSetPercent(ref Style.padding[(int)edge], value.Value);
-        }
-        else
-        {
-            StyleEdgeSetPoint(ref Style.padding[(int)edge], value.Value);
-        }
-    }
-
-    void StyleEdgeSetPercent(ref LayoutValue value, float newValue)
-    {
-        if (value.Value != newValue || value.Unit != LayoutUnit.Percent)
-        {
-            value = float.IsNaN(newValue)
-                ? LayoutValue.Undefined()
-                : LayoutValue.Percent(newValue);
-
-            MarkDirty();
-        }
-    }
-
-    void StyleEdgeSetAuto(ref LayoutValue value)
-    {
-        if (value.Unit != LayoutUnit.Auto)
-        {
-            value = LayoutValue.Auto();
-            MarkDirty();
-        }
-    }
-
-    void StyleEdgeSetPoint(ref LayoutValue value, float newValue)
-    {
-        if (float.IsNaN(value.Value) && float.IsNaN(newValue))
-        {
-            return;
-        }
-
-        if (value.Value != newValue || value.Unit != LayoutUnit.Point)
-        {
-            value = float.IsNaN(newValue)
-                ? LayoutValue.Undefined()
-                : LayoutValue.Point(newValue);
-
-            MarkDirty();
-        }
+        set => BorderLeftWidth = BorderRightWidth = BorderTopWidth = BorderBottomWidth = value;
     }
 }

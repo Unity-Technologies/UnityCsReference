@@ -7,6 +7,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Text;
+using Unity.Collections.LowLevel.Unsafe;
 using UnityEngine.Bindings;
 using UnityEngine.TextCore.LowLevel;
 
@@ -20,13 +21,13 @@ namespace UnityEngine.TextCore.Text
     {
         // List and HashSet used for tracking font assets whose font atlas texture and character data needs updating.
         static List<FontAsset> k_FontAssets_FontFeaturesUpdateQueue = new List<FontAsset>();
-        static HashSet<int> k_FontAssets_FontFeaturesUpdateQueueLookup = new HashSet<int>();
+        static HashSet<EntityId> k_FontAssets_FontFeaturesUpdateQueueLookup = new HashSet<EntityId>();
 
         static List<FontAsset> k_FontAssets_KerningUpdateQueue = new List<FontAsset>();
-        static HashSet<int> k_FontAssets_KerningUpdateQueueLookup = new HashSet<int>();
+        static HashSet<EntityId> k_FontAssets_KerningUpdateQueueLookup = new HashSet<EntityId>();
 
         static List<Texture2D> k_FontAssets_AtlasTexturesUpdateQueue = new List<Texture2D>();
-        static HashSet<int> k_FontAssets_AtlasTexturesUpdateQueueLookup = new HashSet<int>();
+        static HashSet<EntityId> k_FontAssets_AtlasTexturesUpdateQueueLookup = new HashSet<EntityId>();
 
         /// <summary>
         /// Internal static array used to avoid allocations when using the GetGlyphPairAdjustmentTable().
@@ -35,17 +36,17 @@ namespace UnityEngine.TextCore.Text
 
         internal static void RegisterFontAssetForFontFeatureUpdate(FontAsset fontAsset)
         {
-            int instanceID = fontAsset.instanceID;
+            EntityId entityId = fontAsset.entityId;
 
-            if (k_FontAssets_FontFeaturesUpdateQueueLookup.Add(instanceID))
+            if (k_FontAssets_FontFeaturesUpdateQueueLookup.Add(entityId))
                 k_FontAssets_FontFeaturesUpdateQueue.Add(fontAsset);
         }
 
         internal static void RegisterFontAssetForKerningUpdate(FontAsset fontAsset)
         {
-            int instanceID = fontAsset.instanceID;
+            EntityId entityId = fontAsset.entityId;
 
-            if (k_FontAssets_KerningUpdateQueueLookup.Add(instanceID))
+            if (k_FontAssets_KerningUpdateQueueLookup.Add(entityId))
                 k_FontAssets_KerningUpdateQueue.Add(fontAsset);
         }
 
@@ -88,9 +89,9 @@ namespace UnityEngine.TextCore.Text
         /// <param name="texture">The texture on which to call Apply().</param>
         internal static void RegisterAtlasTextureForApply(Texture2D texture)
         {
-            int instanceID = texture.GetInstanceID();
-
-            if (k_FontAssets_AtlasTexturesUpdateQueueLookup.Add(instanceID))
+            EntityId entityId = texture.GetEntityId();
+            Debug.Assert(UnsafeUtility.SizeOf<EntityId>() == sizeof(int), "EntityId size has changed, please update the code below");
+            if (k_FontAssets_AtlasTexturesUpdateQueueLookup.Add(entityId))
                 k_FontAssets_AtlasTexturesUpdateQueue.Add(texture);
         }
 
@@ -349,7 +350,7 @@ namespace UnityEngine.TextCore.Text
             return allGlyphsAddedToTexture && !isMissingCharacters;
         }
 
-        [VisibleToOtherModules("UnityEngine.UIElementsModule")]
+        [VisibleToOtherModules("UnityEngine.UIElementsModule", "UnityEngine.IMGUIModule")]
         internal bool TryAddGlyphs(List<uint> glyphsToAdd)
         {
             // Load font face.

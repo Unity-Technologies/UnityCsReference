@@ -20,8 +20,6 @@ namespace UnityEditor.PackageManager.UI.Internal
             {
                 if (isEnabled)
                     return L10n.Tr("Right click to see viewing options: in browser or local.");
-                else if (version.package.product != null && !version.isInstalled)
-                    return L10n.Tr("Install to view documentation");
                 else
                     return L10n.Tr("Documentation unavailable");
             }

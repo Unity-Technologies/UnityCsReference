@@ -36,7 +36,7 @@ namespace UnityEditor
                             // Note: Do not set m_Icon as GetCachedIcon uses its own cache that is cleared on reaching a max limit.
                             // This is because when having e.g very large projects (1000s of textures with unique icons) we do not want all icons loaded
                             // at the same time so don't keep a reference in m_Icon here
-                            string path = entityId == 0 ? null : AssetDatabase.GetAssetPath(entityId);
+                            string path = entityId == EntityId.None ? null : AssetDatabase.GetAssetPath(entityId);
 
                             if (path != null)
                                 // Finding icon based on only file extension fails in several ways, and a different approach have to be found.
@@ -123,9 +123,9 @@ namespace UnityEditor
 
         public bool foldersFirst { get; set; }
 
-        public void SetResults(int[] instanceIDs)
+        public void SetResults(EntityId[] instanceIDs)
         {
-            var instanceIdSet = new HashSet<int>(instanceIDs);
+            var entityIdSet = new HashSet<EntityId>(instanceIDs);
             if (m_HierarchyType ==  HierarchyType.Assets)
             {
                 var idsUnderEachRoot = new Dictionary<string, int>();
@@ -144,7 +144,7 @@ namespace UnityEditor
                     ++idsUnderEachRoot[rootPath];
                 }
 
-                SetAssetsResults(instanceIdSet, idsUnderEachRoot);
+                SetAssetsResults(entityIdSet, idsUnderEachRoot);
             }
             else
             {
@@ -160,9 +160,9 @@ namespace UnityEditor
             }
         }
 
-        internal void SetResults(int[] instanceIDs, string[] rootPaths)
+        internal void SetResults(EntityId[] entityIds, string[] rootPaths)
         {
-            var instanceIdSet = new HashSet<int>(instanceIDs);
+            var entityIdSet = new HashSet<EntityId>(entityIds);
             if (m_HierarchyType == HierarchyType.Assets)
             {
                 var idsUnderEachRoot = new Dictionary<string, int>();
@@ -172,25 +172,25 @@ namespace UnityEditor
                         idsUnderEachRoot.Add(rootPath, 0);
                     ++idsUnderEachRoot[rootPath];
                 }
-                SetAssetsResults(instanceIdSet, idsUnderEachRoot);
+                SetAssetsResults(entityIdSet, idsUnderEachRoot);
             }
             else
             {
                 var property = new HierarchyIterator(m_HierarchyType, false);
                 property.Reset();
 
-                System.Array.Resize(ref m_Results, instanceIDs.Length);
-                for (int i = 0; i < instanceIDs.Length; ++i)
+                System.Array.Resize(ref m_Results, entityIds.Length);
+                for (int i = 0; i < entityIds.Length; ++i)
                 {
-                    if (property.Find(instanceIDs[i], null))
+                    if (property.Find(entityIds[i], null))
                         CopyPropertyData(ref m_Results[i], property);
                 }
             }
         }
 
-        void SetAssetsResults(HashSet<int> instanceIdsSet, Dictionary<string, int> idsUnderEachRoot)
+        void SetAssetsResults(HashSet<EntityId> entityIdsSet, Dictionary<string, int> idsUnderEachRoot)
         {
-            System.Array.Resize(ref m_Results, instanceIdsSet.Count);
+            System.Array.Resize(ref m_Results, entityIdsSet.Count);
             var currentResultIndex = 0;
             var rootPaths = idsUnderEachRoot.Keys.ToArray();
             var idCounts = idsUnderEachRoot.Values.ToArray();
@@ -202,8 +202,8 @@ namespace UnityEditor
                 var propertiesFound = 0;
                 while (property.Next(null) && propertiesFound < nbIds)
                 {
-                    var instanceId = property.GetEntityIdIfImported();
-                    if (instanceIdsSet.Contains(instanceId))
+                    var entityId = property.GetEntityIdIfImported();
+                    if (entityIdsSet.Contains(entityId))
                     {
                         ++propertiesFound;
                         CopyPropertyData(ref m_Results[currentResultIndex], property);
@@ -373,12 +373,12 @@ namespace UnityEditor
                 if (m_SearchFilter.skipHidden && !PackageManagerUtilityInternal.IsPathInVisiblePackage(folderPath))
                     continue;
 
-                int folderInstanceID = AssetDatabase.GetMainAssetOrInProgressProxyEntityId(folderPath);
+                EntityId folderEntityId = AssetDatabase.GetMainAssetOrInProgressProxyEntityId(folderPath);
                 property = new HierarchyIterator(folderPath);
                 property.SetSearchFilter(m_SearchFilter);
 
                 int folderDepth = property.depth;
-                EntityId[] expanded = { folderInstanceID };
+                EntityId[] expanded = { folderEntityId };
                 Dictionary<string , List<FilterResult>> subAssets = new Dictionary<string, List<FilterResult>>();
                 List<FilterResult> parentAssets = new List<FilterResult>();
                 while (property.Next(expanded))
@@ -510,24 +510,24 @@ namespace UnityEditor
             m_VisibleItems = visibleItems.ToArray();
         }
 
-        public List<int> GetSubAssetInstanceIDs(int mainAssetInstanceID)
+        public List<EntityId> GetSubAssetInstanceIDs(EntityId mainAssetEntityId)
         {
             for (int i = 0; i < m_Results.Length; ++i)
             {
-                if (m_Results[i].entityId == mainAssetInstanceID)
+                if (m_Results[i].entityId == mainAssetEntityId)
                 {
-                    List<int> subAssetInstanceIDs = new List<int>();
+                    List<EntityId> subAssetEntityIds = new List<EntityId>();
                     int index = i + 1; // Start after the main representation
                     while (index < m_Results.Length && !m_Results[index].isMainRepresentation)
                     {
-                        subAssetInstanceIDs.Add(m_Results[index].entityId);
+                        subAssetEntityIds.Add(m_Results[index].entityId);
                         index++;
                     }
-                    return subAssetInstanceIDs;
+                    return subAssetEntityIds;
                 }
             }
-            Debug.LogError("Not main rep " + mainAssetInstanceID);
-            return new List<int>();
+            Debug.LogError("Not main rep " + mainAssetEntityId);
+            return new List<EntityId>();
         }
 
         public int AddSubItemsOfMainRepresentation(int mainRepresentionIndex, List<FilterResult> visibleItems)
@@ -573,7 +573,7 @@ namespace UnityEditor
             get
             {
                 var id = m_Hierarchy.results[m_Position].entityId;
-                if (id == 0)
+                if (id == EntityId.None)
                     m_Hierarchy.results[m_Position].entityId = AssetDatabase.GetMainAssetEntityId(guid);
                 return m_Hierarchy.results[m_Position].entityId;
             }

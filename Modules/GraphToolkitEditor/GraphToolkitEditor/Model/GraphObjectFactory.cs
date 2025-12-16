@@ -111,9 +111,9 @@ namespace Unity.GraphToolkit.Editor
 
         static readonly string k_NativeAssetExtension = "asset";
         [OnOpenAsset(1000)]
-        public static bool OpenGraphAsset(InstanceID instanceId, int line)
+        public static bool OpenGraphAsset(EntityId entityId, int line)
         {
-            var graphObject = TryLoadGraphObjectFromInstanceId(instanceId);
+            var graphObject = TryLoadGraphObjectFromInstanceId(entityId);
             if (graphObject != null)
             {
                 var windowType = GetWindowTypeForGraphObject(graphObject.GetType());
@@ -239,9 +239,9 @@ namespace Unity.GraphToolkit.Editor
         static Dictionary<Type, Type> s_WindowTypeForGraphObjectType = new();
         static Dictionary<GUID, GraphObject> s_LoadedGraphObjects;
 
-        static string InstanceIdToFileExtension(InstanceID instanceId)
+        static string InstanceIdToFileExtension(EntityId entityId)
         {
-            var filePath = AssetDatabase.GetAssetPath((EntityId)instanceId);
+            var filePath = AssetDatabase.GetAssetPath(entityId);
             if (!string.IsNullOrEmpty(filePath))
             {
                 var extension = Path.GetExtension(filePath);
@@ -252,19 +252,19 @@ namespace Unity.GraphToolkit.Editor
             return null;
         }
 
-        static GraphObject TryLoadGraphObjectFromInstanceId(InstanceID instanceId)
+        static GraphObject TryLoadGraphObjectFromInstanceId(EntityId entityId)
         {
-            if (AssetDatabase.IsNativeAsset((EntityId)instanceId))
+            if (AssetDatabase.IsNativeAsset(entityId))
             {
-                return EditorUtility.EntityIdToObject((EntityId)instanceId) as GraphObject;
+                return EditorUtility.EntityIdToObject(entityId) as GraphObject;
             }
 
-            var extension = InstanceIdToFileExtension(instanceId);
+            var extension = InstanceIdToFileExtension(entityId);
             if (extension == null)
                 return null;
             if (s_GraphObjectInfosByExtension.TryGetValue(extension, out var graphObjectInfos) && graphObjectInfos.loaderFunction != null)
             {
-                var filePath = AssetDatabase.GetAssetPath((EntityId)instanceId);
+                var filePath = AssetDatabase.GetAssetPath(entityId);
                 return LoadGraphObjectAtPath(graphObjectInfos.loaderFunction, filePath, false);
             }
 
@@ -455,6 +455,80 @@ namespace Unity.GraphToolkit.Editor
         public static Type GetGraphObjectTypeForExtension(string extension)
         {
             return s_GraphObjectInfosByExtension.GetValueOrDefault(extension).graphObjectType;
+        }
+
+        internal static void CheckFilePath(string assetPath)
+        {
+            if (string.IsNullOrEmpty(assetPath))
+            {
+                throw new ArgumentException(
+                    $"The assetPath {assetPath} is {(assetPath != null ? "empty" : "null")}. Pass a valid assetPath");
+            }
+            var invalidPathChars = EditorBridge.GetInvalidFilenameChars();
+
+            //On Windows, System.IO.Path methods will throw their own exception if the path contains invalid characters. This is not true in MacOS.
+            bool myException = false;
+            try
+            {
+                var fileName = Path.GetFileNameWithoutExtension(assetPath);
+                if (string.IsNullOrEmpty(fileName))
+                {
+                    myException = true;
+                    throw new ArgumentException(
+                        $"The assetPath {assetPath} is missing a file name. Add the file name to the assetPath");
+                }
+
+
+                if (fileName.IndexOfAny(invalidPathChars) != -1)
+                {
+                    myException = true;
+                    ThrowInvalidCharException();
+                }
+
+                if (fileName[0] == '.')
+                {
+                    myException = true;
+                    throw new ArgumentException(
+                        $"The assetPath {assetPath} has a file name starting with '.'. Change the file name to not start with '.'");
+                }
+
+                var fileExtension = Path.GetExtension(assetPath);
+                if (string.IsNullOrEmpty(fileExtension) || fileExtension.Length < 2)
+                {
+                    myException = true;
+                    throw new ArgumentException(
+                        $"The assetPath {assetPath} is missing an extension. Add the extension to the assetPath");
+                }
+
+                var directory = Path.GetDirectoryName(assetPath);
+                if (string.IsNullOrEmpty(directory))
+                {
+                    myException = true;
+                    throw new ArgumentException(
+                        $"The assetPath {assetPath} is invalid. Change the path to a valid path");
+                }
+
+                if (Path.IsPathRooted(assetPath)  || (!assetPath.StartsWith("Assets/", StringComparison.InvariantCultureIgnoreCase) && !assetPath.StartsWith("Packages/", StringComparison.InvariantCultureIgnoreCase)))
+                {
+                    myException = true;
+                    throw new ArgumentException(
+                        $"The assetPath {assetPath} is invalid. it must be relative to either the Assets folder or the Packages folder");
+                }
+            }
+            catch (ArgumentException winEx)
+            {
+                if (! myException && winEx.Message.Contains("Illegal characters"))
+                {
+                    ThrowInvalidCharException();
+                }
+                throw;
+            }
+
+            void ThrowInvalidCharException()
+            {
+                throw new ArgumentException(
+                    $"The assetPath {assetPath} contains invalid characters. Invalid characters are {new string(invalidPathChars)} . Remove those characters from the assetPath");
+            }
         }
     }
 }

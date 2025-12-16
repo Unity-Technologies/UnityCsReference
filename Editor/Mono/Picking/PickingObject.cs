@@ -17,7 +17,8 @@ namespace UnityEditor
         public int materialIndex => m_MaterialIndex;
 
         public static PickingObject Empty => new PickingObject(null);
-        public int GetInstanceID() => m_Target == null ? 0 : m_Target.GetInstanceID();
+
+        public EntityId GetEntityId() => m_Target == null ? EntityId.None : m_Target.GetEntityId();
 
         public PickingObject(Object obj, int matIndex = 0)
         {

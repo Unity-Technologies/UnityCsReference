@@ -13,7 +13,7 @@ using UnityEngine.TextCore.Text;
 
 namespace UnityEngine.TextCore
 {
-    [VisibleToOtherModules("UnityEngine.UIElementsModule")]
+    [VisibleToOtherModules("UnityEngine.UIElementsModule", "UnityEngine.IMGUIModule")]
     internal static class TextPreprocessor
     {
         [VisibleToOtherModules("UnityEngine.UIElementsModule")]

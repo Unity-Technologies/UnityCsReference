@@ -13,6 +13,7 @@ namespace UnityEngine
 {
     [StructLayout(LayoutKind.Sequential)]
     [Unity.IL2CPP.CompilerServices.Il2CppEagerStaticClassConstruction]
+    [Serializable]
     public partial struct Quaternion : IEquatable<Quaternion>, IFormattable
     {
         // X component of the Quaternion. Don't modify this directly unless you know quaternions inside out.
@@ -81,17 +82,15 @@ namespace UnityEngine
 
         // Combines rotations /lhs/ and /rhs/.
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
-        public static Quaternion operator*(in Quaternion lhs, in Quaternion rhs)
-        {
-            return new Quaternion(
-                lhs.w * rhs.x + lhs.x * rhs.w + lhs.y * rhs.z - lhs.z * rhs.y,
-                lhs.w * rhs.y + lhs.y * rhs.w + lhs.z * rhs.x - lhs.x * rhs.z,
-                lhs.w * rhs.z + lhs.z * rhs.w + lhs.x * rhs.y - lhs.y * rhs.x,
-                lhs.w * rhs.w - lhs.x * rhs.x - lhs.y * rhs.y - lhs.z * rhs.z);
-        }
+        public static Quaternion operator*(Quaternion lhs, Quaternion rhs) => new Quaternion() {
+            x = lhs.w * rhs.x + lhs.x * rhs.w + lhs.y * rhs.z - lhs.z * rhs.y,
+            y = lhs.w * rhs.y + lhs.y * rhs.w + lhs.z * rhs.x - lhs.x * rhs.z,
+            z = lhs.w * rhs.z + lhs.z * rhs.w + lhs.x * rhs.y - lhs.y * rhs.x,
+            w = lhs.w * rhs.w - lhs.x * rhs.x - lhs.y * rhs.y - lhs.z * rhs.z
+        };
 
         // Rotates the point /point/ with /rotation/.
-        public static Vector3 operator*(in Quaternion rotation, in Vector3 point)
+        public static Vector3 operator*(Quaternion rotation, Vector3 point)
         {
             float x = rotation.x * 2F;
             float y = rotation.y * 2F;
@@ -113,30 +112,29 @@ namespace UnityEngine
             return res;
         }
 
+        // Are two quaternions equal to each other?
+        [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
+        public static bool operator==(Quaternion lhs, Quaternion rhs) => IsEqualUsingDot(Dot(in lhs, in rhs));
+
+        // Are two quaternions different from each other?
+        [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
+        public static bool operator!=(Quaternion lhs, Quaternion rhs) =>
+            // Returns true in the presence of NaN values.
+            !(lhs == rhs);
+
+
         // *undocumented*
         public const float kEpsilon = 0.000001F;
 
         // Is the dot product of two quaternions within tolerance for them to be considered equal?
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
-        private static bool IsEqualUsingDot(float dot)
-        {
+        private static bool IsEqualUsingDot(float dot) =>
             // Returns false in the presence of NaN values.
-            return dot > 1.0f - kEpsilon;
-        }
-
-        // Are two quaternions equal to each other?
-        [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
-        public static bool operator==(in Quaternion lhs, in Quaternion rhs) => IsEqualUsingDot(Dot(in lhs, in rhs));
-
-        // Are two quaternions different from each other?
-        [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
-        public static bool operator!=(in Quaternion lhs, in Quaternion rhs) =>
-            // Returns true in the presence of NaN values.
-            !(lhs == rhs);
+            dot > 1.0f - kEpsilon;
 
         // The dot product between two rotations.
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
-        public static float Dot(Quaternion a, Quaternion b) => Dot(in a, in b);
+        public static float Dot(Quaternion a, Quaternion b) => a.x * b.x + a.y * b.y + a.z * b.z + a.w * b.w;
 
         // The dot product between two rotations.
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
@@ -152,7 +150,7 @@ namespace UnityEngine
 
         // Creates a rotation with the specified /forward/ and /upwards/ directions.
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
-        public void SetLookRotation(Vector3 view, [uei.DefaultValue("Vector3.up")] Vector3 up) => SetLookRotation(in view, in up);
+        public void SetLookRotation(Vector3 view, [uei.DefaultValue("Vector3.up")] Vector3 up) => this = LookRotation(in view, in up);
 
         // Creates a rotation with the specified /forward/ and /upwards/ directions.
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
@@ -160,7 +158,11 @@ namespace UnityEngine
 
         // Returns the angle in degrees between two rotations /a/ and /b/.
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
-        public static float Angle(Quaternion a, Quaternion b) => Angle(in a, in b);
+        public static float Angle(Quaternion a, Quaternion b)
+        {
+            float dot = Mathf.Min(Mathf.Abs(Dot(in a, in b)), 1.0F);
+            return IsEqualUsingDot(dot) ? 0.0f : Mathf.Acos(dot) * 2.0F * Mathf.Rad2Deg;
+        }
 
         // Returns the angle in degrees between two rotations /a/ and /b/.
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
@@ -171,7 +173,28 @@ namespace UnityEngine
         }
 
         // Makes euler angles positive 0/360 with 0.0001 hacked to support old behaviour of QuaternionToEuler
-        private static Vector3 Internal_MakePositive(Vector3 eulerAngles) => Internal_MakePositive(in eulerAngles);
+        private static Vector3 Internal_MakePositive(Vector3 euler)
+        {
+            float negativeFlip = -0.0001f * Mathf.Rad2Deg;
+            float positiveFlip = 360.0f + negativeFlip;
+
+            if (euler.x < negativeFlip)
+                euler.x += 360.0f;
+            else if (euler.x > positiveFlip)
+                euler.x -= 360.0f;
+
+            if (euler.y < negativeFlip)
+                euler.y += 360.0f;
+            else if (euler.y > positiveFlip)
+                euler.y -= 360.0f;
+
+            if (euler.z < negativeFlip)
+                euler.z += 360.0f;
+            else if (euler.z > positiveFlip)
+                euler.z -= 360.0f;
+
+            return euler;
+        }
 
         // Makes euler angles positive 0/360 with 0.0001 hacked to support old behaviour of QuaternionToEuler
         private static Vector3 Internal_MakePositive(in Vector3 eulerAngles)
@@ -206,20 +229,25 @@ namespace UnityEngine
             set => this = Internal_FromEulerRad(value * Mathf.Deg2Rad);
         }
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
-        public static Quaternion Euler(float x, float y, float z) => Internal_FromEulerRad(new Vector3(x, y, z) * Mathf.Deg2Rad);
+        public static Quaternion Euler(float x, float y, float z) => Internal_FromEulerRad(new Vector3() { x = x * Mathf.Deg2Rad, y = y * Mathf.Deg2Rad, z = z * Mathf.Deg2Rad });
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
-        public static Quaternion Euler(Vector3 euler) => Euler(in euler);
+        public static Quaternion Euler(Vector3 euler) => Internal_FromEulerRad(euler * Mathf.Deg2Rad);
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
         public static Quaternion Euler(in Vector3 euler) => Internal_FromEulerRad(euler * Mathf.Deg2Rad);
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
         public void ToAngleAxis(out float angle, out Vector3 axis) { Internal_ToAxisAngleRad(this, out axis, out angle); angle *= Mathf.Rad2Deg; }
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
-        public void SetFromToRotation(Vector3 fromDirection, Vector3 toDirection) => SetFromToRotation(in fromDirection, in toDirection);
+        public void SetFromToRotation(Vector3 fromDirection, Vector3 toDirection) => this = FromToRotation(in fromDirection, in toDirection);
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
-        public void SetFromToRotation(in Vector3 fromDirection, in Vector3 toDirection) => this = FromToRotation(fromDirection, toDirection);
+        public void SetFromToRotation(in Vector3 fromDirection, in Vector3 toDirection) => this = FromToRotation(in fromDirection, in toDirection);
 
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
-        public static Quaternion RotateTowards(Quaternion from, Quaternion to, float maxDegreesDelta) => RotateTowards(in from, in to, maxDegreesDelta);
+        public static Quaternion RotateTowards(Quaternion from, Quaternion to, float maxDegreesDelta)
+        {
+            float angle = Quaternion.Angle(in from, in to);
+            if (angle == 0.0f) return to;
+            return SlerpUnclamped(in from, in to, Mathf.Min(1.0f, maxDegreesDelta / angle));
+        }
 
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
         public static Quaternion RotateTowards(in Quaternion from, in Quaternion to, float maxDegreesDelta)
@@ -230,7 +258,15 @@ namespace UnityEngine
         }
 
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
-        public static Quaternion Normalize(Quaternion q) => Normalize(in q);
+        public static Quaternion Normalize(Quaternion q)
+        {
+            float mag = Mathf.Sqrt(Dot(in q, in q));
+
+            if (mag < Mathf.Epsilon)
+                return Quaternion.identity;
+
+            return new Quaternion() { x = q.x / mag, y = q.y / mag, z = q.z / mag, w = q.w / mag };
+        }
 
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
         public static Quaternion Normalize(in Quaternion q)
@@ -240,13 +276,17 @@ namespace UnityEngine
             if (mag < Mathf.Epsilon)
                 return Quaternion.identity;
 
-            return new Quaternion(q.x / mag, q.y / mag, q.z / mag, q.w / mag);
+            return new Quaternion() { x = q.x / mag, y = q.y / mag, z = q.z / mag, w = q.w / mag };
         }
 
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
         public void Normalize() => this = Normalize(in this);
 
-        public readonly Quaternion normalized => Normalize(in this);
+        public readonly Quaternion normalized
+        {
+            [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
+            get => Normalize(in this);
+        }
 
         // used to allow Quaternions to be used as keys in hash tables
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
@@ -257,12 +297,15 @@ namespace UnityEngine
         public override readonly bool Equals(object other)
         {
             if (other is Quaternion q)
-                return Equals(q);
+                return Equals(in q);
             return false;
         }
 
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
         public readonly bool Equals(Quaternion other) => x.Equals(other.x) && y.Equals(other.y) && z.Equals(other.z) && w.Equals(other.w);
+
+        [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
+        public readonly bool Equals(in Quaternion other) => x.Equals(other.x) && y.Equals(other.y) && z.Equals(other.z) && w.Equals(other.w);
 
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
         public override readonly string ToString() => ToString(null, null);

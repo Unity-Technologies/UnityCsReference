@@ -234,12 +234,13 @@ namespace UnityEditor
             EditorGUILayout.Slider(m_Metallic, 0.0f, 1.0f);
 
             var terrainLayer = target as TerrainLayer;
+            // See also: TerrainLitGUI in HDRP, TerrainLitShaderGUI in URP.
             if (diffuseTexture != null && TextureHasAlpha(ref diffuseTexture))
             {
-                terrainLayer.smoothnessSource = (UnityEngine.TerrainLayerSmoothnessSource)EditorGUILayout.EnumPopup(EditorGUIUtility.TrTextContent("Smoothness Source"), terrainLayer.smoothnessSource);
+                terrainLayer.smoothnessSource = (UnityEngine.TerrainLayerSmoothnessSource)EditorGUILayout.EnumPopup(
+                    EditorGUIUtility.TrTextContent("Smoothness Source"), terrainLayer.smoothnessSource);
                 if (terrainLayer.smoothnessSource == TerrainLayerSmoothnessSource.DiffuseAlphaChannel)
                 {
-                    // See also: TerrainLitGUI in HDRP, TerrainLitShaderGUI in URP
                     GUIStyle warnStyle = new GUIStyle(GUI.skin.label);
                     warnStyle.wordWrap = true;
                     GUILayout.Label("Smoothness is controlled by diffuse alpha channel", warnStyle);

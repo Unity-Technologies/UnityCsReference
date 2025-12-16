@@ -175,10 +175,10 @@ namespace UnityEditor.Toolbars
             var guiContent = EditorGUIUtility.TrTextContentWithIcon(pivotSettingDef.attribute.displayName,
                 $"Toggle Tool Handle Rotation\n\n{pivotSettingDef.attribute.tooltip}",
                 pivotSettingDef.icon);
-
+            
             return guiContent;
         }
-
+        
         protected override void OpenContextMenu()
         {
             OpenContextMenu(EditorPivotManager.pivotRotationsDefs);

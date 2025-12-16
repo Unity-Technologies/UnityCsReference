@@ -5,6 +5,7 @@
 using System;
 using System.Linq;
 using System.Collections.Generic;
+using Unity.Collections.LowLevel.Unsafe;
 using UnityEngine;
 
 namespace UnityEditor.Search.Providers
@@ -116,14 +117,9 @@ namespace UnityEditor.Search.Providers
         public ObjectQueryEngine(IEnumerable<T> objects)
         {
             m_Objects = objects.ToList();
-            m_QueryEngine.AddFilter<EntityId>("id", GetId);
-            m_QueryEngine.GetFilter("id").AddTypeParser(s =>
-            {
-                if (!ulong.TryParse(s, out ulong result))
-                    return ParseResult<EntityId>.none;
+            var filter = m_QueryEngine.SetFilter<EntityId>("id", GetId);
+            filter.AddTypeParser(EntityIdTypeParser);
 
-                return new ParseResult<EntityId>(true, EntityId.From(result));
-            });
             m_QueryEngine.AddFilter("path", GetPath);
             m_QueryEngine.AddFilter<string>("is", OnIsFilter, new[] {":"});
             m_QueryEngine.AddFilter<MissingReferenceFilter>("missing", OnMissing, new[] { ":" });
@@ -198,12 +194,15 @@ namespace UnityEditor.Search.Providers
             return new SearchProposition(label: label, null, $"Search {typeName} components", icon: Utils.FindTextureForType(t));
         }
 
-        // TODO: This should not be an example. Documentation examples should be in the SearchExamples project.
-        #region search_query_error_example
         public IEnumerable<T> Search(SearchContext context, SearchProvider provider, IEnumerable<T> subset = null)
         {
+            return Search(context.searchQuery, context, provider, subset);
+        }
+
+        internal IEnumerable<T> Search(string queryStr, SearchContext context, SearchProvider provider, IEnumerable<T> subset = null)
+        {
             const bool useFastYielding = true;
-            var query = m_QueryEngine.ParseQuery(context.searchQuery, useFastYielding);
+            var query = m_QueryEngine.ParseQuery(queryStr, useFastYielding);
             if (!query.valid)
             {
                 if (reportError)
@@ -217,8 +216,6 @@ namespace UnityEditor.Search.Providers
             IEnumerable<T> validObjects = FilterValidObjectsOnPull(subset ?? m_Objects, useFastYielding);
             return query.Apply(validObjects, false);
         }
-
-        #endregion
 
         public virtual bool GetId(T obj, QueryFilterOperator op, EntityId entityId)
         {
@@ -391,7 +388,8 @@ namespace UnityEditor.Search.Providers
                 var gocs = go.GetComponents<Component>();
                 if (gocs.Length > 1)
                 {
-                    refs.Add((ulong)(int)obj.GetEntityId());
+                    Debug.Assert(sizeof(int)==UnsafeUtility.SizeOf<EntityId>(), "EntityId is not the same size as int, update this code to use ulong");
+                    refs.Add(obj.GetEntityId().GetRawData());
                 }
                 for (int componentIndex = 1; componentIndex < gocs.Length; ++componentIndex)
                 {
@@ -452,10 +450,13 @@ namespace UnityEditor.Search.Providers
 
             if (!string.IsNullOrEmpty(refValue))
                 AddReference(p.objectReferenceValue, refValue, refs);
-            refs.Add((ulong)(int)p.objectReferenceValue.GetEntityId());
+
+            Debug.Assert(sizeof(int)==UnsafeUtility.SizeOf<EntityId>(), "EntityId is not the same size as int, update this code to use ulong");
+            refs.Add(p.objectReferenceValue.GetEntityId().GetRawData());
             if (p.objectReferenceValue is Component c)
             {
-                refs.Add((ulong)(int)c.gameObject.GetEntityId());
+                Debug.Assert(sizeof(int)==UnsafeUtility.SizeOf<EntityId>(), "EntityId is not the same size as int, update this code to use ulong");
+                refs.Add(c.gameObject.GetEntityId().GetRawData());
                 var compRefValue = SearchUtils.GetTransformPath(c.gameObject.transform);
                 AddReference(c.gameObject, compRefValue, refs);
             }
@@ -476,7 +477,8 @@ namespace UnityEditor.Search.Providers
             if (!isTransformPath && AssetDatabase.AssetPathExists(refValue))
             {
                 var mainEntityId = AssetDatabase.GetMainAssetEntityId(refValue);
-                refs.Add((ulong)(int)mainEntityId);
+                Debug.Assert(sizeof(int)==UnsafeUtility.SizeOf<EntityId>(), "EntityId is not the same size as int, update this code to use ulong");
+                refs.Add(mainEntityId.GetRawData());
             }
 
             refValue = refValue.ToLowerInvariant();
@@ -563,6 +565,7 @@ namespace UnityEditor.Search.Providers
             filter.AddTypeParser(GlobalObjectIdTypeParser);
             filter.AddTypeParser(AssetPathTypeParser);
             filter.AddTypeParser(InstanceIdTypeParser);
+            filter.AddTypeParser(EntityIdTypeParser);
             filter.AddTypeParser(DefaultRefTypeParser);
         }
 
@@ -570,8 +573,8 @@ namespace UnityEditor.Search.Providers
         {
             if (!filterValue.StartsWith("GlobalObjectId", StringComparison.Ordinal) || !GlobalObjectId.TryParse(filterValue, out var gid))
                 return ParseResult<ulong>.none;
-
-            return new ParseResult<ulong>(true, (ulong)(int)GlobalObjectId.GlobalObjectIdentifierToEntityIdSlow(gid));
+            Debug.Assert(sizeof(int)==UnsafeUtility.SizeOf<EntityId>(), "EntityId is not the same size as int, update this code to use ulong");
+            return new ParseResult<ulong>(true, GlobalObjectId.GlobalObjectIdentifierToEntityIdSlow(gid).GetRawData());
         }
 
         static ParseResult<ulong> AssetPathTypeParser(string filterValue)
@@ -579,7 +582,7 @@ namespace UnityEditor.Search.Providers
             if (!filterValue.StartsWith("/") && AssetDatabase.AssetPathExists(filterValue))
             {
                 var entityId = AssetDatabase.GetMainAssetEntityId(filterValue);
-                return new ParseResult<ulong>(true, (ulong)(int)entityId);
+                return new ParseResult<ulong>(true, entityId.GetRawData());
             }
             return ParseResult<ulong>.none;
         }
@@ -595,6 +598,14 @@ namespace UnityEditor.Search.Providers
             if (Utils.TryParse(potentialId, out ulong instanceId))
                 return new ParseResult<ulong>(true, instanceId);
             return ParseResult<ulong>.none;
+        }
+
+        static ParseResult<EntityId> EntityIdTypeParser(string filterValue)
+        {
+            var potentialId = filterValue;
+            if (Utils.TryParse(potentialId, out EntityId entityId))
+                return new ParseResult<EntityId>(true, entityId);
+            return ParseResult<EntityId>.none;
         }
 
         static ParseResult<ulong> DefaultRefTypeParser(string filterValue)

@@ -10,9 +10,9 @@ namespace UnityEditor.Overlays
     {
         public override VisualTreeAsset GetUXML()
         {
-            return EditorGUIUtility.Load("UXML/Overlays/main-toolbar-overlay-canvas.uxml") as VisualTreeAsset; ;
+            return EditorGUIUtility.Load("UXML/Overlays/main-toolbar-overlay-canvas.uxml") as VisualTreeAsset;
         }
 
-        public override OverlayDockArea GetDockArea(OverlayCanvas canvas, VisualElement horizontalParent, VisualElement verticalParent, VisualElement anchoredParent) => null;
+        public override OverlayDockArea GetDockArea(OverlayCanvas canvas, VisualElement parent) => null;
     }
 }

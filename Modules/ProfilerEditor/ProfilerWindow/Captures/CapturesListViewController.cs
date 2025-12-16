@@ -70,8 +70,19 @@ namespace Unity.Profiling.Editor.UI
 
             m_TreeViewControllers = new Dictionary<int, CaptureFileTreeItemViewController>();
 
-            m_CaptureDataService.LoadedCapturesChanged += RefreshView;
             m_CaptureDataService.AllCapturesChanged += RefreshView;
+        }
+
+        protected override void Dispose(bool disposing)
+        {
+            if (disposing)
+            {
+                m_CaptureDataService.AllCapturesChanged -= RefreshView;
+                foreach (var captureItemData in m_TreeViewControllers)
+                    captureItemData.Value.Dispose();
+            }
+
+            base.Dispose(disposing);
         }
 
         protected override VisualElement LoadView()
@@ -127,6 +138,32 @@ namespace Unity.Profiling.Editor.UI
                 return;
             }
 
+            // Clear up items that have been removed from disk, or ones where
+            // we need to rebuild because the file model has been changed.
+            var itemsToClear = new List<int>();
+            foreach (var keyValuePair in m_TreeViewControllers)
+            {
+                var found = false;
+                foreach (var captureFileModel in fullCaptureList.AllCaptures)
+                {
+                    if (captureFileModel.Equals(keyValuePair.Value.Model))
+                    {
+                        found = true;
+                        break;
+                    }
+                }
+
+                if (found)
+                    continue;
+
+                keyValuePair.Value.Dispose();
+                itemsToClear.Add(keyValuePair.Key);
+            }
+
+            // Remove items from dictionary now we've finished iterating it
+            foreach (var itemToClear in itemsToClear)
+                m_TreeViewControllers.Remove(itemToClear);
+
             // Build tree
             var tree = new List<TreeViewItemData<CaptureItemData>>();
             var usedIds = new HashSet<int>();
@@ -151,16 +188,16 @@ namespace Unity.Profiling.Editor.UI
                         continue;
 
                     // generate a persistent tree item id based on the session ID and the Capture file name.
-                    var CaptureTreeItemId = sessionTreeItemId + child.Name.GetHashCode();
+                    var captureTreeItemId = sessionTreeItemId + child.Name.GetHashCode();
 
                     // in case of CaptureId clashes, increment it until it is unique
-                    while (usedIds.Contains(CaptureTreeItemId))
-                        CaptureTreeItemId++;
+                    while (usedIds.Contains(captureTreeItemId))
+                        captureTreeItemId++;
 
-                    usedIds.Add(CaptureTreeItemId);
-                    childrenItems.Add(new TreeViewItemData<CaptureItemData>(CaptureTreeItemId, new CaptureItemData(child.Name, false, child)));
+                    usedIds.Add(captureTreeItemId);
+                    childrenItems.Add(new TreeViewItemData<CaptureItemData>(captureTreeItemId, new CaptureItemData(child.Name, false, child)));
 
-                    if (!oldItemEntries.Contains(CaptureTreeItemId))
+                    if (!oldItemEntries.Contains(captureTreeItemId))
                         // There's been an addition/name change in the Captures of this session, so we need to expand it to show that change
                         // There is a minor chance of false positives here when we have to increment the id more often than before due to clashes,
                         // but it's not a likely scenario, nor a big deal
@@ -177,7 +214,7 @@ namespace Unity.Profiling.Editor.UI
                 tree.Add(groupItem);
             }
 
-            int[] usedIdsArray = new int[usedIds.Count];
+            var usedIdsArray = new int[usedIds.Count];
             usedIds.CopyTo(usedIdsArray, 0, usedIds.Count);
             SessionState.SetIntArray(k_TreePersistencyItemIdsKey, usedIdsArray);
 
@@ -204,7 +241,8 @@ namespace Unity.Profiling.Editor.UI
 
         void ImportCapture()
         {
-            string path = EditorUtility.OpenFilePanelWithFilters("Import Profiler Capture", ProfilerUserSettings.LastImportPath, new[] { "Profiler Captures (.data, .raw)", "data,raw" });
+            var path = EditorUtility.OpenFilePanelWithFilters("Import Profiler Capture",
+                ProfilerUserSettings.LastImportPath, new[] { "Profiler Captures (.data, .raw)", "data,raw" });
             if (path.Length == 0)
                 return;
 
@@ -232,21 +270,6 @@ namespace Unity.Profiling.Editor.UI
             return ViewControllerUtility.LoadVisualTreeFromBuiltInUxml(k_UxmlTreeItemGuid);
         }
 
-        static string NormalizePath(string path)
-        {
-            if (string.IsNullOrEmpty(path))
-                return null;
-
-            return Path.GetFullPath(new Uri(path).LocalPath)
-                .TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar)
-                .ToUpperInvariant();
-        }
-
-        static bool IsSamePath(string path1, string path2)
-        {
-            return NormalizePath(path1) == NormalizePath(path2);
-        }
-
         void BindTreeItem(VisualElement element, int index)
         {
             var itemData = m_CapturesCollection.GetItemDataForIndex<CaptureItemData>(index);
@@ -258,10 +281,11 @@ namespace Unity.Profiling.Editor.UI
             if (!itemData.SessionGroup)
             {
                 var itemId = m_CapturesCollection.GetIdForIndex(index);
-                var viewController = new CaptureFileTreeItemViewController(itemData.FileData, m_CaptureDataService, m_ScreenshotsManager);
 
-                if (IsSamePath(m_ProfilerWindow.CurrentLoadedCaptureFile, itemData.FileData.FullPath))
-                    viewController.IsLoaded = true;
+                if (!m_TreeViewControllers.TryGetValue(itemId, out var viewController))
+                    viewController = new CaptureFileTreeItemViewController(itemData.FileData, m_CaptureDataService, m_ScreenshotsManager, m_ProfilerWindow);
+
+                viewController.IsLoaded = m_ProfilerWindow.CaptureFileIsOpen(itemData.FileData.FullPath);
 
                 fileDataCard.Add(viewController.View);
                 AddChild(viewController);
@@ -281,11 +305,11 @@ namespace Unity.Profiling.Editor.UI
             fileDataCard.Clear();
 
             var itemId = m_CapturesCollection.GetIdForIndex(index);
-            if (m_TreeViewControllers.TryGetValue(itemId, out var viewController))
-            {
-                RemoveChild(viewController);
-                m_TreeViewControllers.Remove(itemId);
-            }
+
+            if (!m_TreeViewControllers.TryGetValue(itemId, out var viewController))
+                return;
+
+            RemoveChild(viewController);
         }
     }
 }

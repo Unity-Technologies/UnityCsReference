@@ -22,7 +22,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         void CancelListPurchases();
         void FetchProductInfo(long productId, Action doneCallback = null);
         void RefreshLocal();
-        void FetchUpdateInfos(IEnumerable<long> productIds, Action doneCallback = null);
+        void FetchUpdateInfos(IReadOnlyCollection<long> productIds, Action doneCallback = null);
         IEnumerable<Asset> ListImportedAssets();
         void OnPostProcessAllAssets(string[] importedAssetPaths, string[] deletedAssetPaths, string[] movedAssetPaths, string[] movedFromAssetPaths);
         void RefreshImportedAssets();
@@ -91,7 +91,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         private void FetchPurchaseInfosWithRetry(IEnumerable<long> productIds, bool checkHiddenPurchases, Action doneCallback)
         {
             var productIdsWithoutPurchaseInfo = productIds?.Where(id => m_AssetStoreCache.GetPurchaseInfo(id) == null).ToList() ?? new List<long>();
-            if (!productIdsWithoutPurchaseInfo.Any())
+            if (productIdsWithoutPurchaseInfo.Count == 0)
                 return;
 
             if (m_ListOperation?.isInProgress == true)
@@ -109,7 +109,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             var fetchHiddenProductsRequired = false;
             fetchOperation.onOperationSuccess += op =>
             {
-                if (fetchOperation.result.list.Any())
+                if (fetchOperation.result.list.Count > 0)
                     m_AssetStoreCache.SetPurchaseInfos(fetchOperation.result.list);
 
                 // If we can't find the all the purchase infos the first time, it could be be that the asset is hidden we'll do another check
@@ -175,9 +175,9 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_AssetStoreCache.SetLocalInfos(m_LocalInfoHandler.GetParsedLocalInfos());
         }
 
-        public void FetchUpdateInfos(IEnumerable<long> productIds, Action doneCallback = null)
+        public void FetchUpdateInfos(IReadOnlyCollection<long> productIds, Action doneCallback = null)
         {
-            if (productIds?.Any() != true)
+            if (productIds == null || productIds.Count == 0)
                 return;
 
             m_AssetStoreRestAPI.GetUpdateDetail(new CheckUpdateInfoArgs(productIds),

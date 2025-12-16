@@ -67,6 +67,13 @@ namespace UnityEngine.UIElements
     [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
     internal abstract class UxmlAsset : IUxmlAttributes
     {
+        enum Flags
+        {
+            None = 0,
+            HasAuthoringId = 1 << 0
+        }
+
+        public const string AuthoringIdAttribute = "authoring-id";
         public const string NullNodeType = "null";
 
         public UxmlAsset(string fullTypeName, UxmlNamespaceDefinition xmlNamespace = default)
@@ -99,6 +106,19 @@ namespace UnityEngine.UIElements
         {
             get => m_Id;
             set => m_Id = value;
+        }
+
+        [SerializeField]
+        Flags m_Flags;
+
+        /// <summary>
+        /// Indicates whether the UXML asset has a persistent authoring ID.
+        /// If not, a temporary generated ID is used, which may change the next time the asset is imported.
+        /// </summary>
+        public bool hasAuthoringId
+        {
+            get => m_Flags.HasFlag(Flags.HasAuthoringId);
+            set => m_Flags = value ? (m_Flags | Flags.HasAuthoringId) : (m_Flags & ~Flags.HasAuthoringId);
         }
 
         public bool isNull => fullTypeName == NullNodeType;

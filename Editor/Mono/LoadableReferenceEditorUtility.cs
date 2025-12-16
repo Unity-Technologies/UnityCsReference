@@ -1,0 +1,129 @@
+// Unity C# reference source
+// Copyright (c) Unity Technologies. For terms of use, see
+// https://unity3d.com/legal/licenses/Unity_Reference_Only_License
+
+using UnityEngine;
+using UnityEngine.Bindings;
+
+namespace UnityEditor
+{
+    /// <summary>
+    /// Utility class for creating and converting LoadableReference objects in the Editor.
+    /// LoadableReference is the low-level reference type used by Loadable for on-demand asset loading.
+    /// This utility provides methods to convert between Unity Objects and LoadableReferences.
+    /// </summary>
+    /// <seealso cref="LoadableReference"/>
+    [NativeHeader("Editor/Src/Utility/LoadableReferenceEditorUtility.bindings.h")]
+    /*UCBP-PUBLIC*/ internal static class LoadableReferenceEditorUtility
+    {
+        /// <summary>
+        /// Gets the GUID and local file identifier from a LoadableReference.
+        /// </summary>
+        /// <remarks>
+        /// This method will return false if the LoadableReference contains a runtime handle.
+        /// Runtime handles are only interpretable by the ContentLoadManager and cannot be converted to GUID/local file identifier.
+        /// </remarks>
+        /// <param name="loadableRef">The LoadableReference to extract information from.</param>
+        /// <param name="guid">The GUID of the asset file containing the referenced object.</param>
+        /// <param name="localId">The local file identifier of the object within the asset.</param>
+        /// <returns>
+        /// True if the LoadableReference represents an asset reference and the GUID and local identifier were successfully retrieved;
+        /// false if the LoadableReference is a runtime handle.
+        /// </returns>
+        /// <seealso cref="AssetDatabase.TryGetGUIDAndLocalFileIdentifier"/>
+        public static bool TryGetGUIDAndLocalFileIdentifier(LoadableReference loadableRef, out GUID guid, out long localId)
+        {
+            // If this is a runtime handle (has ObjectIdHash), we cannot extract GUID/lfid
+            if (loadableRef.m_ObjectIdHash.isValid)
+            {
+                guid = new GUID();
+                localId = 0;
+                return false;
+            }
+
+            guid = loadableRef.m_GUID;
+            localId = loadableRef.m_LocalIdentifierInFile;
+            return true;
+        }
+
+        /// <summary>
+        /// Retrieve the Object referenced by a LoadableReference.
+        /// </summary>
+        /// <remarks>
+        /// This method returns the object in the Editor source asset, not the object in the build output.
+        /// </remarks>
+        /// <param name="loadableRef">The LoadableReference to convert.</param>
+        /// <returns>
+        /// The Unity Object referenced by the LoadableReference, or null if the reference is invalid.
+        /// </returns>
+        public static Object LoadableReferenceToObject(LoadableReference loadableRef)
+        {
+            return LoadableReferenceToObjectInternal(loadableRef);
+        }
+
+        /// <summary>
+        /// Converts a Unity Object to a LoadableReference that can be used for on-demand loading.
+        /// </summary>
+        /// <param name="obj">
+        /// A Unity Object that has been serialized to disk as part of an Asset. Objects inside Scenes cannot be referenced by
+        /// LoadableReference.
+        /// </param>
+        /// <returns>
+        /// A LoadableReference that points to the specified object, or an empty LoadableReference if obj is null
+        /// or if it does not belong to a persisted asset.
+        /// </returns>
+        /// <exception cref="System.ArgumentException">
+        /// Thrown if the object is non-persistent (cannot be serialized to disk).
+        /// </exception>
+        public static LoadableReference ObjectToLoadableReference(Object obj)
+        {
+            return ObjectToLoadableReferenceInternal(obj);
+        }
+
+        /// <summary>
+        /// Creates a LoadableReference from an EntityId.
+        /// </summary>
+        /// <param name="entityID">
+        /// The EntityId of a Unity Object that has been serialized to disk as part of an Asset. Objects inside Scenes cannot be
+        /// referenced by LoadableReference.
+        /// </param>
+        /// <returns>A LoadableReference that points to the object with the specified EntityId.</returns>
+        /// <exception cref="System.ArgumentException">
+        /// Thrown if the EntityId is invalid or if the object is non-persistent.
+        /// </exception>
+        public static LoadableReference CreateLoadableReference(EntityId entityID)
+        {
+            return EntityIDToLoadableReferenceInternal(entityID);
+        }
+
+        /// <summary>
+        /// Creates a LoadableReference from its component parts.
+        /// </summary>
+        /// <param name="guid">The GUID of the asset file containing the object.</param>
+        /// <param name="type">The identifier of the reference type.</param>
+        /// <param name="fileID">The local file ID of the object within the asset.</param>
+        /// <returns>A LoadableReference constructed from the specified components.</returns>
+        /// <seealso cref="GlobalObjectId"/>
+        public static LoadableReference CreateLoadableReference(GUID guid, FileIdentifierType type, long fileID)
+        {
+            var loadableRef = new LoadableReference();
+            loadableRef.m_GUID = guid;
+            loadableRef.m_FileIdentifierType = type;
+            loadableRef.m_LocalIdentifierInFile = fileID;
+            loadableRef.m_ObjectIdHash = new Hash128();
+            return loadableRef;
+        }
+
+        [NativeThrows]
+        [FreeFunction("LoadableReferenceUtility::LoadableReferenceToObject")]
+        private static extern Object LoadableReferenceToObjectInternal(LoadableReference loadableRef);
+
+        [NativeThrows]
+        [FreeFunction("LoadableReferenceUtility::ObjectToLoadableReference")]
+        private static extern LoadableReference ObjectToLoadableReferenceInternal(Object obj);
+
+        [NativeThrows]
+        [FreeFunction("LoadableReferenceUtility::EntityIDToLoadableReference")]
+        private static extern LoadableReference EntityIDToLoadableReferenceInternal(EntityId instanceID);
+    }
+}

@@ -12,7 +12,7 @@ namespace UnityEditor.Scripting
 {
     internal class NetCoreProgram : Program
     {
-        public static readonly NPath DotNetRuntimePath = EditorApplication.applicationScriptingPath + "/NetCoreRuntime";
+        public static readonly NPath DotNetRuntimePath = EditorApplication.applicationScriptingPath + "/DotNetSdk";
         public static readonly NPath DotNetMuxerPath = DotNetRuntimePath.Combine(Application.platform == RuntimePlatform.WindowsEditor ? "dotnet.exe" : "dotnet");
 
         public NetCoreProgram(string executable, string arguments, Action<ProcessStartInfo> setupStartInfo)

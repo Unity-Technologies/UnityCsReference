@@ -2,12 +2,10 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System;
+using System.Runtime.InteropServices;
 using UnityEngine;
 using UnityEngine.Bindings;
 using UnityEngine.Scripting;
-using UnityEditor;
-using System.Runtime.InteropServices;
 
 namespace UnityEditor.Animations
 {
@@ -17,32 +15,30 @@ namespace UnityEditor.Animations
         Additive = 1,
     }
 
-    [NativeHeader("Editor/Src/Animation/AnimatorControllerLayer.h")]
-    [NativeHeader("Editor/Src/Animation/AnimatorControllerLayer.bindings.h")]
     [StructLayout(LayoutKind.Sequential)]
-    [NativeType(CodegenOptions.Custom, "MonoStateMotionPair")]
+    [RequiredByNativeCode]
+    [NativeType("Editor/Src/Animation/AnimatorControllerLayer.h")]
     internal struct StateMotionPair
     {
         public AnimatorState m_State;
         public Motion m_Motion;
     }
 
-    [NativeHeader("Editor/Src/Animation/AnimatorControllerLayer.h")]
-    [NativeHeader("Editor/Src/Animation/AnimatorControllerLayer.bindings.h")]
     [StructLayout(LayoutKind.Sequential)]
-    [NativeType(CodegenOptions.Custom, "MonoStateBehavioursPair")]
+    [RequiredByNativeCode]
+    [NativeType("Editor/Src/Animation/AnimatorControllerLayer.h")]
     internal struct StateBehavioursPair
     {
         public AnimatorState m_State;
+        [NativeName("m_StateMachineBehaviours")]
         public ScriptableObject[] m_Behaviours;
     }
 
     [NativeHeader("Editor/Src/Animation/AnimatorControllerLayer.h")]
-    [NativeHeader("Editor/Src/Animation/AnimatorControllerLayer.bindings.h")]
-    [StructLayout(LayoutKind.Sequential)]
     [NativeAsStruct]
-    [NativeType(CodegenOptions.Custom, "MonoAnimatorControllerLayer")]
-    public partial class AnimatorControllerLayer
+    [RequiredByNativeCode]
+    [StructLayout(LayoutKind.Sequential)]
+    public class AnimatorControllerLayer
     {
         public string                     name                        {   get { return m_Name; }                      set { m_Name = value; }  }
         public AnimatorStateMachine       stateMachine                {   get { return m_StateMachine; }              set { m_StateMachine = value; }  }
@@ -114,6 +110,7 @@ namespace UnityEditor.Animations
 
         string                            m_Name;
         AnimatorStateMachine              m_StateMachine;
+        [NativeName("m_Mask")]
         AvatarMask                        m_AvatarMask;
         StateMotionPair[]                 m_Motions;
         StateBehavioursPair[]             m_Behaviours;

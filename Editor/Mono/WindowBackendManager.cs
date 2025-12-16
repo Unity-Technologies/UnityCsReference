@@ -4,10 +4,8 @@
 
 using System;
 using System.Collections.Generic;
-using UnityEditor.UIElements;
 using UnityEngine;
 using UnityEngine.Bindings;
-using UnityEngine.UIElements;
 
 namespace UnityEditor
 {
@@ -24,6 +22,7 @@ namespace UnityEditor
         IWindowBackend windowBackend { get; set; }
 
         bool resetPanelRenderingOnAssetChange { get; }
+
     }
 
     [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
@@ -54,6 +53,7 @@ namespace UnityEditor
         void OnBackingScaleFactorChanged();
         void EventInterestsChanged();
         void ResetPanelRenderingOnAssetChangeChanged();
+        bool ProcessEvent(Event e);
     }
 
     internal interface IEditorWindowBackend : IWindowBackend

@@ -166,7 +166,7 @@ namespace UnityEditor
         extern internal static int GetSRPBatcherCompatibilityCode(Shader s, int subShaderIdx);
         extern internal static string GetSRPBatcherCompatibilityIssueReason(Shader s, int subShaderIdx, int err);
 
-        extern internal static ulong            GetVariantCount(Shader s, bool usedBySceneOnly);
+        extern internal static bool             GetVariantCount(Shader s, bool usedBySceneOnly, out ulong outCount);
         extern internal static int              GetComputeShaderPlatformCount(ComputeShader s);
         extern internal static ShaderPlatform   GetComputeShaderPlatformType(ComputeShader s, int platformIndex);
         extern internal static int              GetComputeShaderPlatformKernelCount(ComputeShader s, int platformIndex);
@@ -298,6 +298,7 @@ namespace UnityEditor
         extern public static bool IsPassCompiled([NotNull] Material material, int pass);
         extern public static void CompilePass([NotNull] Material material, int pass, bool forceSync = false);
 
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         internal static MaterialProperty[] GetMaterialProperties(UnityEngine.Object[] mats)
         {
             return (MaterialProperty[])GetMaterialPropertiesImpl(mats);

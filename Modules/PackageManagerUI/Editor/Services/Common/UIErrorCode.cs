@@ -22,7 +22,6 @@ namespace UnityEditor.PackageManager.UI.Internal
         // by the UPM server. These values might override the original code.
         UpmError_ServerNotRunning = 100,
         UpmError_UnsignedUnityPackage,
-        UpmError_NotSignedIn,
         UpmError_NotAcquired,
 
         AssetStoreAuthorizationError = 500,

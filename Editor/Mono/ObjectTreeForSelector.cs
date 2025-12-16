@@ -37,7 +37,7 @@ namespace UnityEditor
         int m_ErrorCounter;
         EntityId m_OriginalSelectedID;
         int m_UserData;
-        int m_LastSelectedID = -1;
+        EntityId m_LastSelectedID = EntityId.None;
         string m_SelectedPath = "";
         const string kSearchFieldTag = "TreeSearchField";
         const float kBottomBarHeight = 17f;
@@ -70,7 +70,7 @@ namespace UnityEditor
             UnityAction<TreeSelectorData> treeViewNeededCallback,
             UnityAction<TreeViewItem> selectionCallback,
             UnityAction doubleClickedCallback,
-            int initialSelectedTreeViewItemID,
+            EntityId initialSelectedTreeViewItemID,
             int userData)
         {
             Clear();
@@ -95,7 +95,7 @@ namespace UnityEditor
             {
                 m_TreeView.SetSelection(new[] { m_OriginalSelectedID }, true);
                 // If nothing is selected we expand all to better start overview. If we have a selection it has been revealed in SetSelection above
-                if (m_OriginalSelectedID == 0)
+                if (m_OriginalSelectedID == EntityId.None)
                     m_TreeView.data.SetExpandedWithChildren(m_TreeView.data.root, true);
             }
 
@@ -113,7 +113,7 @@ namespace UnityEditor
             m_SelectionEvent = null;
 
             m_DoubleClickedEvent = null;
-            m_OriginalSelectedID = 0;
+            m_OriginalSelectedID = EntityId.None;
             m_UserData = 0;
 
             m_TreeView = null;
@@ -221,7 +221,7 @@ namespace UnityEditor
 
         void BottomBar(Rect bottomRect)
         {
-            int currentID = m_TreeView.GetSelection().FirstOrDefault();   // 0 is none selected
+            EntityId currentID = m_TreeView.GetSelection().FirstOrDefault();   // 0 is none selected
 
             // Refresh cached string
             if (currentID != m_LastSelectedID)

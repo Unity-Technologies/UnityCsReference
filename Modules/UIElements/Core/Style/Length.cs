@@ -4,7 +4,9 @@
 
 using System;
 using System.Globalization;
+using System.Runtime.InteropServices;
 using UnityEngine.Bindings;
+using UnityEngine.UIElements.Layout;
 using UnityEngine.UIElements.StyleSheets;
 
 namespace UnityEngine.UIElements
@@ -18,6 +20,7 @@ namespace UnityEngine.UIElements
         /// Interprets length as pixel.
         /// </summary>
         Pixel,
+
         /// <summary>
         /// Interprets length as a percentage, with 100 representing 100%.
         /// The value is not constrained and can range from negative numbers to values greater than 100.
@@ -28,20 +31,11 @@ namespace UnityEngine.UIElements
     /// <summary>
     /// Represents a distance value.
     /// </summary>
-    [Serializable]
+    [Serializable, StructLayout(LayoutKind.Sequential)]
     public partial struct Length : IEquatable<Length>
     {
         // Float clamping value (2 ^ 23).
         internal const float k_MaxValue = 8388608.0f;
-
-        // Extension of the LengthUnit to include keywords that can be used with StyleLength
-        private enum Unit
-        {
-            Pixel = LengthUnit.Pixel,
-            Percent = LengthUnit.Percent,
-            Auto,
-            None
-        }
 
         /// <summary>
         /// Creates a pixel <see cref="Length"/> from a float.
@@ -67,7 +61,7 @@ namespace UnityEngine.UIElements
         /// <returns>Auto length.</returns>
         public static Length Auto()
         {
-            return new Length(0f, Unit.Auto);
+            return new Length(0.0f, LayoutUnit.Auto);
         }
 
         /// <summary>
@@ -76,7 +70,7 @@ namespace UnityEngine.UIElements
         /// <returns>None length.</returns>
         public static Length None()
         {
-            return new Length(0f, Unit.None);
+            return new Length(0.0f, LayoutUnit.Undefined);
         }
 
         /// <summary>
@@ -96,20 +90,34 @@ namespace UnityEngine.UIElements
         public LengthUnit unit
         {
             get => (LengthUnit)m_Unit;
-            set => m_Unit = (Unit)value;
+            set => m_Unit = (LayoutUnit)value;
         }
+
+        /// <summary>
+        /// The value property interpreted as a pixel value.
+        /// </summary>
+        /// <remarks>Used for border-width and for text-shadow uss properties.</remarks>
+        // This is the way the computed style encodes the 4 borderWidth values at this moment.
+        // Returns 0 for Auto or None, and assumes pixels even if the value is percents.
+        // This might seem a bit weird but changing that could cause regressions.
+        internal float pixelValue => m_Unit >= LayoutUnit.Auto ? 0f : m_Value;
+
+        /// <summary>
+        /// The internal layout unit of the value property.
+        /// </summary>
+        internal LayoutUnit layoutUnit => m_Unit;
 
         /// <summary>
         /// Check if Length is Auto.
         /// </summary>
         /// <returns>true if Length is Auto, false otherwise</returns>
-        public bool IsAuto() => m_Unit == Unit.Auto;
+        public bool IsAuto() => m_Unit == LayoutUnit.Auto;
 
         /// <summary>
         /// Check if Length is None.
         /// </summary>
         /// <returns>true if Length is None, false otherwise</returns>
-        public bool IsNone() => m_Unit == Unit.None;
+        public bool IsNone() => m_Unit == LayoutUnit.Undefined;
 
         /// <summary>
         /// Creates from a float and an optional <see cref="LengthUnit"/>.
@@ -117,8 +125,9 @@ namespace UnityEngine.UIElements
         /// <remarks>
         /// <see cref="LengthUnit.Pixel"/> is the default unit.
         /// </remarks>
-        public Length(float value) : this(value, Unit.Pixel)
-        {}
+        public Length(float value) : this(value, LayoutUnit.Point)
+        {
+        }
 
         /// <summary>
         /// Creates from a float and an optional <see cref="LengthUnit"/>.
@@ -126,10 +135,11 @@ namespace UnityEngine.UIElements
         /// <remarks>
         /// <see cref="LengthUnit.Pixel"/> is the default unit.
         /// </remarks>
-        public Length(float value, LengthUnit unit) : this(value, (Unit)unit)
-        {}
+        public Length(float value, LengthUnit unit) : this(value, (LayoutUnit)unit)
+        {
+        }
 
-        private Length(float value, Unit unit) : this()
+        private Length(float value, LayoutUnit unit) : this()
         {
             this.value = value;
             m_Unit = unit;
@@ -138,22 +148,29 @@ namespace UnityEngine.UIElements
         [SerializeField]
         private float m_Value;
         [SerializeField]
-        private Unit m_Unit;
+        private LayoutUnit m_Unit;
 
         /// <undoc/>
         public static implicit operator Length(float value)
         {
-            return new Length(value, LengthUnit.Pixel);
+            // Silently converting NaN to None here because there's no other way to get None from a float.
+            return float.IsNaN(value) ? None() : new Length(value, LengthUnit.Pixel);
         }
 
         /// <undoc/>
-        public static bool operator==(Length lhs, Length rhs)
+        internal static bool Approximately(Length lhs, Length rhs)
         {
-            return lhs.m_Value == rhs.m_Value && lhs.m_Unit == rhs.m_Unit;
+            return lhs.m_Unit == rhs.m_Unit && (lhs.m_Unit >= LayoutUnit.Auto || Mathf.Approximately(lhs.m_Value, rhs.m_Value));
         }
 
         /// <undoc/>
-        public static bool operator!=(Length lhs, Length rhs)
+        public static bool operator ==(Length lhs, Length rhs)
+        {
+            return lhs.m_Unit == rhs.m_Unit && (lhs.m_Unit >= LayoutUnit.Auto || lhs.m_Value == rhs.m_Value);
+        }
+
+        /// <undoc/>
+        public static bool operator !=(Length lhs, Length rhs)
         {
             return !(lhs == rhs);
         }
@@ -184,20 +201,21 @@ namespace UnityEngine.UIElements
             var unitStr = string.Empty;
             switch (m_Unit)
             {
-                case Unit.Pixel:
+                case LayoutUnit.Point:
                     if (!Mathf.Approximately(0, value))
                         unitStr = "px";
                     break;
-                case Unit.Percent:
+                case LayoutUnit.Percent:
                     unitStr = "%";
                     break;
-                case Unit.Auto:
+                case LayoutUnit.Auto:
                     valueStr = "auto";
                     break;
-                case Unit.None:
+                case LayoutUnit.Undefined:
                     valueStr = "none";
                     break;
             }
+
             return $"{valueStr}{unitStr}";
         }
 

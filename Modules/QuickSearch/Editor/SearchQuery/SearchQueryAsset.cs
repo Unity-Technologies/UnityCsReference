@@ -31,7 +31,7 @@ namespace UnityEditor.Search
                 if (m_isReadOnlyQuery == null)
                 {
                     var path = AssetDatabase.GetAssetPath(this);
-                    m_isReadOnlyQuery = !string.IsNullOrEmpty(path) && path.StartsWith("Library/");
+                    m_isReadOnlyQuery = Utils.IsAssetReadOnly(path);
                 }
                 return m_isReadOnlyQuery.Value;
             }
@@ -104,7 +104,7 @@ namespace UnityEditor.Search
             get
             {
                 if (string.IsNullOrEmpty(m_FilePath))
-                    m_FilePath = AssetDatabase.GetAssetPath(this);
+                    return AssetDatabase.GetAssetPath(this);
                 return m_FilePath;
             }
 
@@ -153,14 +153,8 @@ namespace UnityEditor.Search
 
         public bool isSearchTemplate
         {
-            get
-            {
-                return m_IsSearchTemplate;
-            }
-            set
-            {
-                m_IsSearchTemplate = value;
-            }
+            get => m_IsSearchTemplate;
+            set => m_IsSearchTemplate = value;
         }
 
         // TODO LightExplorer: we currently only support deriving from SearchQueryAsset, but it would be great if we could support any ISearchQuery. But how to serialize it?
@@ -196,9 +190,6 @@ namespace UnityEditor.Search
                 if (hasMoved)
                 {
                     var movedQueries = moved.Select(AssetDatabase.LoadAssetAtPath<SearchQueryAsset>).Where(q => q).ToList();
-                    foreach (var query in movedQueries)
-                        query.filePath = AssetDatabase.GetAssetPath(query);
-
                     Dispatcher.Emit(SearchEvent.PostProcessProjectQueryMoved, new SearchEventPayload((ISearchElement)null, movedQueries));
                 }
 
@@ -319,6 +310,13 @@ namespace UnityEditor.Search
             asset.text = context.searchText;
             asset.providerIds = new List<string>(context.GetProviders().Except(SearchService.GetActiveProviders()).Select(p => p.id));
 
+            SearchWindowCustomPanelConfig customPanelConfigToRestore = null;
+            if (asset.viewState != null && asset.viewState.customPanelConfig != null && !asset.viewState.customPanelConfig.serializableInQuery)
+            {
+                customPanelConfigToRestore = asset.viewState.customPanelConfig;
+                asset.viewState.customPanelConfig = null;
+            }
+
             var createNew = string.IsNullOrEmpty(AssetDatabase.GetAssetPath(asset));
             var fullPath = Path.Combine(folder, name).Replace("\\", "/");
             var eventPayload = sourceViewState != null ? new SearchEventPayload(sourceViewState, asset) : new SearchEventPayload(context, asset);
@@ -334,6 +332,10 @@ namespace UnityEditor.Search
                 AssetDatabase.SaveAssetIfDirty(asset);
                 Dispatcher.Emit(SearchEvent.ProjectQueryChanged, eventPayload);
             }
+
+            if (customPanelConfigToRestore != null)
+                asset.viewState.customPanelConfig = customPanelConfigToRestore;
+
             return createNew;
         }
 
@@ -393,9 +395,9 @@ namespace UnityEditor.Search
         }
 
         [OnOpenAsset]
-        private static bool OpenQuery(int instanceID, int line)
+        private static bool OpenQuery(EntityId entityId, int line)
         {
-            return Open(instanceID) != null;
+            return Open(entityId) != null;
         }
 
         public IEnumerable<SearchProvider> GetProviders()

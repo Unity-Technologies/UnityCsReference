@@ -9,6 +9,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.IO;
 using System.Text.RegularExpressions;
+using Unity.Collections.LowLevel.Unsafe;
 using UnityEditor.AssetImporters;
 using UnityEditor.IMGUI.Controls;
 using UnityEditor.PackageManager;
@@ -23,8 +24,8 @@ namespace UnityEditor
     [EditorWindowTitle(title = "Project", icon = "Project")]
     internal class ProjectBrowser : EditorWindow, IHasCustomMenu, ISearchableContainer, IFramableContainer
     {
-        public const int kPackagesFolderInstanceId = int.MaxValue;
-        public const int kAssetCreationInstanceID_ForNonExistingAssets = Int32.MaxValue - 1;
+        public static readonly EntityId kPackagesFolderInstanceId = EntityId.From(int.MaxValue);
+        public static readonly EntityId kAssetCreationInstanceID_ForNonExistingAssets = EntityId.From(Int32.MaxValue - 1);
 
         internal static readonly SavedBool k_ShowFoldersFirst = new SavedBool("ShowFoldersFirst", Application.platform != RuntimePlatform.OSXEditor);
 
@@ -35,9 +36,14 @@ namespace UnityEditor
 
         private static readonly Color kFadedOutAssetsColor = new Color(1, 1, 1, 0.5f);
 
-        public static Color GetAssetItemColor(int instanceID)
+        static bool IsAssetImported(EntityId assetId)
         {
-            return (EditorUtility.isInSafeMode && !InternalEditorUtility.AssetReference.IsAssetImported(instanceID)) || AssetClipboardUtility.HasCutAsset(instanceID) ? GUI.color * kFadedOutAssetsColor : GUI.color;
+            return assetId.IsValid();
+        }
+
+        public static Color GetAssetItemColor(EntityId assetId)
+        {
+            return (EditorUtility.isInSafeMode && !IsAssetImported(assetId)) || AssetClipboardUtility.HasCutAsset(assetId) ? GUI.color * kFadedOutAssetsColor : GUI.color;
         }
 
         private static readonly EntityId[] k_EmptySelection = new EntityId[0];
@@ -166,7 +172,8 @@ namespace UnityEditor
         bool m_DidSelectSearchResult = false;
         bool m_ItemSelectedByRightClickThisEvent = false;
         bool m_InternalSelectionChange = false; // to know when selection change originated in project view itself
-        SearchFilter.SearchArea m_LastLocalAssetsSearchArea = SearchFilter.SearchArea.InAssetsOnly;
+        [SerializeField]
+        internal SearchFilter.SearchArea m_LastLocalAssetsSearchArea = SearchFilter.SearchArea.InAssetsOnly;
         PopupList.InputData m_AssetLabels;
         PopupList.InputData m_ObjectTypes;
         PopupList.InputData m_LogTypes;
@@ -233,7 +240,7 @@ namespace UnityEditor
         [NonSerialized]
         Rect m_ListHeaderRect;
         [NonSerialized]
-        private int m_LastFramedID = -1;
+        private EntityId m_LastFramedID = EntityId.None;
 
         // Used by search menu bar
         [NonSerialized]
@@ -389,10 +396,13 @@ namespace UnityEditor
             }
         }
 
-        static internal ItemType GetItemType(EntityId instanceID)
+        static internal ItemType GetItemType(EntityId entityId)
         {
-            if (SavedSearchFilters.IsSavedFilter(instanceID))
-                return ItemType.SavedFilter;
+            if (FavoritesEntityIds.instance.TryGetIdFor(entityId, out int clientId))
+            {
+                if (SavedSearchFilters.IsSavedFilter(clientId))
+                    return ItemType.SavedFilter;
+            }
 
             return ItemType.Asset;
         }
@@ -464,13 +474,13 @@ namespace UnityEditor
             if (m_AssetTree != null)
             {
                 m_AssetTree.ReloadData();
-                SetSearchFoldersFromCurrentSelection(); // We could have moved, deleted or renamed a folder so ensure we get folder paths by instanceID
+                SetSearchFoldersFromCurrentSelection(); // We could have moved, deleted or renamed a folder so ensure we get folder paths by entityId
             }
 
             if (m_FolderTree != null)
             {
                 m_FolderTree.ReloadData();
-                SetSearchFolderFromFolderTreeSelection(); // We could have moved, deleted or renamed a folder so ensure we get folders paths by instanceID
+                SetSearchFolderFromFolderTreeSelection(); // We could have moved, deleted or renamed a folder so ensure we get folders paths by entityId
             }
 
             EnsureValidFolders();
@@ -592,7 +602,7 @@ namespace UnityEditor
             }
         }
 
-        void SetSearchViewState(SearchViewState state)
+        internal void SetSearchViewState(SearchViewState state)
         {
             switch (state)
             {
@@ -612,6 +622,12 @@ namespace UnityEditor
                     Debug.LogError("Invalid search mode as setter");
                     break;
             }
+
+            if (m_SearchFilter.searchArea == SearchFilter.SearchArea.AllAssets ||
+                m_SearchFilter.searchArea == SearchFilter.SearchArea.InAssetsOnly ||
+                m_SearchFilter.searchArea == SearchFilter.SearchArea.InPackagesOnly ||
+                m_SearchFilter.searchArea == SearchFilter.SearchArea.SelectedFolders)
+                m_LastLocalAssetsSearchArea = m_SearchFilter.searchArea;
 
             // Sync gui to state
             InitSearchMenu();
@@ -635,12 +651,6 @@ namespace UnityEditor
             if (!itemClicked.m_On) // Behave like radio buttons: a button that is on cannot be turned off
             {
                 SetSearchViewState((SearchViewState)itemClicked.m_UserData);
-
-                if (m_SearchFilter.searchArea == SearchFilter.SearchArea.AllAssets ||
-                    m_SearchFilter.searchArea == SearchFilter.SearchArea.InAssetsOnly ||
-                    m_SearchFilter.searchArea == SearchFilter.SearchArea.InPackagesOnly ||
-                    m_SearchFilter.searchArea == SearchFilter.SearchArea.SelectedFolders)
-                    m_LastLocalAssetsSearchArea = m_SearchFilter.searchArea;
             }
         }
 
@@ -758,22 +768,24 @@ namespace UnityEditor
             }
         }
 
-        void OnGUIAssetCallback(EntityId instanceID, Rect rect)
+        void OnGUIAssetCallback(EntityId entityId, Rect rect)
         {
             // User hook for rendering stuff on top of assets
             if (EditorApplication.projectWindowItemOnGUI != null)
             {
-                string guid = AssetDatabase.AssetPathToGUID(AssetDatabase.GetAssetPath(instanceID));
+                string guid = AssetDatabase.AssetPathToGUID(AssetDatabase.GetAssetPath(entityId));
                 EditorApplication.projectWindowItemOnGUI(guid, rect);
             }
 
             #pragma warning disable 618
+            #pragma warning disable 612
             if (EditorApplication.projectWindowItemInstanceOnGUI != null)
-                EditorApplication.projectWindowItemInstanceOnGUI(instanceID, rect);
+                EditorApplication.projectWindowItemInstanceOnGUI(entityId, rect);
             #pragma warning restore 618
+            #pragma warning restore 612
 
             if (EditorApplication.projectWindowItemByEntityIdOnGUI != null)
-                EditorApplication.projectWindowItemByEntityIdOnGUI(instanceID, rect);
+                EditorApplication.projectWindowItemByEntityIdOnGUI(entityId, rect);
         }
 
         private void InitOneColumnView()
@@ -1038,7 +1050,7 @@ namespace UnityEditor
             if (m_ViewMode != ViewMode.TwoColumns)
                 Debug.LogError("ShowFolderContents should only be called in two column mode");
 
-            if (folderInstanceID == 0)
+            if (folderInstanceID == EntityId.None)
                 return;
 
             string folderPath = AssetDatabase.GetAssetPath(folderInstanceID);
@@ -1249,10 +1261,10 @@ namespace UnityEditor
         {
             SetAsLastInteractedProjectBrowser();
 
-            var instanceIDs = m_ListArea.GetSelection();
-            if (instanceIDs.Length > 0)
+            var entityIds = m_ListArea.GetSelection();
+            if (entityIds.Length > 0)
             {
-                Selection.entityIds = instanceIDs;
+                Selection.entityIds = entityIds;
                 m_SearchFilter.searchArea = m_LastLocalAssetsSearchArea; // local asset was selected
                 m_InternalSelectionChange = true;
             }
@@ -1290,21 +1302,21 @@ namespace UnityEditor
             EndRenaming();
         }
 
-        bool CanFrameAsset(int instanceID)
+        bool CanFrameAsset(EntityId entityId)
         {
-            var path = AssetDatabase.GetAssetPath((EntityId)instanceID);
+            var path = AssetDatabase.GetAssetPath(entityId);
             if (string.IsNullOrEmpty(path) || IsBuiltinResource(path))
                 return false;
 
             var h = new HierarchyIterator(HierarchyType.Assets, false);
-            if (h.Find(instanceID, null))
+            if (h.Find(entityId, null))
                 return true;
 
             var packageInfo = PackageManager.PackageInfo.FindForAssetPath(path);
             if (packageInfo != null)
             {
                 h = new HierarchyIterator(packageInfo.assetPath, false);
-                if (h.Find(instanceID, null))
+                if (h.Find(entityId, null))
                     return true;
             }
             return false;
@@ -1317,35 +1329,35 @@ namespace UnityEditor
                 return;
 
             // Keep for debugging
-            //Debug.Log ("OnSelectionChange (ProjectBrowser): " + DebugUtils.ListToString(new List<int>(Selection.instanceIDs)));
+            //Debug.Log ("OnSelectionChange (ProjectBrowser): " + DebugUtils.ListToString(new List<int>(Selection.entityIds)));
 
             // The list area selection state is based on the main selection (both in search mode and folderbrowsing)
             m_ListArea.InitSelection(Selection.entityIds);
 
-            int instanceID = Selection.entityIds.Length > 0 ? Selection.entityIds[Selection.entityIds.Length - 1] : EntityId.None;
+            EntityId entityId = Selection.entityIds.Length > 0 ? Selection.entityIds[Selection.entityIds.Length - 1] : EntityId.None;
             if (m_ViewMode == ViewMode.OneColumn)
             {
                 // If searching we are not showing the asset tree but we set selection anyways to ensure its
                 // setup when clearing search
-                bool revealSelectionAndFrameLast = !m_LockTracker.isLocked && CanFrameAsset(instanceID) && Selection.entityIds.Length <= 1;
+                bool revealSelectionAndFrameLast = !m_LockTracker.isLocked && CanFrameAsset(entityId) && Selection.entityIds.Length <= 1;
                 m_AssetTree.SetSelection(Selection.entityIds, revealSelectionAndFrameLast);
             }
             else if (m_ViewMode == ViewMode.TwoColumns)
             {
                 if (!m_InternalSelectionChange)
                 {
-                    bool frame = !m_LockTracker.isLocked && Selection.entityIds.Length > 0 && CanFrameAsset(instanceID);
+                    bool frame = !m_LockTracker.isLocked && Selection.entityIds.Length > 0 && CanFrameAsset(entityId);
                     if (frame)
                     {
                         // If searching we keep the search when framing. If folder browsing we change folder
                         // and frame current selection in its folder
                         if (m_SearchFilter.IsSearching())
                         {
-                            m_ListArea.Frame(instanceID, true, false);
+                            m_ListArea.Frame(entityId, true, false);
                         }
                         else
                         {
-                            FrameObjectInTwoColumnMode(instanceID, true, false);
+                            FrameObjectInTwoColumnMode(entityId, true, false);
                         }
                     }
                 }
@@ -1381,7 +1393,7 @@ namespace UnityEditor
             FolderTreeSelectionChanged(folderWasSelected);
         }
 
-        void AssetTreeItemDoubleClickedCallback(EntityId instanceID)
+        void AssetTreeItemDoubleClickedCallback(EntityId entityId)
         {
             OpenAssetSelection(Selection.entityIds);
         }
@@ -1435,18 +1447,18 @@ namespace UnityEditor
         {
             HashSet<string> folders = new HashSet<string>();
 
-            foreach (var instanceID in Selection.entityIds)
+            foreach (var entityId in Selection.entityIds)
             {
-                if (instanceID == kPackagesFolderInstanceId)
+                if (entityId == kPackagesFolderInstanceId)
                 {
                     folders.Add(PackageManager.Folders.GetPackagesPath());
                     continue;
                 }
 
-                if (!AssetDatabase.Contains(instanceID))
+                if (!AssetDatabase.Contains(entityId))
                     continue;
 
-                string path = AssetDatabase.GetAssetPath(instanceID);
+                string path = AssetDatabase.GetAssetPath(entityId);
                 if (AssetDatabase.IsValidFolder(path))
                 {
                     if (IsInsideHiddenPackage(path))
@@ -1491,14 +1503,15 @@ namespace UnityEditor
             //Since we cant get the path from the AssetsUtility with these InstanceIDs we need to get them from cache.
             if (m_FolderTree.GetSelection().Length == 1)
             {
-                int selectionID = m_FolderTree.GetSelection()[0];
+                EntityId selectionID = m_FolderTree.GetSelection()[0];
                 ItemType type = GetItemType(selectionID);
                 if (type == ItemType.SavedFilter)
                 {
-                    SearchFilter filter = SavedSearchFilters.GetFilter(selectionID);
+                    int filterId = FavoritesEntityIds.instance.GetIdFor(selectionID);
+                    SearchFilter filter = SavedSearchFilters.GetFilter(filterId);
 
                     // Check if the filter is valid (the root of filters are not an actual filter)
-                    if (ValidateFilter(selectionID, filter))
+                    if (ValidateFilter(filterId, filter))
                     {
                         m_SearchFilter = filter;
                     }
@@ -1511,14 +1524,14 @@ namespace UnityEditor
             SetAsLastInteractedProjectBrowser();
 
             // Assumes only asset folders can be multi selected
-            int firstTreeViewInstanceID = 0;
+            EntityId selectedEntityId = EntityId.None;
             if (selectedTreeViewInstanceIDs.Length > 0)
-                firstTreeViewInstanceID = selectedTreeViewInstanceIDs[0];
+                selectedEntityId = selectedTreeViewInstanceIDs[0];
 
             bool folderWasSelected = false;
-            if (firstTreeViewInstanceID != 0)
+            if (selectedEntityId != EntityId.None)
             {
-                ItemType type = GetItemType(firstTreeViewInstanceID);
+                ItemType type = GetItemType(selectedEntityId);
 
                 if (type == ItemType.Asset)
                 {
@@ -1529,16 +1542,19 @@ namespace UnityEditor
 
                 if (type == ItemType.SavedFilter)
                 {
-                    SearchFilter filter = SavedSearchFilters.GetFilter(firstTreeViewInstanceID);
+                    int filterId = FavoritesEntityIds.instance.GetIdFor(selectedEntityId);
+                    SearchFilter filter = SavedSearchFilters.GetFilter(filterId);
 
                     // Check if the filter is valid (the root of filters are not an actual filter)
-                    if (ValidateFilter(firstTreeViewInstanceID, filter))
+                    Debug.Assert(sizeof(int)==UnsafeUtility.SizeOf<EntityId>(), "EntityId is not the same size as int, update this code to use ulong");
+                    if (ValidateFilter((int)selectedEntityId.GetRawData(), filter))
                     {
                         m_SearchFilter = filter;
                         EnsureValidFolders();
+
                         float previewSize = filter.GetState() == SearchFilter.State.FolderBrowsing ?
                             m_LastFoldersGridSize :
-                            SavedSearchFilters.GetPreviewSize(firstTreeViewInstanceID);
+                            SavedSearchFilters.GetPreviewSize(filterId);
                         if (previewSize > 0f)
                             m_ListArea.gridSize = Mathf.Clamp((int)previewSize, m_ListArea.minGridSize, m_ListArea.maxGridSize);
                         SyncFilterGUI();
@@ -1560,8 +1576,8 @@ namespace UnityEditor
             {
                 foreach (string folderPath in filter.folders)
                 {
-                    int instanceID = AssetDatabase.GetMainAssetOrInProgressProxyEntityId(folderPath);
-                    if (instanceID == 0)
+                    EntityId entityId = AssetDatabase.GetMainAssetOrInProgressProxyEntityId(folderPath);
+                    if (entityId == EntityId.None)
                     {
                         if (EditorUtility.DisplayDialog("Folder not found", "The folder '" + folderPath + "' might have been deleted or belong to another project. Do you want to delete the favorite?", "Delete", "Cancel"))
                         {
@@ -1637,9 +1653,9 @@ namespace UnityEditor
                 s_LastInteractedProjectBrowser = null;
         }
 
-        static void DeleteFilter(int filterInstanceID)
+        static void DeleteFilter(int filterId)
         {
-            if (SavedSearchFilters.GetRootInstanceID() == filterInstanceID)
+            if (SavedSearchFilters.GetRootFilterId() == filterId)
             {
                 string title = "Cannot Delete";
                 EditorUtility.DisplayDialog(title, "Deleting the 'Filters' root is not allowed", "OK");
@@ -1649,7 +1665,7 @@ namespace UnityEditor
                 string title = "Delete selected favorite?";
                 if (EditorUtility.DisplayDialog(title, "You cannot undo this action.", "Delete", "Cancel"))
                 {
-                    SavedSearchFilters.RemoveSavedFilter(filterInstanceID);
+                    SavedSearchFilters.RemoveSavedFilter(filterId);
                 }
             }
         }
@@ -1726,12 +1742,12 @@ namespace UnityEditor
             {
                 bool execute = eventType == EventType.ExecuteCommand;
 
-                var instanceIDs = m_FolderTree.GetSelection();
-                if (instanceIDs.Length == 0)
+                var entityIds = m_FolderTree.GetSelection();
+                if (entityIds.Length == 0)
                     return;
 
                 // Only one type can be selected at a time (and savedfilters can only be single-selected)
-                ItemType itemType = GetItemType(instanceIDs[0]);
+                ItemType itemType = GetItemType(entityIds[0]);
 
                 // Check if event made on immutable package
                 if (itemType == ItemType.Asset)
@@ -1755,8 +1771,9 @@ namespace UnityEditor
                     {
                         if (itemType == ItemType.SavedFilter)
                         {
-                            System.Diagnostics.Debug.Assert(instanceIDs.Length == 1); //We do not support multiselection for filters
-                            DeleteFilter(instanceIDs[0]);
+                            System.Diagnostics.Debug.Assert(entityIds.Length == 1); //We do not support multiselection for filters
+                            int filterId = FavoritesEntityIds.instance.GetIdFor(entityIds[0]);
+                            DeleteFilter(filterId);
                             GUIUtility.ExitGUI(); // exit gui since we are iterating items we just reloaded
                         }
                         else if (itemType == ItemType.Asset)
@@ -1780,7 +1797,7 @@ namespace UnityEditor
                         else if (itemType == ItemType.Asset)
                         {
                             evt.Use();
-                            var copiedFolders = AssetClipboardUtility.DuplicateFolders(instanceIDs);
+                            var copiedFolders = AssetClipboardUtility.DuplicateFolders(entityIds);
                             SetFolderSelection(copiedFolders, true);
                             GUIUtility.ExitGUI();
                         }
@@ -1795,7 +1812,7 @@ namespace UnityEditor
                     evt.Use();
                     if (execute && itemType == ItemType.Asset)
                     {
-                        AssetClipboardUtility.CutCopySelectedFolders(instanceIDs, AssetClipboardUtility.PerformedAction.Cut);
+                        AssetClipboardUtility.CutCopySelectedFolders(entityIds, AssetClipboardUtility.PerformedAction.Cut);
                         GUIUtility.ExitGUI();
                     }
                 }
@@ -1804,7 +1821,7 @@ namespace UnityEditor
                     evt.Use();
                     if (execute && itemType == ItemType.Asset)
                     {
-                        AssetClipboardUtility.CutCopySelectedFolders(instanceIDs, AssetClipboardUtility.PerformedAction.Copy);
+                        AssetClipboardUtility.CutCopySelectedFolders(entityIds, AssetClipboardUtility.PerformedAction.Copy);
                         GUIUtility.ExitGUI();
                     }
                 }
@@ -1831,25 +1848,25 @@ namespace UnityEditor
 
         void HandleCommandEvents()
         {
-            // Check if event made on immutable package
-            if (ShouldDiscardCommandsEventsForImmutablePackages())
-            {
-                Debug.LogFormat(LogType.Warning, LogOption.NoStacktrace, null, k_WarningImmutableSelectionFormat, Event.current.commandName);
-                return;
-            }
-            // Check if event is delete on root folder
-            // Note that if the folder is in favorite, there is no need for root check.
-            // Because we only remove it from the favorite list, not delete the asset.
-            if (!SelectionIsFavorite() && ShouldDiscardCommandsEventsForRootFolders())
-            {
-                Debug.LogFormat(LogType.Warning, LogOption.NoStacktrace, null, k_WarningRootFolderDeletionFormat, Event.current.commandName);
-                return;
-            }
-
             var evt = Event.current;
             EventType eventType = evt.type;
             if (eventType == EventType.ExecuteCommand || eventType == EventType.ValidateCommand || evt.keyCode == KeyCode.Escape)
             {
+                // Check if event made on immutable package
+                if (ShouldDiscardCommandsEventsForImmutablePackages())
+                {
+                    Debug.LogFormat(LogType.Warning, LogOption.NoStacktrace, null, k_WarningImmutableSelectionFormat, Event.current.commandName);
+                    return;
+                }
+                // Check if event is delete on root folder
+                // Note that if the folder is in favorite, there is no need for root check.
+                // Because we only remove it from the favorite list, not delete the asset.
+                if (!SelectionIsFavorite() && ShouldDiscardCommandsEventsForRootFolders())
+                {
+                    Debug.LogFormat(LogType.Warning, LogOption.NoStacktrace, null, k_WarningRootFolderDeletionFormat, Event.current.commandName);
+                    return;
+                }
+
                 bool execute = eventType == EventType.ExecuteCommand;
 
                 if (evt.commandName == EventCommandNames.Delete || evt.commandName == EventCommandNames.SoftDelete)
@@ -1952,9 +1969,9 @@ namespace UnityEditor
                 }
                 else
                 {
-                    var instanceIDs = m_AssetTree.GetRowIDs();
-                    m_AssetTree.SetSelection(instanceIDs, false);
-                    AssetTreeSelectionCallback(instanceIDs);
+                    var entityIds = m_AssetTree.GetRowIDs();
+                    m_AssetTree.SetSelection(entityIds, false);
+                    AssetTreeSelectionCallback(entityIds);
                 }
             }
             else if (m_ViewMode == ViewMode.TwoColumns)
@@ -2170,7 +2187,7 @@ namespace UnityEditor
         {
             Event evt = Event.current;
 
-            if (clickedItemID == 0)
+            if (clickedItemID == EntityId.None)
             {
                 // For non selectable assets, don't show context menu. Selection is deselected
                 m_AssetTree.SetSelection(k_EmptySelection, false);
@@ -2207,11 +2224,13 @@ namespace UnityEditor
             isFolderTreeViewContextClicked = true;
             Event evt = Event.current;
             System.Diagnostics.Debug.Assert(evt.type == EventType.ContextClick);
-            if (SavedSearchFilters.IsSavedFilter(clickedItemID))
+
+            if (GetItemType(clickedItemID) == ItemType.SavedFilter)
             {
                 // Context click with a selected Filter
-                if (clickedItemID != SavedSearchFilters.GetRootInstanceID())
-                    SavedFiltersContextMenu.Show(clickedItemID);
+                int filterId = FavoritesEntityIds.instance.GetIdFor(clickedItemID);
+                if (filterId != SavedSearchFilters.GetRootFilterId())
+                    SavedFiltersContextMenu.Show(filterId);
             }
             else
             {
@@ -2381,18 +2400,19 @@ namespace UnityEditor
                         var treeViewSelection = m_FolderTree.GetSelection();
                         if (treeViewSelection.Length == 1)
                         {
-                            int instanceID = treeViewSelection[0];
-                            bool isRootFilter = SavedSearchFilters.GetRootInstanceID() == instanceID;
+                            EntityId entityId = treeViewSelection[0];
 
                             // Ask if filter should be overwritten
-                            if (SavedSearchFilters.IsSavedFilter(instanceID) && !isRootFilter)
+                            if (FavoritesEntityIds.instance.TryGetIdFor(entityId, out int filterId) &&
+                                SavedSearchFilters.IsSavedFilter(filterId) &&
+                                filterId != SavedSearchFilters.GetRootFilterId())
                             {
                                 createNewFilter = false;
                                 string title = "Overwrite Filter?";
-                                string text = "Do you want to overwrite '" + SavedSearchFilters.GetName(instanceID) + "' or create a new filter?";
+                                string text = "Do you want to overwrite '" + SavedSearchFilters.GetName(filterId) + "' or create a new filter?";
                                 int result = EditorUtility.DisplayDialogComplex(title, text, "Overwrite", "Cancel", "Create");
                                 if (result == 0)
-                                    SavedSearchFilters.UpdateExistingSavedFilter(instanceID, m_SearchFilter, listAreaGridSize);
+                                    SavedSearchFilters.UpdateExistingSavedFilter(filterId, m_SearchFilter, listAreaGridSize);
                                 else if (result == 2)
                                     createNewFilter = true;
                             }
@@ -2590,17 +2610,17 @@ namespace UnityEditor
             return folderInstanceIDs;
         }
 
-        static string[] GetFolderPathsFromInstanceIDs(EntityId[] instanceIDs)
+        static string[] GetFolderPathsFromInstanceIDs(EntityId[] entityIds)
         {
             List<string> paths = new List<string>();
-            foreach (var instanceID in instanceIDs)
+            foreach (var entityId in entityIds)
             {
-                if (instanceID == kPackagesFolderInstanceId)
+                if (entityId == kPackagesFolderInstanceId)
                 {
                     paths.Add(PackageManager.Folders.GetPackagesPath());
                     continue;
                 }
-                string path = AssetDatabase.GetAssetPath(instanceID);
+                string path = AssetDatabase.GetAssetPath(entityId);
                 if (!String.IsNullOrEmpty(path))
                     paths.Add(path);
             }
@@ -2900,25 +2920,25 @@ namespace UnityEditor
             }
         }
 
-        public void FrameObject(EntityId instanceID, bool ping)
+        public void FrameObject(EntityId entityId, bool ping)
         {
             m_LockTracker.StopPingIcon();
 
-            bool canFrame = CanFrameAsset(instanceID);
+            bool canFrame = CanFrameAsset(entityId);
             if (!canFrame)
             {
                 // Check if we can frame the main asset from the same asset path instead.
                 // This ensures that Components or child GameObject of Prefabs or hidden sub assets will
                 // still be located and pinged in the Project Browser (case 1262196).
-                var path = AssetDatabase.GetAssetPath((EntityId)instanceID);
+                var path = AssetDatabase.GetAssetPath(entityId);
                 if (!string.IsNullOrEmpty(path))
                 {
                     var mainObject = AssetDatabase.LoadMainAssetAtPath(path);
                     if (mainObject != null)
                     {
-                        canFrame = CanFrameAsset(mainObject.GetInstanceID());
+                        canFrame = CanFrameAsset(mainObject.GetEntityId());
                         if (canFrame)
-                            instanceID = mainObject.GetInstanceID();
+                            entityId = mainObject.GetEntityId();
                     }
                 }
             }
@@ -2930,72 +2950,72 @@ namespace UnityEditor
 
                 // If the item is visible then we can ping it however if it requires revealing then we can not and should indicate why(locked project view).
                 if (canFrame &&
-                    ((m_ViewMode == ViewMode.TwoColumns && m_ListArea != null && !m_ListArea.IsShowing(instanceID))
-                    || (m_ViewMode == ViewMode.OneColumn && m_AssetTree != null && m_AssetTree.data.GetRow(instanceID) == -1)))
+                    ((m_ViewMode == ViewMode.TwoColumns && m_ListArea != null && !m_ListArea.IsShowing(entityId))
+                    || (m_ViewMode == ViewMode.OneColumn && m_AssetTree != null && m_AssetTree.data.GetRow(entityId) == -1)))
                 {
                     Repaint();
                     m_LockTracker.PingIcon();
                 }
             }
 
-            FrameObjectPrivate(instanceID, frame, ping);
+            FrameObjectPrivate(entityId, frame, ping);
             if (s_LastInteractedProjectBrowser == this)
             {
                 m_GrabKeyboardFocusForListArea = true;
             }
         }
 
-        private void FrameObjectPrivate(int instanceID, bool frame, bool ping)
+        private void FrameObjectPrivate(EntityId entityId, bool frame, bool ping)
         {
-            if (instanceID == 0 || m_ListArea == null)
+            if (entityId == EntityId.None || m_ListArea == null)
                 return;
 
             // If framing the same instance as the last one we do not remove the ping
             // since issuing first a ping and then a framing should still show the ping.
-            if (m_LastFramedID != instanceID)
+            if (m_LastFramedID != entityId)
                 EndPing();
-            m_LastFramedID = instanceID;
+            m_LastFramedID = entityId;
 
             ClearSearch();
 
             if (m_ViewMode == ViewMode.TwoColumns)
             {
-                FrameObjectInTwoColumnMode(instanceID, frame, ping);
+                FrameObjectInTwoColumnMode(entityId, frame, ping);
             }
             else if (m_ViewMode == ViewMode.OneColumn)
             {
                 // Clear search to switch back to tree view
-                m_AssetTree.Frame(instanceID, frame, ping);
+                m_AssetTree.Frame(entityId, frame, ping);
             }
         }
 
-        private void FrameObjectInTwoColumnMode(int instanceID, bool frame, bool ping)
+        private void FrameObjectInTwoColumnMode(EntityId entityId, bool frame, bool ping)
         {
-            int folderInstanceID = 0;
+            EntityId folderEntityId = EntityId.None;
 
-            if (instanceID == kPackagesFolderInstanceId)
-                folderInstanceID = kPackagesFolderInstanceId;
+            if (entityId == kPackagesFolderInstanceId)
+                folderEntityId = kPackagesFolderInstanceId;
             else
             {
-                string assetPath = AssetDatabase.GetAssetPath((EntityId)instanceID);
+                string assetPath = AssetDatabase.GetAssetPath((EntityId)entityId);
                 if (!String.IsNullOrEmpty(assetPath))
                 {
                     string containingFolder = ProjectWindowUtil.GetContainingFolder(assetPath);
                     if (!String.IsNullOrEmpty(containingFolder))
-                        folderInstanceID = GetFolderInstanceID(containingFolder);
+                        folderEntityId = GetFolderInstanceID(containingFolder);
 
-                    if (folderInstanceID == 0)
-                        folderInstanceID = AssetDatabase.GetMainAssetOrInProgressProxyEntityId("Assets");
+                    if (folderEntityId == EntityId.None)
+                        folderEntityId = AssetDatabase.GetMainAssetOrInProgressProxyEntityId("Assets");
                 }
             }
 
             // Could be a scene gameobject
-            if (folderInstanceID != 0)
+            if (folderEntityId != EntityId.None)
             {
-                m_FolderTree.Frame(folderInstanceID, frame, ping);
+                m_FolderTree.Frame(folderEntityId, frame, ping);
                 if (frame)
-                    ShowFolderContents(folderInstanceID, true);
-                m_ListArea.Frame(instanceID, frame, ping);
+                    ShowFolderContents(folderEntityId, true);
+                m_ListArea.Frame(entityId, frame, ping);
             }
         }
 
@@ -3031,26 +3051,26 @@ namespace UnityEditor
         internal static bool CanDeleteSelectedAssets()
         {
             var treeViewSelection = GetTreeViewFolderSelection();
-            var instanceIDs = treeViewSelection.Length > 0 ? new List<EntityId>(treeViewSelection) : new List<EntityId>(Selection.entityIds);
+            var entityIds = treeViewSelection.Length > 0 ? new List<EntityId>(treeViewSelection) : new List<EntityId>(Selection.entityIds);
 
-            var objectsToDelete = new HashSet<int>();
-            foreach (var instanceID in instanceIDs)
+            var objectsToDelete = new HashSet<EntityId>();
+            foreach (var entityId in entityIds)
             {
-                if (instanceID == AssetDatabase.GetMainAssetOrInProgressProxyEntityId("Assets") || instanceID == kPackagesFolderInstanceId)
+                if (entityId == AssetDatabase.GetMainAssetOrInProgressProxyEntityId("Assets") || entityId == kPackagesFolderInstanceId)
                 {
                     return false;
                 }
 
-                if (AssetDatabase.IsMainAsset(instanceID))
+                if (AssetDatabase.IsMainAsset(entityId))
                 {
-                    var path = AssetDatabase.GetAssetPath(instanceID);
+                    var path = AssetDatabase.GetAssetPath(entityId);
                     bool isRootFolder, isImmutable;
                     if (string.IsNullOrEmpty(path) || !AssetDatabase.TryGetAssetFolderInfo(path, out isRootFolder, out isImmutable) || isRootFolder || isImmutable)
                     {
                         return false;
                     }
 
-                    objectsToDelete.Add(instanceID);
+                    objectsToDelete.Add(entityId);
                 }
             }
 
@@ -3062,16 +3082,16 @@ namespace UnityEditor
         {
             var treeViewSelection = GetTreeViewFolderSelection();
 
-            List<EntityId> instanceIDs;
+            List<EntityId> entityIds;
             if (treeViewSelection.Length > 0)
-                instanceIDs = new List<EntityId>(treeViewSelection);
+                entityIds = new List<EntityId>(treeViewSelection);
             else
-                instanceIDs = new List<EntityId>(Selection.entityIds);
+                entityIds = new List<EntityId>(Selection.entityIds);
 
-            if (instanceIDs.Count == 0)
+            if (entityIds.Count == 0)
                 return;
 
-            if (ProjectWindowUtil.DeleteAssets(instanceIDs, askIfSure))
+            if (ProjectWindowUtil.DeleteAssets(entityIds, askIfSure))
             {
                 // Ensure selection is cleared since StopAssetEditing() will restore selection from a backup saved in StartAssetEditing.
                 Selection.entityIds = k_EmptySelection;
@@ -3115,20 +3135,20 @@ namespace UnityEditor
             return property;
         }
 
-        internal void ShowObjectsInList(int[] instanceIDs)
+        internal void ShowObjectsInList(EntityId[] entityIds)
         {
             if (!Initialized())
                 Init();
 
             if (m_ViewMode == ViewMode.TwoColumns)
             {
-                m_ListArea.ShowObjectsInList(instanceIDs);
+                m_ListArea.ShowObjectsInList(entityIds);
                 m_FolderTree.SetSelection(k_EmptySelection, false); // Remove selection from folder tree since we show custom list (press F to focus)
             }
             else if (m_ViewMode == ViewMode.OneColumn)
             {
-                foreach (int instanceID in Selection.entityIds)
-                    m_AssetTree.Frame(instanceID, true, false);
+                foreach (EntityId entityId in Selection.entityIds)
+                    m_AssetTree.Frame(entityId, true, false);
             }
         }
 
@@ -3139,9 +3159,9 @@ namespace UnityEditor
             // Only one ProjectBrowser can have focus at a time so if we find one just return that one
             if (s_LastInteractedProjectBrowser != null)
             {
-                int[] instanceIDs = Selection.entityIds.ToIntArray();
+                EntityId[] entityIds = Selection.entityIds;
 
-                s_LastInteractedProjectBrowser.ShowObjectsInList(instanceIDs);
+                s_LastInteractedProjectBrowser.ShowObjectsInList(entityIds);
             }
         }
 
@@ -3163,7 +3183,7 @@ namespace UnityEditor
             if (m_FolderTree.GetSelection().Length != 1)
                 return false;
 
-            int selectionID = m_FolderTree.GetSelection()[0];
+            EntityId selectionID = m_FolderTree.GetSelection()[0];
             ItemType type = GetItemType(selectionID);
             return type == ItemType.SavedFilter;
         }
@@ -3180,27 +3200,27 @@ namespace UnityEditor
 
         internal class SavedFiltersContextMenu
         {
-            int m_SavedFilterInstanceID;
+            int m_FilterId;
 
-            static internal void Show(int savedFilterInstanceID)
+            static internal void Show(int filterId)
             {
                 // Curve context menu
                 GUIContent delete = EditorGUIUtility.TrTextContent("Delete");
 
                 GenericMenu menu = new GenericMenu();
-                menu.AddItem(delete, false, new SavedFiltersContextMenu(savedFilterInstanceID).Delete);
+                menu.AddItem(delete, false, new SavedFiltersContextMenu(filterId).Delete);
 
                 menu.ShowAsContext();
             }
 
-            private SavedFiltersContextMenu(int savedFilterInstanceID)
+            private SavedFiltersContextMenu(int filterId)
             {
-                m_SavedFilterInstanceID = savedFilterInstanceID;
+                m_FilterId = filterId;
             }
 
             private void Delete()
             {
-                DeleteFilter(m_SavedFilterInstanceID);
+                DeleteFilter(m_FilterId);
             }
         }
 

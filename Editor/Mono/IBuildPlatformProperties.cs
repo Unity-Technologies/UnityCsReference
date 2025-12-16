@@ -24,4 +24,7 @@ internal interface IBuildPlatformProperties : IPlatformProperties
 
     // Determines whether to apply/respect the Android.UserBuildSettings.linkTimeOptimization value in the build pipeline.
     public bool SupportLinkTimeOptimization => false;
+
+    // Determines whether the build target supports build automation features.
+    public bool SupportBuildAutomation => false;
 }

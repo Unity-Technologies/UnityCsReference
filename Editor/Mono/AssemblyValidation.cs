@@ -268,7 +268,7 @@ namespace UnityEditor
             var assemblyResolver = new AssemblyResolver();
 
             foreach (var asmpath in searchPaths)
-                assemblyResolver.AddSearchDirectory(asmpath);
+                assemblyResolver.AddSearchDirectory(FileUtil.PathToAbsolutePath(asmpath));
 
             var readerParameters = new ReaderParameters
             {
@@ -279,7 +279,7 @@ namespace UnityEditor
 
             for (int i = 0; i < assemblyPaths.Length; ++i)
             {
-                assemblyDefinitions[i] = AssemblyDefinition.ReadAssembly(assemblyPaths[i], readerParameters);
+                assemblyDefinitions[i] = AssemblyDefinition.ReadAssembly(FileUtil.PathToAbsolutePath(assemblyPaths[i]), readerParameters);
                 // Cecil tries to resolve references by filename, since Unity force loads
                 // assemblies, then assembly reference will resolve even if the assembly name
                 // does not match the assembly filename. So we register all assemblies in

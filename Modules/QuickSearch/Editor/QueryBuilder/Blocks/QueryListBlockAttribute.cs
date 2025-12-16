@@ -61,7 +61,7 @@ namespace UnityEditor.Search
 
         internal static QueryListBlock CreateBlock(Type type, IQuerySource source, string value)
         {
-            var attr = FindBlock(type).attribute;
+            var attr = FindBlock(type)?.attribute;
             if (attr != null)
                 return (QueryListBlock)Activator.CreateInstance(type, new object[] { source, attr.id, value, attr });
             return null;
@@ -79,7 +79,9 @@ namespace UnityEditor.Search
                     return new QueryListMarkerBlock(source, id, marker, listBlockData.attribute);
                 }
 
-                return (QueryListBlock)Activator.CreateInstance(listBlockData.attribute.type, new object[] { source, id, value, listBlockData.attribute });
+                var block = (QueryListBlock)Activator.CreateInstance(listBlockData.attribute.type, new object[] { source, id, value, listBlockData.attribute });
+                block.op = op;
+                return block;
             }
             else if (isValidMarker)
             {

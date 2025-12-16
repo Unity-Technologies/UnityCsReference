@@ -13,7 +13,9 @@ using Mono.Cecil.Cil;
 using Unity.ProjectAuditor.Editor.AssemblyUtils;
 using Unity.ProjectAuditor.Editor.CodeAnalysis;
 using Unity.ProjectAuditor.Editor.Core;
+using Unity.ProjectAuditor.Editor.Utils;
 using UnityEditor;
+using UnityEditor.Compilation;
 using UnityEngine;
 using UnityEngine.Profiling;
 using PropertyDefinition = Unity.ProjectAuditor.Editor.Core.PropertyDefinition;
@@ -25,6 +27,7 @@ namespace Unity.ProjectAuditor.Editor.Modules
     {
         ReadOnly = 0,
         CompileTime,
+        CodeLocation,
         Num
     }
 
@@ -37,6 +40,7 @@ namespace Unity.ProjectAuditor.Editor.Modules
     internal enum CodeProperty
     {
         Assembly = 0,
+        CodeLocation,
         Num
     }
 
@@ -44,6 +48,7 @@ namespace Unity.ProjectAuditor.Editor.Modules
     {
         Code = 0,
         Assembly,
+        CodeLocation,
         Num
     }
 
@@ -55,10 +60,11 @@ namespace Unity.ProjectAuditor.Editor.Modules
             Properties = new[]
             {
                 new PropertyDefinition { Type = PropertyType.LogLevel, Name = "Log Level"},
-                new PropertyDefinition { Type = PropertyType.Description, Name = "Assembly Name", MaxAutoWidth = 800},
+                new PropertyDefinition { Type = PropertyType.Description, Name = "Name", MaxAutoWidth = 800},
                 new PropertyDefinition { Type = PropertyTypeUtil.FromCustom(AssemblyProperty.CompileTime), Format = PropertyFormat.String, Name = "Compile Time"},
                 new PropertyDefinition { Type = PropertyTypeUtil.FromCustom(AssemblyProperty.ReadOnly), Format = PropertyFormat.Bool, Name = "Read Only", IsDefaultGroup = true},
                 new PropertyDefinition { Type = PropertyType.Path, Name = "Asmdef Path"},
+                new PropertyDefinition { Type = PropertyTypeUtil.FromCustom(AssemblyProperty.CodeLocation), Format = PropertyFormat.String, Name = "Location", LongName = "Code Location" },
             }
         };
 
@@ -67,9 +73,9 @@ namespace Unity.ProjectAuditor.Editor.Modules
             Category = IssueCategory.PrecompiledAssembly,
             Properties = new[]
             {
-                new PropertyDefinition { Type = PropertyType.Description, Name = "Assembly Name"},
-                new PropertyDefinition { Type = PropertyTypeUtil.FromCustom(PrecompiledAssemblyProperty.RoslynAnalyzer), Format = PropertyFormat.Bool, Name = "Roslyn Analyzer"},
+                new PropertyDefinition { Type = PropertyType.Description, Name = "Name"},
                 new PropertyDefinition { Type = PropertyType.Directory, Name = "Path", IsDefaultGroup = true},
+                new PropertyDefinition { Type = PropertyTypeUtil.FromCustom(PrecompiledAssemblyProperty.RoslynAnalyzer), Format = PropertyFormat.Bool, Name = "Roslyn Analyzer"},
             }
         };
 
@@ -81,6 +87,7 @@ namespace Unity.ProjectAuditor.Editor.Modules
                 new PropertyDefinition { Type = PropertyType.Description, Name = "Issue", LongName = "Issue description", MaxAutoWidth = 800 },
                 new PropertyDefinition { Type = PropertyType.Severity, Format = PropertyFormat.String, Name = "Severity"},
                 new PropertyDefinition { Type = PropertyType.Areas, Name = "Areas", LongName = "The areas the issue might have an impact on"},
+                new PropertyDefinition { Type = PropertyTypeUtil.FromCustom(CodeProperty.CodeLocation), Format = PropertyFormat.String, Name = "Location", LongName = "Code Location" },
                 new PropertyDefinition { Type = PropertyType.Filename, Name = "Filename", LongName = "Filename and line number"},
                 new PropertyDefinition { Type = PropertyTypeUtil.FromCustom(CodeProperty.Assembly), Format = PropertyFormat.String, Name = "Assembly", LongName = "Managed Assembly name" },
                 new PropertyDefinition { Type = PropertyType.Descriptor, Name = "Descriptor", IsDefaultGroup = true},
@@ -97,7 +104,8 @@ namespace Unity.ProjectAuditor.Editor.Modules
                 new PropertyDefinition { Type = PropertyTypeUtil.FromCustom(CompilerMessageProperty.Code), Format = PropertyFormat.String, Name = "Code", IsDefaultGroup = true},
                 new PropertyDefinition { Type = PropertyType.Description, Format = PropertyFormat.String, Name = "Message", LongName = "Compiler Message"},
                 new PropertyDefinition { Type = PropertyType.Filename, Name = "Filename", LongName = "Filename and line number"},
-                new PropertyDefinition { Type = PropertyTypeUtil.FromCustom(CompilerMessageProperty.Assembly), Format = PropertyFormat.String, Name = "Target Assembly", LongName = "Managed Assembly name" },
+                new PropertyDefinition { Type = PropertyTypeUtil.FromCustom(CompilerMessageProperty.Assembly), Format = PropertyFormat.String, Name = "Assembly", LongName = "Managed Assembly name" },
+                new PropertyDefinition { Type = PropertyTypeUtil.FromCustom(CompilerMessageProperty.CodeLocation), Format = PropertyFormat.String, Name = "Location", LongName = "Code Location" },
                 new PropertyDefinition { Type = PropertyType.Path, Name = "Full Path"},
             }
         };
@@ -111,13 +119,15 @@ namespace Unity.ProjectAuditor.Editor.Modules
                 new PropertyDefinition { Type = PropertyType.Description, Name = "Issue", LongName = "Issue description", MaxAutoWidth = 800 },
                 new PropertyDefinition { Type = PropertyType.Filename, Name = "Filename", LongName = "Filename and line number"},
                 new PropertyDefinition { Type = PropertyTypeUtil.FromCustom(CompilerMessageProperty.Assembly), Format = PropertyFormat.String, Name = "Assembly", LongName = "Managed Assembly name" },
+                new PropertyDefinition { Type = PropertyTypeUtil.FromCustom(CompilerMessageProperty.CodeLocation), Format = PropertyFormat.String, Name = "Location", LongName = "Code Location" },
                 new PropertyDefinition { Type = PropertyType.Descriptor, Name = "Descriptor"},
                 new PropertyDefinition { Type = PropertyType.IsIgnored, Name = "Ignored"},
             }
         };
 
         List<OpCode> m_OpCodes;
-        List<CodeModuleInstructionAnalyzer>[] m_OpCodeAnalyzers = new List<CodeModuleInstructionAnalyzer>[ushort.MaxValue];
+        List<int>[] m_OpCodeAnalyzers = new List<int>[ushort.MaxValue];
+        CodeModuleInstructionAnalyzer[] m_CompatibleAnalyzers;
 
         Thread m_AssemblyAnalysisThread;
 
@@ -147,13 +157,9 @@ namespace Unity.ProjectAuditor.Editor.Modules
                     var strA = a.GetProperty(PropertyTypeUtil.FromCustom(AssemblyProperty.CompileTime));
                     var strB = b.GetProperty(PropertyTypeUtil.FromCustom(AssemblyProperty.CompileTime));
 
-                    // If one result is N/A, they all are (the analysis was done with Editor compilation - see below in this file)
-                    if (strA.StartsWith("N/A"))
-                        return 0;
-
-                    // Cut off the ' ms' at the end
-                    var longA = long.Parse(strA.Substring(0, strA.Length - 3));
-                    var longB = long.Parse(strB.Substring(0, strB.Length - 3));
+                    // Cut off the ' ms' at the end, and ignore editor entries
+                    var longA = strA.Contains("Editor") ? -1 : long.Parse(strA.Substring(0, strA.Length - 3));
+                    var longB = strB.Contains("Editor") ? -1 : long.Parse(strB.Substring(0, strB.Length - 3));
 
                     return longA < longB ? -1 : longA > longB ? 1 : 0;
                 });
@@ -172,33 +178,28 @@ namespace Unity.ProjectAuditor.Editor.Modules
                 Params = analysisParams
             };
 
-            var compatibleAnalyzers = GetCompatibleAnalyzers(analysisParams);
+            m_CompatibleAnalyzers = GetCompatibleAnalyzers(analysisParams);
             for (var i = 0; i < m_OpCodeAnalyzers.Length; i++)
             {
                 m_OpCodeAnalyzers[i] = null;
             }
             foreach (var opCode in m_OpCodes)
             {
-                var opCodeAnalyzers = new List<CodeModuleInstructionAnalyzer>();
-                foreach (var analyzer in compatibleAnalyzers)
+                var opCodeAnalyzers = new List<int>();
+                for (int analyzerIndex = 0; analyzerIndex < m_CompatibleAnalyzers.Length; analyzerIndex++)
                 {
-                    if (analyzer.opCodes.Contains(opCode))
-                    {
-                        opCodeAnalyzers.Add(analyzer);
-                    }
+                    if (m_CompatibleAnalyzers[analyzerIndex].opCodes.Contains(opCode))
+                        opCodeAnalyzers.Add(analyzerIndex);
                 }
                 m_OpCodeAnalyzers[(ushort)opCode.Value] = opCodeAnalyzers;
             }
 
             var precompiledAssemblies = AssemblyInfoProvider.GetPrecompiledAssemblyPaths(PrecompiledAssemblyTypes.All)
                 .Select(assemblyPath => (ReportItem)context.CreateInsight(IssueCategory.PrecompiledAssembly, Path.GetFileNameWithoutExtension(assemblyPath))
-                    .WithCustomProperties(new object[(int)PrecompiledAssemblyProperty.Num]
-                    {
-                        false
-                    })
+                    .WithCustomProperties([false])
                     .WithLocation(assemblyPath))
                 .ToArray();
-            if (precompiledAssemblies.Any())
+            if (precompiledAssemblies.Length > 0)
                 analysisParams.OnIncomingIssues(precompiledAssemblies);
 
             // find all roslyn analyzer DLLs by label
@@ -207,7 +208,7 @@ namespace Unity.ProjectAuditor.Editor.Modules
             // find all roslyn analyzers packaged with Project Auditor
             if (Directory.Exists(ProjectAuditor.s_RoslynAnalyzersDataPath))
             {
-                var assetPaths = AssetDatabase.FindAssets("", new[] { ProjectAuditor.s_RoslynAnalyzersDataPath }).Select(AssetDatabase.GUIDToAssetPath);
+                var assetPaths = AssetDatabase.FindAssets("", [ProjectAuditor.s_RoslynAnalyzersDataPath]).Select(AssetDatabase.GUIDToAssetPath);
                 foreach (var assetPath in assetPaths)
                 {
                     if (assetPath.EndsWith(".dll"))
@@ -221,10 +222,7 @@ namespace Unity.ProjectAuditor.Editor.Modules
                 .Select(roslynAnalyzerDllPath => (ReportItem)context.CreateInsight(
                 IssueCategory.PrecompiledAssembly,
                 Path.GetFileNameWithoutExtension(roslynAnalyzerDllPath))
-                .WithCustomProperties(new object[(int)PrecompiledAssemblyProperty.Num]
-                {
-                    true
-                })
+                .WithCustomProperties([true])
                 .WithLocation(roslynAnalyzerDllPath));
 
             analysisParams.OnIncomingIssues(roslynAnalyzerIssues);
@@ -237,49 +235,72 @@ namespace Unity.ProjectAuditor.Editor.Modules
                     analysisParams.OnIncomingIssues(ProcessCompilerMessages(context, compilationResult));
                 },
                 CodeOptimization = analysisParams.CodeOptimization,
-                CompilationMode = analysisParams.CompilationMode,
+                CodeAnalysisFlags = analysisParams.CodeAnalysisFlags,
+                CodeOwnerFlags = analysisParams.CodeOwnerFlags,
                 Platform = analysisParams.Platform,
                 // TODO: reminder to add list of analyzers to metadata
                 RoslynAnalyzers = UserPreferences.UseRoslynAnalyzers ? roslynAnalyzerAssets.ToArray() : null,
                 AssemblyNames = analysisParams.AssemblyNames
             };
 
-            Profiler.BeginSample("CodeModule.Audit.Compilation");
-            var assemblyInfos = compilationPipeline.Compile(progress);
-            Profiler.EndSample();
+            compilationPipeline.Compile(out var compiledEditorAssemblyPaths, out var compiledPlayerAssemblyPaths, progress);
+
+            if ((analysisParams.CodeAnalysisFlags & CodeAnalysisFlags.Editor) != 0)
+            {
+                var editorCompilerIssues = ProcessEditorCompilerMessages(context);
+                analysisParams.OnIncomingIssues(editorCompilerIssues);
+            }
 
             if (progress?.IsCancelled ?? false)
                 return AnalysisResult.Cancelled;
 
             if (analysisParams.AssemblyNames != null)
             {
-                assemblyInfos = assemblyInfos.Where(a => analysisParams.AssemblyNames.Contains(a.Name)).ToArray();
+                compiledEditorAssemblyPaths = compiledEditorAssemblyPaths.Where(a => analysisParams.AssemblyNames.Contains(a.Name)).ToList();
+                compiledPlayerAssemblyPaths = compiledPlayerAssemblyPaths.Where(a => analysisParams.AssemblyNames.Contains(a.Name)).ToList();
             }
 
-            if (analysisParams.CompilationMode == CompilationMode.Editor ||
-                analysisParams.CompilationMode == CompilationMode.EditorPlayMode)
+            if (compiledEditorAssemblyPaths.Count > 0)
             {
-                var issues = assemblyInfos.Select(assemblyInfo => (ReportItem)context.CreateInsight(IssueCategory.Assembly, assemblyInfo.Name)
-                    .WithCustomProperties(new object[(int)AssemblyProperty.Num]
-                    {
-                        assemblyInfo.IsPackageReadOnly,
-                        "N/A when Compilation Mode is Editor"
-                    })
+                var issues = compiledEditorAssemblyPaths.Select(assemblyInfo => (ReportItem)context.CreateInsight(IssueCategory.Assembly, assemblyInfo.Name)
+                    .WithCustomProperties(
+                    [
+                        assemblyInfo.IsReadOnly,
+                        "0 ms (Compiled by Editor)",
+                        assemblyInfo.GetTypeString()
+                    ])
                     .WithLocation(assemblyInfo.AsmDefPath))
                     .ToArray();
-                if (issues.Any())
+                if (issues.Length > 0)
+                    analysisParams.OnIncomingIssues(issues);
+            }
+
+            // Add these manually because they aren't actually compiled, even though they are part of the player (they are pre-compiled)
+            if (compiledPlayerAssemblyPaths.Count > 0)
+            {
+                var issues = compiledPlayerAssemblyPaths
+                    .Where(assemblyInfo => assemblyInfo.IsUnityInternalAssembly)
+                    .Select(assemblyInfo => (ReportItem)context.CreateInsight(IssueCategory.Assembly, assemblyInfo.Name)
+                    .WithCustomProperties(
+                    [
+                        assemblyInfo.IsReadOnly,
+                        "0 ms (Compiled by Editor)",
+                        assemblyInfo.GetTypeString()
+                    ])
+                    .WithLocation(assemblyInfo.AsmDefPath))
+                    .ToArray();
+                if (issues.Length > 0)
                     analysisParams.OnIncomingIssues(issues);
             }
 
             // process successfully compiled assemblies
-            var localAssemblyInfos = assemblyInfos.Where(info => !info.IsPackageReadOnly).ToArray();
-            var readOnlyAssemblyInfos = assemblyInfos.Where(info => info.IsPackageReadOnly).ToArray();
+            var assemblyInfos = compiledEditorAssemblyPaths.Concat(compiledPlayerAssemblyPaths);
+            assemblyInfos = assemblyInfos.Where(a => AssemblyPackageFilter(a, analysisParams));
+
+            var localAssemblyInfos = assemblyInfos.Where(info => !info.IsReadOnly).ToArray();
+            var readOnlyAssemblyInfos = assemblyInfos.Where(info => info.IsReadOnly).ToArray();
             var foundIssues = new List<ReportItem>();
             var callCrawler = new CallCrawler();
-            var onCallFound = new Action<CallInfo>(pair =>
-            {
-                callCrawler.Add(pair);
-            });
             var onIssueFoundInternal = new Action<ReportItem>(foundIssues.Add);
             var onCompleteInternal = new Action<IProgress>(bar =>
             {
@@ -287,10 +308,8 @@ namespace Unity.ProjectAuditor.Editor.Modules
                 foundIssues.RemoveAll(i => i.Id.IsValid() &&
                     !i.Id.GetDescriptor().IsApplicable(analysisParams));
 
-                Profiler.BeginSample("CodeModule.Audit.BuildCallHierarchies");
                 compilationPipeline.Dispose();
                 callCrawler.BuildCallHierarchies(foundIssues, bar);
-                Profiler.EndSample();
 
                 foreach (var d in foundIssues)
                 {
@@ -310,37 +329,88 @@ namespace Unity.ProjectAuditor.Editor.Modules
                 }
 
                 // workaround for empty 'relativePath' strings which are not all available when 'onIssueFoundInternal' is called
-                if (foundIssues.Any())
+                if (foundIssues.Count > 0)
                     analysisParams.OnIncomingIssues(foundIssues);
                 analysisParams.OnModuleCompleted?.Invoke(AnalysisResult.Success);
             });
 
             assemblyDirectories.AddRange(AssemblyInfoProvider.GetPrecompiledAssemblyDirectories(PrecompiledAssemblyTypes.UserAssembly | PrecompiledAssemblyTypes.UnityEngine | PrecompiledAssemblyTypes.SystemAssembly));
-            if (analysisParams.CompilationMode == CompilationMode.Editor)
+            if ((analysisParams.CodeAnalysisFlags & CodeAnalysisFlags.Editor) != 0)
                 assemblyDirectories.AddRange(AssemblyInfoProvider.GetPrecompiledAssemblyDirectories(PrecompiledAssemblyTypes.UnityEditor));
 
-            Profiler.BeginSample("CodeModule.Audit.Analysis");
-
             // first phase: analyze assemblies generated from editable scripts
-            AnalyzeAssemblies(localAssemblyInfos, analysisParams.AssemblyNames, assemblyDirectories, onCallFound, onIssueFoundInternal, null, progress);
+            AnalyzeAssemblies(localAssemblyInfos, analysisParams, assemblyDirectories, callCrawler, onIssueFoundInternal, null, progress);
             if (progress?.IsCancelled ?? false)
                 return AnalysisResult.Cancelled;
 
             // second phase: analyze all remaining assemblies, in a separate thread
             m_AssemblyAnalysisThread = new Thread(() =>
-                AnalyzeAssemblies(readOnlyAssemblyInfos, analysisParams.AssemblyNames, assemblyDirectories, onCallFound, onIssueFoundInternal, onCompleteInternal));
+                AnalyzeAssemblies(readOnlyAssemblyInfos, analysisParams, assemblyDirectories, callCrawler, onIssueFoundInternal, onCompleteInternal));
             m_AssemblyAnalysisThread.Name = "Assembly Analysis";
             m_AssemblyAnalysisThread.Priority = ThreadPriority.BelowNormal;
             m_AssemblyAnalysisThread.Start();
-
-            Profiler.EndSample();
 
             if (progress?.IsCancelled ?? false)
                 return AnalysisResult.Cancelled;
             return AnalysisResult.InProgress;
         }
 
-        void AnalyzeAssemblies(IReadOnlyCollection<AssemblyInfo> assemblyInfos, IReadOnlyCollection<string> assemblyFilters, IReadOnlyCollection<string> assemblyDirectories, Action<CallInfo> onCallFound, Action<ReportItem> onIssueFound, Action<IProgress> onComplete, IProgress progress = null)
+        bool AssemblyPackageFilter(AssemblyInfo assemblyInfo, AnalysisParams analysisParams)
+        {
+            if (!string.IsNullOrEmpty(assemblyInfo.PackageResolvedPath))
+            {
+                if ((analysisParams.CodeAnalysisFlags & CodeAnalysisFlags.Packages) != 0)
+                {
+                    if ((analysisParams.CodeOwnerFlags & CodeOwnerFlags.Unity) == 0)
+                    {
+                        if (assemblyInfo.IsUnityOwned)
+                            return false;
+                    }
+                    if ((analysisParams.CodeOwnerFlags & CodeOwnerFlags.User) == 0)
+                    {
+                        if (!assemblyInfo.IsUnityOwned)
+                            return false;
+                    }
+                }
+                else
+                {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
+        // Code compilation can forward types to other assemblies, effectively meaning package code can get "baked" into the Assembly-CSharp dlls.
+        // So we need this extra check to detect and filter those types
+        internal static bool PathPackageFilter(string path, CodeAnalysisFlags codeAnalysisFlags, CodeOwnerFlags codeOwnerFlags)
+        {
+            if (PathUtils.ReplaceSeparators(path).Contains("Library/PackageCache/", StringComparison.OrdinalIgnoreCase))
+            {
+                if ((codeAnalysisFlags & CodeAnalysisFlags.Packages) != 0)
+                {
+                    bool isUnityOwned = path.Contains("com.unity.", StringComparison.Ordinal);
+                    if ((codeOwnerFlags & CodeOwnerFlags.Unity) == 0)
+                    {
+                        if (isUnityOwned)
+                            return false;
+                    }
+                    if ((codeOwnerFlags & CodeOwnerFlags.User) == 0)
+                    {
+                        if (!isUnityOwned)
+                            return false;
+                    }
+                }
+                else
+                {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
+        void AnalyzeAssemblies(IReadOnlyCollection<AssemblyInfo> assemblyInfos, AnalysisParams analysisParams, IReadOnlyCollection<string> assemblyDirectories, CallCrawler callCrawler, Action<ReportItem> onIssueFound, Action<IProgress> onComplete, IProgress progress = null)
         {
             using (var assemblyResolver = new DefaultAssemblyResolver())
             {
@@ -353,14 +423,15 @@ namespace Unity.ProjectAuditor.Editor.Modules
                 if (progress != null)
                     progress.Start("Analyzing Assemblies", string.Empty, assemblyInfos.Count());
 
-                // Analyze all Player assemblies
+                // Analyze all assemblies
                 foreach (var assemblyInfo in assemblyInfos)
                 {
-                    if (progress?.IsCancelled ?? false)
-                        return;
-
                     if (progress != null)
+                    {
+                        if (progress.IsCancelled)
+                            return;
                         progress.Advance(assemblyInfo.Name);
+                    }
 
                     if (!File.Exists(assemblyInfo.Path))
                     {
@@ -368,7 +439,8 @@ namespace Unity.ProjectAuditor.Editor.Modules
                         continue;
                     }
 
-                    AnalyzeAssembly(assemblyInfo, assemblyResolver, onCallFound, assemblyFilters == null || assemblyFilters.Contains(assemblyInfo.Name) ? onIssueFound : null);
+                    var onIssueFoundFiltered = (analysisParams.AssemblyNames == null) || analysisParams.AssemblyNames.Contains(assemblyInfo.Name) ? onIssueFound : null;
+                    AnalyzeAssembly(assemblyInfo, analysisParams, assemblyResolver, callCrawler, onIssueFoundFiltered);
                 }
             }
 
@@ -376,50 +448,70 @@ namespace Unity.ProjectAuditor.Editor.Modules
             onComplete?.Invoke(progress);
         }
 
-        void AnalyzeAssembly(AssemblyInfo assemblyInfo, IAssemblyResolver assemblyResolver, Action<CallInfo> onCallFound, Action<ReportItem> onIssueFound)
+        void AnalyzeAssembly(AssemblyInfo assemblyInfo, AnalysisParams analysisParams, IAssemblyResolver assemblyResolver, CallCrawler callCrawler, Action<ReportItem> onIssueFound)
         {
-            Profiler.BeginSample("CodeModule.Analyze " + assemblyInfo.Name);
-
-            using (var assembly = AssemblyDefinition.ReadAssembly(assemblyInfo.Path,
-                new ReaderParameters {ReadSymbols = true, AssemblyResolver = assemblyResolver, MetadataResolver = new MetadataResolverWithCache(assemblyResolver)}))
+            try
             {
-                foreach (var typeDefinition in CodeAnalysis.MonoCecilHelper.AggregateAllTypeDefinitions(assembly.MainModule.Types))
+                using (var assembly = AssemblyDefinition.ReadAssembly(assemblyInfo.Path,
+                    new ReaderParameters { ReadSymbols = true, AssemblyResolver = assemblyResolver, MetadataResolver = new MetadataResolverWithCache(assemblyResolver) }))
                 {
-                    Profiler.BeginSample(typeDefinition.Name);
-                    Profiler.BeginSample("CodeModule.IsPerformanceCriticalType");
-                    var isPerformanceCriticalType = IsPerformanceCriticalType(typeDefinition);
-                    Profiler.EndSample();
-                    foreach (var methodDefinition in typeDefinition.Methods)
+                    object[] assemblyUserData = new object[m_CompatibleAnalyzers.Length];
+                    for (int analyzerIndex = 0; analyzerIndex < m_CompatibleAnalyzers.Length; analyzerIndex++)
+                        assemblyUserData[analyzerIndex] = m_CompatibleAnalyzers[analyzerIndex].OnAnalyzeAssembly();
+
+                    bool isDefaultAssembly = (assemblyInfo.Name == AssemblyInfo.DefaultAssemblyName || assemblyInfo.Name == AssemblyInfo.DefaultEditorAssemblyName);
+
+                    foreach (var typeDefinition in CodeAnalysis.MonoCecilHelper.AggregateAllTypeDefinitions(assembly.MainModule.Types))
                     {
-                        if (!methodDefinition.HasBody)
-                            continue;
+                        var isPerformanceCriticalType = IsPerformanceCriticalType(typeDefinition);
+                        foreach (var methodDefinition in typeDefinition.Methods)
+                        {
+                            if (!methodDefinition.HasBody)
+                                continue;
 
-                        // workaround for long analysis times when Burst is installed
-                        if (methodDefinition.DeclaringType.FullName.StartsWith("Unity.Burst.Editor.BurstDisassembler"))
-                            continue;
+                            // workaround for long analysis times when Burst is installed
+                            if (methodDefinition.DeclaringType.FullName.StartsWith("Unity.Burst.Editor.BurstDisassembler"))
+                                continue;
 
-                        if (!methodDefinition.DebugInformation.HasSequencePoints)
-                            continue;
+                            if (!methodDefinition.DebugInformation.HasSequencePoints)
+                                continue;
 
-                        var isPerformanceCriticalContext = isPerformanceCriticalType && IsPerformanceCriticalMethod(methodDefinition);
+                            // skip generated code (we could add a CodeAnalysisFlag for these if we wanted to include them)
+                            var path = methodDefinition.DebugInformation.SequencePoints[0].Document.Url;
+                            if (path.IndexOf("Unity.SourceGenerator", StringComparison.OrdinalIgnoreCase) >= 0)
+                                continue;
 
-                        AnalyzeMethodBody(assemblyInfo, methodDefinition, isPerformanceCriticalContext, onCallFound, onIssueFound);
+                            // Unity forwards some package types to the default assemblies during compilation. Filter those separately from AssemblyPackageFilter.
+                            if (isDefaultAssembly)
+                            {
+                                if (!PathPackageFilter(path, analysisParams.CodeAnalysisFlags, analysisParams.CodeOwnerFlags))
+                                    continue;
+                            }
+
+                            var isPerformanceCriticalContext = isPerformanceCriticalType && IsPerformanceCriticalMethod(methodDefinition);
+
+                            AnalyzeMethodBody(assemblyInfo, methodDefinition, assemblyUserData, isPerformanceCriticalContext, callCrawler, onIssueFound);
+                        }
                     }
-                    Profiler.EndSample();
                 }
             }
-
-            Profiler.EndSample();
+            catch (FileNotFoundException ex)
+            {
+                // Failed to find the PDB file, log it and move on
+                if (!assemblyInfo.IsUnityInternalAssembly)
+                    Debug.LogWarning(ex.Message);
+            }
         }
 
-        void AnalyzeMethodBody(AssemblyInfo assemblyInfo, MethodDefinition caller, bool perfCriticalContext, Action<CallInfo> onCallFound, Action<ReportItem> onIssueFound)
+        void AnalyzeMethodBody(AssemblyInfo assemblyInfo, MethodDefinition caller, object[] assemblyUserData, bool perfCriticalContext, CallCrawler callCrawler, Action<ReportItem> onIssueFound)
         {
-            Profiler.BeginSample("CodeModule.AnalyzeMethodBody");
-
             var callerNode = new CallTreeNode(caller)
             {
                 PerfCriticalContext = perfCriticalContext
             };
+
+            for (int analyzerIndex = 0; analyzerIndex < m_CompatibleAnalyzers.Length; analyzerIndex++)
+                m_CompatibleAnalyzers[analyzerIndex].OnAnalyzeMethodBody(caller, assemblyUserData[analyzerIndex]);
 
             var sequencePoints = caller.DebugInformation.SequencePoints;
             var lastSequencePointIndex = 0;
@@ -427,18 +519,17 @@ namespace Unity.ProjectAuditor.Editor.Modules
             for (var i = 0; i < instructions.Count; i++)
             {
                 var inst = instructions[i];
-
-                // if issues wont be reported and the call crawler doesnt care about this instruction, immediately skip to the next one
-                if (onIssueFound == null && !(inst.OpCode == OpCodes.Call || inst.OpCode == OpCodes.Callvirt))
-                {
-                    continue;
-                }
-
-                // early out if we have no analyzers and the call crawler doesnt care
                 var analyzers = m_OpCodeAnalyzers[(ushort)inst.OpCode.Value];
-                if (analyzers == null && !(inst.OpCode == OpCodes.Call || inst.OpCode == OpCodes.Callvirt))
+
+                if (inst.OpCode != OpCodes.Call && inst.OpCode != OpCodes.Callvirt)
                 {
-                    continue;
+                    // if issues wont be reported and the call crawler doesnt care about this instruction, immediately skip to the next one
+                    if (onIssueFound == null)
+                        continue;
+
+                    // early out if we have no analyzers and the call crawler doesnt care
+                    if (analyzers == null)
+                        continue;
                 }
 
                 // instructions and sequence points are in offset order
@@ -468,14 +559,12 @@ namespace Unity.ProjectAuditor.Editor.Modules
 
                 if (inst.OpCode == OpCodes.Call || inst.OpCode == OpCodes.Callvirt)
                 {
-                    Profiler.BeginSample("CodeModule.OnCallFound");
-                    onCallFound(new CallInfo(
+                    callCrawler.Add(
                         (MethodReference)inst.Operand,
                         caller,
                         location,
                         perfCriticalContext
-                    ));
-                    Profiler.EndSample();
+                    );
                 }
 
                 // skip analyzers if we are not interested in reporting issues, or have no analyzers
@@ -485,33 +574,28 @@ namespace Unity.ProjectAuditor.Editor.Modules
                 var context = new InstructionAnalysisContext
                 {
                     Instruction = inst,
-                    MethodDefinition = caller
+                    MethodDefinition = caller,
+                    AssemblyInfo = assemblyInfo
                 };
-
-                Profiler.BeginSample(inst.OpCode.Name);
 
                 foreach (var analyzer in analyzers)
                 {
-                    Profiler.BeginSample(analyzer.GetType().Name);
-                    var reportItemBuilder = analyzer.Analyze(context);
+                    context.AssemblyUserData = assemblyUserData[analyzer];
+                    var reportItemBuilder = m_CompatibleAnalyzers[analyzer].Analyze(context);
                     if (reportItemBuilder != null)
                     {
                         reportItemBuilder.WithDependencies(callerNode); // set root
                         reportItemBuilder.WithLocation(location);
-                        reportItemBuilder.WithCustomProperties(new object[(int)CodeProperty.Num] {assemblyInfo.Name});
+                        reportItemBuilder.WithCustomProperties([assemblyInfo.Name, assemblyInfo.GetTypeString()]);
 
                         onIssueFound(reportItemBuilder);
                     }
-                    Profiler.EndSample();
                 }
-                Profiler.EndSample();
             }
-            Profiler.EndSample();
         }
 
         IEnumerable<ReportItem> ProcessCompilerMessages(AnalysisContext context, AssemblyCompilationResult compilationResult)
         {
-            Profiler.BeginSample("CodeModule.ProcessCompilerMessages");
             var compilerMessages = compilationResult.Messages;
             var severity = Severity.None;
             if (compilationResult.Status == CompilationStatus.MissingDependency)
@@ -519,56 +603,111 @@ namespace Unity.ProjectAuditor.Editor.Modules
             else if (compilerMessages.Any(m => m.Type == CompilerMessageType.Error))
                 severity = Severity.Error;
 
-            var assemblyInfo = AssemblyInfoProvider.GetAssemblyInfoFromAssemblyPath(compilationResult.AssemblyPath);
+            var assemblyInfo = AssemblyInfoProvider.GetAssemblyInfoFromAssemblyPath(compilationResult.AssemblyPath, compilationResult.EditorAssembly);
             yield return context.CreateInsight(IssueCategory.Assembly, assemblyInfo.Name)
-                .WithCustomProperties(new object[(int)AssemblyProperty.Num]
-                {
-                    assemblyInfo.IsPackageReadOnly,
-                    compilationResult.DurationInMs + " ms"
-                })
+                .WithCustomProperties(
+                [
+                    assemblyInfo.IsReadOnly,
+                    compilationResult.DurationInMs + " ms",
+                    assemblyInfo.GetTypeString(),
+                ])
                 .WithDependencies(new AssemblyDependencyNode(assemblyInfo.Name, compilationResult.DependentAssemblyNames))
                 .WithLocation(assemblyInfo.AsmDefPath)
                 .WithSeverity(severity);
 
             foreach (var message in compilerMessages)
+                yield return ProcessEditorCompilerMessage(context, assemblyInfo, message);
+        }
+
+        IEnumerable<ReportItem> ProcessEditorCompilerMessages(AnalysisContext context)
+        {
+            int logCount = LogEntries.GetCount();
+            var compilerEntries = new List<UnityEditor.Compilation.CompilerMessage>();
+            LogEntries.StartGettingEntries();
+
+            for (var i = 0; i < logCount; i++)
             {
-                var relativePath = AssemblyInfoProvider.ResolveAssetPath(assemblyInfo, message.File);
+                var entry = new LogEntry();
+                LogEntries.GetEntryInternal(i, entry);
+                var mode = (LogMessageFlags)entry.mode;
+                if ((mode & (LogMessageFlags.kScriptCompileError | LogMessageFlags.kScriptCompileWarning)) == 0)
+                    continue;
 
-                // stephenm TODO - A more data-driven way to specify which view Roslyn messages should be sent to, depending on their code.
-                if (s_RegEx.IsMatch(message.Code))
+                if (!PathPackageFilter(entry.file, context.Params.CodeAnalysisFlags, context.Params.CodeOwnerFlags))
+                    continue;
+
+                compilerEntries.Add(new UnityEditor.Compilation.CompilerMessage()
                 {
-                    var descriptor = new Descriptor(
-                        message.Code,
-                        message.Message,
-                        Areas.IterationTime,
-                        RoslynTextLookup.GetDescription(message.Code),
-                        RoslynTextLookup.GetRecommendation(message.Code));
+                    message = entry.message.TrimEnd('\r', '\n'),
+                    file = entry.file,
+                    line = entry.line,
+                    column = entry.column,
+                    type = (mode & LogMessageFlags.kScriptCompileError) != 0 ? CompilerMessageType.Error : CompilerMessageType.Warning
+                });
+            }
 
-                    DescriptorLibrary.RegisterDescriptor(descriptor.Id, descriptor);
+            LogEntries.EndGettingEntries();
 
-                    yield return context.CreateIssue(IssueCategory.DomainReload, descriptor.Id)
-                        .WithLocation(relativePath, message.Line)
-                        .WithLogLevel(CompilerMessageTypeToLogLevel(message.Type))
-                        .WithCustomProperties(new object[(int)CompilerMessageProperty.Num]
-                        {
-                            message.Code,
-                            assemblyInfo.Name
-                        });
+            var projectFolder = Path.Combine(Application.dataPath, "../");
+
+            foreach (var unityMessage in compilerEntries)
+            {
+                AssemblyInfo assemblyInfo;
+                var assemblyName = UnityEditor.Compilation.CompilationPipeline.GetAssemblyNameFromScriptPath(unityMessage.file);
+                if (assemblyName == AssemblyInfo.DefaultAssemblyFileName || assemblyName == AssemblyInfo.DefaultEditorAssemblyFileName)
+                {
+                    var assemblyPath = Path.GetFullPath(Path.Combine("Library/ScriptAssemblies", assemblyName), projectFolder);
+                    assemblyInfo = AssemblyInfoProvider.GetAssemblyInfoFromUnityAssemblyPath(assemblyPath, assemblyName == AssemblyInfo.DefaultEditorAssemblyFileName);
                 }
                 else
                 {
-                    yield return context.CreateInsight(IssueCategory.CodeCompilerMessage, message.Message)
-                        .WithCustomProperties(new object[(int)CompilerMessageProperty.Num]
-                        {
-                            message.Code,
-                            assemblyInfo.Name
-                        })
-                        .WithLocation(relativePath, message.Line)
-                        .WithLogLevel(CompilerMessageTypeToLogLevel(message.Type));
+                    var assemblyPath = Path.GetFullPath(assemblyName, projectFolder);
+                    assemblyInfo = AssemblyInfoProvider.GetAssemblyInfoFromAssemblyPath(assemblyPath, null);
                 }
-            }
 
-            Profiler.EndSample();
+                var message = AssemblyCompilationTask.UnityCompilerMessageToProjectAuditorCompilerMessage(unityMessage);
+                yield return ProcessEditorCompilerMessage(context, assemblyInfo, message);
+            }
+        }
+
+        ReportItem ProcessEditorCompilerMessage(AnalysisContext context, AssemblyInfo assemblyInfo, AssemblyUtils.CompilerMessage message)
+        {
+            var relativePath = AssemblyInfoProvider.ResolveAssetPath(assemblyInfo, message.File);
+
+            // stephenm TODO - A more data-driven way to specify which view Roslyn messages should be sent to, depending on their code.
+            if (s_RegEx.IsMatch(message.Code))
+            {
+                var descriptor = new Descriptor(
+                    message.Code,
+                    message.Message,
+                    Areas.IterationTime,
+                    RoslynTextLookup.GetDescription(message.Code),
+                    RoslynTextLookup.GetRecommendation(message.Code));
+
+                DescriptorLibrary.RegisterDescriptor(descriptor.Id, descriptor);
+
+                return context.CreateIssue(IssueCategory.DomainReload, descriptor.Id)
+                    .WithLocation(relativePath, message.Line)
+                    .WithLogLevel(CompilerMessageTypeToLogLevel(message.Type))
+                    .WithCustomProperties(
+                    [
+                        message.Code,
+                        assemblyInfo.Name,
+                        assemblyInfo.GetTypeString()
+                    ]);
+            }
+            else
+            {
+                return context.CreateInsight(IssueCategory.CodeCompilerMessage, message.Message)
+                    .WithCustomProperties(
+                    [
+                        message.Code,
+                        assemblyInfo.Name,
+                        assemblyInfo.GetTypeString()
+                    ])
+                    .WithLocation(relativePath, message.Line)
+                    .WithLogLevel(CompilerMessageTypeToLogLevel(message.Type));
+            }
         }
 
         static LogLevel CompilerMessageTypeToLogLevel(CompilerMessageType compilerMessageType)

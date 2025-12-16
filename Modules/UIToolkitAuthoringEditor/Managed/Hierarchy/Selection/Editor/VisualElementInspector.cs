@@ -46,6 +46,7 @@ internal sealed class VisualElementInspector : VisualElement
     private readonly VisualElementHeader m_Header;
     private readonly OpenInBuilderElement m_OpenInBuilder;
     private readonly StyleInspectorElement m_StyleInspector;
+    private StyleInspectorDefaultContent m_StyleInspectorDefaultContent;
 
     [CreateProperty]
     public VisualElement Element
@@ -91,5 +92,29 @@ internal sealed class VisualElementInspector : VisualElement
         m_Header.SetEnabled(false);
         m_OpenInBuilder = this.Q<OpenInBuilderElement>(className:OpenInBuilderUssClass);
         m_StyleInspector = this.Q<StyleInspectorElement>(className:StyleInspectorClass);
+    }
+
+    protected override void HandleEventBubbleUp(EventBase evt)
+    {
+        switch (evt)
+        {
+            case AttachToPanelEvent attachToPanelEvent:
+            {
+                if (attachToPanelEvent.destinationPanel == null)
+                    return;
+                m_StyleInspector.contentContainer.Add(m_StyleInspectorDefaultContent = StyleInspectorDefaultContent.Get());
+                break;
+            }
+            case DetachFromPanelEvent detachFromPanelEvent:
+            {
+                if (detachFromPanelEvent.originPanel == null)
+                    return;
+                m_StyleInspectorDefaultContent?.RemoveFromHierarchy();
+                StyleInspectorDefaultContent.Release(m_StyleInspectorDefaultContent);
+                m_StyleInspectorDefaultContent = null;
+                break;
+            }
+        }
+        base.HandleEventBubbleUp(evt);
     }
 }

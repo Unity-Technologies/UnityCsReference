@@ -95,8 +95,6 @@ namespace UnityEditor.PackageManager.UI.Internal
         [SerializeField]
         private PageManager m_SerializedPageManager;
         [SerializeField]
-        private InspectorSelectionHandler m_SerializedInspectorSelectionHandler;
-        [SerializeField]
         private PageRefreshHandler m_SerializedPageRefreshHandler;
         [SerializeField]
         private PackageDatabase m_SerializedPackageDatabase;
@@ -158,7 +156,6 @@ namespace UnityEditor.PackageManager.UI.Internal
             var pageRefreshHandler = Register(new PageRefreshHandler(pageManager, applicationProxy, unityConnectProxy, assetDatabaseProxy, packageManagerPrefs, upmClient, upmRegistryClient, assetStoreClient));
             var backgroundFetchHandler = Register(new BackgroundFetchHandler(applicationProxy, unityConnectProxy, upmCache, upmClient, assetStoreClient, assetStoreCache, fetchStatusTracker, pageManager, pageRefreshHandler));
             var upmCacheRootClient = Register(new UpmCacheRootClient(clientProxy, applicationProxy));
-            var inspectorSelectionHandler = Register(new InspectorSelectionHandler(selectionProxy, packageDatabase, pageManager));
             var delayedSelectionHandler = Register(new DelayedSelectionHandler(packageDatabase, pageManager, pageRefreshHandler, upmCache, settingsProxy));
             var packageCreator = Register(new PackageCreator(upmClient, packageDatabase, unityConnectProxy, ioProxy, dateTimeProxy));
             var inProjectPackagesMonitor = Register(new InProjectPackagesMonitor(applicationProxy, settingsProxy, upmCache, upmRegistryClient, packageDatabase, pageRefreshHandler, customDisplayDialog));
@@ -189,7 +186,6 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_SerializedUpmCacheRootClient = upmCacheRootClient;
             m_SerializedPackageManagerPrefs = packageManagerPrefs;
             m_SerializedPageManager = pageManager;
-            m_SerializedInspectorSelectionHandler = inspectorSelectionHandler;
             m_SerializedPageRefreshHandler = pageRefreshHandler;
             m_SerializedPackageDatabase = packageDatabase;
             // A reset is needed to avoid creating new stylesheets each time we reload through the internal menu

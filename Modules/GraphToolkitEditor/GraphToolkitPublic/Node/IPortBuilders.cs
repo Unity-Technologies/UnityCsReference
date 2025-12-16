@@ -60,6 +60,18 @@ namespace Unity.GraphToolkit.Editor
         T WithDisplayName(string displayName);
 
         /// <summary>
+        /// Configures the tooltip text of the port being built.
+        /// </summary>
+        /// <param name="tooltip">The tooltip text to assign to the port.</param>
+        /// <returns>The current builder instance for method chaining.</returns>
+        /// <remarks>
+        /// Use this method to assign a custom tooltip description to the port. The tooltip appears in the user interface when hovering over the port name.
+        /// Set the tooltip before calling <see cref="Build"/>.
+        /// If not set, the display name and type of the port are used as a fallback in the format "DISPLAY NAME: Input of type PORT TYPE"
+        /// </remarks>
+        T WithTooltip(string tooltip);
+
+        /// <summary>
         /// Configures the connector UI shape for the port being built.
         /// </summary>
         /// <param name="connectorUI">The <see cref="PortConnectorUI"/> shape to use.</param>
@@ -71,6 +83,18 @@ namespace Unity.GraphToolkit.Editor
         /// Call this method before <see cref="IPortBuilder{T}.Build"/> to ensure the selected style is applied to the constructed port.
         /// </remarks>
         T WithConnectorUI(PortConnectorUI connectorUI);
+
+        /// <summary>
+        /// Configures the port to be built as a vertical port.
+        /// </summary>
+        /// <returns>The current builder instance for method chaining.</returns>
+        /// <remarks>
+        /// Use this method to place the port at the top (as an input) or bottom (as an output) of the node. This allows your graph to flow vertically, from top to bottom.
+        /// Vertical ports can connect to horizontal ports of the same type and vice versa. The name label for the ports is not displayed on the node. The name labels are only displayed via the port tooltip.
+        /// Ports are built as horizontal (i.e. left to right) by default. Call this method before <see cref="IPortBuilder{T}.Build"/> to ensure a port is built as a vertical port. 
+        /// However, this method is not supported for ports on a Block node, which are always displayed horizontally.
+        /// </remarks>
+        T AsVertical();
     }
 
     /// <summary>

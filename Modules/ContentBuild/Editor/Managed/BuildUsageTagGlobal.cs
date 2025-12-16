@@ -5,10 +5,15 @@
 using System;
 using System.Runtime.InteropServices;
 using UnityEngine.Bindings;
+using UnityEngine.Internal;
 using UnityEngine.Scripting;
 
 namespace UnityEditor.Build.Content
 {
+    ///<summary>Container for holding information about lighting information being used in a build.</summary>
+    ///<remarks>This struct helps ensure the correct Shared Variants and Mesh Channels are included in the build correctly.
+    ///
+    ///Note: this struct and its members exist to provide low-level support for the **Scriptable Build Pipeline** package. This is intended for internal use only; use the &lt;a href="https://docs.unity3d.com/Packages/com.unity.scriptablebuildpipeline@latest/index.html"&gt;Scriptable Build Pipeline package&lt;/a&gt; to implement a fully featured build pipeline. You can install this via the [Package Manager window](/upm-ui.md).</remarks>
     [Serializable]
     [UsedByNativeCode]
     [StructLayout(LayoutKind.Sequential)]
@@ -28,6 +33,7 @@ namespace UnityEditor.Build.Content
         internal bool m_BuildForServer;
         internal bool m_LODFadeCrossfade;
 
+        [ExcludeFromDocs]
         public static BuildUsageTagGlobal operator|(BuildUsageTagGlobal x, BuildUsageTagGlobal y)
         {
             var results = new BuildUsageTagGlobal();

@@ -533,5 +533,7 @@ namespace UnityEngine
         internal extern int IsMarkedVisible();
 
         public GameObject gameObject { get { return this; } }
+
+        public extern bool IsDestroying();
     }
 }

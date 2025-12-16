@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-//#define PA_WELCOME_VIEW_OPTIONS
 //#define PA_DRAW_LOGO
 
 using System;
@@ -16,9 +15,7 @@ using Unity.ProjectAuditor.Editor.AssemblyUtils;
 using Unity.ProjectAuditor.Editor.Core;
 using Unity.ProjectAuditor.Editor.Utils;
 using UnityEditor;
-
 using UnityEngine;
-using UnityEngine.Profiling;
 
 using TreeViewState = UnityEditor.IMGUI.Controls.TreeViewState<int>;
 using UnityEditor.PackageManager.Requests;
@@ -58,9 +55,6 @@ namespace Unity.ProjectAuditor.Editor.UI
         // UI
         TreeViewSelection m_AreaSelection;
         TreeViewSelection m_AssemblySelection;
-        List<string> m_DefaultAssemblies = new List<string>();
-
-        internal List<string> DefaultAssemblies => m_DefaultAssemblies;
 
         Draw2D m_Draw2D;
 
@@ -71,12 +65,12 @@ namespace Unity.ProjectAuditor.Editor.UI
         // Serialized fields
         [SerializeField] string m_AreaSelectionSummary;
         [SerializeField] string[] m_AssemblyNames;
+        [SerializeField] bool[] m_AssemblyReadOnlyFlags;
         [SerializeField] string m_AssemblySelectionSummary;
         [SerializeField] Report m_Report;
         [SerializeField] AnalysisState m_AnalysisState = AnalysisState.Initializing;
         [SerializeField] ViewStates m_ViewStates = new ViewStates();
         [SerializeField] ViewManager m_ViewManager;
-
 
         static readonly string k_ReportAutoSaveFilename = "projectauditor-report-autosave.projectauditor";
 
@@ -112,6 +106,8 @@ namespace Unity.ProjectAuditor.Editor.UI
 
                 EditorApplication.update -= RulesPackageInstallProgressCallback;
                 RulesPackageInstallRequest = null;
+
+                ProjectAuditorRulesPackage.Initialize();
             }
         }
 
@@ -120,74 +116,49 @@ namespace Unity.ProjectAuditor.Editor.UI
             Tab[] tabs = {
                 new Tab
                 {
-                    id = TabId.Summary, name = "Summary", categories = new SerializableEnum<IssueCategory>[] { IssueCategory.Metadata }
+                    id = TabId.Summary, name = "Summary", categories = [IssueCategory.Metadata]
                 },
                 new Tab
                 {
                     id = TabId.Code, name = "Code",
-                    categories = new SerializableEnum<IssueCategory>[]
-                    {
+                    categories =
+                    [
                         IssueCategory.Code, IssueCategory.Assembly, IssueCategory.PrecompiledAssembly,
                         IssueCategory.CodeCompilerMessage, IssueCategory.DomainReload
-                    }
+                    ]
                 },
                 new Tab
                 {
                     id = TabId.Assets, name = "Assets",
-                    categories = new SerializableEnum<IssueCategory>[]
-                    {
+                    categories =
+                    [
                         IssueCategory.AssetIssue, IssueCategory.Texture, IssueCategory.SpriteAtlas, IssueCategory.Mesh,
                         IssueCategory.AudioClip, IssueCategory.AnimatorController, IssueCategory.AnimationClip,
                         IssueCategory.Avatar, IssueCategory.AvatarMask
-                    }
+                    ]
                 },
                 new Tab
                 {
                     id = TabId.Shaders, name = "Shaders",
-                    categories = new SerializableEnum<IssueCategory>[]
-                    {
+                    categories =
+                    [
                         IssueCategory.Shader, IssueCategory.ShaderVariant, /*IssueCategory.ComputeShaderVariant,*/
                         IssueCategory.ShaderCompilerMessage, IssueCategory.Material
-                    }
+                    ]
                 },
                 new Tab
                 {
                     id = TabId.Settings, name = "Project",
-                    categories = new SerializableEnum<IssueCategory>[] { IssueCategory.ProjectSetting, IssueCategory.Package }
+                    categories = [IssueCategory.ProjectSetting, IssueCategory.Package]
                 },
                 new Tab
                 {
                     id = TabId.Build, name = "Build",
-                    categories = new SerializableEnum<IssueCategory>[] { IssueCategory.BuildFile, IssueCategory.BuildStep }
+                    categories = [IssueCategory.BuildFile, IssueCategory.BuildStep]
                 },
             };
 
             return tabs;
-        }
-
-        // return true if:
-        // - this issue is not in a package
-        // - we're analyzing package for issues
-        // return false otherwise
-        public bool PackageFilterMatch(ReportItem issue)
-        {
-            if (UserPreferences.AnalyzePackagesForIssues == true)
-                return true;
-
-            if (issue.Location == null)
-                return false;
-
-            if ((issue.Location.Path.IndexOf("packages/", StringComparison.OrdinalIgnoreCase) >= 0)
-                || (issue.Location.Path.IndexOf("Unity.SourceGenerators/", StringComparison.OrdinalIgnoreCase) >= 0))
-            {
-                return false;
-            }
-
-            var isDiagnostic = issue.IsIssue();
-            if (!isDiagnostic)
-                return true;
-
-            return true;
         }
 
         public bool Match(ReportItem issue)
@@ -199,16 +170,10 @@ namespace Unity.ProjectAuditor.Editor.UI
             // - critical context, if enabled/applicable
 
             var viewDesc = activeView.Desc;
-
-            if (!PackageFilterMatch(issue))
-                return false;
-
-            Profiler.BeginSample("MatchAssembly");
             var matchAssembly = !viewDesc.ShowAssemblySelection ||
                 m_AssemblySelection != null &&
                 (m_AssemblySelection.Contains(viewDesc.GetAssemblyName(issue)) ||
                     m_AssemblySelection.ContainsGroup("All"));
-            Profiler.EndSample();
             if (!matchAssembly)
                 return false;
 
@@ -219,16 +184,12 @@ namespace Unity.ProjectAuditor.Editor.UI
             // TODO: the rest of this logic is common to all diagnostic views. It should be moved to the AnalysisView
             if (activeView.IsDiagnostic()) // Only checking matching areas on views that support Area filtering
             {
-                Profiler.BeginSample("MatchArea");
                 var matchArea = issue.Id.IsValid() && issue.Id.GetDescriptor().MatchesAnyAreas(m_SelectedAreas);
-
-                Profiler.EndSample();
                 if (!matchArea)
                     return false;
             }
 
-            if (m_ViewStates.onlyCriticalIssues &&
-                !issue.IsMajorOrCritical())
+            if (activeView.OnlyCriticalIssues() && !issue.IsMajorOrCritical())
                 return false;
 
             return true;
@@ -251,24 +212,14 @@ namespace Unity.ProjectAuditor.Editor.UI
                 m_Report.PostSerializeLayoutUpdate(requestedModules);
             }
 
-            UserPreferences.OnAnalyzePackageIsChanged = i =>
-            {
-                UpdateAssemblyNames();
-                UpdateAssemblySelection(true);
-                m_ViewManager.GetActiveView().MarkDirty();
-                Repaint();
-            };
-
             var currentState = m_AnalysisState;
             m_AnalysisState = AnalysisState.Initializing;
             m_Tabs = GetDefaultTabs();
 
             AnalyticsReporter.EnableAnalytics();
 
-            Profiler.BeginSample("Update Selections");
             UpdateAreaSelection();
             UpdateAssemblySelection();
-            Profiler.EndSample();
 
             InitializeViews(ProjectAuditorSettings.instance.Rules, true);
 
@@ -277,10 +228,8 @@ namespace Unity.ProjectAuditor.Editor.UI
                 m_Report != null &&
                 m_Report.IsValid())
             {
-                Profiler.BeginSample("Views Update");
                 m_ViewManager.OnAnalysisRestored(m_Report);
                 m_AnalysisState = currentState;
-                Profiler.EndSample();
             }
             else
             {
@@ -298,9 +247,7 @@ namespace Unity.ProjectAuditor.Editor.UI
 
             m_Draw2D = new Draw2D(ProjectAuditor.s_DataPath + "/Shaders/ProjectAuditor.shader");
 
-            Profiler.BeginSample("Refresh");
             RefreshWindow();
-            Profiler.EndSample();
 
             wantsMouseMove = true;
         }
@@ -391,7 +338,7 @@ namespace Unity.ProjectAuditor.Editor.UI
 
             m_ViewManager.OnAnalysisRequested += category =>
             {
-                AuditCategories(new[] { category });
+                AuditCategories(ProjectAreaFlags.None, [category]);
                 GUIUtility.ExitGUI();
             };
 
@@ -400,8 +347,6 @@ namespace Unity.ProjectAuditor.Editor.UI
                 AnalyticsReporter.SendEvent(AnalyticsReporter.UIButton.Export,
                     AnalyticsReporter.BeginAnalytic());
             };
-
-            Profiler.BeginSample("Views Creation");
 
             m_ViewManager.Create(rules, m_ViewStates, null, this);
 
@@ -412,8 +357,6 @@ namespace Unity.ProjectAuditor.Editor.UI
             var summary = m_ViewManager.GetView(IssueCategory.Metadata);
             if (summary is SummaryView summaryView)
                 summaryView.m_ProjectAuditorWindow = this;
-
-            Profiler.EndSample();
         }
 
         void InitializeTabs(bool reload)
@@ -556,16 +499,40 @@ namespace Unity.ProjectAuditor.Editor.UI
                     GUILayout.FlexibleSpace();
                     if (GUILayout.Button(string.Format(Contents.AnalyzeButtonText, tabName), GUILayout.Width(200)))
                     {
-                        var categories = GetTabCategories(m_SelectedNonAnalyzedTab);
-                        AuditCategories(categories.ToArray());
+                        bool validPreferences = true;
+                        if (m_SelectedNonAnalyzedTab.id == TabId.Code)
+                            validPreferences = ValidateCodeAnalysisWithPopup();
 
-                        m_ViewSelectionTreeView.Reload();
-                        m_ViewSelectionTreeView.SelectItemByCategory(categories[0]);
+                        if (validPreferences)
+                        {
+                            var area = GetTabProjectArea(m_SelectedNonAnalyzedTab.id);
+                            var categories = GetTabCategories(m_SelectedNonAnalyzedTab);
+                            AuditCategories(area, categories.ToArray());
 
-                        m_IsNonAnalyzedViewSelected = false;
+                            m_ViewSelectionTreeView.Reload();
+                            m_ViewSelectionTreeView.SelectItemByCategory(categories[0]);
+
+                            m_IsNonAnalyzedViewSelected = false;
+                        }
                     }
-
                     GUILayout.FlexibleSpace();
+                }
+
+                if (m_SelectedNonAnalyzedTab.id == TabId.Code)
+                {
+                    const int k_SpacingHeight = 12;
+
+                    using (new EditorGUILayout.HorizontalScope())
+                    {
+                        GUILayout.FlexibleSpace();
+                        using (new EditorGUILayout.VerticalScope(GUILayout.MaxWidth(350)))
+                        {
+                            GUILayout.Space(k_SpacingHeight);
+                            UserPreferences.CodeAnalysisGUI();
+                            GUILayout.Space(k_SpacingHeight);
+                        }
+                        GUILayout.FlexibleSpace();
+                    }
                 }
             }
         }
@@ -977,7 +944,8 @@ namespace Unity.ProjectAuditor.Editor.UI
             {
                 Categories = GetSelectedCategories().ToSerializableArray(),
                 Platform = GetSelectedAnalysisPlatform(),
-                CompilationMode = GetSelectedCompilationMode(),
+                CodeAnalysisFlags = GetSelectedCompilationFlags(),
+                CodeOwnerFlags = GetSelectedCodeOwnerFlags(),
 
                 OnIncomingIssues = issues =>
                 {
@@ -1019,7 +987,7 @@ namespace Unity.ProjectAuditor.Editor.UI
                 Repaint();
         }
 
-        internal void AuditCategories(IssueCategory[] categories)
+        internal void AuditCategories(ProjectAreaFlags areas, IssueCategory[] categories)
         {
             if (m_ProjectAuditor == null)
                 m_ProjectAuditor = new ProjectAuditor();
@@ -1042,8 +1010,10 @@ namespace Unity.ProjectAuditor.Editor.UI
             {
                 Categories = actualCategories.ToSerializableArray(),
                 Platform = m_Report.SessionInfo.Platform,
-                CompilationMode = GetSelectedCompilationMode(),
+                CodeAnalysisFlags = GetSelectedCompilationFlags(),
+                CodeOwnerFlags = GetSelectedCodeOwnerFlags(),
                 ExistingReport = m_Report,
+                ExistingReportProjectAreas = areas,
                 OnIncomingIssues = issues =>
                 {
                     foreach (var view in views)
@@ -1081,7 +1051,7 @@ namespace Unity.ProjectAuditor.Editor.UI
 
         public void AnalyzeShaderVariants()
         {
-            AuditCategories(GetTabCategories(TabId.Shaders));
+            AuditCategories(GetTabProjectArea(TabId.Shaders), GetTabCategories(TabId.Shaders));
             GUIUtility.ExitGUI();
         }
 
@@ -1132,7 +1102,7 @@ namespace Unity.ProjectAuditor.Editor.UI
 
         BuildTarget GetSelectedAnalysisPlatform()
         {
-            var platform = UserPreferences.AnalysisTargetPlatform;
+            BuildTarget platform = UserPreferences.AnalysisTargetPlatform;
 
             // if platform is not selected or supported, fallback to active build target
             if (platform == BuildTarget.NoTarget ||
@@ -1142,25 +1112,33 @@ namespace Unity.ProjectAuditor.Editor.UI
             return platform;
         }
 
-        CompilationMode GetSelectedCompilationMode()
+        CodeAnalysisFlags GetSelectedCompilationFlags()
         {
-            return UserPreferences.CompilationMode;
+            return UserPreferences.CodeAnalysisFlags;
+        }
+
+        CodeOwnerFlags GetSelectedCodeOwnerFlags()
+        {
+            if (Unsupported.IsDeveloperMode())
+                return UserPreferences.CodeOwnerFlags;
+            return CodeOwnerFlags.User;
         }
 
         IssueCategory[] GetSelectedCategories()
         {
             var selectedCategories = UserPreferences.ProjectAreasToAnalyze;
+            var requestedCategories = new List<IssueCategory>([IssueCategory.Metadata]);
+            ProjectAreaFlags categories = selectedCategories;
 
-            var requestedCategories = new List<IssueCategory>(new[] { IssueCategory.Metadata });
-            if (selectedCategories.HasFlag(ProjectAreaFlags.Code))
+            if (categories.HasFlag(ProjectAreaFlags.Code))
                 requestedCategories.AddRange(GetTabCategories(TabId.Code));
-            if (selectedCategories.HasFlag(ProjectAreaFlags.ProjectSettings))
+            if (categories.HasFlag(ProjectAreaFlags.ProjectSettings))
                 requestedCategories.AddRange(GetTabCategories(TabId.Settings));
-            if (selectedCategories.HasFlag(ProjectAreaFlags.Assets))
+            if (categories.HasFlag(ProjectAreaFlags.Assets))
                 requestedCategories.AddRange(GetTabCategories(TabId.Assets));
-            if (selectedCategories.HasFlag(ProjectAreaFlags.Shaders))
+            if (categories.HasFlag(ProjectAreaFlags.Shaders))
                 requestedCategories.AddRange(GetTabCategories(TabId.Shaders));
-            if (selectedCategories.HasFlag(ProjectAreaFlags.Build))
+            if (categories.HasFlag(ProjectAreaFlags.Build))
                 requestedCategories.AddRange(GetTabCategories(TabId.Build));
 
             return requestedCategories.ToArray();
@@ -1174,6 +1152,20 @@ namespace Unity.ProjectAuditor.Editor.UI
         IssueCategory[] GetTabCategories(Tab tab)
         {
             return tab.categories.ToValuesArray();
+        }
+
+        ProjectAreaFlags GetTabProjectArea(TabId tabId)
+        {
+            switch (tabId)
+            {
+                case TabId.Code: return ProjectAreaFlags.Code;
+                case TabId.Assets: return ProjectAreaFlags.Assets;
+                case TabId.Shaders: return ProjectAreaFlags.Shaders;
+                case TabId.Settings: return ProjectAreaFlags.ProjectSettings;
+                case TabId.Build: return ProjectAreaFlags.Build;
+                default:
+                    return ProjectAreaFlags.None;
+            }
         }
 
         void DrawAssemblyFilter()
@@ -1355,78 +1347,97 @@ namespace Unity.ProjectAuditor.Editor.UI
                         GUILayout.FlexibleSpace();
                     }
 
-
-                    EditorGUILayout.Space(k_SpacingHeight);
-
-
-                    var projectAreas = UserPreferences.ProjectAreasToAnalyze;
+                    using (new EditorGUILayout.HorizontalScope())
+                    {
+                        GUILayout.FlexibleSpace();
+                        using (new EditorGUILayout.VerticalScope(GUILayout.MaxWidth(350)))
+                        {
+                            GUILayout.Space(k_SpacingHeight);
+                            UserPreferences.SharedPreferencesGUI();
+                            GUILayout.Space(k_SpacingHeight);
+                        }
+                        GUILayout.FlexibleSpace();
+                    }
 
                     using (new EditorGUILayout.HorizontalScope())
                     {
                         GUILayout.FlexibleSpace();
 
                         const int k_ButtonWidth = 140;
-
-                        // Preferences button
-                        if (GUILayout.Button("Preferences", SharedStyles.LinkLabel, GUILayout.Width(k_ButtonWidth), GUILayout.Height(30)))
+                        using (new EditorGUILayout.VerticalScope(GUILayout.Width(k_ButtonWidth)))
                         {
-                            EditorInterop.OpenProjectAuditorPreferences();
-                        }
-
-                        // Analyze button
-                        using (new EditorGUI.DisabledScope((m_AnalysisState == AnalysisState.InProgress) || (ProjectAuditorRulesPackage.IsInstalled == false) || (RulesPackageInstallRequest != null)))
-                        {
-                            var content = ProjectAuditorRulesPackage.IsInstalled ? Contents.AnalyzeButton : Contents.AnalyzeButtonDisabled;
-                            if (GUILayout.Button(content, GUILayout.Width(k_ButtonWidth), GUILayout.Height(30)))
+                            // Analyze button
+                            using (new EditorGUI.DisabledScope((m_AnalysisState == AnalysisState.InProgress) || (ProjectAuditorRulesPackage.IsInstalled == false) || (RulesPackageInstallRequest != null)))
                             {
-                                if (projectAreas == ProjectAreaFlags.None)
+                                var content = ProjectAuditorRulesPackage.IsInstalled ? Contents.AnalyzeButton : Contents.AnalyzeButtonDisabled;
+                                if (GUILayout.Button(content, GUILayout.Width(k_ButtonWidth), GUILayout.Height(30)))
                                 {
-                                    if (EditorUtility.DisplayDialog(k_EnableAreas, k_EnableAreasQuestion, "Ok", "Cancel"))
+                                    bool validPreferences = true;
+                                    var projectAreas = UserPreferences.ProjectAreasToAnalyze;
+
+                                    if (projectAreas == ProjectAreaFlags.None)
                                     {
-                                        UserPreferences.ProjectAreasToAnalyze = ProjectAreaFlags.All;
+                                        validPreferences = false;
+                                        if (EditorUtility.DisplayDialog(k_EnableAreas, k_EnableAreasQuestion, "Ok", "Cancel"))
+                                        {
+                                            UserPreferences.ProjectAreasToAnalyze.Set(ProjectAreaFlags.All);
+                                            projectAreas.Set(ProjectAreaFlags.All);
+                                            validPreferences = true;
+                                        }
+                                    }
+
+                                    if ((projectAreas & ProjectAreaFlags.Code) != 0)
+                                    {
+                                        if (validPreferences)
+                                            validPreferences = ValidateCodeAnalysisWithPopup();
+                                    }
+
+                                    if (validPreferences)
+                                    {
                                         Analyze();
                                         GUIUtility.ExitGUI();
                                     }
                                 }
-                                else
+                            }
+
+                            // Install rules
+                            using (new EditorGUI.DisabledScope((m_AnalysisState == AnalysisState.InProgress) || (ProjectAuditorRulesPackage.IsLatest) || (RulesPackageInstallRequest != null)))
+                            {
+                                var content = Contents.InstallRulesButton;
+                                if (RulesPackageInstallRequest != null)
                                 {
-                                    Analyze();
-                                    GUIUtility.ExitGUI();
+                                    int frame = Utility.GetStatusWheelFrame();
+                                    content = Contents.UpdateRulesButtonInProgress[frame];
+                                }
+                                else if (ProjectAuditorRulesPackage.IsLatest)
+                                {
+                                    content = Contents.UpdateRulesButtonDisabled;
+                                }
+                                else if (ProjectAuditorRulesPackage.IsInstalled)
+                                {
+                                    content = Contents.UpdateRulesButton;
+                                }
+
+                                if (GUILayout.Button(content, GUILayout.Width(k_ButtonWidth), GUILayout.Height(30)))
+                                {
+                                    RulesPackageInstallRequest = Client.Add(ProjectAuditorRulesPackage.Name);
+                                    EditorApplication.update += RulesPackageInstallProgressCallback;
                                 }
                             }
-                        }
 
-                        // Install rules
-                        using (new EditorGUI.DisabledScope((m_AnalysisState == AnalysisState.InProgress) || (ProjectAuditorRulesPackage.IsLatest) || (RulesPackageInstallRequest != null)))
-                        {
-                            var content = Contents.InstallRulesButton;
-                            if (RulesPackageInstallRequest != null)
+                            // Preferences button
+                            using (new EditorGUILayout.HorizontalScope())
                             {
-                                int frame = Utility.GetStatusWheelFrame();
-                                content = Contents.UpdateRulesButtonInProgress[frame];
-                            }
-                            else if (ProjectAuditorRulesPackage.IsLatest)
-                            {
-                                content = Contents.UpdateRulesButtonDisabled;
-                            }
-                            else if (ProjectAuditorRulesPackage.IsInstalled)
-                            {
-                                content = Contents.UpdateRulesButton;
-                            }
-
-                            if (GUILayout.Button(content, GUILayout.Width(k_ButtonWidth), GUILayout.Height(30)))
-                            {
-                                RulesPackageInstallRequest = Client.Add(ProjectAuditorRulesPackage.Name);
-                                EditorApplication.update += RulesPackageInstallProgressCallback;
+                                GUILayout.FlexibleSpace();
+                                if (GUILayout.Button("All Preferences", SharedStyles.LinkLabel, GUILayout.Height(30)))
+                                {
+                                    EditorInterop.OpenProjectAuditorPreferences();
+                                }
+                                GUILayout.FlexibleSpace();
                             }
                         }
-
                         GUILayout.FlexibleSpace();
                     }
-
-                    EditorGUILayout.Space(k_SpacingHeight);
-
-                    DrawHorizontalLine();
 
                     GUILayout.FlexibleSpace();
                     GUILayout.FlexibleSpace();
@@ -1439,15 +1450,30 @@ namespace Unity.ProjectAuditor.Editor.UI
             EditorGUILayout.EndVertical();
         }
 
-        void DrawHorizontalLine()
+        bool ValidateCodeAnalysisWithPopup()
         {
-            var rect = EditorGUILayout.GetControlRect(GUILayout.Height(1));
+            bool validPreferences = true;
+            var codeAnalysisFlags = UserPreferences.CodeAnalysisFlags;
+            var codeOwnerFlags = UserPreferences.CodeOwnerFlags;
 
-            if (m_Draw2D.DrawStart(rect))
+            if (codeOwnerFlags == CodeOwnerFlags.None)
             {
-                m_Draw2D.DrawLine(0, 0, rect.width, 0, Color.black);
-                m_Draw2D.DrawEnd();
+                validPreferences = false;
+                if (EditorUtility.DisplayDialog(k_EnableCodeOwners, k_EnableCodeOwnersQuestion, "Ok", "Cancel"))
+                {
+                    UserPreferences.CodeOwnerFlags.Set(CodeOwnerFlags.User);
+                    codeOwnerFlags.Set(CodeOwnerFlags.User);
+                    validPreferences = true;
+                }
             }
+
+            if (validPreferences && (codeAnalysisFlags & (CodeAnalysisFlags.Player | CodeAnalysisFlags.Editor)) == 0)
+            {
+                validPreferences = false;
+                EditorUtility.DisplayDialog(k_NoCodeSelected, k_NoCodeSelectedMessage, "Ok");
+            }
+
+            return validPreferences;
         }
 
         void DrawPanels()
@@ -1467,7 +1493,7 @@ namespace Unity.ProjectAuditor.Editor.UI
                 }
 
                 activeView.VerticalScrollViewPos = EditorGUILayout.BeginScrollView(activeView.VerticalScrollViewPos,
-                    false, true, GUIStyle.none,
+                    false, false, GUIStyle.none,
                     GUI.skin.verticalScrollbar, GUI.skin.scrollView);
 
                 Rect clipRect = new Rect(activeView.VerticalScrollViewPos.x, activeView.VerticalScrollViewPos.y,
@@ -1624,24 +1650,21 @@ namespace Unity.ProjectAuditor.Editor.UI
         {
             if (m_Report == null)
                 return;
-            // update list of assembly names
-            if (UserPreferences.AnalyzePackagesForIssues)
-            {
-                var assemblyNames = m_Report.FindByCategory(IssueCategory.Assembly).Select(i => i.Description)
-                    .ToArray();
-                m_AssemblyNames = assemblyNames.Distinct().OrderBy(str => str).ToArray();
-            }
-            else
-            {
-                var assemblyNames = m_Report.FindByCategory(IssueCategory.Assembly).Select(i => i.Description)
-                    .ToArray();
-                string[] allAssemblies = assemblyNames.Distinct().OrderBy(str => str).ToArray();
 
-                if (m_Report.IsForCurrentProject())
-                    m_AssemblyNames = allAssemblies.Where(a => !AssemblyInfoProvider.IsPackageAssembly(a)).ToArray();
-                else
-                    m_AssemblyNames = allAssemblies;
-            }
+            var assemblyNames = m_Report.FindByCategory(IssueCategory.Assembly).Select(i => new System.Tuple<string, bool>(i.Description, i.GetCustomPropertyBool(AssemblyProperty.ReadOnly)));
+            var allAssemblies = assemblyNames.GroupBy(i => i.Item1).Select(g => g.First()).OrderBy(i => i.Item1).ToArray();
+
+            var codeOwnerFlags = m_Report.SessionInfo.CodeOwnerFlags;
+            bool allowPackages = (m_Report.SessionInfo.CodeAnalysisFlags & CodeAnalysisFlags.Packages) != 0;
+            bool allowUnityCode = (codeOwnerFlags & CodeOwnerFlags.Unity) != 0;
+            bool allowUserCode = (codeOwnerFlags & CodeOwnerFlags.User) != 0;
+
+            // update list of assembly names
+            if (m_Report.IsForCurrentProject())
+                allAssemblies = allAssemblies.Where(a => !AssemblyInfoProvider.FilterAssembly(a.Item1, allowPackages, allowUnityCode, allowUserCode)).ToArray();
+
+            m_AssemblyNames = allAssemblies.Select(a => a.Item1).ToArray();
+            m_AssemblyReadOnlyFlags = allAssemblies.Select(a => a.Item2).ToArray();
         }
 
         void UpdateAssemblySelection(bool forceRefresh = false)
@@ -1669,35 +1692,24 @@ namespace Unity.ProjectAuditor.Editor.UI
 
             if (m_Report.IsForCurrentProject())
             {
-                if (forceRefresh || !m_AssemblySelection.selection.Any())
+                if (forceRefresh || m_AssemblySelection.selection.Count == 0)
                 {
-                    // initial selection setup:
-                    // - assemblies from user scripts or editable packages, or
-                    // - default assembly, or,
-                    // - all generated assemblies
-                    IEnumerable<string> compiledAssemblies = null;
+                    var codeOwnerFlags = m_Report.SessionInfo.CodeOwnerFlags;
+                    bool allowPackages = (m_Report.SessionInfo.CodeAnalysisFlags & CodeAnalysisFlags.Packages) != 0;
+                    bool allowUnityCode = (codeOwnerFlags & CodeOwnerFlags.Unity) != 0;
+                    bool allowUserCode = (codeOwnerFlags & CodeOwnerFlags.User) != 0;
 
-                    if (UserPreferences.AnalyzePackagesForIssues)
-                        compiledAssemblies = m_AssemblyNames.Where(a => !AssemblyInfoProvider.IsUnityEngineAssembly(a));
-                    else
-                        compiledAssemblies = m_AssemblyNames.Where(a => !AssemblyInfoProvider.IsPackageAssembly(a));
+                    var compiledAssemblies = new List<string>(m_AssemblyNames.Length);
+                    for (int i = 0; i < m_AssemblyNames.Length; i++)
+                    {
+                        if (!m_AssemblyReadOnlyFlags[i])
+                            compiledAssemblies.Add(m_AssemblyNames[i]);
+                    }
 
-                    compiledAssemblies = compiledAssemblies.Where(a =>
-                        !AssemblyInfoProvider.IsReadOnlyAssembly(a)).ToArray();
                     m_AssemblySelection.selection.AddRange(compiledAssemblies);
 
-                    if (m_DefaultAssemblies == null)
-                        m_DefaultAssemblies = new List<string>(m_AssemblySelection.selection.Count);
-
-                    m_DefaultAssemblies.AddRange(m_AssemblySelection.selection);
-
-                    if (!m_AssemblySelection.selection.Any())
-                    {
-                        if (m_AssemblyNames.Contains(AssemblyInfo.DefaultAssemblyName))
-                            m_AssemblySelection.Set(AssemblyInfo.DefaultAssemblyName);
-                        else
-                            m_AssemblySelection.SetAll(m_AssemblyNames);
-                    }
+                    if (m_AssemblySelection.selection.Count == 0)
+                        m_AssemblySelection.SetAll(m_AssemblyNames);
                 }
             }
 
@@ -1742,8 +1754,19 @@ namespace Unity.ProjectAuditor.Editor.UI
                 {
                     if (GUILayout.Button(Contents.DiscardButton, EditorStyles.toolbarButton, GUILayout.Width(discardButtonWidth)))
                     {
-                        if (!m_Report.NeedsSaving ||
-                            EditorUtility.DisplayDialog(k_Discard, k_DiscardQuestion, "Discard", "Cancel"))
+                        DialogResult response = DialogResult.DefaultAction;
+                        if (m_Report.NeedsSaving)
+                        {
+                            if (m_AnalysisState == AnalysisState.Valid)
+                                response = EditorDialog.DisplayComplexDecisionDialog(k_Discard, k_DiscardQuestion, "Discard", "Save", "Cancel");
+                            else
+                                response = EditorUtility.DisplayDialog(k_Discard, k_DiscardQuestion, "Discard", "Cancel") ? DialogResult.DefaultAction : DialogResult.Cancel;
+                        }
+
+                        if (response == DialogResult.AlternateAction)
+                            SaveReport(out var _);
+
+                        if (response != DialogResult.Cancel)
                         {
                             m_ActiveTabIndex = 0;
                             m_AnalysisState = AnalysisState.Initialized;
@@ -1775,7 +1798,13 @@ namespace Unity.ProjectAuditor.Editor.UI
                     if (GUILayout.Button(Contents.SaveButton, EditorStyles.toolbarButton,
                         GUILayout.Width(loadSaveButtonWidth)))
                     {
-                        SaveReport();
+                        if (SaveReport(out var path))
+                        {
+                            EditorUtility.RevealInFinder(path);
+                            AnalyticsReporter.SendEvent(AnalyticsReporter.UIButton.Save, AnalyticsReporter.BeginAnalytic());
+                        }
+
+                        GUIUtility.ExitGUI();
                     }
                 }
 
@@ -1891,7 +1920,7 @@ namespace Unity.ProjectAuditor.Editor.UI
             return wasButtonClicked;
         }
 
-        void SaveReport()
+        bool SaveReport(out string path)
         {
             // Avoid unsupported save name characters from the report's displayname (project name)
             var invalidChars = Path.GetInvalidFileNameChars();
@@ -1901,7 +1930,7 @@ namespace Unity.ProjectAuditor.Editor.UI
                 reportDisplayName.Replace(c, '_');
             }
 
-            var path = EditorUtility.SaveFilePanel(k_SaveToFile, UserPreferences.LoadSavePath, reportDisplayName.ToString(), "projectauditor");
+            path = EditorUtility.SaveFilePanel(k_SaveToFile, UserPreferences.LoadSavePath, reportDisplayName.ToString(), "projectauditor");
             if (path.Length != 0)
             {
                 m_Report.NeedsSaving = false;
@@ -1912,11 +1941,10 @@ namespace Unity.ProjectAuditor.Editor.UI
 
                 UserPreferences.LoadSavePath = Path.GetDirectoryName(path);
 
-                EditorUtility.RevealInFinder(path);
-                AnalyticsReporter.SendEvent(AnalyticsReporter.UIButton.Save, AnalyticsReporter.BeginAnalytic());
+                return true;
             }
 
-            GUIUtility.ExitGUI();
+            return false;
         }
 
         void LoadReport()
@@ -2056,8 +2084,11 @@ namespace Unity.ProjectAuditor.Editor.UI
         const string k_Discard = "Start New Analysis";
         const string k_DiscardQuestion = "If you start a new analysis, the current report will be discarded.";
         const string k_EnableAreas = "No Project Areas selected";
-        const string k_EnableAreasQuestion =
-            "Enable all analysis areas and continue?\n\nAreas can be individually toggled in the Project Auditor section of Preferences.";
+        const string k_EnableCodeOwners = "No Code Owners selected";
+        const string k_EnableAreasQuestion = "Enable all analysis areas and continue?\n\nAreas can be individually toggled in the Project Auditor section of Preferences.";
+        const string k_EnableCodeOwnersQuestion = "Enable user code analysis and continue?\n\nCode owners can be individually toggled in the Project Auditor section of Preferences.";
+        const string k_NoCodeSelected = "Invalid Code Analysis Areas";
+        const string k_NoCodeSelectedMessage = "Please select either Editor, Player or both.";
 
         // UI styles and layout
         static class LayoutSize
@@ -2080,7 +2111,7 @@ namespace Unity.ProjectAuditor.Editor.UI
             public static readonly GUIContent InstallRulesButton =
                 new GUIContent("Install Rules", $"Please install the rules package to analyze your project ({ProjectAuditorRulesPackage.Name}).");
             public static readonly GUIContent UpdateRulesButton =
-                new GUIContent("Update Rules", $"Please update your rules package to the latest version ({{ProjectAuditorRulesPackage.Name}}).");
+                new GUIContent("Update Rules", $"Please update your rules package to the latest version ({ProjectAuditorRulesPackage.Name}@{ProjectAuditorRulesPackage.LatestVersion}).");
             public static readonly GUIContent UpdateRulesButtonDisabled =
                 new GUIContent("Update Rules", "Everything is up to date!");
             public static readonly GUIContent[] UpdateRulesButtonInProgress;
@@ -2122,6 +2153,13 @@ namespace Unity.ProjectAuditor.Editor.UI
             public static readonly string AnalyzeInfoText = "{0} analysis is not yet included in this report. Run analysis now?";
             public static readonly string AnalyzeButtonText = "Start {0} Analysis";
 
+            public static readonly GUIContent ProjectAreaSelection =
+                new GUIContent("Project Areas", $"Select project areas to analyze.");
+
+            public static readonly GUIContent PlatformSelection =
+                new GUIContent("Platform", "Select the target platform.");
+            public static readonly GUIContent CompilationModeSelection =
+                new GUIContent("Compilation Mode", "Select the compilation mode.");
 
             static Contents()
             {

@@ -34,7 +34,7 @@ namespace Unity.UI.Builder
 
             while (parent != null && parent != root)
             {
-                var computedStyle = parent.computedStyle;
+                ref var computedStyle = ref parent.computedStyle;
 
                 if (!computedStyle.translate.IsNone())
                     return true;

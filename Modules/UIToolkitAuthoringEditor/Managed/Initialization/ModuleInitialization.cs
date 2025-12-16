@@ -2,12 +2,24 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
+using System.Collections.Generic;
+using Unity.Scripting;
+using UnityEditor;
+using UnityEngine.Assertions;
+using UnityEngine.Scripting;
 using UnityEngine.UIElements;
 
 namespace Unity.UIToolkit.Editor
 {
     internal static class ModuleInitialization
     {
+        [RequiredByNativeCode]
+        public static void Initialize()
+        {
+            StyleInspectorDefaultContent.Prepare();
+        }
+
         [RegisterUxmlCache]
         public static void Register()
         {
@@ -55,6 +67,7 @@ namespace Unity.UIToolkit.Editor
             TextGeneratorTypeStyleEnumField.UxmlSerializedData.Register();
             TextOverflowPositionStyleEnumField.UxmlSerializedData.Register();
             TextOverflowStyleEnumField.UxmlSerializedData.Register();
+            TextShadowField.UxmlSerializedData.Register();
             UnityTextAlignStyleEnumField.UxmlSerializedData.Register();
             VisibilityStyleEnumField.UxmlSerializedData.Register();
             WhiteSpaceStyleEnumField.UxmlSerializedData.Register();

@@ -92,7 +92,7 @@ namespace UnityEngine.AI
             get => NavMesh.InternalGetOwner(id);
             set
             {
-                var ownerID = value != null ? value.GetInstanceID() : 0;
+                var ownerID = value != null ? value.GetEntityId() : EntityId.None;
                 if (!NavMesh.InternalSetOwner(id, ownerID))
                     Debug.LogError("Cannot set 'owner' on an invalid NavMeshDataInstance");
             }
@@ -179,7 +179,9 @@ namespace UnityEngine.AI
         public delegate void OnNavMeshPreUpdate();
         public static OnNavMeshPreUpdate onPreUpdate;
 
+#pragma warning disable RS0030 // This [RuntimeInitializeOnLoadMethod] usage be addressed by https://jira.unity3d.com/browse/UUM-128400
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
+#pragma warning restore RS0030
         static void ClearPreUpdateListeners()
         {
             onPreUpdate = null;
@@ -366,7 +368,7 @@ namespace UnityEngine.AI
 
         public static void SetLinkOwner(NavMeshLinkInstance handle, Object owner)
         {
-            var ownerID = owner != null ? owner.GetInstanceID() : 0;
+            var ownerID = owner != null ? owner.GetEntityId() : EntityId.None;
             if (!InternalSetLinkOwner(handle.id, ownerID))
                 Debug.LogError("Cannot set 'owner' on an invalid NavMeshLinkInstance");
         }

@@ -45,7 +45,7 @@ namespace UnityEngine.UIElements.StyleSheets
 
         public static void ApplyBorderWidth(StylePropertyReader reader, ref ComputedStyle computedStyle)
         {
-            CompileBoxArea(reader, out float borderTopWidth, out float borderRightWidth, out float borderBottomWidth, out float borderLeftWidth);
+            CompileBorderBoxArea(reader, out float borderTopWidth, out float borderRightWidth, out float borderBottomWidth, out float borderLeftWidth);
 
             computedStyle.layoutData.Write().borderTopWidth = borderTopWidth;
             computedStyle.layoutData.Write().borderRightWidth = borderRightWidth;

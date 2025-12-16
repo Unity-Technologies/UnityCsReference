@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using UnityEngine;
 using UnityEngine.Bindings;
 
 namespace UnityEditor.Build.Reporting
@@ -14,117 +15,7 @@ namespace UnityEditor.Build.Reporting
     ///Note: the "Packed Asset" name is somewhat misleading because the data is associated with a specific object within an Asset, not an entire Asset.
     ///Some Assets contain just a single object, but in many cases it may contain an entire hierarchy of objects, each with its own PackedAssetInfo entry.</remarks>
     ///<example>
-    ///  <code><![CDATA[
-    ///using System.Collections.Generic;
-    ///using System.IO;
-    ///using System.Linq;
-    ///using System.Text;
-    ///using UnityEditor;
-    ///using UnityEditor.Build.Reporting;
-    ///using UnityEngine;
-    ///
-    ///public struct ContentEntry
-    ///{
-    ///    public ulong size;        // Bytes
-    ///    public int objectCount;   // Number of objects from the same source
-    ///}
-    ///
-    ///public class BuildReportPackedAssetInfoExample
-    ///{
-    ///    [MenuItem("Example/Build and Analyze AssetBundle")]
-    ///    static public void Build()
-    ///    {
-    ///        string buildOutputDirectory = "BuildOutput";
-    ///        if (!Directory.Exists(buildOutputDirectory))
-    ///            Directory.CreateDirectory(buildOutputDirectory);
-    ///
-    ///        var bundleDefinitions = new AssetBundleBuild[]
-    ///        {
-    ///            new AssetBundleBuild()
-    ///            {
-    ///                assetBundleName = "MyBundle",
-    ///
-    ///                // Tip: Adjust this list to builds scenes or assets from your project
-    ///                assetNames = new string[] { "Assets/Scenes/TestScene.unity" }
-    ///            }
-    ///        };
-    ///
-    ///        BuildPipeline.BuildAssetBundles(
-    ///            buildOutputDirectory,
-    ///            bundleDefinitions,
-    ///            BuildAssetBundleOptions.ForceRebuildAssetBundle,
-    ///            EditorUserBuildSettings.activeBuildTarget);
-    ///
-    ///        BuildReport report = BuildReport.GetLatestReport();
-    ///        if (report != null)
-    ///        {
-    ///            var sb = new StringBuilder();
-    ///            sb.AppendLine("Build result   : " + report.summary.result);
-    ///            sb.AppendLine("Build size     : " + report.summary.totalSize + " bytes");
-    ///            sb.Append(ClassifyBuildOutputBySourceAsset(report));
-    ///            Debug.Log(sb.ToString());
-    ///        }
-    ///        else
-    ///        {
-    ///            Debug.Log("AssetBundle build failed");
-    ///        }
-    ///    }
-    ///
-    ///    public static string ClassifyBuildOutputBySourceAsset(BuildReport buildReport)
-    ///    {
-    ///        var sb = new StringBuilder();
-    ///
-    ///        var sourceAssetSize = new Dictionary<string, ContentEntry>();
-    ///
-    ///        var packedAssets = buildReport.packedAssets;
-    ///        foreach(var packedAsset in packedAssets)
-    ///        {
-    ///            sb.AppendLine("Analyzing " + packedAsset.shortPath + "....");
-    ///
-    ///            var contents = packedAsset.contents;
-    ///            foreach(var packedAssetInfo in contents)
-    ///            {
-    ///                // Path of the asset that contains this object
-    ///                var path = packedAssetInfo.sourceAssetPath;
-    ///
-    ///                if (string.IsNullOrEmpty(path))
-    ///                    path = "Internal";
-    ///
-    ///                if (sourceAssetSize.ContainsKey(path))
-    ///                {
-    ///                    var existingEntry = sourceAssetSize[path];
-    ///                    existingEntry.size += packedAssetInfo.packedSize;
-    ///                    existingEntry.objectCount++;
-    ///                    sourceAssetSize[path] = existingEntry;
-    ///                }
-    ///                else
-    ///                {
-    ///                    sourceAssetSize[path] = new ContentEntry
-    ///                    {
-    ///                        size = packedAssetInfo.packedSize,
-    ///                        objectCount = 1
-    ///                    };
-    ///                }
-    ///            }
-    ///        }
-    ///
-    ///        sb.AppendLine("The Build contains the content from the following source assets:\n");
-    ///
-    ///        // Sort biggest to smallest
-    ///        var sortedSourceAssetSize = sourceAssetSize.OrderByDescending(x => x.Value.size);
-    ///
-    ///        // Note: for large builds there could be thousands or more different source assets,
-    ///        // in which case it could be prudent to only show the top 10 or top 100 results.
-    ///        for (int i = 0; i < sortedSourceAssetSize.Count(); i++)
-    ///        {
-    ///            var entry = sortedSourceAssetSize.ElementAt(i);
-    ///            sb.AppendLine(" Asset: \"" + entry.Key + "\" Object Count: " + entry.Value.objectCount + " Size of Objects: " + entry.Value.size);
-    ///        }
-    ///
-    ///        return sb.ToString();
-    ///    }
-    ///}
-    ///]]></code>
+    ///<code source="../Tests/BuildReporting/Assets/Editor/ReferenceExamples/PackedAssetInfo.cs"/>
     ///</example>
     ///<seealso cref="BuildReport" />
     ///<seealso cref="PackedAssets.contents" />

@@ -24,7 +24,8 @@ namespace UnityEngine.UIElements.UIR
             DrawOperationType m_Type;
             VisualElement m_VisualElement;
             RenderTree m_RenderTree;
-            PostProcessingPass m_Effect;
+            PostProcessingPass m_FilterPass;
+            int m_FilterPassIndex;
             FilterFunction m_Filter;
 
             public DrawOperationType type => m_Type;
@@ -56,14 +57,16 @@ namespace UnityEngine.UIElements.UIR
             // OR the render tree to draw)
             public RenderTree renderTree => m_RenderTree;
 
-            public PostProcessingPass effect => m_Effect;
+            public PostProcessingPass FilterPass => m_FilterPass;
+            public int FilterPassIndex => m_FilterPassIndex;
             public FilterFunction filter => m_Filter;
 
-            public void Init(VisualElement ve, in PostProcessingPass effect, FilterFunction filter)
+            public void Init(VisualElement ve, in PostProcessingPass filterPass, int filterPassIndex, FilterFunction filter)
             {
                 m_Type = DrawOperationType.Effect;
                 m_VisualElement = ve;
-                m_Effect = effect;
+                m_FilterPass = filterPass;
+                m_FilterPassIndex = filterPassIndex;
                 m_Filter = filter;
                 m_RenderTree = ve.nestedRenderData.renderTree;
                 InitPointers();
@@ -94,7 +97,7 @@ namespace UnityEngine.UIElements.UIR
                 m_Type = DrawOperationType.Undefined;
                 m_VisualElement = null;
                 m_RenderTree = null;
-                m_Effect = new PostProcessingPass();
+                m_FilterPass = new PostProcessingPass();
                 m_Filter = new FilterFunction();
 
                 dstAtlasBlock = default;
@@ -182,12 +185,12 @@ namespace UnityEngine.UIElements.UIR
 
                 for (int j = filterDef.passes.Length - 1; j >= 0; j--)
                 {
-                    var effect = filterDef.passes[j];
-                    if (effect.material == null)
+                    var filterPass = filterDef.passes[j];
+                    if (filterPass.material == null)
                         continue;
 
                     var operation = m_DrawOperationPool.Get();
-                    operation.Init(ve, effect, filter[i]);
+                    operation.Init(ve, filterPass, j, filter[i]);
 
                     parentOperation.AddChild(operation);
                     parentOperation = operation;
@@ -285,18 +288,11 @@ namespace UnityEngine.UIElements.UIR
                 if (parentOp?.type == DrawOperationType.Effect)
                 {
                     // Inflate for the parent read and write margins
-                    readMargins = GetReadMargins(parentOp.effect, parentOp.filter);
-                    writeMargins = GetWriteMargins(parentOp.effect, parentOp.filter);
+                    readMargins = GetReadMargins(parentOp.FilterPass, parentOp.filter);
+                    writeMargins = GetWriteMargins(parentOp.FilterPass, parentOp.filter);
                     var inflated = UIRUtility.InflateByMargins(UIRUtility.InflateByMargins(r, readMargins), writeMargins);
                     rectInt = UIRUtility.CastToRectInt(inflated);
-                }
-                else
-                {
-                    rectInt = UIRUtility.CastToRectInt(r);
-                }
 
-                if (op.parent?.type == DrawOperationType.Effect)
-                {
                     var sourceBounds = r;
                     sourceBounds = UIRUtility.InflateByMargins(sourceBounds, writeMargins);
 
@@ -305,6 +301,10 @@ namespace UnityEngine.UIElements.UIR
                     // Store the texel offsets in "pixels" since we do not know the texture size yet.
                     // They will be converted to UVs once rendered.
                     op.parent.drawSourceTexOffsets = new Vector4(readMargins.left, readMargins.top, readMargins.right, readMargins.bottom);
+                }
+                else
+                {
+                    rectInt = UIRUtility.CastToRectInt(r);
                 }
 
                 op.bounds = rectInt;
@@ -379,16 +379,13 @@ namespace UnityEngine.UIElements.UIR
             Debug.Assert(bounds.height > 0); // Otherwise, the width should have been set to 0 as well.
 
             bool forceGamma = m_RenderTreeManager.forceGammaRendering;
-            bool filterShouldOutputLinear = false;
-            if (forceGamma && op.parent?.type == DrawOperationType.RenderTree)
-            {
-                // When in force-gamma rendering, we need to keep an sRGB texture for the final textured quad
-                // since the shader will do an explicit linear-to-gamma conversion when sampling that texture.
-                forceGamma = false;
-                filterShouldOutputLinear = true;
-            }
 
-            if (RenderTreeAtlas.CreateTextureForAtlasBlock(ref op.dstAtlasBlock, forceGamma, out bool allocatedNewTexture))
+            // When in force-gamma rendering, the last filter pass of the stack needs to output to an sRGB render
+            // texture because when the parent render tree is rendered, the shader will expect a linear output
+            // when sampling that texture and will perform a manual linear-to-gamma conversion.
+            bool isLastFilterPass = op.parent?.type == DrawOperationType.RenderTree;
+
+            if (RenderTreeAtlas.CreateTextureForAtlasBlock(ref op.dstAtlasBlock, forceGamma && !isLastFilterPass, out bool allocatedNewTexture))
             {
                 if (allocatedNewTexture)
                     m_AllocatedTextures.Add(op.dstAtlasBlock.texture);
@@ -419,25 +416,33 @@ namespace UnityEngine.UIElements.UIR
                         var srcTexEntry = op.firstChild.dstAtlasBlock;
                         var srcUVRect = srcTexEntry.uvRect;
 
-                        var mat = op.effect.material;
+                        var mat = op.FilterPass.material;
 
-                        if (filterShouldOutputLinear)
-                            mat.EnableKeyword("UIE_OUTPUT_LINEAR");
+                        if (forceGamma && isLastFilterPass)
+                            mat.EnableKeyword("_UIE_OUTPUT_LINEAR");
                         else
-                            mat.DisableKeyword("UIE_OUTPUT_LINEAR");
+                            mat.DisableKeyword("_UIE_OUTPUT_LINEAR");
 
-                        mat.SetPass(op.effect.passIndex);
+                        mat.SetPass(op.FilterPass.passIndex);
 
                         m_Block.SetTexture("_MainTex", srcTexEntry.texture); // TODO: Use int instead of string
 
                         s_UVRects[0] = new Vector4(srcUVRect.x, srcUVRect.y, srcUVRect.width, srcUVRect.height);
                         m_Block.SetVectorArray("unity_uie_UVRect", s_UVRects);
 
-                        if (op.effect.prepareMaterialPropertyBlockCallback != null)
-                            op.effect.prepareMaterialPropertyBlockCallback(m_Block, op.filter);
-                        else
-                            ApplyEffectParameters(op.effect, op.filter, op.visualElement);
 
+                        bool readsGamma = QualitySettings.activeColorSpace == ColorSpace.Gamma || forceGamma;
+
+                        if (op.FilterPass.applySettingsCallback != null)
+                            op.FilterPass.applySettingsCallback(m_Block, new FilterPassContext
+                            {
+                                filterFunction = op.filter,
+                                filterPassIndex = op.FilterPassIndex,
+                                readsGamma = readsGamma,
+                                writesGamma = QualitySettings.activeColorSpace == ColorSpace.Gamma || forceGamma && isLastFilterPass,
+                            });
+                        else
+                            ApplyEffectParameters(op.FilterPass, op.filter, op.visualElement, readsGamma);
 
                         Utility.SetPropertyBlock(m_Block);
 
@@ -490,7 +495,7 @@ namespace UnityEngine.UIElements.UIR
             }
         }
 
-        void ApplyEffectParameters(PostProcessingPass effect, FilterFunction filter, VisualElement source)
+        void ApplyEffectParameters(PostProcessingPass effect, FilterFunction filter, VisualElement source, bool readsGamma)
         {
             if (effect.parameterBindings == null)
                 return;
@@ -506,7 +511,7 @@ namespace UnityEngine.UIElements.UIR
                 if (p.type == FilterParameterType.Float)
                     m_Block.SetFloat(binding.name, p.floatValue);
                 else if (p.type == FilterParameterType.Color)
-                    m_Block.SetColor(binding.name, p.colorValue);
+                    m_Block.SetVector(binding.name, readsGamma ? p.colorValue : p.colorValue.linear );
             }
         }
 

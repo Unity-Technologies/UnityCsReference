@@ -65,7 +65,8 @@ namespace UnityEngine.UIElements.UIR
 
         internal readonly Stack<Matrix4x4> view = new Stack<Matrix4x4>(8);
         internal readonly Stack<Rect> scissor = new Stack<Rect>(8);
-        internal readonly List<Material> defaultMaterial = new List<Material>(8);
+        internal readonly List<Material> defaultMaterial = new(8);
+        internal readonly List<MaterialPropertyBlock> props = new(8);
     }
 
     class RenderChainCommand : LinkedPoolItem<RenderChainCommand>
@@ -75,6 +76,7 @@ namespace UnityEngine.UIElements.UIR
         public CommandType type;
         public CommandFlags flags;
         public Material material;
+        public MaterialPropertyBlock userProps;
         public TextureId texture;
         public int stencilRef;
         public float sdfScale;
@@ -98,6 +100,7 @@ namespace UnityEngine.UIElements.UIR
             type = CommandType.Draw;
             flags = 0;
             material = null;
+            userProps = null;
             texture = TextureId.invalid;
             stencilRef = 0;
             sdfScale = 0;

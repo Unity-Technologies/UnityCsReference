@@ -16,7 +16,6 @@ namespace UnityEditor.AdaptivePerformance.Simulator.Editor
     /// The subsystem is used for simulating Adaptive Performance in the Editor with the <see href="https://docs.unity3d.com/Manual/DeviceSimulator.html">Device Simulator</see>.
     /// It is also used for Adaptive Performance tests and to simulate Adaptive Performance when it is not available on the hardware you work with.
     /// </summary>
-    [Preserve]
     public class SimulatorAdaptivePerformanceSubsystem : AdaptivePerformanceSubsystem
     {
         /// <summary>
@@ -514,12 +513,16 @@ namespace UnityEditor.AdaptivePerformance.Simulator.Editor
                 return Initialized;
             }
         }
+    }
 
+    // Class needed to register Descriptor
+    internal class SimulatorProviderDescriptorRegistration
+    {
         /// <summary>
         /// Register the subsystem with the subsystem registry and make it available to use during runtime.
         /// </summary>
         /// <returns>Returns an active subsystem descriptor.</returns>
-        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        [RequiredByNativeCode(optional: true)]
         static AdaptivePerformanceSubsystemDescriptor RegisterDescriptor()
         {
             return AdaptivePerformanceSubsystemDescriptor.RegisterDescriptor(new AdaptivePerformanceSubsystemDescriptor.Cinfo

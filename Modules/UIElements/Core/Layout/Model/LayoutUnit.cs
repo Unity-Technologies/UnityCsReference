@@ -6,8 +6,8 @@ namespace UnityEngine.UIElements.Layout;
 
 enum LayoutUnit
 {
-    Undefined,
     Point,
     Percent,
     Auto,
+    Undefined,
 }

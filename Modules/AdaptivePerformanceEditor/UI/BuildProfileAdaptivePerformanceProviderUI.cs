@@ -2,13 +2,13 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System.Collections.Generic;
 using System;
-using UnityEditorInternal;
-using UnityEngine;
+using System.Collections.Generic;
 using UnityEditor.AdaptivePerformance.Editor.Metadata;
 using UnityEditor.Build.Profile;
 using UnityEditor.PackageManager;
+using UnityEditorInternal;
+using UnityEngine;
 using UnityEngine.AdaptivePerformance;
 using UnityEngine.Bindings;
 using UnityEngine.UIElements;
@@ -180,8 +180,7 @@ namespace UnityEditor.AdaptivePerformance.Editor
             var labelStyle = EditorStyles.linkLabel;
             var uriRect = rect;
 
-            uriRect.x += 500;
-            uriRect.y -= 1;
+            uriRect.y += EditorGUIUtility.singleLineHeight;
             uriRect.width = width;
 
             if (GUI.Button(uriRect, text, labelStyle))
@@ -202,6 +201,8 @@ namespace UnityEditor.AdaptivePerformance.Editor
                 DisplayLink(k_ViewGuide, new Uri(k_CustomProviderUrl), 2, 70, rect);
                 return;
             }
+            if (loaderName == "") //for link
+                return;
 
             var li = m_LoaderMetadata[loaderName];
             bool preToggledState = li.toggled;
@@ -228,6 +229,7 @@ namespace UnityEditor.AdaptivePerformance.Editor
             {
                 noProvider = true;
                 m_LoaderNameList.Add(k_NoProviderTxt);
+                m_LoaderNameList.Add(""); // For link
             }
 
             m_ReorderableList = new ReorderableList(m_LoaderNameList, typeof(string), false, true, false, false);

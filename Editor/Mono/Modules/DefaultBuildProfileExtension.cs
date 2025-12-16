@@ -19,6 +19,8 @@ namespace UnityEditor.Modules
         static readonly GUIContent k_AutoconnectProfilerDisabled = EditorGUIUtility.TrTextContent("Autoconnect Profiler", "Profiling is only enabled in a Development Player.");
         static readonly GUIContent k_BuildWithDeepProfiler = EditorGUIUtility.TrTextContent("Deep Profiling Support", "Build Player with Deep Profiling Support. This might affect Player performance.");
         static readonly GUIContent k_BuildWithDeepProfilerDisabled = EditorGUIUtility.TrTextContent("Deep Profiling Support", "Profiling is only enabled in a Development Player.");
+        static readonly GUIContent k_BuildWithCodeCoverage = EditorGUIUtility.TrTextContent("Code Coverage Support", "Build Player with Code Coverage Support. This might affect Player performance.");
+        static readonly GUIContent k_BuildWithCodeCoverageDisabled = EditorGUIUtility.TrTextContent("Code Coverage Support", "Code Coverage is only enabled in a Development Player.");
         static readonly GUIContent k_AllowDebugging = EditorGUIUtility.TrTextContent("Script Debugging", "Enable this setting to allow your script code to be debugged.");
         static readonly GUIContent k_WaitForManagedDebugger = EditorGUIUtility.TrTextContent("Wait For Managed Debugger", "Show a dialog where you can attach a managed debugger before any script execution. Can also use volume Up or Down button to confirm on Android.");
         static readonly GUIContent k_ManagedDebuggerFixedPort = EditorGUIUtility.TrTextContent("Managed Debugger Fixed Port", "Use the specified port to attach to the managed debugger. If 0, the port will be automatically selected.");
@@ -44,6 +46,7 @@ namespace UnityEditor.Modules
         SerializedProperty m_Development;
         SerializedProperty m_ConnectProfiler;
         SerializedProperty m_BuildWithDeepProfilingSupport;
+        SerializedProperty m_BuildWithCodeCoverage;
         SerializedProperty m_AllowDebugging;
         SerializedProperty m_WaitForManagedDebugger;
         SerializedProperty m_ManagedDebuggerFixedPort;
@@ -93,6 +96,10 @@ namespace UnityEditor.Modules
         public virtual bool ShouldDrawLinkTimeOptimization()
         {
             return BuildTargetDiscovery.TryGetBuildTarget(m_BuildTarget, out var buildTarget) && buildTarget.BuildPlatformProperties?.SupportLinkTimeOptimization == true;
+        }
+        public virtual bool ShouldDrawCodeCoverageCheckbox()
+        {
+            return BuildProfileModuleUtil.IsCoverageSupported(m_BuildTarget);
         }
         public virtual bool ShouldDrawProfilerCheckbox() => true;
         public virtual bool ShouldDrawScriptDebuggingCheckbox() => true;
@@ -166,6 +173,7 @@ namespace UnityEditor.Modules
             m_Development = FindPlatformSettingsPropertyAssert(rootProperty, "m_Development");
             m_ConnectProfiler = FindPlatformSettingsPropertyAssert(rootProperty, "m_ConnectProfiler");
             m_BuildWithDeepProfilingSupport = FindPlatformSettingsPropertyAssert(rootProperty, "m_BuildWithDeepProfilingSupport");
+            m_BuildWithCodeCoverage = FindPlatformSettingsPropertyAssert(rootProperty, "m_BuildWithCodeCoverage");
             m_AllowDebugging = FindPlatformSettingsPropertyAssert(rootProperty, "m_AllowDebugging");
             m_WaitForManagedDebugger = FindPlatformSettingsPropertyAssert(rootProperty, "m_WaitForManagedDebugger");
             m_ManagedDebuggerFixedPort = FindPlatformSettingsPropertyAssert(rootProperty, "m_ManagedDebuggerFixedPort");
@@ -230,6 +238,11 @@ namespace UnityEditor.Modules
                 if (ShouldDrawProfilerCheckbox())
                 {
                     ShowProfilerCheckbox();
+                }
+
+                if (ShouldDrawCodeCoverageCheckbox())
+                {
+                    ShowCodeCoverageCheckbox();
                 }
 
                 if (ShouldDrawScriptDebuggingCheckbox())
@@ -298,8 +311,6 @@ namespace UnityEditor.Modules
                     EditorGUILayout.EndVertical();
                 }
             }
-            else
-                m_InstallInBuildFolder.boolValue = false;
 
             if (m_IsClassicProfile)
             {
@@ -353,6 +364,20 @@ namespace UnityEditor.Modules
             if (EditorGUI.EndChangeCheck() && m_IsClassicProfile)
             {
                 m_SharedSettings.buildWithDeepProfilingSupport = m_BuildWithDeepProfilingSupport.boolValue;
+            }
+        }
+
+        /// <summary>
+        /// Show code coverage options. Platforms can override this method to hide/customize the UI.
+        /// </summary>
+        public virtual void ShowCodeCoverageCheckbox()
+        {
+            var buildWithCodeCoverageLabel = m_Development.boolValue ? k_BuildWithCodeCoverage : k_BuildWithCodeCoverageDisabled;
+            EditorGUI.BeginChangeCheck();
+            EditorGUILayout.PropertyField(m_BuildWithCodeCoverage, buildWithCodeCoverageLabel);
+            if (EditorGUI.EndChangeCheck() && m_IsClassicProfile)
+            {
+                m_SharedSettings.buildWithCodeCoverage = m_BuildWithCodeCoverage.boolValue;
             }
         }
 

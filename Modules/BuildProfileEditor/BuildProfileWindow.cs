@@ -57,6 +57,7 @@ namespace UnityEditor.Build.Profile
 
         Label m_PlatformListLabel;
         VisualElement m_AdditionalActionsDropdown;
+        VisualElement m_BuildButtonContainer;
         DropdownButton m_BuildButton;
         ToolbarButton m_AssetImportButton;
         Button m_BuildAndRunButton;
@@ -72,6 +73,37 @@ namespace UnityEditor.Build.Profile
             window.minSize = new Vector2(725, 400);
         }
 
+        [UsedImplicitly, RequiredByNativeCode]
+        public static void ShowBuildProfileWindowAndRequireActiveProfile()
+        {
+            var window = GetWindow<BuildProfileWindow>(TrText.buildProfilesName);
+            window.minSize = new Vector2(725, 400);
+
+            // Activate the first buildable profile if none is active.
+            foreach (var profile in window.m_BuildProfileDataSource.customBuildProfiles)
+            {
+                if (profile.CanBuildLocally())
+                {
+                    BuildProfile.SetActiveBuildProfile(profile);
+                    return;
+                }
+            }
+
+            // Prompts for build profile creation and try again
+            // to activate an editor buildable profile.
+            PlatformDiscoveryWindow.ShowWindow(() =>
+            {
+                foreach (var profile in window.m_BuildProfileDataSource.customBuildProfiles)
+                {
+                    if (profile.CanBuildLocally())
+                    {
+                        BuildProfile.SetActiveBuildProfile(profile);
+                        return;
+                    }
+                }
+            });
+        }
+
         public static void OnEditorSettingsChanged()
         {
             if (!HasOpenInstances<BuildProfileWindow>())
@@ -81,9 +113,19 @@ namespace UnityEditor.Build.Profile
             window.UpdateFromEditorSettings();
         }
 
+        public static void OnPlatformModuleInstallationChanged(GUID platformId)
+        {
+            if (!HasOpenInstances<BuildProfileWindow>())
+                return;
+
+            var window = GetWindow<BuildProfileWindow>();
+            window.OnMissingClassicPlatformSelected(platformId, HelpBoxMessageType.Info);
+        }
+
         public void CreateGUI()
         {
             BuildProfileModuleUtil.OnEditorSettingsChanged ??= OnEditorSettingsChanged;
+            BuildProfileModuleUtil.OnPlatformModuleInstallationChanged ??= (Action<GUID>)OnPlatformModuleInstallationChanged;
 
             m_WindowState = new BuildProfileWorkflowState(OnWorkflowStateChanged);
             var windowUxml = EditorGUIUtility.LoadRequired(k_Uxml) as VisualTreeAsset;
@@ -97,8 +139,9 @@ namespace UnityEditor.Build.Profile
 
             // Capture static visual element reference.
             m_AdditionalActionsDropdown = rootVisualElement.Q<VisualElement>("additional-actions-dropdown-button");
+            m_BuildButtonContainer = rootVisualElement.Q<VisualElement>("build-dropdown-button");
             m_BuildButton = CreateBuildDropdownButton();
-            rootVisualElement.Q<VisualElement>("build-dropdown-button").Add(m_BuildButton);
+            m_BuildButtonContainer.Add(m_BuildButton);
             m_BuildProfileInspectorElement = rootVisualElement.Q<ScrollView>(buildProfileInspectorVisualElement);
             m_BuildProfileInspectorHeaderElement = rootVisualElement.Q<VisualElement>(buildProfileInspectorHeaderVisualElement);
             m_BuildAndRunButton = rootVisualElement.Q<Button>("build-and-run-button");
@@ -152,8 +195,9 @@ namespace UnityEditor.Build.Profile
             };
             m_ActivateButton.clicked += OnActivateButtonClicked;
             m_BuildInCloudPackageButton.clicked += OnCloudBuildClicked;
-            addBuildProfileButton.clicked += PlatformDiscoveryWindow.ShowWindow;
-            listViewAddProfileButton.clicked += PlatformDiscoveryWindow.ShowWindow;
+            addBuildProfileButton.clicked += this.OpenPlatformDiscoveryWindow;
+            listViewAddProfileButton.clicked += this.OpenPlatformDiscoveryWindow;
+
             playerSettingsButton.clicked += () =>
             {
                 SettingsService.OpenProjectSettings(k_PlayerSettingsWindow);
@@ -263,7 +307,7 @@ namespace UnityEditor.Build.Profile
         /// <summary>
         /// Handles selection of unavailable and supported platform.
         /// </summary>
-        internal void OnMissingClassicPlatformSelected(GUID platformId)
+        internal void OnMissingClassicPlatformSelected(GUID platformId, HelpBoxMessageType messageType = HelpBoxMessageType.Warning)
         {
             m_SelectionHeader.Show();
             m_SelectionFooter.Show();
@@ -275,7 +319,7 @@ namespace UnityEditor.Build.Profile
             m_BuildProfileInspectorHeaderElement.Clear();
             var warningHelpBox = new HelpBox()
             {
-                messageType = HelpBoxMessageType.Warning
+                messageType = messageType
             };
             warningHelpBox.AddToClassList("mx-medium");
             Util.UpdatePlatformRequirementsWarningHelpBox(warningHelpBox, platformId);
@@ -320,7 +364,7 @@ namespace UnityEditor.Build.Profile
             m_SelectionHeader.Hide();
             m_SelectionFooter.Hide();
 
-            m_BuildProfileInspectorElement.Add(new BuildProfileWelcomeElement());
+            m_BuildProfileInspectorElement.Add(new BuildProfileWelcomeElement(OpenPlatformDiscoveryWindow));
         }
 
         /// <summary>
@@ -468,6 +512,15 @@ namespace UnityEditor.Build.Profile
             m_BuildAndRunButton.text = child.buildAndRunButtonDisplayName;
             m_BuildButton.SetText(child.buildButtonDisplayName);
 
+            if (m_BuildButton.enabledInHierarchy)
+            {
+                m_BuildButtonContainer.Show();
+            }
+            else
+            {
+                m_BuildButtonContainer.Hide();
+            }
+
             // Additional actions are always directly applied to the parent window state.
             if (parent.additionalActions == child.additionalActions)
             {
@@ -519,6 +572,8 @@ namespace UnityEditor.Build.Profile
                 actions[firstEnabledIndex].displayName, actions[firstEnabledIndex].callback, menu);
             if (actions[firstEnabledIndex].state != ActionState.Enabled)
                 dropdown.SetEnabled(false);
+
+            dropdown.focusable = true;
 
             m_AdditionalActionsDropdown.Clear();
             m_AdditionalActionsDropdown.Add(dropdown);
@@ -587,6 +642,10 @@ namespace UnityEditor.Build.Profile
 
         void UpdateFormButtonState(BuildProfile profile)
         {
+            var isCustomBuildProfile = !BuildProfileContext.IsClassicPlatformProfile(profile);
+            var isModuleInstalled = BuildProfileContext.IsModuleInstalled(profile);
+            var isBuildAutomationSupported = BuildProfileContext.IsBuildAutomationSupported(profile);
+
             if (profile is null)
             {
                 m_WindowState.activateAction = ActionState.Hidden;
@@ -600,7 +659,11 @@ namespace UnityEditor.Build.Profile
                 m_WindowState.activateAction = ActionState.Hidden;
                 m_WindowState.buildAction = ActionState.Enabled;
                 m_WindowState.buildAndRunAction = ActionState.Enabled;
-                m_WindowState.buildInCloudPackageAction = BuildProfileContext.IsClassicPlatformProfile(profile) ? ActionState.Hidden : ActionState.Enabled;
+                m_WindowState.buildInCloudPackageAction = isCustomBuildProfile ?
+                    isModuleInstalled ?
+                    isBuildAutomationSupported ? ActionState.Enabled : ActionState.Disabled : ActionState.Hidden : ActionState.Disabled;
+                m_BuildInCloudPackageButton.tooltip = isCustomBuildProfile ?
+                    isBuildAutomationSupported ? string.Empty : TrText.cloudBuildUnsupportedTooltip : TrText.cloudBuildRequiresProfileTooltip;
                 m_WindowState.Refresh();
             }
             else
@@ -609,7 +672,11 @@ namespace UnityEditor.Build.Profile
                 m_WindowState.activateAction = canBuild ? ActionState.Enabled : ActionState.Hidden;
                 m_WindowState.buildAction = canBuild ? ActionState.Disabled : ActionState.Hidden;
                 m_WindowState.buildAndRunAction = ActionState.Hidden;
-                m_WindowState.buildInCloudPackageAction = BuildProfileContext.IsClassicPlatformProfile(profile) ? ActionState.Hidden : ActionState.Enabled;
+                m_WindowState.buildInCloudPackageAction = isCustomBuildProfile ?
+                    isModuleInstalled ?
+                    isBuildAutomationSupported ? ActionState.Enabled : ActionState.Disabled : ActionState.Hidden : ActionState.Disabled;
+                m_BuildInCloudPackageButton.tooltip = isCustomBuildProfile ?
+                    isBuildAutomationSupported ? string.Empty : TrText.cloudBuildUnsupportedTooltip : TrText.cloudBuildRequiresProfileTooltip;
                 m_WindowState.Refresh();
             }
         }
@@ -712,7 +779,7 @@ namespace UnityEditor.Build.Profile
             menu.AddItem(new GUIContent(TrText.forceSkipDataBuild), false,
                 () => OnBuildButtonClicked(BuildOptions.ShowBuiltPlayer | BuildOptions.BuildScriptsOnly));
             return new DropdownButton(TrText.build,
-                () => OnBuildButtonClicked(BuildOptions.ShowBuiltPlayer), menu);
+                () => OnBuildButtonClicked(BuildOptions.ShowBuiltPlayer), menu) {focusable = true};
         }
 
         void UpdateToolbarButtonState()
@@ -751,6 +818,31 @@ namespace UnityEditor.Build.Profile
             }
 
             RebuildProfileListViews();
+        }
+
+        /// <summary>
+        /// Opens the platform discovery window, activates the first profile created.
+        /// </summary>
+        void OpenPlatformDiscoveryWindow()
+        {
+            var profile = m_BuildProfileSelection.Get(0);
+            if (m_BuildProfileDataSource.customBuildProfiles.Count == 0)
+            {
+                PlatformDiscoveryWindow.ShowWindowAndSelectPlatform(profile?.platformGuid, () =>
+                {
+                    foreach (var profile in m_BuildProfileDataSource.customBuildProfiles)
+                    {
+                        if (profile.CanBuildLocally())
+                        {
+                            BuildProfile.SetActiveBuildProfile(profile);
+                            return;
+                        }
+                    }
+                });
+                return;
+            }
+
+            PlatformDiscoveryWindow.ShowWindowAndSelectPlatform(profile?.platformGuid);
         }
     }
 }

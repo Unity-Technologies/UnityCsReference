@@ -95,7 +95,7 @@ namespace UnityEditor.Toolbars
         [MainToolbarElement(Toolbar.deprecatedElementsId, defaultDockPosition = MainToolbarDockPosition.Left, defaultDockIndex = 11)]
         static MainToolbarElement CreateSubToolbarZone()
         {
-            return new MainToolbarCustom(CreateToolbar);
+            return new MainToolbarCustom(CreateToolbar) { displayed = Toolbar.get.deprecatedElements.Count > 0 } ;
         }
 
         static VisualElement CreateToolbar()

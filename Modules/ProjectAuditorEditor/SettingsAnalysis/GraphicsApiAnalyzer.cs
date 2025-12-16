@@ -27,7 +27,7 @@ namespace Unity.ProjectAuditor.Editor.SettingsAnalysis
             "Enable Metal graphics API for better CPU Performance.")
         {
             DocumentationUrl = documentationUrl,
-            Platforms = new SerializableEnum<BuildTarget>[] { BuildTarget.iOS }
+            Platforms = [BuildTarget.iOS]
         };
 
         static readonly Descriptor k_VulkanDescriptor = new Descriptor(
@@ -38,7 +38,7 @@ namespace Unity.ProjectAuditor.Editor.SettingsAnalysis
             "Enable Vulkan graphics API for better CPU Performance.")
         {
             DocumentationUrl = documentationUrl,
-            Platforms = new SerializableEnum<BuildTarget>[] { BuildTarget.Android }
+            Platforms = [BuildTarget.Android]
         };
 
         public override void Initialize(Action<Descriptor> registerDescriptor)

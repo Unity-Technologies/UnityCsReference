@@ -73,7 +73,7 @@ internal sealed class InstanceIDToReferenceRemapper : DocumentReferenceRemapper,
             }
             else if (PreserveUnresolvedInstanceIds)
             {
-                reference = new Reference();
+                reference = new Reference { UdmObjectId = unmappedInstanceIDs[i].GetRawData() };
             }
             else
             {

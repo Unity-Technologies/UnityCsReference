@@ -2,9 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System;
 using System.Collections.Generic;
-using System.Linq;
 using JetBrains.Annotations;
 using Unity.GraphToolkit.CSO;
 using UnityEngine;
@@ -195,7 +193,7 @@ namespace Unity.GraphToolkit.Editor
         [UsedImplicitly]
         public static void DefaultCommandHandler(UndoStateComponent undoState, GraphModelStateComponent graphModelState, UpdateStickyNoteThemeCommand command)
         {
-            if (!command.Models.Any())
+            if (!command.Models.HasAny())
                 return;
 
             using (var undoStateUpdater = undoState.UpdateScope)
@@ -255,7 +253,7 @@ namespace Unity.GraphToolkit.Editor
         [UsedImplicitly]
         public static void DefaultCommandHandler(UndoStateComponent undoState, GraphModelStateComponent graphModelState, UpdateStickyNoteTextSizeCommand command)
         {
-            if (!command.Models.Any())
+            if (!command.Models.HasAny())
                 return;
 
             using (var undoStateUpdater = undoState.UpdateScope)

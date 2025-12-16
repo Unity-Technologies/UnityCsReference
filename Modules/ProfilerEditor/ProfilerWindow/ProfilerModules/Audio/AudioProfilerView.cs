@@ -21,13 +21,17 @@ namespace UnityEditorInternal
 {
     internal class AudioProfilerGroupInfoWrapper
     {
+#pragma warning disable CS0618
         public AudioProfilerGroupInfo info;
+#pragma warning restore CS0618
         public string assetName;
         public string objectName;
         public string parentName;
         public bool addToRoot;
 
+#pragma warning disable CS0618
         public AudioProfilerGroupInfoWrapper(AudioProfilerGroupInfo info, string assetName, string objectName, bool addToRoot)
+#pragma warning restore CS0618
         {
             this.info = info;
             this.assetName = assetName;
@@ -330,7 +334,7 @@ namespace UnityEditorInternal
                 if (audioNode != null)
                 {
                     EditorGUIUtility.PingObject(audioNode.info.info.assetEntityId);
-                    delayedPingObject = audioNode.info.info.objectInstanceId;
+                    delayedPingObject = audioNode.info.info.objectEntityId;
                     EditorApplication.CallDelayed(PingObjectDelayed, 1.0f);
                 }
             }
@@ -401,7 +405,9 @@ namespace UnityEditorInternal
 
             public override void FetchData()
             {
+#pragma warning disable CS0618
                 var root = new AudioProfilerGroupTreeViewItem(1, 0, null, "ROOT", new AudioProfilerGroupInfoWrapper(new AudioProfilerGroupInfo(), "ROOT", "ROOT", false));
+#pragma warning restore CS0618
                 FillTreeItems(root, 1, 0, m_Backend.items);
                 m_RootItem = root;
                 //SetExpanded (m_RootItem, true);
@@ -545,6 +551,7 @@ namespace UnityEditorInternal
 
         private class AudioProfilerDSPNode
         {
+#pragma warning disable CS0618
             public AudioProfilerDSPNode(AudioProfilerDSPInfo info)
             {
                 this.info = info;
@@ -552,6 +559,7 @@ namespace UnityEditorInternal
             }
 
             public AudioProfilerDSPInfo info;
+#pragma warning restore CS0618
             public List<AudioProfilerDSPNode> parents;
             public List<AudioProfilerDSPNode> children;
             public int x;
@@ -565,6 +573,7 @@ namespace UnityEditorInternal
 
         private class AudioProfilerDSPWire
         {
+#pragma warning disable CS0618
             public AudioProfilerDSPWire(AudioProfilerDSPNode source, AudioProfilerDSPNode target, AudioProfilerDSPInfo info)
             {
                 this.source = source;
@@ -575,6 +584,7 @@ namespace UnityEditorInternal
             public AudioProfilerDSPNode source;
             public AudioProfilerDSPNode target;
             public AudioProfilerDSPInfo info;
+#pragma warning restore CS0618
         }
 
         GUIStyle m_FontStyle;
@@ -712,7 +722,9 @@ namespace UnityEditorInternal
             }
         }
 
+#pragma warning disable CS0618
         void DoDSPNodeLayout(List<AudioProfilerDSPNode> nodes, List<AudioProfilerDSPWire> wires, ProfilerProperty property)
+#pragma warning restore CS0618
         {
             // Add space for wire weights that typically fall between two nodes
             nodeSpacingX = 10;
@@ -795,7 +807,9 @@ namespace UnityEditorInternal
             }
         }
 
+#pragma warning disable CS0618
         public void OnGUI(Rect clippingRect, ProfilerProperty property, bool showInactiveDSPChains, bool highlightAudibleDSPChains, bool _horizontalLayout, ref float zoomFactor, ref Vector2 scrollPos, ref Vector2 virtualSize)
+#pragma warning restore CS0618
         {
             horizontalLayout = _horizontalLayout;
 
@@ -991,10 +1005,12 @@ namespace UnityEditorInternal
 
     internal class AudioProfilerClipInfoWrapper
     {
+#pragma warning disable CS0618
         public AudioProfilerClipInfo info;
         public string assetName;
 
         public AudioProfilerClipInfoWrapper(AudioProfilerClipInfo info, string assetName)
+#pragma warning restore CS0618
         {
             this.info = info;
             this.assetName = assetName;
@@ -1255,7 +1271,9 @@ namespace UnityEditorInternal
 
             public override void FetchData()
             {
+#pragma warning disable CS0618
                 var root = new AudioProfilerClipTreeViewItem(1, 0, null, "ROOT", new AudioProfilerClipInfoWrapper(new AudioProfilerClipInfo(), "ROOT"));
+#pragma warning restore CS0618
                 FillTreeItems(root, 1, 0, m_Backend.items);
                 m_RootItem = root;
                 //SetExpanded (m_RootItem, true);

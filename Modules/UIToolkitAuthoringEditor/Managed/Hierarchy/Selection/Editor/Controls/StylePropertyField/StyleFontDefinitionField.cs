@@ -49,5 +49,20 @@ namespace Unity.UIToolkit.Editor
             labelElement.AddToClassList(labelUssClassName);
             visualInput.AddToClassList(inputUssClassName);
         }
+
+        protected override FontDefinitionField CreateValueField()
+        {
+            return new FontDefinitionField();
+        }
+
+        protected override StyleFontDefinition CreateStyleValue(FontDefinition v)
+        {
+            return v;
+        }
+
+        internal override bool EqualsCurrentValue(StyleFontDefinition v)
+        {
+            return value == v;
+        }
     }
 }

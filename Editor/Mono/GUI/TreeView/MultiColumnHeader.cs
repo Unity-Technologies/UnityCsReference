@@ -227,7 +227,7 @@ namespace UnityEditor.IMGUI.Controls
             // We create a guiclip to let the header be able to scroll horizontally according to the tree view's horizontal scroll
             // If the tree view is inside a UI Toolkit scroll view, however, we don't need the x scroll offset.
             Vector2 scrollOffset = Vector2.zero;
-            var container = UIElementsUtility.GetCurrentIMGUIContainer();
+            var container = UIElementsIMGUIUtility.GetCurrentIMGUIContainer();
             var uiScrollView = container?.GetFirstAncestorOfType<ScrollView>();
             if (uiScrollView == null)
             {

@@ -134,6 +134,20 @@ namespace Unity
             internal EntityManager EntityManager => default(EntityManager);
         }
 
+        internal unsafe partial class World : IDisposable
+        {
+            internal EntityManager EntityManager => default(EntityManager);
+
+            public void Dispose()
+            {
+            }
+        }
+
+        internal static class ActiveGameObjectWorld
+        {
+            internal static World World => default(World);
+        }
+
         internal unsafe struct EntityManager
         {
             internal bool HasComponent<T>(Entity entity)

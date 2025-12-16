@@ -11,7 +11,6 @@ using Unity.ProjectAuditor.Editor.Utils;
 using UnityEditor;
 using UnityEditor.IMGUI.Controls;
 using UnityEngine;
-using UnityEngine.Profiling;
 
 using TreeViewState = UnityEditor.IMGUI.Controls.TreeViewState<int>;
 
@@ -52,6 +51,7 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
         public ViewDescriptor Desc => m_Desc;
 
         public virtual string Description => $"A list of {m_Desc.DisplayName} found in the project.";
+        public virtual bool OnlyCriticalIssues() { return false; }
 
         public string DocumentationUrl => Documentation.GetPageUrl(new string(m_Desc.DisplayName.Where(char.IsLetterOrDigit).ToArray()));
 
@@ -197,8 +197,6 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
             if (rows == null || rows.Count == 0 || (rows.Count == 1 && rows[0].displayName == "No items"))
                 return;
 
-            Profiler.BeginSample("AnalysisView.AdjustColumnWidth");
-
             var header = m_Table.multiColumnHeader;
 
             for (var columnIndex = 0; columnIndex < m_Layout.Properties.Length; columnIndex++)
@@ -221,8 +219,6 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
                 {
                     for (int rowIndex = 0; rowIndex < rows.Count; ++rowIndex)
                     {
-                        Profiler.BeginSample("AnalysisView.AdjustColumnWidth.GetCellString");
-
                         var row = rows[rowIndex];
                         var item = ((IssueTableItem)row);
                         var issue = item.ReportItem;
@@ -264,8 +260,6 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
                             cellString = issue.GetProperty(propertyType);
                         }
 
-                        Profiler.EndSample();
-
                         var propWidth = Utility.EstimateWidth(cellString);
 
                         if (propWidth > widestPropWidth)
@@ -303,8 +297,6 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
                 m_Table.showIgnoredIssues = showIgnoredIssues;
                 m_Table.Reload();
             }
-
-            Profiler.EndSample();
         }
 
         bool HasIcon(PropertyDefinition property)
@@ -479,9 +471,7 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
 
             var r = EditorGUILayout.GetControlRect(GUILayout.ExpandHeight(true));
 
-            Profiler.BeginSample("IssueTable.OnGUI");
             m_Table.OnGUI(r);
-            Profiler.EndSample();
 
             EditorGUILayout.EndVertical();
         }
@@ -715,11 +705,8 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
                 {
                     exporter.Export(path, m_Layout.Category, (issue) =>
                     {
-                        if (!PackageFilterMatch(issue))
-                         return false;
-
                         if (predicate != null && !predicate(issue))
-                         return false;
+                            return false;
 
                         return true;
                     });
@@ -737,11 +724,6 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
         public virtual bool Match(ReportItem issue)
         {
             return m_BaseFilter.Match(issue) && m_TextFilter.Match(issue);
-        }
-
-        public virtual bool PackageFilterMatch(ReportItem issue)
-        {
-            return m_BaseFilter.PackageFilterMatch(issue);
         }
 
         internal void OnEnable()

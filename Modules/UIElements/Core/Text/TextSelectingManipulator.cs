@@ -170,7 +170,7 @@ namespace UnityEngine.UIElements
             {
                 //only move cursor to position if it wasn't a double or triple click.
                 if (evt.timestamp - m_LastMouseDownTimeStamp < Event.GetDoubleClickTime())
-                    m_ConsecutiveMouseDownCount++;
+                    m_ConsecutiveMouseDownCount = ( m_ConsecutiveMouseDownCount  % 3) +1 ; // goest to 3 then come back to 1
                 else
                     m_ConsecutiveMouseDownCount = 1;
 
@@ -238,7 +238,10 @@ namespace UnityEngine.UIElements
                 return;
 
             if (selectAllOnMouseUp)
+            {
                 m_SelectingUtilities.SelectAll();
+                ResetClickCount();
+            }
 
             selectAllOnMouseUp = false;
             m_Dragged = false;

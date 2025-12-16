@@ -92,7 +92,9 @@ namespace UnityEditor
                 + "\n* Silly: detailed debugging messages.");
             public static readonly GUIContent packageManagerLogLevelOverridden = EditorGUIUtility.TrTextContent("Package Manager Log Level currently overridden by -enablePackageManagerTraces command-line argument.");
 
+            public static readonly GUIContent logging = EditorGUIUtility.TrTextContent("Logging");
             public static readonly GUIContent enableExtendedLogging = EditorGUIUtility.TrTextContent("Timestamp Editor log entries", "Adds timestamp and thread Id to Editor.log messages.");
+            public static readonly GUIContent useGlobalEditorLog = EditorGUIUtility.TrTextContent("Use Global Editor Log", "If enabled, all Unity projects use the same global Editor log file located at the default path for the operating system. If disabled, each project uses its own separate Editor log located in the project folder. Changes to this setting require an Editor restart to take effect.");
             public static readonly GUIContent enableShortcutHelperBar = EditorGUIUtility.TrTextContent("Enable Shortcut Helper Bar", "Enables the Shortcut Helper Bar in the status bar at the bottom of the main Unity Editor window.");
             public static readonly GUIContent enablePlayModeTooltips = EditorGUIUtility.TrTextContent("Enable PlayMode Tooltips", "Enables tooltips in the editor while in play mode.");
             public static readonly GUIContent resetAllDialogBoxes = EditorGUIUtility.TrTextContent("\"Don't ask me again\" checkboxes", "Dialog boxes that can be opted out by checking a \"Don't ask me again\" checkbox.");
@@ -189,6 +191,7 @@ By default, Windows will combine these under a single taskbar item.");
         private string[] m_CustomScalingLabels = {"100%", "125%", "150%", "175%", "200%", "225%", "250%", "300%", "350%"};
         private int[] m_CustomScalingValues = { 100, 125, 150, 175, 200, 225, 250, 300, 350 };
         private bool m_EnableExtendedLogging;
+        private SavedBool m_UseGlobalEditorLog = new SavedBool("UseGlobalEditorLog", true);
         private readonly string kContentScalePrefKey = "CustomEditorUIScale";
         private readonly string kWindowsTaskbarPrefKey = "WindowsTaskbarBehavior";
 
@@ -646,10 +649,11 @@ By default, Windows will combine these under a single taskbar item.");
             DrawPackageManagerOptions();
             DrawDynamicHintsOptions();
 
-            m_EnableExtendedLogging = EditorGUILayout.Toggle(GeneralProperties.enableExtendedLogging, m_EnableExtendedLogging);
-
             DrawEnableHelperBar();
             DrawEnableTooltipsInPlayMode();
+
+            DrawLoggingOptions();
+
             EditorGUILayout.Space();
 
             GUILayout.Label(GeneralProperties.hierarchyHeader, EditorStyles.boldLabel);
@@ -771,6 +775,16 @@ By default, Windows will combine these under a single taskbar item.");
         private void DrawDynamicHintsOptions()
         {
             m_EnableExtendedDynamicHints = EditorGUILayout.Toggle(GeneralProperties.enableExtendedDynamicHints, m_EnableExtendedDynamicHints);
+        }
+
+        private void DrawLoggingOptions()
+        {
+            GUILayout.Space(10);
+            EditorGUI.indentLevel++;
+            GUILayout.Label(GeneralProperties.logging, EditorStyles.boldLabel);
+            m_EnableExtendedLogging = EditorGUILayout.Toggle(GeneralProperties.enableExtendedLogging, m_EnableExtendedLogging);
+            m_UseGlobalEditorLog.value = EditorGUILayout.Toggle(GeneralProperties.useGlobalEditorLog, m_UseGlobalEditorLog.value);
+            EditorGUI.indentLevel--;
         }
 
         private void DrawPackageManagerOptions()
@@ -924,36 +938,10 @@ By default, Windows will combine these under a single taskbar item.");
             var toggleLabelWidth = EditorStyles.label.CalcSize(SceneViewProperties.createObjectsAtPrefabPosition).x;
             EditorGUIUtility.labelWidth = toggleLabelWidth;
 
-            GUIContent PlacementModeToGUIContent(GOCreationCommands.PlacementMode mode)
-            {
-                if (mode == GOCreationCommands.PlacementMode.SceneIntersection)
-                    return SceneViewProperties.createObjectsAtRaycastToScenePivot;
-                else if(mode == GOCreationCommands.PlacementMode.WorldOrigin)
-                    return SceneViewProperties.createObjectsAtWorldOrigin;
-                else if(mode == GOCreationCommands.PlacementMode.ScenePivot)
-                    return SceneViewProperties.createObjectsAtScenePivot;
-
-                return GUIContent.none;
-            }
-            void AddItem(GenericMenu menu, GOCreationCommands.PlacementMode mode)
-            {
-                menu.AddItem(PlacementModeToGUIContent(mode), m_CreatePlacementMode == mode, mode =>
-                {
-                    m_CreatePlacementMode = (GOCreationCommands.PlacementMode)mode;
-                    WritePreferences();
-                }, mode);
-            }
-            EditorGUILayout.BeginHorizontal();
-            EditorGUILayout.LabelField(SceneViewProperties.placementMode);
-            if (EditorGUILayout.DropdownButton(PlacementModeToGUIContent(m_CreatePlacementMode), FocusType.Keyboard))
-            {
-                var menu = new GenericMenu();
-                AddItem(menu, GOCreationCommands.PlacementMode.SceneIntersection);
-                AddItem(menu, GOCreationCommands.PlacementMode.WorldOrigin);
-                AddItem(menu, GOCreationCommands.PlacementMode.ScenePivot);
-                menu.ShowAsContext();
-            }
-            EditorGUILayout.EndHorizontal();
+            var previousPlacementMode = m_CreatePlacementMode;
+            var newPlacementMode = (GOCreationCommands.PlacementMode) EditorGUILayout.EnumPopup(new GUIContent(SceneViewProperties.placementMode), previousPlacementMode);
+            if (newPlacementMode != previousPlacementMode)
+                m_CreatePlacementMode = newPlacementMode;
 
             m_PlacementUsePrefabSerializedPositionOnHierarchyDrop = EditorGUILayout.Toggle(SceneViewProperties.createObjectsAtPrefabPosition, m_PlacementUsePrefabSerializedPositionOnHierarchyDrop);
 

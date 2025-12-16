@@ -22,10 +22,17 @@ namespace Unity.UI.Builder
 
             if (root.serializedData == null && UxmlSerializedDataRegistry.GetDescription(root.fullTypeName) is UxmlSerializedDataDescription desc)
             {
-                root.serializedData = UxmlSerializer.Serialize(desc, root, context);
+                root.serializedData = desc.CreateSerializedData();
+                if (root.properties != null)
+                {
+                    foreach (var p in root.properties)
+                    {
+                        UxmlSerializer.TryParseSerializedAttribute(p.name, p.value, root.serializedData, new CreationContext(vta));
+                    }
+                }
             }
 
-            var ve = VisualTreeAsset.Create(root, context);
+            var ve = VisualTreeAsset.Create(root, context, null);
 
             if (ve == null)
                 return null;

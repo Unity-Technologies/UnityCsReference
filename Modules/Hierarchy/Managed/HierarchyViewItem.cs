@@ -55,8 +55,8 @@ namespace Unity.Hierarchy
         readonly VisualElement m_LeftContainer;
         internal VisualElement LeftContainer => m_LeftContainer;
 
-        internal delegate void ExpandedStateChangedDelegate(in HierarchyNode node, bool isExpanded, bool recursive);
-        internal event ExpandedStateChangedDelegate ExpandedStateChanged;
+        internal delegate void ExpandedStateChangedEventHandler(in HierarchyNode node, bool isExpanded, bool recursive);
+        internal event ExpandedStateChangedEventHandler ExpandedStateChanged;
 
         /// <summary>
         /// The <see cref="HierarchyNodeType"/> of the <see cref="HierarchyNode"/> bound to this <see cref="HierarchyViewItem"/>.
@@ -223,9 +223,9 @@ namespace Unity.Hierarchy
             var showToggle = noFilter && viewModel.GetChildrenCount(in m_Node) > 0;
             m_Toggle.EnableInClassList(k_HierarchyItemToggleHidden, !showToggle);
 
-            var isExpanded = viewModel.HasAllFlags(in m_Node, HierarchyNodeFlags.Expanded);
+            var isExpanded = viewModel.HasFlags(in m_Node, HierarchyNodeFlags.Expanded);
             m_Toggle.SetValueWithoutNotify(showToggle && isExpanded);
-            Icon.EnableInClassList(k_HierarchyItemIconCut, viewModel.HasAllFlags(in m_Node, HierarchyNodeFlags.Cut));
+            Icon.EnableInClassList(k_HierarchyItemIconCut, viewModel.HasFlags(in m_Node, HierarchyNodeFlags.Cut));
             if (m_Handler is IHierarchyEditorNodeTypeHandler editorHandler)
                 m_Name.Text = editorHandler.GetDisplayName(m_View, in m_Node);
             else
@@ -283,7 +283,7 @@ namespace Unity.Hierarchy
             }
             else if (evt is ClickEvent clickEvent && m_Toggle.visible && m_Toggle.worldBound.Contains(clickEvent.position))
             {
-                var isExpanded = !m_View.ViewModel.HasAllFlags(in m_Node, HierarchyNodeFlags.Expanded);
+                var isExpanded = !m_View.ViewModel.HasFlags(in m_Node, HierarchyNodeFlags.Expanded);
                 ExpandedStateChanged?.Invoke(in m_Node, isExpanded, clickEvent.altKey);
                 evt.StopPropagation();
             }
@@ -316,12 +316,12 @@ namespace Unity.Hierarchy
 
         void OnBeginRename()
         {
-            m_View.m_IsRenamingItem = true;
+            m_View.SetRenamingItem(this);
         }
 
         void OnEndRename(string text, bool canceled)
         {
-            m_View.m_IsRenamingItem = false;
+            m_View.SetRenamingItem(null);
 
             if (canceled)
                 return;

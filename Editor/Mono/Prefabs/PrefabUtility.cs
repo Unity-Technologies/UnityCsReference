@@ -15,6 +15,7 @@ using Object = UnityEngine.Object;
 using RequiredByNativeCodeAttribute = UnityEngine.Scripting.RequiredByNativeCodeAttribute;
 using UnityEngine.Bindings;
 using UnityEngine.Assertions;
+using UnityEngine.Serialization;
 
 namespace UnityEditor
 {
@@ -387,7 +388,7 @@ namespace UnityEditor
 
                 rootSet.Add(PrefabUtility.GetOutermostPrefabInstanceRoot(gameObject));
             }
-            
+
             InstanceOverridesInfo[] instanceOverridesInfos = rootSet.Select(PrefabUtility.GetPrefabInstanceOverridesInfo_Internal).ToArray();
             PrefabUtility.RemovePrefabInstanceUnusedOverrides(instanceOverridesInfos, action);
         }
@@ -1089,9 +1090,32 @@ namespace UnityEditor
             // Copy overridden property value to asset
             if (instanceProperty.propertyType == SerializedPropertyType.ManagedReference)
             {
-                // For a managed reference root property we assign the entire object reference value so we can handle if the Asset value is null from start, since in
-                // this case we cannot use CopyFromSerializedProperty as we do for normal properties.
-                sourceProperty.managedReferenceValue = instanceProperty.managedReferenceValue;
+                // For a managed reference root property we cannot use CopyFromSerializedProperty as we do for normal properties, since the Asset value could be null
+                // if the refID does not exist in the prefab asset.
+
+                // We take advantage of the fact that the refID of the managed object in the instance is the same as the refID of the managed object in the prefab asset.
+                // If the refID does exist in the prefab asset we know that the managed object is the corresponding object to the instance object and we can reuse the managed
+                // object from the prefab asset.
+
+                // Get the refID from the instance property
+                var refID = ManagedReferenceUtility.GetManagedReferenceIdForObject(instanceProperty.serializedObject.targetObject, instanceProperty.managedReferenceValue);
+                // Does this refID exist in the prefab asset?
+                var refObject = ManagedReferenceUtility.GetManagedReference(prefabSourceSerializedObject.targetObject, refID);
+                if (refObject != null)
+                {
+                    // The refID exists which means we changing a reference in the asset to point to another object in the asset.
+                    // In this case the corresponding object of the prefab instance object
+                    sourceProperty.managedReferenceValue = refObject;
+                }
+                else
+                {
+                    // The refID does not exist which means we are assigning a new managed object to the asset.
+                    // Since this is assigning the managed object to a different managed host object it automatically triggers a deep copy of the managed object,
+                    // once we call ApplyModifiedProperties on the prefabSourceSerializedObject
+                    // But this will not remap any object references in the managed object to the source assets so all references will be lost after saving the prefab asset.
+                    // We will need to fix this some day by adding a remapping step to the deep copy.
+                    sourceProperty.managedReferenceValue = instanceProperty.managedReferenceValue;
+                }
             }
             else
             {
@@ -3932,7 +3956,7 @@ namespace UnityEditor
             {
                 unusedMods = iovInfo.unusedMods.Length,
                 unusedRemovedGameObjectCount = iovInfo.unusedRemovedGameObjectCount,
-                unusedRemovedComponentCount = iovInfo.unusedRemovedComponentCount  
+                unusedRemovedComponentCount = iovInfo.unusedRemovedComponentCount
             };
 
             bool removedAny = iovInfo.unusedOverrideCount != 0;
@@ -4207,5 +4231,6 @@ namespace UnityEditor
                 UnloadPrefabContents(scene);
             }
         }
+        internal static bool HasPrefabExtension(string assetPath) => assetPath.EndsWith(".prefab", StringComparison.OrdinalIgnoreCase);
     }
 }

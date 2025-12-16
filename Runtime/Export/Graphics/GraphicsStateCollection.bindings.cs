@@ -37,8 +37,18 @@ namespace UnityEngine.Experimental.Rendering
         extern public bool LoadFromFile(string filePath);
         extern public bool SaveToFile(string filePath);
         extern public bool SendToEditor(string fileName);
-        [NativeName("Warmup")] extern public JobHandle WarmUp(JobHandle dependency = new JobHandle());
-        [NativeName("WarmupProgressively")] extern public JobHandle WarmUpProgressively(int count, JobHandle dependency = new JobHandle());
+
+        public JobHandle WarmUp(JobHandle dependency = new JobHandle())
+        {
+            return WarmUp(dependency, false);
+        }
+
+        public JobHandle WarmUpProgressively(int count, JobHandle dependency = new JobHandle())
+        {
+            return WarmUpProgressively(count, dependency, false);
+        }
+        [NativeName("Warmup")] extern public JobHandle WarmUp(JobHandle dependency, bool traceCacheMisses);
+        [NativeName("WarmupProgressively")] extern public JobHandle WarmUpProgressively(int count, JobHandle dependency, bool traceCacheMisses);
         extern public int totalGraphicsStateCount { get; }
         extern public int completedWarmupCount { get; }
         extern public bool isWarmedUp { [NativeName("IsWarmedUp")] get; }
@@ -80,12 +90,77 @@ namespace UnityEngine.Experimental.Rendering
         [NativeName("ContainsVariant")] extern private bool ContainsVariantByShader(Shader shader, PassIdentifier passId, LocalKeyword[] keywords);
         [NativeName("ContainsVariant")] extern private bool ContainsVariantByMaterial(Material mat, PassIdentifier passId);
 
-
         extern public void ClearVariants();
         extern public bool AddGraphicsStateForVariant(Shader shader, PassIdentifier passId, LocalKeyword[] keywords, GraphicsState setup);
         extern public bool RemoveGraphicsStatesForVariant(Shader shader, PassIdentifier passId, LocalKeyword[] keywords);
         extern public bool CopyGraphicsStatesForVariant(Shader srcShader, PassIdentifier srcPassId, LocalKeyword[] srcKeywords,
                                                         Shader dstShader, PassIdentifier dstPassId, LocalKeyword[] dstKeywords);
+
+        extern public bool isTracingCacheMisses {[NativeName("IsTracingCacheMisses")] get; }
+        extern public GraphicsStateCollection cacheMissCollection { [NativeName("GetCacheMissCollection")] get; }
+        extern public void EraseCacheMissCollection();
+        extern public bool Append(GraphicsStateCollection collection);
+
+        public bool AddGraphicsStates(Mesh[] meshes, Material[] materials, int samples,
+            NativeArray<AttachmentDescriptor> attachments, NativeArray<SubPassDescriptor> subPasses,
+            [uei.DefaultValue("0")] int subPassIndex = 0, [uei.DefaultValue("-1")] int depthAttachmentIndex = -1, [uei.DefaultValue("-1")] int shadingRateIndex = -1)
+        {
+            GlobalKeyword[] globalKeywords = Shader.enabledGlobalKeywords;
+            return AddGraphicsStates_Internal(meshes, materials, globalKeywords, samples, attachments, subPasses, subPassIndex, depthAttachmentIndex, shadingRateIndex);
+        }
+
+        public bool AddGraphicsStates(Mesh[] meshes, Material[] materials, GlobalKeyword[] globalKeywords, int samples, 
+            NativeArray<AttachmentDescriptor> attachments, NativeArray<SubPassDescriptor> subPasses,
+            [uei.DefaultValue("0")] int subPassIndex = 0, [uei.DefaultValue("-1")] int depthAttachmentIndex = -1, [uei.DefaultValue("-1")] int shadingRateIndex = -1)
+        {
+            return AddGraphicsStates_Internal(meshes, materials, globalKeywords, samples, attachments, subPasses, subPassIndex, depthAttachmentIndex, shadingRateIndex);
+        }
+
+        [NativeName("AddGraphicsStates")]
+        extern private bool AddGraphicsStates_Internal(Mesh[] meshes, Material[] materials, GlobalKeyword[] globalKeywords, int samples, ReadOnlySpan<AttachmentDescriptor> attachments,
+            ReadOnlySpan<SubPassDescriptor> subPasses, int subPassIndex, int depthAttachmentIndex, int shadingRateIndex);
+
+        public bool AddGraphicsStatesFromReference(GraphicsState refState, Mesh[] meshes, Material[] materials, int samples,
+            NativeArray<AttachmentDescriptor> attachments, NativeArray<SubPassDescriptor> subPasses,
+            [uei.DefaultValue("0")] int subPassIndex = 0, [uei.DefaultValue("-1")] int depthAttachmentIndex = -1, [uei.DefaultValue("-1")] int shadingRateIndex = -1)
+        {
+            GlobalKeyword[] globalKeywords = Shader.enabledGlobalKeywords;
+            return AddGraphicsStatesFromReference_Internal(refState, meshes, materials, globalKeywords, samples, attachments, subPasses, subPassIndex, depthAttachmentIndex, shadingRateIndex);
+        }
+
+        public bool AddGraphicsStatesFromReference(GraphicsState refState, Mesh[] meshes, Material[] materials, GlobalKeyword[] globalKeywords, int samples,
+            NativeArray<AttachmentDescriptor> attachments, NativeArray<SubPassDescriptor> subPasses,
+            [uei.DefaultValue("0")] int subPassIndex = 0, [uei.DefaultValue("-1")] int depthAttachmentIndex = -1, [uei.DefaultValue("-1")] int shadingRateIndex = -1)
+        {
+            return AddGraphicsStatesFromReference_Internal(refState, meshes, materials, globalKeywords, samples, attachments, subPasses, subPassIndex, depthAttachmentIndex, shadingRateIndex);
+        }
+
+        public bool AddGraphicsStatesFromReference(GraphicsState refState, Mesh[] meshes, Material[] materials)
+        {
+            int samples = refState.sampleCount;
+            AttachmentDescriptor[] attachments = refState.attachments;
+            SubPassDescriptor[] subPasses = refState.subPasses;
+            int subPassIndex = refState.subPassIndex;
+            int depthAttachmentIndex = refState.depthAttachmentIndex;
+            int shadingRateIndex = refState.shadingRateIndex;
+            GlobalKeyword[] globalKeywords = Shader.enabledGlobalKeywords;
+            return AddGraphicsStatesFromReference_Internal(refState, meshes, materials, globalKeywords, samples, attachments, subPasses, subPassIndex, depthAttachmentIndex, shadingRateIndex);
+        }
+
+        public bool AddGraphicsStatesFromReference(GraphicsState refState, Mesh[] meshes, Material[] materials, GlobalKeyword[] globalKeywords)
+        {
+            int samples = refState.sampleCount;
+            AttachmentDescriptor[] attachments = refState.attachments;
+            SubPassDescriptor[] subPasses = refState.subPasses;
+            int subPassIndex = refState.subPassIndex;
+            int depthAttachmentIndex = refState.depthAttachmentIndex;
+            int shadingRateIndex = refState.shadingRateIndex;
+            return AddGraphicsStatesFromReference_Internal(refState, meshes, materials, globalKeywords, samples, attachments, subPasses, subPassIndex, depthAttachmentIndex, shadingRateIndex);
+        }
+
+        [NativeName("AddGraphicsStatesFromReference")]
+        extern private bool AddGraphicsStatesFromReference_Internal(GraphicsState refState, Mesh[] meshes, Material[] materials, GlobalKeyword[] globalKeywords, int samples, ReadOnlySpan<AttachmentDescriptor> attachments,
+            ReadOnlySpan<SubPassDescriptor> subPasses, int subPassIndex, int depthAttachmentIndex, int shadingRateIndex);
 
         [NativeName("CreateFromScript")] extern private static void Internal_Create([Writable] GraphicsStateCollection gsc);
     }

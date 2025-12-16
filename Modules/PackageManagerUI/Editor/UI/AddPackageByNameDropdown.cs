@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System;
 using UnityEngine;
 using UnityEngine.UIElements;
 using System.Linq;
@@ -11,7 +10,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 {
     internal class AddPackageByNameDropdown : DropdownContent
     {
-        internal static readonly string k_NonCompliantDialogTitle = L10n.Tr("Restricted Package");
+        private static readonly string k_NonCompliantDialogTitle = L10n.Tr("Restricted Package");
 
         private static readonly Vector2 k_DefaultWindowSize = new(320, 72);
         private static readonly Vector2 k_WindowSizeWithError = new(320, 114);
@@ -49,7 +48,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             Add(root);
             cache = new VisualElementCache(root);
 
-            packageNameField.textEdition.placeholder = L10n.Tr("Name");
+            packageNameField.textEdition.placeholder = L10n.Tr("Technical name ") + "(com.org.package)";
             packageVersionField.textEdition.placeholder = L10n.Tr("Version (optional)");
 
             submitButton.clickable.clicked += SubmitClicked;
@@ -62,8 +61,16 @@ namespace UnityEditor.PackageManager.UI.Internal
             packageVersionField.RegisterCallback<KeyDownEvent>(OnKeyDownShortcut, TrickleDown.TrickleDown);
 
             inputForm.SetEnabled(true);
-            packageNameField.value = packageNameInitialValue ?? string.Empty;
-            packageVersionField.value = packageVersionInitialValue ?? string.Empty;
+            if (!string.IsNullOrEmpty(packageNameInitialValue))
+            {
+                packageNameField.value = packageNameInitialValue;
+                packageNameInitialValue = string.Empty;
+            }
+            if (!string.IsNullOrEmpty(packageVersionInitialValue))
+            {
+                packageVersionField.value = packageVersionInitialValue;
+                packageVersionInitialValue = string.Empty;
+            }
             if (string.IsNullOrEmpty(errorInfoBox.text) || packageNameField.ClassListContains("error"))
                 packageNameField.Focus();
             else
@@ -97,6 +104,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             ShowWithNewWindowSize();
         }
 
+        // The internal modifier is used (instead of private) to give our test project access to these properties/methods
         internal void SubmitClicked()
         {
             var packageName = packageNameField.value.Trim();
@@ -158,7 +166,6 @@ namespace UnityEditor.PackageManager.UI.Internal
         {
             return compliance != null && compliance.status != PackageComplianceStatus.Compliant;
         }
-
 
         private void CheckComplianceAndInstallPackage(PackageCompliance compliance, string packageName,
             string packageDisplayName, string packageVersion, string productId)
@@ -229,8 +236,8 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private VisualElementCache cache { get; }
         private VisualElement inputForm => cache.Get<VisualElement>("inputForm");
-        internal TextField packageNameField => cache.Get<TextField>("packageName");
-        internal TextField packageVersionField => cache.Get<TextField>("packageVersion");
+        public TextField packageNameField => cache.Get<TextField>("packageName");
+        public TextField packageVersionField => cache.Get<TextField>("packageVersion");
         private HelpBox errorInfoBox => cache.Get<HelpBox>("errorInfoBox");
         private Button submitButton => cache.Get<Button>("submitButton");
     }

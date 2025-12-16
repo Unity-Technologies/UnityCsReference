@@ -60,7 +60,7 @@ namespace UnityEngine
         extern public Vector4[] GetImageTexCoords();
 
         [FreeFunction(Name = "BillboardRenderer_Bindings::GetImageTexCoordsInternal", HasExplicitThis = true)]
-        extern internal void GetImageTexCoordsInternal(object list);
+        extern internal void GetImageTexCoordsInternal(List<Vector4> list);
 
         // List<T> version
         public void SetImageTexCoords(List<Vector4> imageTexCoords)
@@ -68,15 +68,20 @@ namespace UnityEngine
             if (imageTexCoords == null)
                 throw new ArgumentNullException("imageTexCoords");
 
-            SetImageTexCoordsInternalList(imageTexCoords);
+            SetImageTexCoords(NoAllocHelpers.CreateReadOnlySpan(imageTexCoords));
         }
 
         // T[] version
-        [FreeFunction(Name = "BillboardRenderer_Bindings::SetImageTexCoords", HasExplicitThis = true)]
-        extern public void SetImageTexCoords([NotNull] Vector4[] imageTexCoords);
+        public void SetImageTexCoords(Vector4[] imageTexCoords)
+        {
+            if (imageTexCoords == null)
+                throw new ArgumentNullException("imageTexCoords");
 
-        [FreeFunction(Name = "BillboardRenderer_Bindings::SetImageTexCoordsInternalList", HasExplicitThis = true)]
-        extern internal void SetImageTexCoordsInternalList(object list);
+            SetImageTexCoords(imageTexCoords.AsSpan());
+        }
+
+        [FreeFunction(Name = "BillboardRenderer_Bindings::SetImageTexCoords", HasExplicitThis = true)]
+        extern void SetImageTexCoords(ReadOnlySpan<Vector4> imageTexCoords);
 
         // List<T> version
         public void GetVertices(List<Vector2> vertices)
@@ -92,7 +97,7 @@ namespace UnityEngine
         extern public Vector2[] GetVertices();
 
         [FreeFunction(Name = "BillboardRenderer_Bindings::GetVerticesInternal", HasExplicitThis = true)]
-        extern internal void GetVerticesInternal(object list);
+        extern internal void GetVerticesInternal(List<Vector2> list);
 
         // List<T> version
         public void SetVertices(List<Vector2> vertices)
@@ -100,15 +105,20 @@ namespace UnityEngine
             if (vertices == null)
                 throw new ArgumentNullException("vertices");
 
-            SetVerticesInternalList(vertices);
+            SetVertices(NoAllocHelpers.CreateReadOnlySpan(vertices));
         }
 
         // T[] version
-        [FreeFunction(Name = "BillboardRenderer_Bindings::SetVertices", HasExplicitThis = true)]
-        extern public void SetVertices([NotNull] Vector2[] vertices);
+        public void SetVertices(Vector2[] vertices)
+        {
+            if (vertices == null)
+                throw new ArgumentNullException("vertices");
 
-        [FreeFunction(Name = "BillboardRenderer_Bindings::SetVerticesInternalList", HasExplicitThis = true)]
-        extern internal void SetVerticesInternalList(object list);
+            SetVertices(vertices.AsSpan());
+        }
+
+        [FreeFunction(Name = "BillboardRenderer_Bindings::SetVertices", HasExplicitThis = true)]
+        extern void SetVertices(ReadOnlySpan<Vector2> vertices);
 
         // List<T> version
         public void GetIndices(List<UInt16> indices)
@@ -124,7 +134,7 @@ namespace UnityEngine
         extern public UInt16[] GetIndices();
 
         [FreeFunction(Name = "BillboardRenderer_Bindings::GetIndicesInternal", HasExplicitThis = true)]
-        extern internal void GetIndicesInternal(object list);
+        extern internal void GetIndicesInternal(List<UInt16> list);
 
         // List<T> version
         public void SetIndices(List<UInt16> indices)
@@ -132,15 +142,20 @@ namespace UnityEngine
             if (indices == null)
                 throw new ArgumentNullException("indices");
 
-            SetIndicesInternalList(indices);
+            SetIndices(NoAllocHelpers.CreateReadOnlySpan(indices));
         }
 
         // T[] version
-        [FreeFunction(Name = "BillboardRenderer_Bindings::SetIndices", HasExplicitThis = true)]
-        extern public void SetIndices([NotNull] UInt16[] indices);
+        public void SetIndices(UInt16[] indices)
+        {
+            if (indices == null)
+                throw new ArgumentNullException("indices");
 
-        [FreeFunction(Name = "BillboardRenderer_Bindings::SetIndicesInternalList", HasExplicitThis = true)]
-        extern internal void SetIndicesInternalList(object list);
+            SetIndices(indices.AsSpan());
+        }
+
+        [FreeFunction(Name = "BillboardRenderer_Bindings::SetIndices", HasExplicitThis = true)]
+        extern void SetIndices(ReadOnlySpan<UInt16> indices);
 
         [FreeFunction(Name = "BillboardRenderer_Bindings::MakeMaterialProperties", HasExplicitThis = true)]
         extern internal void MakeMaterialProperties(MaterialPropertyBlock properties, Camera camera);

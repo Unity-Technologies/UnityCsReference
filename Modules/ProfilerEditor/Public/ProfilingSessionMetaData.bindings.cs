@@ -32,5 +32,9 @@ namespace Unity.Profiling.Editor
         ProductName,
         ScreenshotTextureInfo,
         ScreenshotRawTextureData,
+        FramesSinceLastScreenshot,
+        DateTimeOfRecording,
+        DeviceModel,
+        DeviceSystemVersion,
     }
 }

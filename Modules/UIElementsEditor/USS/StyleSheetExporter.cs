@@ -385,7 +385,7 @@ namespace UnityEditor.UIElements
                     WriteVariable(ref ctx, ctx.styleSheet.ReadVariable(handle));
                     break;
                 case StyleValueType.String:
-                    WriteString(ref ctx, ctx.styleSheet.ReadString(handle));
+                    WriteString(ref ctx, $"\"{ctx.styleSheet.ReadString(handle)}\"");
                     break;
                 case StyleValueType.Function:
                     var functionName = ctx.styleSheet.ReadFunctionName(handle);

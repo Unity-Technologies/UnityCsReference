@@ -153,11 +153,11 @@ namespace UnityEditor
             GUIStyle.SetMouseTooltip(hint.ToTooltipString(), tooltipRect);
         }
 
-        internal static void DrawHint(Rect hintTriggerRect, Vector2 mousePosition, AssetReference assetReference)
+        internal static void DrawHint(Rect hintTriggerRect, Vector2 mousePosition, EntityId assetId)
         {
             if (!hintTriggerRect.Contains(mousePosition) || !GUIClip.visibleRect.Contains(mousePosition)) { return; }
 
-            string assetPath = AssetDatabase.GUIDToAssetPath(assetReference.guid);
+            string assetPath = AssetDatabase.GetAssetPath(assetId);
             var assetType = AssetDatabase.GetMainAssetTypeAtPath(assetPath);
 
             if (assetType == null) //this means the object or its base script has been deleted and is "Missing"
@@ -185,7 +185,7 @@ namespace UnityEditor
                  * 2) Display one big tooltip made up with all elements from custom tooltip
                  */
 
-                GameObject assetGameObject = (GetLoadedObjectFromEntityId(assetReference.entityId) as GameObject);
+                GameObject assetGameObject = (GetLoadedObjectFromEntityId(assetId) as GameObject);
                 if (!assetGameObject)
                 {
                     /* this seems to happen non-deterministically at project startup depending of what the user is hovering when the editor opens,

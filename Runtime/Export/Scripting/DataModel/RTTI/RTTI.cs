@@ -73,8 +73,8 @@ internal interface IManagedRtti
 internal sealed class PureManagedObjectRtti : Rtti, IManagedRtti
 {
     internal readonly ConstructorInfo Constructor;
-    public RttiData[] TransferData { get; }
-    public bool IsBlittable { get; }
+    public RttiData[] TransferData { get; set; }
+    public bool IsBlittable { get; set; }
 
     internal PureManagedObjectRtti(Type type, Schema schema, RttiData[] transferData, bool isBlittable)
         : base(type, schema, RttiGroup.PureManaged)
@@ -94,14 +94,12 @@ internal sealed class PureManagedObjectRtti : Rtti, IManagedRtti
 // These types cannot be initialized using RuntimeHelpers.GetUninitializedObject(type).
 internal sealed class ImmutablePureManagedObjectRtti : Rtti, IManagedRtti
 {
-    public RttiData[] TransferData { get; }
+    public RttiData[] TransferData { get; set; }
     public bool IsBlittable { get; }
 
     internal ImmutablePureManagedObjectRtti(Type type, Schema schema, RttiData[] transferData)
         : base(type, schema, RttiGroup.ImmutablePureManaged)
     {
-        EngineHelper.AssertIsTrue(transferData.Length == 1);
-
         TransferData = transferData;
         IsBlittable = false;
     }
@@ -134,7 +132,7 @@ internal sealed class UnityHybridObjectRtti : UnityObjectRtti, IManagedRtti
 {
     internal readonly Schema NativeSchema;
     internal readonly ConstructorInfo Constructor;
-    public RttiData[] TransferData { get; }
+    public RttiData[] TransferData { get; set; }
     public bool IsBlittable { get; }
 
     internal UnityHybridObjectRtti(Type type, Schema schema, Schema nativeSchema, RttiData[] transferData)
@@ -152,7 +150,18 @@ internal sealed class UnityHybridObjectRtti : UnityObjectRtti, IManagedRtti
         {
             throw new ArgumentException($"Type {type.Name} is not a hybrid type");
         }
-        return UdmTypeId.Default;
+
+        var nativeTypeID = UnityEngine.Object.GetUDMTypeID(type);
+        if (!nativeTypeID.IsValid())
+        {
+            // TODO: Instead of returning `UdmTypeId.Default`, we should throw an exception here.
+            // Currently we fail to retrieve the native type ID of `SixWaySmokeLit` (which inherits from
+            // `RenderPipelineMaterial`), even though we expect it to exist. This should be investigated
+            // and fixed in a future PR.
+            return UdmTypeId.Default;
+        }
+
+        return nativeTypeID;
     }
 };
 

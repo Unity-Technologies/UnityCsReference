@@ -26,6 +26,7 @@ namespace Unity.ProjectAuditor.Editor.Utils
 #pragma warning restore 0414
 
         static string[] s_ShaderPlatformNames;
+        static Material s_SRPCompatibilityCheckMaterial;
 
         static void Init()
         {
@@ -39,7 +40,7 @@ namespace Unity.ProjectAuditor.Editor.Utils
             s_MethodHasInstancing = s_TypeShaderUtil.GetMethod("HasInstancing", BindingFlags.Static | BindingFlags.NonPublic);
             s_MethodHasSurfaceShaders = s_TypeShaderUtil.GetMethod("HasSurfaceShaders", BindingFlags.Static | BindingFlags.NonPublic);
 
-            var platformMask = (int)s_MethodGetAvailableShaderCompilerPlatforms.Invoke(null, new object[] {});
+            var platformMask = (int)s_MethodGetAvailableShaderCompilerPlatforms.Invoke(null, []);
             var names = new List<string>();
             for (var i = 0; i < 32; ++i)
             {
@@ -67,7 +68,7 @@ namespace Unity.ProjectAuditor.Editor.Utils
             if (s_MethodGetShaderActiveSubshaderIndex == null)
                 return 0;
 
-            return (int)s_MethodGetShaderActiveSubshaderIndex.Invoke(null, new object[] { shader});
+            return (int)s_MethodGetShaderActiveSubshaderIndex.Invoke(null, [shader]);
         }
 
         public static string[] GetShaderGlobalKeywords(Shader shader)
@@ -78,7 +79,7 @@ namespace Unity.ProjectAuditor.Editor.Utils
             if (s_MethodGetShaderGlobalKeywords == null)
                 return null;
 
-            return (string[])s_MethodGetShaderGlobalKeywords.Invoke(null, new object[] { shader});
+            return (string[])s_MethodGetShaderGlobalKeywords.Invoke(null, [shader]);
         }
 
         public static string[] GetShaderLocalKeywords(Shader shader)
@@ -89,7 +90,7 @@ namespace Unity.ProjectAuditor.Editor.Utils
             if (s_MethodGetShaderLocalKeywords == null)
                 return null;
 
-            return (string[])s_MethodGetShaderLocalKeywords.Invoke(null, new object[] { shader});
+            return (string[])s_MethodGetShaderLocalKeywords.Invoke(null, [shader]);
         }
 
         public static int GetSRPBatcherCompatibilityCode(Shader shader, int subShaderIdx)
@@ -99,7 +100,24 @@ namespace Unity.ProjectAuditor.Editor.Utils
 
             if (s_MethodGetSRPBatcherCompatibilityCode == null)
                 return -1;
-            return (int)s_MethodGetSRPBatcherCompatibilityCode.Invoke(null, new object[] { shader, subShaderIdx});
+
+            if (!s_SRPCompatibilityCheckMaterial)
+            {
+                s_SRPCompatibilityCheckMaterial = new Material(shader);
+                s_SRPCompatibilityCheckMaterial.hideFlags = HideFlags.HideAndDontSave;
+            }
+            else
+            {
+                s_SRPCompatibilityCheckMaterial.shader = shader;
+            }
+
+            s_SRPCompatibilityCheckMaterial.SetPass(0);
+
+            int result = (int)s_MethodGetSRPBatcherCompatibilityCode.Invoke(null, [shader, subShaderIdx]);
+
+            s_SRPCompatibilityCheckMaterial.shader = null;
+
+            return result;
         }
 
         public static ulong GetVariantCount(Shader shader)
@@ -110,7 +128,11 @@ namespace Unity.ProjectAuditor.Editor.Utils
             if (s_MethodGetShaderVariantCount == null)
                 return 0;
 
-            return (ulong)s_MethodGetShaderVariantCount.Invoke(null, new object[] { shader, false});
+            ulong outCount = 0;
+            if (!(bool)s_MethodGetShaderVariantCount.Invoke(null, [shader, false, outCount]))
+                return 0;
+
+            return outCount;
         }
 
         public static bool HasInstancing(Shader shader)
@@ -121,7 +143,7 @@ namespace Unity.ProjectAuditor.Editor.Utils
             if (s_MethodHasInstancing == null)
                 return false;
 
-            return (bool)s_MethodHasInstancing.Invoke(null, new object[] { shader});
+            return (bool)s_MethodHasInstancing.Invoke(null, [shader]);
         }
 
         public static bool HasSurfaceShaders(Shader shader)
@@ -132,7 +154,7 @@ namespace Unity.ProjectAuditor.Editor.Utils
             if (s_MethodHasSurfaceShaders == null)
                 return false;
 
-            return (bool)s_MethodHasSurfaceShaders.Invoke(null, new object[] { shader});
+            return (bool)s_MethodHasSurfaceShaders.Invoke(null, [shader]);
         }
 
         public static int GetPropertyCount(Shader shader)

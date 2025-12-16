@@ -93,6 +93,7 @@ namespace UnityEditor.Overlays
 
             m_Handle.Add(m_Visual = new VisualElement());
             m_Visual.AddToClassList(k_HeightDraggerVisualClassName);
+            m_Visual.pickingMode = PickingMode.Ignore;
         }
     }
 }

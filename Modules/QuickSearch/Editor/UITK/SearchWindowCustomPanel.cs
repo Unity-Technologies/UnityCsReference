@@ -4,8 +4,6 @@
 
 using System;
 using UnityEngine;
-using UnityEditor;
-using UnityEngine.Analytics;
 using UnityEngine.UIElements;
 
 namespace UnityEditor.Search
@@ -13,11 +11,19 @@ namespace UnityEditor.Search
     [Serializable]
     class SearchWindowCustomPanelConfig
     {
-        [SerializeField] private SearchFunctor<Action<ISearchWindow, ISearchView, VisualElement>> m_BindPanel;
-        [SerializeField] private SearchFunctor<Action<ISearchWindow, ISearchView, VisualElement>> m_UnbindPanel;
+        [SerializeField] private SearchFunctor<Action<SearchWindowCustomPanelConfig, ISearchWindow, ISearchView, SearchElement>> m_BindPanel;
+        [SerializeField] private SearchFunctor<Action<SearchWindowCustomPanelConfig, ISearchWindow, ISearchView, SearchElement>> m_UnbindPanel;
         [SerializeField] private string m_Id;
 
         public string id => m_Id;
+        // User can store contextual data across calls to Bind/Unbind.
+        public object bindUserData { get; set; }
+
+        // A locked panel won't be overridden by another query being executed.
+        public bool isLocked;
+        
+        // Should we persist this panel in a search Query saved on disk.
+        public bool serializableInQuery;
 
         public SearchWindowCustomPanelConfig(string id)
         {
@@ -26,29 +32,27 @@ namespace UnityEditor.Search
 
         public bool isValid => !string.IsNullOrEmpty(m_Id) && m_BindPanel != null;
 
-        public Action<ISearchWindow, ISearchView, VisualElement> bindPanel
+        public Action<SearchWindowCustomPanelConfig, ISearchWindow, ISearchView, SearchElement> bindPanel
         {
-            get => m_BindPanel.handler;
-            set => m_BindPanel = new SearchFunctor<Action<ISearchWindow, ISearchView, VisualElement>>(value);
+            get => m_BindPanel?.handler;
+            set => m_BindPanel = new SearchFunctor<Action<SearchWindowCustomPanelConfig, ISearchWindow, ISearchView, SearchElement>>(value);
         }
 
-        public Action<ISearchWindow, ISearchView, VisualElement> unbindPanel
+        public Action<SearchWindowCustomPanelConfig, ISearchWindow, ISearchView, SearchElement> unbindPanel
         {
-            get => m_UnbindPanel.handler;
-            set => m_UnbindPanel = new SearchFunctor<Action<ISearchWindow, ISearchView, VisualElement>>(value);
+            get => m_UnbindPanel?.handler;
+            set => m_UnbindPanel = new SearchFunctor<Action<SearchWindowCustomPanelConfig, ISearchWindow, ISearchView, SearchElement>>(value);
         }
     }
 
-    class SearchWindowCustomPanel : VisualElement
+    class SearchWindowCustomPanel : SearchElement
     {
         private SearchWindowCustomPanelConfig m_Config;
         public ISearchWindow window;
-        public ISearchView view;
         public SearchWindowCustomPanel(ISearchWindow window, ISearchView view)
+            : base("SearchWindowCustomPanel", view, "search-custom-panel")
         {
             this.window = window;
-            this.view = view;
-            AddToClassList("search-custom-panel");
         }
 
         public SearchWindowCustomPanelConfig config
@@ -57,17 +61,20 @@ namespace UnityEditor.Search
 
             set
             {
-                if (m_Config?.id == value?.id)
+                if (m_Config == value)
                     return;
                 if (m_Config != null)
                 {
-                    m_Config.unbindPanel?.Invoke(window, view, this);
+                    m_Config.unbindPanel?.Invoke(m_Config, window, m_ViewModel, this);
+                    // Be sure to nullify any user data
+                    m_Config.bindUserData = null;
+                    // Clear out any custom that might be lingering.
                     Clear();
                 }
                 m_Config = value;
                 if (m_Config != null)
                 {
-                    m_Config.bindPanel?.Invoke(window, view, this);
+                    m_Config.bindPanel?.Invoke(m_Config, window, m_ViewModel, this);
                 }
 
                 style.display = childCount > 0 ? DisplayStyle.Flex : DisplayStyle.None;

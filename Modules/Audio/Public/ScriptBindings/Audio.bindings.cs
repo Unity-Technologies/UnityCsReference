@@ -34,6 +34,7 @@ namespace UnityEngine.Audio
 namespace UnityEngine
 {
     // These are speaker types defined for use with [[AudioSettings.speakerMode]].
+    // Must be kept in sync with its C++ counterpart `AudioSpeakerMode`.
     public enum AudioSpeakerMode
     {
         // Channel count is unaffected.
@@ -54,11 +55,14 @@ namespace UnityEngine
         Prologic = 7
     }
 
-    static public partial class AudioExtensions
+    public static class AudioExtensions
     {
-        public static int ChannelCount(this AudioSpeakerMode mode)
+        [NativeMethod(Name = "AudioSpeakerModeBindings::InternalIAudioSpeakerModeChannelCount", IsFreeFunction = true)]
+        internal static extern int InternalIAudioSpeakerModeChannelCount(AudioSpeakerMode speakerMode);
+
+        public static int ChannelCount(this AudioSpeakerMode speakerMode)
         {
-            switch (mode)
+            switch (speakerMode)
             {
                 case AudioSpeakerMode.Mono: return 1;
                 case AudioSpeakerMode.Stereo: return 2;
@@ -67,9 +71,10 @@ namespace UnityEngine
                 case AudioSpeakerMode.Mode5point1: return 6;
                 case AudioSpeakerMode.Mode7point1: return 8;
                 case AudioSpeakerMode.Prologic: return 2;
+                throw new ArgumentException($"{nameof(speakerMode)}");
             }
 
-            throw new ArgumentException($"{nameof(mode)}");
+            throw new ArgumentException($"{nameof(speakerMode)}");
         }
     }
 

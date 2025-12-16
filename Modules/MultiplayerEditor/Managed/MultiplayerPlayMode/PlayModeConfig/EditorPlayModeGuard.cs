@@ -45,7 +45,7 @@ class EditorPlayModeGuard : ScriptableObject, IDisposable
     private void OnEnable()
     {
         AssertSingleton();
-        hideFlags = HideFlags.HideAndDontSave;
+        OrchestratedScenario.PreventScriptableObjectUnload(this);
 
         EditorApplication.playModeStateChanged += OnPlayModeStateChanged;
     }

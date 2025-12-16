@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using UnityEngine.Bindings;
 using UnityEngine.Scripting;
+using System.Runtime.InteropServices;
 
 namespace UnityEngine.Animations
 {
@@ -52,7 +53,7 @@ namespace UnityEngine.Animations
         private static extern int GetSourceCountInternal([NotNull] AimConstraint self);
 
         [FreeFunction(Name = "ConstraintBindings::GetSources", HasExplicitThis = true)]
-        public extern void GetSources([NotNull] List<ConstraintSource> sources);
+        public extern void GetSources([NotNull][Out] List<ConstraintSource> sources);
 
         public void SetSources(List<ConstraintSource> sources)
         {
@@ -63,7 +64,7 @@ namespace UnityEngine.Animations
         }
 
         [FreeFunction("ConstraintBindings::SetSources", ThrowsException = true)]
-        private static extern void SetSourcesInternal([NotNull] AimConstraint self, List<ConstraintSource> sources);
+        private static extern void SetSourcesInternal([NotNull] AimConstraint self, [In] List<ConstraintSource> sources);
 
         public extern int AddSource(ConstraintSource source);
 

@@ -86,6 +86,23 @@ namespace Unity.GraphToolkit
         }
 
         /// <summary>
+        /// Checks if there is at least one element in the IEnumerable <paramref name="source"/>.
+        /// </summary>
+        /// <param name="source">The list to check.</param>
+        /// <typeparam name="T">The type of values.</typeparam>
+        /// <returns>True if <paramref name="source"/> contains at least one element, false otherwise.</returns>
+        /// <exception cref="ArgumentNullException">Thrown if <paramref name="source"/> is null.</exception>
+        public static bool HasAny<T>(this IEnumerable<T> source)
+        {
+            if (source == null)
+            {
+                throw new ArgumentNullException(nameof(source));
+            }
+            using var enumerator = source.GetEnumerator();
+            return enumerator.MoveNext();
+        }
+
+        /// <summary>
         /// Checks if at least one element from the IReadOnlyList <paramref name="source"/> matches the predicate <paramref name="predicate"/>.
         /// </summary>
         /// <param name="source">The list to check.</param>
@@ -93,7 +110,7 @@ namespace Unity.GraphToolkit
         /// <typeparam name="T">The type of values.</typeparam>
         /// <returns>True if <paramref name="source"/> contains at least one element that matches <paramref name="predicate"/>, false otherwise.</returns>
         /// <exception cref="ArgumentNullException">Thrown if <paramref name="source"/> or <paramref name="predicate"/> is null.</exception>
-        public static bool Any<T>(this IReadOnlyList<T> source, Func<T, bool> predicate)
+        public static bool HasAny<T>(this IReadOnlyList<T> source, Func<T, bool> predicate)
         {
             if (source == null)
             {
@@ -114,6 +131,36 @@ namespace Unity.GraphToolkit
                 }
             }
 
+            return false;
+        }
+
+
+        /// <summary>
+        /// Checks if at least one element from the IEnumerable <paramref name="source"/> matches the predicate <paramref name="predicate"/>.
+        /// </summary>
+        /// <param name="source">The list to check.</param>
+        /// <param name="predicate">The predicate to use.</param>
+        /// <typeparam name="T">The type of values.</typeparam>
+        /// <returns>True if <paramref name="source"/> contains at least one element that matches <paramref name="predicate"/>, false otherwise.</returns>
+        /// <exception cref="ArgumentNullException">Thrown if <paramref name="source"/> or <paramref name="predicate"/> is null.</exception>
+        public static bool HasAny<T>(this IEnumerable<T> source, Func<T, bool> predicate)
+        {
+            if (source == null)
+            {
+                throw new ArgumentNullException(nameof(source));
+            }
+            if (predicate == null)
+            {
+                throw new ArgumentNullException(nameof(predicate));
+            }
+
+            foreach (var element in source)
+            {
+                if (predicate(element))
+                {
+                    return true;
+                }
+            }
             return false;
         }
 

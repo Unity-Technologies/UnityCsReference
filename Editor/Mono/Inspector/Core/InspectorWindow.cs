@@ -174,21 +174,21 @@ namespace UnityEditor
             // EditorApplication.projectWasLoaded, which calls this, fires after OnEnabled
             // therefore the logic in OnEnabled already tried to de-serialize the locked objects, including those it only had InstanceIDs of
             // This needs to get fixed here as the InstanceIDs have been reshuffled with the new session and could resolving to random Objects
-            if (m_InstanceIDsLockedBeforeSerialization.Count > 0)
+            if (m_EntityIdsLockedBeforeSerialization.Count > 0)
             {
                 // Game objects will have new instanceIDs in a new Unity session, so take out all objects that where reconstructed from InstanceIDs
-                for (int i = m_InstanceIDsLockedBeforeSerialization.Count - 1; i >= 0; i--)
+                for (int i = m_EntityIdsLockedBeforeSerialization.Count - 1; i >= 0; i--)
                 {
                     for (int j = m_ObjectsLockedBeforeSerialization.Count - 1; j >= 0; j--)
                     {
-                        if (m_ObjectsLockedBeforeSerialization[j] == null || m_ObjectsLockedBeforeSerialization[j].GetInstanceID() == m_InstanceIDsLockedBeforeSerialization[i])
+                        if (m_ObjectsLockedBeforeSerialization[j] == null || m_ObjectsLockedBeforeSerialization[j].GetEntityId() == m_EntityIdsLockedBeforeSerialization[i])
                         {
                             m_ObjectsLockedBeforeSerialization.RemoveAt(j);
                             break;
                         }
                     }
                 }
-                m_InstanceIDsLockedBeforeSerialization.Clear();
+                m_EntityIdsLockedBeforeSerialization.Clear();
                 RestoreLockStateFromSerializedData();
             }
         }
@@ -475,7 +475,7 @@ namespace UnityEditor
             m_PreviewWindow.RebuildContentsContainers();
             m_PreviewWindow.Show();
             Repaint();
-            UIEventRegistration.MakeCurrentIMGUIContainerDirty();
+            UIElementsIMGUIUtility.MakeCurrentIMGUIContainerDirty();
             if (exitGUI)
                 GUIUtility.ExitGUI();
         }
@@ -507,7 +507,7 @@ namespace UnityEditor
                     if (!EditorUtility.IsPersistent(m_ObjectsLockedBeforeSerialization[i]))
                     {
                         if (m_ObjectsLockedBeforeSerialization[i] != null)
-                            m_InstanceIDsLockedBeforeSerialization.Add(m_ObjectsLockedBeforeSerialization[i].GetInstanceID());
+                            m_EntityIdsLockedBeforeSerialization.Add(m_ObjectsLockedBeforeSerialization[i].GetEntityId());
                         m_ObjectsLockedBeforeSerialization.RemoveAt(i);
                     }
                 }
@@ -518,7 +518,7 @@ namespace UnityEditor
         {
             m_ObjectsLockedBeforeSerialization.Clear();
 
-            m_InstanceIDsLockedBeforeSerialization.Clear();
+            m_EntityIdsLockedBeforeSerialization.Clear();
         }
 
         internal void GetObjectsLocked(List<Object> objs)
@@ -543,11 +543,11 @@ namespace UnityEditor
             // try to retrieve all Objects from their stored instance ids in the list.
             // this is only used for non persistent objects (scene objects)
 
-            if (m_InstanceIDsLockedBeforeSerialization.Count > 0)
+            if (m_EntityIdsLockedBeforeSerialization.Count > 0)
             {
-                for (int i = 0; i < m_InstanceIDsLockedBeforeSerialization.Count; i++)
+                for (int i = 0; i < m_EntityIdsLockedBeforeSerialization.Count; i++)
                 {
-                    Object instance = EditorUtility.EntityIdToObject(m_InstanceIDsLockedBeforeSerialization[i]);
+                    Object instance = EditorUtility.EntityIdToObject(m_EntityIdsLockedBeforeSerialization[i]);
                     //don't add null objects (i.e.
                     if (instance)
                     {

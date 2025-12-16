@@ -90,6 +90,29 @@ namespace UnityEditor.Search
         }
     }
 
+    class QueryGroupBlock : QueryWordBlock
+    {
+        public QueryGroupBlock(IQuerySource source, bool openingGroup)
+            : base(source, openingGroup ? "(" : ")")
+        {
+            noSpaceAfterBlock = openingGroup;
+            noSpaceBeforeBlock = !openingGroup;
+        }
+
+        internal override bool canExclude => false;
+        internal override bool canOpenEditorOnValueClicked => false;
+
+        public static QueryGroupBlock CreateOpenGroupBlock(IQuerySource source)
+        {
+            return new QueryGroupBlock(source, openingGroup: true);
+        }
+
+        public static QueryGroupBlock CreateCloseGroupBlock(IQuerySource source)
+        {
+            return new QueryGroupBlock(source, openingGroup: false);
+        }
+    }
+
     class QueryToggleBlock : QueryWordBlock
     {
         public QueryToggleBlock(IQuerySource source, string toggle)

@@ -15,26 +15,27 @@ namespace Unity.ProjectAuditor.Editor
     [Serializable]
     public class Rule
     {
+        [SerializeField]
+        private SerializableEnum<Severity> severity;
         /// <summary>
         /// The Severity level to apply to the issue(s) represented by this Rule
         /// </summary>
-        [SerializeField]
-        private SerializableEnum<Severity> severity;
         public Severity Severity { get { return severity; } set { severity = value; } }
 
+        
+        [SerializeField]
+        private string filter;
         /// <summary>
         /// An optional location filter representing a ReportItem's location.
         /// If specified, this Rule applies to a single ReportItem. If the string is null or empty, this Rule applies to every ReportItem matching the Id.
         /// </summary>
-        [SerializeField]
-        private string filter;
         public string Filter { get { return filter; } set { filter = value; } }
 
+        [SerializeField]
+        private DescriptorId id;
         /// <summary>
         /// The Descriptor ID
         /// </summary>
-        [SerializeField]
-        private DescriptorId id;
         public DescriptorId Id { get => id; set => id = value; }
 
         /// <summary>Get the hashed integer representation of the Rule.</summary>

@@ -126,12 +126,8 @@ namespace Unity.GraphToolkit.Editor
             clientRect.x = 0;
             clientRect.y = 0;
 
-            var containerTranslation = m_Container.resolvedStyle.translate;
-            var containerScale = new Vector3(
-                m_Container.resolvedStyle.scale.value.x,
-                m_Container.resolvedStyle.scale.value.y,
-                1f // Z is not supported in UI Toolkit's resolvedStyle
-            );
+            var containerTranslation = graphView.Pan;
+            var containerScale = Vector2.one * graphView.Zoom;
             var containerPosition = m_Container.layout;
 
             var painter = mgc.painter2D;

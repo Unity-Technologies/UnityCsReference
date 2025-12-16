@@ -7,10 +7,12 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using System.Threading;
 using Unity.Collections;
+using Unity.Collections.LowLevel.Unsafe;
 using Unity.Profiling;
 using UnityEngine.Scripting;
+using UnityEngine.UIElements.StyleSheets;
+using UnityEngine.UIElements.Unmanaged;
 
 namespace UnityEngine.UIElements.Layout;
 
@@ -18,9 +20,9 @@ namespace UnityEngine.UIElements.Layout;
 enum LayoutNodeDataType
 {
     Node = 0,
-    Style = 1,
-    Computed = 2,
-    Cache = 3
+    Computed = 1,
+    Cache = 2,
+    ComputedStyle = 3,
 }
 
 [RequiredByNativeCode]
@@ -200,7 +202,7 @@ internal class LayoutManager : IDisposable
 
         s_Initialized = SharedManagerState.Shutdown;
 
-        s_SharedInstance.Dispose();
+        s_SharedInstance.Dispose(domainUnload: true);
     }
 
     // The capacity of the LayoutManager impacts how many chunks are created per component
@@ -219,12 +221,12 @@ internal class LayoutManager : IDisposable
 
     readonly int m_Index;
 
-    LayoutDataStore m_Nodes;
-    LayoutDataStore m_Configs;
+    UnmanagedDataStore m_Nodes;
+    UnmanagedDataStore m_Configs;
 
-    readonly ConcurrentQueue<LayoutHandle> m_NodesToFree = new();
+    readonly ConcurrentQueue<UnmanagedDataHandle> m_NodesToFree = new();
 
-    readonly LayoutHandle m_DefaultConfig;
+    readonly UnmanagedDataHandle m_DefaultConfig;
 
     readonly ManagedObjectStore<LayoutMeasureFunction> m_ManagedMeasureFunctions = new(k_CapacitySmall);
     readonly ManagedObjectStore<LayoutBaselineFunction> m_ManagedBaselineFunctions = new(k_CapacitySmall);
@@ -238,6 +240,16 @@ internal class LayoutManager : IDisposable
     // Used in tests.
     public int NodeCapacity => m_Nodes.Capacity;
 
+    private ComputedStyle m_InitialStyle = InitialStyle.Get();
+
+    // Used in tests. Set to true for tests with nodes that don't have VisualElements driving them.
+    // Normally, computed styles use the InitialStyle as their starting value,
+    // but our tests that create layout nodes currently expect a "default" computed style instead.
+    internal bool OverrideInitialStyle
+    {
+        set => m_InitialStyle = value ? ComputedStyle.CreateInitial() : InitialStyle.Get();
+    }
+
     internal static LayoutManager GetManager(int index)
         => (uint) index < s_Managers.Count ? s_Managers[index] : null;
 
@@ -250,37 +262,40 @@ internal class LayoutManager : IDisposable
 
         var nodeComponentTypes = new[]
         {
-            ComponentType.Create<LayoutNodeData>(),
-            ComponentType.Create<LayoutStyleData>(),
-            ComponentType.Create<LayoutComputedData>(),
-            ComponentType.Create<LayoutCacheData>(),
+            UnmanagedComponentType.Create<LayoutNodeData>(),
+            UnmanagedComponentType.Create<LayoutComputedData>(),
+            UnmanagedComponentType.Create<LayoutCacheData>(),
+            UnmanagedComponentType.Create<ComputedStyle>(),
         };
 
         const string areaName = nameof(UIElements);
         ReadOnlySpan<MemoryLabel> nodeComponentLabels = stackalloc MemoryLabel[]
         {
             new MemoryLabel(areaName, $"Layout.ComponentData<{nameof(LayoutNodeData)}>"),
-            new MemoryLabel(areaName, $"Layout.ComponentData<{nameof(LayoutStyleData)}>"),
             new MemoryLabel(areaName, $"Layout.ComponentData<{nameof(LayoutComputedData)}>"),
             new MemoryLabel(areaName, $"Layout.ComponentData<{nameof(LayoutCacheData)}>"),
+            new MemoryLabel(areaName, $"Layout.ComponentData<{nameof(ComputedStyle)}>"),
         };
 
         var configComponentTypes = new[]
         {
-            ComponentType.Create<LayoutConfigData>()
+            UnmanagedComponentType.Create<LayoutConfigData>()
         };
         ReadOnlySpan<MemoryLabel> configComponentLabels = stackalloc MemoryLabel[]
         {
             new MemoryLabel(areaName, $"Layout.ComponentData<{nameof(LayoutConfigData)}>"),
         };
 
-        m_Nodes = new LayoutDataStore(nodeComponentTypes, nodeComponentLabels, initialNodeCapacity, allocator);
-        m_Configs = new LayoutDataStore(configComponentTypes, configComponentLabels, k_InitialConfigCapacity, allocator);
+        m_Nodes = new UnmanagedDataStore(nodeComponentTypes, nodeComponentLabels, initialNodeCapacity, allocator);
+        m_Configs = new UnmanagedDataStore(configComponentTypes, configComponentLabels, k_InitialConfigCapacity, allocator);
 
         m_DefaultConfig = CreateConfig().Handle;
     }
 
-    public void Dispose()
+    // Called by unit tests
+    public void Dispose() => Dispose(false);
+
+    private void Dispose(bool domainUnload)
     {
         s_Managers[m_Index] = null;
 
@@ -294,11 +309,19 @@ internal class LayoutManager : IDisposable
 
                 var data = (LayoutNodeData*) m_Nodes.GetComponentDataPtr(i, (int)LayoutNodeDataType.Node);
 
-                if (!data->Children.IsCreated)
-                    continue;
+                if (data->Children.IsCreated)
+                {
+                    data->Children.Dispose();
+                    data->Children = new();
+                }
 
-                data->Children.Dispose();
-                data->Children = new();
+                var computedStyle = (ComputedStyle*) m_Nodes.GetComponentDataPtr(i, (int)LayoutNodeDataType.ComputedStyle);
+                // During domain reload in CreateEditorWindowTests, there is one element that has an uninitialized
+                // style which causes a NullReferenceException if we don't use SafeRelease here.
+                if (domainUnload)
+                    computedStyle->SafeRelease();
+                else
+                    computedStyle->Release();
 
                 var owner = m_ManagedOwners.GetValue(data->ManagedOwnerIndex);
                 if (owner.IsAllocated)
@@ -349,15 +372,21 @@ internal class LayoutManager : IDisposable
         return node;
     }
 
-    LayoutNode CreateNodeInternal(LayoutHandle configHandle)
+    unsafe LayoutNode CreateNodeInternal(UnmanagedDataHandle configHandle)
     {
         TryRecycleSingleNode();
 
+        var data = LayoutNodeData.Default;
+        data.Config = configHandle;
+
+        var computedStyle = m_InitialStyle.Acquire();
+
         var handle = m_Nodes.Allocate(
-            new LayoutNodeData { Config = configHandle , Children= new() },
-            LayoutStyleData.Default,
+            data,
             LayoutComputedData.Default,
-            LayoutCacheData.Default);
+            LayoutCacheData.Default,
+            computedStyle
+        );
 
         if (handle.Index > m_HighMark)
             m_HighMark = handle.Index;
@@ -370,7 +399,7 @@ internal class LayoutManager : IDisposable
 
     void TryRecycleSingleNode()
     {
-        if (m_NodesToFree.TryDequeue(out LayoutHandle handle))
+        if (m_NodesToFree.TryDequeue(out UnmanagedDataHandle handle))
         {
             FreeNode(handle);
         }
@@ -383,7 +412,7 @@ internal class LayoutManager : IDisposable
         // We should make this configurable, at least as a diagnostic switch
         const int maxIterations = 100;
         int iterations = 0;
-        while (iterations < maxIterations && m_NodesToFree.TryDequeue(out LayoutHandle handle))
+        while (iterations < maxIterations && m_NodesToFree.TryDequeue(out UnmanagedDataHandle handle))
         {
             FreeNode(handle);
             iterations++;
@@ -402,7 +431,7 @@ internal class LayoutManager : IDisposable
         node = LayoutNode.Undefined;
     }
 
-    void FreeNode(LayoutHandle handle)
+    unsafe void FreeNode(UnmanagedDataHandle handle)
     {
         ref var data = ref GetAccess().GetNodeData(handle);
         if (data.Children.IsCreated)
@@ -417,6 +446,9 @@ internal class LayoutManager : IDisposable
         data.UsesMeasure = false;
         data.UsesBaseline = false;
 
+        ref var computedStyle = ref GetAccess().GetComputedStyle(handle);
+        computedStyle.Release();
+
         GCHandle owner = m_ManagedOwners.GetValue(data.ManagedOwnerIndex);
         if (owner.IsAllocated)
             owner.Free();
@@ -430,7 +462,7 @@ internal class LayoutManager : IDisposable
             TryRecycleNodes();
     }
 
-    public VisualElement GetOwner(LayoutHandle handle)
+    public VisualElement GetOwner(UnmanagedDataHandle handle)
     {
         //This assumes an internal behavior of the managed object store... invalid could be -1 instead
         if (GetAccess().GetNodeData(handle).ManagedOwnerIndex == 0)
@@ -440,7 +472,7 @@ internal class LayoutManager : IDisposable
         return m_ManagedOwners.GetValue(GetAccess().GetNodeData(handle).ManagedOwnerIndex).Target as VisualElement;
     }
 
-    public void SetOwner(LayoutHandle handle, VisualElement value)
+    public void SetOwner(UnmanagedDataHandle handle, VisualElement value)
     {
         if (value == null)
         {
@@ -461,25 +493,25 @@ internal class LayoutManager : IDisposable
         m_ManagedOwners.UpdateValue(ref index, gcHandle);
     }
 
-    public LayoutMeasureFunction GetMeasureFunction(LayoutHandle handle)
+    public LayoutMeasureFunction GetMeasureFunction(UnmanagedDataHandle handle)
     {
         int index = GetAccess().GetConfigData(handle).ManagedMeasureFunctionIndex;
         return m_ManagedMeasureFunctions.GetValue(index);
     }
 
-    public void SetMeasureFunction(LayoutHandle handle, LayoutMeasureFunction value)
+    public void SetMeasureFunction(UnmanagedDataHandle handle, LayoutMeasureFunction value)
     {
         ref var index = ref GetAccess().GetConfigData(handle).ManagedMeasureFunctionIndex;
         m_ManagedMeasureFunctions.UpdateValue(ref index, value);
     }
 
-    public LayoutBaselineFunction GetBaselineFunction(LayoutHandle handle)
+    public LayoutBaselineFunction GetBaselineFunction(UnmanagedDataHandle handle)
     {
         int index = GetAccess().GetConfigData(handle).ManagedBaselineFunctionIndex;
         return m_ManagedBaselineFunctions.GetValue(index);
     }
 
-    public void SetBaselineFunction(LayoutHandle handle, LayoutBaselineFunction value)
+    public void SetBaselineFunction(UnmanagedDataHandle handle, LayoutBaselineFunction value)
     {
         ref var index = ref GetAccess().GetConfigData(handle).ManagedBaselineFunctionIndex;
         m_ManagedBaselineFunctions.UpdateValue(ref index, value);

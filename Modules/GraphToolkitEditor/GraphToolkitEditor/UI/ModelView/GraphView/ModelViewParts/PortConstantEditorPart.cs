@@ -26,7 +26,8 @@ namespace Unity.GraphToolkit.Editor
         /// <returns>A new instance of <see cref="PortConstantEditorPart"/>.</returns>
         public static PortConstantEditorPart Create(string name, Model model, ChildView ownerElement, string parentClassName)
         {
-            if (model is PortModel)
+            // Do not create constant editor if port is vertical
+            if (model is PortModel { Orientation: PortOrientation.Horizontal })
             {
                 return new PortConstantEditorPart(name, model, ownerElement, parentClassName);
             }

@@ -6,7 +6,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
-using UnityEngine;
 
 namespace Unity.GraphToolkit.Editor
 {
@@ -136,20 +135,20 @@ namespace Unity.GraphToolkit.Editor
                                 inspectorOnly = option.IsInInspectorOnly
                             });
                             if (!option.IsInInspectorOnly || isInspectorModelView)
-                                nodeOptionsDict[option.PortModel.UniqueName] = new List<NodeOption> { option };
+                                nodeOptionsDict[option.Id] = new List<NodeOption> { option };
                         }
                         continue;
                     }
 
                     // If multiple models are inspected, we only want to display the node options that are present in all models.
-                    foreach (var title in nodeOptionsDict.Keys.ToList())
+                    foreach (var id in nodeOptionsDict.Keys.ToList())
                     {
                         var otherOptions = nodeModel.NodeOptions.Where(o =>
-                            title == o.PortModel.UniqueName && o.PortModel.DataTypeHandle == nodeOptionsDict[title].First().PortModel.DataTypeHandle).ToList();
-                        if (otherOptions.Any())
-                            nodeOptionsDict[title].AddRange(otherOptions);
+                            id == o.Id && o.PortModel.DataTypeHandle == nodeOptionsDict[id].First().PortModel.DataTypeHandle).ToList();
+                        if (otherOptions.HasAny())
+                            nodeOptionsDict[id].AddRange(otherOptions);
                         else
-                            nodeOptionsDict.Remove(title);
+                            nodeOptionsDict.Remove(id);
                     }
                 }
             }

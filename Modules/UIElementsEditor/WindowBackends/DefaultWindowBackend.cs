@@ -5,6 +5,7 @@
 using UnityEngine;
 using UnityEngine.Assertions;
 using UnityEngine.UIElements;
+using static UnityEngine.UIElements.IMGUIContainer;
 
 namespace UnityEditor.UIElements
 {
@@ -109,6 +110,12 @@ namespace UnityEditor.UIElements
         {
             if (panel.UpdateScalingFromEditorWindow)
                 panel.pixelsPerPoint = (panel as EditorPanel).GetBackingScaleFactor() ?? 1;
+        }
+
+        public bool ProcessEvent( Event e)
+        {
+            using var scope = new UITKScope();
+            return EditorEventDispatchUtility.DoDispatch(panel, e);
         }
     }
 }

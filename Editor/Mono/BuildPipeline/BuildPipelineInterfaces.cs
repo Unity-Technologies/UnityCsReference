@@ -14,6 +14,8 @@ using UnityEngine.Scripting;
 using UnityEditor.AssetImporters;
 using UnityEngine.SceneManagement;
 using UnityEditor.Build.Profile;
+using UnityEngine.Rendering;
+using UnityEngine.Bindings;
 
 namespace UnityEditor.Build
 {
@@ -94,6 +96,7 @@ namespace UnityEditor.Build
         void OnProcessComputeShader(ComputeShader shader, string kernelName, IList<ShaderCompilerData> data);
     }
 
+    [VisibleToOtherModules("UnityEditor.BurstModule")]
     // This API lets you generate native plugins to be integrated into the player build,
     // during the incremental player build. The incremental player build platform implementations will know
     // how to consume these plugins and link them into the build.
@@ -135,7 +138,7 @@ namespace UnityEditor.Build
         {
             // Any pathname returned in this array will be treated as a plugin to be linked into the player
             public string[] generatedPlugins { get; set; }
-            public string[] generatedSymbols { get; set; }
+            public string[] generatedDebugFiles { get; set; }
         }
 
         // Method to generate native plugins during the player build. This will be called on a thread by the incremental
@@ -696,8 +699,10 @@ namespace UnityEditor.Build
         }
 
         [RequiredByNativeCode]
-        internal static ShaderCompilerData[] OnPreprocessShaders(Shader shader, ShaderSnippetData snippet, ShaderCompilerData[] data)
+        internal static ShaderCompilerData[] OnPreprocessShaders(Shader shader, ShaderType shaderType, PassType passType, string passName, PassIdentifier passIdentifier, ShaderCompilerData[] data)
         {
+            var snippet = new ShaderSnippetData(shaderType, passType, passName, passIdentifier);
+
             var dataList = data.ToList();
             if (processors.shaderProcessors != null)
             {

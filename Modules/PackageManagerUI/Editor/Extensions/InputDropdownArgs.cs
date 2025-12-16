@@ -12,7 +12,7 @@ namespace UnityEditor.PackageManager.UI
     {
         public string title;
         public Background? icon;
-        internal string iconUssClass;
+        public string iconUssClass;
         public string placeholderText;
         public string submitButtonText;
         public string defaultValue;

@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using UnityEditor.Build;
 using UnityEngine;
+using UnityEngine.Bindings;
 using UnityEngine.Internal;
 using Object = UnityEngine.Object;
 
@@ -1596,9 +1597,9 @@ sealed partial class EditorGUILayout
     }
 
     // Make a foldout with a toggle and title
-    internal static bool ToggleTitlebar(bool foldout, GUIContent label, ref bool toggleValue)
+    internal static bool ToggleTitlebar(bool foldout, GUIContent label, ref bool toggleValue, bool supportHover = false)
     {
-        return EditorGUI.ToggleTitlebar(GUILayoutUtility.GetRect(GUIContent.none, EditorStyles.inspectorTitlebar), label, foldout, ref toggleValue);
+        return EditorGUI.ToggleTitlebar(GUILayoutUtility.GetRect(GUIContent.none, EditorStyles.inspectorTitlebar), label, foldout, ref toggleValue, supportHover);
     }
 
     internal static bool ToggleTitlebar(bool foldout, GUIContent label, SerializedProperty property)
@@ -2221,6 +2222,7 @@ sealed partial class EditorGUILayout
         EndPlatformGrouping();
     }
 
+    [VisibleToOtherModules("UnityEditor.BurstModule")]
     internal static int BeginPlatformGrouping(BuildPlatform[] platforms, GUIContent defaultTab)
     {
         return BeginPlatformGrouping(platforms, defaultTab, EditorStyles.frameBox);
@@ -2373,6 +2375,7 @@ sealed partial class EditorGUILayout
         return selected;
     }
 
+    [VisibleToOtherModules("UnityEditor.BurstModule")]
     internal static void EndPlatformGrouping()
     {
         EndVertical();

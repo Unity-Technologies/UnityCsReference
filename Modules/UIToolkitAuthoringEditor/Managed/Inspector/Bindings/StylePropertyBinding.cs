@@ -6,7 +6,6 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using Unity.Properties;
-using UnityEditor.UIElements;
 using UnityEngine;
 using UnityEngine.Bindings;
 using UnityEngine.UIElements;
@@ -29,8 +28,65 @@ internal interface ITrackablePropertyProvider
     event Action<ITrackablePropertyProvider, string, TrackedPropertyType> OnTrackedPropertyChanged;
 }
 
+internal interface INotifyCompositeStylePropertyChanged<in TValue>
+{
+    void SetValue(BindingId id, TValue v, bool notify);
+
+    void NotifyStylePropertyChanged(BindingId id, TValue previousValue, TValue newValue);
+}
+
+internal static class NotifyCompositeStylePropertyChangedExtensions
+{
+    public static void NotifyStylePropertyChanged<TValue>(this INotifyCompositeStylePropertyChanged<TValue> self, VisualElement element, BindingId id, TValue previousValue, TValue newValue)
+    {
+        var evt = CompositeStylePropertyChangeEvent<TValue>.GetPooled(id, previousValue, newValue);
+        evt.target = element;
+        element.SendEvent(evt);
+    }
+}
+
+class CompositeStylePropertyChangeEvent<T> : EventBase<CompositeStylePropertyChangeEvent<T>>, IChangeEvent
+{
+    static CompositeStylePropertyChangeEvent()
+    {
+        SetCreateFunction(() => new CompositeStylePropertyChangeEvent<T>());
+    }
+
+    public BindingId Id { get; protected set; }
+    public T PreviousValue { get; protected set; }
+    public T NewValue { get; protected set; }
+
+    protected override void Init()
+    {
+        base.Init();
+        LocalInit();
+    }
+
+    void LocalInit()
+    {
+        bubbles = false;
+        tricklesDown = false;
+        PreviousValue = default(T);
+        NewValue = default(T);
+    }
+
+    public static CompositeStylePropertyChangeEvent<T> GetPooled(BindingId id, T previousValue, T newValue)
+    {
+        CompositeStylePropertyChangeEvent<T> e = GetPooled();
+        e.Id = id;
+        e.PreviousValue = previousValue;
+        e.NewValue = newValue;
+        return e;
+    }
+
+    public CompositeStylePropertyChangeEvent()
+    {
+        LocalInit();
+    }
+}
+
 [UxmlObject]
-sealed partial class StylePropertyBinding : CustomBinding, ITrackablePropertyProvider
+sealed partial class StylePropertyBinding : CustomBinding, ITrackablePropertyProvider, IDataSourceProvider
 {
     [Flags]
     enum UpdateFlags
@@ -173,6 +229,7 @@ sealed partial class StylePropertyBinding : CustomBinding, ITrackablePropertyPro
     private readonly Dictionary<BindingInfoKey, State> m_State = new ();
     private UpdateFlags m_UpdateFlags;
     private string m_StyleProperty;
+    private string m_StylePropertyCSharpName;
     private StylePropertyId stylePropertyId;
 
     public event Action<ITrackablePropertyProvider, string, TrackedPropertyType> OnTrackedPropertyChanged;
@@ -195,6 +252,7 @@ sealed partial class StylePropertyBinding : CustomBinding, ITrackablePropertyPro
                 return;
             m_StyleProperty = value;
             stylePropertyId = GetPropertyId(m_StyleProperty);
+            m_StylePropertyCSharpName = StylePropertyUtil.ussNameToCSharpName.GetValueOrDefault(m_StyleProperty, m_StyleProperty);
         }
     }
 
@@ -296,6 +354,14 @@ sealed partial class StylePropertyBinding : CustomBinding, ITrackablePropertyPro
             ProcessChange(evt.newValue, ctx.styleDiff, ctx.binding, setter);
     }
 
+    static void ProcessChange<T>(CompositeStylePropertyChangeEvent<T> evt, CallbackContext ctx, Action<StyleProperty, StyleSheet, T> setter)
+    {
+        if (ctx.binding.ignoreChanges|| evt.target != ctx.element || evt.Id != ctx.bindingId)
+            return;
+
+        if (ShouldProcessChange(evt, ctx))
+            ProcessChange(evt.NewValue, ctx.styleDiff, ctx.binding, setter);
+    }
 
     BindingResult Update<TInline, TComputed>(in BindingId id, StylePropertyData<TInline, TComputed> value, StyleDiff diff, VisualElement targetElement)
     {
@@ -312,13 +378,13 @@ sealed partial class StylePropertyBinding : CustomBinding, ITrackablePropertyPro
         {
             m_State[key] = currentState;
             if (previousState.IsOverridden != currentState.IsOverridden)
-                OnTrackedPropertyChanged?.Invoke(this, StylePropertyUtil.stylePropertyIdToPropertyName[value.id], isOverridden ? TrackedPropertyType.MarkOverride : TrackedPropertyType.ClearOverride);
+                OnTrackedPropertyChanged?.Invoke(this, styleProperty, isOverridden ? TrackedPropertyType.MarkOverride : TrackedPropertyType.ClearOverride);
         }
         // If state is not tracked yet and the value is not inlined, let's wait until it is to start tracking it.
         else if (isOverridden)
         {
             m_State[key] = currentState;
-            OnTrackedPropertyChanged?.Invoke(this, StylePropertyUtil.stylePropertyIdToPropertyName[value.id], TrackedPropertyType.MarkOverride);
+            OnTrackedPropertyChanged?.Invoke(this, styleProperty, TrackedPropertyType.MarkOverride);
         }
 
         targetElement.EnableInClassList("style-property-field__inline-value", value.uxmlValue.isInlined);
@@ -342,6 +408,19 @@ sealed partial class StylePropertyBinding : CustomBinding, ITrackablePropertyPro
             {
                 if (TypeConversion.TryConvert<TComputed, TInline>(ref computedValue, out var convertedValue))
                     inlineField.value = convertedValue;
+                else
+                    Debug.LogWarning($"Invalid Cast from: `{typeof(TComputed).Name}` to `{typeof(TInline).Name}`");
+                break;
+            }
+            case INotifyCompositeStylePropertyChanged<TComputed> compositeComputedField:
+            {
+                compositeComputedField.SetValue(id, computedValue, true);
+                break;
+            }
+            case INotifyCompositeStylePropertyChanged<TInline> compositeInlineField:
+            {
+                if (TypeConversion.TryConvert<TComputed, TInline>(ref computedValue, out var convertedValue))
+                    compositeInlineField.SetValue(id, convertedValue, true);
                 else
                     Debug.LogWarning($"Invalid Cast from: `{typeof(TComputed).Name}` to `{typeof(TInline).Name}`");
                 break;
@@ -406,7 +485,9 @@ sealed partial class StylePropertyBinding : CustomBinding, ITrackablePropertyPro
         in BindingId id,
         VisualElement targetElement,
         EventCallback<ChangeEvent<TStyleValue>, CallbackContext> styleValueCallback,
-        EventCallback<ChangeEvent<TValue>, CallbackContext> valueCallback)
+        EventCallback<ChangeEvent<TValue>, CallbackContext> valueCallback,
+        EventCallback<CompositeStylePropertyChangeEvent<TStyleValue>, CallbackContext> styleValueChangedCallback,
+        EventCallback<CompositeStylePropertyChangeEvent<TValue>, CallbackContext> valueChangedCallback)
     {
         switch (targetElement)
         {
@@ -415,6 +496,12 @@ sealed partial class StylePropertyBinding : CustomBinding, ITrackablePropertyPro
                 break;
             case INotifyValueChanged<TValue> when id == BaseField<TValue>.valueProperty:
                 targetElement.RegisterCallback(valueCallback, new CallbackContext(binding, targetElement, id));
+                break;
+            case INotifyCompositeStylePropertyChanged<TStyleValue>:
+                targetElement.RegisterCallback(styleValueChangedCallback, new CallbackContext(binding, targetElement, id));
+                break;
+            case INotifyCompositeStylePropertyChanged<TValue>:
+                targetElement.RegisterCallback(valueChangedCallback, new CallbackContext(binding, targetElement, id));
                 break;
             default:
                 targetElement.RegisterCallback<PropertyChangedEvent, CallbackContext>(binding.ProcessChange, new CallbackContext(binding, targetElement, id));
@@ -459,4 +546,24 @@ sealed partial class StylePropertyBinding : CustomBinding, ITrackablePropertyPro
         evt.StopImmediatePropagation();
         return false;
     }
+
+    private static bool ShouldProcessChange<T>(CompositeStylePropertyChangeEvent<T> evt, CallbackContext ctx)
+    {
+        if (evt.target != ctx.element)
+            return false;
+
+        if (!ctx.binding.isReadonly)
+            return true;
+
+        // Write back the previous value so that it looks like it's readonly.
+        ((INotifyCompositeStylePropertyChanged<T>)evt.target).SetValue(evt.Id, evt.PreviousValue, false);
+        evt.StopImmediatePropagation();
+
+        return false;
+    }
+
+    // These are implemented solely to opt-in the change tracking per property, we don't want these to be set
+    // from UXML, hence why they are not UXML attributes.
+    object IDataSourceProvider.dataSource => null;
+    PropertyPath IDataSourceProvider.dataSourcePath => PropertyPath.FromName(m_StylePropertyCSharpName);
 }

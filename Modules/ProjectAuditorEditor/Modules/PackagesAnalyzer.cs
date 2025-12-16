@@ -17,7 +17,7 @@ namespace Unity.ProjectAuditor.Editor.Modules
         static readonly Descriptor k_RecommendPackageUpgrade = new Descriptor(
             PAP0001,
             "Newer recommended package version",
-            Areas.Quality,
+            Areas.Upgrade,
             "A newer recommended version of this package is available.",
             "Update the package via Package Manager."
         )
@@ -26,7 +26,7 @@ namespace Unity.ProjectAuditor.Editor.Modules
             DefaultSeverity = Severity.Minor
         };
 
-        static readonly Descriptor k_RecommendPackagePreView = new Descriptor(
+        static readonly Descriptor k_RecommendPackagePreview = new Descriptor(
             PAP0002,
             "Experimental/Preview packages",
             Areas.Quality,
@@ -41,7 +41,7 @@ namespace Unity.ProjectAuditor.Editor.Modules
         public override void Initialize(Action<Descriptor> registerDescriptor)
         {
             registerDescriptor(k_RecommendPackageUpgrade);
-            registerDescriptor(k_RecommendPackagePreView);
+            registerDescriptor(k_RecommendPackagePreview);
         }
 
         public override IEnumerable<ReportItem> Analyze(PackageAnalysisContext context)
@@ -50,7 +50,7 @@ namespace Unity.ProjectAuditor.Editor.Modules
             // first check if any package is preview or experimental
             if (package.version.Contains("pre") || package.version.Contains("exp"))
             {
-                yield return context.CreateIssue(IssueCategory.ProjectSetting, k_RecommendPackagePreView.Id, package.name, package.version)
+                yield return context.CreateIssue(IssueCategory.ProjectSetting, k_RecommendPackagePreview.Id, package.name, package.version)
                     .WithLocation(package.assetPath);
             }
             else

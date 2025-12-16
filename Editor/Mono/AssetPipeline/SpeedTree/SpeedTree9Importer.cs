@@ -22,7 +22,7 @@ using static UnityEditor.SpeedTree.Importer.SpeedTree9Reader;
 namespace UnityEditor.SpeedTree.Importer
 {
     // [2024-09-27] version: 3
-    // Fixed code that would lead to m_LODCount vs m_PerLODSettings.arraySize mismatching in GUI 
+    // Fixed code that would lead to m_LODCount vs m_PerLODSettings.arraySize mismatching in GUI
     [ScriptedImporter(version: 3, ext: "st9", AllowCaching = true)]
     public class SpeedTree9Importer : ScriptedImporter
     {
@@ -189,7 +189,7 @@ namespace UnityEditor.SpeedTree.Importer
             ctx.AddObjectToAsset(ImporterSettings.kGameObjectName, mainObject);
             ctx.SetMainObject(mainObject);
 
-            SetThumbnailFromTexture2D(Styles.kIcon, mainObject.GetInstanceID());
+            SetThumbnailFromTexture2D(Styles.kIcon, mainObject.GetEntityId());
 
             m_OutputImporterData.mainObject = mainObject;
 
@@ -229,7 +229,7 @@ namespace UnityEditor.SpeedTree.Importer
 
         private void CacheTreeImporterValues(string assetPath)
         {
-            // Variables used a lot are cached, since accessing any Reader array has a non-negligeable cost. 
+            // Variables used a lot are cached, since accessing any Reader array has a non-negligeable cost.
             m_LODCount = (uint)m_Tree.Lod.Length;
             if(m_LODCount > LODGUI.kLODColors.Length)
             {
@@ -911,16 +911,16 @@ namespace UnityEditor.SpeedTree.Importer
             return null;
         }
 
-        private bool TryGetInstanceIDFromMaterialProperty(Material material, int propertyName, out int id)
+        private bool TryGetInstanceIDFromMaterialProperty(Material material, int propertyName, out EntityId id)
         {
             if (!material.HasProperty(propertyName))
             {
-                id = 0;
+                id = EntityId.None;
                 return false;
             }
 
             var property = material.GetTexture(propertyName);
-            id = property.GetInstanceID();
+            id = property.GetEntityId();
 
             return true;
         }
@@ -949,7 +949,7 @@ namespace UnityEditor.SpeedTree.Importer
             {
                 bool colorTex = SetMaterialTexture(mat, stMaterial, 0, path, MaterialProperties.MainTexID);
 
-                if (colorTex && TryGetInstanceIDFromMaterialProperty(mat, MaterialProperties.MainTexID, out int id) && id != 0)
+                if (colorTex && TryGetInstanceIDFromMaterialProperty(mat, MaterialProperties.MainTexID, out var id) && id != EntityId.None)
                 {
                     mat.SetColor(MaterialProperties.ColorTintID, m_MaterialSettings.mainColor);
                 }
@@ -974,8 +974,8 @@ namespace UnityEditor.SpeedTree.Importer
             {
                 bool foundExtra = SetMaterialTexture(mat, stMaterial, 2, path, MaterialProperties.ExtraTexID);
 
-                int id = 0;
-                if (foundExtra && TryGetInstanceIDFromMaterialProperty(mat, MaterialProperties.ExtraTexID, out id) && id != 0)
+                EntityId id = EntityId.None;
+                if (foundExtra && TryGetInstanceIDFromMaterialProperty(mat, MaterialProperties.ExtraTexID, out id) && id != EntityId.None)
                 {
                     // _Glossiness (== _Smoothness) is multipled in the shader with the texture values if ExtraTex is present.
                     // Set default value 1.0f to override the default value 0.5, otherwise, the original texture values will
@@ -990,7 +990,7 @@ namespace UnityEditor.SpeedTree.Importer
                     mat.SetFloat(MaterialProperties.MetallicID, stColor.Y);
                 }
 
-                mat.SetFloat(MaterialProperties.ExtraMapKwToggleID, (foundExtra && id != 0) ? 1.0f : 0.0f);
+                mat.SetFloat(MaterialProperties.ExtraMapKwToggleID, (foundExtra && id != EntityId.None) ? 1.0f : 0.0f);
             }
 
             // Extra and SSS
@@ -1002,7 +1002,7 @@ namespace UnityEditor.SpeedTree.Importer
                 // TODO: To implement in ST9 Shader.
                 mat.SetFloat(MaterialProperties.SubsurfaceKwToggleID, (setToggle) ? 1.0f : 0.0f);
 
-                if (hasSSSTex && TryGetInstanceIDFromMaterialProperty(mat, MaterialProperties.SubsurfaceTexID, out int id) && id != 0)
+                if (hasSSSTex && TryGetInstanceIDFromMaterialProperty(mat, MaterialProperties.SubsurfaceTexID, out var id) && id != EntityId.None)
                 {
                     mat.SetColor(MaterialProperties.SubsurfaceColorID, new Color(1.0f, 1.0f, 1.0f, 1.0f));
                 }

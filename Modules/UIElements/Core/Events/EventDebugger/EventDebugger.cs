@@ -433,52 +433,52 @@ namespace UnityEngine.UIElements.Experimental
                 if (eventBase.eventTypeId == PointerMoveEvent.TypeId())
                 {
                     newEvent.type = EventType.MouseMove;
-                    SendEvent(UIElementsUtility.CreateEvent(newEvent, EventType.MouseMove));
+                    SendEvent(UIElementsIMGUIUtility.CreateEvent(newEvent, EventType.MouseMove));
                 }
                 else if (eventBase.eventTypeId == PointerDownEvent.TypeId())
                 {
                     newEvent.type = EventType.MouseDown;
-                    SendEvent(UIElementsUtility.CreateEvent(newEvent, EventType.MouseDown));
+                    SendEvent(UIElementsIMGUIUtility.CreateEvent(newEvent, EventType.MouseDown));
                 }
                 else if (eventBase.eventTypeId == PointerUpEvent.TypeId())
                 {
                     newEvent.type = EventType.MouseUp;
-                    SendEvent(UIElementsUtility.CreateEvent(newEvent, EventType.MouseUp));
+                    SendEvent(UIElementsIMGUIUtility.CreateEvent(newEvent, EventType.MouseUp));
                 }
                 else if (eventBase.eventTypeId == ContextClickEvent.TypeId())
                 {
                     newEvent.type = EventType.ContextClick;
-                    SendEvent(UIElementsUtility.CreateEvent(newEvent, EventType.ContextClick));
+                    SendEvent(UIElementsIMGUIUtility.CreateEvent(newEvent, EventType.ContextClick));
                 }
                 else if (eventBase.eventTypeId == MouseEnterWindowEvent.TypeId())
                 {
                     newEvent.type = EventType.MouseEnterWindow;
-                    SendEvent(UIElementsUtility.CreateEvent(newEvent, EventType.MouseEnterWindow));
+                    SendEvent(UIElementsIMGUIUtility.CreateEvent(newEvent, EventType.MouseEnterWindow));
                 }
                 else if (eventBase.eventTypeId == MouseLeaveWindowEvent.TypeId())
                 {
                     newEvent.type = EventType.MouseLeaveWindow;
-                    SendEvent(UIElementsUtility.CreateEvent(newEvent, EventType.MouseLeaveWindow));
+                    SendEvent(UIElementsIMGUIUtility.CreateEvent(newEvent, EventType.MouseLeaveWindow));
                 }
                 else if (eventBase.eventTypeId == WheelEvent.TypeId())
                 {
                     newEvent.type = EventType.ScrollWheel;
                     newEvent.delta = eventBase.delta;
-                    SendEvent(UIElementsUtility.CreateEvent(newEvent, EventType.ScrollWheel));
+                    SendEvent(UIElementsIMGUIUtility.CreateEvent(newEvent, EventType.ScrollWheel));
                 }
                 else if (eventBase.eventTypeId == KeyDownEvent.TypeId())
                 {
                     newEvent.type = EventType.KeyDown;
                     newEvent.character = eventBase.character;
                     newEvent.keyCode = eventBase.keyCode;
-                    SendEvent(UIElementsUtility.CreateEvent(newEvent, EventType.KeyDown));
+                    SendEvent(UIElementsIMGUIUtility.CreateEvent(newEvent, EventType.KeyDown));
                 }
                 else if (eventBase.eventTypeId == KeyUpEvent.TypeId())
                 {
                     newEvent.type = EventType.KeyUp;
                     newEvent.character = eventBase.character;
                     newEvent.keyCode = eventBase.keyCode;
-                    SendEvent(UIElementsUtility.CreateEvent(newEvent, EventType.KeyUp));
+                    SendEvent(UIElementsIMGUIUtility.CreateEvent(newEvent, EventType.KeyUp));
                 }
                 else if (eventBase.eventTypeId == NavigationMoveEvent.TypeId())
                 {
@@ -495,29 +495,29 @@ namespace UnityEngine.UIElements.Experimental
                 else if (eventBase.eventTypeId == DragUpdatedEvent.TypeId())
                 {
                     newEvent.type = EventType.DragUpdated;
-                    SendEvent(UIElementsUtility.CreateEvent(newEvent, EventType.DragUpdated));
+                    SendEvent(UIElementsIMGUIUtility.CreateEvent(newEvent, EventType.DragUpdated));
                 }
                 else if (eventBase.eventTypeId == DragPerformEvent.TypeId())
                 {
                     newEvent.type = EventType.DragPerform;
-                    SendEvent(UIElementsUtility.CreateEvent(newEvent, EventType.DragPerform));
+                    SendEvent(UIElementsIMGUIUtility.CreateEvent(newEvent, EventType.DragPerform));
                 }
                 else if (eventBase.eventTypeId == DragExitedEvent.TypeId())
                 {
                     newEvent.type = EventType.DragExited;
-                    SendEvent(UIElementsUtility.CreateEvent(newEvent, EventType.DragExited));
+                    SendEvent(UIElementsIMGUIUtility.CreateEvent(newEvent, EventType.DragExited));
                 }
                 else if (eventBase.eventTypeId == ValidateCommandEvent.TypeId())
                 {
                     newEvent.type = EventType.ValidateCommand;
                     newEvent.commandName = eventBase.commandName;
-                    SendEvent(UIElementsUtility.CreateEvent(newEvent, EventType.ValidateCommand));
+                    SendEvent(UIElementsIMGUIUtility.CreateEvent(newEvent, EventType.ValidateCommand));
                 }
                 else if (eventBase.eventTypeId == ExecuteCommandEvent.TypeId())
                 {
                     newEvent.type = EventType.ExecuteCommand;
                     newEvent.commandName = eventBase.commandName;
-                    SendEvent(UIElementsUtility.CreateEvent(newEvent, EventType.ExecuteCommand));
+                    SendEvent(UIElementsIMGUIUtility.CreateEvent(newEvent, EventType.ExecuteCommand));
                 }
                 else if (eventBase.eventTypeId == IMGUIEvent.TypeId())
                 {

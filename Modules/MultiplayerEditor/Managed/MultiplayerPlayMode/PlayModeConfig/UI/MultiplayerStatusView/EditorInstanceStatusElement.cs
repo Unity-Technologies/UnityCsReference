@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using UnityEditor.Multiplayer.Internal;
 using UnityEngine.UIElements;
 
 namespace Unity.Multiplayer.PlayMode.Editor;
@@ -19,9 +20,12 @@ class EditorInstanceStatusElement : VisualElement
         pillsContainer.AddToClassList(k_PillContainerClass);
         Add(pillsContainer);
 
-        var rolePill = new Label(instanceDescription.RoleMask.ToString());
-        rolePill.AddToClassList(k_PillClass, k_RolePillClass);
-        pillsContainer.Add(rolePill);
+        if (EditorMultiplayerManager.enableMultiplayerRoles)
+        {
+            var rolePill = new Label(instanceDescription.RoleMask.ToString());
+            rolePill.AddToClassList(k_PillClass, k_RolePillClass);
+            pillsContainer.Add(rolePill);
+        }
 
         if (!string.IsNullOrEmpty(instanceDescription.PlayerTag))
         {

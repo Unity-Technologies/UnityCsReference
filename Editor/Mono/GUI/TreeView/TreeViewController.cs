@@ -673,7 +673,7 @@ namespace UnityEditor.IMGUI.Controls
                         // If this is contained withing something from UI Toolkit (e.g. the Inspector window), the scroll
                         // will be controlled by UI Toolkit itself so we need to make sure to only show what we need to
                         // show, otherwise things can become really slow.
-                        var container = UIElementsUtility.GetCurrentIMGUIContainer();
+                        var container = UIElementsIMGUIUtility.GetCurrentIMGUIContainer();
                         var uiScrollView = container?.GetFirstAncestorOfType<ScrollView>();
                         if (uiScrollView != null)
                         {

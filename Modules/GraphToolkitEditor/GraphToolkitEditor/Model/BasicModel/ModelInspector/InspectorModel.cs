@@ -346,7 +346,7 @@ namespace Unity.GraphToolkit.Editor
         {
             var currentTitle = m_Title;
 
-            if (!inspectedModels.Skip(1).Any())
+            if (!inspectedModels.Skip(1).HasAny())
             {
                 var inspectedModel = inspectedModels.First();
                 if (inspectedModel is IHasTitle hasTitle)

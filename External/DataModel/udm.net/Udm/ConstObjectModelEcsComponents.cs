@@ -6,99 +6,100 @@ using System.Collections;
 
 namespace Unity.DataModel
 {
-[StructLayout(LayoutKind.Sequential)]
-internal unsafe struct ConstObjectModelEcsComponents : IEnumerable
-{
-    internal ConstObjectModelEcsComponents(DocumentModel document, UdmObjectId objectId)
-    {
-        fixed (ConstObjectModelEcsComponents* thisPtr = &this)
-        {
-            UdmInterop.Instance.udm_document_model_get_const_ecs_components(document.DocumentPtr, objectId, thisPtr);
-        }
-    }
-
     [StructLayout(LayoutKind.Sequential)]
-    internal struct Enumerator : IEnumerator
+    internal unsafe struct ConstObjectModelEcsComponents : IEnumerable
     {
-        public Enumerator()
+        internal ConstObjectModelEcsComponents(DocumentModel document, UdmObjectId objectId)
         {
-            accessorPtr = default;
-            Entries = null;
-            Index = -1;
-            EntryCount = 0;
-        }
-
-        internal Enumerator(ConstObjectModelEcsComponents objectModelComponents)
-        {
-            Entries = (ObjectModelSchemaDataPair*)objectModelComponents.Entries.ToPointer();
-            Index = -1;
-            EntryCount = objectModelComponents.EntryCount;
-            accessorPtr = (ConstAccessor*)Marshal.AllocHGlobal(sizeof(ConstAccessor)).ToPointer();
-            accessorPtr->Schema = default;
-            accessorPtr->Data = IntPtr.Zero;
-        }
-
-        internal void Dispose()
-        {
-            if (accessorPtr != null)
+            fixed (ConstObjectModelEcsComponents* thisPtr = &this)
             {
-                Marshal.FreeHGlobal(new IntPtr(accessorPtr));
-                accessorPtr = null;
+                UdmInterop.Instance.udm_document_model_get_const_ecs_components(document.DocumentPtr, objectId, thisPtr);
             }
         }
 
-        public bool MoveNext()
+        [StructLayout(LayoutKind.Sequential)]
+        internal struct Enumerator : IEnumerator
         {
-            Index++;
-            if (Index < (long)EntryCount)
+            public Enumerator()
             {
-                accessorPtr->Data = Entries[Index].Data;
-                accessorPtr->Schema = Entries[Index].Schema;
-                return true;
+                accessorPtr = default;
+                Entries = null;
+                Index = -1;
+                EntryCount = 0;
             }
-            return false;
-        }
 
-        public void Reset()
-        {
-            Index = -1;
-        }
+            internal Enumerator(ConstObjectModelEcsComponents objectModelComponents)
+            {
+                Entries = (ObjectModelSchemaDataPair*)objectModelComponents.Entries.ToPointer();
+                Index = -1;
+                EntryCount = objectModelComponents.EntryCount;
+                accessorPtr = (ConstAccessor*)Marshal.AllocHGlobal(sizeof(ConstAccessor)).ToPointer();
+                accessorPtr->References = (IntPtr)objectModelComponents.DocumentModel.GetReferences();
+                accessorPtr->Schema = default;
+                accessorPtr->Data = IntPtr.Zero;
+            }
 
-        internal ref readonly ConstAccessor Current
-        {
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get => ref *accessorPtr;
-        }
+            internal void Dispose()
+            {
+                if (accessorPtr != null)
+                {
+                    Marshal.FreeHGlobal(new IntPtr(accessorPtr));
+                    accessorPtr = null;
+                }
+            }
 
-        object IEnumerator.Current => Current;
+            public bool MoveNext()
+            {
+                Index++;
+                if (Index < (long)EntryCount)
+                {
+                    accessorPtr->Data = Entries[Index].Data;
+                    accessorPtr->Schema = Entries[Index].Schema;
+                    return true;
+                }
+                return false;
+            }
+
+            public void Reset()
+            {
+                Index = -1;
+            }
+
+            internal ref readonly ConstAccessor Current
+            {
+                [MethodImpl(MethodImplOptions.AggressiveInlining)]
+                get => ref *accessorPtr;
+            }
+
+            object IEnumerator.Current => Current;
 
 #pragma warning disable CS0649 // Field is never assigned to, and will always have its default value
-        private ConstAccessor* accessorPtr;
-        private ObjectModelSchemaDataPair* Entries;
-        private long Index;
-        private ulong EntryCount;
+            private ConstAccessor* accessorPtr;
+            private ObjectModelSchemaDataPair* Entries;
+            private long Index;
+            private ulong EntryCount;
 #pragma warning restore CS0649 // Field is never assigned to, and will always have its default value
-    }
+        }
 
-    IEnumerator IEnumerable.GetEnumerator()
-    {
-        return (IEnumerator)GetEnumerator();
-    }
+        IEnumerator IEnumerable.GetEnumerator()
+        {
+            return (IEnumerator)GetEnumerator();
+        }
 
-    internal Enumerator GetEnumerator()
-    {
-        return new Enumerator(this);
-    }
+        internal Enumerator GetEnumerator()
+        {
+            return new Enumerator(this);
+        }
 
-    internal ulong GetCount()
-    {
-        return EntryCount;
-    }
+        internal ulong GetCount()
+        {
+            return EntryCount;
+        }
 
 #pragma warning disable CS0649 // Field is never assigned to, and will always have its default value
-    internal IntPtr Entries;
-    internal ulong EntryCount;
+        internal IntPtr Entries;
+        internal ulong EntryCount;
+        internal DocumentModel DocumentModel;
 #pragma warning restore CS0649 // Field is never assigned to, and will always have its default value
-    internal DocumentModel DocumentModel;
-}
+    }
 }

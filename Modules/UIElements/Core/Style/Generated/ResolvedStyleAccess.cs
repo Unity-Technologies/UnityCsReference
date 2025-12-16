@@ -20,7 +20,7 @@ namespace UnityEngine.UIElements
         public Align alignSelf => ve.computedStyle.alignSelf;
         public Ratio aspectRatio => ve.computedStyle.aspectRatio;
         public Color backgroundColor => ve.computedStyle.backgroundColor;
-        public Background backgroundImage => ve.computedStyle.backgroundImage;
+        public Background backgroundImage => Background.From(ve.computedStyle.backgroundImage);
         public BackgroundPosition backgroundPositionX => ve.computedStyle.backgroundPositionX;
         public BackgroundPosition backgroundPositionY => ve.computedStyle.backgroundPositionY;
         public BackgroundRepeat backgroundRepeat => ve.computedStyle.backgroundRepeat;

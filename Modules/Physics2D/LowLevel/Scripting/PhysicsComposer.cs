@@ -459,6 +459,13 @@ namespace UnityEngine.LowLevelPhysics2D
         public readonly bool useDelaunay { get => PhysicsComposer_GetDelaunay(this); set => PhysicsComposer_SetDelaunay(this, value); }
 
         /// <summary>
+        /// Get/Set the maximum number of polygon vertices to be used when composing polygon output.
+        /// This should be in the range of 3 to <see cref="UnityEngine.LowLevelPhysics2D.PhysicsConstants.MaxPolygonVertices"/>.
+        /// The default is <see cref="UnityEngine.LowLevelPhysics2D.PhysicsConstants.MaxPolygonVertices"/>.
+        /// </summary>
+        public readonly int maxPolygonVertices { get => PhysicsComposer_GetMaxPolygonVertices(this); set => PhysicsComposer_SetMaxPolygonVertices(this, value); }
+
+        /// <summary>
         /// Get the number of layers currently added to the Physics Composer.
         /// </summary>
         public readonly int layerCount => PhysicsComposer_GetLayerCount(this);
@@ -479,6 +486,16 @@ namespace UnityEngine.LowLevelPhysics2D
         public readonly int rejectedGeometryCount => PhysicsComposer_GetRejectedGeometryCount(this);
 
         /// <summary>
+        /// Get the geometry islands from a previous polygon geometry composition i.e. a call to <see cref="LowLevelPhysics2D.PhysicsComposer.CreatePolygonGeometry(Vector2, Allocator)"/> or <see cref="LowLevelPhysics2D.PhysicsComposer.CreateConvexHulls(Vector2, Allocator)"/>.
+        /// Each generated polygon or convex-hull belongs to a unique island defining a set of polygons that are connected together as they share edges.
+        /// The array returned contains a series of ranges where each range is a unique connected island where the range indicates both the start index and length of the original polygon indices.
+        /// The number of discovered unique islands is defined by the size of the returned array.
+        /// </summary>
+        /// <param name="allocator">The memory allocator to use for the results. This can only be <see cref="Unity.Collections.Allocator.Temp"/>, <see cref="Unity.Collections.Allocator.TempJob"/> or <see cref="Unity.Collections.Allocator.Persistent"/>.</param>
+        /// <returns>A NativeArray containing a series of ranges where each range is aunique connected island where the range indicates both the start and end indices of the original polygon indices.</returns>
+        public readonly NativeArray<RangeInt> GetGeometryIslands(Allocator allocator) => PhysicsComposer_GetGeometryIslands(this, allocator).ToNativeArray<RangeInt>();
+
+        /// <summary>
         /// Create <see cref="LowLevelPhysics2D.PolygonGeometry"/> from the composition by iterating all the layers added to the composition in the layer order specified, applying each operation specified.
         /// A limit is imposed on small vertex distances so it is recommended that scaling is applied here rather than on the returned geometry so geometry is not discarded due to it being invalid.
         /// </summary>
@@ -486,6 +503,14 @@ namespace UnityEngine.LowLevelPhysics2D
         /// <param name="allocator">The memory allocator to use for the results. This can only be <see cref="Unity.Collections.Allocator.Temp"/>, <see cref="Unity.Collections.Allocator.TempJob"/> or <see cref="Unity.Collections.Allocator.Persistent"/>.</param>
         /// <returns>A NativeArray containing the Polygon Geometry created from the composer. This NativeArray must be disposed of after use otherwise leaks will occur. The exception to this is if the array is empty.</returns>
         public readonly NativeArray<PolygonGeometry> CreatePolygonGeometry(Vector2 vertexScale, Allocator allocator) => PhysicsComposer_CreatePolygonGeometry(this, vertexScale, allocator).ToNativeArray<PolygonGeometry>();
+
+        /// <summary>
+        /// Create <see cref="LowLevelPhysics2D.PolygonGeometry.ConvexHull"/> from the composition by iterating all the layers added to the composition in the layer order specified, applying each operation specified.
+        /// </summary>
+        /// <param name="vertexScale">The scaling to be applied to the composer vertices.</param>
+        /// <param name="allocator">The memory allocator to use for the results. This can only be <see cref="Unity.Collections.Allocator.Temp"/>, <see cref="Unity.Collections.Allocator.TempJob"/> or <see cref="Unity.Collections.Allocator.Persistent"/>.</param>
+        /// <returns>A NativeArray containing the Polygon Geometry convex hull created from the composer. This NativeArray must be disposed of after use otherwise leaks will occur. The exception to this is if the array is empty.</returns>
+        public readonly NativeArray<PolygonGeometry.ConvexHull> CreateConvexHulls(Vector2 vertexScale, Allocator allocator) => PhysicsComposer_CreateConvexHulls(this, vertexScale, allocator).ToNativeArray<PolygonGeometry.ConvexHull>();
 
         /// <summary>
         /// Create <see cref="LowLevelPhysics2D.ChainGeometry"/> from the composition by iterating all the layers added to the composition in the layer order specified, applying each operation specified.

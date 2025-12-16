@@ -3,14 +3,9 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using System.Collections.Generic;
-using UnityEditor;
-using UnityEditorInternal;
 using UnityEngine;
-using System.IO;
 using UnityEditor.Overlays;
-using UnityEngine.SceneManagement;
-using Object = UnityEngine.Object;
+using UnityEngine.Scripting;
 
 namespace UnityEditor
 {
@@ -101,6 +96,7 @@ namespace UnityEditor
             EditorApplication.searchChanged -= Repaint;
         }
 
+        [RequiredByNativeCode]
         static void BackgroundTaskStatusChanged()
         {
             if (ms_OcclusionCullingWindow)

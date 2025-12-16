@@ -11,6 +11,7 @@ using System.Runtime.CompilerServices;
 [assembly: InternalsVisibleTo("Unity.UIElements.EditorTests")]
 [assembly: InternalsVisibleTo("Unity.UIElements.Tests")]
 [assembly: InternalsVisibleTo("UnityEngine.UI.Tests")]
+[assembly: InternalsVisibleTo("EditorGUI.Tests.Playmode")]
 // Make internal visible to integration test project
 [assembly: InternalsVisibleTo("UnityEngine.InputForUIVisualizer")]
 [assembly: InternalsVisibleTo("UnityEngine.InputForUITests")]

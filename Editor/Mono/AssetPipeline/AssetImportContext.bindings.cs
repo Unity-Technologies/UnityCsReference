@@ -12,6 +12,7 @@ using UnityEngine.Scripting.APIUpdating;
 using Debug = UnityEngine.Debug;
 using Object = UnityEngine.Object;
 using UnityEditor.Experimental;
+using System.Runtime.InteropServices;
 
 namespace UnityEditor.AssetImporters
 {
@@ -49,7 +50,7 @@ namespace UnityEditor.AssetImporters
         }
 
         [FreeFunction("AssetImportContextBindings::GetObjects", HasExplicitThis = true)]
-        public extern void GetObjects([NotNull] List<Object> objects);
+        public extern void GetObjects([NotNull][Out] List<Object> objects);
 
         [NativeThrows]
         public extern void AddObjectToAsset(string identifier, Object obj, Texture2D thumbnail);
@@ -74,7 +75,7 @@ namespace UnityEditor.AssetImporters
         {
             if (guid.Empty())
             {
-                throw new ArgumentNullException("guid", "Cannot add dependency on empty GUID.");
+                throw new ArgumentNullException("guid", "Cannot add source dependency on empty GUID.");
             }
 
             DependsOnSourceAssetInternalGUID(guid);
@@ -135,7 +136,7 @@ namespace UnityEditor.AssetImporters
         {
             if (guid.Empty())
             {
-                throw new ArgumentNullException("guid", "Cannot add dependency on empty GUID.");
+                throw new ArgumentNullException("guid", "Cannot add artifact dependency on empty GUID.");
             }
 
             DependsOnArtifactInternalGUID(guid);

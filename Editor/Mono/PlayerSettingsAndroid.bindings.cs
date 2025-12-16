@@ -85,6 +85,7 @@ namespace UnityEditor
         AndroidApiLevel24 = 24,
 
         // Android 7.1, "Nougat", API level 25
+        [Obsolete(PlayerSettings.Android.MinSupportedAPILevelWarningGracePeriod, false)]
         AndroidApiLevel25 = 25,
 
         // Android 8.0, "Oreo", API level 26
@@ -276,7 +277,7 @@ namespace UnityEditor
         [StaticAccessor("GetPlayerSettings()", StaticAccessorType.Dot)]
         public partial class Android
         {
-            internal const string MinSupportedAPILevelWarning = "Minimum supported Android API level is 25 (Android 7.1 Nougat). Please use AndroidApiLevel25 or higher.";
+            internal const string MinSupportedAPILevelWarning = "Minimum supported Android API level is 26 (Android 8.0 Oreo). Please use AndroidApiLevel26 or higher.";
             internal const string MinSupportedAPILevelWarningGracePeriod = MinSupportedAPILevelWarning + " This warning will become an error on a next release.";
 
             // Disable Depth and Stencil Buffers
@@ -288,8 +289,8 @@ namespace UnityEditor
             {
                 get
                 {
-                    // Minimum supported Android API level is 25 (Android 7.1 Nougat).
-                    return AndroidSdkVersions.AndroidApiLevel25;
+                    // Minimum supported Android API level is 26 (Android 8.0 Oreo).
+                    return AndroidSdkVersions.AndroidApiLevel26;
                 }
             }
 
@@ -791,6 +792,7 @@ namespace UnityEditor
             [NativeMethod("GetAndroidMinSupportedAPILevel")]
             internal static extern int GetMinSupportedAPILevel();
 
+            [VisibleToOtherModules("UnityEditor.BurstModule")]
             [StaticAccessor("GetPlayerSettings().GetEditorOnly()", StaticAccessorType.Dot)]
             [NativeMethod("GetAndroidMinTargetAPILevel")]
             internal static extern int GetMinTargetAPILevel();

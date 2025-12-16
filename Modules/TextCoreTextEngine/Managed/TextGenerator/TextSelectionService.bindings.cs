@@ -73,5 +73,8 @@ namespace UnityEngine.TextCore.Text
 
         [NativeMethod(Name = "TextSelectionService::SelectCurrentParagraph")]
         internal static extern void SelectCurrentParagraph(IntPtr textGenerationInfo, ref int cursorIndex, ref int selectIndex);
+
+        [NativeMethod(Name = "TextSelectionService::GetValidPointIndex")]
+        internal static extern int GetValidPointIndex(IntPtr textGenerationInfo, int index);
     }
 }

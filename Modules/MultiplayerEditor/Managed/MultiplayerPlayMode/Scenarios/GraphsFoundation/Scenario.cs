@@ -19,8 +19,7 @@ namespace Unity.Multiplayer.PlayMode.Editor
     /// associated Instances across Preparation, Deployment, and Running phases. It also notifies
     /// all attached callbacks of Scenario status and completion results.
     /// </summary>
-    [Serializable]
-    internal class Scenario : ScriptableObject, ISerializationCallbackReceiver
+    internal class Scenario : ScriptableObject
     {
         [SerializeField] private ScenarioStatusData m_StatusData;
         [SerializeField] private bool m_HasStarted;
@@ -38,17 +37,18 @@ namespace Unity.Multiplayer.PlayMode.Editor
             // Create a scenario
             var scenario = CreateInstance<Scenario>();
             scenario.name = name;
-            scenario.hideFlags |= HideFlags.DontSave;
+            OrchestratedScenario.PreventScriptableObjectUnload(scenario);
             return scenario;
         }
 
-        public void OnBeforeSerialize() {}
-
-        public void OnAfterDeserialize()
+        void OnEnable()
         {
-            // Re-attach listeners after Domain Reload Deserialization
+            // Re-attach listeners after Domain Reload
             foreach (var instance in m_Instances)
+            {
+                instance.StatusRefreshed -= OnInstanceStatusRefreshed;
                 instance.StatusRefreshed += OnInstanceStatusRefreshed;
+            }
         }
 
         private void OnInstanceStatusRefreshed(Instance instance, InstanceStatusData status)
@@ -67,6 +67,23 @@ namespace Unity.Multiplayer.PlayMode.Editor
             {
                 if (!instance.IsFreeRunMode())
                     instance.Reset();
+            }
+        }
+
+        private void ResetAfterCancellation()
+        {
+            // After a cancellation, instances that failed should remain in their failed state
+            // so users can see the failure result. While instances that were running or completed
+            // should be reset to the idle state.
+            foreach (var instance in m_Instances)
+            {
+                if (instance.IsFreeRunMode())
+                    continue;
+                
+                if (instance.StatusData.OverallStatus.State is not ExecutionState.Failed)
+                {
+                    instance.Reset();
+                }
             }
         }
 
@@ -315,6 +332,9 @@ namespace Unity.Multiplayer.PlayMode.Editor
 
             // At this point, all instances ran successfully. Now simply monitor the ExecutionStage until it is complete.
             await MonitorAllInstances();
+
+            if (cancellationToken.IsCancellationRequested)
+                ResetAfterCancellation();
 
             // This will make sure that the status will be updated after the last ExecutionStage is finished
             // even in the case where the scenario has no nodes.

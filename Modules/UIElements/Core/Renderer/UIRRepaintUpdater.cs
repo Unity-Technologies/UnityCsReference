@@ -96,9 +96,7 @@ namespace UnityEngine.UIElements
             bool stackingContextChanged = false;
             if (ve.renderData != null)
             {
-                stackingContextChanged =
-                    (ve.useRenderTexture && ((ve.renderData.flags & RenderDataFlags.IsSubTreeQuad) == 0)) ||
-                    (!ve.useRenderTexture && (ve.renderData.flags & RenderDataFlags.IsSubTreeQuad) != 0);
+                stackingContextChanged = ve.useRenderTexture == ((ve.renderData.flags & RenderDataFlags.IsSubTreeQuad) == 0);
             }
 
             if (renderHintsChanged || stackingContextChanged)
@@ -134,7 +132,6 @@ namespace UnityEngine.UIElements
             renderTreeManager.ProcessChanges();
 
             // Apply these debug values every frame because the render chain may have been recreated.
-            renderTreeManager.drawStats = drawStats;
             renderTreeManager.device.breakBatches = breakBatches;
             renderTreeManager.textureSlotCount = textureSlotCount;
         }

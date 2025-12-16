@@ -3,98 +3,109 @@ using System.Runtime.InteropServices;
 
 namespace Unity.DataModel
 {
-[StructLayout(LayoutKind.Sequential)]
-internal struct ObjectCollectionPerSchema
-{
-    internal SchemaId SchemaId;
-    internal ulong ObjectCount;
-    internal ulong FirstObjectIndex;
-    internal ulong ObjectDataOffset;
-} 
-
-[StructLayout(LayoutKind.Sequential)]
-internal struct BinaryHeaderImpl
-{
-    internal uint Magic;
-    internal uint Version;
-
-    internal ulong ExternalDocumentIdsOffset;
-    internal ulong ExternalDocumentIdsCount;
-
-    internal ulong ReferencesOffset;
-    internal ulong ReferencesCount;
-
-    internal ulong ObjectCollectionPerSchemaOffset;
-    internal ulong ObjectCollectionPerSchemaCount;
-
-    internal ulong ComponentCollectionPerSchemaOffset;
-    internal ulong ComponentCollectionPerSchemaCount;
-
-    internal ulong ObjectIdsOffset;
-    internal ulong ObjectIdsCount;
-
-    internal Hash BodyHash;
-}
-
-[StructLayout(LayoutKind.Sequential)]
-internal unsafe struct BinaryHeader
-{
-    internal bool IsValid() => BinaryHeaderPtr != null && UdmInterop.Instance.udm_binary_header_is_valid(BinaryHeaderPtr) != 0;
-
-    internal void ThrowIfInvalid()
+    [StructLayout(LayoutKind.Sequential)]
+    internal struct ObjectCollectionPerSchema
     {
-        if (!IsValid())
-            throw new InvalidOperationException("Trying to use an invalid SchemaField");
+        internal SchemaId SchemaId;
+        internal ulong ObjectCount;
+        internal ulong FirstObjectIndex;
+        internal ulong ObjectDataOffset;
     }
 
-    internal ReadOnlySpan<UdmGuid> GetExternalDocumentIds()
+    [StructLayout(LayoutKind.Sequential)]
+    internal struct BinaryHeaderImpl
     {
-        ThrowIfInvalid();
-        unsafe
+        internal uint Magic;
+        internal uint Version;
+
+        internal ulong ExternalDocumentIdsOffset;
+        internal ulong ExternalDocumentIdsCount;
+
+        internal ulong ReferencesOffset;
+        internal ulong ReferencesCount;
+
+        internal ulong ObjectCollectionPerSchemaOffset;
+        internal ulong ObjectCollectionPerSchemaCount;
+
+        internal ulong ComponentCollectionPerSchemaOffset;
+        internal ulong ComponentCollectionPerSchemaCount;
+
+        internal ulong ObjectIdsOffset;
+        internal ulong ObjectIdsCount;
+
+        internal Hash BodyHash;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    internal unsafe struct BinaryHeader
+    {
+        internal bool IsValid() => BinaryHeaderPtr != null &&
+                                   UdmInterop.Instance.udm_binary_header_is_valid(BinaryHeaderPtr) != 0;
+
+        internal void ThrowIfInvalid()
         {
-            var ptr = (byte*)BinaryHeaderPtr + BinaryHeaderPtr->ExternalDocumentIdsOffset;
-            return new ReadOnlySpan<UdmGuid>((UdmGuid*)ptr, (int)BinaryHeaderPtr->ExternalDocumentIdsCount);
+            if (!IsValid())
+                throw new InvalidOperationException("Trying to use an invalid SchemaField");
         }
-    }
 
-    internal ReadOnlySpan<UdmObjectId> GetObjectIds()
-    {
-        ThrowIfInvalid();
-        unsafe
+        internal ReadOnlySpan<UdmGuid> GetExternalDocumentIds()
         {
-            var ptr = (byte*)BinaryHeaderPtr + BinaryHeaderPtr->ObjectIdsOffset;
-            return new ReadOnlySpan<UdmObjectId>((UdmObjectId*)ptr, (int)BinaryHeaderPtr->ObjectIdsCount);
+            ThrowIfInvalid();
+            unsafe
+            {
+                var ptr = (byte*)BinaryHeaderPtr + BinaryHeaderPtr->ExternalDocumentIdsOffset;
+                return new ReadOnlySpan<UdmGuid>((UdmGuid*)ptr, (int)BinaryHeaderPtr->ExternalDocumentIdsCount);
+            }
         }
-    }
 
-    internal ReadOnlySpan<ObjectCollectionPerSchema> GetObjectCollections()
-    {
-        ThrowIfInvalid();
-        unsafe
+        internal ReadOnlySpan<Reference> GetReferences()
         {
-            var ptr = (byte*)BinaryHeaderPtr + BinaryHeaderPtr->ObjectCollectionPerSchemaOffset;
-            return new ReadOnlySpan<ObjectCollectionPerSchema>((ObjectCollectionPerSchema*)ptr, (int)BinaryHeaderPtr->ObjectCollectionPerSchemaCount);
+            ThrowIfInvalid();
+            unsafe
+            {
+                var ptr = (byte*)BinaryHeaderPtr + BinaryHeaderPtr->ReferencesOffset;
+                return new ReadOnlySpan<Reference>((Reference*)ptr, (int)BinaryHeaderPtr->ReferencesCount);
+            }
         }
-    }
 
-    internal ReadOnlySpan<ObjectCollectionPerSchema> GetComponentCollections()
-    {
-        ThrowIfInvalid();
-        unsafe
+        internal ReadOnlySpan<UdmObjectId> GetObjectIds()
         {
-            var ptr = (byte*)BinaryHeaderPtr + BinaryHeaderPtr->ComponentCollectionPerSchemaOffset;
-            return new ReadOnlySpan<ObjectCollectionPerSchema>((ObjectCollectionPerSchema*)ptr, (int)BinaryHeaderPtr->ComponentCollectionPerSchemaCount);
+            ThrowIfInvalid();
+            unsafe
+            {
+                var ptr = (byte*)BinaryHeaderPtr + BinaryHeaderPtr->ObjectIdsOffset;
+                return new ReadOnlySpan<UdmObjectId>((UdmObjectId*)ptr, (int)BinaryHeaderPtr->ObjectIdsCount);
+            }
         }
-    }
 
-    public static unsafe implicit operator BinaryHeader(BinaryHeaderImpl* ptr)
-    {
-        return new BinaryHeader
+        internal ReadOnlySpan<ObjectCollectionPerSchema> GetObjectCollections()
         {
-            BinaryHeaderPtr = ptr
-        };
-    }
+            ThrowIfInvalid();
+            unsafe
+            {
+                var ptr = (byte*)BinaryHeaderPtr + BinaryHeaderPtr->ObjectCollectionPerSchemaOffset;
+                return new ReadOnlySpan<ObjectCollectionPerSchema>((ObjectCollectionPerSchema*)ptr, (int)BinaryHeaderPtr->ObjectCollectionPerSchemaCount);
+            }
+        }
 
-    internal unsafe BinaryHeaderImpl* BinaryHeaderPtr;
-}
+        internal ReadOnlySpan<ObjectCollectionPerSchema> GetComponentCollections()
+        {
+            ThrowIfInvalid();
+            unsafe
+            {
+                var ptr = (byte*)BinaryHeaderPtr + BinaryHeaderPtr->ComponentCollectionPerSchemaOffset;
+                return new ReadOnlySpan<ObjectCollectionPerSchema>((ObjectCollectionPerSchema*)ptr, (int)BinaryHeaderPtr->ComponentCollectionPerSchemaCount);
+            }
+        }
+
+        public static unsafe implicit operator BinaryHeader(BinaryHeaderImpl* ptr)
+        {
+            return new BinaryHeader
+            {
+                BinaryHeaderPtr = ptr
+            };
+        }
+
+        internal unsafe BinaryHeaderImpl* BinaryHeaderPtr;
+    }
 }

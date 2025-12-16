@@ -203,7 +203,7 @@ namespace UnityEditor.VFX
 
     internal class VFXExpressionObjectValueContainerDesc<T> : VFXExpressionValueContainerDesc
     {
-        public EntityId entityId = 0;
+        public EntityId entityId = EntityId.None;
     }
 
     [NativeType(CodegenOptions.Custom, "ScriptingVFXExpressionDesc")]

@@ -11,7 +11,6 @@ using Unity.ProjectAuditor.Editor.Core;
 using Unity.ProjectAuditor.Editor.Utils;
 using UnityEngine;
 using UnityEngine.Profiling;
-using System.Runtime.InteropServices;
 
 namespace Unity.ProjectAuditor.Editor.Modules
 {
@@ -37,8 +36,8 @@ namespace Unity.ProjectAuditor.Editor.Modules
         static readonly IssueLayout k_AudioClipLayout = new IssueLayout
         {
             Category = IssueCategory.AudioClip,
-            Properties = new[]
-            {
+            Properties =
+            [
                 new PropertyDefinition { Type = PropertyType.Description, Name = "Name", MaxAutoWidth = 500 },
                 new PropertyDefinition { Type = PropertyType.FileType, Name = "Format", IsDefaultGroup = true },
                 new PropertyDefinition { Type = PropertyTypeUtil.FromCustom(AudioClipProperty.Length), Format = PropertyFormat.String, Name = "Length"},
@@ -53,7 +52,7 @@ namespace Unity.ProjectAuditor.Editor.Modules
                 new PropertyDefinition { Type = PropertyTypeUtil.FromCustom(AudioClipProperty.PreloadAudioData), Format = PropertyFormat.Bool, Name = "Preload Audio Data" },
                 new PropertyDefinition { Type = PropertyTypeUtil.FromCustom(AudioClipProperty.LoadType), Format = PropertyFormat.String, Name = "Load Type" },
                 new PropertyDefinition { Type = PropertyType.Path, Name = "Path", MaxAutoWidth = 500 }
-            }
+            ]
         };
 
         public override string Name => "Audio Clips";
@@ -167,8 +166,7 @@ namespace Unity.ProjectAuditor.Editor.Modules
 
                 issues.Add(context.CreateInsight(IssueCategory.AudioClip, clipName)
                     .WithCustomProperties(
-                        new object[(int)AudioClipProperty.Num]
-                        {
+                        [
                             Formatting.FormatDurationWithMs(ts),
                             origSize,
                             compSize,
@@ -180,7 +178,7 @@ namespace Unity.ProjectAuditor.Editor.Modules
                             context.Importer.loadInBackground,
                             sampleSettings.preloadAudioData,
                             sampleSettings.loadType,
-                        })
+                        ])
                     .WithLocation(assetPath));
 
                 foreach (var analyzer in analyzers)

@@ -158,6 +158,17 @@ namespace UnityEditor.Overlays
 
             UpdatePosition(evt.newRect.size);
         }
+        
+        VisualElement CreatePopupHeader()
+        {
+            var header = new VisualElement();
+            var title = new Label(overlay.displayName);
+            title.name = Overlay.k_HeaderTitle;
+            header.Add(title);
+            header.AddToClassList(Overlay.k_Header);
+
+            return header;
+        }
 
         public void Refresh()
         {
@@ -169,7 +180,7 @@ namespace UnityEditor.Overlays
             style.maxHeight = StyleKeyword.Null;
             style.maxWidth = StyleKeyword.Null;
 
-            root.Add(overlay.GetSimpleHeader());
+            root.parent.Insert(root.parent.IndexOf(root), CreatePopupHeader());
             root.Add(overlay.CreatePanelContent());
 
             root.Focus();

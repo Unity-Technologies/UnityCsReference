@@ -71,16 +71,34 @@ namespace UnityEditor
 
         SplitterState splitState = null;
 
+        private float GetBackingScaleFactor()
+        {
+
+            ContainerWindow cw = null;
+            for (View v = this; v != null; v = v.parent)
+            {
+                cw = v.window;
+                if (cw != null)
+                    break;
+            }
+
+            // If we can't find the root ContainerWindow we fall back to the old behavior of using GUIUtility.pixelsPerPoint
+            // While it is not ideal and it shouldn't really happen it is definetly better than crashing or logging an error at the moment
+            // This will log a warning in the future when use outside of an imgui event dispatching.
+            return cw?.GetBackingScale() ?? GUIUtility.pixelsPerPoint;
+        }
+        
+
         void SetupSplitter()
         {
             float[] actualSizes = new float[children.Length];
             float[] minSizes = new float[children.Length];
-
+            float scale = GetBackingScaleFactor();
             for (int j = 0; j < children.Length; j++)
             {
                 View c = (View)children[j];
-                actualSizes[j] = GUIUtility.RoundToPixelGrid(vertical ? c.position.height : c.position.width);
-                minSizes[j] = GUIUtility.RoundToPixelGrid(vertical ? c.minSize.y : c.minSize.x);
+                actualSizes[j] = GUIUtility.RoundToPixelGrid(vertical ? c.position.height : c.position.width, scale);
+                minSizes[j] = GUIUtility.RoundToPixelGrid(vertical ? c.minSize.y : c.minSize.x, scale);
             }
 
             splitState = SplitterState.FromAbsolute(actualSizes, minSizes, null);
@@ -157,7 +175,10 @@ namespace UnityEditor
 
             for (int k = 0; k < children.Length - 1; k++)
                 splitState.DoSplitter(k, k + 1, 0);
-            splitState.RelativeToRealSizes(vertical ? GUIUtility.RoundToPixelGrid(position.height) : GUIUtility.RoundToPixelGrid(position.width));
+
+            float scale = GetBackingScaleFactor();
+
+            splitState.RelativeToRealSizes(vertical ? GUIUtility.RoundToPixelGrid(position.height, scale) : GUIUtility.RoundToPixelGrid(position.width, scale), scale);
             SetupRectsFromSplitter();
         }
 
@@ -165,8 +186,10 @@ namespace UnityEditor
         {
             float width = position.width;
             float height = position.height;
-            float roundPos = GUIUtility.RoundToPixelGrid(pos);
-            float roundSize = GUIUtility.RoundToPixelGrid(pos + size) - roundPos;
+
+            float scale = GetBackingScaleFactor();
+            float roundPos = GUIUtility.RoundToPixelGrid(pos, scale);
+            float roundSize = GUIUtility.RoundToPixelGrid(pos + size, scale) - roundPos;
             Rect newRect;
             if (vertical)
             {
@@ -660,6 +683,7 @@ namespace UnityEditor
         internal const float kGrabDist = 5;
         public void SplitGUI(Event evt)
         {
+            GUIUtility.CheckOnGUI();
             if (splitState == null)
                 SetupSplitter();
 

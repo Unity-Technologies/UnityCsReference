@@ -213,7 +213,7 @@ namespace UnityEditor
             if (m_Mixers.Count > 0)
             {
                 // First create a tree view item for each controller
-                var roots = m_Mixers.Select(mixer => new AudioMixerItem(mixer.GetInstanceID(), 0, m_RootItem, mixer.name, mixer, GetInfoText(mixer))).ToList();
+                var roots = m_Mixers.Select(mixer => new AudioMixerItem(mixer.GetEntityId(), 0, m_RootItem, mixer.name, mixer, GetInfoText(mixer))).ToList();
 
                 // Rearrange items to a tree based on output mixer group
                 foreach (var item in roots)
@@ -244,7 +244,7 @@ namespace UnityEditor
             if (item.mixer.outputAudioMixerGroup != null)
             {
                 var parentMixer = item.mixer.outputAudioMixerGroup.audioMixer;
-                var parentItem = TreeViewUtility<EntityId>.FindItemInList(parentMixer.GetInstanceID(), items) as AudioMixerItem;
+                var parentItem = TreeViewUtility<EntityId>.FindItemInList(parentMixer.GetEntityId(), items) as AudioMixerItem;
                 if (parentItem != null)
                 {
                     parentItem.AddChild(item);
@@ -281,24 +281,24 @@ namespace UnityEditor
             return true;
         }
 
-        public int GetInsertAfterItemIDForNewItem(string newName, TreeViewItem<EntityId> parentItem)
+        public EntityId GetInsertAfterItemIDForNewItem(string newName, TreeViewItem<EntityId> parentItem)
         {
             // Find pos under parent
-            int insertAfterID = parentItem.id;
+            EntityId insertAfterID = parentItem.id;
 
             if (!parentItem.hasChildren)
                 return insertAfterID;
 
             for (int idx = 0; idx < parentItem.children.Count; ++idx)
             {
-                int instanceID = parentItem.children[idx].id;
+                EntityId entityId = parentItem.children[idx].id;
 
                 // Use same name compare as when we sort in the backend: See AssetDatabase.cpp: SortChildren
-                string propertyPath = AssetDatabase.GetAssetPath((EntityId)instanceID);
+                string propertyPath = AssetDatabase.GetAssetPath(entityId);
                 if (EditorUtility.NaturalCompare(Path.GetFileNameWithoutExtension(propertyPath), newName) > 0)
                     break;
 
-                insertAfterID = instanceID;
+                insertAfterID = entityId;
             }
             return insertAfterID;
         }
@@ -332,7 +332,7 @@ namespace UnityEditor
                 m_FakeItem.icon = icon;
 
                 // Find pos under parent
-                int insertAfterID = GetInsertAfterItemIDForNewItem(name, parentItem);
+                EntityId insertAfterID = GetInsertAfterItemIDForNewItem(name, parentItem);
 
                 // Find pos in expanded rows and insert
                 int index = TreeViewController<EntityId>.GetIndexOfID(visibleRows, insertAfterID);
@@ -439,7 +439,7 @@ namespace UnityEditor
         protected override void RenameEnded()
         {
             string name = string.IsNullOrEmpty(GetRenameOverlay().name) ? GetRenameOverlay().originalName : GetRenameOverlay().name;
-            int instanceID = GetRenameOverlay().userData;
+            EntityId entityId = GetRenameOverlay().userData;
             bool isCreating = GetCreateAssetUtility().IsCreatingNewAsset();
             bool userAccepted = GetRenameOverlay().userAcceptedRename;
 
@@ -454,7 +454,7 @@ namespace UnityEditor
                 else
                 {
                     // Rename an existing asset
-                    ObjectNames.SetNameSmartWithInstanceID(instanceID, name);
+                    ObjectNames.SetNameSmartWithEntityId(entityId, name);
                 }
             }
             else if (isCreating)
@@ -477,11 +477,11 @@ namespace UnityEditor
             if (!m_TreeView.data.HasFakeItem() && GetCreateAssetUtility().IsCreatingNewAsset())
             {
                 // Get selection from tree
-                int parentInstanceID = m_TreeView.data.root.id;
+                EntityId parentEntityId = m_TreeView.data.root.id;
                 var selectedItem = GetSelectedItem();
                 if (selectedItem != null)
-                    parentInstanceID = selectedItem.parent.id;
-                m_TreeView.data.InsertFakeItem(GetCreateAssetUtility().instanceID, parentInstanceID, GetCreateAssetUtility().originalName, GetCreateAssetUtility().icon);
+                    parentEntityId = selectedItem.parent.id;
+                m_TreeView.data.InsertFakeItem(GetCreateAssetUtility().entityId, parentEntityId, GetCreateAssetUtility().originalName, GetCreateAssetUtility().icon);
             }
 
             if (m_TreeView.data.HasFakeItem() && !GetCreateAssetUtility().IsCreatingNewAsset())
@@ -499,17 +499,17 @@ namespace UnityEditor
             string resourceFileData = string.Empty;
             var selectedItem = GetSelectedItem();
             if (selectedItem != null && selectedItem.mixer.outputAudioMixerGroup != null)
-                resourceFileData = selectedItem.mixer.outputAudioMixerGroup.GetInstanceID().ToString();
+                resourceFileData = selectedItem.mixer.outputAudioMixerGroup.GetEntityId().ToString();
 
-            int instanceID = 0;
+            EntityId entityId = EntityId.None;
 
             if (GetCreateAssetUtility().BeginNewAssetCreation(
-                instanceID, ScriptableObject.CreateInstance<DoCreateAudioMixer>(), "NewAudioMixer.mixer", null, resourceFileData))
+                    entityId, ScriptableObject.CreateInstance<DoCreateAudioMixer>(), "NewAudioMixer.mixer", null, resourceFileData))
             {
                 SyncFakeItem();
 
                 // Start naming the asset
-                bool renameStarted = GetRenameOverlay().BeginRename(GetCreateAssetUtility().originalName, instanceID, 0f);
+                bool renameStarted = GetRenameOverlay().BeginRename(GetCreateAssetUtility().originalName, entityId, 0f);
                 if (!renameStarted)
                     Debug.LogError("Rename not started (when creating new asset)");
             }

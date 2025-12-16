@@ -127,7 +127,7 @@ namespace Unity.Hierarchy
         internal static bool DoesSelectedNodesHaveChildren(this HierarchyView view)
         {
             var viewModel = view.ViewModel;
-            foreach (ref readonly var node in viewModel.EnumerateNodesWithAllFlags(HierarchyNodeFlags.Selected))
+            foreach (ref readonly var node in viewModel.EnumerateNodesWithFlags(HierarchyNodeFlags.Selected))
             {
                 if (viewModel.GetChildrenCount(in node) > 0)
                     return true;

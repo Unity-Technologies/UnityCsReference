@@ -82,7 +82,7 @@ namespace UnityEngine
         public static void SplitUIVertexStreams(List<UIVertex> verts, List<Vector3> positions, List<Color32> colors, List<Vector4> uv0S, List<Vector4> uv1S,
             List<Vector4> uv2S, List<Vector4> uv3S, List<Vector3> normals, List<Vector4> tangents, List<int> indices)
         {
-            SplitUIVertexStreamsInternal(verts, positions, colors, uv0S, uv1S, uv2S, uv3S, normals, tangents);
+            SplitUIVertexStreamsInternal(NoAllocHelpers.CreateReadOnlySpan(verts), positions, colors, uv0S, uv1S, uv2S, uv3S, normals, tangents);
             SplitIndicesStreamsInternal(verts, indices);
         }
 
@@ -93,7 +93,10 @@ namespace UnityEngine
 
         public static void CreateUIVertexStream(List<UIVertex> verts, List<Vector3> positions, List<Color32> colors, List<Vector4> uv0S, List<Vector4> uv1S, List<Vector4> uv2S, List<Vector4> uv3S, List<Vector3> normals, List<Vector4> tangents, List<int> indices)
         {
-            CreateUIVertexStreamInternal(verts, positions, colors, uv0S, uv1S, uv2S, uv3S, normals, tangents, indices);
+            CreateUIVertexStreamInternal(verts, NoAllocHelpers.CreateReadOnlySpan(positions), NoAllocHelpers.CreateReadOnlySpan(colors), 
+                NoAllocHelpers.CreateReadOnlySpan(uv0S), NoAllocHelpers.CreateReadOnlySpan(uv1S), NoAllocHelpers.CreateReadOnlySpan(uv2S),
+                NoAllocHelpers.CreateReadOnlySpan(uv3S), NoAllocHelpers.CreateReadOnlySpan(normals), NoAllocHelpers.CreateReadOnlySpan(tangents),
+                NoAllocHelpers.CreateReadOnlySpan(indices));
         }
 
         public static void AddUIVertexStream(List<UIVertex> verts, List<Vector3> positions, List<Color32> colors, List<Vector4> uv0S, List<Vector4> uv1S, List<Vector3> normals, List<Vector4> tangents)
@@ -103,7 +106,7 @@ namespace UnityEngine
 
         public static void AddUIVertexStream(List<UIVertex> verts, List<Vector3> positions, List<Color32> colors, List<Vector4> uv0S, List<Vector4> uv1S, List<Vector4> uv2S, List<Vector4> uv3S, List<Vector3> normals, List<Vector4> tangents)
         {
-            SplitUIVertexStreamsInternal(verts, positions, colors, uv0S, uv1S, uv2S, uv3S, normals, tangents);
+            SplitUIVertexStreamsInternal(NoAllocHelpers.CreateReadOnlySpan(verts), positions, colors, uv0S, uv1S, uv2S, uv3S, normals, tangents);
         }
 
         [Obsolete("UI System now uses meshes.Generate a mesh and use 'SetMesh' instead", false)]
@@ -163,16 +166,20 @@ namespace UnityEngine
             DestroyImmediate(mesh);
         }
 
-        [StaticAccessor("UI", StaticAccessorType.DoubleColon)]
-        private static extern void SplitIndicesStreamsInternal(object verts, object indices);
+        private static void SplitIndicesStreamsInternal(List<UIVertex> verts, List<int> indices)
+        {
+            indices.Clear();
+            for (var i = 0; i < verts.Count; ++i)
+                indices.Add(i);
+        }
 
         [StaticAccessor("UI", StaticAccessorType.DoubleColon)]
-        private static extern void SplitUIVertexStreamsInternal(object verts, object positions, object colors, object uv0S, object uv1S, object uv2S,
-            object uv3S, object normals, object tangents);
+        private static extern void SplitUIVertexStreamsInternal(ReadOnlySpan<UIVertex> verts, List<Vector3> positions, List<Color32> colors, List<Vector4> uv0S, List<Vector4> uv1S, List<Vector4> uv2S,
+            List<Vector4> uv3S, List<Vector3> normals, List<Vector4> tangents);
 
         [StaticAccessor("UI", StaticAccessorType.DoubleColon)]
-        private static extern void CreateUIVertexStreamInternal(object verts, object positions, object colors, object uv0S, object uv1S, object uv2S,
-            object uv3S, object normals, object tangents, object indices);
+        private static extern void CreateUIVertexStreamInternal(List<UIVertex> verts, ReadOnlySpan<Vector3> positions, ReadOnlySpan<Color32> colors, ReadOnlySpan<Vector4> uv0S, ReadOnlySpan<Vector4> uv1S, ReadOnlySpan<Vector4> uv2S,
+            ReadOnlySpan<Vector4> uv3S, ReadOnlySpan<Vector3> normals, ReadOnlySpan<Vector4> tangents, ReadOnlySpan<int> indices);
 
         public delegate void OnRequestRebuild();
         public static event OnRequestRebuild onRequestRebuild;

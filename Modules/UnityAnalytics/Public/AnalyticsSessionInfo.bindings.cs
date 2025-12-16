@@ -7,6 +7,9 @@ using UnityEngine.Scripting;
 
 namespace UnityEngine.Analytics
 {
+#pragma warning disable RS0030 // This [Preserve] usage will be addressed by https://jira.unity3d.com/browse/UUM-127673
+    [Preserve]
+#pragma warning restore RS0030
     [RequiredByNativeCode]
     public enum AnalyticsSessionState
     {
@@ -16,6 +19,9 @@ namespace UnityEngine.Analytics
         kSessionResumed = 3
     }
 
+#pragma warning disable RS0030 // This [Preserve] usage will be addressed by https://jira.unity3d.com/browse/UUM-127673
+    [Preserve]
+#pragma warning restore RS0030
     [RequiredByNativeCode]
     [NativeHeader("UnityAnalyticsScriptingClasses.h")]
     [NativeHeader("Modules/UnityAnalytics/Public/UnityAnalytics.h")]
@@ -24,6 +30,9 @@ namespace UnityEngine.Analytics
         public delegate void SessionStateChanged(AnalyticsSessionState sessionState, long sessionId, long sessionElapsedTime, bool sessionChanged);
         public static event SessionStateChanged sessionStateChanged;
 
+#pragma warning disable RS0030 // This [Preserve] usage will be addressed by https://jira.unity3d.com/browse/UUM-127673
+        [Preserve]
+#pragma warning restore RS0030
         [RequiredByNativeCode]
         internal static void CallSessionStateChanged(AnalyticsSessionState sessionState, long sessionId, long sessionElapsedTime, bool sessionChanged)
         {
@@ -102,6 +111,9 @@ namespace UnityEngine.Analytics
         public delegate void IdentityTokenChanged(string token);
         public static event IdentityTokenChanged identityTokenChanged;
 
+#pragma warning disable RS0030 // This [Preserve] usage will be addressed by https://jira.unity3d.com/browse/UUM-127673
+        [Preserve]
+#pragma warning restore RS0030
         [RequiredByNativeCode]
         internal static void CallIdentityTokenChanged(string token)
         {

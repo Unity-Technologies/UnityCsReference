@@ -99,7 +99,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private void OnPackagesChanged(PackagesChangeArgs args)
         {
-            if (!args.progressUpdated.Any() && !args.added.Any() && !args.removed.Any())
+            if (args.progressUpdated.Count == 0 && args.added.Count == 0 && args.removed.Count == 0)
                 return;
 
             RefreshInProgressSpinner();
@@ -127,7 +127,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         {
             var filtersSet = new[] { filters.status.GetDisplayName() }.Concat(filters.categories).Concat(filters.labels)
                 .Where(s => !string.IsNullOrEmpty(s)).ToArray();
-            filtersMenu.text = filtersSet.Any() ? string.Format(L10n.Tr("Filters ({0})"), string.Join(", ", filtersSet)) : L10n.Tr("Filters");
+            filtersMenu.text = filtersSet.Length > 0 ? string.Format(L10n.Tr("Filters ({0})"), string.Join(", ", filtersSet)) : L10n.Tr("Filters");
         }
 
         private void UpdateSortMenuText(PageSortOption sortOption)
@@ -138,7 +138,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private void UpdateSortingMenu(IPage page)
         {
-            var showSortingMenu = page.supportedSortOptions.Any();
+            var showSortingMenu = page.supportedSortOptions?.Count > 0;
             UIUtils.SetElementDisplay(sortingMenu, showSortingMenu);
             if (!showSortingMenu)
                 return;
@@ -172,7 +172,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 var tooltipText = L10n.Tr("You need to sign in before you can sort or filter packages.");
                 SetEnabledStatusAndTooltip(false, tooltipText, sortingMenu, filtersMenu, clearFiltersButton);
             }
-            else if (!page.supportedStatusFilters.Any())
+            else if (page.supportedStatusFilters == null || page.supportedStatusFilters.Count == 0)
             {
                 var tooltipText = L10n.Tr("There are no applicable filters to display for this context.");
                 SetEnabledStatusAndTooltip(false, tooltipText, filtersMenu, clearFiltersButton);
@@ -345,7 +345,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             };
 
             dropdownItem = addMenu.AddBuiltInDropdownItem();
-            dropdownItem.text = L10n.Tr("Install package by name...");
+            dropdownItem.text = L10n.Tr("Install package by technical name...");
             dropdownItem.userData = "AddByName";
             dropdownItem.action = () =>
             {
@@ -353,7 +353,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             };
 
             dropdownItem = addMenu.AddBuiltInDropdownItem();
-            dropdownItem.text = L10n.Tr("Create package");
+            dropdownItem.text = L10n.Tr("Create package...");
             dropdownItem.userData = "CreatePackage";
             dropdownItem.insertSeparatorBefore = true;
             dropdownItem.action = () =>
@@ -404,12 +404,12 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private VisualElementCache cache { get; }
 
-        internal ExtendableToolbarMenu addMenu => cache.Get<ExtendableToolbarMenu>("toolbarAddMenu");
+        public ExtendableToolbarMenu addMenu => cache.Get<ExtendableToolbarMenu>("toolbarAddMenu");
         private ToolbarMenu sortingMenu => cache.Get<ToolbarMenu>("toolbarOrderingMenu");
         private ToolbarWindowMenu filtersMenu => cache.Get<ToolbarWindowMenu>("toolbarFiltersMenu");
         private ToolbarButton clearFiltersButton => cache.Get<ToolbarButton>("toolbarClearFiltersButton");
-        internal ExtendableToolbarMenu toolbarSettingsMenu => cache.Get<ExtendableToolbarMenu>("toolbarSettingsMenu");
-        internal VisualElement spinnerButtonContainer => cache.Get<VisualElement>("spinnerButtonContainer");
-        internal LoadingSpinner inProgressSpinner => cache.Get<LoadingSpinner>("inProgressSpinner");
+        public ExtendableToolbarMenu toolbarSettingsMenu => cache.Get<ExtendableToolbarMenu>("toolbarSettingsMenu");
+        private VisualElement spinnerButtonContainer => cache.Get<VisualElement>("spinnerButtonContainer");
+        private LoadingSpinner inProgressSpinner => cache.Get<LoadingSpinner>("inProgressSpinner");
     }
 }

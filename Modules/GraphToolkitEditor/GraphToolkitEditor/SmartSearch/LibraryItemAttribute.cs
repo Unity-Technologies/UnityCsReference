@@ -42,6 +42,11 @@ namespace Unity.GraphToolkit.Editor
         public string Mode { get; }
 
         /// <summary>
+        /// Custom path for the item's icon. If set, it takes precedence over the style defined by <see cref="StyleName"/>.
+        /// </summary>
+        public string IconPath { get; }
+
+        /// <summary>
         /// Initializes a new instance of the LibraryItemAttribute class.
         /// </summary>
         /// <param name="graphModelType">Type of <see cref="GraphModel"/> to use to create the element.</param>
@@ -49,7 +54,8 @@ namespace Unity.GraphToolkit.Editor
         /// <param name="styleName">Style name to give to this item.</param>
         /// <param name="subtitle">The subtitle of this item.</param>
         /// <param name="mode">When applicable, the mode of this item.</param>
-        public LibraryItemAttribute(Type graphModelType, string path, string styleName = null, string subtitle = null, string mode = null)
+        /// <param name="iconPath">Custom path for the item's icon. If set, it takes precedence over the style defined by styleName.</param>
+        public LibraryItemAttribute(Type graphModelType, string path, string styleName = null, string subtitle = null, string mode = null, string iconPath = "")
         {
             Assert.IsTrue(
                 graphModelType.IsSubclassOf(typeof(GraphModel)),
@@ -70,6 +76,7 @@ namespace Unity.GraphToolkit.Editor
             Subtitle = subtitle;
             StyleName = styleName;
             Mode = mode;
+            IconPath = iconPath;
         }
     }
 }

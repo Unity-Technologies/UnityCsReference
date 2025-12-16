@@ -169,7 +169,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             var registriesListResult = request.Result ?? new RegistryInfo[0];
             var registriesCount = registriesListResult.Length;
 
-            if (m_SettingsProxy.registries.Any() && m_SettingsProxy.registries.Count < registriesCount)
+            if (m_SettingsProxy.registries.Count > 0 && m_SettingsProxy.registries.Count < registriesCount)
                 onRegistriesAdded?.Invoke(registriesCount - m_SettingsProxy.registries.Count);
 
             if (!registriesListResult.IsEquivalentTo(m_SettingsProxy.registries))

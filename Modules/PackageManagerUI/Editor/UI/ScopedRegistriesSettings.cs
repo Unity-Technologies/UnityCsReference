@@ -28,11 +28,11 @@ namespace UnityEditor.PackageManager.UI.Internal
             public override object CreateInstance() => new ScopedRegistriesSettings();
         }
         private Dictionary<string, RegistryItem> m_ExistingRegistryItems = new Dictionary<string, RegistryItem>();
-        internal IReadOnlyDictionary<string, RegistryItem> registryItems => m_ExistingRegistryItems;
+        private IReadOnlyDictionary<string, RegistryItem> registryItems => m_ExistingRegistryItems;
 
         private readonly RegistryItem m_NewScopedRegistryItem;
 
-        internal RegistryInfoDraft draft => m_SettingsProxy.registryInfoDraft;
+        private RegistryInfoDraft draft => m_SettingsProxy.registryInfoDraft;
 
         private IResourceLoader m_ResourceLoader;
         private IProjectSettingsProxy m_SettingsProxy;
@@ -384,6 +384,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 scopesList[i].EnableInClassList(k_SelectedScopeClass, i == selectedIndex);
         }
 
+        // The internal modifier is used (instead of private) to give our test project access to these properties/methods
         internal void UpdateRegistryList()
         {
             registriesList.Clear();
@@ -495,17 +496,17 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private ExtendedHelpBox scopedRegistriesInfoBox => cache.Get<ExtendedHelpBox>("scopedRegistriesInfoBox");
         private HelpBox scopedRegistryErrorBox => cache.Get<HelpBox>("scopedRegistryErrorBox");
-        internal ExtendedHelpBox scopedRegistryNonCompliantErrorBox => cache.Get<ExtendedHelpBox>("scopedRegistryNonCompliantErrorBox");
-        internal VisualElement registriesList => cache.Get<VisualElement>("registriesList");
-        internal VisualElement registriesRightContainer => cache.Get<VisualElement>("registriesRightContainer");
-        internal TextField registryNameTextField => cache.Get<TextField>("registryNameTextField");
-        internal TextField registryUrlTextField => cache.Get<TextField>("registryUrlTextField");
-        internal VisualElement scopesList => cache.Get<VisualElement>("scopesList");
-        internal Button addRegistryButton => cache.Get<Button>("addRegistryButton");
-        internal Button removeRegistryButton => cache.Get<Button>("removeRegistryButton");
-        internal Button addScopeButton => cache.Get<Button>("addScopeButton");
-        internal Button removeScopeButton => cache.Get<Button>("removeScopeButton");
-        internal Button revertRegistriesButton => cache.Get<Button>("revertRegistriesButton");
-        internal Button applyRegistriesButton => cache.Get<Button>("applyRegistriesButton");
+        private ExtendedHelpBox scopedRegistryNonCompliantErrorBox => cache.Get<ExtendedHelpBox>("scopedRegistryNonCompliantErrorBox");
+        private VisualElement registriesList => cache.Get<VisualElement>("registriesList");
+        private VisualElement registriesRightContainer => cache.Get<VisualElement>("registriesRightContainer");
+        private TextField registryNameTextField => cache.Get<TextField>("registryNameTextField");
+        private TextField registryUrlTextField => cache.Get<TextField>("registryUrlTextField");
+        private VisualElement scopesList => cache.Get<VisualElement>("scopesList");
+        private Button addRegistryButton => cache.Get<Button>("addRegistryButton");
+        private Button removeRegistryButton => cache.Get<Button>("removeRegistryButton");
+        private Button addScopeButton => cache.Get<Button>("addScopeButton");
+        private Button removeScopeButton => cache.Get<Button>("removeScopeButton");
+        private Button revertRegistriesButton => cache.Get<Button>("revertRegistriesButton");
+        private Button applyRegistriesButton => cache.Get<Button>("applyRegistriesButton");
     }
 }

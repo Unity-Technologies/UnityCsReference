@@ -492,7 +492,7 @@ namespace UnityEditor
 
         // Test texture importer settings for equality.
         [FreeFunction("TextureImporterBindings::CopyTo")]
-        private static extern void Copy([NotNull] TextureImporterSettings self, [Out][NotNull] TextureImporterSettings target);
+        private static extern void Copy([NotNull] TextureImporterSettings self, [In, Out][NotNull] TextureImporterSettings target);
 
         // Configure parameters to import a texture for a purpose of ''type'', as described [[TextureImporterType|here]].
         [Obsolete("ApplyTextureType(TextureImporterType, bool) is deprecated, use ApplyTextureType(TextureImporterType)")]
@@ -507,7 +507,7 @@ namespace UnityEditor
         }
 
         [FreeFunction("TextureImporterBindings::ApplyTextureType")]
-        private static extern void Internal_ApplyTextureType([Out][NotNull] TextureImporterSettings self, TextureImporterType type);
+        private static extern void Internal_ApplyTextureType([In, Out][NotNull] TextureImporterSettings self, TextureImporterType type);
 
         // Deprecated APIs
         [Obsolete("Use sRGBTexture instead")]
@@ -704,6 +704,6 @@ namespace UnityEditor
         }
 
         [FreeFunction("TextureImporterBindings::CopyTo")]
-        private static extern void Copy([NotNull] TextureImporterPlatformSettings self, [Out][NotNull] TextureImporterPlatformSettings target);
+        private static extern void Copy([NotNull] TextureImporterPlatformSettings self, [In, Out][NotNull] TextureImporterPlatformSettings target);
     }
 }

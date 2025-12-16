@@ -2,6 +2,8 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using UnityEngine.UIElements;
+
 namespace UnityEditor.Overlays
 {
     sealed class ToolbarDropZone : OverlayContainerDropZone
@@ -20,23 +22,14 @@ namespace UnityEditor.Overlays
 
         protected override bool ShouldEnable(Overlay draggedOverlay)
         {
-            var draggedOverlayIsInPanelMode = draggedOverlay.activeLayout == Layout.Panel;
-
-            return !m_CurrentContainer.HasVisibleOverlays() && (!draggedOverlayIsInPanelMode || m_ShouldAllowPanelOverlay);
+            return !m_CurrentContainer.HasVisibleOverlays()
+                   && !m_CurrentContainer.ContainsOverlay(draggedOverlay, GetSection());
         }
 
         public override void Activate(Overlay draggedOverlay)
         {
             base.Activate(draggedOverlay);
-
-            SetHidden(true);
-        }
-
-        public override void UpdateHover(OverlayDropZoneBase hovered)
-        {
-            base.UpdateHover(hovered);
-
-            SetHidden(hovered != this);
+            style.display = ShouldEnable(draggedOverlay) ? DisplayStyle.Flex : DisplayStyle.None;
         }
     }
 }

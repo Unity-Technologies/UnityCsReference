@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System;
 using System.Collections.Generic;
 using System.Linq;
 using JetBrains.Annotations;
@@ -56,7 +55,7 @@ namespace Unity.GraphToolkit.Editor
                 return;
 
             var portalsToOpen = command.Models.Where(p => p.CanCreateOppositePortal()).ToList();
-            if (!portalsToOpen.Any())
+            if (!portalsToOpen.HasAny())
                 return;
 
             using (var undoStateUpdater = undoState.UpdateScope)
@@ -76,7 +75,7 @@ namespace Unity.GraphToolkit.Editor
                 graphUpdater.MarkUpdated(changeScope.ChangeDescription);
             }
 
-            if (createdElements.Any())
+            if (createdElements.HasAny())
             {
                 var selectionHelper = new GlobalSelectionCommandHelper(selectionState);
                 using (var selectionUpdaters = selectionHelper.UpdateScopes)

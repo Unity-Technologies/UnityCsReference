@@ -23,7 +23,7 @@ namespace Unity.ProjectAuditor.Editor.SettingsAnalysis
             "The <b>Strip Engine Code</b> is option in Player Settings is disabled. The generated build will be larger than necessary.",
             "Enable <b>Strip Engine Code</b> in <b>Project Settings > Player > Other Settings > Optimization</b>.")
         {
-            Platforms = new SerializableEnum<BuildTarget>[] { BuildTarget.Android, BuildTarget.iOS, BuildTarget.WebGL }
+            Platforms = [BuildTarget.Android, BuildTarget.iOS, BuildTarget.WebGL]
         };
 
         static readonly Descriptor k_AndroidManagedStrippingDescriptor = new Descriptor(
@@ -33,7 +33,7 @@ namespace Unity.ProjectAuditor.Editor.SettingsAnalysis
             "The <b>Managed Stripping Level</b> in the Android Player Settings is set to <b>Disabled</b>, <b>Low</b> or <b>Minimal</b>. The generated build will be larger than necessary.",
             "Set <b>Managed Stripping Level</b> in the Android Player Settings to Medium or High.")
         {
-            Platforms = new SerializableEnum<BuildTarget>[] { BuildTarget.Android }
+            Platforms = [BuildTarget.Android]
         };
 
         static readonly Descriptor k_iOSManagedStrippingDescriptor = new Descriptor(
@@ -43,7 +43,7 @@ namespace Unity.ProjectAuditor.Editor.SettingsAnalysis
             "The <b>Managed Stripping Level</b> in the iOS Player Settings is set to <b>Disabled</b>, <b>Low</b> or <b>Minimal</b>. The generated build will be larger than necessary.",
             "Set <b>Managed Stripping Level</b> in the iOS Player Settings to Medium or High.")
         {
-            Platforms = new SerializableEnum<BuildTarget>[] { BuildTarget.iOS }
+            Platforms = [BuildTarget.iOS]
         };
 
         public override void Initialize(Action<Descriptor> registerDescriptor)

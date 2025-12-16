@@ -35,8 +35,6 @@ namespace UnityEngine.UIElements.HierarchyV2
         IList m_ItemsSource;
         // This is used for filtering the unused items in the DisplayedList during the BindVisibleItems.
         LinkedList<RecycledItem> m_RefreshList = new();
-        // The list of items being displayed in the CollectionView. Note, this list does not contain ghost items.
-        LinkedList<RecycledItem> m_DisplayedList = new();
         KeyboardNavigationManipulator m_NavigationManipulator;
         IVisualElementScheduledItem m_RebuildScheduled;
         IVisualElementScheduledItem m_ScrollScheduledItem;
@@ -50,8 +48,7 @@ namespace UnityEngine.UIElements.HierarchyV2
         bool m_IsChangingScrollingParameters;
         double m_DelayedScrolledVerticalValue = 0;
         double m_ScrollValue;
-        float m_FixedItemHeight = -1;
-        float m_ComputedAverageHeight = -1;
+        float m_FixedItemHeight = k_DefaultItemHeight;
         float m_LastHeight = -1;
         int m_FirstVisibleItemIndex;
         int m_LastFocusedElementIndex = -1;
@@ -79,6 +76,8 @@ namespace UnityEngine.UIElements.HierarchyV2
         // including some items out of bound (ghost items).
         internal readonly Dictionary<int, RecycledItem> m_IndexToItemDictionary = new();
         internal bool isRebuildScheduled => m_RebuildScheduled?.isActive == true;
+        // The list of items being displayed in the CollectionView. Note, this list does not contain ghost items.
+        internal LinkedList<RecycledItem> m_DisplayedList = new();
         /// <summary>
         /// Enum for current pointer processing state.
         /// </summary>
@@ -107,11 +106,6 @@ namespace UnityEngine.UIElements.HierarchyV2
             [VisibleToOtherModules("UnityEngine.HierarchyModule")] get;
             private set;
         }
-
-        /// <summary>
-        /// The USS class name for the Vertical Scroller of the CollectionView.
-        /// </summary>
-        public static readonly string verticalScrollerVisibleUssClassName = BaseVerticalCollectionView.ussClassName + "--vertical-scroller-visible";
 
         /// <summary>
         /// Called when a drag operation wants to start in this collection view.
@@ -180,7 +174,6 @@ namespace UnityEngine.UIElements.HierarchyV2
                 }
 
                 UnbindAllItems();
-                ResetAverageHeight();
                 RefreshItems();
             }
         }
@@ -239,20 +232,6 @@ namespace UnityEngine.UIElements.HierarchyV2
 
                 if (previous != m_SelectionType)
                     NotifyPropertyChanged(selectionTypeProperty);
-            }
-        }
-
-        internal float averageItemHeight
-        {
-            get
-            {
-                if (fixedItemHeight > 0)
-                    return fixedItemHeight;
-
-                if (m_ComputedAverageHeight > 0)
-                    return m_ComputedAverageHeight;
-
-                return k_DefaultItemHeight;
             }
         }
 
@@ -386,10 +365,13 @@ namespace UnityEngine.UIElements.HierarchyV2
                 return;
 
             this.AddManipulator(m_NavigationManipulator = new KeyboardNavigationManipulator(Apply));
-            RegisterCallback<PointerDownEvent>(OnPointerDown);
-            RegisterCallback<PointerUpEvent>(OnPointerUp);
-            RegisterCallback<PointerMoveEvent>(OnPointerMove);
-            RegisterCallback<PointerCancelEvent>(OnPointerCancel);
+            m_ScrollView.RegisterCallback<PointerMoveEvent>(OnPointerMove);
+            m_ScrollView.RegisterCallback<PointerDownEvent>(OnPointerDown);
+            m_ScrollView.RegisterCallback<PointerCancelEvent>(OnPointerCancel);
+            m_ScrollView.RegisterCallback<PointerUpEvent>(OnPointerUp);
+            // Triggered the scroller(s) appears/disappears
+            m_HorizontalScroller.RegisterCallback<GeometryChangedEvent>(OnHorizontalScrollerGeometryChange);
+            m_VerticalScroller.RegisterCallback<GeometryChangedEvent>(OnVerticalScrollerGeometryChange);
         }
 
         void OnDetachFromPanelEvent(DetachFromPanelEvent evt)
@@ -398,10 +380,12 @@ namespace UnityEngine.UIElements.HierarchyV2
                 return;
 
             this.RemoveManipulator(m_NavigationManipulator);
-            UnregisterCallback<PointerDownEvent>(OnPointerDown);
-            UnregisterCallback<PointerUpEvent>(OnPointerUp);
-            UnregisterCallback<PointerMoveEvent>(OnPointerMove);
-            UnregisterCallback<PointerCancelEvent>(OnPointerCancel);
+            m_ScrollView.UnregisterCallback<PointerMoveEvent>(OnPointerMove);
+            m_ScrollView.UnregisterCallback<PointerDownEvent>(OnPointerDown);
+            m_ScrollView.UnregisterCallback<PointerCancelEvent>(OnPointerCancel);
+            m_ScrollView.UnregisterCallback<PointerUpEvent>(OnPointerUp);
+            m_HorizontalScroller.UnregisterCallback<GeometryChangedEvent>(OnHorizontalScrollerGeometryChange);
+            m_VerticalScroller.UnregisterCallback<GeometryChangedEvent>(OnVerticalScrollerGeometryChange);
 
             if (m_ScrollScheduledItem?.isActive == true)
             {
@@ -428,11 +412,47 @@ namespace UnityEngine.UIElements.HierarchyV2
             }
         }
 
+        void OnHorizontalScrollerGeometryChange(GeometryChangedEvent evt)
+        {
+            // Only proceed if the scrollbar's height changed
+            if (Mathf.Approximately(evt.oldRect.size.y, evt.newRect.size.y) || itemsSource == null)
+            {
+                return;
+            }
+
+            var rangeEstimate = (double)fixedItemHeight * itemsSource.Count;
+            var containerHeight = m_Container.layout.height;
+            var maxScrollRange = rangeEstimate > containerHeight ? Math.Abs(rangeEstimate - containerHeight) : 0;
+
+            // Update the high value and scroll value of the vertical scroller
+            SetScrollingParameters(m_ScrollValue, maxScrollRange);
+            // We need to reset the offset that is added by the horizontal scrollbar's appearance
+            if (evt.newRect.size == new Vector2())
+            {
+                m_ScrollView.containerOffset = new Vector2(0, 0);
+            }
+            // Update the visibility and factor of the vertical scroller when the horizontal one appears
+            UpdateVerticalScrollRange();
+        }
+
+        void OnVerticalScrollerGeometryChange(GeometryChangedEvent evt)
+        {
+            // Only proceed if the scrollbar's width changed
+            if (Mathf.Approximately(evt.oldRect.size.x, evt.newRect.size.x) || itemsSource == null)
+            {
+                return;
+            }
+
+            // Refresh the vertical scroll range (resolves the annoying issue of, we need to wait for the next frame to get the right dimension)
+            UpdateVerticalScrollRange();
+        }
+
         internal void UpdateVerticalScrollValue(double value)
         {
             if (!m_VerticalScroller.Approximately(value, m_ScrollValue))
             {
-                m_VerticalScroller.value = m_ScrollValue = value;
+                m_VerticalScroller.value = value;
+                m_ScrollValue = m_VerticalScroller.value;
                 BindVisibleItems();
             }
         }
@@ -451,7 +471,8 @@ namespace UnityEngine.UIElements.HierarchyV2
                 using (new EventDispatcherGate(panel.dispatcher))
                 {
                     m_VerticalScroller.highValue = maxScrollRange;
-                    m_VerticalScroller.value = m_ScrollValue = currentScrollOffset;
+                    m_VerticalScroller.value = currentScrollOffset;
+                    m_ScrollValue = m_VerticalScroller.value;
                 }
             }
             finally
@@ -512,7 +533,7 @@ namespace UnityEngine.UIElements.HierarchyV2
             item.element.EnableInClassList(BaseVerticalCollectionView.itemAlternativeBackgroundUssClassName, useAlternateUss);
             item.isLastItem = index == itemsSource.Count - 1;
             item.SetSelected(m_Selection.ContainsIndex(index));
-            item.element.style.height = averageItemHeight;
+            item.element.style.height = fixedItemHeight;
             item.index = index;
             m_IndexToItemDictionary.Add(index, item);
 
@@ -530,7 +551,6 @@ namespace UnityEngine.UIElements.HierarchyV2
             m_RebuildScheduled?.Pause();
 
             ClearAllItems();
-            ResetAverageHeight();
             RefreshItems();
         }
 
@@ -547,10 +567,17 @@ namespace UnityEngine.UIElements.HierarchyV2
         }
 
         /// <summary>
+        /// Event fired at the beginning of <see cref="RefreshItems"/> to allow users to make sure the underlying data is ready to be iterated on.
+        /// </summary>
+        public event Action BeforeRefreshingItems;
+
+        /// <summary>
         /// Rebinds all items currently visible.
         /// </summary>
         public void RefreshItems()
         {
+            BeforeRefreshingItems?.Invoke();
+
             // Clean up all items if itemsSource is null or empty, or makeCell is null
             if (itemsSource == null || layoutConfiguration?.makeCell == null || itemsSource.Count == 0)
             {
@@ -566,53 +593,21 @@ namespace UnityEngine.UIElements.HierarchyV2
                 return;
             }
 
-            m_VerticalScroller.style.display = DisplayStyle.Flex;
-
             var height = m_Container.resolvedStyle.height;
             if (float.IsNaN(height))
                 return;
 
             m_LastHeight = height;
 
-            var numberOfVisibleItems = (int)(m_Container.layout.height / averageItemHeight);
+            var numberOfVisibleItems = (int)(m_Container.layoutSize.y / fixedItemHeight);
             if (itemsSource.Count - 1 < numberOfVisibleItems)
                 m_ScrollValue = 0;
 
-            var rangeEstimate = (double)averageItemHeight * itemsSource.Count;
-            m_VerticalScroller.style.display = rangeEstimate > height ? DisplayStyle.Flex : DisplayStyle.None;
-            EnableInClassList(verticalScrollerVisibleUssClassName, rangeEstimate > height);
-            SetScrollingParameters(m_ScrollValue, Math.Abs(rangeEstimate - height));
-            BindVisibleItems();
-
-            // Need to unbind/clean the ghost items in dictionary to match the items being displayed.
-            // Normally needs to happen when undoing or deleting items.
-            if (m_IndexToItemDictionary.Count > m_DisplayedList.Count)
-            {
-                if (m_DisplayedList.Count == 0)
-                {
-                    ClearAllItems();
-                }
-                else
-                {
-                    using var _ = HashSetPool<int>.Get(out var displayedIndices);
-                    foreach (var item in m_DisplayedList)
-                    {
-                        displayedIndices.Add(item.index);
-                    }
-
-                    using var pooledList = ListPool<int>.Get(out var indicesToRemove);
-                    foreach (var key in m_IndexToItemDictionary.Keys)
-                    {
-                        if (!displayedIndices.Contains(key))
-                            indicesToRemove.Add(key);
-                    }
-
-                    foreach (var index in indicesToRemove)
-                    {
-                        UnbindItem(m_IndexToItemDictionary[index]);
-                    }
-                }
-            }
+            var rangeEstimate = (double)fixedItemHeight * itemsSource.Count;
+            var maxScrollRange = rangeEstimate > height ? Math.Abs(rangeEstimate - height) : 0;
+            m_VerticalScroller.style.display = rangeEstimate > height - m_HorizontalScroller.worldBound.height ? DisplayStyle.Flex : DisplayStyle.None;
+            SetScrollingParameters(m_ScrollValue, maxScrollRange);
+            BindVisibleItems(true);
         }
 
         void ClearAllItems()
@@ -727,7 +722,7 @@ namespace UnityEngine.UIElements.HierarchyV2
                 UnbindItem(m_IndexToItemDictionary[index]);
         }
 
-        void UpdateVisibleRange()
+        void UpdateVerticalScrollRange()
         {
             var firstVisibleIndex = 0;
             var lastVisibleIndex = -1;
@@ -737,16 +732,13 @@ namespace UnityEngine.UIElements.HierarchyV2
                 firstVisibleIndex = m_DisplayedList.First.Value.index;
                 var current = m_DisplayedList.First;
 
-                if (current.Value.renderedHeight < 0)
-                    return;
-
                 // We update the scrolling speed so we scroll down by 1/2 of a standard item per click
-                m_VerticalScroller.scrollSize = k_DefaultScrollSize * averageItemHeight / current.Value.renderedHeight;
+                m_VerticalScroller.scrollSize = k_DefaultScrollSize * fixedItemHeight / fixedItemHeight;
 
                 var lastVisibleItem = m_DisplayedList.First;
                 var maxOffset = m_LastHeight - m_ScrollView.containerOffset.y;
 
-                while (current != null && current.Value.verticalOffset + current.Value.renderedHeight < maxOffset)
+                while (current != null && current.Value.verticalOffset + fixedItemHeight < maxOffset)
                 {
                     lastVisibleItem = current;
                     current = current.Next;
@@ -759,23 +751,44 @@ namespace UnityEngine.UIElements.HierarchyV2
             var visibleRange = lastVisibleIndex - firstVisibleIndex + 1;
             if (visibleRange > 0 && itemsSource != null)
             {
-                // We need to use the visible count otherwise there will be some imprecision when scrolling through the list.
-                var visibleCount = Mathf.Ceil(m_LastHeight / averageItemHeight);
-                var ratio = visibleCount / itemsSource.Count;
-                m_VerticalScroller.Adjust(ratio);
+                // This cast is required for the floating precision which causes the incorrect drag element's height
+                var ratio = (double)visibleRange / itemsSource.Count;
+                var rangeEstimate = (double)fixedItemHeight * itemsSource.Count;
+                // In the events that we go through this code path outside the refresh
+                m_VerticalScroller.style.display = rangeEstimate > m_Container.worldBound.height ? DisplayStyle.Flex : DisplayStyle.None;
+                m_VerticalScroller.factor = (float) (Math.Abs(ratio - 1) < UIRUtility.k_Epsilon ? m_ScrollView.viewport.layout.height / m_Container.boundingBox.height : ratio);
             }
         }
 
-        void ResetAverageHeight()
+        void UpdateHorizontalScrollRange()
         {
-            m_ComputedAverageHeight = -1;
+            var maxWidth = 0f;
+            var verticalScrollerWidth = m_VerticalScroller.worldBound.width;
+
+            if (layoutConfiguration is MultiColumnLayoutConfiguration columnLayout)
+            {
+                maxWidth = columnLayout.header.columnContainer.layoutSize.x - verticalScrollerWidth;
+            }
+            else
+            {
+                foreach (var displayItem in m_DisplayedList)
+                {
+                    maxWidth = Mathf.Max(maxWidth, displayItem.element.worldBoundingBox.width - verticalScrollerWidth);
+                }
+            }
+
+            m_HorizontalScroller.style.display = maxWidth > m_Container.rect.width ? DisplayStyle.Flex : DisplayStyle.None;
+            m_HorizontalScroller.lowValue = 0;
+            m_HorizontalScroller.highValue = maxWidth - m_Container.rect.width;
+            m_HorizontalScroller.scrollSize = k_DefaultScrollSize * m_Container.rect.width;
+            m_HorizontalScroller.factor = maxWidth > UIRUtility.k_Epsilon ? m_Container.worldBound.width / maxWidth : 1f;
         }
 
-        void BindVisibleItems()
+        void BindVisibleItems(bool forceBindItem = false)
         {
             var height = m_LastHeight;
-            var visibleCount = (int)Mathf.Ceil(height / averageItemHeight) + 3;
-            m_FirstVisibleItemIndex = (int)(m_ScrollValue / averageItemHeight);
+            var visibleCount = (int)Mathf.Ceil(height / fixedItemHeight) + 3;
+            m_FirstVisibleItemIndex = (int)(m_ScrollValue / fixedItemHeight);
 
             // The items should be in the map, we swap the refresh and the displayed list
             (m_DisplayedList, m_RefreshList) = (m_RefreshList, m_DisplayedList);
@@ -805,15 +818,19 @@ namespace UnityEngine.UIElements.HierarchyV2
                 if (item != null)
                 {
                     m_RefreshList.RemoveFirst();
-                    item.Value.element.style.display = DisplayStyle.None;
                     m_FreeList.AddLast(item);
                 }
             }
 
-            AddElementsFromIndex(m_FirstVisibleItemIndex, visibleCount);
+            AddElementsFromIndex(m_FirstVisibleItemIndex, visibleCount, forceBindItem);
+
+            foreach (var item in m_FreeList)
+            {
+                item.element.style.display = DisplayStyle.None;
+            }
         }
 
-        void AddElementsFromIndex(int firstIndex, int itemCount)
+        void AddElementsFromIndex(int firstIndex, int itemCount, bool forceBindItem = false)
         {
             var lastIndex = firstIndex + itemCount;
 
@@ -843,14 +860,13 @@ namespace UnityEngine.UIElements.HierarchyV2
                     }
                 }
 
-                BindItem(itemWrapper, index);
+                if (forceBindItem || itemWrapper.index != index)
+                {
+                    BindItem(itemWrapper, index);
+                }
 
-                // Since we are re-using the same styles as ReusableCollectionItem, we need to overwrite the item's styles.
+                // Since we are hiding the reusable items instead of removing it, we need to make them visible again.
                 itemWrapper.element.style.display = DisplayStyle.Flex;
-                itemWrapper.element.style.position = Position.Absolute;
-                itemWrapper.element.style.top = 0;
-                itemWrapper.element.style.left = 0;
-                itemWrapper.element.style.right = 0;
 
                 m_DisplayedList.AddLast(itemWrapper.node);
             }
@@ -865,79 +881,44 @@ namespace UnityEngine.UIElements.HierarchyV2
 
         void UpdateContainerOffset()
         {
-            var firstItemHeight = averageItemHeight;
             var offset = m_ScrollView.containerOffset;
-
-            if (m_DisplayedList.Count > 0)
-            {
-                if (m_DisplayedList.First.Value.renderedHeight > 0)
-                {
-                    firstItemHeight = m_DisplayedList.First.Value.renderedHeight;
-                }
-            }
-
-            var offVertical = (float)(m_ScrollValue % averageItemHeight);
-            offVertical *= firstItemHeight / averageItemHeight;
+            var offVertical = (float)(m_ScrollValue % fixedItemHeight);
             offset.y = offVertical;
-            // The old ListView resets the x axis
-            offset.x = 0;
-
+            // If there's a scrollable space, we retain the old offset, otherwise we reset to 0.
+            offset.x = m_HorizontalScroller.highValue > 0 ? offset.x : 0;
             m_ScrollView.containerOffset = offset;
         }
 
-        void UpdateScrollingRangeAfterLayout()
+        internal void UpdateScrollingRangeAfterLayout()
         {
-            float maxWidth = 0;
-            if (layoutConfiguration is MultiColumnLayoutConfiguration columnLayout)
-            {
-                maxWidth = columnLayout.header.worldBoundingBox.width;
-            }
-            else
-            {
-                var verticalScrollerWidth = m_VerticalScroller.style.display == DisplayStyle.None ? 0 : m_VerticalScroller.worldBound.width;
-                foreach (var displayItem in m_DisplayedList)
-                {
-                    maxWidth = Mathf.Max(maxWidth, displayItem.element.worldBoundingBox.width - verticalScrollerWidth);
-                }
-            }
-
-            m_HorizontalScroller.SetEnabled(maxWidth > m_Container.worldBound.width);
-            m_HorizontalScroller.style.display = maxWidth > m_Container.rect.width ? DisplayStyle.Flex : DisplayStyle.None;
-            m_HorizontalScroller.lowValue = 0;
-            m_HorizontalScroller.highValue = maxWidth - m_Container.rect.width;
-            m_HorizontalScroller.scrollSize = k_DefaultScrollSize * m_Container.rect.width;
-
-            float horizontalFactor = maxWidth > UIRUtility.k_Epsilon ? m_Container.worldBound.width / maxWidth : 1f;
-
-            m_HorizontalScroller.Adjust(horizontalFactor);
+            UpdateHorizontalScrollRange();
 
             var item = m_DisplayedList.Last;
             if (item != null)
             {
                 var itemValue = item.Value;
                 var offset = m_ScrollView.containerOffset.y;
-                var bottom = itemValue.verticalOffset + itemValue.renderedHeight;
+                var bottom = itemValue.verticalOffset + fixedItemHeight;
                 var height = m_Container.resolvedStyle.height;
 
                 if (itemValue.isLastItem)
                 {
                     var firstItemCandidate = item;
                     var currentSpace = height;
-                    var currentTop = currentSpace - itemValue.renderedHeight;
+                    var currentTop = currentSpace - fixedItemHeight;
 
                     while (currentTop > 0 && firstItemCandidate.Previous != null)
                     {
                         firstItemCandidate = firstItemCandidate.Previous;
-                        currentTop -= firstItemCandidate.Value.renderedHeight;
+                        currentTop -= fixedItemHeight;
                     }
 
                     if (currentTop <= 0)
                     {
-                        //we get the ratio of the first visible item
-                        double ratio = -currentTop / firstItemCandidate.Value.renderedHeight;
+                        // We get the ratio of the first visible item
+                        var ratio = -currentTop / fixedItemHeight;
                         var firstID = firstItemCandidate.Value.index;
-
-                        double totalRange = (firstID + ratio) * averageItemHeight;
+                        var totalRange = (firstID + ratio) * fixedItemHeight;
                         SetScrollingParameters(Math.Min(m_ScrollValue, totalRange), totalRange);
                     }
                 }
@@ -948,7 +929,7 @@ namespace UnityEngine.UIElements.HierarchyV2
                     if (bottom + offset < (height - k_Buffer))
                     {
                         var emptySpace = height - (bottom - offset);
-                        var toAdd = Mathf.CeilToInt(emptySpace / averageItemHeight);
+                        var toAdd = Mathf.CeilToInt(emptySpace / fixedItemHeight);
                         toAdd = Math.Clamp(toAdd, 0, itemsSource.Count - itemValue.index - 1);
 
                         if (toAdd > 0)
@@ -959,13 +940,8 @@ namespace UnityEngine.UIElements.HierarchyV2
                     }
                 }
 
-                UpdateVisibleRange();
+                UpdateVerticalScrollRange();
             }
-        }
-
-        internal void ItemPositionUpdated(RecycledItem item)
-        {
-            UpdateScrollingRangeAfterLayout();
         }
 
         /// <summary>
@@ -975,7 +951,7 @@ namespace UnityEngine.UIElements.HierarchyV2
         /// <returns>The index of the item.</returns>
         public int GetIndexFromPosition(Vector2 position)
         {
-            var itemHeight = AlignmentUtils.RoundToPixelGrid(averageItemHeight, scaledPixelsPerPoint);
+            var itemHeight = AlignmentUtils.RoundToPixelGrid(fixedItemHeight, scaledPixelsPerPoint);
             var positionY = m_ScrollValue + position.y;
             return (int)(positionY / itemHeight);
         }
@@ -997,16 +973,17 @@ namespace UnityEngine.UIElements.HierarchyV2
 
             if (m_FirstVisibleItemIndex >= index)
             {
-                UpdateVerticalScrollValue(averageItemHeight * index);
+                UpdateVerticalScrollValue(fixedItemHeight * index);
                 return;
             }
 
-            var numberOfVisibleItems = (int)(m_Container.layout.height / averageItemHeight);
+            var containerHeight = m_Container.layoutSize.y;
+            var numberOfVisibleItems = (int)(containerHeight / fixedItemHeight);
             if (index < m_FirstVisibleItemIndex + numberOfVisibleItems)
                 return;
 
-            var visibleOffset = averageItemHeight - (m_Container.layout.height - numberOfVisibleItems * averageItemHeight);
-            var yScrollOffset = averageItemHeight * (index - numberOfVisibleItems) + visibleOffset;
+            var visibleOffset = fixedItemHeight - (containerHeight - numberOfVisibleItems * fixedItemHeight);
+            var yScrollOffset = fixedItemHeight * (index - numberOfVisibleItems) + visibleOffset;
             UpdateVerticalScrollValue(yScrollOffset);
         }
 
@@ -1071,12 +1048,7 @@ namespace UnityEngine.UIElements.HierarchyV2
             }
             else
             {
-                Vector2 scrollOffset = new();
-                // Temporary fix: Adjust the scrollable height as multi-columns have headers.
-                if (layoutConfiguration is MultiColumnLayoutConfiguration multiColumnLayoutConfiguration)
-                    scrollOffset = new Vector2(0, multiColumnLayoutConfiguration.headerContainer.rect.height);
-
-                var clickedIndex = GetIndexFromPosition((Vector2)evt.localPosition - scrollOffset);
+                var clickedIndex = GetIndexFromPosition(evt.localPosition);
                 if (selectionType == SelectionType.Multiple
                     && evt.button == (int)MouseButton.LeftMouse
                     && !evt.shiftKey
@@ -1143,12 +1115,7 @@ namespace UnityEngine.UIElements.HierarchyV2
 
         void DoSelect(Vector2 localPosition, bool actionKey, bool shiftKey)
         {
-            Vector2 scrollOffset = new();
-            // Temporary fix: Adjust the scrollable height as multi-columns have headers.
-            if (layoutConfiguration is MultiColumnLayoutConfiguration multiColumnLayoutConfiguration)
-                scrollOffset = new Vector2(0, multiColumnLayoutConfiguration.headerContainer.rect.height);
-
-            var clickedIndex = GetIndexFromPosition(localPosition - scrollOffset);
+            var clickedIndex = GetIndexFromPosition(localPosition);
             if (clickedIndex > itemsSource.Count - 1)
                 return;
 

@@ -2,8 +2,11 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using UnityEngine.Bindings;
+
 namespace UnityEditor.Scripting.Compilers
 {
+    [VisibleToOtherModules("UnityEditor.BurstModule")]
     /// Marks the type of a [[CompilerMessage]]
     internal enum CompilerMessageType
     {
@@ -16,6 +19,7 @@ namespace UnityEditor.Scripting.Compilers
         Information = 2
     }
 
+    [VisibleToOtherModules("UnityEditor.BurstModule")]
     /// This struct should be returned from GetCompilerMessages() on ScriptCompilerBase implementations
     internal struct CompilerMessage
     {
@@ -30,6 +34,7 @@ namespace UnityEditor.Scripting.Compilers
         /// The type of the message. Either Error or Warning
         public CompilerMessageType type;
 
+        [VisibleToOtherModules("UnityEditor.BurstModule")]
         //This field is dead and not used. The reason it's still here is that its used through [InternalsVibislbeTo] by the burst package (as of oktober2020), so we cannot yet remove this
         // ReSharper disable once NotAccessedField.Global
         internal string assemblyName;

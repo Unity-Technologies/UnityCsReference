@@ -48,5 +48,20 @@ namespace Unity.UIToolkit.Editor
             labelElement.AddToClassList(labelUssClassName);
             visualInput.AddToClassList(inputUssClassName);
         }
+
+        protected override BackgroundSizeStyleField CreateValueField()
+        {
+            return new BackgroundSizeStyleField();
+        }
+
+        protected override StyleBackgroundSize CreateStyleValue(BackgroundSize v)
+        {
+            return v;
+        }
+
+        internal override bool EqualsCurrentValue(StyleBackgroundSize v)
+        {
+            return value == v;
+        }
     }
 }

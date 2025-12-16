@@ -40,11 +40,8 @@ namespace UnityEditor.Search
     /// </summary>
     public static class SearchService
     {
-        // TODO: This MaxFetchTime should be revisited. First, 50ms is very long for one frame.
-        // Second, this is PER PROVIDER! Which means if you have 3 providers running, each can take up to 50ms
-        // for a total of 150ms per frame!
-        internal const int k_MaxFetchTimeMs = 50;
-        private const int k_MaxSessionTimeMs = SearchSession.k_InfiniteSession;
+        // Default max fetch time for an auto updated search session. This is a max per frame update, no matter how many providers there are in the session.
+        internal static readonly TimeSpan k_MaxFetchTime = TimeSpan.FromMilliseconds(16);
         static SearchProvider s_SearchServiceProvider;
 
         /// <summary>
@@ -318,132 +315,118 @@ namespace UnityEditor.Search
         /// <param name="context">The current search context</param>
         /// <param name="options">Options defining how the query will be performed</param>
         /// <returns>A list of search items matching the search query.</returns>
+        [Obsolete("GetItems is deprecated, please use Request instead. GetItems will be removed in a future version.")]
         public static List<SearchItem> GetItems(SearchContext context, SearchFlags options = SearchFlags.Default)
         {
             return GetItems(context, GetNewSessionGuid(), options);
         }
 
-        static List<SearchItem> GetItems(SearchContext context, Hash128 sessionGuid, SearchFlags options = SearchFlags.Default)
+        static List<SearchItem> GetItems(SearchContext context, Hash128 sessionGuid, SearchFlags options)
         {
-            // Stop all search sessions every time there is a new search.
-            context.sessions.StopAllAsyncSearchSessions();
+            PrepareSearchSession(context, context.session, sessionGuid, options, new EditorApplicationUpdateMechanism<SearchItem>(k_MaxFetchTime));
+            return FetchSessionFirstBatch(context.session, context);
+        }
+
+        static void PrepareSearchSession(SearchContext context, SearchSession session, Hash128 sessionGuid, SearchFlags options, IAsyncIEnumerableHandlerUpdateMechanism<SearchItem> searchSessionUpdateMechanism)
+        {
+            // Stop the search session every time we prepare a new search.
+            session.Stop();
             context.searchFinishTime = context.searchStartTime = DateTime.UtcNow.Ticks;
             context.sessionEnded -= OnSearchEnded;
             context.sessionEnded += OnSearchEnded;
 
-            context.sessions.StartSessions(context, sessionGuid);
-
-            if (options.HasAny(SearchFlags.WantsMore))
-                context.wantsMore = true;
+            session.Reset(new SearchSessionContext(context, sessionGuid), searchSessionUpdateMechanism);
 
             // Transfer all options from options to context.options
             context.options |= options;
 
-            int fetchProviderCount = 0;
-            var allItems = new List<SearchItem>(3);
+            var allItems = new List<SearchItem>();
 
             if (TryParseExpression(context, out var expression))
             {
                 var iterator = EvaluateExpression(expression, context);
-                PrepareProviderSession(s_SearchServiceProvider, iterator, context);
-                HandleItemsIteratorSession(allItems, s_SearchServiceProvider, context);
-                fetchProviderCount++;
+                PrepareProviderSession(session, s_SearchServiceProvider, iterator);
             }
             else
             {
-                // We have to start all providers first otherwise we can get in a situation where
-                // each provider triggers a session ended because they all finish in the first batch,
-                // leading to SessionStarted-SessionEnded-SessionStarted-SessionEnded...
-                fetchProviderCount = PrepareProviderSessions(context.providers, context, allItems);
-                foreach (var provider in context.providers)
-                {
-                    try
-                    {
-                        var watch = new System.Diagnostics.Stopwatch();
-                        watch.Start();
-                        HandleItemsIteratorSession(allItems, provider, context);
-                        provider.RecordFetchTime(watch.Elapsed.TotalMilliseconds);
-                    }
-                    catch (Exception ex)
-                    {
-                        Debug.LogException(new Exception($"Failed to fetch {provider.name} items.", ex));
-                        var session = context.sessions.GetProviderSession(provider);
-                        session.Stop();
-                    }
-                }
+                PrepareProviderSessions(context.providers, session, context, allItems);
             }
 
-            if (fetchProviderCount == 0)
+            // If we have some items already, it means that a provider populated the items argument, and either:
+            // 1- returned null from fetchItems
+            // 2- returned the same items argument from fetchItems
+            // In either case, they did not return an iterator, so we have to handle the items as an additional enumerator in the session
+            if (allItems.Count > 0)
             {
-                context.sessions.CallSessionStarted(context);
-                OnSearchEnded(context);
-                context.sessions.StopAllAsyncSearchSessions();
-                context.sessions.CallSessionEnded(context);
+                session.AddProviderEnumerator(new SearchProviderFetchEnumerator(s_SearchServiceProvider, allItems));
             }
-
-            if (!context.options.HasAny(SearchFlags.Sorted))
-                return allItems;
-
-            allItems.Sort(SortItemComparer);
-            return allItems.GroupBy(i => i.id).Select(i => i.First()).ToList();
         }
 
-        static int PrepareProviderSessions(IEnumerable<SearchProvider> providers, SearchContext context, List<SearchItem> allItems)
+        static List<SearchItem> FetchSessionFirstBatch(SearchSession session, SearchContext context)
         {
-            var fetchProviderCount = 0;
+            var firstSessionBatch = new List<SearchItem>();
+
+            // Start the session since we are about to fetch items.
+            session.Start();
+            var enumerationEnded = false;
+            var searchItemEnumerator = session.ItemsEnumerator;
+            if (searchItemEnumerator != null && context.options.HasAny(SearchFlags.Synchronous))
+            {
+                while (searchItemEnumerator.MoveNext())
+                {
+                    if (searchItemEnumerator.Current != null)
+                        firstSessionBatch.Add(searchItemEnumerator.Current);
+                }
+
+                enumerationEnded = true;
+            }
+            else
+            {
+                enumerationEnded = !session.FetchSome(firstSessionBatch, k_MaxFetchTime);
+            }
+
+            if (firstSessionBatch.Count > 0)
+                session.SendItems(firstSessionBatch);
+
+            // If the enumeration ended, stop the session.
+            if (enumerationEnded)
+            {
+                session.Stop();
+            }
+
+            return firstSessionBatch;
+        }
+
+        static void PrepareProviderSessions(IEnumerable<SearchProvider> providers, SearchSession session, SearchContext context, List<SearchItem> allItems)
+        {
             foreach (var provider in providers)
             {
                 try
                 {
+                    var watch = new System.Diagnostics.Stopwatch();
+                    provider.ResetFetchTime();
+                    watch.Start();
                     var iterator = provider.fetchItems(context, allItems, provider);
+                    watch.Stop();
+                    provider.IncrementFetchTime(watch.Elapsed);
                     if (iterator == allItems)
                         iterator = null;
 
-                    PrepareProviderSession(provider, iterator, context);
-                    ++fetchProviderCount;
+                    // fetchItems could return null if allItems was populated directly. In this case, we
+                    // don't add the iterator to the session, because we will handle allItems directly afterwards.
+                    if (iterator != null)
+                        PrepareProviderSession(session, provider, iterator);
                 }
                 catch (Exception ex)
                 {
-                    Debug.LogException(new Exception($"Failed to get fetch {provider.name} provider items.", ex));
-                    var session = context.sessions.GetProviderSession(provider);
-                    session.Stop();
+                    Debug.LogException(new Exception($"Failed to get {provider.name} provider fetchItems enumerator.", ex));
                 }
             }
-            return fetchProviderCount;
         }
 
-        static void PrepareProviderSession(SearchProvider provider, object iterator, SearchContext context)
+        static void PrepareProviderSession(SearchSession session, SearchProvider provider, object iterator)
         {
-            var session = context.sessions.GetProviderSession(provider);
-            session.Reset(context.sessions.currentSessionContext, iterator, k_MaxFetchTimeMs, k_MaxSessionTimeMs);
-            session.Start();
-        }
-
-        static void HandleItemsIteratorSession(List<SearchItem> allItems, SearchProvider provider, SearchContext context)
-        {
-            var session = context.sessions.GetProviderSession(provider);
-            if (session.itemsEnumerator != null && context.options.HasAny(SearchFlags.Synchronous))
-            {
-                var stackedEnumerator = session.itemsEnumerator;
-                while (stackedEnumerator.MoveNext())
-                {
-                    if (stackedEnumerator.Current != null)
-                        allItems.Add(stackedEnumerator.Current);
-                }
-
-                session.Stop();
-            }
-            else
-            {
-                var sessionEnded = !session.FetchSome(allItems, k_MaxFetchTimeMs);
-                if (context.options.HasAny(SearchFlags.FirstBatchAsync) && allItems.Count > 0)
-                {
-                    session.SendItems(allItems);
-                    allItems.Clear();
-                }
-                if (sessionEnded)
-                    session.Stop();
-            }
+            session.AddProviderEnumerator(new SearchProviderFetchEnumerator(provider, iterator));
         }
 
         /// <summary>
@@ -454,27 +437,33 @@ namespace UnityEditor.Search
         /// <returns>Asynchronous list of search items.</returns>
         public static ISearchList Request(SearchContext context, SearchFlags options = SearchFlags.None)
         {
+            return Request(context, options, false);
+        }
+
+        static ISearchList Request(SearchContext context, SearchFlags options, bool searchListOwnsContext)
+        {
             context.options |= options;
             ISearchList results = null;
+            var sessionGuid = GetNewSessionGuid();
+            var updateMechanism = new EditorApplicationUpdateMechanism<SearchItem>(k_MaxFetchTime);
             if (!InternalEditorUtility.CurrentThreadIsMainThread())
             {
-                results = new ConcurrentSearchList(context);
+                results = new ConcurrentSearchList(context, searchListOwnsContext);
 
                 Dispatcher.Enqueue(() =>
                 {
-                    results.AddItems(GetItems(context, context.options));
+                    PrepareSearchSession(context, context.session, sessionGuid, options, updateMechanism);
+                    FetchSessionFirstBatch(context.session, context);
                     (results as ConcurrentSearchList)?.GetItemsDone();
                 });
 
                 return results;
             }
 
-            if (context.options.HasAny(SearchFlags.Sorted))
-                results = new SortedSearchList(context, SearchListSortingStrategy.OnAddItems);
-            else
-                results = new AsyncSearchList(context);
+            results = new AsyncSearchList(context, searchListOwnsContext);
 
-            results.AddItems(GetItems(context, context.options));
+            PrepareSearchSession(context, context.session, sessionGuid, options, updateMechanism);
+            FetchSessionFirstBatch(context.session, context);
             return results;
         }
 
@@ -487,7 +476,8 @@ namespace UnityEditor.Search
         {
             var activeProviders = GetActiveProviders();
             var context = CreateContext(activeProviders, searchText, options);
-            return Request(context, context.options);
+            // Pass true to "searchListOwnsContext" to make sure the context is disposed with the searchList.
+            return Request(context, context.options, true);
         }
 
         /// <summary>
@@ -531,7 +521,7 @@ namespace UnityEditor.Search
             Request(context,
                 (c, items) => results.AddRange(items),
                 (c) => onSearchCompleted?.Invoke(c, results),
-                context.options);
+                options);
         }
 
         /// <summary>
@@ -543,20 +533,6 @@ namespace UnityEditor.Search
             Action<SearchContext> onSearchCompleted,
             SearchFlags options = SearchFlags.None)
         {
-            // TODO: Clean up this method. Those callbacks will allocate new objects each time this is called.
-            // We rely on some requestId to avoid issues with previous sessions. This could be improved.
-
-            // If we are in a thread, defer the execution to the main thread to avoid
-            // potential synchronization issues with the code below.
-            if (!InternalEditorUtility.CurrentThreadIsMainThread())
-            {
-                Dispatcher.Enqueue(() =>
-                {
-                    Request(context, onIncomingItems, onSearchCompleted, options);
-                });
-                return;
-            }
-
             var requestId = GetNewSessionGuid();
             context.options |= options;
             if (context.options.HasAny(SearchFlags.Debug))
@@ -578,7 +554,7 @@ namespace UnityEditor.Search
 
             void OnSessionEnded(SearchContext c)
             {
-                if (c.sessions.currentSessionContext.guid != requestId)
+                if (c.session.guid != requestId)
                     return;
                 if (context.options.HasAny(SearchFlags.Debug))
                     Debug.Log($"{requestId} Request session ended {context.searchText}");
@@ -591,22 +567,24 @@ namespace UnityEditor.Search
                 onSearchCompleted?.Invoke(c);
             }
 
+            // Prepare search session
+            PrepareSearchSession(context, context.session, requestId, context.options, new EditorApplicationUpdateMechanism<SearchItem>(k_MaxFetchTime));
+
+            // Register to async events
             context.asyncItemReceived += ReceiveItems;
             context.sessionStarted += OnSessionStarted;
-            var firstResults = GetItems(context, requestId, context.options);
-            if (firstResults.Count > 0)
-                ReceiveItems(context, firstResults);
+            context.sessionEnded += OnSessionEnded;
 
-            // When search is completed in the first batch, sessionEnded is called before
-            // we get here. To avoid OnSessionEnded being called before ReceiveItems,
-            // we need to make sure that OnSessionEnded is registered only after the call to GetItems.
-            // However, we can only do this if the call to GetItems and the sessions are done in the main thread.
-            if (context.searchInProgress)
-                context.sessionEnded += OnSessionEnded;
-            else
-            {
-                OnSessionEnded(context);
-            }
+            FetchSessionFirstBatch(context.session, context);
+        }
+
+        internal static IEnumerator<SearchItem> RequestEnumerator(SearchContext context)
+        {
+            var requestId = GetNewSessionGuid();
+            PrepareSearchSession(context, context.session, requestId, context.options, new ManualUpdateMechanism<SearchItem>());
+
+            // The session will be started and stopped by the enumerator.
+            return new SearchSessionEnumerator(context.session);
         }
 
         static Hash128 GetNewSessionGuid()
@@ -617,17 +595,6 @@ namespace UnityEditor.Search
         private static void OnSearchEnded(SearchContext context)
         {
             context.searchFinishTime = DateTime.UtcNow.Ticks;
-        }
-
-        private static int SortItemComparer(SearchItem item1, SearchItem item2)
-        {
-            var po = item1.provider.priority.CompareTo(item2.provider.priority);
-            if (po != 0)
-                return po;
-            po = item1.score.CompareTo(item2.score);
-            if (po != 0)
-                return po;
-            return string.CompareOrdinal(item1.id, item2.id);
         }
 
         private static void RefreshProviders()

@@ -4,7 +4,6 @@
 
 using System.Collections.Generic;
 using Unity.GraphToolkit.CSO;
-using UnityEngine;
 using UnityEngine.Pool;
 
 namespace Unity.GraphToolkit.Editor
@@ -75,7 +74,7 @@ namespace Unity.GraphToolkit.Editor
 
                     foreach (var element in elementsToCullDictionary)
                     {
-                        if (revealedElements.Any(r => r.Key.Equals(element.Key)))
+                        if (revealedElements.HasAny(r => r.Key.Equals(element.Key)))
                             elementsOnBothList.Add(element);
                     }
 
@@ -87,7 +86,7 @@ namespace Unity.GraphToolkit.Editor
                 elementsToCull = elementsToCullDictionary.ToList();
                 if (elementsOnBothList.Count > 0)
                 {
-                    elementsToCull.RemoveAll(t => elementsOnBothList.Any(u => u.Key.Equals(t.Key)));
+                    elementsToCull.RemoveAll(t => elementsOnBothList.HasAny(u => u.Key.Equals(t.Key)));
                 }
 
 #pragma warning disable 0162

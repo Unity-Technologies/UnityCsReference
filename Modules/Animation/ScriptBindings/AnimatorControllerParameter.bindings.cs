@@ -2,21 +2,16 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System;
-using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using System.Collections;
 using UnityEngine.Bindings;
 using UnityEngine.Scripting;
 
 namespace UnityEngine
 {
-    [NativeHeader("Modules/Animation/ScriptBindings/AnimatorControllerParameter.bindings.h")]
     [NativeHeader("Modules/Animation/AnimatorControllerParameter.h")]
     [NativeAsStruct]
-    [StructLayout(LayoutKind.Sequential)]
     [UsedByNativeCode]
-    [NativeType(CodegenOptions.Custom, "MonoAnimatorControllerParameter")]
+    [StructLayout(LayoutKind.Sequential)]
     public class AnimatorControllerParameter
     {
         public string                             name

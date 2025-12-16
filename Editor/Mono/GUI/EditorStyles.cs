@@ -5,6 +5,7 @@
 using UnityEditor.Experimental;
 using UnityEditor.StyleSheets;
 using UnityEngine;
+using UnityEngine.Bindings;
 using UnityEngine.Internal;
 
 // See Style Guide in wiki for more information on editor styles.
@@ -368,10 +369,20 @@ namespace UnityEditor
         internal static GUIStyle assetLabelIcon { get { return s_Current.m_AssetLabelIcon; } }
         private GUIStyle m_AssetLabelIcon;
 
-        internal static GUIStyle searchField { get { return s_Current.m_SearchField; } }
+
+        internal static GUIStyle searchField
+        {
+            [VisibleToOtherModules("UnityEditor.BurstModule")]
+            get { return s_Current.m_SearchField; }
+        }
         private GUIStyle m_SearchField;
 
-        internal static GUIStyle searchFieldCancelButton { get { return s_Current.m_SearchFieldCancelButton; } }
+        [VisibleToOtherModules("UnityEditor.BurstModule")]
+        internal static GUIStyle searchFieldCancelButton
+        {
+            [VisibleToOtherModules("UnityEditor.BurstModule")]
+            get { return s_Current.m_SearchFieldCancelButton; }
+        }
         private GUIStyle m_SearchFieldCancelButton;
 
         internal static GUIStyle searchFieldCancelButtonEmpty { get { return s_Current.m_SearchFieldCancelButtonEmpty; } }

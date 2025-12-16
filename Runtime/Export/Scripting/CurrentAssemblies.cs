@@ -6,6 +6,8 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
+using System.Reflection.Metadata;
+using System.Reflection.PortableExecutable;
 using Unity.Scripting.LifecycleManagement;
 using UnityEngine.Bindings;
 
@@ -16,52 +18,8 @@ namespace UnityEngine.Assemblies;
 /// Provides utility methods to enumerate assemblies loaded and managed by Unity.
 /// </summary>
 [VisibleToOtherModules]
-public static class CurrentAssemblies
+public static partial class CurrentAssemblies
 {
-    private struct AssemblyLoadContextStateHelper
-    {
-        public MethodInfo GetAssemblyLoadContextMethod;
-        public FieldInfo AssemblyLoadContextStateField;
-    }
-
-    [NoAutoStaticsCleanup] //k_AssemblyLoadContextStateHelper can be kept alive accross code reloads
-    private static readonly AssemblyLoadContextStateHelper k_AssemblyLoadContextStateHelper = GetAssemblyLoadContextStateHelperImpl();
-    private static AssemblyLoadContextStateHelper GetAssemblyLoadContextStateHelperImpl()
-    {
-        var method = Type.GetType("System.Runtime.Loader.AssemblyLoadContext")?.GetMethod("GetLoadContext", BindingFlags.Static | BindingFlags.Public);
-        if (method == null)
-            return default;
-
-        var field = method.DeclaringType?.GetField("_state", BindingFlags.Instance | BindingFlags.NonPublic);
-        var result = new AssemblyLoadContextStateHelper
-        {
-            GetAssemblyLoadContextMethod = method,
-            AssemblyLoadContextStateField = field
-        };
-        return result;
-    }
-
-    /// <summary>
-    /// Validate whether the assembly is loaded from still live AssemblyLoadContext.
-    /// On NETCore when AssemblyLoadContexts are being used it is possible that some assemblies are in the "being unloaded" state.
-    /// That causes exceptions in code which uses such assemblies and that code should be wrapped in try/catch.
-    /// Alternatively we can filter out assemblies which are not in the "live" state and return only valid for iteration assemblies.
-    /// This allows to have a filtering boilerplate in a common utility method which can be used when code is used within Unity Editor
-    /// (and thus relying on AssemblyLoader infrastructure) and out-of-process (e.g. ILPP).
-    /// Since we still use Mono (ENABLE_CORECLR_FIXME) which requires netstandard we can't use AssemblyLoadContext API directly and use reflection.
-    /// </summary>
-    /// <param name="assembly">Assembly instance to check a liveness state</param>
-    /// <returns>True is assembly belongs to live context, false otherwise</returns>
-    private static bool IsFromLiveAssemblyLoadContext(Assembly assembly)
-    {
-        var assemblyLoadContext = k_AssemblyLoadContextStateHelper.GetAssemblyLoadContextMethod.Invoke(null, new object[] { assembly });
-        if (assemblyLoadContext == null)
-            return true;
-
-        var state = k_AssemblyLoadContextStateHelper.AssemblyLoadContextStateField?.GetValue(assemblyLoadContext);
-        var result = 0 == Convert.ToInt32(state);
-        return result;
-    }
 
     /// <summary>
     /// Gets the assemblies that have been loaded by Unity into the current execution context.
@@ -81,19 +39,7 @@ public static class CurrentAssemblies
 
         // Fallback to AppDomain.CurrentDomain.GetAssemblies() if we are not running in ALC mode.
         var allAssemblies = AppDomain.CurrentDomain.GetAssemblies();
-        if (k_AssemblyLoadContextStateHelper.GetAssemblyLoadContextMethod == null)
-            return allAssemblies;
-
-        // But filter to only return assemblies that are loaded from still live ALC.
-        // This is done to be able to use the GetLoadedAssemblies method in out-of-process code such as ILPP.
-        var liveAssemblies = new List<Assembly>();
-        foreach (var assembly in allAssemblies) // and we don't use LINQ
-        {
-            if (IsFromLiveAssemblyLoadContext(assembly))
-                liveAssemblies.Add(assembly);
-        }
-
-        return liveAssemblies;
+        return allAssemblies;
     }
 
     /// <summary>
@@ -102,7 +48,7 @@ public static class CurrentAssemblies
     /// <param name="assemblyPath">Path to assembly</param>
     /// <returns>Loaded assembly</returns>
     [System.Diagnostics.CodeAnalysis.SuppressMessage("CodeReloadSafety", "UAC0020:Assembly.Load usage", Justification = "il2cpp fallback")]
-    internal static Assembly LoadFromPath(string assemblyPath)
+    public static Assembly LoadFromPath(string assemblyPath)
     {
         if (!Path.IsPathFullyQualified(assemblyPath))
         {
@@ -118,7 +64,7 @@ public static class CurrentAssemblies
     /// </summary>
     /// <param name="rawAssembly">Binary assembly data</param>
     /// <returns>Loaded assembly</returns>
-    internal static Assembly LoadFromBytes(byte[] rawAssembly)
+    public static Assembly LoadFromBytes(byte[] rawAssembly)
     {
         return LoadFromBytes(rawAssembly, null);
     }
@@ -130,7 +76,7 @@ public static class CurrentAssemblies
     /// <param name="rawSymbolStore">Binary assembly symbols data</param>
     /// <returns>Loaded assembly</returns>
     [System.Diagnostics.CodeAnalysis.SuppressMessage("CodeReloadSafety", "UAC0020:Assembly.Load usage", Justification = "il2cpp fallback")]
-    internal static Assembly LoadFromBytes(byte[] rawAssembly, byte[] rawSymbolStore)
+    public static Assembly LoadFromBytes(byte[] rawAssembly, byte[] rawSymbolStore)
     {
         if (rawAssembly == null)
             throw new ArgumentNullException(nameof(rawAssembly));
@@ -142,6 +88,48 @@ public static class CurrentAssemblies
             throw new BadImageFormatException("Empty raw assembly symbols byte array");
 
 
+        var assemblyName = GetAssemblyNameFromBytes(rawAssembly);
+
+        if (TryGetLoadedAssembly(assemblyName, out var loadedAssembly))
+        {
+            return loadedAssembly;
+        }
+
         return Assembly.Load(rawAssembly, rawSymbolStore);
+    }
+
+    // This code is a copy of AssemblyMetaData.GetAssemblyNameFromStream,
+    // because we don't (yet, at least) have access to that from here.
+    private static AssemblyName GetAssemblyNameFromBytes(byte[] rawAssemblyBytes)
+    {
+        try
+        {
+            using var rawAssemblyStream = new MemoryStream(rawAssemblyBytes);
+            using var peReader = new PEReader(rawAssemblyStream);
+
+            var metadataReader = peReader.GetMetadataReader(MetadataReaderOptions.None);
+
+            return metadataReader.GetAssemblyDefinition().GetAssemblyName();
+        }
+        catch (InvalidOperationException ex)
+        {
+            throw new BadImageFormatException(ex.Message, ex);
+        }
+    }
+
+    private static bool TryGetLoadedAssembly(AssemblyName assemblyName, out Assembly assembly)
+    {
+        var loadedAssemblies = GetLoadedAssemblies();
+        foreach (var loadedAssembly in loadedAssemblies)
+        {
+            if (loadedAssembly.GetName().Name == assemblyName.Name)
+            {
+                assembly = loadedAssembly;
+                return true;
+            }
+        }
+
+        assembly = null;
+        return false;
     }
 }

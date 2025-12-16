@@ -62,7 +62,7 @@ namespace UnityEngine.UIElements
 
         protected TextElement m_TextElement;
 
-        public Vector2 ComputeTextSize(string textToMeasure, float width, float height, float? fontsize = null)
+        public Vector2 ComputeTextSize(string textToMeasure, float width, VisualElement.MeasureMode widthMode, float height, VisualElement.MeasureMode heightMode, float? fontsize = null)
         {
             if (!TextUtilities.IsAdvancedTextEnabledForElement(m_TextElement))
             {
@@ -73,7 +73,7 @@ namespace UnityEngine.UIElements
             width = Mathf.Floor(width * scale);
             height = Mathf.Floor(height * scale);
 
-            ComputeNativeTextSize(textToMeasure, width, height, fontsize);
+            ComputeNativeTextSize(textToMeasure, width, widthMode, height, heightMode, fontsize);
 
             return preferredSize;
         }
@@ -166,7 +166,7 @@ namespace UnityEngine.UIElements
 
         TextOverflowMode GetTextOverflowMode()
         {
-            var style = m_TextElement.computedStyle;
+            ref var style = ref m_TextElement.computedStyle;
             if (style.textOverflow == TextOverflow.Clip)
                 return TextOverflowMode.Masking;
 
@@ -185,7 +185,7 @@ namespace UnityEngine.UIElements
 
         internal virtual bool ConvertUssToTextGenerationSettings(bool populateScreenRect, float? fontsize = null)
         {
-            var style = m_TextElement.computedStyle;
+            ref var style = ref m_TextElement.computedStyle;
             var tgs = settings;
 
             if (style.unityTextAutoSize != TextAutoSize.None())
@@ -293,7 +293,7 @@ namespace UnityEngine.UIElements
             float horizontalPadding;
             float verticalPadding;
 
-            var style = m_TextElement.computedStyle;
+            ref var style = ref m_TextElement.computedStyle;
 
             // Grow half inside and half outside
             float outlineThickness = style.unityTextOutlineWidth / 2.0f;

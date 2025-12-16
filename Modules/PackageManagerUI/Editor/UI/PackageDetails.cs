@@ -83,7 +83,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             });
             PackageManagerExtensions.extensionsGUICreated = true;
 
-            if (PackageManagerExtensions.Extensions.Any())
+            if (PackageManagerExtensions.Extensions.Count > 0)
                 Refresh(m_PageManager.activePage.GetSelection());
         }
 
@@ -202,7 +202,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             if (PackageManagerExtensions.extensionsGUICreated)
             {
                 var version = package?.versions.primary;
-                var packageInfo = version != null ? m_UpmCache.GetBestMatchPackageInfo(version.name, version.isInstalled, version.versionString) : null;
+                var packageInfo = version != null ? m_UpmCache.GetBestMatchPackageInfo(version.name, version.package.product?.id ?? 0, version.isInstalled, version.versionString) : null;
                 PackageManagerExtensions.ExtensionCallback(() =>
                 {
                     foreach (var extension in PackageManagerExtensions.Extensions)

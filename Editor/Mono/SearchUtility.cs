@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using Unity.Collections.LowLevel.Unsafe;
 using UnityEditor.AssetImporters;
 using UnityEngine;
 using Object = UnityEngine.Object;
@@ -21,7 +22,7 @@ namespace UnityEditor
         // Supports the following syntax:
         // 't:type' syntax (e.g 't:Texture2D' will show Texture2D objects)
         // 'l:assetlabel' syntax (e.g 'l:architecture' will show assets with AssetLabel 'architecture')
-        // 'ref[:id]:path' syntax (e.g 'ref:1234' will show objects that references the object with instanceID 1234)
+        // 'ref[:id]:path' syntax (e.g 'ref:1234' will show objects that references the object with entityId 1234)
         // 'v:versionState' syntax (e.g 'v:modified' will show objects that are modified locally)
         // 's:softLockState' syntax (e.g 's:inprogress' will show objects that are modified by anyone (except you))
         // 'a:area' syntax (e.g 'a:all' will s search in all assets, 'a:assets' will s search in assets folder only and 'a:packages' will s search in packages folder only)
@@ -149,7 +150,7 @@ namespace UnityEditor
                 parsed = true;
             }
 
-            // Support: 'ref[:id]:path' syntax (e.g 'ref:1234' will show objects that references the object with instanceID 1234)
+            // Support: 'ref[:id]:path' syntax (e.g 'ref:1234' will show objects that references the object with entityId 1234)
             if (HasFilter(searchString, "ref"))
             {
                 EntityId entityId = EntityId.None;
@@ -160,9 +161,9 @@ namespace UnityEditor
                     // Instead of resolving a path passed-in pathname to an instance-id, use a supplied one.
                     // The pathname is effectively just a UI hint of whose references we're filtering out.
                     string refString = searchString.Substring(firstColon + 1, secondColon - firstColon - 1);
-                    ulong id;
-                    if (System.UInt64.TryParse(refString, out id))
-                        entityId = (int)id;
+                    Debug.Assert(UnsafeUtility.SizeOf<EntityId>() == UnsafeUtility.SizeOf<int>(), "EntityId size is not equal to int size update. Chances are this needs to be updated when changing EntityId.ToString");
+                    if (System.UInt64.TryParse(refString, out var id))
+                        entityId = EntityId.From(id);;
                     //else
                     //  Debug.Log ("Not valid refString to case to Integer " + refString); // outcomment for debugging
                 }
@@ -194,7 +195,7 @@ namespace UnityEditor
                     //  Debug.Log ("Not valid assetPath " + assetPath); // outcomment for debugging
                 }
 
-                filter.referencingInstanceIDs = new int[] { entityId };
+                filter.referencingEntityIds = new[] { entityId };
                 parsed = true;
             }
 

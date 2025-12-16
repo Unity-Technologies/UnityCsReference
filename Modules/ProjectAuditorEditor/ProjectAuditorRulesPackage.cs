@@ -15,6 +15,11 @@ namespace Unity.ProjectAuditor.Editor
 
         static ProjectAuditorRulesPackage()
         {
+            Initialize();
+        }
+
+        public static void Initialize()
+        {
             var paths = AssetDatabase.FindAssets("t:asmdef", new string[] { "Packages" })
                 .Select(AssetDatabase.GUIDToAssetPath);
             var asmDefPath = paths.FirstOrDefault(path => path.EndsWith("Unity.ProjectAuditor.Editor.asmdef"));
@@ -27,24 +32,34 @@ namespace Unity.ProjectAuditor.Editor
             IsInstalled = (packageInfo != null);
             if (IsInstalled)
             {
-                IsLatest = packageInfo.versions.latest == packageInfo.version;
+                LatestVersion = packageInfo.versions.latest;
+                IsLatest = LatestVersion == packageInfo.version;
                 IsLocal = packageInfo.source == PackageSource.Local;
                 Version = packageInfo.version;
                 var splitVersion = packageInfo.version.Split('.');
                 VersionShort = splitVersion[0] + '.' + splitVersion[1];
             }
+            else
+            {
+                IsLatest = false;
+                IsLocal = false;
+                Version = string.Empty;
+                LatestVersion = string.Empty;
+                VersionShort = string.Empty;
+            }
         }
 
-        public static bool IsInstalled { get; }
-        public static bool IsLatest { get; }
-        public static bool IsLocal { get; }
+        public static bool IsInstalled { get; private set; }
+        public static bool IsLatest { get; private set; }
+        public static bool IsLocal { get; private set; }
 
         public const string Name = "com.unity.project-auditor-rules";
 
-        public static string Path { get; }
+        public static string Path { get; private set; }
 
-        public static string Version { get; }
+        public static string Version { get; private set; }
+        public static string LatestVersion { get; private set; }
 
-        public static string VersionShort { get; }
+        public static string VersionShort { get; private set; }
     }
 }

@@ -5,6 +5,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Bindings;
+using System.Runtime.InteropServices;
 
 namespace UnityEditor
 {
@@ -16,7 +17,7 @@ namespace UnityEditor
         public extern void SetDefaultReferences(string[] name, Object[] target);
 
         [FreeFunction("MonoImporterBindings::GetDefaultReferencesInternal")]
-        internal static extern void GetDefaultReferencesInternal([NotNull] MonoScript script, List<string> names, List<Object> targets);
+        internal static extern void GetDefaultReferencesInternal([NotNull] MonoScript script, [Out] List<string> names, [Out] List<Object> targets);
 
         [FreeFunction("MonoImporterBindings::GetAllRuntimeMonoScripts")]
         public static extern MonoScript[] GetAllRuntimeMonoScripts();

@@ -10,12 +10,18 @@ using UnityEngine;
 
 namespace UnityEditor.Build.Content
 {
+    ///<summary>Caching object for the Scriptable Build Pipeline.</summary>
+    ///<remarks>This class helps improve performance when calling the <see cref="ContentBuildInterface.CalculateBuildUsageTags" /> api multiple times.
+    ///
+    ///Note: this class and its members exist to provide low-level support for the **Scriptable Build Pipeline** package. This is intended for internal use only; use the &lt;a href="https://docs.unity3d.com/Packages/com.unity.scriptablebuildpipeline@latest/index.html"&gt;Scriptable Build Pipeline package&lt;/a&gt; to implement a fully featured build pipeline. You can install this via the [Package Manager window](/upm-ui.md).</remarks>
     [UsedByNativeCode]
     [NativeHeader("Modules/ContentBuild/Editor/BuildUsage/BuildUsageCache.h")]
     public class BuildUsageCache : IDisposable
     {
         private IntPtr m_Ptr;
 
+        ///<summary>Default contructor.</summary>
+        ///<remarks>Internal use only. See <see cref="BuildUsageCache" />.</remarks>
         public BuildUsageCache()
         {
             m_Ptr = Internal_Create();
@@ -26,6 +32,8 @@ namespace UnityEditor.Build.Content
             Dispose(false);
         }
 
+        ///<summary>Dispose the BuildUsageCache destroying all internal state.</summary>
+        ///<remarks>Internal use only. See <see cref="BuildUsageCache" />.</remarks>
         public void Dispose()
         {
             Dispose(true);

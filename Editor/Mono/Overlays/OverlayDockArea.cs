@@ -20,8 +20,9 @@ namespace UnityEditor.Overlays
         internal const string leftToolbarDropZone = "DropZone-LeftToolbar";
         internal const string rightToolbarDropZone = "DropZone-RightToolbar";
 
-        const string leftDynamicPanelDropZone = "DropZone-LeftDynamicPanel";
-        const string rightDynamicPanelDropZone = "DropZone-RightDynamicPanel";
+        // Used in tests.
+        internal const string leftDynamicPanelDropZone = "DropZone-LeftDynamicPanel";
+        internal const string rightDynamicPanelDropZone = "DropZone-RightDynamicPanel";
 
         // Used in tests.
         internal const string topLeftColumnDropZone = "DropZone-TopLeftColumn";
@@ -42,43 +43,67 @@ namespace UnityEditor.Overlays
         readonly OverlayContainerDropZone m_TopRightAnchored;
         readonly OverlayContainerDropZone m_BottomRightAnchored;
 
-        readonly VisualElement m_VerticalToolbarContainer;
-        readonly VisualElement m_HorizontalToolbarContainer;
-        readonly VisualElement m_AnchoredContainer;
-        readonly VisualElement m_DynamicPanelContainer;
+        readonly VisualElement m_DockAreasContainer;
+        readonly VisualElement m_SceneViewContainer;
+        readonly VisualElement m_LeftAnchoredContainer;
+        readonly VisualElement m_RightAnchoredContainer;
 
-        public DefaultModeDockArea(OverlayCanvas canvas, VisualElement horizontalParent, VisualElement verticalParent, VisualElement anchoredParent)
+
+        public DefaultModeDockArea(OverlayCanvas canvas, VisualElement root)
         {
+            // Set up main container.
             this.StretchToParentSize();
             pickingMode = PickingMode.Ignore;
-            m_AnchoredContainer = new VisualElement { name = "AnchoredDockArea" };
-            SetupContainer(m_AnchoredContainer, anchoredParent);
-            Add(m_AnchoredContainer);
+            var container = root.Q<VisualElement>("overlay-container-group--horizontal");
+            var sceneContainer = root.Q<VisualElement>("displaced-panel--container");
+            SetupContainer(this, sceneContainer);
 
-            m_VerticalToolbarContainer = new VisualElement { name = "VerticalToolbarDockArea" };
-            Add(m_VerticalToolbarContainer);
-            SetupContainer(m_VerticalToolbarContainer, verticalParent);
+            // Dock Areas container.
+            m_DockAreasContainer = new VisualElement { name = "DockAreasContainer" };
+            Add(m_DockAreasContainer);
+            m_DockAreasContainer.Add(m_TopToolbar = new ToolbarDropZone(canvas.GetDockZoneContainer(DockZone.TopToolbar), true) { name = topToolbarDropZone });
+            m_DockAreasContainer.pickingMode = PickingMode.Ignore;
 
-            m_HorizontalToolbarContainer = new VisualElement { name = "HorizontalToolbarDockArea" };
-            Add(m_HorizontalToolbarContainer);
-            SetupContainer(m_HorizontalToolbarContainer, horizontalParent);
+            // Scene view container (holds left/right columns).
+            m_SceneViewContainer = new VisualElement { name = "SceneViewContainer" };
+            m_DockAreasContainer.Add(m_SceneViewContainer);
+            m_SceneViewContainer.pickingMode = PickingMode.Ignore;
 
-            m_DynamicPanelContainer = new VisualElement { name = "DynamicPanelDockArea" };
-            Add(m_DynamicPanelContainer);
-            SetupContainer(m_DynamicPanelContainer, verticalParent);
+            // Set up left column.
+            var dynamicPanelSpacerLeft = new VisualElement() { name = "DynamicPanelSpacerLeft" };
+            var toolbarLeft = container.Q<VisualElement>("overlay-toolbar__left");
+            var dynamicPanelLeft = root.Q<VisualElement>("overlay-dynamic-panel--left");
+            m_LeftAnchoredContainer = new VisualElement { name = "LeftAnchoredDockArea" };
+            m_LeftAnchoredContainer.pickingMode = PickingMode.Ignore;
+            m_SceneViewContainer.Add(m_LeftToolbar = new ToolbarDropZone(canvas.GetDockZoneContainer(DockZone.LeftToolbar), false) { name = leftToolbarDropZone });
+            m_SceneViewContainer.Add(dynamicPanelSpacerLeft);
+            m_SceneViewContainer.Add(m_LeftAnchoredContainer);
+            SetupSpacer(dynamicPanelSpacerLeft, dynamicPanelLeft, toolbarLeft);
 
-            m_HorizontalToolbarContainer.Add(m_TopToolbar = new ToolbarDropZone(canvas.GetDockZoneContainer(DockZone.TopToolbar), true) { name = topToolbarDropZone });
-            m_HorizontalToolbarContainer.Add(m_BottomToolbar = new ToolbarDropZone(canvas.GetDockZoneContainer(DockZone.BottomToolbar), true) { name = bottomToolbarDropZone });
-            m_VerticalToolbarContainer.Add(m_LeftToolbar = new ToolbarDropZone(canvas.GetDockZoneContainer(DockZone.LeftToolbar), false) { name = leftToolbarDropZone });
-            m_VerticalToolbarContainer.Add(m_RightToolbar = new ToolbarDropZone(canvas.GetDockZoneContainer(DockZone.RightToolbar), false) { name = rightToolbarDropZone });
+            // Set up right column.
+            var dynamicPanelSpacerRight = new VisualElement() { name = "DynamicPanelSpacerRight" };
+            var toolbarRight = container.Q<VisualElement>("overlay-toolbar__right");
+            var dynamicPanelRight = root.Q<VisualElement>("overlay-dynamic-panel--right");
+            m_RightAnchoredContainer = new VisualElement { name = "RightAnchoredDockArea" };
+            m_RightAnchoredContainer.pickingMode = PickingMode.Ignore;
+            m_SceneViewContainer.Add(m_RightAnchoredContainer);
+            m_SceneViewContainer.Add(dynamicPanelSpacerRight);
+            m_SceneViewContainer.Add(m_RightToolbar = new ToolbarDropZone(canvas.GetDockZoneContainer(DockZone.RightToolbar), false) { name = rightToolbarDropZone });
+            SetupSpacer(dynamicPanelSpacerRight, dynamicPanelRight, toolbarRight);
 
-            m_DynamicPanelContainer.Add(m_LeftDynamicPanel = new DynamicPanelDropZone(canvas.GetDockZoneContainer(DockZone.LeftDynamicPanel)) { name = leftDynamicPanelDropZone });
-            m_DynamicPanelContainer.Add(m_RightDynamicPanel = new DynamicPanelDropZone(canvas.GetDockZoneContainer(DockZone.RightDynamicPanel)) { name = rightDynamicPanelDropZone });
+            // Bottom toolbar drop zone.
+            m_DockAreasContainer.Add(m_BottomToolbar = new ToolbarDropZone(canvas.GetDockZoneContainer(DockZone.BottomToolbar), true) { name = bottomToolbarDropZone });
 
-            m_AnchoredContainer.Add(m_TopLeftAnchored = new OverlayContainerDropZone(canvas.GetDockZoneContainer(DockZone.LeftColumn), OverlayContainerDropZone.Placement.Start, m_TopToolbar, m_LeftToolbar, m_LeftDynamicPanel) { name = topLeftColumnDropZone });
-            m_AnchoredContainer.Add(m_BottomLeftAnchored = new OverlayContainerDropZone(canvas.GetDockZoneContainer(DockZone.LeftColumn), OverlayContainerDropZone.Placement.End, m_BottomToolbar, m_LeftToolbar, m_LeftDynamicPanel) { name = bottomLeftColumnDropZone });
-            m_AnchoredContainer.Add(m_TopRightAnchored = new OverlayContainerDropZone(canvas.GetDockZoneContainer(DockZone.RightColumn), OverlayContainerDropZone.Placement.Start, m_TopToolbar, m_RightToolbar, m_RightDynamicPanel) { name = topRightColumnDropZone });
-            m_AnchoredContainer.Add(m_BottomRightAnchored = new OverlayContainerDropZone(canvas.GetDockZoneContainer(DockZone.RightColumn), OverlayContainerDropZone.Placement.End, m_BottomToolbar, m_RightToolbar, m_RightDynamicPanel) { name = bottomRightColumnDropZone });
+            // Anchored corner drop zones
+            // Left: top, dynamic panel, bottom
+            m_LeftAnchoredContainer.Add(m_TopLeftAnchored = new OverlayContainerDropZone(canvas.GetDockZoneContainer(DockZone.LeftColumn), OverlayContainerDropZone.Placement.Start, m_TopToolbar, m_LeftToolbar, m_LeftDynamicPanel) { name = topLeftColumnDropZone });
+            m_LeftAnchoredContainer.Add(m_LeftDynamicPanel = new DynamicPanelDropZone(canvas.GetDockZoneContainer(DockZone.LeftDynamicPanel)) { name = leftDynamicPanelDropZone });
+            m_LeftAnchoredContainer.Add(m_BottomLeftAnchored = new OverlayContainerDropZone(canvas.GetDockZoneContainer(DockZone.LeftColumn), OverlayContainerDropZone.Placement.End, m_BottomToolbar, m_LeftToolbar, m_LeftDynamicPanel) { name = bottomLeftColumnDropZone });
+
+            // Right: top, dynamic panel, bottom
+            m_RightAnchoredContainer.Add(m_TopRightAnchored = new OverlayContainerDropZone(canvas.GetDockZoneContainer(DockZone.RightColumn), OverlayContainerDropZone.Placement.Start, m_TopToolbar, m_RightToolbar, m_RightDynamicPanel) { name = topRightColumnDropZone });
+            m_RightAnchoredContainer.Add(m_RightDynamicPanel = new DynamicPanelDropZone(canvas.GetDockZoneContainer(DockZone.RightDynamicPanel)) { name = rightDynamicPanelDropZone });
+            m_RightAnchoredContainer.Add(m_BottomRightAnchored = new OverlayContainerDropZone(canvas.GetDockZoneContainer(DockZone.RightColumn), OverlayContainerDropZone.Placement.End, m_BottomToolbar, m_RightToolbar, m_RightDynamicPanel) { name = bottomRightColumnDropZone });
         }
 
         void SetupContainer(VisualElement container, VisualElement parent)
@@ -88,9 +113,24 @@ namespace UnityEditor.Overlays
             parent.RegisterCallback<GeometryChangedEvent>((evt) =>
             {
                 var worldPos = parent.parent.LocalToWorld(evt.newRect.position);
-                container.style.translate = this.WorldToLocal(worldPos);
+                container.style.translate = container.parent.WorldToLocal(worldPos);
                 container.style.width = evt.newRect.width;
                 container.style.height = evt.newRect.height;
+            });
+        }
+
+        void SetupSpacer(VisualElement spacer, VisualElement panel, VisualElement toolbar)
+        {
+            spacer.pickingMode = PickingMode.Ignore;
+            panel.RegisterCallback<GeometryChangedEvent>((evt) =>
+            {
+                spacer.style.width = evt.newRect.width + toolbar.resolvedStyle.width;
+                spacer.style.height = evt.newRect.height;
+            });
+            toolbar.RegisterCallback<GeometryChangedEvent>((evt) =>
+            {
+                spacer.style.width = panel.resolvedStyle.width + evt.newRect.width;
+                spacer.style.height = panel.resolvedStyle.height;
             });
         }
 

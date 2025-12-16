@@ -34,7 +34,10 @@ namespace Unity.ProjectAuditor.Editor.Modules
                 {
                     textureImporter.mipmapEnabled = true;
                     textureImporter.SaveAndReimport();
+                    return true;
                 }
+
+                return false;
             }
         };
 
@@ -54,7 +57,10 @@ namespace Unity.ProjectAuditor.Editor.Modules
                 {
                     textureImporter.mipmapEnabled = false;
                     textureImporter.SaveAndReimport();
+                    return true;
                 }
+
+                return false;
             }
         };
 
@@ -75,7 +81,10 @@ namespace Unity.ProjectAuditor.Editor.Modules
                 {
                     textureImporter.isReadable = false;
                     textureImporter.SaveAndReimport();
+                    return true;
                 }
+
+                return false;
             }
         };
 
@@ -95,7 +104,10 @@ namespace Unity.ProjectAuditor.Editor.Modules
                 {
                     textureImporter.streamingMipmaps = true;
                     textureImporter.SaveAndReimport();
+                    return true;
                 }
+
+                return false;
             }
         };
 
@@ -107,7 +119,7 @@ namespace Unity.ProjectAuditor.Editor.Modules
             "Consider setting the <b>Anisotropic Level</b> to 1."
         )
         {
-            Platforms = new SerializableEnum<BuildTarget>[] { BuildTarget.Android, BuildTarget.iOS, BuildTarget.Switch},
+            Platforms = [BuildTarget.Android, BuildTarget.iOS, BuildTarget.Switch],
             MessageFormat = "Texture2D '{0}' anisotropic level is set to '{1}'",
             Fixer = (issue, analysisParams) =>
             {
@@ -116,7 +128,10 @@ namespace Unity.ProjectAuditor.Editor.Modules
                 {
                     textureImporter.anisoLevel = 1;
                     textureImporter.SaveAndReimport();
+                    return true;
                 }
+
+                return false;
             }
         };
 

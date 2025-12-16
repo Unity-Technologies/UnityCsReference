@@ -11,7 +11,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 {
     internal class ExtendedHelpBox : HelpBox
     {
-        private static readonly string k_WithReadMoreUssClass = "with-read-more";
+        private static readonly string k_WithLinksUssClass = "with-links";
 
         [UnityEngine.Internal.ExcludeFromDocs, Serializable]
         public new class UxmlSerializedData : HelpBox.UxmlSerializedData
@@ -24,6 +24,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 UxmlDescriptionCache.RegisterType(typeof(UxmlSerializedData), new UxmlAttributeNames[]
                 {
                     new (nameof(readMoreUrl), "read-more-url"),
+                    new (nameof(readMoreText), "read-more-text"),
                     new (nameof(customIcon), "custom-icon"),
                     new (nameof(analyticsId), "analytics-id")
                 }, true);
@@ -32,6 +33,8 @@ namespace UnityEditor.PackageManager.UI.Internal
 #pragma warning disable 649
             [SerializeField, MultilineTextField] string readMoreUrl;
             [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags readMoreUrl_UxmlAttributeFlags;
+            [SerializeField, MultilineTextField] string readMoreText;
+            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags readMoreText_UxmlAttributeFlags;
             [SerializeField] Icon customIcon;
             [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags customIcon_UxmlAttributeFlags;
             [SerializeField] string analyticsId;
@@ -47,6 +50,8 @@ namespace UnityEditor.PackageManager.UI.Internal
                 var e = (ExtendedHelpBox)obj;
                 if (ShouldWriteAttributeValue(readMoreUrl_UxmlAttributeFlags))
                     e.readMoreUrl = readMoreUrl;
+                if (ShouldWriteAttributeValue(readMoreText_UxmlAttributeFlags))
+                    e.readMoreText = readMoreText;
                 if (ShouldWriteAttributeValue(customIcon_UxmlAttributeFlags))
                     e.customIcon = customIcon;
                 if (ShouldWriteAttributeValue(analyticsId_UxmlAttributeFlags))
@@ -111,7 +116,22 @@ namespace UnityEditor.PackageManager.UI.Internal
 
                 m_CustomIconElement.AddToClassList(m_CustomIconClass);
                 if (m_CustomIconElement.parent == null)
-                    Insert(0, m_CustomIconElement);
+                    this.Q<VisualElement>(className: "unity-help-box__top-container")?.Insert(0, m_CustomIconElement);
+            }
+        }
+
+        private string m_ReadMoreText = L10n.Tr("Learn More");
+        public string readMoreText
+        {
+            get => m_ReadMoreText;
+            set
+            {
+                var newValue = value ?? L10n.Tr("Learn More");
+                if ((m_ReadMoreText ?? string.Empty) == newValue)
+                    return;
+                m_ReadMoreText = newValue;
+                if (m_ReadMoreButton != null)
+                    m_ReadMoreButton.text = m_ReadMoreText;
             }
         }
 
@@ -144,6 +164,9 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private Button m_ReadMoreButton;
 
+        private Button m_CustomLinkButton;
+        VisualElement m_CustomLinkContainer;
+
         private void OnReadMoreUrlChanged()
         {
             var showReadMoreButton = !string.IsNullOrEmpty(m_ReadMoreUrl);
@@ -151,18 +174,38 @@ namespace UnityEditor.PackageManager.UI.Internal
             {
                 if (m_ReadMoreButton == null)
                 {
-                    // The `unity-theme-env-variables` class is needed as we want to use theme variable `--unity-font-size-small` to make the text small
-                    m_ReadMoreButton = new Button { text = L10n.Tr("Learn More"), classList = { "link", "unity-theme-env-variables" } };
+                    m_ReadMoreButton = new Button { text = m_ReadMoreText, classList = { "link" } };
                     m_ReadMoreButton.clickable.clicked += OnReadMoreClicked;
                 }
 
                 m_ReadMoreButton.tooltip = m_ReadMoreUrl;
                 if (m_ReadMoreButton.parent == null)
-                    Add(m_ReadMoreButton);
+                    AddLinkToHierarchy(m_ReadMoreButton);
+
             }
             else
-                m_ReadMoreButton?.RemoveFromHierarchy();
-            EnableInClassList(k_WithReadMoreUssClass, showReadMoreButton);
+                RemoveLinkFromHierarchy(m_ReadMoreButton);
+            EnableInClassList(k_WithLinksUssClass, showReadMoreButton);
+        }
+
+        public void SetCustomLinkButton(string linkButtonText, Action onClick, string linkButtonTooltip = "")
+        {
+            var showLinkCustomButton = !string.IsNullOrEmpty(linkButtonText) && onClick != null;
+            if (showLinkCustomButton)
+            {
+                if (m_CustomLinkButton == null)
+                {
+                    m_CustomLinkButton = new Button { text = linkButtonText, classList = { "link" } };
+                    m_CustomLinkButton.clickable.clicked += onClick;
+                }
+
+                m_CustomLinkButton.tooltip = linkButtonTooltip;
+                if (m_CustomLinkButton.parent == null)
+                   AddLinkToHierarchy(m_CustomLinkButton);
+            }
+            else
+                RemoveLinkFromHierarchy(m_CustomLinkButton);
+            EnableInClassList(k_WithLinksUssClass, showLinkCustomButton);
         }
 
         private void OnReadMoreClicked()
@@ -172,6 +215,26 @@ namespace UnityEditor.PackageManager.UI.Internal
 
             ServicesContainer.instance.Resolve<IApplicationProxy>().OpenURL(readMoreUrl);
             PackageManagerReadMoreClickedAnalytics.SendEvent(analyticsId, readMoreUrl);
+        }
+
+        private void AddLinkToHierarchy(Button linkButton)
+        {
+            if (m_CustomLinkContainer == null)
+            {
+                m_CustomLinkContainer = new VisualElement { name = "customLinkContainer" };
+                Insert(childCount - 1, m_CustomLinkContainer);
+            }
+
+            m_CustomLinkContainer.Add(linkButton);
+        }
+
+        private void RemoveLinkFromHierarchy(Button linkButton)
+        {
+            linkButton?.RemoveFromHierarchy();
+            if (m_CustomLinkContainer?.childCount != 0)
+                return;
+            m_CustomLinkContainer.RemoveFromHierarchy();
+            m_CustomLinkContainer = null;
         }
     }
 }

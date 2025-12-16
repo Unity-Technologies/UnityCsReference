@@ -374,6 +374,7 @@ namespace UnityEngine.Events
     }
 
     [Serializable]
+    [UsedByNativeCode]
     class PersistentCall : ISerializationCallbackReceiver
     {
         //keep the layout of this class in sync with MonoPersistentCall in PersistentCallCollection.cpp
@@ -528,6 +529,24 @@ namespace UnityEngine.Events
         {
             m_TargetAssemblyTypeName = UnityEventTools.TidyAssemblyTypeName(m_TargetAssemblyTypeName);
         }
+
+        [UsedByNativeCode]
+        internal static Object ExtractTargetObject(PersistentCall persistentCall)
+        {
+            return persistentCall.m_Target;
+        }
+
+        [UsedByNativeCode]
+        internal static string ExtractTargetAssemblyTypeName(PersistentCall persistentCall)
+        {
+            return persistentCall.m_TargetAssemblyTypeName;
+        }
+
+        [UsedByNativeCode]
+        internal static string ExtractMethodName(PersistentCall persistentCall)
+        {
+            return persistentCall.m_MethodName;
+        }
     }
 
     [Serializable]
@@ -670,7 +689,9 @@ namespace UnityEngine.Events
 
         private bool m_NeedsUpdate = true;
 
+#pragma warning disable RS0030 // This [Preserve] usage be addressed by https://jira.unity3d.com/browse/UUM-128404
         [Preserve]
+#pragma warning restore RS0030
         public int Count
         {
             get { return m_PersistentCalls.Count + m_RuntimeCalls.Count; }
@@ -747,7 +768,9 @@ namespace UnityEngine.Events
         // ISerializationCallbackReceiver.OnAfterDeserialize executes before entering playmode
         // thus persistent calls can be cached incorrectly if initially called very early.
         // This callback invalidates caches after actual entering of playmode.
+#pragma warning disable RS0030 // This [RuntimeInitializeOnLoadMethod] usage be addressed by https://jira.unity3d.com/browse/UUM-128404
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
+#pragma warning restore RS0030
         static void OnPlayModeStateChange()
         {
             foreach (var unityEventReference in s_UnityEvents)
@@ -984,7 +1007,7 @@ namespace UnityEngine.Events
             if (!method.IsStatic)
             {
                 var obj = targetObj as Object;
-                if (obj == null || obj.GetInstanceID() == 0)
+                if (obj == null || obj.GetEntityId() == EntityId.None)
                 {
                     throw new ArgumentException(
                         string.Format(

@@ -18,6 +18,14 @@ namespace Unity.IO.Archive
         Failed
     }
 
+    [Flags]
+    [RequiredByNativeCode]
+    internal enum ManagedArchiveOptions
+    {
+        None = 0,
+        MountCAH = 1 << 0,
+    };
+    
     [NativeHeader("Runtime/VirtualFileSystem/ArchiveFileSystem/ArchiveFileHandle.h")]
     [RequiredByNativeCode]
     public struct ArchiveFileInfo
@@ -98,7 +106,11 @@ namespace Unity.IO.Archive
     [StaticAccessor("GetManagedArchiveSystem()", StaticAccessorType.Dot)]
     public static class ArchiveFileInterface
     {
-        public static extern ArchiveHandle MountAsync(ContentNamespace namespaceId, string filePath, string prefix);
+        internal static extern ArchiveHandle MountAsync(ContentNamespace namespaceId, string filePath, string prefix, ManagedArchiveOptions options);
+        public static ArchiveHandle MountAsync(ContentNamespace namespaceId, string filePath, string prefix)
+        {
+            return MountAsync(namespaceId, filePath, prefix, ManagedArchiveOptions.None);
+        }
         public static extern ArchiveHandle[] GetMountedArchives(ContentNamespace namespaceId);
 
         internal static extern ArchiveStatus Archive_GetStatus(ArchiveHandle handle);

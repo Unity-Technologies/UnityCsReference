@@ -68,14 +68,13 @@ namespace UnityEngine.UIElements
 
                 if (foundAttributeCounter > 0)
                 {
-                    valueOverride = new Vector2(minV, maxV);
                     handledAttributes.Add("value");
 
                     if (bag is UxmlAsset uxmlAsset)
                     {
                         uxmlAsset.RemoveAttribute("min-value");
                         uxmlAsset.RemoveAttribute("max-value");
-                        uxmlAsset.SetAttribute("value", UxmlUtility.ValueToString(Value));
+                        uxmlAsset.SetAttribute("value", UxmlUtility.ValueToString(new Vector2(minV, maxV)));
                     }
                 }
             }

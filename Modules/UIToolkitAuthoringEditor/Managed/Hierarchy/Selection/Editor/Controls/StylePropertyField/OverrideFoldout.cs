@@ -106,11 +106,6 @@ namespace Unity.UIToolkit.Editor
         }
 
         public OverrideFoldout()
-            : this(null)
-        {
-        }
-
-        public OverrideFoldout(string text)
         {
             AddToClassList(ussClassName);
             AddToClassList(Foldout.ussClassName);

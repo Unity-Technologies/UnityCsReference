@@ -5,6 +5,7 @@
 using System.Collections.Generic;
 using Mono.Cecil;
 using Mono.Cecil.Cil;
+using Unity.ProjectAuditor.Editor.AssemblyUtils;
 
 namespace Unity.ProjectAuditor.Editor.Core
 {
@@ -13,7 +14,7 @@ namespace Unity.ProjectAuditor.Editor.Core
     /// </summary>
     public class InstructionAnalysisContext : AnalysisContext
     {
-        // TODO: thesse 2 fields used to be public, but we can't leak the Cecil implementation out in the public API, as we might move away from using Cecil in the future.
+        // TODO: these 2 fields used to be public, but we can't leak the Cecil implementation out in the public API, as we might move away from using Cecil in the future.
 
         /// <summary>
         /// A Mono.Cecil Method Definition containing information about the current method being analyzed.
@@ -24,6 +25,16 @@ namespace Unity.ProjectAuditor.Editor.Core
         /// A Mono.Cecil Instruction containing information about the current code instruction being analyzed.
         /// </summary>
         internal Instruction Instruction;
+
+        /// <summary>
+        /// Assembly the instruction belongs to.
+        /// </summary>
+        internal AssemblyInfo AssemblyInfo;
+
+        /// <summary>
+        /// Custom metadata that an analyzer can setup for each Assembly.
+        /// </summary>
+        internal object AssemblyUserData;
     }
 
     /// <summary>
@@ -55,5 +66,20 @@ namespace Unity.ProjectAuditor.Editor.Core
         /// ReportItem to the report.
         /// </remarks>
         public abstract ReportItemBuilder Analyze(InstructionAnalysisContext context);
+
+        /// <summary>
+        /// Implement this method to store custom per-assembly data
+        /// </summary>
+        internal virtual object OnAnalyzeAssembly()
+        {
+            return null;
+        }
+
+        /// <summary>
+        /// Implement this method to store custom per-method data (requires allocating data first via OnAnalyzeAssembly)
+        /// </summary>
+        internal virtual void OnAnalyzeMethodBody(MethodDefinition methodDefinition, object assemblyUserData)
+        {
+        }
     }
 }

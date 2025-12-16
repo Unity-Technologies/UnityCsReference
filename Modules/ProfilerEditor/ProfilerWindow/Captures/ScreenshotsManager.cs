@@ -31,11 +31,10 @@ namespace Unity.Profiling.Editor.UI
             }
         }
 
-        readonly IProfilerCaptureDataService m_DataService;
-        Queue<Request> m_Queue;
+        readonly Queue<Request> m_Queue;
+        readonly Dictionary<string, Texture2D> m_LoadedTextures;
         EditorCoroutine m_Loader;
         Texture2D m_TemporaryTexture;
-        Dictionary<string, Texture2D> m_LoadedTextures;
 
         const int k_ThumbWidth = 256;
         const int k_ThumbHeight = 144;
@@ -48,10 +47,8 @@ namespace Unity.Profiling.Editor.UI
 
         public event Action<string> ScreenshotLoaded;
 
-        public ScreenshotsManager(IProfilerCaptureDataService dataService)
+        public ScreenshotsManager()
         {
-            m_DataService = dataService;
-            m_DataService.NewFrameRecorded += OnNewFrame;
             EditorApplication.playModeStateChanged += OnPlaymodeStateChanged;
             AssemblyReloadEvents.beforeAssemblyReload += OnBeforeAssemblyReload;
             AssemblyReloadEvents.afterAssemblyReload += OnAfterAssemblyReload;
@@ -62,57 +59,57 @@ namespace Unity.Profiling.Editor.UI
                 Application.temporaryCachePath, "ProfilerTempScreenshot" + k_CaptureScreenshotFileExtension));
         }
 
-        public static string ToScreenshotPath(string thePath)
+        static string ToScreenshotPath(string thePath)
         {
             return Path.ChangeExtension(thePath, k_CaptureScreenshotFileExtension);
         }
 
-        public static string ToThumbnailPath(string thePath)
+        static string ToThumbnailPath(string thePath)
         {
             return Path.ChangeExtension(thePath, k_CaptureScreenshotThumbExtension);
         }
 
-        public static void CaptureDeleted(string CapturePath)
+        public static void CaptureDeleted(string capturePath)
         {
-            string screenshotPath = ToScreenshotPath(CapturePath);
+            var screenshotPath = ToScreenshotPath(capturePath);
             if (File.Exists(screenshotPath))
                 File.Delete(screenshotPath);
 
-            string thumbsPath = ToThumbnailPath(CapturePath);
+            var thumbsPath = ToThumbnailPath(capturePath);
             if (File.Exists(thumbsPath))
                 File.Delete(thumbsPath);
         }
 
-        public static void CaptureRenamed(string CaptureFrom, string CaptureTo)
+        public static void CaptureRenamed(string captureFrom, string captureTo)
         {
-            string sourceScreenshotPath = ToScreenshotPath(CaptureFrom);
+            var sourceScreenshotPath = ToScreenshotPath(captureFrom);
             if (File.Exists(sourceScreenshotPath))
             {
-                var targetScreenshotPath = ToScreenshotPath(CaptureTo);
+                var targetScreenshotPath = ToScreenshotPath(captureTo);
                 File.Move(sourceScreenshotPath, targetScreenshotPath);
             }
 
-            string thumbPathFrom = ToThumbnailPath(CaptureFrom);
+            var thumbPathFrom = ToThumbnailPath(captureFrom);
             if (File.Exists(thumbPathFrom))
             {
-                string thumbPathTo = ToThumbnailPath(CaptureTo);
+                var thumbPathTo = ToThumbnailPath(captureTo);
                 File.Move(thumbPathFrom, thumbPathTo);
             }
         }
 
-        public static void CaptureImported(string CaptureFrom, string CaptureTo)
+        public static void CaptureImported(string captureFrom, string captureTo)
         {
-            string sourceScreenshotPath = ToScreenshotPath(CaptureFrom);
+            var sourceScreenshotPath = ToScreenshotPath(captureFrom);
             if (File.Exists(sourceScreenshotPath))
             {
-                var targetScreenshotPath = ToScreenshotPath(CaptureTo);
+                var targetScreenshotPath = ToScreenshotPath(captureTo);
                 File.Copy(sourceScreenshotPath, targetScreenshotPath);
             }
 
-            string thumbPathFrom = ToThumbnailPath(CaptureFrom);
+            var thumbPathFrom = ToThumbnailPath(captureFrom);
             if (File.Exists(thumbPathFrom))
             {
-                string thumbPathTo = ToThumbnailPath(CaptureTo);
+                var thumbPathTo = ToThumbnailPath(captureTo);
                 File.Copy(thumbPathFrom, thumbPathTo);
             }
         }
@@ -122,17 +119,18 @@ namespace Unity.Profiling.Editor.UI
             if (m_LoadedTextures.TryGetValue(fileName, out var texture))
                 return texture;
 
-            texture = new Texture2D(1, 1, TextureFormat.RGB24, false);
-            texture.name = fileName;
-            // Avoid the texture being unloaded on scene changes. Also, regardless of the hideflags, the ScreenshotManager is responsible for the destruction of this Texture.
-            texture.hideFlags = HideFlags.HideAndDontSave;
+            texture = new Texture2D(1, 1, TextureFormat.RGB24, false)
+            {
+                name = fileName,
+                // Avoid the texture being unloaded on scene changes. Also, regardless of the hideflags, the ScreenshotManager is responsible for the destruction of this Texture.
+                hideFlags = HideFlags.HideAndDontSave
+            };
             m_LoadedTextures.Add(fileName, texture);
 
             var request = new Request(fileName, texture, callbackOnUpdate);
             m_Queue.Enqueue(request);
 
-            if (m_Loader == null)
-            m_Loader = EditorCoroutineUtility.StartCoroutine(ProcessRequest(), this);
+            m_Loader ??= EditorCoroutineUtility.StartCoroutine(ProcessRequest(), this);
 
             return texture;
         }
@@ -140,7 +138,7 @@ namespace Unity.Profiling.Editor.UI
         public void Dispose()
         {
             if (m_Loader != null)
-            EditorCoroutineUtility.StopCoroutine(m_Loader);
+                EditorCoroutineUtility.StopCoroutine(m_Loader);
 
             // The manager created the textures, it is responsible for cleaning them up
             foreach (var queueItem in m_Queue)
@@ -156,7 +154,6 @@ namespace Unity.Profiling.Editor.UI
             EditorApplication.playModeStateChanged -= OnPlaymodeStateChanged;
             AssemblyReloadEvents.beforeAssemblyReload -= OnBeforeAssemblyReload;
             AssemblyReloadEvents.afterAssemblyReload -= OnAfterAssemblyReload;
-            m_DataService.NewFrameRecorded -= OnNewFrame;
             m_Queue.Clear();
             m_LoadedTextures.Clear();
         }
@@ -173,7 +170,7 @@ namespace Unity.Profiling.Editor.UI
 
                 if (File.Exists(thumbPath))
                 {
-                    byte[] data = null;
+                    byte[] data;
                     // guarding against hypothetical race conditions here in case the file gets deleted off of the main thread (or by another process)
                     try
                     {
@@ -188,8 +185,8 @@ namespace Unity.Profiling.Editor.UI
                     var fileSize = data.Length;
 
                     // Read in width and height that we appended to the end of the file
-                    int thumbW = BitConverter.ToInt32(data, fileSize - k_ThumbWidthFileOffset);
-                    int thumbH = BitConverter.ToInt32(data, fileSize - k_ThumbHeightFileOffset);
+                    var thumbW = BitConverter.ToInt32(data, fileSize - k_ThumbWidthFileOffset);
+                    var thumbH = BitConverter.ToInt32(data, fileSize - k_ThumbHeightFileOffset);
                     Array.Resize(ref data, fileSize - k_WidthOrHeightDataSize);
 
                     request.Texture.Reinitialize(thumbW, thumbH, TextureFormat.BC7, false);
@@ -198,7 +195,7 @@ namespace Unity.Profiling.Editor.UI
                 }
                 else
                 {
-                    byte[] dataOriginal = null;
+                    byte[] dataOriginal;
                     // Read in the full size screenshot so we can make a thumbnail
                     // This has thrown an exception at least once while debugging and deleting a file via the context menu.
                     try
@@ -211,15 +208,15 @@ namespace Unity.Profiling.Editor.UI
                         continue;
                     }
 
-                    Texture2D fullSizeTex = new Texture2D(1, 1, TextureFormat.RGB24, false);
+                    var fullSizeTex = new Texture2D(1, 1, TextureFormat.RGB24, false);
                     fullSizeTex.LoadImage(dataOriginal, false);
                     fullSizeTex.filterMode = FilterMode.Bilinear;
 
                     // Make a rendertexture with the same aspect ratio, scaled to fit within thumbnail bounds:
                     // First find out what ratio we're dealing with.
-                    float screenshotAspect = (float)fullSizeTex.width / (float)fullSizeTex.height;
-                    int thumbWidth = k_ThumbWidth;
-                    int thumbHeight = k_ThumbHeight;
+                    var screenshotAspect = (float)fullSizeTex.width / (float)fullSizeTex.height;
+                    var thumbWidth = k_ThumbWidth;
+                    var thumbHeight = k_ThumbHeight;
 
                     // Find our final shrunk width and height.
                     // Round the numbers so that our final dimensions are multiples of 4 for BC7 compression.
@@ -264,13 +261,14 @@ namespace Unity.Profiling.Editor.UI
             m_Loader = null;
         }
 
-        internal void ReadInOrReset(string path)
+        internal bool ReadInOrReset(string path)
         {
             var screenshotPath = Path.ChangeExtension(path, k_CaptureScreenshotFileExtension);
             if (File.Exists(screenshotPath))
-                ReadInTempScreenshot(screenshotPath);
-            else
-                ResetTemporaryScreenshot();
+                return ReadInTempScreenshot(screenshotPath);
+
+            ResetTemporaryScreenshot();
+            return false;
         }
 
         internal void ResetTemporaryScreenshot()
@@ -280,27 +278,32 @@ namespace Unity.Profiling.Editor.UI
                 m_TemporaryTexture.Reinitialize(1, 1, TextureFormat.RGB24, false);
         }
 
-        internal void WriteOutTempScreenshot(string path)
+        bool WriteOutTempScreenshot(string path)
         {
             // Don't write out an empty texture
-            if (m_TemporaryTexture != null && m_TemporaryTexture.width > 1 && m_TemporaryTexture.height > 1)
-            {
-                path = Path.ChangeExtension(path, k_CaptureScreenshotFileExtension);
-                if (!File.Exists(path))
-                    File.WriteAllBytes(path, m_TemporaryTexture.EncodeToPNG());
-            }
+            if (m_TemporaryTexture == null || m_TemporaryTexture.width <= 1 || m_TemporaryTexture.height <= 1)
+                return false;
+
+            path = Path.ChangeExtension(path, k_CaptureScreenshotFileExtension);
+            if (File.Exists(path))
+                return false;
+
+            File.WriteAllBytes(path, m_TemporaryTexture.EncodeToPNG());
+            return true;
         }
 
-        internal void ReadInTempScreenshot(string path)
+        bool ReadInTempScreenshot(string path)
         {
             if (!File.Exists(path))
-                return;
+                return false;
 
             var data = File.ReadAllBytes(path);
 
             if (m_TemporaryTexture == null)
                 m_TemporaryTexture = new Texture2D(1, 1, TextureFormat.RGB24, false);
             m_TemporaryTexture.LoadImage(data, false);
+
+            return true;
         }
 
         static class TextureInfoElem
@@ -311,9 +314,9 @@ namespace Unity.Profiling.Editor.UI
             public const int TotalElems = 3;
         }
 
-        public void OnNewFrame(int connectionId, int newFrameIndex)
+        internal bool WriteOutMostRecentScreenshot(string filePath, int frameIndex)
         {
-            using (var frameData = ProfilerDriver.GetRawFrameDataView(newFrameIndex, 0))
+            using (var frameData = ProfilerDriver.GetRawFrameDataView(frameIndex, 0))
             {
                 var texInfo = frameData.GetFrameMetaData<int>(ProfilerDriver.profilerInternalSessionMetaDataGuid,
                     (int)ProfilingSessionMetaDataEntry.ScreenshotTextureInfo);
@@ -323,9 +326,9 @@ namespace Unity.Profiling.Editor.UI
                     var data = frameData.GetFrameMetaData<byte>(ProfilerDriver.profilerInternalSessionMetaDataGuid,
                         (int)ProfilingSessionMetaDataEntry.ScreenshotRawTextureData);
 
-                    TextureFormat format = (TextureFormat)texInfo[TextureInfoElem.TextureFormat];
-                    int width = texInfo[TextureInfoElem.Width];
-                    int height = texInfo[TextureInfoElem.Height];
+                    var format = (TextureFormat)texInfo[TextureInfoElem.TextureFormat];
+                    var width = texInfo[TextureInfoElem.Width];
+                    var height = texInfo[TextureInfoElem.Height];
 
                     if (data.Length > 1)
                     {
@@ -334,33 +337,46 @@ namespace Unity.Profiling.Editor.UI
                         else
                             m_TemporaryTexture.Reinitialize(width, height, format, false);
                         CopyDataToTexture(m_TemporaryTexture, data);
+                        return WriteOutTempScreenshot(filePath);
                     }
                 }
+                else
+                {
+                    // If we didn't find screenshot data, try and find the frame
+                    // that most recently had a screenshot.
+                    var framesSinceLast = frameData.GetFrameMetaData<int>(ProfilerDriver.profilerInternalSessionMetaDataGuid,
+                        (int)ProfilingSessionMetaDataEntry.FramesSinceLastScreenshot);
+
+                    if (framesSinceLast.Length == 1)
+                        return WriteOutMostRecentScreenshot(filePath, frameIndex - framesSinceLast[0]);
+                }
             }
+
+            return false;
         }
 
-        internal void CopyDataToTexture(Texture2D tex, NativeArray<byte> byteArray)
+        void CopyDataToTexture(Texture2D tex, NativeArray<byte> byteArray)
         {
             unsafe
             {
-                void* srcPtr = NativeArrayUnsafeUtility.GetUnsafeBufferPointerWithoutChecks(byteArray);
-                void* dstPtr = tex.GetRawTextureData<byte>().GetUnsafeReadOnlyPtr();
+                var srcPtr = NativeArrayUnsafeUtility.GetUnsafeBufferPointerWithoutChecks(byteArray);
+                var dstPtr = tex.GetRawTextureData<byte>().GetUnsafeReadOnlyPtr();
                 UnsafeUtility.MemCpy(dstPtr, srcPtr, byteArray.Length * sizeof(byte));
             }
         }
 
         // The temporary texture can get deleted without warning, so save it to disk if it looks like that's about to happen.
-        private void OnBeforeAssemblyReload()
+        void OnBeforeAssemblyReload()
         {
             WriteOutTempScreenshot(m_TemporaryScreenshotCachePath);
         }
 
-        private void OnAfterAssemblyReload()
+        void OnAfterAssemblyReload()
         {
             ReadInTempScreenshot(m_TemporaryScreenshotCachePath);
         }
 
-        private void OnPlaymodeStateChanged(PlayModeStateChange playModeState)
+        void OnPlaymodeStateChanged(PlayModeStateChange playModeState)
         {
             switch (playModeState)
             {

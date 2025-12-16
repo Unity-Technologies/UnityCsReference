@@ -63,11 +63,6 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
             return false;
         }
 
-        public bool PackageFilterMatch(ReportItem issue)
-        {
-            return true;
-        }
-
         bool MatchesSearch(string text)
         {
             return text.IndexOf(searchString, ignoreCase ? StringComparison.CurrentCultureIgnoreCase : StringComparison.CurrentCulture) >= 0;

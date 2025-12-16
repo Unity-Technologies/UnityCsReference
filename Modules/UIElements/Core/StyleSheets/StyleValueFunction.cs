@@ -24,6 +24,7 @@ namespace UnityEngine.UIElements
         FilterBlur,
         FilterContrast,
         FilterHueRotate,
+        MaterialProperty
     }
 
     internal static class StyleValueFunctionExtension
@@ -41,6 +42,7 @@ namespace UnityEngine.UIElements
         public const string k_FilterBlur = "blur";
         public const string k_FilterContrast = "contrast";
         public const string k_FilterHueRotate = "hue-rotate";
+        public const string k_MaterialProperty = "prop";
 
         public static StyleValueFunction FromUssString(string ussValue)
         {
@@ -73,6 +75,8 @@ namespace UnityEngine.UIElements
                     return StyleValueFunction.FilterContrast;
                 case k_FilterHueRotate:
                     return StyleValueFunction.FilterHueRotate;
+                case k_MaterialProperty:
+                    return StyleValueFunction.MaterialProperty;
                 default:
                     throw new ArgumentOutOfRangeException(nameof(ussValue), ussValue, "Unknown function name");
             }
@@ -108,6 +112,8 @@ namespace UnityEngine.UIElements
                     return k_FilterContrast;
                 case StyleValueFunction.FilterHueRotate:
                     return k_FilterHueRotate;
+                case StyleValueFunction.MaterialProperty:
+                    return k_MaterialProperty;
                 default:
                     throw new ArgumentOutOfRangeException(nameof(svf), svf, $"Unknown {nameof(StyleValueFunction)}");
             }

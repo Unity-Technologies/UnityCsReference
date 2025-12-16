@@ -6,262 +6,318 @@ using udm_vector_ptr = System.IntPtr;
 
 namespace Unity.DataModel
 {
-[StructLayout(LayoutKind.Sequential)]
-internal struct VectorField
-{
-    internal ulong Size;
-    internal long Location;
-
-    internal unsafe byte* GetDataPtr()
+    [StructLayout(LayoutKind.Sequential)]
+    internal struct VectorField
     {
-        var handle = GCHandle.Alloc(this, GCHandleType.Pinned);
-        unsafe
-        {
-            byte* ptr = (byte*)handle.AddrOfPinnedObject().ToPointer();
-            return ptr;
-        }
-    }
-}
+        internal ulong Size;
+        internal long Location;
 
-// TODO: Support Vector<T>
-[StructLayout(LayoutKind.Sequential)]
-internal unsafe struct Vector
-{
-    internal Vector(Accessor accessor)
-    {
-        Field = default;
-        ElementSchema = default;
-        DocumentModel = default;
-
-        Schema schema = accessor.GetSchema();
-        if (schema.IsValid() && schema.GetFlags().HasFlag(SchemaFlags.IsVector))
+        internal unsafe byte* GetDataPtr()
         {
-            Field = accessor.Data;
-            ElementSchema = schema.GetVectorElementSchema();
-            DocumentModel = accessor.DocumentModel;
+            return UnsafeHelper.AsBytePointer(ref this) + Location;
         }
     }
 
-    internal bool IsValid()
-{
-        return Field != IntPtr.Zero && ElementSchema.IsValid();
-    }
-
-    internal Schema GetElementSchema()
+    // TODO: Support Vector<T>
+    [StructLayout(LayoutKind.Sequential)]
+    internal unsafe struct Vector
     {
-        return ElementSchema;
-    }
-
-    internal ulong GetLength()
-    {
-        ThrowIfInvalid();
-        return GetLengthInternalUnsafe();
-    }
-
-    private ulong GetLengthInternalUnsafe()
-    {
-        return ((VectorField*)Field)->Size;
-    }
-
-    internal byte* GetDataPtr()
-    {
-        ThrowIfInvalid();
-        return GetDataPtrInternalUnsafe();
-    }
-
-    private unsafe byte* GetDataPtrInternalUnsafe()
-    {
-        return ((VectorField*)Field)->GetDataPtr();
-    }
-
-    internal void Clear()
-    {
-        ThrowIfInvalid();
-
-        fixed (Vector* vectorAccessorPtr = &this)
+        internal Vector(Accessor accessor)
         {
-            UdmInterop.Instance.udm_vector_clear(vectorAccessorPtr);
-        }
-    }
+            Field = default;
+            ElementSchema = default;
+            DocumentModel = default;
 
-    internal void Reserve(ulong capacity)
-    {
-        ThrowIfInvalid();
-
-        fixed (Vector* vectorAccessorPtr = &this)
-        {
-            UdmInterop.Instance.udm_vector_reserve(vectorAccessorPtr, capacity);
-        }
-    }
-
-    internal Accessor Insert(ConstAccessor accessor, ulong index)
-    {
-        ThrowIfInvalid();
-        accessor.ThrowIfInvalid();
-
-        ulong length = GetLengthInternalUnsafe();
-
-        if (index > length)
-            throw new IndexOutOfRangeException($"Index {index} is out of range. Vector size {length}");
-
-        fixed (Vector* vectorAccessorPtr = &this)
-        {
-            var ptr = UdmInterop.Instance.udm_vector_insert_uninitialized(vectorAccessorPtr, index);
-            var elementAccessor = new Accessor
+            Schema schema = accessor.GetSchema();
+            if (schema.IsValid() && schema.GetFlags().HasFlag(SchemaFlags.IsVector))
             {
-                Schema = ElementSchema,
-                Data = ptr,
-                DocumentModel = DocumentModel
-            };
-
-            UdmInterop.Instance.udm_accessor_initialize(&elementAccessor, &accessor);
-            return elementAccessor;
+                Field = accessor.Data;
+                ElementSchema = schema.GetVectorElementSchema();
+                DocumentModel = accessor.DocumentModel;
+            }
         }
-    }
 
-    internal Accessor Insert(ulong index)
-    {
-        ThrowIfInvalid();
-
-        ulong length = GetLengthInternalUnsafe();
-
-        if (index > length)
-            throw new IndexOutOfRangeException($"Index {index} is out of range. Vector size {length}");
-
-        fixed (Vector* vectorAccessorPtr = &this)
+        internal bool IsValid()
         {
-            var ptr = UdmInterop.Instance.udm_vector_insert_uninitialized(vectorAccessorPtr, index);
-            var elementAccessor = new Accessor
+            return Field != IntPtr.Zero && ElementSchema.IsValid();
+        }
+
+        internal Schema GetElementSchema()
+        {
+            return ElementSchema;
+        }
+
+        internal ulong GetLength()
+        {
+            ThrowIfInvalid();
+            return GetLengthInternalUnsafe();
+        }
+
+        private ulong GetLengthInternalUnsafe()
+        {
+            return ((VectorField*)Field)->Size;
+        }
+
+        internal byte* GetDataPtr()
+        {
+            ThrowIfInvalid();
+            return GetDataPtrInternalUnsafe();
+        }
+
+        private unsafe byte* GetDataPtrInternalUnsafe()
+        {
+            return ((VectorField*)Field)->GetDataPtr();
+        }
+
+        internal void Clear()
+        {
+            ThrowIfInvalid();
+
+            fixed (Vector* vectorAccessorPtr = &this)
             {
-                Schema = ElementSchema,
-                Data = ptr,
-                DocumentModel = DocumentModel
-            };
-            var schemaAccessor = ElementSchema.GetAccessor();
-
-            UdmInterop.Instance.udm_accessor_initialize(&elementAccessor, &schemaAccessor);
-            return elementAccessor;
+                UdmInterop.Instance.udm_vector_clear(vectorAccessorPtr);
+            }
         }
-    }
 
-    internal void RemoveAt(ulong index)
-    {
-        ThrowIfInvalid();
-
-        fixed (Vector* vectorAccessorPtr = &this)
+        internal void Reserve(ulong capacity)
         {
-            UdmInterop.Instance.udm_vector_erase(vectorAccessorPtr, index);
-        }
-    }
+            ThrowIfInvalid();
 
-    internal void Resize(ulong length)
-    {
-        ThrowIfInvalid();
-
-        ulong oldLength = GetLengthInternalUnsafe();
-        var accessor = ElementSchema.GetAccessor();
-
-        fixed (Vector* vectorAccessorPtr = &this)
-        {
-            UdmInterop.Instance.udm_vector_resize_uninitialized(vectorAccessorPtr, length);
-
-            var dataPtr = GetDataPtrInternalUnsafe();
-            for (ulong index = oldLength; index < length; ++index)
+            fixed (Vector* vectorAccessorPtr = &this)
             {
-                var ptr = dataPtr + ElementSchema.GetSize() * index;
+                UdmInterop.Instance.udm_vector_reserve(vectorAccessorPtr, capacity);
+            }
+        }
+
+        internal Accessor Insert(ConstAccessor accessor, ulong index)
+        {
+            ThrowIfInvalid();
+            accessor.ThrowIfInvalid();
+
+            ulong length = GetLengthInternalUnsafe();
+
+            if (index > length)
+                throw new IndexOutOfRangeException($"Index {index} is out of range. Vector size {length}");
+
+            fixed (Vector* vectorAccessorPtr = &this)
+            {
+                var ptr = UdmInterop.Instance.udm_vector_insert_uninitialized(vectorAccessorPtr, index);
                 var elementAccessor = new Accessor
+                {
+                    Schema = ElementSchema,
+                    Data = ptr,
+                    DocumentModel = DocumentModel
+                };
+
+                UdmInterop.Instance.udm_accessor_initialize(&elementAccessor, &accessor);
+                return elementAccessor;
+            }
+        }
+
+        internal Accessor Insert(ulong index)
+        {
+            ThrowIfInvalid();
+
+            ulong length = GetLengthInternalUnsafe();
+
+            if (index > length)
+                throw new IndexOutOfRangeException($"Index {index} is out of range. Vector size {length}");
+
+            fixed (Vector* vectorAccessorPtr = &this)
+            {
+                var ptr = UdmInterop.Instance.udm_vector_insert_uninitialized(vectorAccessorPtr, index);
+                var elementAccessor = new Accessor
+                {
+                    Schema = ElementSchema,
+                    Data = ptr,
+                    DocumentModel = DocumentModel
+                };
+                var schemaAccessor = ElementSchema.GetAccessor();
+
+                UdmInterop.Instance.udm_accessor_initialize(&elementAccessor, &schemaAccessor);
+                return elementAccessor;
+            }
+        }
+
+        internal void RemoveAt(ulong index)
+        {
+            ThrowIfInvalid();
+
+            fixed (Vector* vectorAccessorPtr = &this)
+            {
+                UdmInterop.Instance.udm_vector_erase(vectorAccessorPtr, index);
+            }
+        }
+
+        internal void Resize(ulong length)
+        {
+            ThrowIfInvalid();
+
+            ulong oldLength = GetLengthInternalUnsafe();
+            var accessor = ElementSchema.GetAccessor();
+
+            fixed (Vector* vectorAccessorPtr = &this)
+            {
+                UdmInterop.Instance.udm_vector_resize_uninitialized(vectorAccessorPtr, length);
+
+                var dataPtr = GetDataPtrInternalUnsafe();
+                for (ulong index = oldLength; index < length; ++index)
+                {
+                    var ptr = dataPtr + ElementSchema.GetSize() * index;
+                    var elementAccessor = new Accessor
+                    {
+                        Schema = ElementSchema,
+                        Data = (IntPtr)ptr,
+                        DocumentModel = DocumentModel
+                    };
+
+                    UdmInterop.Instance.udm_accessor_initialize(&elementAccessor, &accessor);
+                }
+            }
+        }
+
+        internal Accessor Add(ConstAccessor accessor)
+        {
+            ThrowIfInvalid();
+            accessor.ThrowIfInvalid();
+
+            fixed (Vector* vectorAccessorPtr = &this)
+            {
+                var ptr = UdmInterop.Instance.udm_vector_push_back_uninitialized(vectorAccessorPtr);
+                var elementAccessor = new Accessor
+                {
+                    Schema = ElementSchema,
+                    Data = ptr,
+                    DocumentModel = DocumentModel
+                };
+
+                UdmInterop.Instance.udm_accessor_initialize(&elementAccessor, &accessor);
+                return elementAccessor;
+            }
+        }
+
+        internal Accessor Add()
+        {
+            ThrowIfInvalid();
+
+            fixed (Vector* vectorAccessorPtr = &this)
+            {
+                var ptr = UdmInterop.Instance.udm_vector_push_back_uninitialized(vectorAccessorPtr);
+                var elementAccessor = new Accessor
+                {
+                    Schema = ElementSchema,
+                    Data = ptr,
+                    DocumentModel = DocumentModel
+                };
+                var schemaAccessor = ElementSchema.GetAccessor();
+
+                UdmInterop.Instance.udm_accessor_initialize(&elementAccessor, &schemaAccessor);
+                return elementAccessor;
+            }
+        }
+
+        internal void Add<T>(T item)
+        {
+            ThrowIfInvalid();
+
+            // If the current vector contains strings
+            if (item is String itemStr)
+            {
+                if (!ElementSchema.IsUTF8String())
+                    ThrowTypeIdMismatchException();
+
+                var addedAccessor = Add();
+                addedAccessor.SetUTF8StringValue(itemStr);
+            }
+            else if (ElementSchema.GetFlags().HasFlag(SchemaFlags.IsFundamental))
+            {
+                if (!ElementSchema.IsUnderlyingType<T>())
+                    ThrowTypeIdMismatchException();
+
+                var added = Add();
+#pragma warning disable CS8500 // This takes the address of, gets the size of, or declares a pointer to a managed type
+                *(T*)added.Data = item;
+#pragma warning restore CS8500 // This takes the address of, gets the size of, or declares a pointer to a managed type
+            }
+            else if (ElementSchema.IsReference())
+                throw new NotImplementedException("Adding reference types is not currently supported.");
+            else if (ElementSchema.GetFlags().HasFlag(SchemaFlags.IsVector))
+            {
+                var vectorElementSchema = ElementSchema.GetVectorElementSchema();
+                // Push back in the current vector, and get the accessor to it
+                var lastItemAccessor = Add();
+
+                var nestedVector = new Vector(lastItemAccessor);
+
+                ref var cast = ref UnsafeHelper.As<T, byte>(ref item);
+                ref var list = ref UnsafeHelper.As<byte, IList>(ref cast);
+                var listCount = list.Count;
+                var listCountUlong = (ulong)list.Count;
+
+                if (nestedVector.ElementSchema.GetFlags().HasFlag(SchemaFlags.IsFundamental))
+                {
+                    ref byte[] byteArray = ref UnsafeHelper.As<IList, byte[]>(ref list);
+                    fixed (byte* beginningArrayByte = byteArray)
+                    {
+                        // We can set the vector immediately; no need to recurse
+                        UdmInterop.Instance.udm_vector_assign(&nestedVector, beginningArrayByte, listCountUlong);
+                    }
+                }
+                else
+                {
+                    nestedVector.Clear();
+                    nestedVector.Reserve(listCountUlong);
+
+                    for (int i = 0; i < listCount; i++)
+                    {
+                        var obj = list[i];
+                        nestedVector.Add(obj);
+                    }
+                }
+            }
+        }
+
+        private static void ThrowTypeIdMismatchException() => throw new InvalidOperationException("You tried adding to a vector of a different type.");
+
+        internal Accessor ElementAt(ulong index)
+        {
+            ThrowIfInvalid();
+            ulong length = GetLengthInternalUnsafe();
+
+            if (index >= length)
+                throw new IndexOutOfRangeException($"Index {index} is out of range. Vector size {length}");
+
+            fixed (Vector* vectorAccessorPtr = &this)
+            {
+                var ptr = GetDataPtrInternalUnsafe() + ElementSchema.GetSize() * index;
+                return new Accessor
                 {
                     Schema = ElementSchema,
                     Data = (IntPtr)ptr,
                     DocumentModel = DocumentModel
                 };
-
-                UdmInterop.Instance.udm_accessor_initialize(&elementAccessor, &accessor);
             }
         }
-    }
 
-    internal Accessor Add(ConstAccessor accessor)
-    {
-        ThrowIfInvalid();
-        accessor.ThrowIfInvalid();
-
-        fixed (Vector* vectorAccessorPtr = &this)
+        internal void Assign(void* data, ulong size)
         {
-            var ptr = UdmInterop.Instance.udm_vector_push_back_uninitialized(vectorAccessorPtr);
-            var elementAccessor = new Accessor
+            ThrowIfInvalid();
+            fixed (Vector* vectorAccessorPtr = &this)
             {
-                Schema = ElementSchema,
-                Data = ptr,
-                DocumentModel = DocumentModel
-            };
-
-            UdmInterop.Instance.udm_accessor_initialize(&elementAccessor, &accessor);
-            return elementAccessor;
+                UdmInterop.Instance.udm_vector_assign(vectorAccessorPtr, data, size);
+            }
         }
-    }
 
-    internal Accessor Add()
-    {
-        ThrowIfInvalid();
-
-        fixed (Vector* vectorAccessorPtr = &this)
+        internal void ThrowIfInvalid()
         {
-            var ptr = UdmInterop.Instance.udm_vector_push_back_uninitialized(vectorAccessorPtr);
-            var elementAccessor = new Accessor
-            {
-                Schema = ElementSchema,
-                Data = ptr,
-                DocumentModel = DocumentModel
-            };
-            var schemaAccessor = ElementSchema.GetAccessor();
-
-            UdmInterop.Instance.udm_accessor_initialize(&elementAccessor, &schemaAccessor);
-            return elementAccessor;
+            if (!IsValid())
+                throw new InvalidOperationException("Trying to use an invalid Vector");
         }
+
+        internal Schema ElementSchema;
+        // Pointers to blittable types are not considered blittable by the bindings generator
+        // internal VectorField* Field;
+        internal IntPtr Field;
+        internal DocumentModel DocumentModel;
     }
-
-    private static void ThrowTypeIdMismatchException() => throw new InvalidOperationException("You tried adding to a vector of a different type.");
-
-    internal Accessor ElementAt(ulong index)
-    {
-        ThrowIfInvalid();
-        ulong length = GetLengthInternalUnsafe();
-
-        if (index >= length)
-            throw new IndexOutOfRangeException($"Index {index} is out of range. Vector size {length}");
-
-        fixed (Vector* vectorAccessorPtr = &this)
-        {
-            var ptr = GetDataPtrInternalUnsafe() + ElementSchema.GetSize() * index;
-            return new Accessor
-            {
-                Schema = ElementSchema,
-                Data = (IntPtr)ptr,
-                DocumentModel = DocumentModel
-            };
-        }
-    }
-
-    internal void Assign(void* data, ulong size)
-    {
-        ThrowIfInvalid();
-        fixed (Vector* vectorAccessorPtr = &this)
-        {
-            UdmInterop.Instance.udm_vector_assign(vectorAccessorPtr, data, size);
-        }
-    }
-
-    internal void ThrowIfInvalid()
-    {
-        if (!IsValid())
-            throw new InvalidOperationException("Trying to use an invalid Vector");
-    }
-
-    internal Schema ElementSchema;
-    // Pointers to blittable types are not considered blittable by the bindings generator
-    // internal VectorField* Field;
-    internal IntPtr Field;
-    internal DocumentModel DocumentModel;
-}
 }

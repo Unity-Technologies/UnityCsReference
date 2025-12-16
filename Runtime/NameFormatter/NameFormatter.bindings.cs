@@ -8,11 +8,11 @@ namespace UnityEngine
 {
     // Helper class for constructing displayable names for objects.
     [VisibleToOtherModules]
-    [NativeHeader("Runtime/NameFormatter/NameFormatter.h")]
+    [NativeHeader("Runtime/NameFormatter/NameFormatter.bindings.h")]
     internal sealed class NameFormatter
     {
         // Make a displayable name for a variable.
-        [FreeFunction]
+        [FreeFunction(Name = "FormatVariableName_Binding")]
         public static extern string FormatVariableName(string name);
     }
 }

@@ -11,8 +11,24 @@ namespace UnityEditor.Search
 {
     class SearchDatabaseTemplates
     {
+        // By default we index packages.
         public static readonly string @default =
 @"{
+    ""name"": ""Assets"",
+    ""roots"": [""Assets"",""Packages""],
+    ""includes"": [],
+    ""excludes"": [""Assets/Temp/"", ""Assets/External/""],
+    ""options"": {
+        ""types"": true,
+        ""properties"": true,
+        ""extended"": false,
+        ""dependencies"": true
+    },
+    ""baseScore"": 999
+}";
+        // SourceBuild do not index Packages by default to avoid wasting time in test project.
+        public static readonly string testProject =
+            @"{
     ""name"": ""Assets"",
     ""roots"": [""Assets""],
     ""includes"": [],
@@ -81,13 +97,17 @@ namespace UnityEditor.Search
     ""baseScore"": 155
 }";
 
+        public const string defaultTemplate = "_Default";
+        public const string testProjectDefaultTemplate = "TestProject";
+
         public static readonly Dictionary<string, string> all = new Dictionary<string, string>()
         {
             { "Assets", assets },
             { "Packages", packages },
             { "Prefabs", prefabs },
             { "Scenes", scenes },
-            { "_Default", @default }
+            { defaultTemplate, @default },
+            { testProjectDefaultTemplate, testProject }
         };
     }
 
@@ -118,10 +138,21 @@ namespace UnityEditor.Search
             }
         }
 
+        public static bool NeedTestProjectTemplate()
+        {
+            return Unsupported.IsSourceBuild(checkHumanControllingUs: false) ||
+                   Application.isTestRun;
+        }
+
         public static string CreateTemplateIndex(string template, string path, string name = null, string settings = null)
         {
             if (settings == null && !SearchDatabaseTemplates.all.ContainsKey(template))
                 return null;
+
+            if (template == SearchDatabaseTemplates.defaultTemplate && NeedTestProjectTemplate())
+            {
+                template = SearchDatabaseTemplates.testProjectDefaultTemplate;
+            }
 
             var dirPath = path;
             var indexFileName = string.IsNullOrEmpty(name) ? Path.GetFileNameWithoutExtension(path) : name;

@@ -4,9 +4,7 @@
 
 using System;
 using UnityEditor;
-using UnityEditor.PackageManager.UI;
 using UnityEditor.ShortcutManagement;
-using UnityEditor.Utils;
 using UnityEngine;
 
 namespace Unity.GraphToolsAuthoringFramework.InternalEditorBridge
@@ -41,7 +39,7 @@ namespace Unity.GraphToolsAuthoringFramework.InternalEditorBridge
             return KeyCombination.SequenceToMenuString(binding.keyCombinationSequence);
         }
 
-        public static void SetEntryDoubleClickedDelegate(Action<string, int> doubleClickedCallback)
+        public static void SetEntryDoubleClickedDelegate(Action<string, EntityId> doubleClickedCallback)
         {
             ConsoleWindow.entryWithManagedCallbackDoubleClicked += CallEntryDoubleClickedCallback;
 
@@ -50,7 +48,7 @@ namespace Unity.GraphToolsAuthoringFramework.InternalEditorBridge
             void CallEntryDoubleClickedCallback(LogEntry logEntry) => doubleClickedCallback(logEntry.file, logEntry.entityId);
         }
 
-        public static void AddMessageWithDoubleClickCallback(string message, string file, LogType logType, LogOption logOptions, int instanceId, int logIdentifier)
+        public static void AddMessageWithDoubleClickCallback(string message, string file, LogType logType, LogOption logOptions, EntityId instanceId, int logIdentifier)
         {
             int mode = LogTypeOptionsToMode(logType, logOptions) | (int)ConsoleWindow.Mode.StickyError;
 
@@ -69,19 +67,9 @@ namespace Unity.GraphToolsAuthoringFramework.InternalEditorBridge
             ConsoleWindow.ShowConsoleWindow(immediate);
         }
 
-        public static Action CallDelayed(EditorApplication.CallbackFunction action, double delaySeconds = 0.0f)
-        {
-            return EditorApplication.CallDelayed(action, delaySeconds);
-        }
-
         public static void ShowColorPicker(Action<Color> colorChangedCallback, Color col, bool showAlpha = true, bool hdr = false)
         {
             ColorPicker.Show(colorChangedCallback, col, showAlpha, hdr);
-        }
-
-        public static string NormalizePath(this string path)
-        {
-            return Paths.NormalizePath(path);
         }
 
         public static KeyCombination FromKeyboardInput(KeyCode keyCode, EventModifiers modifiers)
@@ -103,6 +91,14 @@ namespace Unity.GraphToolsAuthoringFramework.InternalEditorBridge
         {
             var drawerType = ScriptAttributeUtility.GetDrawerTypeForType(type, null);
             return typeof(PropertyDrawer).IsAssignableFrom(drawerType);
+        }
+
+        static char[] s_InvalidChars;
+
+        public static char[] GetInvalidFilenameChars()
+        {
+            s_InvalidChars ??= EditorUtility.GetInvalidFilenameChars().ToCharArray();
+            return s_InvalidChars;
         }
     }
 }

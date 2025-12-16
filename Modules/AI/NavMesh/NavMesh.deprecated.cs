@@ -23,7 +23,7 @@ public partial struct NavMeshLinkInstance
         get => NavMesh.InternalGetLinkOwner(id);
         set
         {
-            var ownerID = value != null ? value.GetInstanceID() : 0;
+            var ownerID = value != null ? value.GetEntityId() : EntityId.None;
             if (!NavMesh.InternalSetLinkOwner(id, ownerID))
                 Debug.LogError("Cannot set 'owner' on an invalid NavMeshLinkInstance");
         }

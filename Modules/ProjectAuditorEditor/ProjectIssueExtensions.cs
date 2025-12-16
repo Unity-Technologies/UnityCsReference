@@ -56,7 +56,7 @@ namespace Unity.ProjectAuditor.Editor
                 case PropertyType.LogLevel:
                     return issue.LogLevel.ToString();
                 case PropertyType.Severity:
-                    return issue.Severity.ToString();
+                    return issue.Severity.ToFrontendString();
                 case PropertyType.Areas:
                     return issue.Id.GetDescriptor().GetAreasSummary();
                 case PropertyType.FileType:
@@ -120,9 +120,9 @@ namespace Unity.ProjectAuditor.Editor
             switch (propertyType)
             {
                 case PropertyType.LogLevel:
-                    return issueA.LogLevel.CompareTo(issueB.LogLevel);
+                    return ((int)issueA.LogLevel).CompareTo((int)issueB.LogLevel);
                 case PropertyType.Severity:
-                    return issueA.Severity.CompareTo(issueB.Severity);
+                    return ((int)issueA.Severity).CompareTo((int)issueB.Severity);
                 case PropertyType.Areas:
                     var areasA = (int)issueA.Id.GetDescriptor().Areas.Value;
                     var areasB = (int)issueB.Id.GetDescriptor().Areas.Value;
@@ -184,17 +184,13 @@ namespace Unity.ProjectAuditor.Editor
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static int StringCompareWithLongIntSupport(string a, string b)
         {
-            try
-            {
-                var longA = long.Parse(a);
-                var longB = long.Parse(b);
+            bool parsedA = long.TryParse(a, out var longA);
+            bool parsedB = long.TryParse(b, out var longB);
 
+            if (parsedA && parsedB)
                 return longA < longB ? -1 : longA > longB ? 1 : 0;
-            }
-            catch
-            {
+            else
                 return string.Compare(a, b, StringComparison.OrdinalIgnoreCase);
-            }
         }
     }
 }

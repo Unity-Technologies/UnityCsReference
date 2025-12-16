@@ -4,9 +4,7 @@
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using Unity.GraphToolkit.Editor.ContextualMenuItems;
-using Unity.GraphToolkit.InternalBridge;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.Assertions;
@@ -240,7 +238,9 @@ namespace Unity.GraphToolkit.Editor
             if (GraphView == null)
                 return;
 
-            var selectable = dropCandidates.Single();
+            Assert.IsTrue(dropCandidates.Count == 1);
+
+            var selectable =  dropCandidates[0];
             var portToConnect = GetPortToConnect(selectable);
             Assert.IsNotNull(portToConnect);
 
@@ -278,7 +278,7 @@ namespace Unity.GraphToolkit.Editor
             Label = ConnectorElement.Q<Label>(GraphElementHelper.labelName);
 
             var constantPart = (PortConstantEditorPart)PartList.GetPart(constantEditorPartName);
-            constantPart.SetDragZone(Label);
+            constantPart?.SetDragZone(Label);
 
             AddToClassList(ussClassName);
             this.AddPackageStylesheet("Port.uss");
@@ -469,7 +469,7 @@ namespace Unity.GraphToolkit.Editor
             EnableClass(notConnectedUssClassName, !portIsConnected);
 
             var constantPart = (PortConstantEditorPart)PartList.GetPart(constantEditorPartName);
-            constantPart.SetDragZone(Label);
+            constantPart?.SetDragZone(Label);
 
             if (visitor.ChangeHints.HasChange(ChangeHint.Data))
             {
@@ -477,7 +477,9 @@ namespace Unity.GraphToolkit.Editor
                 parentNode?.DisableCullingForFrame();
 
                 this.PreallocForMoreClasses(6); // hidden, connected, direction, capacity, datatype, type
-                var hidden = PortModel != null && PortHasOption(PortModel.Options, PortModelOptions.Hidden);
+
+                // A port should be hidden if it has no wire and has the Hidden option.
+                var hidden = PortModel != null && PortModel.GetConnectedWires().Count == 0 && PortHasOption(PortModel.Options, PortModelOptions.Hidden);
                 EnableClass(hiddenUssClassName, hidden);
 
                 EnableClass(inputUssClassName, PortModel.Direction == PortDirection.Input);

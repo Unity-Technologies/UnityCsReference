@@ -7,7 +7,7 @@ namespace Unity.ProjectAuditor.Editor
     /// <summary>
     /// Severity of an issue
     /// </summary>
-    public enum Severity
+    public enum Severity : int
     {
         /// <summary>
         /// Default Severity
@@ -58,5 +58,21 @@ namespace Unity.ProjectAuditor.Editor
         /// Not visible to user
         /// </summary>
         Hidden,
+    }
+
+    internal static class SeverityExtensions
+    {
+        internal static string ToFrontendString(this Severity s)
+        {
+            // Prevent conflict with Info/Minor
+            if (s == Severity.Minor)
+                return "Minor";
+
+            // Prevent conflict with Warning/Moderate
+            if (s == Severity.Moderate)
+                return "Moderate";
+
+            return s.ToString();
+        }
     }
 }

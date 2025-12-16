@@ -41,5 +41,20 @@ namespace Unity.UIToolkit.Editor
         /// <param name="label">The text to use as a label.</param>
         /// <param name="useIcon">Whether to use an icon for the buttons or text of the enum value.</param>
         public StyleEnumField(string label, bool useIcon) : base(label, new EnumToggleField<T>(useIcon)) { }
+
+        protected override EnumToggleField<T> CreateValueField()
+        {
+            return new EnumToggleField<T>();
+        }
+
+        protected override StyleEnum<T> CreateStyleValue(T v)
+        {
+            return v;
+        }
+
+        internal override bool EqualsCurrentValue(StyleEnum<T> v)
+        {
+            return value == v;
+        }
     }
 }

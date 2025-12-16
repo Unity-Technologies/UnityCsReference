@@ -57,17 +57,17 @@ namespace Unity.ProjectAuditor.Editor.Modules
         static readonly IssueLayout k_MetaDataLayout = new IssueLayout
         {
             Category = IssueCategory.BuildSummary,
-            Properties = new[]
-            {
+            Properties =
+            [
                 new PropertyDefinition { Type = PropertyType.Description, Name = "Key" }
-            }
+            ]
         };
 
         static readonly IssueLayout k_FileLayout = new IssueLayout
         {
             Category = IssueCategory.BuildFile,
-            Properties = new[]
-            {
+            Properties =
+            [
                 new PropertyDefinition { Type = PropertyType.Description, Name = "Source Asset", MaxAutoWidth = 500},
                 new PropertyDefinition { Type = PropertyType.FileType, Name = "File Type", LongName = "File Extension"},
                 new PropertyDefinition { Type = PropertyTypeUtil.FromCustom(BuildReportFileProperty.ImporterType), Format = PropertyFormat.String, Name = "Importer Type"},
@@ -76,18 +76,18 @@ namespace Unity.ProjectAuditor.Editor.Modules
                 new PropertyDefinition { Type = PropertyTypeUtil.FromCustom(BuildReportFileProperty.SizePercent), Format = PropertyFormat.Percentage, Name = "Size % (of Data)", LongName = "Percentage of the total data size"},
                 new PropertyDefinition { Type = PropertyType.Path, Name = "Path", IsHidden = true},
                 new PropertyDefinition { Type = PropertyTypeUtil.FromCustom(BuildReportFileProperty.BuildFile), Format = PropertyFormat.String, Name = "Build File", MaxAutoWidth = 500 }
-            }
+            ]
         };
 
         static readonly IssueLayout k_StepLayout = new IssueLayout
         {
             Category = IssueCategory.BuildStep,
-            Properties = new[]
-            {
+            Properties =
+            [
                 new PropertyDefinition { Type = PropertyType.LogLevel, Name = "Log Level"},
                 new PropertyDefinition { Type = PropertyType.Description, Name = "Build Step", MaxAutoWidth = 500 },
                 new PropertyDefinition { Type = PropertyTypeUtil.FromCustom(BuildReportStepProperty.Duration), Format = PropertyFormat.String, Name = "Duration"}
-            },
+            ],
             IsHierarchy = true
         };
 
@@ -95,12 +95,12 @@ namespace Unity.ProjectAuditor.Editor.Modules
 
         public override string Name => "Build Report";
 
-        public override IReadOnlyCollection<IssueLayout> SupportedLayouts => new IssueLayout[]
-        {
+        public override IReadOnlyCollection<IssueLayout> SupportedLayouts =>
+        [
             k_MetaDataLayout,
             k_FileLayout,
             k_StepLayout
-        };
+        ];
 
         public override AnalysisResult Audit(AnalysisParams analysisParams, IProgress progress = null)
         {
@@ -112,8 +112,8 @@ namespace Unity.ProjectAuditor.Editor.Modules
                     Report = buildReport
                 };
 
-                analysisParams.OnIncomingIssues(new[]
-                {
+                analysisParams.OnIncomingIssues(
+                [
                     NewMetaData(context, k_KeyBuildPath, buildReport.summary.outputPath),
                     NewMetaData(context, k_KeyPlatform, buildReport.summary.platform),
                     NewMetaData(context, k_KeyResult, buildReport.summary.result),
@@ -121,7 +121,7 @@ namespace Unity.ProjectAuditor.Editor.Modules
                     NewMetaData(context, k_KeyEndTime, Formatting.FormatDateTime(buildReport.summary.buildEndedAt)),
                     NewMetaData(context, k_KeyTotalTime, Formatting.FormatDuration(buildReport.summary.totalTime)),
                     NewMetaData(context, k_KeyTotalSize, Formatting.FormatSize(buildReport.summary.totalSize)),
-                });
+                ]);
 
                 analysisParams.OnIncomingIssues(AnalyzeBuildSteps(context));
                 analysisParams.OnIncomingIssues(AnalyzePackedAssets(context));
@@ -135,12 +135,12 @@ namespace Unity.ProjectAuditor.Editor.Modules
             {
                 var depth = step.depth;
                 yield return context.CreateInsight(IssueCategory.BuildStep, step.name)
-                    .WithCustomProperties(new object[(int)BuildReportStepProperty.Num]
-                    {
+                    .WithCustomProperties(
+                    [
                         Formatting.FormatDuration(step.duration),
                         step.name,
                         depth
-                    })
+                    ])
                     .WithSeverity(Severity.Hidden);
 
                 foreach (var message in step.messages)
@@ -148,12 +148,12 @@ namespace Unity.ProjectAuditor.Editor.Modules
                     var logMessage = message.content;
                     var description = new StringReader(logMessage).ReadLine(); // only take first line
                     yield return context.CreateInsight(IssueCategory.BuildStep, description)
-                        .WithCustomProperties(new object[(int)BuildReportStepProperty.Num]
-                        {
+                        .WithCustomProperties(
+                        [
                             0,
                             logMessage,
                             depth + 1
-                        })
+                        ])
                         .WithSeverity(CoreUtils.LogTypeToSeverity(message.type));
                 }
             }
@@ -180,14 +180,14 @@ namespace Unity.ProjectAuditor.Editor.Modules
 
                     yield return context.CreateInsight(IssueCategory.BuildFile, description)
                         .WithLocation(assetPath)
-                        .WithCustomProperties(new object[(int)BuildReportFileProperty.Num]
-                        {
+                        .WithCustomProperties(
+                        [
                             assetImporter != null ? assetImporter.GetType().Name : k_Unknown,
                             content.type.Name,
                             content.packedSize,
                             Math.Round((double)content.packedSize / dataSize, 4),
                             packedAsset.shortPath
-                        });
+                        ]);
                 }
             }
         }
@@ -195,7 +195,7 @@ namespace Unity.ProjectAuditor.Editor.Modules
         ReportItem NewMetaData(BuildAnalysisContext context, string key, object value)
         {
             return context.CreateInsight(IssueCategory.BuildSummary, key)
-                .WithCustomProperties(new object[(int)BuildReportMetaData.Num] { value });
+                .WithCustomProperties([value]);
         }
     }
 }

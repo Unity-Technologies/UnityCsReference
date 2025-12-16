@@ -46,13 +46,14 @@ namespace UnityEngine.VFX
         internal extern VFXInstancingMode instancingMode { get; set; }
         [FreeFunction(Name = "VisualEffectAssetBindings::GetTextureDimension", HasExplicitThis = true)] extern public UnityEngine.Rendering.TextureDimension GetTextureDimension(int nameID);
         [FreeFunction(Name = "VisualEffectAssetBindings::GetExposedSpace", HasExplicitThis = true)] extern public VFXSpace GetExposedSpace(int nameID);
-        [FreeFunction(Name = "VisualEffectAssetBindings::GetExposedProperties", HasExplicitThis = true)] extern public void GetExposedProperties([NotNull] List<VFXExposedProperty> exposedProperties);
-        [FreeFunction(Name = "VisualEffectAssetBindings::GetEvents", HasExplicitThis = true)] extern public void GetEvents([NotNull] List<string> names);
+        [FreeFunction(Name = "VisualEffectAssetBindings::GetExposedProperties", HasExplicitThis = true)] extern public void GetExposedProperties([NotNull][Out] List<VFXExposedProperty> exposedProperties);
+        [FreeFunction(Name = "VisualEffectAssetBindings::GetEvents", HasExplicitThis = true)] extern public void GetEvents([NotNull][Out] List<string> names);
         [FreeFunction(Name = "VisualEffectAssetBindings::HasSystemFromScript", HasExplicitThis = true)] extern internal bool HasSystem(int nameID);
-        [FreeFunction(Name = "VisualEffectAssetBindings::GetSystemNamesFromScript", HasExplicitThis = true)] extern internal void GetSystemNames([NotNull] List<string> names);
-        [FreeFunction(Name = "VisualEffectAssetBindings::GetParticleSystemNamesFromScript", HasExplicitThis = true)] extern internal void GetParticleSystemNames([NotNull] List<string> names);
-        [FreeFunction(Name = "VisualEffectAssetBindings::GetOutputEventNamesFromScript", HasExplicitThis = true)] extern internal void GetOutputEventNames([NotNull] List<string> names);
-        [FreeFunction(Name = "VisualEffectAssetBindings::GetSpawnSystemNamesFromScript", HasExplicitThis = true)] extern internal void GetSpawnSystemNames([NotNull] List<string> names);
+        [FreeFunction(Name = "VisualEffectAssetBindings::GetSystemNamesFromScript", HasExplicitThis = true)] extern internal void GetSystemNames([NotNull][Out] List<string> names);
+        [FreeFunction(Name = "VisualEffectAssetBindings::GetParticleSystemNamesFromScript", HasExplicitThis = true)] extern internal void GetParticleSystemNames([NotNull][Out] List<string> names);
+        [FreeFunction(Name = "VisualEffectAssetBindings::GetOutputEventNamesFromScript", HasExplicitThis = true)] extern internal void GetOutputEventNames([NotNull][Out] List<string> names);
+        [FreeFunction(Name = "VisualEffectAssetBindings::GetSpawnSystemNamesFromScript", HasExplicitThis = true)] extern internal void GetSpawnSystemNames([NotNull][Out] List<string> names);
+        [FreeFunction(Name = "VisualEffectAssetBindings::PrewarmComputeShadersFromScript", HasExplicitThis = true)] extern public void PrewarmComputeShaders();
 
         public UnityEngine.Rendering.TextureDimension GetTextureDimension(string name)
         {

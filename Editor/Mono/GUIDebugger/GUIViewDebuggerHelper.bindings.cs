@@ -118,7 +118,7 @@ namespace UnityEditor
     internal static partial class GUIViewDebuggerHelper
     {
         [NativeThrows]
-        static internal extern void GetViews(List<GUIView> views);
+        static internal extern void GetViews([UnityMarshalAs(NativeType.ScriptingObjectPtr)] List<GUIView> views);
 
         static internal extern void DebugWindow([UnityMarshalAs(NativeType.ScriptingObjectPtr)] GUIView view);
 
@@ -131,17 +131,17 @@ namespace UnityEditor
             return new GUIContent(text, image, tooltip);
         }
 
-        internal static extern void GetDrawInstructions(List<IMGUIDrawInstruction> drawInstructions, bool includeStackTraces = true);
+        internal static extern void GetDrawInstructions([UnityMarshalAs(NativeType.ScriptingObjectPtr)] List<IMGUIDrawInstruction> drawInstructions, bool includeStackTraces = true);
 
-        internal static extern void GetClipInstructions(List<IMGUIClipInstruction> clipInstructions, bool includeStackTraces = true);
+        internal static extern void GetClipInstructions([UnityMarshalAs(NativeType.ScriptingObjectPtr)] List<IMGUIClipInstruction> clipInstructions, bool includeStackTraces = true);
 
-        internal static extern void GetNamedControlInstructions(List<IMGUINamedControlInstruction> namedControlInstructions);
+        internal static extern void GetNamedControlInstructions([UnityMarshalAs(NativeType.ScriptingObjectPtr)] List<IMGUINamedControlInstruction> namedControlInstructions);
 
-        internal static extern void GetPropertyInstructions(List<IMGUIPropertyInstruction> namedControlInstructions, bool includeStackTraces = true);
+        internal static extern void GetPropertyInstructions([UnityMarshalAs(NativeType.ScriptingObjectPtr)] List<IMGUIPropertyInstruction> namedControlInstructions, bool includeStackTraces = true);
 
-        internal static extern void GetLayoutInstructions(List<IMGUILayoutInstruction> layoutInstructions, bool includeStackTraces = true);
+        internal static extern void GetLayoutInstructions([UnityMarshalAs(NativeType.ScriptingObjectPtr)] List<IMGUILayoutInstruction> layoutInstructions, bool includeStackTraces = true);
 
-        internal static extern void GetUnifiedInstructions(List<IMGUIInstruction> layoutInstructions, bool includeStackTraces = true);
+        internal static extern void GetUnifiedInstructions([UnityMarshalAs(NativeType.ScriptingObjectPtr)] List<IMGUIInstruction> layoutInstructions, bool includeStackTraces = true);
 
         [FreeFunction("GetGUIDebuggerManager().ClearInstructions")]
         internal static extern void ClearInstructions();

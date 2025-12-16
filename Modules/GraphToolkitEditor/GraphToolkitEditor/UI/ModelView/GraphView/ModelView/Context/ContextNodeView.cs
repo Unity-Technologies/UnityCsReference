@@ -2,9 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System;
 using System.Collections.Generic;
-using System.Linq;
 using Unity.GraphToolkit.ItemLibrary.Editor;
 using UnityEngine;
 using UnityEngine.UIElements;
@@ -145,8 +143,8 @@ namespace Unity.GraphToolkit.Editor
         {
             base.UpdateUIFromModel(visitor);
 
-            var hasVerticalInput = ContextNodeModel?.InputsById.Values.Any(t => t.Orientation == PortOrientation.Vertical) ?? false;
-            var hasVerticalOutput = ContextNodeModel?.OutputsById.Values.Any(t => t.Orientation == PortOrientation.Vertical) ?? false;
+            var hasVerticalInput = ContextNodeModel?.InputsById.Values.HasAny(t => t.Orientation == PortOrientation.Vertical) ?? false;
+            var hasVerticalOutput = ContextNodeModel?.OutputsById.Values.HasAny(t => t.Orientation == PortOrientation.Vertical) ?? false;
 
             EnableInClassList(ussClassName.WithUssModifier("no-vertical-input"), !hasVerticalInput);
             EnableInClassList(ussClassName.WithUssModifier("no-vertical-output"), !hasVerticalOutput);
@@ -181,7 +179,7 @@ namespace Unity.GraphToolkit.Editor
             if (blockContainer == null)
                 return 0;
 
-            var blocks = blockContainer.Children().OfType<BlockNodeView>().ToList();
+            using var dispose = blockContainer.Children().OfTypeToPooledList<BlockNodeView, VisualElement>(out var blocks);
 
             if (blocks.Count > 0)
             {
@@ -286,12 +284,13 @@ namespace Unity.GraphToolkit.Editor
         /// <inheritdoc/>
         public override bool HandlePasteOperation(PasteOperation operation, string operationName, Vector2 delta, CopyPasteData copyPasteData)
         {
-            if (!copyPasteData.Nodes.All(t => t is BlockNodeModel))
+            if (!copyPasteData.Nodes.HasAny(t => t is BlockNodeModel))
                 return false;
 
-            GraphView.Dispatch(new InsertBlocksInContextCommand(ContextNodeModel,
-                -1,
-                copyPasteData.Nodes.OfType<BlockNodeModel>().ToList(), false, true, operationName));
+            using var dispose = copyPasteData.Nodes.OfTypeToPooledList<BlockNodeModel, AbstractNodeModel>(out var blocks);
+
+            GraphView.Dispatch(new InsertBlocksInContextCommand(
+                ContextNodeModel, -1, blocks, false, true, operationName));
 
             return true;
         }

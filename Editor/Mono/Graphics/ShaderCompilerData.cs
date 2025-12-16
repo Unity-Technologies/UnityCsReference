@@ -13,10 +13,18 @@ namespace UnityEditor.Rendering
     [UsedByNativeCode]
     public struct ShaderSnippetData
     {
-        private ShaderType m_ShaderType;
-        private PassType m_PassType;
-        private string m_PassName;
-        private PassIdentifier m_PassIdentifier;
+        private readonly ShaderType m_ShaderType;
+        private readonly PassType m_PassType;
+        private readonly string m_PassName;
+        private readonly PassIdentifier m_PassIdentifier;
+
+        internal ShaderSnippetData(ShaderType shaderType, PassType passType, string passName, PassIdentifier passIdentifier)
+        {
+            m_ShaderType = shaderType;
+            m_PassType = passType;
+            m_PassName = passName;
+            m_PassIdentifier = passIdentifier;
+        }
 
         public ShaderType shaderType
         {

@@ -4,7 +4,6 @@
 
 using UnityEngine;
 using UnityEditor.AnimatedValues;
-using UnityEditorInternal.VR;
 using System.Linq;
 
 namespace UnityEditor

@@ -18,9 +18,12 @@ using Unity.Profiling;
 using UnityEditor.AssetImporters;
 using UnityEditor.Scripting.ScriptCompilation;
 using UnityEngine.Scripting.APIUpdating;
+using UnityEditor.Scripting;
+using UnityEngine.Bindings;
 
 namespace UnityEditor
 {
+    [VisibleToOtherModules("UnityEditor.BurstModule")]
     internal class AssemblyHelper
     {
         static Dictionary<string, bool> managedToDllType = new Dictionary<string, bool>();
@@ -43,6 +46,8 @@ namespace UnityEditor
             var precompiledAssemblyPaths = InternalEditorUtility.GetPrecompiledAssemblyPaths();
 
             HashSet<string> searchPaths = new HashSet<string>(precompiledAssemblyPaths);
+            // bcl extensions search path. Note: when we have CoreCLR editor, we'll want to make this search path dependant on current runtime
+            searchPaths.Add(BCLExtensions.NetstandardRuntimeDirectory());
 
             var precompiledAssemblies = InternalEditorUtility.GetUnityAssemblies(true, target);
             foreach (var asm in precompiledAssemblies)

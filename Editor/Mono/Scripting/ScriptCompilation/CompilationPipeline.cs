@@ -4,12 +4,16 @@
 
 using System;
 using System.Collections.Generic;
-using UnityEditor.Scripting.ScriptCompilation;
+using System.IO;
 using System.Linq;
+using UnityEditor.Scripting;
 using UnityEditor.Scripting.Compilers;
-using sc = UnityEditor.Scripting.ScriptCompilation;
+using UnityEditor.Scripting.ScriptCompilation;
+using UnityEditor.Scripting.ScriptCompilation.MsBuild;
 using UnityEditorInternal;
 using UnityEngine.Scripting;
+using sc = UnityEditor.Scripting.ScriptCompilation;
+using UnityEngine.Bindings;
 
 namespace UnityEditor.Compilation
 {
@@ -200,6 +204,30 @@ namespace UnityEditor.Compilation
         }
     }
 
+    internal struct CompilationDoneResult
+    {
+        internal CompilationDoneResult(bool isForEditor, bool isSuccessful, List<string> updatedFiles, List<string> deletedFiles, IReadOnlyDictionary<string, IReadOnlyList<string>> assemblyDefines)
+        {
+            IsForEditor = isForEditor;
+            IsSuccessful = isSuccessful;
+            UpdatedFiles = updatedFiles;
+            DeletedFiles = deletedFiles;
+            AssemblyDefines = assemblyDefines;
+        }
+
+        public bool IsForEditor { get; internal set; }
+
+        public bool IsSuccessful { get; private set; }
+
+        // List of the files in the publish Directory that is new or has been updated since last time.
+        public List<string> UpdatedFiles { get; private set; }
+
+        // List of files that has been deleted since last time.
+        public List<string> DeletedFiles { get; private set; }
+
+        public IReadOnlyDictionary<string, IReadOnlyList<string>> AssemblyDefines { get; private set; }
+    }
+
     public static partial class CompilationPipeline
     {
         static AssemblyDefinitionPlatform[] assemblyDefinitionPlatforms;
@@ -243,6 +271,23 @@ namespace UnityEditor.Compilation
                     }
                 }
             }
+        }
+
+        internal static bool TryGetLastBuildResult(CompileTarget target, out CompilationDoneResult? lastCompilationDoneResult)
+        {
+            if (MsBuildCompilationInterface.Instance.TryGetLastBuildResult(target, out var result))
+            {
+                lastCompilationDoneResult = result;
+                return true;
+            }
+
+            lastCompilationDoneResult = null;
+            return false;
+        }
+
+        internal static void ReportBuildFinished(CompileTarget target, CompilationDoneResult compilationDoneResult)
+        {
+
         }
 
         static CompilationPipeline()
@@ -345,6 +390,7 @@ namespace UnityEditor.Compilation
         }
 
         //Danger danger: this method is used by BurstAotCompiler.cs
+        [VisibleToOtherModules("UnityEditor.BurstModule")]
         internal static ScriptAssembly[] GetScriptAssemblies(IEditorCompilation editorCompilation, EditorScriptCompilationOptions options, string[] extraScriptingDefines = null)
         {
             var target = EditorUserBuildSettings.activeBuildTarget;
@@ -551,9 +597,12 @@ namespace UnityEditor.Compilation
             return null;
         }
 
+        [VisibleToOtherModules("UnityEditor.BurstModule")]
         internal static Assembly[] ToAssemblies(ScriptAssembly[] scriptAssemblies)
         {
             var assemblies = new Assembly[scriptAssemblies.Length];
+
+            var targetingPackFiles = TargetingPackExtractor.GetAssembliesFromFrameworkList(BCLExtensions.NetstandardTargetingPackDirectory());
 
             for (int i = 0; i < scriptAssemblies.Length; ++i)
             {
@@ -563,7 +612,7 @@ namespace UnityEditor.Compilation
                 var outputPath = scriptAssembly.FullPath;
                 var sourceFiles = scriptAssembly.Files;
                 var defines = scriptAssembly.Defines;
-                var compiledAssemblyReferences = scriptAssembly.References.Select(FileUtil.GetPhysicalPath).ToArray();
+                var compiledAssemblyReferences = scriptAssembly.References.Select(FileUtil.GetPhysicalPath).Concat(targetingPackFiles.referenceAssemblies.Select(p=>p.MakeAbsolute().ToString())).ToArray();
 
                 var flags = AssemblyFlags.None;
 
@@ -572,6 +621,9 @@ namespace UnityEditor.Compilation
 
                 var compilerOptions = scriptAssembly.CompilerOptions;
                 compilerOptions.ResponseFiles = scriptAssembly.GetResponseFiles();
+                // inject analyzers
+                compilerOptions.RoslynAnalyzerDllPaths = (compilerOptions.RoslynAnalyzerDllPaths ?? Array.Empty<string>()).Concat(
+                    targetingPackFiles.analyzers.Select(p => p.MakeAbsolute().ToString())).ToArray();
 
                 assemblies[i] = new Assembly(name,
                     outputPath,

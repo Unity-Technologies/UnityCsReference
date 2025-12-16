@@ -235,7 +235,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public IPage FindPage(IList<IPackage> packages)
         {
-            if (packages?.Any() != true || packages.All(p => activePage.visualStates.Contains(p.uniqueId) || activePage.ShouldInclude(p)))
+            if (packages == null || packages.Count == 0 || packages.All(p => activePage.visualStates.Contains(p.uniqueId) || activePage.ShouldInclude(p)))
                 return activePage;
 
             var pageIdsToCheck = new[] { BuiltInPage.k_Id, InProjectPage.k_Id, UnityRegistryPage.k_Id, MyAssetsPage.k_Id, MyRegistriesPage.k_Id};

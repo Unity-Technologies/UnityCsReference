@@ -29,6 +29,8 @@ namespace UnityEditor.Build.Profile
         public static readonly string platforms = L10n.Tr("Platforms");
         public static readonly string build = L10n.Tr("Build");
         public static readonly string cloudBuild = L10n.Tr("Cloud Build");
+        public static readonly string cloudBuildRequiresProfileTooltip = L10n.Tr("Add a Build Profile to use Build Automation");
+        public static readonly string cloudBuildUnsupportedTooltip = L10n.Tr("This platform is not supported by Build Automation");
         public static readonly string buildAndRun = L10n.Tr("Build And Run");
         public static readonly string sharedSettingsInfo =
             L10n.Tr("Platform builds use the shared scene list. To change the scene list or other settings independently, create a Build Profile for this platform.");

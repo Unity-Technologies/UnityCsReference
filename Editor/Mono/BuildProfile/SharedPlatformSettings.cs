@@ -79,6 +79,19 @@ namespace UnityEditor.Build.Profile
             }
         }
 
+        internal protected override bool buildWithCodeCoverage
+        {
+            get => base.buildWithCodeCoverage;
+            set
+            {
+                if (base.buildWithCodeCoverage != value)
+                {
+                    base.buildWithCodeCoverage = value;
+                    SyncSharedSettings(k_SettingBuildWithCodeCoverage);
+                }
+            }
+        }
+
         internal protected override bool allowDebugging
         {
             get => base.allowDebugging;
@@ -385,6 +398,9 @@ namespace UnityEditor.Build.Profile
                     case k_SettingBuildWithDeepProfilingSupport:
                         platformSettingsBase.buildWithDeepProfilingSupport = buildWithDeepProfilingSupport;
                         break;
+                    case k_SettingBuildWithCodeCoverage:
+                        platformSettingsBase.buildWithCodeCoverage = buildWithCodeCoverage;
+                        break;
                     case k_SettingAllowDebugging:
                         platformSettingsBase.allowDebugging = allowDebugging;
                         break;
@@ -473,6 +489,8 @@ namespace UnityEditor.Build.Profile
             platformSettings.development = development;
             platformSettings.connectProfiler = connectProfiler;
             platformSettings.buildWithDeepProfilingSupport = buildWithDeepProfilingSupport;
+            var isCoverageSupported = BuildProfileModuleUtil.IsCoverageSupported(profile.buildTarget);
+            platformSettings.buildWithCodeCoverage = isCoverageSupported ? buildWithCodeCoverage : false;
             platformSettings.allowDebugging = allowDebugging;
             platformSettings.waitForManagedDebugger = waitForManagedDebugger;
             platformSettings.managedDebuggerFixedPort = managedDebuggerFixedPort;

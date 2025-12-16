@@ -16,6 +16,7 @@ namespace UnityEngine.UIElements
 {
     internal interface IStyleDataGroup<T>
     {
+        T GetDefault();
         T Copy();
         void CopyFrom(ref T other);
     }
@@ -40,6 +41,11 @@ namespace UnityEngine.UIElements
         public Visibility visibility;
         public WhiteSpace whiteSpace;
         public Length wordSpacing;
+
+        public InheritedData GetDefault()
+        {
+            return default;
+        }
 
         public InheritedData Copy()
         {
@@ -118,155 +124,10 @@ namespace UnityEngine.UIElements
         }
     }
 
-    internal struct LayoutData : IStyleDataGroup<LayoutData>, IEquatable<LayoutData>
-    {
-        public Align alignContent;
-        public Align alignItems;
-        public Align alignSelf;
-        public Ratio aspectRatio;
-        public float borderBottomWidth;
-        public float borderLeftWidth;
-        public float borderRightWidth;
-        public float borderTopWidth;
-        public Length bottom;
-        public DisplayStyle display;
-        public Length flexBasis;
-        public FlexDirection flexDirection;
-        public float flexGrow;
-        public float flexShrink;
-        public Wrap flexWrap;
-        public Length height;
-        public Justify justifyContent;
-        public Length left;
-        public Length marginBottom;
-        public Length marginLeft;
-        public Length marginRight;
-        public Length marginTop;
-        public Length maxHeight;
-        public Length maxWidth;
-        public Length minHeight;
-        public Length minWidth;
-        public Length paddingBottom;
-        public Length paddingLeft;
-        public Length paddingRight;
-        public Length paddingTop;
-        public Position position;
-        public Length right;
-        public Length top;
-        public Length width;
-
-        public LayoutData Copy()
-        {
-            return this;
-        }
-
-        public void CopyFrom(ref LayoutData other)
-        {
-            this = other;
-        }
-
-        public static bool operator ==(LayoutData lhs, LayoutData rhs)
-        {
-            return lhs.alignContent == rhs.alignContent &&
-                lhs.alignItems == rhs.alignItems &&
-                lhs.alignSelf == rhs.alignSelf &&
-                lhs.aspectRatio == rhs.aspectRatio &&
-                lhs.borderBottomWidth == rhs.borderBottomWidth &&
-                lhs.borderLeftWidth == rhs.borderLeftWidth &&
-                lhs.borderRightWidth == rhs.borderRightWidth &&
-                lhs.borderTopWidth == rhs.borderTopWidth &&
-                lhs.bottom == rhs.bottom &&
-                lhs.display == rhs.display &&
-                lhs.flexBasis == rhs.flexBasis &&
-                lhs.flexDirection == rhs.flexDirection &&
-                lhs.flexGrow == rhs.flexGrow &&
-                lhs.flexShrink == rhs.flexShrink &&
-                lhs.flexWrap == rhs.flexWrap &&
-                lhs.height == rhs.height &&
-                lhs.justifyContent == rhs.justifyContent &&
-                lhs.left == rhs.left &&
-                lhs.marginBottom == rhs.marginBottom &&
-                lhs.marginLeft == rhs.marginLeft &&
-                lhs.marginRight == rhs.marginRight &&
-                lhs.marginTop == rhs.marginTop &&
-                lhs.maxHeight == rhs.maxHeight &&
-                lhs.maxWidth == rhs.maxWidth &&
-                lhs.minHeight == rhs.minHeight &&
-                lhs.minWidth == rhs.minWidth &&
-                lhs.paddingBottom == rhs.paddingBottom &&
-                lhs.paddingLeft == rhs.paddingLeft &&
-                lhs.paddingRight == rhs.paddingRight &&
-                lhs.paddingTop == rhs.paddingTop &&
-                lhs.position == rhs.position &&
-                lhs.right == rhs.right &&
-                lhs.top == rhs.top &&
-                lhs.width == rhs.width;
-        }
-
-        public static bool operator !=(LayoutData lhs, LayoutData rhs)
-        {
-            return !(lhs == rhs);
-        }
-
-        public bool Equals(LayoutData other)
-        {
-            return other == this;
-        }
-
-        public override bool Equals(object obj)
-        {
-            if (ReferenceEquals(null, obj))
-                return false;
-            return obj is LayoutData &&
-                Equals((LayoutData)obj);
-        }
-
-        public override int GetHashCode()
-        {
-            unchecked
-            {
-                var hashCode = (int)alignContent;
-                hashCode = (hashCode * 397) ^ (int)alignItems;
-                hashCode = (hashCode * 397) ^ (int)alignSelf;
-                hashCode = (hashCode * 397) ^ aspectRatio.GetHashCode();
-                hashCode = (hashCode * 397) ^ borderBottomWidth.GetHashCode();
-                hashCode = (hashCode * 397) ^ borderLeftWidth.GetHashCode();
-                hashCode = (hashCode * 397) ^ borderRightWidth.GetHashCode();
-                hashCode = (hashCode * 397) ^ borderTopWidth.GetHashCode();
-                hashCode = (hashCode * 397) ^ bottom.GetHashCode();
-                hashCode = (hashCode * 397) ^ (int)display;
-                hashCode = (hashCode * 397) ^ flexBasis.GetHashCode();
-                hashCode = (hashCode * 397) ^ (int)flexDirection;
-                hashCode = (hashCode * 397) ^ flexGrow.GetHashCode();
-                hashCode = (hashCode * 397) ^ flexShrink.GetHashCode();
-                hashCode = (hashCode * 397) ^ (int)flexWrap;
-                hashCode = (hashCode * 397) ^ height.GetHashCode();
-                hashCode = (hashCode * 397) ^ (int)justifyContent;
-                hashCode = (hashCode * 397) ^ left.GetHashCode();
-                hashCode = (hashCode * 397) ^ marginBottom.GetHashCode();
-                hashCode = (hashCode * 397) ^ marginLeft.GetHashCode();
-                hashCode = (hashCode * 397) ^ marginRight.GetHashCode();
-                hashCode = (hashCode * 397) ^ marginTop.GetHashCode();
-                hashCode = (hashCode * 397) ^ maxHeight.GetHashCode();
-                hashCode = (hashCode * 397) ^ maxWidth.GetHashCode();
-                hashCode = (hashCode * 397) ^ minHeight.GetHashCode();
-                hashCode = (hashCode * 397) ^ minWidth.GetHashCode();
-                hashCode = (hashCode * 397) ^ paddingBottom.GetHashCode();
-                hashCode = (hashCode * 397) ^ paddingLeft.GetHashCode();
-                hashCode = (hashCode * 397) ^ paddingRight.GetHashCode();
-                hashCode = (hashCode * 397) ^ paddingTop.GetHashCode();
-                hashCode = (hashCode * 397) ^ (int)position;
-                hashCode = (hashCode * 397) ^ right.GetHashCode();
-                hashCode = (hashCode * 397) ^ top.GetHashCode();
-                hashCode = (hashCode * 397) ^ width.GetHashCode();
-                return hashCode;
-            }
-        }
-    }
-
     internal struct RareData : IStyleDataGroup<RareData>, IEquatable<RareData>
     {
         public Cursor cursor;
+        public List<FilterFunction> filter;
         public TextOverflow textOverflow;
         public Color unityBackgroundImageTintColor;
         public OverflowClipBox unityOverflowClipBox;
@@ -278,19 +139,54 @@ namespace UnityEngine.UIElements
         public SliceType unitySliceType;
         public TextOverflowPosition unityTextOverflowPosition;
 
+        public RareData GetDefault()
+        {
+            return default;
+        }
+
         public RareData Copy()
         {
-            return this;
+            var data = new RareData();
+            data.cursor = cursor;
+            data.filter = new List<FilterFunction>(filter);
+            data.textOverflow = textOverflow;
+            data.unityBackgroundImageTintColor = unityBackgroundImageTintColor;
+            data.unityOverflowClipBox = unityOverflowClipBox;
+            data.unitySliceBottom = unitySliceBottom;
+            data.unitySliceLeft = unitySliceLeft;
+            data.unitySliceRight = unitySliceRight;
+            data.unitySliceScale = unitySliceScale;
+            data.unitySliceTop = unitySliceTop;
+            data.unitySliceType = unitySliceType;
+            data.unityTextOverflowPosition = unityTextOverflowPosition;
+            return data;
         }
 
         public void CopyFrom(ref RareData other)
         {
-            this = other;
+            cursor = other.cursor;
+            if (!ReferenceEquals(filter, other.filter))
+            {
+                filter.Clear();
+                filter.AddRange(other.filter);
+            }
+
+            textOverflow = other.textOverflow;
+            unityBackgroundImageTintColor = other.unityBackgroundImageTintColor;
+            unityOverflowClipBox = other.unityOverflowClipBox;
+            unitySliceBottom = other.unitySliceBottom;
+            unitySliceLeft = other.unitySliceLeft;
+            unitySliceRight = other.unitySliceRight;
+            unitySliceScale = other.unitySliceScale;
+            unitySliceTop = other.unitySliceTop;
+            unitySliceType = other.unitySliceType;
+            unityTextOverflowPosition = other.unityTextOverflowPosition;
         }
 
         public static bool operator ==(RareData lhs, RareData rhs)
         {
             return lhs.cursor == rhs.cursor &&
+                lhs.filter == rhs.filter &&
                 lhs.textOverflow == rhs.textOverflow &&
                 lhs.unityBackgroundImageTintColor == rhs.unityBackgroundImageTintColor &&
                 lhs.unityOverflowClipBox == rhs.unityOverflowClipBox &&
@@ -326,6 +222,7 @@ namespace UnityEngine.UIElements
             unchecked
             {
                 var hashCode = cursor.GetHashCode();
+                hashCode = (hashCode * 397) ^ filter.GetHashCode();
                 hashCode = (hashCode * 397) ^ (int)textOverflow;
                 hashCode = (hashCode * 397) ^ unityBackgroundImageTintColor.GetHashCode();
                 hashCode = (hashCode * 397) ^ (int)unityOverflowClipBox;
@@ -347,6 +244,11 @@ namespace UnityEngine.UIElements
         public Scale scale;
         public TransformOrigin transformOrigin;
         public Translate translate;
+
+        public TransformData GetDefault()
+        {
+            return default;
+        }
 
         public TransformData Copy()
         {
@@ -404,6 +306,11 @@ namespace UnityEngine.UIElements
         public List<TimeValue> transitionDuration;
         public List<StylePropertyName> transitionProperty;
         public List<EasingFunction> transitionTimingFunction;
+
+        public TransitionData GetDefault()
+        {
+            return default;
+        }
 
         public TransitionData Copy()
         {
@@ -484,7 +391,7 @@ namespace UnityEngine.UIElements
     internal struct VisualData : IStyleDataGroup<VisualData>, IEquatable<VisualData>
     {
         public Color backgroundColor;
-        public Background backgroundImage;
+        public EntityId backgroundImage;
         public BackgroundPosition backgroundPositionX;
         public BackgroundPosition backgroundPositionY;
         public BackgroundRepeat backgroundRepeat;
@@ -497,57 +404,21 @@ namespace UnityEngine.UIElements
         public Color borderTopColor;
         public Length borderTopLeftRadius;
         public Length borderTopRightRadius;
-        public List<FilterFunction> filter;
         public float opacity;
-        public OverflowInternal overflow;
+
+        public VisualData GetDefault()
+        {
+            return default;
+        }
 
         public VisualData Copy()
         {
-            var data = new VisualData();
-            data.backgroundColor = backgroundColor;
-            data.backgroundImage = backgroundImage;
-            data.backgroundPositionX = backgroundPositionX;
-            data.backgroundPositionY = backgroundPositionY;
-            data.backgroundRepeat = backgroundRepeat;
-            data.backgroundSize = backgroundSize;
-            data.borderBottomColor = borderBottomColor;
-            data.borderBottomLeftRadius = borderBottomLeftRadius;
-            data.borderBottomRightRadius = borderBottomRightRadius;
-            data.borderLeftColor = borderLeftColor;
-            data.borderRightColor = borderRightColor;
-            data.borderTopColor = borderTopColor;
-            data.borderTopLeftRadius = borderTopLeftRadius;
-            data.borderTopRightRadius = borderTopRightRadius;
-            data.filter = new List<FilterFunction>(filter);
-            data.opacity = opacity;
-            data.overflow = overflow;
-            return data;
+            return this;
         }
 
         public void CopyFrom(ref VisualData other)
         {
-            backgroundColor = other.backgroundColor;
-            backgroundImage = other.backgroundImage;
-            backgroundPositionX = other.backgroundPositionX;
-            backgroundPositionY = other.backgroundPositionY;
-            backgroundRepeat = other.backgroundRepeat;
-            backgroundSize = other.backgroundSize;
-            borderBottomColor = other.borderBottomColor;
-            borderBottomLeftRadius = other.borderBottomLeftRadius;
-            borderBottomRightRadius = other.borderBottomRightRadius;
-            borderLeftColor = other.borderLeftColor;
-            borderRightColor = other.borderRightColor;
-            borderTopColor = other.borderTopColor;
-            borderTopLeftRadius = other.borderTopLeftRadius;
-            borderTopRightRadius = other.borderTopRightRadius;
-            if (!ReferenceEquals(filter, other.filter))
-            {
-                filter.Clear();
-                filter.AddRange(other.filter);
-            }
-
-            opacity = other.opacity;
-            overflow = other.overflow;
+            this = other;
         }
 
         public static bool operator ==(VisualData lhs, VisualData rhs)
@@ -566,9 +437,7 @@ namespace UnityEngine.UIElements
                 lhs.borderTopColor == rhs.borderTopColor &&
                 lhs.borderTopLeftRadius == rhs.borderTopLeftRadius &&
                 lhs.borderTopRightRadius == rhs.borderTopRightRadius &&
-                lhs.filter == rhs.filter &&
-                lhs.opacity == rhs.opacity &&
-                lhs.overflow == rhs.overflow;
+                lhs.opacity == rhs.opacity;
         }
 
         public static bool operator !=(VisualData lhs, VisualData rhs)
@@ -607,9 +476,7 @@ namespace UnityEngine.UIElements
                 hashCode = (hashCode * 397) ^ borderTopColor.GetHashCode();
                 hashCode = (hashCode * 397) ^ borderTopLeftRadius.GetHashCode();
                 hashCode = (hashCode * 397) ^ borderTopRightRadius.GetHashCode();
-                hashCode = (hashCode * 397) ^ filter.GetHashCode();
                 hashCode = (hashCode * 397) ^ opacity.GetHashCode();
-                hashCode = (hashCode * 397) ^ (int)overflow;
                 return hashCode;
             }
         }

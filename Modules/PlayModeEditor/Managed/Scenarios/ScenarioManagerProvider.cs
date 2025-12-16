@@ -13,7 +13,7 @@ namespace Unity.PlayMode.Editor
     /// </summary>
     class ScenarioManagerProvider : ScriptableSingleton<ScenarioManagerProvider>
     {
-        [SerializeField] private PlayModeScenario m_Config;
+        [SerializeReference] private PlayModeScenario m_Config;
 
         /// <summary>
         /// An event that is raised when the play mode state changes.

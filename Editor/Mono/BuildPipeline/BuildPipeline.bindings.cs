@@ -60,6 +60,10 @@ namespace UnityEditor
         [FreeFunction]
         internal static extern void ShowBuildProfileWindow();
 
+        [NativeHeader("Editor/Src/BuildPipeline/BuildPlayerHelpers.h")]
+        [FreeFunction]
+        internal static extern void ShowBuildProfileWindowAndRequireActiveProfile();
+
         private static void LogBuildExceptionAndExit(string buildFunctionName, System.Exception exception)
         {
             Debug.LogErrorFormat("Internal Error in {0}:", buildFunctionName);
@@ -163,6 +167,11 @@ namespace UnityEditor
                     throw new ArgumentException("Non-development build cannot allow debugging. Either add the Development build option, or remove the AllowDebugging build option.");
                 }
 
+                if ((buildPlayerOptions.options & BuildOptions.EnableCodeCoverage) != 0)
+                {
+                    throw new ArgumentException("Non-development build cannot allow code coverage. Either add the Development build option, or remove the EnableCodeCoverage build option.");
+                }
+
                 if ((buildPlayerOptions.options & BuildOptions.EnableDeepProfilingSupport) != 0)
                 {
                     throw new ArgumentException("Non-development build cannot allow deep profiling support. Either add the Development build option, or remove the EnableDeepProfilingSupport build option.");
@@ -196,6 +205,7 @@ namespace UnityEditor
                     buildPlayerOptions.subtarget,
                     buildPlayerOptions.options,
                     buildPlayerOptions.extraScriptingDefines,
+                    buildPlayerOptions.previousBuildMetadataLocations,
                     false);
             }
             catch (System.ArgumentException argumentException)
@@ -225,6 +235,7 @@ namespace UnityEditor
                 buildPlayerOptions.subtarget,
                 buildPlayerOptions.options,
                 buildPlayerOptions.extraScriptingDefines,
+                buildPlayerOptions.previousBuildMetadataLocations,
                 delayToAfterScriptReload
                 );
         }
@@ -290,7 +301,7 @@ namespace UnityEditor
 
 
         // Entry point into the C++ implementation of BuildPlayer()
-        internal static extern BuildReport BuildPlayerInternal(string[] levels, string locationPathName, string assetBundleManifestPath, BuildTargetGroup buildTargetGroup, BuildTarget target, int subtarget, BuildOptions options, string[] extraScriptingDefines, bool delayToAfterScriptReload);
+        internal static extern BuildReport BuildPlayerInternal(string[] levels, string locationPathName, string assetBundleManifestPath, BuildTargetGroup buildTargetGroup, BuildTarget target, int subtarget, BuildOptions options, string[] extraScriptingDefines, string[] previousBuildMetadataLocations, bool delayToAfterScriptReload);
 
         internal static extern void BuildPlayerInternalPostBuild(BuildReport report);
 
@@ -327,8 +338,7 @@ namespace UnityEditor
 
         private static extern BuildPlayerDataResult BuildPlayerData(BuildPlayerDataOptions buildPlayerDataOptions);
 
-		// UCBP-Backport - temporary internal
-        internal static BuildReport BuildContentDirectory(BuildContentDirectoryParameters buildParameters)
+        /*UCBP-PUBLIC*/ internal static BuildReport BuildContentDirectory(BuildContentDirectoryParameters buildParameters)
         {
             if (buildParameters.targetPlatform == 0 || buildParameters.targetPlatform == BuildTarget.NoTarget)
             {
@@ -540,5 +550,7 @@ namespace UnityEditor
             }
             return true;
         }
+
+        /*UCBP-PUBLIC*/ internal static extern void CleanBuildCache();
     }
 }

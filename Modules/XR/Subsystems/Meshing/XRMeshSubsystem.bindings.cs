@@ -96,14 +96,23 @@ namespace UnityEngine.XR
     [StructLayout(LayoutKind.Sequential)]
     public struct MeshGenerationResult : IEquatable<MeshGenerationResult>
     {
+        [NativeName("meshId")]
         public MeshId MeshId { get; }
+        [NativeName("mesh")]
         public Mesh Mesh { get; }
+        [NativeName("meshCollider")]
         public MeshCollider MeshCollider { get; }
+        [NativeName("status")]
         public MeshGenerationStatus Status { get; }
+        [NativeName("attributes")]
         public MeshVertexAttributes Attributes { get; }
+        [NativeName("timestamp")]
         public ulong Timestamp { get; }
+        [NativeName("position")]
         public Vector3 Position { get; }
+        [NativeName("rotation")]
         public Quaternion Rotation { get; }
+        [NativeName("scale")]
         public Vector3 Scale { get; }
 
         public override bool Equals(object obj)
@@ -285,13 +294,16 @@ namespace UnityEngine.XR
             MeshGenerationOptions options);
 
         [RequiredByNativeCode]
-        private void InvokeMeshReadyDelegate(
-            MeshGenerationResult result,
+        static void InvokeMeshReadyDelegate(
+            IntPtr resultPtr,
             Action<MeshGenerationResult> onMeshGenerationComplete)
         {
-            if (onMeshGenerationComplete != null)
-                onMeshGenerationComplete(result);
+            var result = GetMeshGenerationResult(resultPtr);
+            onMeshGenerationComplete?.Invoke(result);
         }
+
+        [NativeMethod]
+        static extern MeshGenerationResult GetMeshGenerationResult(IntPtr resultPtr);
 
         public extern float meshDensity { get; set; }
 

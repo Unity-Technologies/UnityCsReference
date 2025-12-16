@@ -191,6 +191,17 @@ namespace UnityEditor.Modules
     {
         public virtual ScriptingImplementation[] Supported()
         {
+            if (Unsupported.IsSourceBuild())  // CORECLR_FIXME remove sourcebuild
+            {
+                return new[]
+                {
+                    ScriptingImplementation.Mono2x,
+                    ScriptingImplementation.IL2CPP,
+                    #pragma warning disable 618
+                    ScriptingImplementation.CoreCLR
+                    #pragma warning restore 618
+                };
+            }
             return new[]
             {
                 ScriptingImplementation.Mono2x,

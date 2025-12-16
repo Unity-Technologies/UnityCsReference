@@ -54,6 +54,16 @@ namespace Unity.GraphToolkit.Editor
     public interface INode
     {
         /// <summary>
+        /// The text displayed when hovering over the node's header.
+        /// </summary>
+        public string Tooltip { get; set; }
+
+        /// <summary>
+        /// The highlight color of the node. The highlight is located on the upper border of nodes, and on the upper and lower borders of context nodes.
+        /// </summary>
+        public Color DefaultColor { get; set; }
+
+        /// <summary>
         /// The number of input ports on the node.
         /// </summary>
         public int InputPortCount => ((NodeModel)this).InputsByDisplayOrder.Count;
@@ -78,9 +88,9 @@ namespace Unity.GraphToolkit.Editor
         /// Retrieves an input port using its name.
         /// </summary>
         /// <param name="name">The unique name of the input port within this node.</param>
-        /// <returns>The input port with the specified name.</returns>
+        /// <returns>The input port with the specified name, or null if no match is found.</returns>
         /// <remarks>The input port's name is unique within the node's input ports and node options.</remarks>
-        public IPort GetInputPortByName(string name) => ((NodeModel)this).InputsById[name];
+        public IPort GetInputPortByName(string name) => ((NodeModel)this).InputsById.GetValueOrDefault(name);
 
         /// <summary>
         /// The number of output ports on the node.
@@ -109,6 +119,6 @@ namespace Unity.GraphToolkit.Editor
         /// <param name="name">The unique name of the output port within this node.</param>
         /// <returns>The output port with the specified name, or null if no match is found.</returns>
         /// <remarks>The output port's name is unique within the node's output ports.</remarks>
-        public IPort GetOutputPortByName(string name) => ((NodeModel)this).OutputsById[name];
+        public IPort GetOutputPortByName(string name) => ((NodeModel)this).OutputsById.GetValueOrDefault(name);
     }
 }

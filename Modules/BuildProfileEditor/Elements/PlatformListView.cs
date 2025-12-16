@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System;
 using System.Collections.Generic;
 using UnityEditor.Build.Profile.Handlers;
 using UnityEngine;
@@ -61,7 +60,8 @@ namespace UnityEditor.Build.Profile.Elements
             m_SharedSceneListItem.Set(TrText.sceneList, BuildProfileModuleUtil.GetSceneListIcon());
             m_SharedSceneListItem.AddToClassList("unity-list-view__item");
             m_SharedSceneListItem.AddToClassList("unity-collection-view__item");
-            m_SharedSceneListItem.AddManipulator(new Clickable(evt => {
+            m_SharedSceneListItem.AddManipulator(new Clickable(evt =>
+            {
                 m_SharedSceneListItem.AddToClassList("unity-collection-view__item--selected");
                 m_Parent.OnClassicSceneListSelected();
             }));
@@ -401,7 +401,8 @@ namespace UnityEditor.Build.Profile.Elements
                     type = ListItemType.InstalledPlatform,
                     data = profile,
                     text = BuildProfileModuleUtil.GetClassicPlatformDisplayName(profile.platformGuid),
-                    icon = BuildProfileModuleUtil.GetPlatformIconSmall(profile.platformGuid)
+                    icon = BuildProfileModuleUtil.GetPlatformIconSmall(profile.platformGuid),
+                    platformId = profile.platformGuid // Ensure platformId is set for consistency
                 });
             }
 
@@ -412,7 +413,7 @@ namespace UnityEditor.Build.Profile.Elements
                     type = ListItemType.MissingPlatform,
                     text = BuildProfileModuleUtil.GetClassicPlatformDisplayName(platformId),
                     icon = BuildProfileModuleUtil.GetPlatformIconSmall(platformId),
-                    platformId = platformId
+                    platformId = platformId,
                 });
             }
 

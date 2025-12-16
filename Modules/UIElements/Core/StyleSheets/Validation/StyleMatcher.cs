@@ -49,6 +49,8 @@ namespace UnityEngine.UIElements.StyleSheets
         protected abstract bool MatchUrl();
         protected abstract bool MatchTime();
         protected abstract bool MatchFilterFunction();
+
+        protected abstract bool MatchMaterialPropertyValue();
         protected abstract bool MatchAngle();
         protected abstract bool MatchCustomIdent();
 
@@ -274,7 +276,16 @@ namespace UnityEngine.UIElements.StyleSheets
             // All sub expressions are mandatory but they may match in any order.
             int matchCount = MatchMany(exp);
             int subExpCount = exp.subExpressions.Length;
-            return matchCount == subExpCount;
+
+            // If we matched everything, success
+            if (matchCount == subExpCount)
+                return true;
+
+            // If we have variables and no more values to consume, assume variables cover the rest
+            if (matchCount > 0 && !hasCurrent && matchedVariableCount > 0)
+                return true;
+
+            return false;
         }
 
         private unsafe int MatchMany(Expression exp)
@@ -320,10 +331,14 @@ namespace UnityEngine.UIElements.StyleSheets
             int* matchedExp = stackalloc int[subExpCount];
 
             int matchCount = 0;
-            int matchVariableCount = 0;
+            int startVariableCount = matchedVariableCount;
+            int currentMatchVariableCount = startVariableCount;
 
-            for (int i = 0; i < subExpCount && matchCount + matchVariableCount < subExpCount;)
+            for (int i = 0; hasCurrent;)
             {
+                int totalMatched = matchCount + (matchedVariableCount - startVariableCount);
+                if (totalMatched >= subExpCount) break;
+
                 int expressionIndex = matchOrder[i];
                 bool alreadyMatched = false;
                 for (int j = 0; j < matchCount; j++)
@@ -343,14 +358,14 @@ namespace UnityEngine.UIElements.StyleSheets
 
                 if (result)
                 {
-                    if (matchVariableCount == matchedVariableCount)
+                    if (currentMatchVariableCount == matchedVariableCount)
                     {
                         matchedExp[matchCount] = expressionIndex;
                         ++matchCount;
                     }
                     else
                     {
-                        matchVariableCount = matchedVariableCount;
+                        currentMatchVariableCount = matchedVariableCount;
                     }
 
                     // Reset the loop to try the next value on all unmatched sub expressions
@@ -359,10 +374,11 @@ namespace UnityEngine.UIElements.StyleSheets
                 else
                 {
                     ++i;
+                    if (i >= subExpCount) break;
                 }
             }
-
-            return matchCount + matchVariableCount;
+            int variablesMatchedInGroup = matchedVariableCount - startVariableCount;
+            return matchCount + variablesMatchedInGroup;
         }
 
         private bool MatchJuxtaposition(Expression exp)
@@ -409,6 +425,9 @@ namespace UnityEngine.UIElements.StyleSheets
                         break;
                     case DataType.FilterFunction:
                         result = MatchFilterFunction();
+                        break;
+                    case DataType.Prop:
+                        result = MatchMaterialPropertyValue();
                         break;
                     case DataType.Angle:
                         result = MatchAngle();
@@ -601,6 +620,14 @@ namespace UnityEngine.UIElements.StyleSheets
             return match.Success;
         }
 
+        static readonly Regex s_PropFunctionRegex = new Regex(@"^prop\(""[a-zA-Z0-9_]+""\s+.+\)$", RegexOptions.Compiled);
+        protected override bool MatchMaterialPropertyValue()
+        {
+            var value = current;
+            Match match = s_PropFunctionRegex.Match(value);
+            return match.Success;
+        }
+
         static readonly Regex s_AngleRegex = new Regex(@"^[+-]?\d+(?:\.\d+)?(?:deg|grad|rad|turn)$", RegexOptions.Compiled);
         protected override bool MatchAngle()
         {
@@ -786,6 +813,19 @@ namespace UnityEngine.UIElements.StyleSheets
         protected override bool MatchFilterFunction()
         {
             var filterType = current.handle.valueIndex;
+            MoveNext();
+
+            var value = current;
+            int argCount = (int)value.sheet.ReadFloat(value.handle);
+            for (int i = 0; i < argCount; ++i)
+                MoveNext();
+
+            return true;
+        }
+
+        protected override bool MatchMaterialPropertyValue()
+        {
+            var propFunc = current.handle.valueIndex;
             MoveNext();
 
             var value = current;

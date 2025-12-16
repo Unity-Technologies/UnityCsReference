@@ -223,7 +223,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 return false;
 
             return !string.IsNullOrEmpty(info.id?.Trim()) && !string.IsNullOrEmpty(info.name?.Trim())
-                && !string.IsNullOrEmpty(info.url?.Trim()) && info.scopes.Any()
+                && !string.IsNullOrEmpty(info.url?.Trim()) && info.scopes.Length > 0
                 && info.scopes.All(s => !string.IsNullOrEmpty(s.Trim()));
         }
 

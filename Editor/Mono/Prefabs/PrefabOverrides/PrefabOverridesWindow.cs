@@ -12,7 +12,6 @@ using UnityEditor.SceneManagement;
 using System.Text;
 using static UnityEditor.GameObjectTreeViewGUI;
 using Object = UnityEngine.Object;
-using TreeViewState = UnityEditor.IMGUI.Controls.TreeViewState<int>;
 
 namespace UnityEditor
 {
@@ -31,7 +30,7 @@ namespace UnityEditor
         GameObject[] m_SelectedGameObjects = null;
 
         // TreeView not used when there are multiple Prefabs.
-        TreeViewState m_TreeViewState;
+        TreeViewState<EntityId> m_TreeViewState;
         PrefabOverridesTreeView m_TreeView;
 
         GUIContent m_StageContent = new GUIContent();
@@ -102,7 +101,7 @@ namespace UnityEditor
         internal PrefabOverridesWindow(GameObject selectedGameObject)
         {
             m_SelectedGameObjects = new GameObject[] { selectedGameObject };
-            m_TreeViewState = new TreeViewState();
+            m_TreeViewState = new TreeViewState<EntityId>();
             m_TreeView = new PrefabOverridesTreeView(selectedGameObject, m_TreeViewState, this);
 
             GameObject prefabAssetRoot = PrefabUtility.GetCorrespondingObjectFromSource(selectedGameObject);

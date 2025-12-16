@@ -41,8 +41,8 @@ namespace UnityEditor.PackageManager.UI.Internal
         public override Icon icon => m_Args.icon;
         public override RefreshOptions refreshOptions => m_Args.refreshOptions;
 
-        public override IEnumerable<PageFilters.Status> supportedStatusFilters => m_Args.supportedStatusFilters ?? Enumerable.Empty<PageFilters.Status>();
-        public override IEnumerable<PageSortOption> supportedSortOptions => m_Args.supportedSortOptions ?? Enumerable.Empty<PageSortOption>();
+        public override IReadOnlyCollection<PageFilters.Status> supportedStatusFilters => m_Args.supportedStatusFilters ?? Array.Empty<PageFilters.Status>();
+        public override IReadOnlyCollection<PageSortOption> supportedSortOptions => m_Args.supportedSortOptions ?? Array.Empty<PageSortOption>();
         public override PageCapability capability => m_Args.capability;
 
         public ExtensionPage(IPackageDatabase packageDatabase, ExtensionPageArgs args)

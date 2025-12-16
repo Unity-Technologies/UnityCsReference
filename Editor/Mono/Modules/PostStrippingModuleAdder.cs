@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using UnityEditorInternal;
+using UnityEngine.Assemblies;
 namespace UnityEditor.Modules;
 
 internal class PostStrippingModuleAdder : IPostStrippingModuleAdder
@@ -29,7 +30,7 @@ internal class PostStrippingModuleAdder : IPostStrippingModuleAdder
         //a managed assembly is still getting generated for this module, check if the assembly contains no types
         if (File.Exists(moduleAssemblyPath))
         {
-            var assembly = System.Reflection.Assembly.LoadFrom(moduleAssemblyPath);
+            var assembly = CurrentAssemblies.LoadFromPath(moduleAssemblyPath);
             var types = assembly.GetTypes();
             if (types.Length > 0)
                 throw new ArgumentException($"Cannot add {moduleName} after UnityLinker has run because it has a non-empty managed assembly. Types found: {string.Join<Type>(", ", types)}.");

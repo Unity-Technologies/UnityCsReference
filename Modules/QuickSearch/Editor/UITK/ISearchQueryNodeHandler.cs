@@ -57,7 +57,6 @@ namespace UnityEditor.Search
                 // Finally we sort by name
                 _ => string.Compare(x.Name, y.Name, StringComparison.OrdinalIgnoreCase)
             };
-
         }
     }
 
@@ -70,25 +69,23 @@ namespace UnityEditor.Search
         }
     }
 
-    interface ISearchQueryNodeHandler
+    interface ISearchQueryNodeHandler : IDisposable
     {
         int HandlerId { get; }
         TreeViewItemData<SearchQueryNodeData>? RootItem { get; }
         string Name { get; }
+        event Action<ISearchQueryNodeHandler> queryListChanged;
 
         void BuildRoots(SearchContext context, string queryFilter = null);
         void Rename(SearchQueryTreeViewItem item, string newName);
-        void AddQuery(ISearchQuery query);
-        void UpdateQuery(ISearchQuery query);
-        void RemoveQuery(ISearchQuery query);
-        void RemoveQuery(int queryId);
+
         ISearchQuery GetQuery(int treeId);
         ISearchQuery GetQuery(string queryId);
-        bool SupportsRename(ISearchQuery query);
         ISearchQuery GetValidQuery(SearchQueryTreeViewItem item);
 
-        void PopulateContextualMenu(TreeView tree, SearchContext context, SearchQueryTreeViewItem item,
-            DropdownMenu menu);
+        bool SupportsRename(ISearchQuery query);
+        
+        void PopulateContextualMenu(TreeView tree, SearchContext context, SearchQueryTreeViewItem item, DropdownMenu menu);
 
         void ActivateItem(TreeView tree, SearchQueryTreeViewItem item);
         void BindItem(TreeView tree, SearchQueryTreeViewItem item, int itemIndex);

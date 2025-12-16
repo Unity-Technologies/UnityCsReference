@@ -46,6 +46,15 @@ namespace UnityEngine.UIElements
             }
         }
 
+        internal Object GetSelectedFont()
+        {
+            if (fontAsset != null)
+                return fontAsset;
+            if (font != null)
+                return font;
+            return null;
+        }
+
 
         /// <summary>
         /// Create a FontDefinition from <see cref="Font"/>.

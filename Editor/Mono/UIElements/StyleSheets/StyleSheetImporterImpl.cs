@@ -512,7 +512,7 @@ namespace UnityEditor.UIElements.StyleSheets
                     {
                         string hiResImageLocation = URIHelpers.InjectFileNameSuffix(projectRelativePath, "@2x");
 
-                        if (File.Exists(hiResImageLocation))
+                        if (File.Exists(FileUtil.PathToAbsolutePath(hiResImageLocation)))
                         {
                             UnityEngine.Object hiResImage = DeclareDependencyAndLoad(hiResImageLocation);
 
@@ -981,7 +981,7 @@ namespace UnityEditor.UIElements.StyleSheets
 
         internal static void PopulateDependencies(string assetPath, List<string> dependencies)
         {
-            var contents = File.ReadAllText(assetPath);
+            var contents = File.ReadAllText(FileUtil.PathToAbsolutePath(assetPath));
 
             if (string.IsNullOrEmpty(contents))
                 return;

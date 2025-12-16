@@ -140,7 +140,7 @@ namespace UnityEditor.Search
                 if (item.data is Providers.AssetProvider.AssetMetaInfo info)
                 {
                     if (!string.IsNullOrEmpty(info.path))
-                        return System.IO.Path.GetFileName(info.path);
+                        return Utils.GetFileName(info.path);
 
                     return info.obj?.name;
                 }

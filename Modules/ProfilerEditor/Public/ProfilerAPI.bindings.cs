@@ -8,6 +8,7 @@ using UnityEditor;
 using UnityEditor.MPE;
 using UnityEditor.Profiling;
 using UnityEditor.Profiling.Analytics;
+using UnityEngine;
 using UnityEngine.Bindings;
 using UnityEngine.Profiling;
 using UnityEngine.Scripting;
@@ -115,7 +116,9 @@ namespace UnityEditorInternal
     [System.Serializable]
     public struct EventMarker
     {
-        public int objectInstanceId;
+        public EntityId objectEntityId;
+        [Obsolete("objectInstanceId is deprecated, use objectEntityId instead.", false)]
+        public int objectInstanceId { get => objectEntityId; set => objectEntityId = value; }
         public int nameOffset;
         public int frame;
     }
@@ -288,7 +291,7 @@ namespace UnityEditorInternal
         [StaticAccessor("profiling::GetProfilerSessionPtr()->GetProfilerHistory()", StaticAccessorType.Arrow)]
         internal static extern void GetCounterValuesBatchByCategoryFast(string categoryName, string name, int firstFrameIndex, Span<float> counterValuesBuffer, out float maxValue);
 
-        static public void GetGpuStatisticsAvailabilityStates(int firstFrame, [Out] GpuProfilingStatisticsAvailabilityStates[] buffer)
+        static public void GetGpuStatisticsAvailabilityStates(int firstFrame, [In, Out] GpuProfilingStatisticsAvailabilityStates[] buffer)
         {
             unsafe
             {
@@ -335,7 +338,7 @@ namespace UnityEditorInternal
 
         [StaticAccessor("profiling::GetProfilerSessionPtr()->GetProfilerHistory()", StaticAccessorType.Arrow)]
         [NativeMethod("GetAnyStatisticsAvailableInCategories")]
-        static internal extern void GetAnyStatisticsAvailableInCategories(string[] categories, int firstFrame, [Out] int[] anyStatisticsAvailableBuffer);
+        static internal extern void GetAnyStatisticsAvailableInCategories(string[] categories, int firstFrame, [In, Out] int[] anyStatisticsAvailableBuffer);
 
         static public HierarchyFrameDataView GetHierarchyFrameDataView(int frameIndex, int threadIndex, HierarchyFrameDataView.ViewModes viewMode, int sortColumn, bool sortAscending)
         {

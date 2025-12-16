@@ -112,7 +112,8 @@ namespace UnityEditor.Scripting
                 + NetStandardFinder.GetNetStandardCompatShimsDirectory().Escape(Path.PathSeparator) + Path.PathSeparator
                 + NetStandardFinder.GetDotNetFrameworkCompatShimsDirectory().Escape(Path.PathSeparator) + Path.PathSeparator
                 + "+" + Application.dataPath.Escape(Path.PathSeparator)
-                + packagePathsToSearchForAssemblies.ToString();
+                + packagePathsToSearchForAssemblies.ToString()
+                + Path.PathSeparator + "Library/ScriptAssemblies";
 
             if (configurationSourceDirectories != null)
             {

@@ -28,7 +28,7 @@ namespace Unity.GraphToolkit.Editor.Implementation
                 Node.CallOnDefineOptions(definitionScope);
                 foreach (var nodeOption in NodeOptions)
                 {
-                    NodeOptionsByName[nodeOption.PortModel.UniqueName] = nodeOption;
+                    NodeOptionsByName[nodeOption.Id] = nodeOption;
                 }
 
                 Node.CallOnDefineNode(definitionScope);

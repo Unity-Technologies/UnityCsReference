@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -24,7 +25,7 @@ namespace UnityEditor.UIElements
     // Make sure UXML is imported after assets than can be addressed in USS
     [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
     [HelpURL("UIE-VisualTree-landing")]
-    [ScriptedImporter(version: 25, ext: "uxml", importQueueOffset: 1102)]
+    [ScriptedImporter(version: 26, ext: "uxml", importQueueOffset: 1102)]
     [ExcludeFromPreset]
     internal class UIElementsViewImporter : ScriptedImporter
     {
@@ -35,7 +36,7 @@ namespace UnityEditor.UIElements
 
             try
             {
-                doc = XDocument.Parse(File.ReadAllText(assetPath), LoadOptions.SetLineInfo);
+                doc = XDocument.Parse(File.ReadAllText(FileUtil.PathToAbsolutePath(assetPath)), LoadOptions.SetLineInfo);
             }
             catch (Exception)
             {
@@ -98,6 +99,7 @@ namespace UnityEditor.UIElements
         #pragma warning restore CS0618 // Type or member is obsolete
 
         static UxmlAssetAttributeCache s_UxmlAssetAttributeCache = new();
+        readonly Dictionary<int, UxmlAsset> m_UsedIds = new();
 
         [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         internal UXMLImporterImpl()
@@ -216,6 +218,10 @@ namespace UnityEditor.UIElements
                     return "Uxml object can only be placed under VisualElements or other UxmlObjects: {0}";
                 case ImportErrorCode.InvalidUxmlObjectChild:
                     return "Uxml object has an invalid child element: {0}";
+                case ImportErrorCode.DuplicateAuthoringId:
+                    return "Uxml object has an authoring-id that is already used by another Uxml object: {0}";
+                case ImportErrorCode.AttributeParsing:
+                    return "Could not parse attribute value: {0}";
                 default:
                     throw new ArgumentOutOfRangeException("Unhandled error code " + errorCode);
             }
@@ -225,7 +231,7 @@ namespace UnityEditor.UIElements
         internal static Hash128 GenerateHash(string uxmlPath)
         {
             var h = new Hash128();
-            using (var stream = File.OpenRead(uxmlPath))
+            using (var stream = File.OpenRead(FileUtil.PathToAbsolutePath(uxmlPath)))
             {
                 int readCount = 0;
                 byte[] b = new byte[1024 * 16];
@@ -253,7 +259,7 @@ namespace UnityEditor.UIElements
 
             try
             {
-                doc = XDocument.Load(xmlPath, LoadOptions.SetLineInfo);
+                doc = XDocument.Load(FileUtil.PathToAbsolutePath(xmlPath), LoadOptions.SetLineInfo);
             }
             catch (Exception e)
             {
@@ -352,25 +358,15 @@ namespace UnityEditor.UIElements
                 return;
             }
 
-            LoadXml(elt, null, vta, 0, generateRandomId);
-            SyncVisualTreeAssetSerializedData(vta);
-        }
-
-        void SyncVisualTreeAssetSerializedData(VisualTreeAsset vta)
-        {
-            UxmlSerializer.SyncVisualTreeAssetSerializedData(new CreationContext(vta), false);
-
-            // Setup dependencies
-            if (m_Context != null)
+            try
             {
-                foreach (var asset in vta.DepthFirstTraversal())
-                {
-                    if (asset is VisualElementAsset vea)
-                    {
-                        var dependencyKeyName = UxmlCodeDependencies.instance.FormatSerializedDependencyKeyName(vea.fullTypeName);
-                        m_Context.DependsOnCustomDependency(dependencyKeyName);
-                    }
-                }
+                LoadXml(elt, null, null, vta, generateRandomId);
+                UxmlSerializer.CreateSerializedDataOverrides(vta);
+            }
+            finally
+            {
+                // Clear used IDs for next import
+                m_UsedIds.Clear();
             }
         }
 
@@ -556,7 +552,7 @@ namespace UnityEditor.UIElements
 
             try
             {
-                var doc = XDocument.Parse(File.ReadAllText(templateAssetPath), LoadOptions.SetLineInfo);
+                var doc = XDocument.Parse(File.ReadAllText(FileUtil.PathToAbsolutePath(templateAssetPath)), LoadOptions.SetLineInfo);
 
                 if (doc != null)
                 {
@@ -646,13 +642,10 @@ namespace UnityEditor.UIElements
             }
         }
 
-        void LoadXml(XElement elt, UxmlAsset parent, VisualTreeAsset vta, int orderInDocument, bool generateRandomId = false)
+        void LoadXml(XElement elt, UxmlAsset parent, UxmlSerializedData parentSerializedData, VisualTreeAsset vta, bool generateRandomId = false)
         {
-            var uxmlAsset = ResolveType(elt, parent, vta);
-            if (uxmlAsset == null)
-            {
+            if (!TryResolveType(elt, parent, vta, out var uxmlAsset, out var uxmlSerializedDataDescription))
                 return;
-            }
 
             int parentHash;
             // Not a direct cast because it can fail.
@@ -673,19 +666,9 @@ namespace UnityEditor.UIElements
             if (!EnsureValidUxmlObjectChild(elt, uxmlAsset, vta, parent))
                 return;
 
-            // id includes the parent id, meaning it's dependent on the whole direct hierarchy
-            if (generateRandomId)
-            {
-                uxmlAsset.id = vta.GetNextUxmlAssetId(parent?.id ?? 0);
-            }
-            else
-            {
-                // id includes the parent id, meaning it's dependent on the whole direct hierarchy
-                uxmlAsset.id = (vta.GetNextChildSerialNumber() + 585386304) * -1521134295 + parentHash;
-            }
-
             var templateAsset = uxmlAsset as TemplateAsset;
             var vea = uxmlAsset as VisualElementAsset;
+            var uxmlObjectAsset = uxmlAsset as UxmlObjectAsset;
             if (templateAsset != null)
             {
                 if (null == parent)
@@ -697,7 +680,7 @@ namespace UnityEditor.UIElements
                     parent.Add(templateAsset);
                 }
             }
-            else if (uxmlAsset is UxmlObjectAsset uxmlObjectAsset)
+            else if (uxmlObjectAsset != null)
             {
                 parent?.Add(uxmlObjectAsset);
             }
@@ -719,7 +702,31 @@ namespace UnityEditor.UIElements
                     }
                 }
             }
-            ParseAttributes(elt, uxmlAsset, vta, parent);
+
+            // Allocate an Id, this may be replaced by the authoring-id attribute later
+            uxmlAsset.id = GetNextUxmlAssetId(uxmlAsset, generateRandomId, parentHash);
+
+            var currentSerializedData = vea?.serializedData;
+
+            if (uxmlObjectAsset != null && parentSerializedData != null)
+            {
+                // If its a field name we do nothing and forward the parentSerializedData data to child UxmlObjects.
+                if (!uxmlObjectAsset.isField)
+                {
+                    parentSerializedData = LoadUxmlObject(uxmlObjectAsset, parentSerializedData, uxmlSerializedDataDescription);
+                    currentSerializedData = parentSerializedData;
+                }
+            }
+            else
+            {
+                parentSerializedData = currentSerializedData;
+            }
+
+            ParseAttributes(elt, uxmlAsset, vta, uxmlSerializedDataDescription, currentSerializedData);
+
+            if (currentSerializedData != null)
+                currentSerializedData.uxmlAssetId = uxmlAsset.id;
+            m_UsedIds[uxmlAsset.id] = uxmlAsset;
 
             if (elt.HasElements)
             {
@@ -733,11 +740,168 @@ namespace UnityEditor.UIElements
                         LoadAttributeOverridesNode(templateAsset, child, vta);
                     else
                     {
-                        ++orderInDocument;
-                        LoadXml(child, uxmlAsset, vta, orderInDocument);
+                        LoadXml(child, uxmlAsset, parentSerializedData, vta);
                     }
                 }
             }
+        }
+
+        int GetNextUxmlAssetId(UxmlAsset uxmlAsset, bool generateRandomId, int parentHash)
+        {
+            var vta = uxmlAsset.visualTreeAsset;
+            int newId;
+            do
+            {
+                if (generateRandomId)
+                {
+                    newId = vta.GetNextUxmlAssetId(uxmlAsset.parentAsset?.id ?? 0);
+                }
+                else
+                {
+                    // id includes the parent id, meaning it's dependent on the whole direct hierarchy
+                    newId = (vta.GetNextChildSerialNumber() + 585386304) * -1521134295 + parentHash++;
+                }
+            }
+            while (m_UsedIds.ContainsKey(newId));
+
+            return newId;
+        }
+
+        /// <summary>
+        /// Create the UxmlObject serialized data and apply it to the corresponding field in the parent serialized data.
+        /// </summary>
+        /// <param name="uxmlObjectAsset">The UxmlObject asset</param>
+        /// <param name="parentSerializedData">The serialized data of the current parent VisualElement or UxmlObject if we are nested.
+        /// Note this may not match the parent of <paramref name="uxmlObjectAsset"/> if it is a UxmlObject field name.</param>
+        /// <param name="uxmlSerializedDataDescription">Description of the <paramref name="uxmlObjectAsset"/></param>
+        /// <returns></returns>
+        UxmlSerializedData LoadUxmlObject(UxmlObjectAsset uxmlObjectAsset, UxmlSerializedData parentSerializedData, UxmlSerializedDataDescription uxmlSerializedDataDescription)
+        {
+            // We expect the UXML with UxmlObjects to look like this:
+            // <visual-element>
+            //   <element-field-name>
+            //     <field-value/>
+            //     <field-value/>
+            //   </element-field-name>
+            // </visual-element>
+            // Legacy fields, such as those found in MultiColumnListView and MultiColumnTreeView,
+            // do not have a root element and look like this:
+            // <visual-element>
+            //   <field-value/>
+            //   <field-value/>
+            // </visual-element>
+
+            // If its a field name we do nothing and forward the parentSerializedData data to child UxmlObjects
+            var serializedData = uxmlObjectAsset.fullTypeName == UxmlAsset.NullNodeType ? null : CreateSerializedData(uxmlSerializedDataDescription);
+
+            // Find a matching UxmlObjectReference field.
+            var rootName = uxmlObjectAsset.parentAsset is UxmlObjectAsset parentUxmlObjectAsset && parentUxmlObjectAsset.isField ? parentUxmlObjectAsset.fullTypeName : null;
+            var uxmlObjectType = uxmlSerializedDataDescription?.serializedDataType;
+            var parentSerializedDataDescription = UxmlSerializedDataRegistry.GetDescription(parentSerializedData.GetType().DeclaringType.FullName);
+
+            var uxmlObjectReferenceDescription = FindMatchingUxmlObjectField(parentSerializedDataDescription, rootName, uxmlObjectType, true);
+            if (uxmlObjectReferenceDescription != null)
+            {
+                AssignUxmlObjectToField(serializedData, parentSerializedData, uxmlObjectReferenceDescription);
+            }
+            else
+            {
+                var warning = string.Format(UxmlSerializedUxmlObjectAttributeDescription.k_UxmlObjectWithNoFieldWarning, uxmlObjectAsset.fullTypeName, parentSerializedDataDescription.uxmlFullName);
+
+                // Try to find a match by ignoring the root name
+                uxmlObjectReferenceDescription = FindMatchingUxmlObjectField(parentSerializedDataDescription, null, uxmlObjectType, false);
+                if (uxmlObjectReferenceDescription != null)
+                {
+                    warning += "\n" + string.Format(UxmlSerializedUxmlObjectAttributeDescription.k_UxmlObjectMismatchFieldHint, uxmlObjectReferenceDescription.name, uxmlObjectReferenceDescription.rootName);
+                    AssignUxmlObjectToField(serializedData, parentSerializedData, uxmlObjectReferenceDescription);
+                }
+
+                Debug.LogWarning(warning, uxmlObjectAsset.visualTreeAsset);
+            }
+
+            return serializedData;
+        }
+
+        UxmlSerializedData CreateSerializedData(UxmlSerializedDataDescription description)
+        {
+            RegisterDependency(description.uxmlFullName);
+            return description.CreateSerializedData();
+        }
+
+        void RegisterDependency(string fullName)
+        {
+            if (m_Context != null)
+            {
+                var dependencyKeyName = UxmlCodeDependencies.instance.FormatSerializedDependencyKeyName(fullName);
+                m_Context.DependsOnCustomDependency(dependencyKeyName);
+            }
+        }
+
+        static UxmlSerializedUxmlObjectAttributeDescription FindMatchingUxmlObjectField(UxmlSerializedDataDescription desc, string rootName, Type uxmlObjectType, bool checkRootName)
+        {
+            foreach (var attribute in desc.serializedAttributes)
+            {
+                if (attribute is not UxmlSerializedUxmlObjectAttributeDescription uxmlObjectDescription)
+                    continue;
+
+                // Check root name
+                if (checkRootName && uxmlObjectDescription.rootName != rootName)
+                    continue;
+
+                // Check type is compatible
+                var expectedObjectType = uxmlObjectDescription.isList ? uxmlObjectDescription.type.GetArrayOrListElementType() : uxmlObjectDescription.type;
+                if (uxmlObjectType == null || expectedObjectType.IsAssignableFrom(uxmlObjectType))
+                    return uxmlObjectDescription;
+            }
+            return null;
+        }
+
+        static void AssignUxmlObjectToField(UxmlSerializedData uxmlObjectData, UxmlSerializedData parentSerializedData, UxmlSerializedUxmlObjectAttributeDescription uxmlObjectReferenceDescription)
+        {
+            object value = null;
+
+            if (uxmlObjectReferenceDescription.isList)
+            {
+                var listType = uxmlObjectReferenceDescription.type;
+                var collectionInstance = uxmlObjectReferenceDescription.GetSerializedValue(parentSerializedData);
+
+                if (listType.IsArray)
+                {
+                    if (collectionInstance is Array array)
+                    {
+                        // We dont know the final size of the array until all elements have been parsed so we need to increase it as we go.
+                        var newArray = Array.CreateInstance(listType.GetArrayOrListElementType(), array.Length + 1);
+                        Array.Copy(array, 0, newArray, 0, array.Length);
+                        array = newArray;
+                    }
+                    else
+                    {
+                        array = Array.CreateInstance(listType.GetArrayOrListElementType(), 1);
+                    }
+
+                    array.SetValue(uxmlObjectData, array.Length - 1);
+                    value = array;
+                }
+                else
+                {
+                    var list = collectionInstance as IList;
+                    list ??= (IList)Activator.CreateInstance(listType);
+                    list.Add(uxmlObjectData);
+                    value = list;
+                }
+            }
+            else
+            {
+                value = uxmlObjectData;
+
+                // Display a warning when uxml file contains more than one named UxmlObject of a type defined in a single instance attribute
+                if (uxmlObjectReferenceDescription.GetSerializedValueAttributeFlags(parentSerializedData) == UxmlSerializedData.UxmlAttributeFlags.OverriddenInUxml)
+                {
+                    Debug.LogWarning(string.Format(UxmlSerializedUxmlObjectAttributeDescription.k_MultipleUxmlObjectsWarning, uxmlObjectReferenceDescription.name));
+                }
+            }
+
+            uxmlObjectReferenceDescription.SetSerializedValue(parentSerializedData, value, UxmlSerializedData.UxmlAttributeFlags.OverriddenInUxml);
         }
 
         void LoadStyleReferenceNode(VisualElementAsset vea, XElement styleElt, VisualTreeAsset vta)
@@ -873,21 +1037,28 @@ namespace UnityEditor.UIElements
             return (elementNamespaceName, fullName, new UxmlNamespaceDefinition{ prefix = prefix, resolvedNamespace = elt.GetNamespaceOfPrefix(prefix)?.NamespaceName});
         }
 
-        UxmlAsset ResolveType(XElement elt, UxmlAsset parent, VisualTreeAsset visualTreeAsset)
+        bool TryResolveType(XElement elt, UxmlAsset parent, VisualTreeAsset visualTreeAsset, out UxmlAsset uxmlAsset, out UxmlSerializedDataDescription uxmlSerializedDataDescription)
         {
             var (elementNamespaceName, fullName, xmlns) = ResolveFullType(elt);
+            uxmlAsset = null;
+            uxmlSerializedDataDescription = null;
 
             // Is this a null element?
             if (fullName == UxmlAsset.NullNodeType)
             {
-                return new UxmlObjectAsset(UxmlAsset.NullNodeType, false, xmlns);
+                uxmlAsset = new UxmlObjectAsset(UxmlAsset.NullNodeType, false, xmlns);
+                return true;
             }
 
+            uxmlSerializedDataDescription = UxmlSerializedDataRegistry.GetDescription(fullName);
+            if (uxmlSerializedDataDescription?.isEditorOnly == true)
+                visualTreeAsset.hasEditorElements = true;
+
             // Is the element a UxmlObject?
-            if (UxmlSerializedDataRegistry.GetDescription(fullName) is UxmlSerializedDataDescription desc &&
-                desc.isUxmlObject)
+            if (uxmlSerializedDataDescription?.isUxmlObject == true)
             {
-                return new UxmlObjectAsset(fullName, false, xmlns);
+                uxmlAsset = new UxmlObjectAsset(fullName, false, xmlns);
+                return true;
             }
 
             // Does the element contain values for a field marked with the UxmlObjectAttribute?
@@ -895,14 +1066,16 @@ namespace UnityEditor.UIElements
                 UxmlSerializedDataRegistry.GetDescription(parent.fullTypeName) is UxmlSerializedDataDescription descParent &&
                 descParent.IsUxmlObjectField(fullName))
             {
-                return new UxmlObjectAsset(fullName, true, xmlns);
+                uxmlAsset = new UxmlObjectAsset(fullName, true, xmlns);
+                return true;
             }
 
             #pragma warning disable CS0618 // Type or member is obsolete
             // Check for "legacy" UxmlObject
             if (UxmlObjectFactoryRegistry.factories.ContainsKey(fullName))
             {
-                return new UxmlObjectAsset(fullName, false, xmlns);
+                uxmlAsset = new UxmlObjectAsset(fullName, false, xmlns);
+                return true;
             }
             #pragma warning restore CS0618 // Type or member is obsolete
 
@@ -916,7 +1089,7 @@ namespace UnityEditor.UIElements
                         ImportErrorCode.TemplateInstanceHasEmptySource,
                         null,
                         elt);
-                    return null;
+                    return false;
                 }
 
                 string templateName = sourceAttr.Value;
@@ -927,13 +1100,22 @@ namespace UnityEditor.UIElements
                         ImportErrorCode.UnknownTemplate,
                         templateName,
                         elt);
-                    return null;
+                    return false;
                 }
 
-                return new TemplateAsset(templateName, xmlns);
+                uxmlAsset = new TemplateAsset(templateName, xmlns) { serializedData = CreateSerializedData(uxmlSerializedDataDescription) };
+                return true;
             }
 
-            return new VisualElementAsset(fullName, xmlns);
+            var vea = new VisualElementAsset(fullName, xmlns);
+            uxmlAsset = vea;
+
+            if (uxmlSerializedDataDescription != null)
+            {
+                vea.serializedData = CreateSerializedData(uxmlSerializedDataDescription);
+            }
+
+            return true;
         }
 
         bool EnsureValidUxmlObjectChild(XElement elt, UxmlAsset uxmlAsset, VisualTreeAsset vta, UxmlAsset parent)
@@ -1040,152 +1222,245 @@ namespace UnityEditor.UIElements
             return parent;
         }
 
-        void ParseAttributes(XElement elt, UxmlAsset res, VisualTreeAsset vta, UxmlAsset parent)
+        void ParseAttributes(XElement elt, UxmlAsset uxmlAsset, VisualTreeAsset vta, UxmlSerializedDataDescription uxmlSerializedDataDescription, UxmlSerializedData uxmlSerializedData)
         {
-            var vea = res as VisualElementAsset;
-            UxmlSerializedDataDescription uxmlSerializedDataDescription = null;
+            var cc = new CreationContext(vta);
             foreach (var xattr in elt.Attributes())
             {
                 var attrName = xattr.Name.LocalName;
-                uxmlSerializedDataDescription ??= UxmlSerializedDataRegistry.GetDescription(res.fullTypeName);
-                Type assetType = null;
+                var attrValue = xattr.Value;
 
-                // Extract the asset type from the UxmlSerializedData
-                if (uxmlSerializedDataDescription?.FindAttributeWithUxmlName(attrName) is UxmlSerializedAttributeDescription attributeDescription &&
-                    attributeDescription.isUnityObject)
-                    assetType = attributeDescription.type;
+                if (TryParseSpecialAttribute(elt, xattr, vta, uxmlAsset, uxmlSerializedData))
+                    continue;
 
-                if (assetType != null || s_UxmlAssetAttributeCache.GetAssetAttributeType(res.fullTypeName, attrName, out assetType))
+                if (uxmlSerializedData != null && uxmlSerializedDataDescription != null)
                 {
-                    var value = xattr.Value;
-                    if (assetType != typeof(VisualTreeAsset) || !vta.TemplateExists(xattr.Value))
+                    if (uxmlSerializedDataDescription.FindAttributeWithUxmlName(attrName) is { } attributeDescription)
                     {
-                        var (response, asset) = ValidateAndLoadResource(elt, vta, xattr.Value, true);
-
-                        if (response.result == URIValidationResult.OK && !vta.AssetEntryExists(xattr.Value, assetType))
+                        if (attributeDescription.isUnityObject)
                         {
-                            asset = ExtractSubAssetFromParent(asset, assetType, response);
-
-                            // Update the url value so it is correct when saved back to UXML
-                            if (response.resolvedUrlChanged)
+                            var assetType = attributeDescription.type;
+                            if (assetType != typeof(VisualTreeAsset) || !vta.TemplateExists(xattr.Value))
                             {
-                                value = URIHelpers.MakeAssetUri(asset);
-                                vta.importerWithUpdatedUrls = true;
-                            }
+                                // We need to first load the asset and add it to the vta so that the attribute converter can find it.
+                                // When importing a UXML which contains relative file paths the converter will not be able to resolve the vta
+                                // asset path as it does not yet exist, so it falls back to the path we provide in the register method.
+                                // In the future we should consider passing the asset path to the converter through the CreationContext.
+                                var (response, asset) = ValidateAndLoadResource(elt, vta, attrValue, true);
+                                if (response.result == URIValidationResult.OK && !vta.AssetEntryExists(xattr.Value, assetType))
+                                {
+                                    asset = ExtractSubAssetFromParent(asset, assetType, response);
 
-                            vta.RegisterAssetEntry(value, assetType, asset);
+                                    // Update the url value so it is correct when saved back to UXML
+                                    if (response.resolvedUrlChanged)
+                                    {
+                                        attrValue = URIHelpers.MakeAssetUri(asset);
+                                        vta.importerWithUpdatedUrls = true;
+                                    }
+
+                                    vta.RegisterAssetEntry(attrValue, assetType, asset);
+                                }
+                            }
+                        }
+
+                        UxmlSerializer.TryParseSerializedAttribute(attrValue, uxmlSerializedData, attributeDescription, cc);
+                    };
+
+                    // Since a deprecated attribute name may be shared by multiple attributes, we apply it to every matching occurrence.
+                    foreach (var obsoleteAttribute in uxmlSerializedDataDescription.FindAttributesWithObsoleteUxmlName(attrName))
+                    {
+                        if (UxmlSerializer.TryParseSerializedAttribute(attrValue, uxmlSerializedData, obsoleteAttribute, cc))
+                        {
+                            // Upgrade the attribute name
+                            attrName = obsoleteAttribute.name;
                         }
                     }
-
-                    res.SetAttribute(xattr.Name.LocalName, value);
-
-                    continue;
                 }
-
-                // Start with VisualElement special cases
-                if (vea != null)
-                {
-                    switch (attrName)
-                    {
-                        case k_ClassAttr:
-                            vea.classes = xattr.Value.Split(' ');
-                            continue;
-                        case "content-container":
-                        case "contentContainer":
-                            vea.SetAttribute(xattr.Name.LocalName, xattr.Value);
-                            if (vta.contentContainerId != 0)
-                            {
-                                LogError(vta, ImportErrorType.Semantic, ImportErrorCode.DuplicateContentContainer, null, elt);
-                                continue;
-                            }
-
-                            vta.contentContainerId = vea.id;
-                            continue;
-                        case k_SlotDefinitionAttr:
-                            LogWarning(vta, ImportErrorType.Syntax, ImportErrorCode.SlotsAreExperimental, null, elt);
-                            if (String.IsNullOrEmpty(xattr.Value))
-                                LogError(vta, ImportErrorType.Semantic, ImportErrorCode.SlotDefinitionHasEmptyName, null, elt);
-                            else if (!vta.AddSlotDefinition(xattr.Value, vea.id))
-                                LogError(vta, ImportErrorType.Semantic, ImportErrorCode.DuplicateSlotDefinition, xattr.Value, elt);
-                            continue;
-                        case k_SlotUsageAttr:
-                            LogWarning(vta, ImportErrorType.Syntax, ImportErrorCode.SlotsAreExperimental, null, elt);
-                            var templateAsset = parent as TemplateAsset;
-                            if (templateAsset == null)
-                            {
-                                LogError(vta, ImportErrorType.Semantic, ImportErrorCode.SlotUsageInNonTemplate, parent, elt);
-                                continue;
-                            }
-
-                            if (string.IsNullOrEmpty(xattr.Value))
-                            {
-                                LogError(vta, ImportErrorType.Semantic, ImportErrorCode.SlotUsageHasEmptyName, null, elt);
-                                continue;
-                            }
-
-                            templateAsset.AddSlotUsage(xattr.Value, vea.id);
-                            continue;
-                        case k_StyleAttr:
-                            var parser = new UnityStylesheetParser();
-                            var parsed = parser.Parse("* { " + xattr.Value + " }");
-                            if (parser.errors.Count != 0)
-                            {
-                                LogWarning(
-                                    vta,
-                                    ImportErrorType.Semantic,
-                                    ImportErrorCode.InvalidCssInStyleAttribute,
-                                    parser.errors.Aggregate("", (s, error) => s + error.ToString() + "\n"),
-                                    xattr);
-                                continue;
-                            }
-
-                            if (parsed.StyleRules.Count() != 1)
-                            {
-                                LogWarning(
-                                    vta,
-                                    ImportErrorType.Semantic,
-                                    ImportErrorCode.InvalidCssInStyleAttribute,
-                                    "Expected one style rule, found " + parsed.StyleRules.Count(),
-                                    xattr);
-                                continue;
-                            }
-
-                            // Each vea will creates 0 or 1 style rule, with one or more properties
-                            // they don't have selectors and are directly referenced by index
-                            // it's then applied during tree cloning
-                            m_Builder.BeginRule(-1);
-                            m_CurrentLine = ((IXmlLineInfo) xattr).LineNumber;
-                            foreach (var prop in parsed.StyleRules.First().Style.Declarations)
-                            {
-                                m_Builder.BeginProperty(prop.Name);
-                                VisitValue(prop);
-                                m_Builder.EndProperty();
-                            }
-
-                            vea.ruleIndex = m_Builder.EndRule();
-                            continue;
-                    }
-                }
-
-                // To be able to re-export the xmlns back to .uxml, we need to keep the "xmlns:" part.
-                // If the xmlns is global (i.e. "xmlns=UnityEngine.UIElements"), then we save it as a
-                // normal attribute.
-                if (xattr.IsNamespaceDeclaration)
-                {
-                    // Defining a global namespace
-                    if (attrName == "xmlns")
-                    {
-                        res.AddUxmlNamespace("", xattr.Value);
-                    }
-                    else
-                    {
-                        res.AddUxmlNamespace(attrName, xattr.Value);
-                    }
-                    continue;
-                }
-
-                res.SetAttribute(xattr.Name.LocalName, xattr.Value);
+                uxmlAsset.SetAttribute(attrName, attrValue);
             }
+
+            if (uxmlSerializedDataDescription != null && uxmlSerializedData is IUxmlSerializedDataCustomAttributeHandler customHandler)
+            {
+                using (HashSetPool<string>.Get(out var handledAttributes))
+                {
+                    customHandler.SerializeCustomAttributes(uxmlAsset, handledAttributes);
+
+                    // Apply the handled values to the serialized data
+                    foreach (var attrName in handledAttributes)
+                    {
+                        var attributeDesc = uxmlSerializedDataDescription.FindAttributeWithUxmlName(attrName);
+                        if (attributeDesc != null)
+                        {
+                            UxmlSerializer.TryParseSerializedAttribute(uxmlAsset.GetAttributeValue(attrName), uxmlSerializedData, attributeDesc, cc);
+                        }
+                    }
+                }
+            }
+        }
+
+        bool TryParseSpecialAttribute(XElement elt, XAttribute xattr, VisualTreeAsset vta, UxmlAsset asset, UxmlSerializedData uxmlSerializedData)
+        {
+            var attrName = xattr.Name.LocalName;
+
+            // To be able to re-export the xmlns back to .uxml, we need to keep the "xmlns:" part.
+            // If the xmlns is global (i.e. "xmlns=UnityEngine.UIElements"), then we save it as a
+            // normal attribute.
+            if (xattr.IsNamespaceDeclaration)
+            {
+                // Defining a global namespace
+                if (attrName == "xmlns")
+                {
+                    asset.AddUxmlNamespace("", xattr.Value);
+                }
+                else
+                {
+                    asset.AddUxmlNamespace(attrName, xattr.Value);
+                }
+                return true;
+            }
+
+            if (attrName == UxmlAsset.AuthoringIdAttribute)
+            {
+                // If the content container ID was already applied before the authoring ID then we need to update it.
+                bool updateContentContainerId = vta.contentContainerId == asset.id;
+
+                // Empty values are silently ignored.
+                if (string.IsNullOrEmpty(xattr.Value))
+                    return true;
+
+                var success = UxmlUtility.TryParse(xattr.Value, out var parsedId, out var error);
+                if (success && parsedId == 0)
+                {
+                    error = "Authoring Id cannot be zero.";
+                    success = false;
+                }
+
+                if (!success)
+                {
+                    error = $"{attrName}=\"{xattr.Value}\": {error}";
+                    LogError(vta, ImportErrorType.Syntax, ImportErrorCode.AttributeParsing, error, xattr);
+                    return true;
+                }
+
+                asset.id = parsedId;
+
+                // Check we have no conflicts
+                if (m_UsedIds.TryGetValue(asset.id, out var usedIdEntry))
+                {
+                    // If the id is already used by a non-generated id, log an error
+                    if (usedIdEntry.hasAuthoringId)
+                    {
+                        LogError(vta, ImportErrorType.Semantic, ImportErrorCode.DuplicateAuthoringId, asset.id, elt);
+
+                        // If we have a conflict we will need to generate a new id.
+                        asset.id = GetNextUxmlAssetId(asset, true, 0);
+                        return true;
+                    }
+
+                    // Assign a new id to the generated one
+                    usedIdEntry.id = GetNextUxmlAssetId(usedIdEntry, true, 0);
+                    m_UsedIds[usedIdEntry.id] = usedIdEntry;
+                }
+
+                asset.hasAuthoringId = true;
+                if (uxmlSerializedData != null)
+                    uxmlSerializedData.uxmlAssetId = asset.id;
+                asset.SetAttribute(attrName, xattr.Value);
+
+                if (updateContentContainerId)
+                    vta.contentContainerId = asset.id;
+
+                return true;
+            }
+
+            if (asset is not VisualElementAsset vea)
+                return false;
+
+            var name = xattr.Name.LocalName;
+            var value = xattr.Value;
+
+            switch (name)
+            {
+                case k_ClassAttr:
+                    vea.classes = value.Split(' ');
+                    return true;
+
+                case "content-container":
+                case "contentContainer":
+                    vea.SetAttribute(name, value);
+                    if (vta.contentContainerId != 0)
+                        LogError(vta, ImportErrorType.Semantic, ImportErrorCode.DuplicateContentContainer, null, elt);
+                    else
+                        vta.contentContainerId = vea.id;
+                    return true;
+
+                case k_SlotDefinitionAttr:
+                    LogWarning(vta, ImportErrorType.Syntax, ImportErrorCode.SlotsAreExperimental, null, elt);
+                    if (string.IsNullOrEmpty(value))
+                        LogError(vta, ImportErrorType.Semantic, ImportErrorCode.SlotDefinitionHasEmptyName, null, elt);
+                    else if (!vta.AddSlotDefinition(value, vea.id))
+                        LogError(vta, ImportErrorType.Semantic, ImportErrorCode.DuplicateSlotDefinition, value, elt);
+                    return true;
+
+                case k_SlotUsageAttr:
+                    LogWarning(vta, ImportErrorType.Syntax, ImportErrorCode.SlotsAreExperimental, null, elt);
+                    var templateAsset = vea.parentAsset as TemplateAsset;
+                    if (templateAsset == null)
+                    {
+                        LogError(vta, ImportErrorType.Semantic, ImportErrorCode.SlotUsageInNonTemplate, vea.parentAsset, elt);
+                        return true;
+                    }
+
+                    if (string.IsNullOrEmpty(value))
+                    {
+                        LogError(vta, ImportErrorType.Semantic, ImportErrorCode.SlotUsageHasEmptyName, null, elt);
+                        return true;
+                    }
+
+                    templateAsset.AddSlotUsage(value, vea.id);
+                    return true;
+
+                case k_StyleAttr:
+                    var parser = new UnityStylesheetParser();
+                    var parsed = parser.Parse("* { " + value + " }");
+                    if (parser.errors.Count != 0)
+                    {
+                        LogWarning(
+                            vta,
+                            ImportErrorType.Semantic,
+                            ImportErrorCode.InvalidCssInStyleAttribute,
+                            parser.errors.Aggregate("", (s, error) => s + error.ToString() + "\n"),
+                            xattr);
+                        return true;
+                    }
+
+                    if (parsed.StyleRules.Count() != 1)
+                    {
+                        LogWarning(
+                            vta,
+                            ImportErrorType.Semantic,
+                            ImportErrorCode.InvalidCssInStyleAttribute,
+                            "Expected one style rule, found " + parsed.StyleRules.Count(),
+                            xattr);
+                        return true;
+                    }
+
+                    // Each vea will creates 0 or 1 style rule, with one or more properties
+                    // they don't have selectors and are directly referenced by index
+                    // it's then applied during tree cloning
+                    m_Builder.BeginRule(-1);
+                    m_CurrentLine = ((IXmlLineInfo)xattr).LineNumber;
+                    foreach (var prop in parsed.StyleRules.First().Style.Declarations)
+                    {
+                        m_Builder.BeginProperty(prop.Name);
+                        VisitValue(prop);
+                        m_Builder.EndProperty();
+                    }
+
+                    vea.ruleIndex = m_Builder.EndRule();
+                    return true;
+            }
+            return false;
         }
     }
 
@@ -1221,6 +1496,8 @@ namespace UnityEditor.UIElements
         TemplateHasCircularDependency,
         InvalidUxmlObjectParent,
         InvalidUxmlObjectChild,
+        DuplicateAuthoringId,
+        AttributeParsing,
     }
 
     internal enum ImportErrorType

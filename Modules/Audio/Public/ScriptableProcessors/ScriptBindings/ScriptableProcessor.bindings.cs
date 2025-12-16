@@ -13,38 +13,6 @@ using UnityEngine.Scripting;
 namespace UnityEngine.Audio
 {
     /// <summary>
-    /// A temporary context tied to a particular mix cycle, and generally passed along when processing <see cref="ProcessorInstance"/>s.
-    /// </summary>
-    /// <remarks>
-    /// This also gives access to communicating data together with a <see cref="ProcessorInstance.Pipe"/>.
-    /// </remarks>
-    /// <seealso cref="ControlContext.Manual.BeginMix"/>
-    public unsafe struct RealtimeContext : ProcessorInstance.IContext
-    {
-        /// <summary>
-        /// The DSP time at which the mix cycle began.
-        /// </summary>
-        public readonly UInt64 dspTime => m_DSPClock;
-
-        /// <summary>
-        /// True if this context was ever created.
-        /// </summary>
-        public readonly bool isCreated => Access.IsCreated;
-
-        internal RealtimeAccess Access;
-        UInt64 m_DSPClock;
-
-        ProcessorInstance.AvailableData ProcessorInstance.IContext.GetAvailableData(Handle handle)
-            => new(ScriptableProcessorBindings.GetAvailableDataForRealtime(Access, handle));
-
-        bool ProcessorInstance.IContext.SendData(Handle handle, void* data, int size, int align, long typehash)
-        {
-            ScriptableProcessorBindings.ReturnDataFromProcessor(Access, handle, data, size, align, typehash);
-            return true;
-        }
-    }
-
-    /// <summary>
     /// <see cref="ProcessorInstance"/> is a handle to the common functionality of a scriptable processor.
     /// </summary>
     /// <remarks>
@@ -65,35 +33,70 @@ namespace UnityEngine.Audio
         }
 
         /// <summary>
+        /// Settings controlling how a <see cref="ProcessorInstance"/> is updated over the course of its lifetime.
+        /// </summary>
+        /// <seealso cref="ProcessorInstance.CreationParameters"/>
+        /// <seealso cref="ProcessorInstance.IControl{TRealtime}.Update"/>
+        /// <seealso cref="ProcessorInstance.IRealtime.Update"/>
+        public enum UpdateSetting
+        {
+            /// <summary>
+            /// The default update setting for a <see cref="ProcessorInstance"/>.
+            /// </summary>
+            /// <remarks>
+            /// This is equivalent to <see cref="UpdateIfDataIsAvailable"/>.
+            /// A default-inititalized value of <see cref="UpdateSetting"/> will correspond to this as well.
+            /// </remarks>
+            Default = 0,
+
+            /// <summary>
+            /// Never invoke <see cref="ProcessorInstance.IControl{TRealtime}.Update"/> on this processor nor <see cref="ProcessorInstance.IRealtime.Update"/>.
+            /// </summary>
+            NeverUpdate = 1,
+
+            /// <summary>
+            /// Invoke <see cref="ProcessorInstance.IControl{TRealtime}.Update"/> or <see cref="ProcessorInstance.IRealtime.Update"/>
+            /// only if data has been sent or returned from <see cref="ProcessorInstance.Pipe.SendData"/> since the last update.
+            /// </summary>
+            UpdateIfDataIsAvailable = 2,
+            /// <summary>
+            /// Always invoke <see cref="ProcessorInstance.IControl{TRealtime}.Update"/> or <see cref="ProcessorInstance.IRealtime.Update"/>
+            /// on this <see cref="ProcessorInstance"/> on every update.
+            /// </summary>
+            UpdateAlways = 3,
+        }
+
+        /// <summary>
         /// Additional data and parameters specifying how a <see cref="ProcessorInstance"/> should be created.
         /// </summary>
         /// <remarks>
         /// These are generally suggested setup from whomever is creating the <see cref="ProcessorInstance"/>, such as a <see cref="IAudioGenerator"/>.
         /// You can change properties to suit your particular needs.
         /// </remarks>
-        public struct CreationParameters
+        public partial struct CreationParameters
         {
             /// <summary>
             /// Control under what circumstances <see cref="ProcessorInstance.IControl{TRealtime}.Update"/> will be called.
             /// </summary>
-            public ControlContext.ProcessorUpdateSetting controlUpdateSetting { get; set; }
+            public UpdateSetting controlUpdateSetting { get; set; }
+
             /// <summary>
             /// Control under what circumstances <see cref="ProcessorInstance.IRealtime.Update"/> will be called.
             /// </summary>
-            public ControlContext.ProcessorUpdateSetting processorUpdateSetting { get; set; }
+            public UpdateSetting realtimeUpdateSetting { get; set; }
 
             internal readonly InitializationFlags BuildInitializationFlags()
             {
                 InitializationFlags flags = 0;
 
-                if (controlUpdateSetting == ControlContext.ProcessorUpdateSetting.UpdateIfDataIsAvailable)
+                if (controlUpdateSetting == UpdateSetting.UpdateIfDataIsAvailable)
                     flags |= InitializationFlags.UpdateControlIfDataIsAvailable;
-                else if (controlUpdateSetting == ControlContext.ProcessorUpdateSetting.UpdateAlways)
+                else if (controlUpdateSetting == UpdateSetting.UpdateAlways)
                     flags |= InitializationFlags.UpdateControlAlways;
 
-                if (processorUpdateSetting == ControlContext.ProcessorUpdateSetting.UpdateIfDataIsAvailable)
+                if (realtimeUpdateSetting == UpdateSetting.UpdateIfDataIsAvailable)
                     flags |= InitializationFlags.UpdateProcessorIfDataIsAvailable;
-                else if (processorUpdateSetting == ControlContext.ProcessorUpdateSetting.UpdateAlways)
+                else if (realtimeUpdateSetting == UpdateSetting.UpdateAlways)
                     flags |= InitializationFlags.UpdateProcessorAlways;
 
                 return flags;
@@ -103,7 +106,7 @@ namespace UnityEngine.Audio
         /// <summary>
         /// Internal representation of flags controlling how a <see cref="ProcessorInstance"/> is handled over the course of its lifetime.
         /// </summary>
-        /// <seealso cref="ControlContext.ProcessorUpdateSetting"/>
+        /// <seealso cref="ControlContext.UpdateSetting"/>
         [System.Flags]
         internal enum InitializationFlags : UInt32
         {
@@ -218,7 +221,7 @@ namespace UnityEngine.Audio
             /// <see cref="ProcessorInstance.CreationParameters.controlUpdateSetting"/>.
             /// </remarks>
             /// <seealso cref="ControlContext.Manual.Update"/>
-            /// <seealso cref="ControlContext.ProcessorUpdateSetting"/>
+            /// <seealso cref="ControlContext.UpdateSetting"/>
             public void Update(ControlContext context, Pipe pipe);
 
             /// <summary>
@@ -364,7 +367,6 @@ namespace UnityEngine.Audio
         /// <remarks>
         /// You can enumerate the <see cref="Element"/>s within using a __foreach__ loop over this collection.
         /// </remarks>
-        /// <seealso cref="ControlContext.SendData"/>
         /// <seealso cref="Pipe.SendData"/>
         /// <example>
         /// <code source="../../../../../Tests/EditModeAndPlayModeTests/Audio/Assets/DocCodeExamples/SAP_HowToUseGetAvailableData.cs"/>
@@ -372,8 +374,7 @@ namespace UnityEngine.Audio
         public unsafe ref struct AvailableData
         {
             /// <summary>
-            /// A piece of temporary immutable type-erased data that was sent from an API like
-            /// <see cref="ControlContext.SendData"/> or <see cref="ProcessorInstance.Pipe.SendData"/>, received on likely another thread.
+            /// A piece of temporary immutable type-erased data that was sent from <see cref="ProcessorInstance.Pipe.SendData"/>, received on likely another thread.
             /// </summary>
             /// <remarks>
             /// You can use <see cref="ProcessorInstance.AvailableData.Element.TryGetData"/> to test and extract a piece of typed data,
@@ -727,6 +728,10 @@ namespace UnityEngine.Audio
 
         [NativeMethod(Name = "audio::CheckProcessorExists", IsFreeFunction = true)]
         static extern unsafe bool CheckProcessorExistsInternal(Unity.Audio.Handle handle, /*ControlHeader* */ void* control);
+
+        // This method is only used for testing what happens when exceptions are thrown from script bindings.
+        [NativeMethod(Name = "audio::ThrowScriptingExceptionForTest", IsFreeFunction = true, IsThreadSafe = true, ThrowsException = true)]
+        internal static extern void ThrowScriptingExceptionForTest();
     }
 
     static class ProcessorExtensions

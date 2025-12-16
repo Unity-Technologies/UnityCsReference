@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Bindings;
 using UnityEngine.Scripting;
+using System.Runtime.InteropServices;
 
 namespace UnityEditor.AssetImporters
 {
@@ -59,10 +60,10 @@ namespace UnityEditor.AssetImporters
         public bool TryGetProperty(string propertyName, out string value) => TryGetStringProperty(propertyName, out value);
         public bool TryGetProperty(string propertyName, out TexturePropertyDescription value) => TryGetTextureProperty(propertyName, out value);
 
-        public extern void GetVector4PropertyNames(List<string> names);
-        public extern void GetFloatPropertyNames(List<string> names);
-        public extern void GetTexturePropertyNames(List<string> names);
-        public extern void GetStringPropertyNames(List<string> names);
+        public extern void GetVector4PropertyNames([Out] List<string> names);
+        public extern void GetFloatPropertyNames([Out] List<string> names);
+        public extern void GetTexturePropertyNames([Out] List<string> names);
+        public extern void GetStringPropertyNames([Out] List<string> names);
 
         extern bool TryGetVector4Property(string propertyName, out Vector4 value);
         extern bool TryGetFloatProperty(string propertyName, out float value);

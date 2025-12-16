@@ -14,11 +14,11 @@ namespace UnityEditor.PackageManager.UI.Internal
 {
     internal class PackageManagerUserSettingsProvider : SettingsProvider
     {
+        public const string k_PackageManagerUserSettingsPath = "Preferences/Package Manager";
         private const string k_UserSettingsStylesheet = "StyleSheets/PackageManager/PackageManagerUserSettings.uss";
         private const string k_CommonStylesheet = "StyleSheets/Extensions/base/common.uss";
         private const string k_DarkStylesheet = "StyleSheets/Extensions/base/dark.uss";
         private const string k_LightStylesheet = "StyleSheets/Extensions/base/light.uss";
-        internal const string k_PackageManagerUserSettingsPath = "Preferences/Package Manager";
         private const string k_PackageManagerUserSettingsTemplate = "PackageManagerUserSettings.uxml";
         private const string k_AssetStoreFolder = "Asset Store-5.x";
 

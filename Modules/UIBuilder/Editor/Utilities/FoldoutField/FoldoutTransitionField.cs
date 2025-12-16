@@ -12,7 +12,7 @@ namespace Unity.UI.Builder
 {
     sealed class FoldoutTransitionField : FoldoutField
     {
-        const string k_UxmlPath = BuilderConstants.UIToolkitAuthoringControlsPath + "/FoldoutTransitionField.uxml";
+        const string k_UxmlPath = BuilderConstants.UtilitiesPath + "/StyleField/FoldoutTransitionField.uxml";
         const string k_UssPath = BuilderConstants.UIToolkitAuthoringControlsPath + "/FoldoutTransitionField.uss";
         const string k_UssDarkSkinPath = BuilderConstants.UIToolkitAuthoringControlsPath + "/FoldoutTransitionFieldDark.uss";
         const string k_UssLightSkinPath = BuilderConstants.UIToolkitAuthoringControlsPath + "/FoldoutTransitionFieldLight.uss";

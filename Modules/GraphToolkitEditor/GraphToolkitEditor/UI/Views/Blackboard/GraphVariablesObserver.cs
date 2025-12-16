@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System;
 using System.Collections.Generic;
 using Unity.GraphToolkit.CSO;
 using UnityEngine;
@@ -55,7 +54,7 @@ namespace Unity.GraphToolkit.Editor
                     var model = m_GraphModelStateComponent.GraphModel.GetModel(newModelHash);
                     if (model is IGroupItemModel groupItemModel)
                     {
-                        if (newGroups.Any(t => groupItemModel.IsInGroup(t)))
+                        if (newGroups.HasAny(t => groupItemModel.IsInGroup(t)))
                             continue;
                         if (model is GroupModelBase groupModelBase)
                             newGroups.Add(groupModelBase);
@@ -67,7 +66,7 @@ namespace Unity.GraphToolkit.Editor
                 // need to check if a variable was not added before its parent group.
                 for (int i = 0; i < newGroups.Count;)
                 {
-                    if (newGroups.Any(t => ((IGroupItemModel)newGroups[i]).IsInGroup(t)))
+                    if (newGroups.HasAny(t => ((IGroupItemModel)newGroups[i]).IsInGroup(t)))
                         newGroups.RemoveAt(i);
                     else
                         ++i;
@@ -76,7 +75,7 @@ namespace Unity.GraphToolkit.Editor
                 // need to check if a variable was not added before its parent group.
                 for (int i = 0; i < newVariableDeclarations.Count;)
                 {
-                    if (newGroups.Any(t => ((IGroupItemModel)newVariableDeclarations[i]).IsInGroup(t)))
+                    if (newGroups.HasAny(t => ((IGroupItemModel)newVariableDeclarations[i]).IsInGroup(t)))
                         newVariableDeclarations.RemoveAt(i);
                     else
                         ++i;

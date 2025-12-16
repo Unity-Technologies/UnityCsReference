@@ -222,7 +222,7 @@ namespace Unity.UIToolkit.Editor
                     RegisterEnumCallbacks<Align>(binding, id, targetElement);
                     break;
                 case StylePropertyId.AspectRatio:
-                    RegisterCallbacks<StyleRatio, Ratio>(binding, in id, targetElement, ProcessChange, ProcessChange);
+                    RegisterCallbacks<StyleRatio, Ratio>(binding, in id, targetElement, ProcessChange, ProcessChange, binding.ProcessChange, binding.ProcessChange);
                     break;
                 case StylePropertyId.BackgroundColor:
                 case StylePropertyId.BorderBottomColor:
@@ -232,20 +232,20 @@ namespace Unity.UIToolkit.Editor
                 case StylePropertyId.Color:
                 case StylePropertyId.UnityBackgroundImageTintColor:
                 case StylePropertyId.UnityTextOutlineColor:
-                    RegisterCallbacks<StyleColor, Color>(binding, in id, targetElement, ProcessChange, ProcessChange);
+                    RegisterCallbacks<StyleColor, Color>(binding, in id, targetElement, ProcessChange, ProcessChange, binding.ProcessChange, binding.ProcessChange);
                     break;
                 case StylePropertyId.BackgroundImage:
-                    RegisterCallbacks<StyleBackground, Background>(binding, in id, targetElement, ProcessChange, ProcessChange);
+                    RegisterCallbacks<StyleBackground, Background>(binding, in id, targetElement, ProcessChange, ProcessChange, binding.ProcessChange, binding.ProcessChange);
                     break;
                 case StylePropertyId.BackgroundPositionX:
                 case StylePropertyId.BackgroundPositionY:
-                    RegisterCallbacks<StyleBackgroundPosition, BackgroundPosition>(binding, in id, targetElement, ProcessChange, ProcessChange);
+                    RegisterCallbacks<StyleBackgroundPosition, BackgroundPosition>(binding, in id, targetElement, ProcessChange, ProcessChange, binding.ProcessChange, binding.ProcessChange);
                     break;
                 case StylePropertyId.BackgroundRepeat:
-                    RegisterCallbacks<StyleBackgroundRepeat, BackgroundRepeat>(binding, in id, targetElement, ProcessChange, ProcessChange);
+                    RegisterCallbacks<StyleBackgroundRepeat, BackgroundRepeat>(binding, in id, targetElement, ProcessChange, ProcessChange, binding.ProcessChange, binding.ProcessChange);
                     break;
                 case StylePropertyId.BackgroundSize:
-                    RegisterCallbacks<StyleBackgroundSize, BackgroundSize>(binding, in id, targetElement, ProcessChange, ProcessChange);
+                    RegisterCallbacks<StyleBackgroundSize, BackgroundSize>(binding, in id, targetElement, ProcessChange, ProcessChange, binding.ProcessChange, binding.ProcessChange);
                     break;
                 case StylePropertyId.BorderBottomLeftRadius:
                 case StylePropertyId.BorderBottomRightRadius:
@@ -274,7 +274,7 @@ namespace Unity.UIToolkit.Editor
                 case StylePropertyId.UnityParagraphSpacing:
                 case StylePropertyId.Width:
                 case StylePropertyId.WordSpacing:
-                    RegisterCallbacks<StyleLength, Length>(binding, in id, targetElement, ProcessChange, ProcessChange);
+                    RegisterCallbacks<StyleLength, Length>(binding, in id, targetElement, ProcessChange, ProcessChange, binding.ProcessChange, binding.ProcessChange);
                     break;
                 case StylePropertyId.BorderBottomWidth:
                 case StylePropertyId.BorderLeftWidth:
@@ -285,16 +285,16 @@ namespace Unity.UIToolkit.Editor
                 case StylePropertyId.Opacity:
                 case StylePropertyId.UnitySliceScale:
                 case StylePropertyId.UnityTextOutlineWidth:
-                    RegisterCallbacks<StyleFloat, float>(binding, in id, targetElement, ProcessChange, ProcessChange);
+                    RegisterCallbacks<StyleFloat, float>(binding, in id, targetElement, ProcessChange, ProcessChange, binding.ProcessChange, binding.ProcessChange);
                     break;
                 case StylePropertyId.Cursor:
-                    RegisterCallbacks<StyleCursor, UnityEngine.UIElements.Cursor>(binding, in id, targetElement, ProcessChange, ProcessChange);
+                    RegisterCallbacks<StyleCursor, UnityEngine.UIElements.Cursor>(binding, in id, targetElement, ProcessChange, ProcessChange, binding.ProcessChange, binding.ProcessChange);
                     break;
                 case StylePropertyId.Display:
                     RegisterEnumCallbacks<DisplayStyle>(binding, id, targetElement);
                     break;
                 case StylePropertyId.Filter:
-                    RegisterCallbacks<StyleList<FilterFunction>, List<FilterFunction>>(binding, in id, targetElement, ProcessChange, ProcessChange);
+                    RegisterCallbacks<StyleList<FilterFunction>, List<FilterFunction>>(binding, in id, targetElement, ProcessChange, ProcessChange, binding.ProcessChange, binding.ProcessChange);
                     break;
                 case StylePropertyId.FlexDirection:
                     RegisterEnumCallbacks<FlexDirection>(binding, id, targetElement);
@@ -313,47 +313,47 @@ namespace Unity.UIToolkit.Editor
                     RegisterEnumCallbacks<Position>(binding, id, targetElement);
                     break;
                 case StylePropertyId.Rotate:
-                    RegisterCallbacks<StyleRotate, Rotate>(binding, in id, targetElement, ProcessChange, ProcessChange);
+                    RegisterCallbacks<StyleRotate, Rotate>(binding, in id, targetElement, ProcessChange, ProcessChange, binding.ProcessChange, binding.ProcessChange);
                     break;
                 case StylePropertyId.Scale:
-                    RegisterCallbacks<StyleScale, Scale>(binding, in id, targetElement, ProcessChange, ProcessChange);
+                    RegisterCallbacks<StyleScale, Scale>(binding, in id, targetElement, ProcessChange, ProcessChange, binding.ProcessChange, binding.ProcessChange);
                     break;
                 case StylePropertyId.TextOverflow:
                     RegisterEnumCallbacks<TextOverflow>(binding, id, targetElement);
                     break;
                 case StylePropertyId.TextShadow:
-                    RegisterCallbacks<StyleTextShadow, TextShadow>(binding, in id, targetElement, ProcessChange, ProcessChange);
+                    RegisterCallbacks<StyleTextShadow, TextShadow>(binding, in id, targetElement, ProcessChange, ProcessChange, binding.ProcessChange, binding.ProcessChange);
                     break;
                 case StylePropertyId.TransformOrigin:
-                    RegisterCallbacks<StyleTransformOrigin, TransformOrigin>(binding, in id, targetElement, ProcessChange, ProcessChange);
+                    RegisterCallbacks<StyleTransformOrigin, TransformOrigin>(binding, in id, targetElement, ProcessChange, ProcessChange, binding.ProcessChange, binding.ProcessChange);
                     break;
                 case StylePropertyId.TransitionDelay:
                 case StylePropertyId.TransitionDuration:
-                    RegisterCallbacks<StyleList<TimeValue>, List<TimeValue>>(binding, in id, targetElement, ProcessChange, ProcessChange);
+                    RegisterCallbacks<StyleList<TimeValue>, List<TimeValue>>(binding, in id, targetElement, ProcessChange, ProcessChange, binding.ProcessChange, binding.ProcessChange);
                     break;
                 case StylePropertyId.TransitionProperty:
-                    RegisterCallbacks<StyleList<StylePropertyName>, List<StylePropertyName>>(binding, in id, targetElement, ProcessChange, ProcessChange);
+                    RegisterCallbacks<StyleList<StylePropertyName>, List<StylePropertyName>>(binding, in id, targetElement, ProcessChange, ProcessChange, binding.ProcessChange, binding.ProcessChange);
                     break;
                 case StylePropertyId.TransitionTimingFunction:
-                    RegisterCallbacks<StyleList<EasingFunction>, List<EasingFunction>>(binding, in id, targetElement, ProcessChange, ProcessChange);
+                    RegisterCallbacks<StyleList<EasingFunction>, List<EasingFunction>>(binding, in id, targetElement, ProcessChange, ProcessChange, binding.ProcessChange, binding.ProcessChange);
                     break;
                 case StylePropertyId.Translate:
-                    RegisterCallbacks<StyleTranslate, Translate>(binding, in id, targetElement, ProcessChange, ProcessChange);
+                    RegisterCallbacks<StyleTranslate, Translate>(binding, in id, targetElement, ProcessChange, ProcessChange, binding.ProcessChange, binding.ProcessChange);
                     break;
                 case StylePropertyId.UnityEditorTextRenderingMode:
                     RegisterEnumCallbacks<EditorTextRenderingMode>(binding, id, targetElement);
                     break;
                 case StylePropertyId.UnityFont:
-                    RegisterCallbacks<StyleFont, Font>(binding, in id, targetElement, ProcessChange, ProcessChange);
+                    RegisterCallbacks<StyleFont, Font>(binding, in id, targetElement, ProcessChange, ProcessChange, binding.ProcessChange, binding.ProcessChange);
                     break;
                 case StylePropertyId.UnityFontDefinition:
-                    RegisterCallbacks<StyleFontDefinition, FontDefinition>(binding, in id, targetElement, ProcessChange, ProcessChange);
+                    RegisterCallbacks<StyleFontDefinition, FontDefinition>(binding, in id, targetElement, ProcessChange, ProcessChange, binding.ProcessChange, binding.ProcessChange);
                     break;
                 case StylePropertyId.UnityFontStyleAndWeight:
                     RegisterEnumCallbacks<FontStyle>(binding, id, targetElement);
                     break;
                 case StylePropertyId.UnityMaterial:
-                    RegisterCallbacks<StyleMaterialDefinition, MaterialDefinition>(binding, in id, targetElement, ProcessChange, ProcessChange);
+                    RegisterCallbacks<StyleMaterialDefinition, MaterialDefinition>(binding, in id, targetElement, ProcessChange, ProcessChange, binding.ProcessChange, binding.ProcessChange);
                     break;
                 case StylePropertyId.UnityOverflowClipBox:
                     RegisterEnumCallbacks<OverflowClipBox>(binding, id, targetElement);
@@ -362,7 +362,7 @@ namespace Unity.UIToolkit.Editor
                 case StylePropertyId.UnitySliceLeft:
                 case StylePropertyId.UnitySliceRight:
                 case StylePropertyId.UnitySliceTop:
-                    RegisterCallbacks<StyleInt, int>(binding, in id, targetElement, ProcessChange, ProcessChange);
+                    RegisterCallbacks<StyleInt, int>(binding, in id, targetElement, ProcessChange, ProcessChange, binding.ProcessChange, binding.ProcessChange);
                     break;
                 case StylePropertyId.UnitySliceType:
                     RegisterEnumCallbacks<SliceType>(binding, id, targetElement);
@@ -371,7 +371,7 @@ namespace Unity.UIToolkit.Editor
                     RegisterEnumCallbacks<TextAnchor>(binding, id, targetElement);
                     break;
                 case StylePropertyId.UnityTextAutoSize:
-                    RegisterCallbacks<StyleTextAutoSize, TextAutoSize>(binding, in id, targetElement, ProcessChange, ProcessChange);
+                    RegisterCallbacks<StyleTextAutoSize, TextAutoSize>(binding, in id, targetElement, ProcessChange, ProcessChange, binding.ProcessChange, binding.ProcessChange);
                     break;
                 case StylePropertyId.UnityTextGenerator:
                     RegisterEnumCallbacks<TextGeneratorType>(binding, id, targetElement);
@@ -406,6 +406,8 @@ namespace Unity.UIToolkit.Editor
                 case StylePropertyId.AspectRatio:
                     targetElement.UnregisterCallback<ChangeEvent<Ratio>, CallbackContext>(ProcessChange);
                     targetElement.UnregisterCallback<ChangeEvent<StyleRatio>, CallbackContext>(ProcessChange);
+                    targetElement.UnregisterCallback<CompositeStylePropertyChangeEvent<Ratio>, CallbackContext>(binding.ProcessChange);
+                    targetElement.UnregisterCallback<CompositeStylePropertyChangeEvent<StyleRatio>, CallbackContext>(binding.ProcessChange);
                     break;
                 case StylePropertyId.BackgroundColor:
                 case StylePropertyId.BorderBottomColor:
@@ -417,23 +419,33 @@ namespace Unity.UIToolkit.Editor
                 case StylePropertyId.UnityTextOutlineColor:
                     targetElement.UnregisterCallback<ChangeEvent<Color>, CallbackContext>(ProcessChange);
                     targetElement.UnregisterCallback<ChangeEvent<StyleColor>, CallbackContext>(ProcessChange);
+                    targetElement.UnregisterCallback<CompositeStylePropertyChangeEvent<Color>, CallbackContext>(binding.ProcessChange);
+                    targetElement.UnregisterCallback<CompositeStylePropertyChangeEvent<StyleColor>, CallbackContext>(binding.ProcessChange);
                     break;
                 case StylePropertyId.BackgroundImage:
                     targetElement.UnregisterCallback<ChangeEvent<Background>, CallbackContext>(ProcessChange);
                     targetElement.UnregisterCallback<ChangeEvent<StyleBackground>, CallbackContext>(ProcessChange);
+                    targetElement.UnregisterCallback<CompositeStylePropertyChangeEvent<Background>, CallbackContext>(binding.ProcessChange);
+                    targetElement.UnregisterCallback<CompositeStylePropertyChangeEvent<StyleBackground>, CallbackContext>(binding.ProcessChange);
                     break;
                 case StylePropertyId.BackgroundPositionX:
                 case StylePropertyId.BackgroundPositionY:
                     targetElement.UnregisterCallback<ChangeEvent<BackgroundPosition>, CallbackContext>(ProcessChange);
                     targetElement.UnregisterCallback<ChangeEvent<StyleBackgroundPosition>, CallbackContext>(ProcessChange);
+                    targetElement.UnregisterCallback<CompositeStylePropertyChangeEvent<BackgroundPosition>, CallbackContext>(binding.ProcessChange);
+                    targetElement.UnregisterCallback<CompositeStylePropertyChangeEvent<StyleBackgroundPosition>, CallbackContext>(binding.ProcessChange);
                     break;
                 case StylePropertyId.BackgroundRepeat:
                     targetElement.UnregisterCallback<ChangeEvent<BackgroundRepeat>, CallbackContext>(ProcessChange);
                     targetElement.UnregisterCallback<ChangeEvent<StyleBackgroundRepeat>, CallbackContext>(ProcessChange);
+                    targetElement.UnregisterCallback<CompositeStylePropertyChangeEvent<BackgroundRepeat>, CallbackContext>(binding.ProcessChange);
+                    targetElement.UnregisterCallback<CompositeStylePropertyChangeEvent<StyleBackgroundRepeat>, CallbackContext>(binding.ProcessChange);
                     break;
                 case StylePropertyId.BackgroundSize:
                     targetElement.UnregisterCallback<ChangeEvent<BackgroundSize>, CallbackContext>(ProcessChange);
                     targetElement.UnregisterCallback<ChangeEvent<StyleBackgroundSize>, CallbackContext>(ProcessChange);
+                    targetElement.UnregisterCallback<CompositeStylePropertyChangeEvent<BackgroundSize>, CallbackContext>(binding.ProcessChange);
+                    targetElement.UnregisterCallback<CompositeStylePropertyChangeEvent<StyleBackgroundSize>, CallbackContext>(binding.ProcessChange);
                     break;
                 case StylePropertyId.BorderBottomLeftRadius:
                 case StylePropertyId.BorderBottomRightRadius:
@@ -464,6 +476,8 @@ namespace Unity.UIToolkit.Editor
                 case StylePropertyId.WordSpacing:
                     targetElement.UnregisterCallback<ChangeEvent<Length>, CallbackContext>(ProcessChange);
                     targetElement.UnregisterCallback<ChangeEvent<StyleLength>, CallbackContext>(ProcessChange);
+                    targetElement.UnregisterCallback<CompositeStylePropertyChangeEvent<Length>, CallbackContext>(binding.ProcessChange);
+                    targetElement.UnregisterCallback<CompositeStylePropertyChangeEvent<StyleLength>, CallbackContext>(binding.ProcessChange);
                     break;
                 case StylePropertyId.BorderBottomWidth:
                 case StylePropertyId.BorderLeftWidth:
@@ -476,10 +490,14 @@ namespace Unity.UIToolkit.Editor
                 case StylePropertyId.UnityTextOutlineWidth:
                     targetElement.UnregisterCallback<ChangeEvent<float>, CallbackContext>(ProcessChange);
                     targetElement.UnregisterCallback<ChangeEvent<StyleFloat>, CallbackContext>(ProcessChange);
+                    targetElement.UnregisterCallback<CompositeStylePropertyChangeEvent<float>, CallbackContext>(binding.ProcessChange);
+                    targetElement.UnregisterCallback<CompositeStylePropertyChangeEvent<StyleFloat>, CallbackContext>(binding.ProcessChange);
                     break;
                 case StylePropertyId.Cursor:
                     targetElement.UnregisterCallback<ChangeEvent<UnityEngine.UIElements.Cursor>, CallbackContext>(ProcessChange);
                     targetElement.UnregisterCallback<ChangeEvent<StyleCursor>, CallbackContext>(ProcessChange);
+                    targetElement.UnregisterCallback<CompositeStylePropertyChangeEvent<UnityEngine.UIElements.Cursor>, CallbackContext>(binding.ProcessChange);
+                    targetElement.UnregisterCallback<CompositeStylePropertyChangeEvent<StyleCursor>, CallbackContext>(binding.ProcessChange);
                     break;
                 case StylePropertyId.Display:
                     targetElement.UnregisterCallback<ChangeEvent<DisplayStyle>, CallbackContext>(ProcessChange);
@@ -489,6 +507,8 @@ namespace Unity.UIToolkit.Editor
                 case StylePropertyId.Filter:
                     targetElement.UnregisterCallback<ChangeEvent<List<FilterFunction>>, CallbackContext>(ProcessChange);
                     targetElement.UnregisterCallback<ChangeEvent<StyleList<FilterFunction>>, CallbackContext>(ProcessChange);
+                    targetElement.UnregisterCallback<CompositeStylePropertyChangeEvent<List<FilterFunction>>, CallbackContext>(binding.ProcessChange);
+                    targetElement.UnregisterCallback<CompositeStylePropertyChangeEvent<StyleList<FilterFunction>>, CallbackContext>(binding.ProcessChange);
                     break;
                 case StylePropertyId.FlexDirection:
                     targetElement.UnregisterCallback<ChangeEvent<FlexDirection>, CallbackContext>(ProcessChange);
@@ -519,10 +539,14 @@ namespace Unity.UIToolkit.Editor
                 case StylePropertyId.Rotate:
                     targetElement.UnregisterCallback<ChangeEvent<Rotate>, CallbackContext>(ProcessChange);
                     targetElement.UnregisterCallback<ChangeEvent<StyleRotate>, CallbackContext>(ProcessChange);
+                    targetElement.UnregisterCallback<CompositeStylePropertyChangeEvent<Rotate>, CallbackContext>(binding.ProcessChange);
+                    targetElement.UnregisterCallback<CompositeStylePropertyChangeEvent<StyleRotate>, CallbackContext>(binding.ProcessChange);
                     break;
                 case StylePropertyId.Scale:
                     targetElement.UnregisterCallback<ChangeEvent<Scale>, CallbackContext>(ProcessChange);
                     targetElement.UnregisterCallback<ChangeEvent<StyleScale>, CallbackContext>(ProcessChange);
+                    targetElement.UnregisterCallback<CompositeStylePropertyChangeEvent<Scale>, CallbackContext>(binding.ProcessChange);
+                    targetElement.UnregisterCallback<CompositeStylePropertyChangeEvent<StyleScale>, CallbackContext>(binding.ProcessChange);
                     break;
                 case StylePropertyId.TextOverflow:
                     targetElement.UnregisterCallback<ChangeEvent<TextOverflow>, CallbackContext>(ProcessChange);
@@ -532,27 +556,39 @@ namespace Unity.UIToolkit.Editor
                 case StylePropertyId.TextShadow:
                     targetElement.UnregisterCallback<ChangeEvent<TextShadow>, CallbackContext>(ProcessChange);
                     targetElement.UnregisterCallback<ChangeEvent<StyleTextShadow>, CallbackContext>(ProcessChange);
+                    targetElement.UnregisterCallback<CompositeStylePropertyChangeEvent<TextShadow>, CallbackContext>(binding.ProcessChange);
+                    targetElement.UnregisterCallback<CompositeStylePropertyChangeEvent<StyleTextShadow>, CallbackContext>(binding.ProcessChange);
                     break;
                 case StylePropertyId.TransformOrigin:
                     targetElement.UnregisterCallback<ChangeEvent<TransformOrigin>, CallbackContext>(ProcessChange);
                     targetElement.UnregisterCallback<ChangeEvent<StyleTransformOrigin>, CallbackContext>(ProcessChange);
+                    targetElement.UnregisterCallback<CompositeStylePropertyChangeEvent<TransformOrigin>, CallbackContext>(binding.ProcessChange);
+                    targetElement.UnregisterCallback<CompositeStylePropertyChangeEvent<StyleTransformOrigin>, CallbackContext>(binding.ProcessChange);
                     break;
                 case StylePropertyId.TransitionDelay:
                 case StylePropertyId.TransitionDuration:
                     targetElement.UnregisterCallback<ChangeEvent<List<TimeValue>>, CallbackContext>(ProcessChange);
                     targetElement.UnregisterCallback<ChangeEvent<StyleList<TimeValue>>, CallbackContext>(ProcessChange);
+                    targetElement.UnregisterCallback<CompositeStylePropertyChangeEvent<List<TimeValue>>, CallbackContext>(binding.ProcessChange);
+                    targetElement.UnregisterCallback<CompositeStylePropertyChangeEvent<StyleList<TimeValue>>, CallbackContext>(binding.ProcessChange);
                     break;
                 case StylePropertyId.TransitionProperty:
                     targetElement.UnregisterCallback<ChangeEvent<List<StylePropertyName>>, CallbackContext>(ProcessChange);
                     targetElement.UnregisterCallback<ChangeEvent<StyleList<StylePropertyName>>, CallbackContext>(ProcessChange);
+                    targetElement.UnregisterCallback<CompositeStylePropertyChangeEvent<List<StylePropertyName>>, CallbackContext>(binding.ProcessChange);
+                    targetElement.UnregisterCallback<CompositeStylePropertyChangeEvent<StyleList<StylePropertyName>>, CallbackContext>(binding.ProcessChange);
                     break;
                 case StylePropertyId.TransitionTimingFunction:
                     targetElement.UnregisterCallback<ChangeEvent<List<EasingFunction>>, CallbackContext>(ProcessChange);
                     targetElement.UnregisterCallback<ChangeEvent<StyleList<EasingFunction>>, CallbackContext>(ProcessChange);
+                    targetElement.UnregisterCallback<CompositeStylePropertyChangeEvent<List<EasingFunction>>, CallbackContext>(binding.ProcessChange);
+                    targetElement.UnregisterCallback<CompositeStylePropertyChangeEvent<StyleList<EasingFunction>>, CallbackContext>(binding.ProcessChange);
                     break;
                 case StylePropertyId.Translate:
                     targetElement.UnregisterCallback<ChangeEvent<Translate>, CallbackContext>(ProcessChange);
                     targetElement.UnregisterCallback<ChangeEvent<StyleTranslate>, CallbackContext>(ProcessChange);
+                    targetElement.UnregisterCallback<CompositeStylePropertyChangeEvent<Translate>, CallbackContext>(binding.ProcessChange);
+                    targetElement.UnregisterCallback<CompositeStylePropertyChangeEvent<StyleTranslate>, CallbackContext>(binding.ProcessChange);
                     break;
                 case StylePropertyId.UnityEditorTextRenderingMode:
                     targetElement.UnregisterCallback<ChangeEvent<EditorTextRenderingMode>, CallbackContext>(ProcessChange);
@@ -562,10 +598,14 @@ namespace Unity.UIToolkit.Editor
                 case StylePropertyId.UnityFont:
                     targetElement.UnregisterCallback<ChangeEvent<Font>, CallbackContext>(ProcessChange);
                     targetElement.UnregisterCallback<ChangeEvent<StyleFont>, CallbackContext>(ProcessChange);
+                    targetElement.UnregisterCallback<CompositeStylePropertyChangeEvent<Font>, CallbackContext>(binding.ProcessChange);
+                    targetElement.UnregisterCallback<CompositeStylePropertyChangeEvent<StyleFont>, CallbackContext>(binding.ProcessChange);
                     break;
                 case StylePropertyId.UnityFontDefinition:
                     targetElement.UnregisterCallback<ChangeEvent<FontDefinition>, CallbackContext>(ProcessChange);
                     targetElement.UnregisterCallback<ChangeEvent<StyleFontDefinition>, CallbackContext>(ProcessChange);
+                    targetElement.UnregisterCallback<CompositeStylePropertyChangeEvent<FontDefinition>, CallbackContext>(binding.ProcessChange);
+                    targetElement.UnregisterCallback<CompositeStylePropertyChangeEvent<StyleFontDefinition>, CallbackContext>(binding.ProcessChange);
                     break;
                 case StylePropertyId.UnityFontStyleAndWeight:
                     targetElement.UnregisterCallback<ChangeEvent<FontStyle>, CallbackContext>(ProcessChange);
@@ -575,6 +615,8 @@ namespace Unity.UIToolkit.Editor
                 case StylePropertyId.UnityMaterial:
                     targetElement.UnregisterCallback<ChangeEvent<MaterialDefinition>, CallbackContext>(ProcessChange);
                     targetElement.UnregisterCallback<ChangeEvent<StyleMaterialDefinition>, CallbackContext>(ProcessChange);
+                    targetElement.UnregisterCallback<CompositeStylePropertyChangeEvent<MaterialDefinition>, CallbackContext>(binding.ProcessChange);
+                    targetElement.UnregisterCallback<CompositeStylePropertyChangeEvent<StyleMaterialDefinition>, CallbackContext>(binding.ProcessChange);
                     break;
                 case StylePropertyId.UnityOverflowClipBox:
                     targetElement.UnregisterCallback<ChangeEvent<OverflowClipBox>, CallbackContext>(ProcessChange);
@@ -587,6 +629,8 @@ namespace Unity.UIToolkit.Editor
                 case StylePropertyId.UnitySliceTop:
                     targetElement.UnregisterCallback<ChangeEvent<int>, CallbackContext>(ProcessChange);
                     targetElement.UnregisterCallback<ChangeEvent<StyleInt>, CallbackContext>(ProcessChange);
+                    targetElement.UnregisterCallback<CompositeStylePropertyChangeEvent<int>, CallbackContext>(binding.ProcessChange);
+                    targetElement.UnregisterCallback<CompositeStylePropertyChangeEvent<StyleInt>, CallbackContext>(binding.ProcessChange);
                     break;
                 case StylePropertyId.UnitySliceType:
                     targetElement.UnregisterCallback<ChangeEvent<SliceType>, CallbackContext>(ProcessChange);
@@ -601,6 +645,8 @@ namespace Unity.UIToolkit.Editor
                 case StylePropertyId.UnityTextAutoSize:
                     targetElement.UnregisterCallback<ChangeEvent<TextAutoSize>, CallbackContext>(ProcessChange);
                     targetElement.UnregisterCallback<ChangeEvent<StyleTextAutoSize>, CallbackContext>(ProcessChange);
+                    targetElement.UnregisterCallback<CompositeStylePropertyChangeEvent<TextAutoSize>, CallbackContext>(binding.ProcessChange);
+                    targetElement.UnregisterCallback<CompositeStylePropertyChangeEvent<StyleTextAutoSize>, CallbackContext>(binding.ProcessChange);
                     break;
                 case StylePropertyId.UnityTextGenerator:
                     targetElement.UnregisterCallback<ChangeEvent<TextGeneratorType>, CallbackContext>(ProcessChange);
@@ -886,12 +932,32 @@ namespace Unity.UIToolkit.Editor
             ProcessChange(evt, ctx, SetRatio);
         }
 
+        private void ProcessChange(CompositeStylePropertyChangeEvent<Ratio> evt, CallbackContext ctx)
+        {
+            ProcessChange(evt, ctx, SetRatio);
+        }
+
+        private void ProcessChange(CompositeStylePropertyChangeEvent<StyleRatio> evt, CallbackContext ctx)
+        {
+            ProcessChange(evt, ctx, SetRatio);
+        }
+
         private static void ProcessChange(ChangeEvent<Color> evt, CallbackContext ctx)
         {
             ProcessChange(evt, ctx, SetColor);
         }
 
         private static void ProcessChange(ChangeEvent<StyleColor> evt, CallbackContext ctx)
+        {
+            ProcessChange(evt, ctx, SetColor);
+        }
+
+        private void ProcessChange(CompositeStylePropertyChangeEvent<Color> evt, CallbackContext ctx)
+        {
+            ProcessChange(evt, ctx, SetColor);
+        }
+
+        private void ProcessChange(CompositeStylePropertyChangeEvent<StyleColor> evt, CallbackContext ctx)
         {
             ProcessChange(evt, ctx, SetColor);
         }
@@ -906,12 +972,32 @@ namespace Unity.UIToolkit.Editor
             ProcessChange(evt, ctx, SetBackground);
         }
 
+        private void ProcessChange(CompositeStylePropertyChangeEvent<Background> evt, CallbackContext ctx)
+        {
+            ProcessChange(evt, ctx, SetBackground);
+        }
+
+        private void ProcessChange(CompositeStylePropertyChangeEvent<StyleBackground> evt, CallbackContext ctx)
+        {
+            ProcessChange(evt, ctx, SetBackground);
+        }
+
         private static void ProcessChange(ChangeEvent<BackgroundPosition> evt, CallbackContext ctx)
         {
             ProcessChange(evt, ctx, SetBackgroundPosition);
         }
 
         private static void ProcessChange(ChangeEvent<StyleBackgroundPosition> evt, CallbackContext ctx)
+        {
+            ProcessChange(evt, ctx, SetBackgroundPosition);
+        }
+
+        private void ProcessChange(CompositeStylePropertyChangeEvent<BackgroundPosition> evt, CallbackContext ctx)
+        {
+            ProcessChange(evt, ctx, SetBackgroundPosition);
+        }
+
+        private void ProcessChange(CompositeStylePropertyChangeEvent<StyleBackgroundPosition> evt, CallbackContext ctx)
         {
             ProcessChange(evt, ctx, SetBackgroundPosition);
         }
@@ -926,12 +1012,32 @@ namespace Unity.UIToolkit.Editor
             ProcessChange(evt, ctx, SetBackgroundRepeat);
         }
 
+        private void ProcessChange(CompositeStylePropertyChangeEvent<BackgroundRepeat> evt, CallbackContext ctx)
+        {
+            ProcessChange(evt, ctx, SetBackgroundRepeat);
+        }
+
+        private void ProcessChange(CompositeStylePropertyChangeEvent<StyleBackgroundRepeat> evt, CallbackContext ctx)
+        {
+            ProcessChange(evt, ctx, SetBackgroundRepeat);
+        }
+
         private static void ProcessChange(ChangeEvent<BackgroundSize> evt, CallbackContext ctx)
         {
             ProcessChange(evt, ctx, SetBackgroundSize);
         }
 
         private static void ProcessChange(ChangeEvent<StyleBackgroundSize> evt, CallbackContext ctx)
+        {
+            ProcessChange(evt, ctx, SetBackgroundSize);
+        }
+
+        private void ProcessChange(CompositeStylePropertyChangeEvent<BackgroundSize> evt, CallbackContext ctx)
+        {
+            ProcessChange(evt, ctx, SetBackgroundSize);
+        }
+
+        private void ProcessChange(CompositeStylePropertyChangeEvent<StyleBackgroundSize> evt, CallbackContext ctx)
         {
             ProcessChange(evt, ctx, SetBackgroundSize);
         }
@@ -946,12 +1052,32 @@ namespace Unity.UIToolkit.Editor
             ProcessChange(evt, ctx, SetLength);
         }
 
+        private void ProcessChange(CompositeStylePropertyChangeEvent<Length> evt, CallbackContext ctx)
+        {
+            ProcessChange(evt, ctx, SetLength);
+        }
+
+        private void ProcessChange(CompositeStylePropertyChangeEvent<StyleLength> evt, CallbackContext ctx)
+        {
+            ProcessChange(evt, ctx, SetLength);
+        }
+
         private static void ProcessChange(ChangeEvent<float> evt, CallbackContext ctx)
         {
             ProcessChange(evt, ctx, SetFloat);
         }
 
         private static void ProcessChange(ChangeEvent<StyleFloat> evt, CallbackContext ctx)
+        {
+            ProcessChange(evt, ctx, SetFloat);
+        }
+
+        private void ProcessChange(CompositeStylePropertyChangeEvent<float> evt, CallbackContext ctx)
+        {
+            ProcessChange(evt, ctx, SetFloat);
+        }
+
+        private void ProcessChange(CompositeStylePropertyChangeEvent<StyleFloat> evt, CallbackContext ctx)
         {
             ProcessChange(evt, ctx, SetFloat);
         }
@@ -966,12 +1092,32 @@ namespace Unity.UIToolkit.Editor
             ProcessChange(evt, ctx, SetCursor);
         }
 
+        private void ProcessChange(CompositeStylePropertyChangeEvent<UnityEngine.UIElements.Cursor> evt, CallbackContext ctx)
+        {
+            ProcessChange(evt, ctx, SetCursor);
+        }
+
+        private void ProcessChange(CompositeStylePropertyChangeEvent<StyleCursor> evt, CallbackContext ctx)
+        {
+            ProcessChange(evt, ctx, SetCursor);
+        }
+
         private static void ProcessChange(ChangeEvent<List<FilterFunction>> evt, CallbackContext ctx)
         {
             ProcessChange(evt, ctx, SetFilterFunctionList);
         }
 
         private static void ProcessChange(ChangeEvent<StyleList<FilterFunction>> evt, CallbackContext ctx)
+        {
+            ProcessChange(evt, ctx, SetFilterFunctionList);
+        }
+
+        private void ProcessChange(CompositeStylePropertyChangeEvent<List<FilterFunction>> evt, CallbackContext ctx)
+        {
+            ProcessChange(evt, ctx, SetFilterFunctionList);
+        }
+
+        private void ProcessChange(CompositeStylePropertyChangeEvent<StyleList<FilterFunction>> evt, CallbackContext ctx)
         {
             ProcessChange(evt, ctx, SetFilterFunctionList);
         }
@@ -986,12 +1132,32 @@ namespace Unity.UIToolkit.Editor
             ProcessChange(evt, ctx, SetRotate);
         }
 
+        private void ProcessChange(CompositeStylePropertyChangeEvent<Rotate> evt, CallbackContext ctx)
+        {
+            ProcessChange(evt, ctx, SetRotate);
+        }
+
+        private void ProcessChange(CompositeStylePropertyChangeEvent<StyleRotate> evt, CallbackContext ctx)
+        {
+            ProcessChange(evt, ctx, SetRotate);
+        }
+
         private static void ProcessChange(ChangeEvent<Scale> evt, CallbackContext ctx)
         {
             ProcessChange(evt, ctx, SetScale);
         }
 
         private static void ProcessChange(ChangeEvent<StyleScale> evt, CallbackContext ctx)
+        {
+            ProcessChange(evt, ctx, SetScale);
+        }
+
+        private void ProcessChange(CompositeStylePropertyChangeEvent<Scale> evt, CallbackContext ctx)
+        {
+            ProcessChange(evt, ctx, SetScale);
+        }
+
+        private void ProcessChange(CompositeStylePropertyChangeEvent<StyleScale> evt, CallbackContext ctx)
         {
             ProcessChange(evt, ctx, SetScale);
         }
@@ -1006,12 +1172,32 @@ namespace Unity.UIToolkit.Editor
             ProcessChange(evt, ctx, SetTextShadow);
         }
 
+        private void ProcessChange(CompositeStylePropertyChangeEvent<TextShadow> evt, CallbackContext ctx)
+        {
+            ProcessChange(evt, ctx, SetTextShadow);
+        }
+
+        private void ProcessChange(CompositeStylePropertyChangeEvent<StyleTextShadow> evt, CallbackContext ctx)
+        {
+            ProcessChange(evt, ctx, SetTextShadow);
+        }
+
         private static void ProcessChange(ChangeEvent<TransformOrigin> evt, CallbackContext ctx)
         {
             ProcessChange(evt, ctx, SetTransformOrigin);
         }
 
         private static void ProcessChange(ChangeEvent<StyleTransformOrigin> evt, CallbackContext ctx)
+        {
+            ProcessChange(evt, ctx, SetTransformOrigin);
+        }
+
+        private void ProcessChange(CompositeStylePropertyChangeEvent<TransformOrigin> evt, CallbackContext ctx)
+        {
+            ProcessChange(evt, ctx, SetTransformOrigin);
+        }
+
+        private void ProcessChange(CompositeStylePropertyChangeEvent<StyleTransformOrigin> evt, CallbackContext ctx)
         {
             ProcessChange(evt, ctx, SetTransformOrigin);
         }
@@ -1026,12 +1212,32 @@ namespace Unity.UIToolkit.Editor
             ProcessChange(evt, ctx, SetTimeValueList);
         }
 
+        private void ProcessChange(CompositeStylePropertyChangeEvent<List<TimeValue>> evt, CallbackContext ctx)
+        {
+            ProcessChange(evt, ctx, SetTimeValueList);
+        }
+
+        private void ProcessChange(CompositeStylePropertyChangeEvent<StyleList<TimeValue>> evt, CallbackContext ctx)
+        {
+            ProcessChange(evt, ctx, SetTimeValueList);
+        }
+
         private static void ProcessChange(ChangeEvent<List<StylePropertyName>> evt, CallbackContext ctx)
         {
             ProcessChange(evt, ctx, SetStylePropertyNameList);
         }
 
         private static void ProcessChange(ChangeEvent<StyleList<StylePropertyName>> evt, CallbackContext ctx)
+        {
+            ProcessChange(evt, ctx, SetStylePropertyNameList);
+        }
+
+        private void ProcessChange(CompositeStylePropertyChangeEvent<List<StylePropertyName>> evt, CallbackContext ctx)
+        {
+            ProcessChange(evt, ctx, SetStylePropertyNameList);
+        }
+
+        private void ProcessChange(CompositeStylePropertyChangeEvent<StyleList<StylePropertyName>> evt, CallbackContext ctx)
         {
             ProcessChange(evt, ctx, SetStylePropertyNameList);
         }
@@ -1046,12 +1252,32 @@ namespace Unity.UIToolkit.Editor
             ProcessChange(evt, ctx, SetEasingFunctionList);
         }
 
+        private void ProcessChange(CompositeStylePropertyChangeEvent<List<EasingFunction>> evt, CallbackContext ctx)
+        {
+            ProcessChange(evt, ctx, SetEasingFunctionList);
+        }
+
+        private void ProcessChange(CompositeStylePropertyChangeEvent<StyleList<EasingFunction>> evt, CallbackContext ctx)
+        {
+            ProcessChange(evt, ctx, SetEasingFunctionList);
+        }
+
         private static void ProcessChange(ChangeEvent<Translate> evt, CallbackContext ctx)
         {
             ProcessChange(evt, ctx, SetTranslate);
         }
 
         private static void ProcessChange(ChangeEvent<StyleTranslate> evt, CallbackContext ctx)
+        {
+            ProcessChange(evt, ctx, SetTranslate);
+        }
+
+        private void ProcessChange(CompositeStylePropertyChangeEvent<Translate> evt, CallbackContext ctx)
+        {
+            ProcessChange(evt, ctx, SetTranslate);
+        }
+
+        private void ProcessChange(CompositeStylePropertyChangeEvent<StyleTranslate> evt, CallbackContext ctx)
         {
             ProcessChange(evt, ctx, SetTranslate);
         }
@@ -1066,12 +1292,32 @@ namespace Unity.UIToolkit.Editor
             ProcessChange(evt, ctx, SetFont);
         }
 
+        private void ProcessChange(CompositeStylePropertyChangeEvent<Font> evt, CallbackContext ctx)
+        {
+            ProcessChange(evt, ctx, SetFont);
+        }
+
+        private void ProcessChange(CompositeStylePropertyChangeEvent<StyleFont> evt, CallbackContext ctx)
+        {
+            ProcessChange(evt, ctx, SetFont);
+        }
+
         private static void ProcessChange(ChangeEvent<FontDefinition> evt, CallbackContext ctx)
         {
             ProcessChange(evt, ctx, SetFontDefinition);
         }
 
         private static void ProcessChange(ChangeEvent<StyleFontDefinition> evt, CallbackContext ctx)
+        {
+            ProcessChange(evt, ctx, SetFontDefinition);
+        }
+
+        private void ProcessChange(CompositeStylePropertyChangeEvent<FontDefinition> evt, CallbackContext ctx)
+        {
+            ProcessChange(evt, ctx, SetFontDefinition);
+        }
+
+        private void ProcessChange(CompositeStylePropertyChangeEvent<StyleFontDefinition> evt, CallbackContext ctx)
         {
             ProcessChange(evt, ctx, SetFontDefinition);
         }
@@ -1086,6 +1332,16 @@ namespace Unity.UIToolkit.Editor
             ProcessChange(evt, ctx, SetMaterialDefinition);
         }
 
+        private void ProcessChange(CompositeStylePropertyChangeEvent<MaterialDefinition> evt, CallbackContext ctx)
+        {
+            ProcessChange(evt, ctx, SetMaterialDefinition);
+        }
+
+        private void ProcessChange(CompositeStylePropertyChangeEvent<StyleMaterialDefinition> evt, CallbackContext ctx)
+        {
+            ProcessChange(evt, ctx, SetMaterialDefinition);
+        }
+
         private static void ProcessChange(ChangeEvent<int> evt, CallbackContext ctx)
         {
             ProcessChange(evt, ctx, SetInt);
@@ -1096,12 +1352,32 @@ namespace Unity.UIToolkit.Editor
             ProcessChange(evt, ctx, SetInt);
         }
 
+        private void ProcessChange(CompositeStylePropertyChangeEvent<int> evt, CallbackContext ctx)
+        {
+            ProcessChange(evt, ctx, SetInt);
+        }
+
+        private void ProcessChange(CompositeStylePropertyChangeEvent<StyleInt> evt, CallbackContext ctx)
+        {
+            ProcessChange(evt, ctx, SetInt);
+        }
+
         private static void ProcessChange(ChangeEvent<TextAutoSize> evt, CallbackContext ctx)
         {
             ProcessChange(evt, ctx, SetTextAutoSize);
         }
 
         private static void ProcessChange(ChangeEvent<StyleTextAutoSize> evt, CallbackContext ctx)
+        {
+            ProcessChange(evt, ctx, SetTextAutoSize);
+        }
+
+        private void ProcessChange(CompositeStylePropertyChangeEvent<TextAutoSize> evt, CallbackContext ctx)
+        {
+            ProcessChange(evt, ctx, SetTextAutoSize);
+        }
+
+        private void ProcessChange(CompositeStylePropertyChangeEvent<StyleTextAutoSize> evt, CallbackContext ctx)
         {
             ProcessChange(evt, ctx, SetTextAutoSize);
         }

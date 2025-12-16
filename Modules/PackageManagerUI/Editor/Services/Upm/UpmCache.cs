@@ -12,21 +12,21 @@ namespace UnityEditor.PackageManager.UI.Internal
     internal interface IUpmCache : IService
     {
         event Action<string, bool> onLoadAllVersionsChanged;
-        event Action<IReadOnlyCollection<(PackageInfo oldInfo, PackageInfo newInfo)>> onPackageInfosUpdated;
+        event Action<IReadOnlyCollection<(PackageInfo oldInfo, PackageInfo newInfo)>, PackagesChangedSource> onPackageInfosUpdated;
         event Action<PackageInfo> onExtraPackageInfoFetched;
         event Action onScopedRegistriesPotentiallyChanged;
 
-        IEnumerable<PackageInfo> searchPackageInfos { get; }
-        IEnumerable<PackageInfo> installedPackageInfos  { get; }
+        IReadOnlyCollection<PackageInfo> searchPackageInfos { get; }
+        IReadOnlyCollection<PackageInfo> installedPackageInfos  { get; }
         bool installedPackageInfosReady { get; }
 
         void SetLoadAllVersions(string packageUniqueId, bool value);
         void AddExtraPackageInfo(PackageInfo packageInfo);
         PackageInfo GetExtraPackageInfo(string packageId);
         PackageInfo GetInstalledPackageInfo(string packageName);
-        IReadOnlyCollection<(PackageInfo oldInfo, PackageInfo newInfo)> SetInstalledPackageInfos(IEnumerable<PackageInfo> packageInfos, long timestamp = 0);
+        IReadOnlyCollection<(PackageInfo oldInfo, PackageInfo newInfo)> SetInstalledPackageInfos(IEnumerable<PackageInfo> packageInfos, long timestamp = 0, PackagesChangedSource changedSource = PackagesChangedSource.Other);
         PackageInfo GetSearchPackageInfo(string packageName);
-        PackageInfo GetBestMatchPackageInfo(string packageName, bool isInstalled, string version = null);
+        PackageInfo GetBestMatchPackageInfo(string packageName, long productId, bool isInstalled, string version = null);
         IUpmPackageData GetPackageData(string packageName);
         IUpmPackageData GetPackageData(long productId);
         void SetSearchPackageInfos(IEnumerable<PackageInfo> packageInfos, long timestamp);
@@ -76,12 +76,12 @@ namespace UnityEditor.PackageManager.UI.Internal
         private string[] m_SerializedLoadAllVersions;
 
         public event Action<string, bool> onLoadAllVersionsChanged = delegate {};
-        public event Action<IReadOnlyCollection<(PackageInfo oldInfo, PackageInfo newInfo)>> onPackageInfosUpdated;
+        public event Action<IReadOnlyCollection<(PackageInfo oldInfo, PackageInfo newInfo)>, PackagesChangedSource> onPackageInfosUpdated;
         public event Action<PackageInfo> onExtraPackageInfoFetched;
         public event Action onScopedRegistriesPotentiallyChanged;
 
-        public IEnumerable<PackageInfo> searchPackageInfos => m_SearchPackageInfos.Values;
-        public IEnumerable<PackageInfo> installedPackageInfos => m_PackageNameToInstalledPackageInfosMap.Values;
+        public IReadOnlyCollection<PackageInfo> searchPackageInfos => m_SearchPackageInfos.Values;
+        public IReadOnlyCollection<PackageInfo> installedPackageInfos => m_PackageNameToInstalledPackageInfosMap.Values;
         public bool installedPackageInfosReady => m_InstalledPackageInfosTimestamp >= 0;
 
         private readonly IProjectSettingsProxy m_SettingsProxy;
@@ -123,6 +123,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 p1.resolvedDependencies.Length != p2.resolvedDependencies.Length || !p1.resolvedDependencies.SequenceEqual(p2.resolvedDependencies) ||
                 p1.projectDependenciesEntry != p2.projectDependenciesEntry ||
                 p1.signature.status != p2.signature.status ||
+                p1.trustLevel != p2.trustLevel ||
                 p1.documentationUrl != p2.documentationUrl ||
                 p1.changelogUrl != p2.changelogUrl ||
                 p1.licensesUrl != p2.licensesUrl ||
@@ -233,7 +234,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 m_ProductIdToInstalledPackageInfosMap[newProductId] = newInfo;
         }
 
-        public IReadOnlyCollection<(PackageInfo oldInfo, PackageInfo newInfo)> SetInstalledPackageInfos(IEnumerable<PackageInfo> packageInfos, long timestamp = 0)
+        public IReadOnlyCollection<(PackageInfo oldInfo, PackageInfo newInfo)> SetInstalledPackageInfos(IEnumerable<PackageInfo> packageInfos, long timestamp = 0, PackagesChangedSource changedSource = PackagesChangedSource.Other)
         {
             var newPackageInfos = packageInfos.ToDictionary(p => p.name, p => p);
 
@@ -249,7 +250,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
             if (updatedInfos.Count > 0)
             {
-                TriggerOnPackageInfosUpdated(updatedInfos);
+                TriggerOnPackageInfosUpdated(updatedInfos, changedSource);
                 DetectScopedRegistriesChanges(updatedInfos, false);
             }
             return updatedInfos;
@@ -257,12 +258,14 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public PackageInfo GetSearchPackageInfo(string packageName) => m_SearchPackageInfos.Get(packageName);
 
-        public PackageInfo GetBestMatchPackageInfo(string packageName, bool isInstalled, string version = null)
+        public PackageInfo GetBestMatchPackageInfo(string packageName, long productId, bool isInstalled, string version = null)
         {
-            if (string.IsNullOrEmpty(packageName))
+            if (string.IsNullOrEmpty(packageName) && productId == 0)
                 return null;
             if (isInstalled)
                 return GetInstalledPackageInfo(packageName);
+            if (productId > 0)
+                return GetProductSearchPackageInfo(productId);
             var searchInfo = GetSearchPackageInfo(packageName) ?? GetInstalledPackageInfo(packageName);
             if (string.IsNullOrEmpty(version) || searchInfo?.version == version)
                 return searchInfo;
@@ -371,7 +374,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             }
         }
 
-        private void TriggerOnPackageInfosUpdated(IReadOnlyCollection<(PackageInfo oldInfo, PackageInfo newInfo)> packageInfos)
+        private void TriggerOnPackageInfosUpdated(IReadOnlyCollection<(PackageInfo oldInfo, PackageInfo newInfo)> packageInfos, PackagesChangedSource changedSource = PackagesChangedSource.Other)
         {
             foreach (var (oldInfo, newInfo) in packageInfos)
             {
@@ -380,7 +383,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 if (!string.IsNullOrEmpty(newInfo?.packageId))
                     m_ParsedUpmReserved.Remove(newInfo.packageId);
             }
-            onPackageInfosUpdated?.Invoke(packageInfos);
+            onPackageInfosUpdated?.Invoke(packageInfos, changedSource);
         }
 
         public Dictionary<string, object> ParseUpmReserved(PackageInfo packageInfo)

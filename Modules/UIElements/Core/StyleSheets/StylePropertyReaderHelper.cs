@@ -556,8 +556,31 @@ namespace UnityEngine.UIElements.StyleSheets
                     var resourcePath = propertyValue.sheet.ReadResourcePath(propertyValue.handle);
                     if (resourcePath.isPathValid)
                     {
+                        UnityEngine.Object obj = Resources.Load(resourcePath.path);
+                        if (obj != null)
+                        {
+                            var type = obj.GetType();
+                            if (type == typeof(Texture2D))
+                            {
+                                source.texture = resourcePath.LoadResource<Texture2D>(dpiScaling);
+                            }
+                            else if (type == typeof(Sprite))
+                            {
+                                source.sprite = resourcePath.LoadResource<Sprite>(dpiScaling);
+                            }
+                            else if (type == typeof(VectorImage))
+                            {
+                                source.vectorImage = resourcePath.LoadResource<VectorImage>(dpiScaling);
+                            }
+                            else if (type == typeof(RenderTexture))
+                            {
+                                source.renderTexture = resourcePath.LoadResource<RenderTexture>(dpiScaling);
+                            }
+                        }
+
                         //TODO: This will use GUIUtility.pixelsPerPoint as targetDpi, this may not be the best value for the current panel
-                        source.sprite = resourcePath.LoadResource<Sprite>(dpiScaling);
+                        if (source.IsNull())
+                            source.sprite = resourcePath.LoadResource<Sprite>(dpiScaling);
                         if (source.IsNull())
                             source.texture = resourcePath.LoadResource<Texture2D>(dpiScaling);
                         if (source.IsNull())

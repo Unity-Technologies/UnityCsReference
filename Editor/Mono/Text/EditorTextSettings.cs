@@ -41,6 +41,7 @@ namespace UnityEditor
             IMGUITextHandle.GetEditorTextSettings = () => defaultTextSettings;
             IMGUITextHandle.GetBlurryFontAssetMapping = GetBlurryFontAssetMapping;
             IMGUITextHandle.GetEditorTextGeneratorType = GetEditorTextGeneratorType;
+            IMGUITextHandle.GetHyperlinkColor = GetHyperlinkColor;
             UITKTextHandle.GetBlurryFontAssetMapping = GetBlurryFontAssetMapping;
             UITKTextHandle.GenerateBitmapFallbackFontAssets = CanGenerateFallbackFontAssets;
         }
@@ -140,6 +141,12 @@ namespace UnityEditor
 
                 return s_DefaultTextSettings;
             }
+        }
+
+        private static Color GetHyperlinkColor()
+        {
+            ColorUtility.TryParseHtmlString(EditorGUIUtility.GetHyperlinkColorForSkin(), out Color color);
+            return color;
         }
 
     void CreateDefaultEditorFontAsset()

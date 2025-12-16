@@ -102,12 +102,12 @@ namespace Unity.Profiling.Editor.UI
             }
         }
 
-        State CheckDirectoryForUpdates(out Exception exeption)
+        State CheckDirectoryForUpdates(out Exception exception)
         {
             // FileSystemWatcher is only available in Windows, so instead of separate implementation for each platform,
             // we just do a manual watch for the folder.
             DateTime lastWriteTime;
-            exeption = null;
+            exception = null;
 
             try
             {
@@ -117,7 +117,7 @@ namespace Unity.Profiling.Editor.UI
             {
                 // Directory.Refresh may throw a System.IO.IOException when:
                 //     A device such as a disk drive is not ready.
-                exeption = ex;
+                exception = ex;
                 return State.Exception;
             }
 
@@ -149,7 +149,7 @@ namespace Unity.Profiling.Editor.UI
                     {
                         // Directory.Refresh may throw a System.IO.IOException when:
                         //     A device such as a disk drive is not ready.
-                        exeption = innerEx;
+                        exception = innerEx;
                         return State.Exception;
                     }
 
@@ -157,7 +157,7 @@ namespace Unity.Profiling.Editor.UI
                     {
                         // The base directory seems to still exist, maybe a subfolder got deleted while iterating over it.
                         // Recheck
-                        var state = CheckDirectoryForUpdates(out exeption);
+                        var state = CheckDirectoryForUpdates(out exception);
                         // Everything is fine on rechecking, return
                         if (state != State.Exception)
                             return state;
@@ -166,7 +166,7 @@ namespace Unity.Profiling.Editor.UI
                         return State.DirectoryDeleted;
                 }
 
-                exeption = ex;
+                exception = ex;
                 return State.Exception;
             }
             var dirty = lastWriteTime != m_LastDirectoryWriteTimeUTC;

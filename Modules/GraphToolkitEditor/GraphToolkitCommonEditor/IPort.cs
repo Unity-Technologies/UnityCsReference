@@ -28,12 +28,12 @@ namespace Unity.GraphToolkit.Editor
     public interface IPort
     {
         /// <summary>
-        /// Gets the data type associated with the port.
+        /// The data type associated with the port.
         /// </summary>
         Type DataType { get; }
 
         /// <summary>
-        /// Gets the unique identifier name of the port.
+        /// The unique identifier name of the port.
         /// </summary>
         /// <remarks>
         /// The name is used to retrieve the port programmatically using methods like
@@ -43,12 +43,17 @@ namespace Unity.GraphToolkit.Editor
         string Name { get; }
 
         /// <summary>
-        /// Gets the label displayed in the UI for the port.
+        /// The label displayed in the UI for the port.
         /// </summary>
         string DisplayName { get; }
 
         /// <summary>
-        /// Gets the direction of the port.
+        /// The text displayed when hovering over the port's label.
+        /// </summary>
+        string Tooltip { get; }
+
+        /// <summary>
+        /// The direction of the port.
         /// </summary>
         /// <remarks>
         /// The direction indicates whether the port is an input or output.
@@ -65,7 +70,7 @@ namespace Unity.GraphToolkit.Editor
         bool IsConnected { get; }
 
         /// <summary>
-        /// Gets the first port connected to this port, if any.
+        /// The first port connected to this port, if any.
         /// </summary>
         /// <remarks>
         /// If multiple connections exist, only the first connected port is returned.

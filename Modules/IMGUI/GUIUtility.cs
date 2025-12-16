@@ -42,7 +42,7 @@ namespace UnityEngine
         [VisibleToOtherModules("UnityEngine.UIElementsModule")]
         internal static int s_SkinMode;
         [VisibleToOtherModules("UnityEngine.UIElementsModule")]
-        internal static int s_OriginalID;
+        internal static EntityId s_OriginalID;
 
         // IoC callbacks for UIElements
         [VisibleToOtherModules("UnityEngine.UIElementsModule")]
@@ -50,20 +50,15 @@ namespace UnityEngine
         [VisibleToOtherModules("UnityEngine.UIElementsModule")]
         internal static Action releaseCapture;
         [VisibleToOtherModules("UnityEngine.UIElementsModule")]
-        internal static Func<int, IntPtr, bool> processEvent;
-        [VisibleToOtherModules("UnityEngine.UIElementsModule")]
-        internal static Action cleanupRoots;
+        internal static Func<EntityId, IntPtr, bool> processEvent;
         [VisibleToOtherModules("UnityEngine.UIElementsModule")]
         internal static Func<Exception, bool> endContainerGUIFromException;
         [VisibleToOtherModules("UnityEngine.UIElementsModule")]
         internal static Action guiChanged;
 
-        // This callback function allows to peek at events before they
-        // are processed in order to clean any dangling state left after
-        // an event was unexpectedly used.
-        internal static Action<EventType, KeyCode, EventModifiers> beforeEventProcessed;
 
-        private static Event m_Event = new Event();
+
+
 
         [RequiredByNativeCode]
         private static void MarkGUIChanged()
@@ -114,7 +109,9 @@ namespace UnityEngine
             get { return Internal_GetHotControl(); }
             set
             {
-                WarnOnGUI();
+                // Some place set it back to 0 on focus changes preventively, especially in tests.
+                if (value != 0)
+                    WarnOnGUI();
                 Internal_SetHotControl(value);
             }
         }
@@ -135,9 +132,10 @@ namespace UnityEngine
         // The controlID of the control that has keyboard focus.
         public static int keyboardControl
         {
-            get { return Internal_GetKeyboardControl(); }
+            get { WarnOnGUI(); return Internal_GetKeyboardControl(); }
             set
             {
+                WarnOnGUI();
                 Internal_SetKeyboardControl(value);
             }
         }
@@ -146,7 +144,7 @@ namespace UnityEngine
 
         internal static bool HasKeyFocus(int controlID)
         {
-            WarnOnGUI();
+            // No need for WarnOnGUI() : keyboardControl already has the check and it would fire twice
             return controlID == GUIUtility.keyboardControl &&
                 (s_HasCurrentWindowKeyFocusFunc != null ? s_HasCurrentWindowKeyFocusFunc() : true);
         }
@@ -175,29 +173,6 @@ namespace UnityEngine
             return Internal_GetBuiltinSkin(skin) as GUISkin;
         }
 
-        [RequiredByNativeCode]
-        internal static void ProcessEvent(int instanceID, IntPtr nativeEventPtr, out bool result)
-        {
-            if (beforeEventProcessed != null)
-            {
-                m_Event.CopyFromPtr(nativeEventPtr);
-                beforeEventProcessed.Invoke(m_Event.type, m_Event.keyCode, m_Event.modifiers);
-            }
-
-            result = false;
-            if (processEvent != null)
-            {
-                // call manually so that the result is true if any of the invocation return true.
-                // Otherwise only the return from the last invocation is used.
-                foreach( var invocation in processEvent.GetInvocationList())
-                {
-                    if (invocation is not Func<int, IntPtr, bool> typed)
-                        continue;
-                    result |= typed.Invoke(instanceID, nativeEventPtr);
-                }
-            }
-        }
-
         [VisibleToOtherModules("UnityEngine.UIElementsModule")]
         internal static void EndContainer()
         {
@@ -205,30 +180,25 @@ namespace UnityEngine
             Internal_ExitGUI();
         }
 
-        internal static void CleanupRoots()
-        {
-            cleanupRoots?.Invoke();
-        }
-
         [RequiredByNativeCode]
-        internal static void BeginGUI(int skinMode, int instanceID, int useGUILayout)
+        internal static void BeginGUI(int skinMode, EntityId entityId, int useGUILayout)
         {
             s_SkinMode = skinMode;
-            s_OriginalID = instanceID;
+            s_OriginalID = entityId;
 
             ResetGlobalState();
 
             // Switch to the correct ID list & clear keyboard loop if we're about to layout (we rebuild it during layout, so we want it cleared beforehand)
             if (useGUILayout != 0)
             {
-                GUILayoutUtility.Begin(instanceID);
+                GUILayoutUtility.Begin(entityId);
             }
         }
 
         [RequiredByNativeCode]
-        internal static void DestroyGUI(int instanceID)
+        internal static void DestroyGUI(EntityId entityId)
         {
-            GUILayoutUtility.RemoveSelectedIdList(instanceID, false);
+            GUILayoutUtility.RemoveSelectedIdListLayout(entityId);
         }
 
         [RequiredByNativeCode]
@@ -258,7 +228,7 @@ namespace UnityEngine
                             break;
                     }
                 }
-                GUILayoutUtility.SelectIDList(s_OriginalID, false);
+                GUILayoutUtility.SelectIDListLayout(s_OriginalID);
                 GUIContent.ClearStaticCache();
             }
             finally

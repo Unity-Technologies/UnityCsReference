@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using UnityEditor.Audio;
+using UnityEngine;
 
 namespace UnityEditor
 {
@@ -26,10 +27,10 @@ namespace UnityEditor
 
         public class VisitorFetchInstanceIDs
         {
-            public List<int> instanceIDs = new List<int>();
+            public List<EntityId> entityIds = new List<EntityId>();
             public void Visitor(AudioMixerGroupController group)
             {
-                instanceIDs.Add(group.GetInstanceID());
+                entityIds.Add(group.GetEntityId());
             }
         }
 

@@ -22,7 +22,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         [SerializeField]
         private PageFilters.Status[] m_SupportedStatusFilters = { PageFilters.Status.UpdateAvailable };
-        public override IEnumerable<PageFilters.Status> supportedStatusFilters => m_SupportedStatusFilters;
+        public override IReadOnlyCollection<PageFilters.Status> supportedStatusFilters => m_SupportedStatusFilters;
 
         public UnityRegistryPage(IPackageDatabase packageDatabase) : base(packageDatabase) {}
 

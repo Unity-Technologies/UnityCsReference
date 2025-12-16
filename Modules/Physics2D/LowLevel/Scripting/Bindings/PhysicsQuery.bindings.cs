@@ -8,6 +8,7 @@ namespace UnityEngine.LowLevelPhysics2D
 {
     internal static partial class PhysicsLowLevelScripting2D
     {
+        [NativeMethod(Name = "PhysicsQuery::ShapeAndShape", IsThreadSafe = true)] extern internal static PhysicsShape.ContactManifold PhysicsQuery_ShapeAndShape(PhysicsShape shapeA, PhysicsTransform transformA, PhysicsShape shapeB, PhysicsTransform transformB);
         [NativeMethod(Name = "PhysicsQuery::CircleAndCircle", IsThreadSafe = true)] extern internal static PhysicsShape.ContactManifold PhysicsQuery_CircleAndCircle(CircleGeometry geometryA, PhysicsTransform transformA, CircleGeometry geometryB, PhysicsTransform transformB);
         [NativeMethod(Name = "PhysicsQuery::CapsuleAndCircle", IsThreadSafe = true)] extern internal static PhysicsShape.ContactManifold PhysicsQuery_CapsuleAndCircle(CapsuleGeometry geometryA, PhysicsTransform transformA, CircleGeometry geometryB, PhysicsTransform transformB);
         [NativeMethod(Name = "PhysicsQuery::SegmentAndCircle", IsThreadSafe = true)] extern internal static PhysicsShape.ContactManifold PhysicsQuery_SegmentAndCircle(SegmentGeometry geometryA, PhysicsTransform transformA, CircleGeometry geometryB, PhysicsTransform transformB);

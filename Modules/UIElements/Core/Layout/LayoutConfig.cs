@@ -3,18 +3,19 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System.Runtime.InteropServices;
+using UnityEngine.UIElements.Unmanaged;
 
 namespace UnityEngine.UIElements.Layout;
 
 [StructLayout(LayoutKind.Sequential)]
 readonly struct LayoutConfig
 {
-    public static LayoutConfig Undefined => new LayoutConfig(default, LayoutHandle.Undefined);
+    public static LayoutConfig Undefined => new LayoutConfig(default, UnmanagedDataHandle.Undefined);
 
     readonly LayoutDataAccess m_Access;
-    readonly LayoutHandle m_Handle;
+    readonly UnmanagedDataHandle m_Handle;
 
-    internal LayoutConfig(LayoutDataAccess access, LayoutHandle handle)
+    internal LayoutConfig(LayoutDataAccess access, UnmanagedDataHandle handle)
     {
         m_Access = access;
         m_Handle = handle;
@@ -23,12 +24,12 @@ readonly struct LayoutConfig
     /// <summary>
     /// Returns <see langword="true"/> if this is an invalid/undefined node.
     /// </summary>
-    public bool IsUndefined => m_Handle.Equals(LayoutHandle.Undefined);
+    public bool IsUndefined => m_Handle.Equals(UnmanagedDataHandle.Undefined);
 
     /// <summary>
     /// Returns the handle for this node.
     /// </summary>
-    public LayoutHandle Handle => m_Handle;
+    public UnmanagedDataHandle Handle => m_Handle;
 
     /// <summary>
     /// Gets or sets the shared point scale factor for configured nodes.

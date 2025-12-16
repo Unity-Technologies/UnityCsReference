@@ -11,6 +11,9 @@ namespace UnityEditor.PackageManager.UI.Internal
 {
     internal class UpmFiltersWindow : PackageManagerFiltersWindow
     {
+        // The internal modifier is used (instead of private) to give our test project access to these properties/methods
+        internal Foldout m_StatusFoldOut;
+
         protected override Vector2 GetSize(IPage page)
         {
             var height = k_FoldOutHeight + page.supportedStatusFilters.Count() * k_ToggleHeight;
@@ -61,7 +64,5 @@ namespace UnityEditor.PackageManager.UI.Internal
                 UpdatePageFilters();
             }
         }
-
-        internal Foldout m_StatusFoldOut;
     }
 }

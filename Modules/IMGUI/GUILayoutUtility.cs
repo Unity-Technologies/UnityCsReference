@@ -18,7 +18,7 @@ namespace UnityEngine
     {
         internal readonly struct LayoutCacheState
         {
-            public readonly int id;
+            public readonly long id;
             public readonly GUILayoutGroup topLevel;
             public readonly GenericStack layoutGroups;
             public readonly GUILayoutGroup windows;
@@ -36,16 +36,22 @@ namespace UnityEngine
         [VisibleToOtherModules("UnityEngine.UIElementsModule")]
         internal sealed class LayoutCache
         {
-            internal int id { get; private set; }
+            internal long id { get; private set; }
             public GUILayoutGroup topLevel = new GUILayoutGroup();
             internal GenericStack layoutGroups = new GenericStack();
             internal GUILayoutGroup windows = new GUILayoutGroup();
 
             public LayoutCacheState State => new LayoutCacheState(this);
 
-            public LayoutCache(int instanceID = -1)
+            public LayoutCache(int windowID = -1)
             {
-                id = instanceID;
+                id = windowID;
+                layoutGroups.Push(topLevel);
+            }
+
+            public LayoutCache(EntityId entityId)
+            {
+                id = (long)entityId.GetRawData();
                 layoutGroups.Push(topLevel);
             }
 
@@ -67,7 +73,7 @@ namespace UnityEngine
         }
 
         // TODO: Clean these up after a while
-        static readonly Dictionary<int, LayoutCache> s_StoredLayouts = new Dictionary<int, LayoutCache>();
+        static readonly Dictionary<EntityId, LayoutCache> s_StoredLayouts = new Dictionary<EntityId, LayoutCache>();
         static readonly Dictionary<int, LayoutCache> s_StoredWindows = new Dictionary<int, LayoutCache>();
 
         internal static LayoutCache current = new LayoutCache();
@@ -75,33 +81,42 @@ namespace UnityEngine
         internal static readonly Rect kDummyRect = new Rect(0, 0, 1, 1);
 
         internal static int unbalancedgroupscount { get; set; }
-        internal static void CleanupRoots()
+
+        internal static LayoutCache GetLayoutCacheWindow(int id)
         {
-            // See GUI.CleanupRoots
-            s_SpaceStyle = null;
-            s_StoredLayouts.Clear();
-            s_StoredWindows.Clear();
-            current = new LayoutCache();
+            s_StoredWindows.TryGetValue(id, out var cache);
+            return cache;
         }
 
-        internal static LayoutCache GetLayoutCache(int instanceID, bool isWindow)
+        internal static LayoutCache GetLayoutCache(EntityId id)
         {
-            Dictionary<int, LayoutCache> store = isWindow ? s_StoredWindows : s_StoredLayouts;
-            LayoutCache cache;
-            store.TryGetValue(instanceID, out cache);
-
+            s_StoredLayouts.TryGetValue(id, out var cache);
             return cache;
         }
 
         [VisibleToOtherModules("UnityEngine.UIElementsModule")]
-        internal static LayoutCache SelectIDList(int instanceID, bool isWindow)
+        internal static LayoutCache SelectIDListWindow(int id)
         {
-            Dictionary<int, LayoutCache> store = isWindow ? s_StoredWindows : s_StoredLayouts;
-            LayoutCache cache = GetLayoutCache(instanceID, isWindow);
+            LayoutCache cache = GetLayoutCacheWindow(id);
             if (cache == null)
             {
-                cache = new LayoutCache(instanceID);
-                store[instanceID] = cache;
+                cache = new LayoutCache(id);
+                s_StoredWindows[id] = cache;
+            }
+            current.topLevel = cache.topLevel;
+            current.layoutGroups = cache.layoutGroups;
+            current.windows = cache.windows;
+            return cache;
+        }
+
+        [VisibleToOtherModules("UnityEngine.UIElementsModule")]
+        internal static LayoutCache SelectIDListLayout(EntityId ownerEntityId)
+        {
+            LayoutCache cache = GetLayoutCache(ownerEntityId);
+            if (cache == null)
+            {
+                cache = new LayoutCache(ownerEntityId);
+                s_StoredLayouts[ownerEntityId] = cache;
             }
             current.topLevel = cache.topLevel;
             current.layoutGroups = cache.layoutGroups;
@@ -110,20 +125,21 @@ namespace UnityEngine
         }
 
         //Remove the object instanceID from s_StoredLayouts or s_StoredWindows dictionaries to prevent any dangling references.
-        internal static void RemoveSelectedIdList(int instanceID, bool isWindow)
+        internal static void RemoveSelectedIdListWindow(int windowID)
         {
-            Dictionary<int, LayoutCache> store = isWindow ? s_StoredWindows : s_StoredLayouts;
-            if (store.ContainsKey(instanceID))
-            {
-                store.Remove(instanceID);
-            }
+            s_StoredWindows.Remove(windowID);
+        }
+
+        internal static void RemoveSelectedIdListLayout(EntityId ownerEntityId)
+        {
+            s_StoredLayouts.Remove(ownerEntityId);
         }
 
         // Set up the internal GUILayouting
         // Called by the main GUI class automatically (from GUI.Begin)
-        internal static void Begin(int instanceID)
+        internal static void Begin(EntityId instanceID)
         {
-            LayoutCache cache = SelectIDList(instanceID, false);
+            LayoutCache cache = SelectIDListLayout(instanceID);
             // Make a vertical group to encompass the whole thing
             if (Event.current.type == EventType.Layout)
             {
@@ -160,7 +176,7 @@ namespace UnityEngine
 
         internal static void BeginWindow(int windowID, GUIStyle style, GUILayoutOption[] options)
         {
-            LayoutCache cache = SelectIDList(windowID, true);
+            LayoutCache cache = SelectIDListWindow(windowID);
             // Make a vertical group to encompass the whole thing
             if (Event.current.type == EventType.Layout)
             {

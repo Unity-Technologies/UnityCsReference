@@ -2,8 +2,10 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Runtime.InteropServices;
 using UnityEditor.Experimental;
 using UnityEditor.IMGUI.Controls;
 using UnityEditorInternal;
@@ -63,10 +65,11 @@ namespace UnityEditor
         {
             float topPixel = row * k_LineHeight;
 
-            // Assumes Saved filter are second root
             var item = rows[row];
-            ProjectBrowser.ItemType type = ProjectBrowser.GetItemType(item.id);
-            if (type == ProjectBrowser.ItemType.Asset)
+
+            // Add extra space before Assets root
+            var itemType = item is SearchFilterTreeItem ? ProjectBrowser.ItemType.SavedFilter : ProjectBrowser.ItemType.Asset;
+            if (itemType == ProjectBrowser.ItemType.Asset)
                 topPixel += k_DistBetweenRootTypes;
 
             return topPixel;
@@ -151,37 +154,40 @@ namespace UnityEditor
             string savedFilterName = "New Saved Search";
 
             m_IsCreatingSavedFilter = true;
-            int instanceID = SavedSearchFilters.AddSavedFilter(savedFilterName, filter, GetListAreaGridSize());
-            m_TreeView.Frame(instanceID, true, false);
+            int filterId = SavedSearchFilters.AddSavedFilter(savedFilterName, filter, GetListAreaGridSize());
+            EntityId entityId = FavoritesEntityIds.instance.GetOrAllocateEntityIdFor(filterId);
+            m_TreeView.Frame(entityId, true, false);
 
             // Start naming the asset
-            m_TreeView.state.renameOverlay.BeginRename(savedFilterName, instanceID, 0f);
+            m_TreeView.state.renameOverlay.BeginRename(savedFilterName, entityId, 0f);
         }
 
         override protected void RenameEnded()
         {
-            var instanceID = GetRenameOverlay().userData;
-            ProjectBrowser.ItemType type = ProjectBrowser.GetItemType(instanceID);
+            var entityId = GetRenameOverlay().userData;
+            ProjectBrowser.ItemType type = ProjectBrowser.GetItemType(entityId);
 
             if (m_IsCreatingSavedFilter)
             {
                 // Create saved filter
                 m_IsCreatingSavedFilter = false;
 
+                int filterId = FavoritesEntityIds.instance.GetIdFor(entityId);
                 if (GetRenameOverlay().userAcceptedRename)
                 {
-                    SavedSearchFilters.SetName(instanceID,  GetRenameOverlay().name);
-                    m_TreeView.SetSelection(new[] { instanceID }, true);
+                    SavedSearchFilters.SetName(filterId, GetRenameOverlay().name);
+                    m_TreeView.SetSelection(new[] { entityId }, true);
                 }
                 else
-                    SavedSearchFilters.RemoveSavedFilter(instanceID);
+                    SavedSearchFilters.RemoveSavedFilter(filterId);
             }
             else if (type == ProjectBrowser.ItemType.SavedFilter)
             {
                 // Renamed saved filter
                 if (GetRenameOverlay().userAcceptedRename)
                 {
-                    SavedSearchFilters.SetName(instanceID,  GetRenameOverlay().name);
+                    int filterId = FavoritesEntityIds.instance.GetIdFor(entityId);
+                    SavedSearchFilters.SetName(filterId,  GetRenameOverlay().name);
                 }
             }
             else
@@ -256,14 +262,14 @@ namespace UnityEditor
         public override void FetchData()
         {
             bool firstInitialize = !isInitialized;
-            m_RootItem = new TreeViewItem<EntityId>(0, 0, null, "Invisible Root Item");
+            m_RootItem = new TreeViewItem<EntityId>(EntityId.None, 0, null, "Invisible Root Item");
             SetExpanded(m_RootItem, true); // ensure always visible
 
             // We want three roots: Favorites, Assets, and Packages
             var visibleRoots = new List<TreeViewItem<EntityId>>();
 
             // Favorites root
-            var savedFiltersRootItem = SavedSearchFilters.ConvertToTreeView();
+            var savedFiltersRootItem = SavedSearchFilters.ConvertToTreeView(FavoritesEntityIds.instance.GetOrAllocateEntityIdFor);
             visibleRoots.Add(savedFiltersRootItem);
 
             // Assets root
@@ -421,9 +427,11 @@ namespace UnityEditor
 
         protected override void GetParentsAbove(EntityId id, HashSet<EntityId> parentsAbove)
         {
-            if (SavedSearchFilters.IsSavedFilter(id))
+            ProjectBrowser.ItemType itemType = ProjectBrowser.GetItemType(id);
+            if (itemType == ProjectBrowser.ItemType.SavedFilter)
             {
-                parentsAbove.Add(SavedSearchFilters.GetRootInstanceID());
+                EntityId parentEntityId = FavoritesEntityIds.instance.GetOrAllocateEntityIdFor(SavedSearchFilters.GetRootFilterId());
+                parentsAbove.Add(parentEntityId);
             }
             else
             {
@@ -483,10 +491,12 @@ namespace UnityEditor
 
         public override void StartDrag(TreeViewItem<EntityId> draggedItem, List<EntityId> draggedItemIDs)
         {
-            if (SavedSearchFilters.IsSavedFilter(draggedItem.id))
+            ProjectBrowser.ItemType itemType = ProjectBrowser.GetItemType(draggedItem.id);
+            if (itemType == ProjectBrowser.ItemType.SavedFilter)
             {
                 // Root Filters Item is not allowed to be dragged
-                if (draggedItem.id == SavedSearchFilters.GetRootInstanceID())
+                EntityId rootFiltersEntityId = FavoritesEntityIds.instance.GetOrAllocateEntityIdFor(SavedSearchFilters.GetRootFilterId());
+                if (draggedItem.id == rootFiltersEntityId)
                     return;
             }
 
@@ -503,14 +513,19 @@ namespace UnityEditor
             // Dragging saved filter
             if (savedFilterData != null)
             {
-                var instanceID = (EntityId)savedFilterData;
-                if (targetItem is SearchFilterTreeItem && parentItem is SearchFilterTreeItem)// && targetItem.id != draggedInstanceID && parentItem.id != draggedInstanceID)
+                var entityId = (EntityId)savedFilterData;
+                if (targetItem is SearchFilterTreeItem && parentItem is SearchFilterTreeItem)
                 {
-                    bool validMove = SavedSearchFilters.CanMoveSavedFilter(instanceID, parentItem.id, targetItem.id, dropPos == DropPosition.Below);
+                    // map to filterIds
+                    int filterId = FavoritesEntityIds.instance.GetIdFor(entityId);
+                    int parentFilterId = FavoritesEntityIds.instance.GetIdFor(parentItem.id);
+                    int targetFilterId = FavoritesEntityIds.instance.GetIdFor(targetItem.id);
+
+                    bool validMove = SavedSearchFilters.CanMoveSavedFilter(filterId, parentFilterId, targetFilterId, dropPos == DropPosition.Below);
                     if (validMove && perform)
                     {
-                        SavedSearchFilters.MoveSavedFilter(instanceID, parentItem.id, targetItem.id, dropPos == DropPosition.Below);
-                        m_TreeView.SetSelection(new[] { instanceID }, false);
+                        SavedSearchFilters.MoveSavedFilter(filterId, parentFilterId, targetFilterId, dropPos == DropPosition.Below);
+                        m_TreeView.SetSelection(new[] { entityId }, false);
                         m_TreeView.NotifyListenersThatSelectionChanged();
                     }
                     return validMove ? DragAndDropVisualMode.Copy : DragAndDropVisualMode.None;
@@ -528,7 +543,7 @@ namespace UnityEditor
                     {
                         if (perform)
                         {
-                            Object[] objs = DragAndDrop.objectReferences;
+                            UnityEngine.Object[] objs = DragAndDrop.objectReferences;
                             if (objs.Length > 0)
                             {
                                 string path = AssetDatabase.GetAssetPath(objs[0].GetEntityId());
@@ -541,8 +556,11 @@ namespace UnityEditor
                                     bool addAsChild = targetItem == parentItem;
 
                                     float previewSize = ProjectBrowserColumnOneTreeViewGUI.GetListAreaGridSize();
-                                    EntityId instanceID = SavedSearchFilters.AddSavedFilterAfterInstanceID(folderName, searchFilter, previewSize, targetItem.id, addAsChild);
-                                    m_TreeView.SetSelection(new[] { instanceID }, false);
+
+                                    int targetFilterId = FavoritesEntityIds.instance.GetIdFor(targetItem.id);
+                                    int newFilterId = SavedSearchFilters.AddSavedFilterAfterFilterId(folderName, searchFilter, previewSize, targetFilterId, addAsChild);
+                                    EntityId newEntityId = FavoritesEntityIds.instance.GetOrAllocateEntityIdFor(newFilterId);
+                                    m_TreeView.SetSelection(new[] { newEntityId }, false);
                                     m_TreeView.NotifyListenersThatSelectionChanged();
                                 }
                                 else
@@ -558,6 +576,83 @@ namespace UnityEditor
             }
             //  Assets are handled by base
             return base.DoDrag(parentItem, targetItem, perform, dropPos);
+        }
+    }
+
+    // The FavoritesEntityIds is a ScriptableSingleton for internal state to survive assembly
+    // reloading (life time: session of Editor, not persisted to disk)
+    class FavoritesEntityIds : ScriptableSingleton<FavoritesEntityIds>
+    {
+        // This list is serializable so survives domain reloading
+        List<IdPair> m_AllocatedEntityIds = [];
+
+        // These dictionaries are not serializable so built on demand for performance
+        Dictionary<int, EntityId> m_LookupEntityId = new();
+        Dictionary<EntityId, int> m_LookupId = new();
+
+        [StructLayout(LayoutKind.Sequential)]
+        [Serializable]
+        record struct IdPair(int id, EntityId entityId);
+
+        public EntityId GetOrAllocateEntityIdFor(int id)
+        {
+            if (m_LookupEntityId.TryGetValue(id, out var entityId))
+                return entityId;
+
+            // Fallback to list traversal (should only happen once per id, at startup and after domain reloading)
+            foreach (var pair in m_AllocatedEntityIds)
+            {
+                if (pair.id == id)
+                {
+                    CacheMapping(id, pair.entityId);
+                    return pair.entityId;
+                }
+            }
+
+            // Allocate new EntityId
+            var newEntityId = EntityId.AllocateNextLowestEntityId();
+            m_AllocatedEntityIds.Add(new IdPair(id, newEntityId));
+            CacheMapping(id, newEntityId);
+            return newEntityId;
+        }
+
+        public int GetIdFor(EntityId entityId)
+        {
+            if (TryGetIdFor(entityId, out int id))
+                return id;
+
+            throw new KeyNotFoundException("EntityId was not found: " + entityId);
+        }
+
+        public bool TryGetIdFor(EntityId entityId, out int id)
+        {
+            if (m_LookupId.TryGetValue(entityId, out int intId))
+            {
+                id = intId;
+                return true;
+            }
+
+            // Fallback to list traversal (should only happen once per id, at startup and after domain reloading)
+            foreach (var pair in m_AllocatedEntityIds)
+            {
+                if (pair.entityId == entityId)
+                {
+                    CacheMapping(pair.id, entityId);
+                    id = pair.id;
+                    return true;
+                }
+            }
+
+            // When retrning false use the same convention for the out parameter
+            // value as Dictionary.TryGetValue: using default value of the type.
+            id = default;
+            return false;
+        }
+
+        void CacheMapping(int id, EntityId entityId)
+        {
+            m_LookupEntityId[id] = entityId;
+            m_LookupId[entityId] = id;
         }
     }
 }

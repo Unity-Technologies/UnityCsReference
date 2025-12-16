@@ -30,7 +30,10 @@ namespace Unity.ProjectAuditor.Editor.Modules
                 {
                     textureImporter.textureType = TextureImporterType.NormalMap;
                     textureImporter.SaveAndReimport();
+                    return true;
                 }
+
+                return false;
             }
         };
 

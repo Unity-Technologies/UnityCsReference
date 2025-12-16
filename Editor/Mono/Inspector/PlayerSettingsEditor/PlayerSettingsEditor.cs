@@ -16,7 +16,6 @@ using System.Linq;
 using System.Text;
 using System.Reflection;
 using UnityEditor.Modules;
-using UnityEditorInternal.VR;
 using UnityEngine.Events;
 using UnityEngine.SceneManagement;
 using GraphicsDeviceType = UnityEngine.Rendering.GraphicsDeviceType;
@@ -218,7 +217,7 @@ namespace UnityEditor
             public static readonly GUIContent il2cppStacktraceInformation = EditorGUIUtility.TrTextContent("IL2CPP Stacktrace Information", "Which information to include in stack traces. Including the file name and line number may increase build size.");
             public static readonly GUIContent scriptingMono2x = EditorGUIUtility.TrTextContent("Mono");
             public static readonly GUIContent scriptingIL2CPP = EditorGUIUtility.TrTextContent("IL2CPP");
-            public static readonly GUIContent scriptingCoreCLR = EditorGUIUtility.TrTextContent("CoreCLR");
+            public static readonly GUIContent scriptingCoreCLR = EditorGUIUtility.TrTextContent("CoreCLR (Internal only)");
             public static readonly GUIContent scriptingDefault = EditorGUIUtility.TrTextContent("Default");
             public static readonly GUIContent strippingDisabled = EditorGUIUtility.TrTextContent("Disabled");
             public static readonly GUIContent strippingMinimal = EditorGUIUtility.TrTextContent("Minimal");
@@ -1588,7 +1587,7 @@ namespace UnityEditor
                 {
                     var result = EditorUtility.DisplayDialogComplex("Changing editor graphics API",
                         "You've changed the active graphics API. This requires a restart of the Editor. Do you want to save the Scene when restarting?",
-                        "Save and Restart", cancelAPIChange ? "Cancel Changing API" : "Not now", "Discard Changes and Restart");
+                        "Save and Restart", cancelAPIChange ? "Cancel Changing API" : "Restart Later", "Discard Changes and Restart");
                     if (result == 1)
                     {
                         doRestart = false; // Cancel was selected
@@ -1618,7 +1617,7 @@ namespace UnityEditor
                 {
                     doRestart = EditorUtility.DisplayDialog("Changing editor graphics API",
                         "You've changed the active graphics API. This requires a restart of the Editor.",
-                        "Restart Editor", "Not now");
+                        "Restart Editor", cancelAPIChange ? "Cancel Changing API" : "Restart Later"); // This should be only "Restart Editor" and "Restart Later", will be fixed with UUM-127416
                 }
                 return new ChangeGraphicsApiAction(doRestart, doRestart);
             }
@@ -1718,7 +1717,7 @@ namespace UnityEditor
                 {
                     doRestart = EditorUtility.DisplayDialog("Changing editor graphics jobs mode",
                         "You've changed the active graphics jobs mode. This requires a restart of the Editor.",
-                        "Restart Editor", "Not now");
+                        "Restart Editor", "Restart Later");
                 }
             }
             return doRestart;
@@ -2562,24 +2561,28 @@ namespace UnityEditor
                         }
                     }
                 }
-                if (EditorGUI.EndChangeCheck() && (newGraphicsJobs != graphicsJobs))
+                if (EditorGUI.EndChangeCheck())
                 {
-                    Undo.RecordObject(target, SettingsContent.undoChangedGraphicsJobsString);
-                    PlayerSettings.SetGraphicsJobsForPlatform_Internal(m_CurrentTarget,
-                        platform.namedBuildTarget.ToBuildTargetGroup() == BuildTargetGroup.Standalone ? EditorUserBuildSettings.selectedStandaloneTarget : platform.defaultTarget, newGraphicsJobs);
-
-                    OnTargetObjectChangedDirectly();
-
-                    if (IsActivePlayerSettingsEditor() && CheckApplyGraphicsJobsModeChange(platform.defaultTarget))
+                    if (newGraphicsJobs != graphicsJobs)
                     {
-                        EditorApplication.RequestCloseAndRelaunchWithCurrentArguments();
-                        GUIUtility.ExitGUI();
+                        Undo.RecordObject(target, SettingsContent.undoChangedGraphicsJobsString);
+                        PlayerSettings.SetGraphicsJobsForPlatform_Internal(m_CurrentTarget,
+                            platform.namedBuildTarget.ToBuildTargetGroup() == BuildTargetGroup.Standalone ? EditorUserBuildSettings.selectedStandaloneTarget : platform.defaultTarget, newGraphicsJobs);
+
+                        OnTargetObjectChangedDirectly();
+
+                        if (IsActivePlayerSettingsEditor() && CheckApplyGraphicsJobsModeChange(platform.defaultTarget))
+                        {
+                            EditorApplication.RequestCloseAndRelaunchWithCurrentArguments();
+                            GUIUtility.ExitGUI();
+                        }
                     }
-                }
-                if (EditorGUI.EndChangeCheck() && (newGraphicsJobsSyncAfterKick != graphicsJobsSyncAfterKick))
-                {
-                    Undo.RecordObject(target, SettingsContent.undoChangedGraphicsJobsString);
-                    PlayerSettings.SetSwitchGraphicsJobsSyncAfterKick(newGraphicsJobsSyncAfterKick);
+
+                    if (newGraphicsJobsSyncAfterKick != graphicsJobsSyncAfterKick)
+                    {
+                        Undo.RecordObject(target, SettingsContent.undoChangedGraphicsJobsString);
+                        PlayerSettings.SetSwitchGraphicsJobsSyncAfterKick(newGraphicsJobsSyncAfterKick);
+                    }
                 }
             }
             if (gfxJobModesSupported && newGraphicsJobs)
@@ -3444,7 +3447,7 @@ namespace UnityEditor
                 EditorGUILayout.PropertyField(m_CameraUsageDescription, SettingsContent.cameraUsageDescription);
                 EditorGUILayout.PropertyField(m_MicrophoneUsageDescription, SettingsContent.microphoneUsageDescription);
 
-                if (platform.namedBuildTarget == NamedBuildTarget.iOS || platform.namedBuildTarget == NamedBuildTarget.tvOS)
+                if (platform.namedBuildTarget == NamedBuildTarget.iOS || platform.namedBuildTarget == NamedBuildTarget.tvOS || platform.namedBuildTarget == NamedBuildTarget.VisionOS)
                     EditorGUILayout.PropertyField(m_LocationUsageDescription, SettingsContent.locationUsageDescription);
             }
 
@@ -3961,11 +3964,14 @@ namespace UnityEditor
             {
                 using (var propertyScope = new EditorGUI.PropertyScope(vertical.rect, GUIContent.none, m_StackTraceTypes))
                 {
+                    var logTypeLabelWidth = 80;
                     using (new EditorGUILayout.HorizontalScope())
                     {
-                        GUILayout.Label("Log Type");
+                        GUIStyle centeredStyle = new GUIStyle(GUI.skin.label);
+                        centeredStyle.alignment = TextAnchor.MiddleCenter;
+                        EditorGUILayout.LabelField("Log Type", GUILayout.Width(EditorGUIUtility.labelWidth - logTypeLabelWidth / 2));
                         foreach (StackTraceLogType stackTraceLogType in Enum.GetValues(typeof(StackTraceLogType)))
-                            GUILayout.Label(stackTraceLogType.ToString(), GUILayout.Width(70));
+                            EditorGUILayout.LabelField(stackTraceLogType.ToString(), centeredStyle, GUILayout.Width(logTypeLabelWidth));
                     }
 
                     foreach (LogType logType in Enum.GetValues(typeof(LogType)))
@@ -3973,12 +3979,12 @@ namespace UnityEditor
                         var logProperty = m_StackTraceTypes.GetArrayElementAtIndex((int)logType);
                         using (new EditorGUILayout.HorizontalScope())
                         {
-                            GUILayout.Label(logType.ToString(), GUILayout.MinWidth(60));
+                            EditorGUILayout.LabelField(logType.ToString(), GUILayout.Width(EditorGUIUtility.labelWidth - EditorGUI.kIndentPerLevel));
                             foreach (StackTraceLogType stackTraceLogType in Enum.GetValues(typeof(StackTraceLogType)))
                             {
                                 StackTraceLogType inStackTraceLogType = (StackTraceLogType)logProperty.intValue;
                                 EditorGUI.BeginChangeCheck();
-                                bool val = EditorGUILayout.ToggleLeft(" ", inStackTraceLogType == stackTraceLogType, GUILayout.Width(65));
+                                bool val = EditorGUILayout.ToggleLeft(" ", inStackTraceLogType == stackTraceLogType, GUILayout.Width(logTypeLabelWidth));
                                 if (EditorGUI.EndChangeCheck() && val)
                                 {
                                     logProperty.intValue = (int)stackTraceLogType;

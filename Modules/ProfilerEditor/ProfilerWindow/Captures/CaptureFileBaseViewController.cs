@@ -2,8 +2,8 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System;
 using System.IO;
+using System.Text;
 using Unity.Collections;
 using UnityEngine;
 using UnityEngine.UIElements;
@@ -19,11 +19,10 @@ namespace Unity.Profiling.Editor.UI
         const string k_UxmlEditorPlatformIcon = "profiler-capture-file__preview-image__editor-icon";
         const string k_UxmlBlocksGraphRender = "profiler-capture-file__bar__blocks-graph-view-render";
 
-        const string k_TooltipNoBottleneck = "{0}\n\nInformation about CPU and GPU targets is not available until a capture has been opened at least once. Open the capture to see it displayed in the profiler captures list.";
+        const string k_TooltipNoBottleneck = "Information about CPU and GPU targets is not available until a capture has been opened at least once. Open the capture to see it displayed in the profiler captures list.";
         const string k_Tooltip = "{0}\n\nCPU: {1}% of frames over target\nGPU: {2}% of frames over target";
 
         // Model & state
-        readonly CaptureFileModel m_Model;
         readonly ScreenshotsManager m_ScreenshotsManager;
         protected BottlenecksChartViewModel m_BottleneckModel;
 
@@ -37,7 +36,7 @@ namespace Unity.Profiling.Editor.UI
 
         public CaptureFileBaseViewController(CaptureFileModel model, ScreenshotsManager screenshotsManager)
         {
-            m_Model = model;
+            Model = model;
             m_ScreenshotsManager = screenshotsManager;
         }
 
@@ -46,7 +45,7 @@ namespace Unity.Profiling.Editor.UI
             ScreenshotImage?.MarkDirtyRepaint();
         }
 
-        protected CaptureFileModel Model => m_Model;
+        internal CaptureFileModel Model { get; }
 
         protected Image ScreenshotImage => m_Screenshot;
 
@@ -76,12 +75,15 @@ namespace Unity.Profiling.Editor.UI
 
         protected virtual void RefreshView()
         {
-            if (m_Model == null)
+            if (Model == null)
                 return;
 
-            m_Name.text = m_Model.Name;
-            m_PlatformIcon.image = null; // TODO: Platform icons a la Memory Profiler
-            UIUtility.SetElementDisplay(m_EditorPlatformIcon, m_Model.EditorPlatform);
+            m_Name.text = Model.Name;
+            m_PlatformIcon.image = Model.Platform < 0 ? null : PlatformsHelper.GetPlatformIcon(Model.Platform);
+            UIUtility.SetElementDisplay(m_EditorPlatformIcon, Model.EditorPlatform);
+
+            if (m_BottleneckModel is { IsDisposed: false })
+                m_BottleneckModel.Dispose();
 
             m_BottleneckModel = BottlenecksChartViewModelBuilder.BuildFromFile(Model.FullPath);
             m_BlocksGraphView.DataSource = this;
@@ -99,7 +101,7 @@ namespace Unity.Profiling.Editor.UI
                 m_Screenshot.image = image;
             }
 
-            RefreshTotal();
+            RefreshTooltip();
         }
 
         protected int GetFramerateTarget()
@@ -110,15 +112,42 @@ namespace Unity.Profiling.Editor.UI
             return Mathf.RoundToInt(1e9f / ((BlocksGraphViewRender.IDataSource)this).DataValueThresholdInGraphView());
         }
 
-        void RefreshTotal()
+        void RefreshTooltip()
         {
             var cpuPercentOver = Mathf.RoundToInt(((BlocksGraphViewRender.IDataSource)this).PercentageFramesOverTarget(0));
             var gpuPercentOver = Mathf.RoundToInt(((BlocksGraphViewRender.IDataSource)this).PercentageFramesOverTarget(1));
 
+            var sb = new StringBuilder();
+            sb.AppendLine(Model.Name);
+
+            if (m_BottleneckModel is { CaptureMetaDataVersion: >= 0 })
+            {
+                // These need to be individually checked because of previous issues
+                // where they might not have consistently been written out.
+                if (m_BottleneckModel.Platform >= 0)
+                    sb.AppendLine("Platform: " + m_BottleneckModel.Platform);
+                if (m_BottleneckModel.ScriptingBackend >= 0)
+                    sb.AppendLine("Scripting Backend: " + m_BottleneckModel.ScriptingBackend);
+                if (m_BottleneckModel.UnityVersion.Length > 0)
+                    sb.AppendLine("Unity Version: " + m_BottleneckModel.UnityVersion);
+                if (m_BottleneckModel.ProductName.Length > 0)
+                    sb.AppendLine("Project Name: " + m_BottleneckModel.ProductName);
+                if (m_BottleneckModel.DeviceModel.Length > 0)
+                    sb.AppendLine("Device Model: " + m_BottleneckModel.DeviceModel);
+                if (m_BottleneckModel.DeviceSystemVersion.Length > 0)
+                    sb.AppendLine("Device System Version: " + m_BottleneckModel.DeviceSystemVersion);
+            }
+
+            sb.AppendLine("");
             if (cpuPercentOver < 0 || gpuPercentOver < 0)
-                View.tooltip = string.Format(k_TooltipNoBottleneck, m_Model.Name);
+                sb.Append(k_TooltipNoBottleneck);
             else
-                View.tooltip = string.Format(k_Tooltip, m_Model.Name, cpuPercentOver, gpuPercentOver);
+            {
+                sb.AppendLine($"CPU: {cpuPercentOver}% of frames over target");
+                sb.Append($"GPU: {gpuPercentOver}% of frames over target");
+            }
+
+            View.tooltip = sb.ToString();
         }
 
         int BlocksGraphViewRender.IDataSource.NumberOfDataSeriesForGraphView()

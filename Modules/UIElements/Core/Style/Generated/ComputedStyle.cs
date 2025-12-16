@@ -18,24 +18,23 @@ namespace UnityEngine.UIElements
 {
     internal partial struct ComputedStyle
     {
+        public StyleDataRef<CustomData> customData;
         public StyleDataRef<InheritedData> inheritedData;
-        public StyleDataRef<LayoutData> layoutData;
+        public StyleDataRefUnmanaged<LayoutData> layoutData;
         public StyleDataRef<RareData> rareData;
         public StyleDataRef<TransformData> transformData;
         public StyleDataRef<TransitionData> transitionData;
-        public StyleDataRef<VisualData> visualData;
+        public StyleDataRefUnmanaged<VisualData> visualData;
 
-        public Dictionary<string, StylePropertyValue> customProperties;
         public Int64 matchingRulesHash;
         public float dpiScaling;
-        public ComputedTransitionProperty[] computedTransitions;
 
         public Align alignContent => layoutData.Read().alignContent;
         public Align alignItems => layoutData.Read().alignItems;
         public Align alignSelf => layoutData.Read().alignSelf;
         public Ratio aspectRatio => layoutData.Read().aspectRatio;
         public Color backgroundColor => visualData.Read().backgroundColor;
-        public Background backgroundImage => visualData.Read().backgroundImage;
+        public EntityId backgroundImage => visualData.Read().backgroundImage;
         public BackgroundPosition backgroundPositionX => visualData.Read().backgroundPositionX;
         public BackgroundPosition backgroundPositionY => visualData.Read().backgroundPositionY;
         public BackgroundRepeat backgroundRepeat => visualData.Read().backgroundRepeat;
@@ -56,7 +55,7 @@ namespace UnityEngine.UIElements
         public Color color => inheritedData.Read().color;
         public Cursor cursor => rareData.Read().cursor;
         public DisplayStyle display => layoutData.Read().display;
-        public List<FilterFunction> filter => visualData.Read().filter;
+        public List<FilterFunction> filter => rareData.Read().filter;
         public Length flexBasis => layoutData.Read().flexBasis;
         public FlexDirection flexDirection => layoutData.Read().flexDirection;
         public float flexGrow => layoutData.Read().flexGrow;
@@ -76,7 +75,7 @@ namespace UnityEngine.UIElements
         public Length minHeight => layoutData.Read().minHeight;
         public Length minWidth => layoutData.Read().minWidth;
         public float opacity => visualData.Read().opacity;
-        public OverflowInternal overflow => visualData.Read().overflow;
+        public OverflowInternal overflow => layoutData.Read().overflow;
         public Length paddingBottom => layoutData.Read().paddingBottom;
         public Length paddingLeft => layoutData.Read().paddingLeft;
         public Length paddingRight => layoutData.Read().paddingRight;
@@ -123,6 +122,7 @@ namespace UnityEngine.UIElements
         {
             ref var initialStyle = ref InitialStyle.Get();
             var cs = new ComputedStyle{dpiScaling = 1f};
+            cs.customData = initialStyle.customData.Acquire();
             cs.inheritedData = parentStyle.inheritedData.Acquire();
             cs.layoutData = initialStyle.layoutData.Acquire();
             cs.rareData = initialStyle.rareData.Acquire();
@@ -135,17 +135,19 @@ namespace UnityEngine.UIElements
         public static ComputedStyle CreateInitial()
         {
             var cs = new ComputedStyle{dpiScaling = 1f};
+            cs.customData = StyleDataRef<CustomData>.Create();
             cs.inheritedData = StyleDataRef<InheritedData>.Create();
-            cs.layoutData = StyleDataRef<LayoutData>.Create();
+            cs.layoutData = StyleDataRefUnmanaged<LayoutData>.Create();
             cs.rareData = StyleDataRef<RareData>.Create();
             cs.transformData = StyleDataRef<TransformData>.Create();
             cs.transitionData = StyleDataRef<TransitionData>.Create();
-            cs.visualData = StyleDataRef<VisualData>.Create();
+            cs.visualData = StyleDataRefUnmanaged<VisualData>.Create();
             return cs;
         }
 
         public ComputedStyle Acquire()
         {
+            customData.Acquire();
             inheritedData.Acquire();
             layoutData.Acquire();
             rareData.Acquire();
@@ -157,6 +159,7 @@ namespace UnityEngine.UIElements
 
         public void Release()
         {
+            customData.Release();
             inheritedData.Release();
             layoutData.Release();
             rareData.Release();
@@ -165,8 +168,20 @@ namespace UnityEngine.UIElements
             visualData.Release();
         }
 
+        public void SafeRelease()
+        {
+            customData.SafeRelease();
+            inheritedData.SafeRelease();
+            layoutData.SafeRelease();
+            rareData.SafeRelease();
+            transformData.SafeRelease();
+            transitionData.SafeRelease();
+            visualData.SafeRelease();
+        }
+
         public void CopyFrom(ref ComputedStyle other)
         {
+            customData.CopyFrom(other.customData);
             inheritedData.CopyFrom(other.inheritedData);
             layoutData.CopyFrom(other.layoutData);
             rareData.CopyFrom(other.rareData);
@@ -174,10 +189,8 @@ namespace UnityEngine.UIElements
             transitionData.CopyFrom(other.transitionData);
             visualData.CopyFrom(other.visualData);
 
-            customProperties = other.customProperties;
             matchingRulesHash = other.matchingRulesHash;
             dpiScaling = other.dpiScaling;
-            computedTransitions = other.computedTransitions;
         }
 
         public void ApplyProperties(StylePropertyReader reader, ref ComputedStyle parentStyle)
@@ -281,7 +294,7 @@ namespace UnityEngine.UIElements
                         layoutData.Write().display = (DisplayStyle)reader.ReadEnum(StyleEnumType.DisplayStyle, 0);
                         break;
                     case StylePropertyId.Filter:
-                        reader.ReadListFilterFunction(visualData.Write().filter, 0);
+                        reader.ReadListFilterFunction(rareData.Write().filter, 0);
                         break;
                     case StylePropertyId.Flex:
                         ShorthandApplicator.ApplyFlex(reader, ref this);
@@ -347,7 +360,7 @@ namespace UnityEngine.UIElements
                         visualData.Write().opacity = reader.ReadFloat(0);
                         break;
                     case StylePropertyId.Overflow:
-                        visualData.Write().overflow = (OverflowInternal)reader.ReadEnum(StyleEnumType.OverflowInternal, 0);
+                        layoutData.Write().overflow = (OverflowInternal)reader.ReadEnum(StyleEnumType.OverflowInternal, 0);
                         break;
                     case StylePropertyId.Padding:
                         ShorthandApplicator.ApplyPadding(reader, ref this);
@@ -393,19 +406,15 @@ namespace UnityEngine.UIElements
                         break;
                     case StylePropertyId.TransitionDelay:
                         reader.ReadListTimeValue(transitionData.Write().transitionDelay, 0);
-                        ResetComputedTransitions();
                         break;
                     case StylePropertyId.TransitionDuration:
                         reader.ReadListTimeValue(transitionData.Write().transitionDuration, 0);
-                        ResetComputedTransitions();
                         break;
                     case StylePropertyId.TransitionProperty:
                         reader.ReadListStylePropertyName(transitionData.Write().transitionProperty, 0);
-                        ResetComputedTransitions();
                         break;
                     case StylePropertyId.TransitionTimingFunction:
                         reader.ReadListEasingFunction(transitionData.Write().transitionTimingFunction, 0);
-                        ResetComputedTransitions();
                         break;
                     case StylePropertyId.Translate:
                         transformData.Write().translate = reader.ReadTranslate(0);
@@ -527,9 +536,6 @@ namespace UnityEngine.UIElements
                 case StylePropertyId.BackgroundColor:
                     visualData.Write().backgroundColor = sv.color;
                     break;
-                case StylePropertyId.BackgroundImage:
-                    visualData.Write().backgroundImage = sv.resource.IsAllocated ? Background.FromObject(sv.resource.Target) : new Background();
-                    break;
                 case StylePropertyId.BackgroundPositionX:
                     visualData.Write().backgroundPositionX = sv.position;
                     break;
@@ -644,7 +650,7 @@ namespace UnityEngine.UIElements
                     visualData.Write().opacity = sv.number;
                     break;
                 case StylePropertyId.Overflow:
-                    visualData.Write().overflow = (OverflowInternal)sv.number;
+                    layoutData.Write().overflow = (OverflowInternal)sv.number;
                     break;
                 case StylePropertyId.PaddingBottom:
                     layoutData.Write().paddingBottom = sv.length;
@@ -676,17 +682,8 @@ namespace UnityEngine.UIElements
                 case StylePropertyId.UnityEditorTextRenderingMode:
                     inheritedData.Write().unityEditorTextRenderingMode = (EditorTextRenderingMode)sv.number;
                     break;
-                case StylePropertyId.UnityFont:
-                    inheritedData.Write().unityFont = sv.resource.IsAllocated ? sv.resource.Target as Font : null;
-                    break;
-                case StylePropertyId.UnityFontDefinition:
-                    inheritedData.Write().unityFontDefinition = sv.resource.IsAllocated ? FontDefinition.FromObject(sv.resource.Target) : new FontDefinition();
-                    break;
                 case StylePropertyId.UnityFontStyleAndWeight:
                     inheritedData.Write().unityFontStyleAndWeight = (FontStyle)sv.number;
-                    break;
-                case StylePropertyId.UnityMaterial:
-                    inheritedData.Write().unityMaterial = sv.resource.IsAllocated ? MaterialDefinition.FromObject(sv.resource.Target) : null;
                     break;
                 case StylePropertyId.UnityOverflowClipBox:
                     rareData.Write().unityOverflowClipBox = (OverflowClipBox)sv.number;
@@ -751,39 +748,47 @@ namespace UnityEngine.UIElements
                 return;
             switch (sv.id)
             {
+                case StylePropertyId.BackgroundImage:
+                    visualData.Write().backgroundImage = sv.GetResource<UnityEngine.Object>()?.GetEntityId() ?? EntityId.None;
+                    break;
                 case StylePropertyId.Filter:
-                    if (sv.value == null)
-                        visualData.Write().filter.CopyFrom(InitialStyle.filter);
+                    if (sv.keyword is StyleKeyword.Initial or StyleKeyword.Null)
+                        rareData.Write().filter.CopyFrom(InitialStyle.filter);
                     else
-                        visualData.Write().filter = sv.value as List<FilterFunction>;
+                        rareData.Write().filter.CopyFrom(sv.value as List<FilterFunction>);
                     break;
                 case StylePropertyId.TransitionDelay:
-                    if (sv.value == null)
+                    if (sv.keyword is StyleKeyword.Initial or StyleKeyword.Null)
                         transitionData.Write().transitionDelay.CopyFrom(InitialStyle.transitionDelay);
                     else
-                        transitionData.Write().transitionDelay = sv.value as List<TimeValue>;
-                    ResetComputedTransitions();
+                        transitionData.Write().transitionDelay = sv.value as List<TimeValue> ?? new();
                     break;
                 case StylePropertyId.TransitionDuration:
-                    if (sv.value == null)
+                    if (sv.keyword is StyleKeyword.Initial or StyleKeyword.Null)
                         transitionData.Write().transitionDuration.CopyFrom(InitialStyle.transitionDuration);
                     else
-                        transitionData.Write().transitionDuration = sv.value as List<TimeValue>;
-                    ResetComputedTransitions();
+                        transitionData.Write().transitionDuration = sv.value as List<TimeValue> ?? new();
                     break;
                 case StylePropertyId.TransitionProperty:
-                    if (sv.value == null)
+                    if (sv.keyword is StyleKeyword.Initial or StyleKeyword.Null)
                         transitionData.Write().transitionProperty.CopyFrom(InitialStyle.transitionProperty);
                     else
-                        transitionData.Write().transitionProperty = sv.value as List<StylePropertyName>;
-                    ResetComputedTransitions();
+                        transitionData.Write().transitionProperty = sv.value as List<StylePropertyName> ?? new();
                     break;
                 case StylePropertyId.TransitionTimingFunction:
-                    if (sv.value == null)
+                    if (sv.keyword is StyleKeyword.Initial or StyleKeyword.Null)
                         transitionData.Write().transitionTimingFunction.CopyFrom(InitialStyle.transitionTimingFunction);
                     else
-                        transitionData.Write().transitionTimingFunction = sv.value as List<EasingFunction>;
-                    ResetComputedTransitions();
+                        transitionData.Write().transitionTimingFunction = sv.value as List<EasingFunction> ?? new();
+                    break;
+                case StylePropertyId.UnityFont:
+                    inheritedData.Write().unityFont = sv.GetResource<UnityEngine.Font>();
+                    break;
+                case StylePropertyId.UnityFontDefinition:
+                    inheritedData.Write().unityFontDefinition = FontDefinition.FromObject(sv.GetResource<UnityEngine.Object>());
+                    break;
+                case StylePropertyId.UnityMaterial:
+                    inheritedData.Write().unityMaterial = (MaterialDefinition)sv.value;
                     break;
                 default:
                     Debug.LogAssertion($"Unexpected property id {sv.id}");
@@ -889,7 +894,7 @@ namespace UnityEngine.UIElements
                     layoutData.Write().display = other.layoutData.Read().display;
                     break;
                 case StylePropertyId.Filter:
-                    visualData.Write().filter.CopyFrom(other.visualData.Read().filter);
+                    rareData.Write().filter.CopyFrom(other.rareData.Read().filter);
                     break;
                 case StylePropertyId.FlexBasis:
                     layoutData.Write().flexBasis = other.layoutData.Read().flexBasis;
@@ -949,7 +954,7 @@ namespace UnityEngine.UIElements
                     visualData.Write().opacity = other.visualData.Read().opacity;
                     break;
                 case StylePropertyId.Overflow:
-                    visualData.Write().overflow = other.visualData.Read().overflow;
+                    layoutData.Write().overflow = other.layoutData.Read().overflow;
                     break;
                 case StylePropertyId.PaddingBottom:
                     layoutData.Write().paddingBottom = other.layoutData.Read().paddingBottom;
@@ -989,19 +994,15 @@ namespace UnityEngine.UIElements
                     break;
                 case StylePropertyId.TransitionDelay:
                     transitionData.Write().transitionDelay.CopyFrom(other.transitionData.Read().transitionDelay);
-                    ResetComputedTransitions();
                     break;
                 case StylePropertyId.TransitionDuration:
                     transitionData.Write().transitionDuration.CopyFrom(other.transitionData.Read().transitionDuration);
-                    ResetComputedTransitions();
                     break;
                 case StylePropertyId.TransitionProperty:
                     transitionData.Write().transitionProperty.CopyFrom(other.transitionData.Read().transitionProperty);
-                    ResetComputedTransitions();
                     break;
                 case StylePropertyId.TransitionTimingFunction:
                     transitionData.Write().transitionTimingFunction.CopyFrom(other.transitionData.Read().transitionTimingFunction);
-                    ResetComputedTransitions();
                     break;
                 case StylePropertyId.Translate:
                     transformData.Write().translate = other.transformData.Read().translate;
@@ -1106,12 +1107,12 @@ namespace UnityEngine.UIElements
                     break;
                 case StylePropertyId.Bottom:
                     layoutData.Write().bottom = newValue;
-                    ve.layoutNode.Bottom = newValue.ToLayoutValue();
+                    ve.layoutNode.MarkDirty();
                     ve.IncrementVersion(VersionChangeType.Layout);
                     break;
                 case StylePropertyId.FlexBasis:
                     layoutData.Write().flexBasis = newValue;
-                    ve.layoutNode.FlexBasis = newValue.ToLayoutValue();
+                    ve.layoutNode.MarkDirty();
                     ve.IncrementVersion(VersionChangeType.Layout);
                     break;
                 case StylePropertyId.FontSize:
@@ -1120,12 +1121,12 @@ namespace UnityEngine.UIElements
                     break;
                 case StylePropertyId.Height:
                     layoutData.Write().height = newValue;
-                    ve.layoutNode.Height = newValue.ToLayoutValue();
+                    ve.layoutNode.MarkDirty();
                     ve.IncrementVersion(VersionChangeType.Layout);
                     break;
                 case StylePropertyId.Left:
                     layoutData.Write().left = newValue;
-                    ve.layoutNode.Left = newValue.ToLayoutValue();
+                    ve.layoutNode.MarkDirty();
                     ve.IncrementVersion(VersionChangeType.Layout);
                     break;
                 case StylePropertyId.LetterSpacing:
@@ -1134,72 +1135,72 @@ namespace UnityEngine.UIElements
                     break;
                 case StylePropertyId.MarginBottom:
                     layoutData.Write().marginBottom = newValue;
-                    ve.layoutNode.MarginBottom = newValue.ToLayoutValue();
+                    ve.layoutNode.MarkDirty();
                     ve.IncrementVersion(VersionChangeType.Layout);
                     break;
                 case StylePropertyId.MarginLeft:
                     layoutData.Write().marginLeft = newValue;
-                    ve.layoutNode.MarginLeft = newValue.ToLayoutValue();
+                    ve.layoutNode.MarkDirty();
                     ve.IncrementVersion(VersionChangeType.Layout);
                     break;
                 case StylePropertyId.MarginRight:
                     layoutData.Write().marginRight = newValue;
-                    ve.layoutNode.MarginRight = newValue.ToLayoutValue();
+                    ve.layoutNode.MarkDirty();
                     ve.IncrementVersion(VersionChangeType.Layout);
                     break;
                 case StylePropertyId.MarginTop:
                     layoutData.Write().marginTop = newValue;
-                    ve.layoutNode.MarginTop = newValue.ToLayoutValue();
+                    ve.layoutNode.MarkDirty();
                     ve.IncrementVersion(VersionChangeType.Layout);
                     break;
                 case StylePropertyId.MaxHeight:
                     layoutData.Write().maxHeight = newValue;
-                    ve.layoutNode.MaxHeight = newValue.ToLayoutValue();
+                    ve.layoutNode.MarkDirty();
                     ve.IncrementVersion(VersionChangeType.Layout);
                     break;
                 case StylePropertyId.MaxWidth:
                     layoutData.Write().maxWidth = newValue;
-                    ve.layoutNode.MaxWidth = newValue.ToLayoutValue();
+                    ve.layoutNode.MarkDirty();
                     ve.IncrementVersion(VersionChangeType.Layout);
                     break;
                 case StylePropertyId.MinHeight:
                     layoutData.Write().minHeight = newValue;
-                    ve.layoutNode.MinHeight = newValue.ToLayoutValue();
+                    ve.layoutNode.MarkDirty();
                     ve.IncrementVersion(VersionChangeType.Layout);
                     break;
                 case StylePropertyId.MinWidth:
                     layoutData.Write().minWidth = newValue;
-                    ve.layoutNode.MinWidth = newValue.ToLayoutValue();
+                    ve.layoutNode.MarkDirty();
                     ve.IncrementVersion(VersionChangeType.Layout);
                     break;
                 case StylePropertyId.PaddingBottom:
                     layoutData.Write().paddingBottom = newValue;
-                    ve.layoutNode.PaddingBottom = newValue.ToLayoutValue();
+                    ve.layoutNode.MarkDirty();
                     ve.IncrementVersion(VersionChangeType.Layout);
                     break;
                 case StylePropertyId.PaddingLeft:
                     layoutData.Write().paddingLeft = newValue;
-                    ve.layoutNode.PaddingLeft = newValue.ToLayoutValue();
+                    ve.layoutNode.MarkDirty();
                     ve.IncrementVersion(VersionChangeType.Layout);
                     break;
                 case StylePropertyId.PaddingRight:
                     layoutData.Write().paddingRight = newValue;
-                    ve.layoutNode.PaddingRight = newValue.ToLayoutValue();
+                    ve.layoutNode.MarkDirty();
                     ve.IncrementVersion(VersionChangeType.Layout);
                     break;
                 case StylePropertyId.PaddingTop:
                     layoutData.Write().paddingTop = newValue;
-                    ve.layoutNode.PaddingTop = newValue.ToLayoutValue();
+                    ve.layoutNode.MarkDirty();
                     ve.IncrementVersion(VersionChangeType.Layout);
                     break;
                 case StylePropertyId.Right:
                     layoutData.Write().right = newValue;
-                    ve.layoutNode.Right = newValue.ToLayoutValue();
+                    ve.layoutNode.MarkDirty();
                     ve.IncrementVersion(VersionChangeType.Layout);
                     break;
                 case StylePropertyId.Top:
                     layoutData.Write().top = newValue;
-                    ve.layoutNode.Top = newValue.ToLayoutValue();
+                    ve.layoutNode.MarkDirty();
                     ve.IncrementVersion(VersionChangeType.Layout);
                     break;
                 case StylePropertyId.UnityParagraphSpacing:
@@ -1208,7 +1209,7 @@ namespace UnityEngine.UIElements
                     break;
                 case StylePropertyId.Width:
                     layoutData.Write().width = newValue;
-                    ve.layoutNode.Width = newValue.ToLayoutValue();
+                    ve.layoutNode.MarkDirty();
                     ve.IncrementVersion(VersionChangeType.Layout);
                     break;
                 case StylePropertyId.WordSpacing:
@@ -1226,32 +1227,32 @@ namespace UnityEngine.UIElements
             {
                 case StylePropertyId.BorderBottomWidth:
                     layoutData.Write().borderBottomWidth = newValue;
-                    ve.layoutNode.BorderBottomWidth = newValue;
+                    ve.layoutNode.MarkDirty();
                     ve.IncrementVersion(VersionChangeType.BorderWidth | VersionChangeType.Layout | VersionChangeType.Repaint);
                     break;
                 case StylePropertyId.BorderLeftWidth:
                     layoutData.Write().borderLeftWidth = newValue;
-                    ve.layoutNode.BorderLeftWidth = newValue;
+                    ve.layoutNode.MarkDirty();
                     ve.IncrementVersion(VersionChangeType.BorderWidth | VersionChangeType.Layout | VersionChangeType.Repaint);
                     break;
                 case StylePropertyId.BorderRightWidth:
                     layoutData.Write().borderRightWidth = newValue;
-                    ve.layoutNode.BorderRightWidth = newValue;
+                    ve.layoutNode.MarkDirty();
                     ve.IncrementVersion(VersionChangeType.BorderWidth | VersionChangeType.Layout | VersionChangeType.Repaint);
                     break;
                 case StylePropertyId.BorderTopWidth:
                     layoutData.Write().borderTopWidth = newValue;
-                    ve.layoutNode.BorderTopWidth = newValue;
+                    ve.layoutNode.MarkDirty();
                     ve.IncrementVersion(VersionChangeType.BorderWidth | VersionChangeType.Layout | VersionChangeType.Repaint);
                     break;
                 case StylePropertyId.FlexGrow:
                     layoutData.Write().flexGrow = newValue;
-                    ve.layoutNode.FlexGrow = newValue;
+                    ve.layoutNode.MarkDirty();
                     ve.IncrementVersion(VersionChangeType.Layout);
                     break;
                 case StylePropertyId.FlexShrink:
                     layoutData.Write().flexShrink = newValue;
-                    ve.layoutNode.FlexShrink = newValue;
+                    ve.layoutNode.MarkDirty();
                     ve.IncrementVersion(VersionChangeType.Layout);
                     break;
                 case StylePropertyId.Opacity:
@@ -1279,7 +1280,7 @@ namespace UnityEngine.UIElements
                     if (layoutData.Read().alignContent != (Align)newValue)
                     {
                         layoutData.Write().alignContent = (Align)newValue;
-                        ve.layoutNode.AlignContent = (LayoutAlign)newValue;
+                        ve.layoutNode.MarkDirty();
                         ve.IncrementVersion(VersionChangeType.Layout);
                     }
 
@@ -1288,7 +1289,7 @@ namespace UnityEngine.UIElements
                     if (layoutData.Read().alignItems != (Align)newValue)
                     {
                         layoutData.Write().alignItems = (Align)newValue;
-                        ve.layoutNode.AlignItems = (LayoutAlign)newValue;
+                        ve.layoutNode.MarkDirty();
                         ve.IncrementVersion(VersionChangeType.Layout);
                     }
 
@@ -1297,7 +1298,7 @@ namespace UnityEngine.UIElements
                     if (layoutData.Read().alignSelf != (Align)newValue)
                     {
                         layoutData.Write().alignSelf = (Align)newValue;
-                        ve.layoutNode.AlignSelf = (LayoutAlign)newValue;
+                        ve.layoutNode.MarkDirty();
                         ve.IncrementVersion(VersionChangeType.Layout);
                     }
 
@@ -1306,7 +1307,7 @@ namespace UnityEngine.UIElements
                     if (layoutData.Read().flexDirection != (FlexDirection)newValue)
                     {
                         layoutData.Write().flexDirection = (FlexDirection)newValue;
-                        ve.layoutNode.FlexDirection = (LayoutFlexDirection)newValue;
+                        ve.layoutNode.MarkDirty();
                         ve.IncrementVersion(VersionChangeType.Layout);
                     }
 
@@ -1315,7 +1316,7 @@ namespace UnityEngine.UIElements
                     if (layoutData.Read().flexWrap != (Wrap)newValue)
                     {
                         layoutData.Write().flexWrap = (Wrap)newValue;
-                        ve.layoutNode.Wrap = (LayoutWrap)newValue;
+                        ve.layoutNode.MarkDirty();
                         ve.IncrementVersion(VersionChangeType.Layout);
                     }
 
@@ -1324,16 +1325,16 @@ namespace UnityEngine.UIElements
                     if (layoutData.Read().justifyContent != (Justify)newValue)
                     {
                         layoutData.Write().justifyContent = (Justify)newValue;
-                        ve.layoutNode.JustifyContent = (LayoutJustify)newValue;
+                        ve.layoutNode.MarkDirty();
                         ve.IncrementVersion(VersionChangeType.Layout);
                     }
 
                     break;
                 case StylePropertyId.Overflow:
-                    if (visualData.Read().overflow != (OverflowInternal)newValue)
+                    if (layoutData.Read().overflow != (OverflowInternal)newValue)
                     {
-                        visualData.Write().overflow = (OverflowInternal)newValue;
-                        ve.layoutNode.Overflow = (LayoutOverflow)newValue;
+                        layoutData.Write().overflow = (OverflowInternal)newValue;
+                        ve.layoutNode.MarkDirty();
                         ve.IncrementVersion(VersionChangeType.Layout | VersionChangeType.Overflow);
                     }
 
@@ -1342,7 +1343,7 @@ namespace UnityEngine.UIElements
                     if (layoutData.Read().position != (Position)newValue)
                     {
                         layoutData.Write().position = (Position)newValue;
-                        ve.layoutNode.PositionType = (LayoutPositionType)newValue;
+                        ve.layoutNode.MarkDirty();
                         ve.IncrementVersion(VersionChangeType.Layout);
                     }
 
@@ -1528,7 +1529,7 @@ namespace UnityEngine.UIElements
             }
         }
 
-        public void ApplyPropertyAnimation(VisualElement ve, StylePropertyId id, Background newValue)
+        public void ApplyPropertyAnimation(VisualElement ve, StylePropertyId id, EntityId newValue)
         {
             switch (id)
             {
@@ -1541,20 +1542,7 @@ namespace UnityEngine.UIElements
 
                     break;
                 default:
-                    throw new ArgumentException("Invalid animation property id. Can't apply value of type 'Background' to property '" + id + "'. Please make sure that this property is animatable.", nameof(id));
-            }
-        }
-
-        public void ApplyPropertyAnimation(VisualElement ve, StylePropertyId id, List<FilterFunction> newValue)
-        {
-            switch (id)
-            {
-                case StylePropertyId.Filter:
-                    visualData.Write().filter = newValue;
-                    ve.IncrementVersion(VersionChangeType.Repaint);
-                    break;
-                default:
-                    throw new ArgumentException("Invalid animation property id. Can't apply value of type 'List<FilterFunction>' to property '" + id + "'. Please make sure that this property is animatable.", nameof(id));
+                    throw new ArgumentException("Invalid animation property id. Can't apply value of type 'EntityId' to property '" + id + "'. Please make sure that this property is animatable.", nameof(id));
             }
         }
 
@@ -1602,6 +1590,19 @@ namespace UnityEngine.UIElements
                     break;
                 default:
                     throw new ArgumentException("Invalid animation property id. Can't apply value of type 'TextShadow' to property '" + id + "'. Please make sure that this property is animatable.", nameof(id));
+            }
+        }
+
+        public void ApplyPropertyAnimation(VisualElement ve, StylePropertyId id, List<FilterFunction> newValue)
+        {
+            switch (id)
+            {
+                case StylePropertyId.Filter:
+                    rareData.Write().filter = newValue;
+                    ve.IncrementVersion(VersionChangeType.Repaint);
+                    break;
+                default:
+                    throw new ArgumentException("Invalid animation property id. Can't apply value of type 'List<FilterFunction>' to property '" + id + "'. Please make sure that this property is animatable.", nameof(id));
             }
         }
 
@@ -1657,13 +1658,26 @@ namespace UnityEngine.UIElements
             }
         }
 
+        public void ApplyPropertyAnimation(VisualElement ve, StylePropertyId id, MaterialDefinition newValue)
+        {
+            switch (id)
+            {
+                case StylePropertyId.UnityMaterial:
+                    inheritedData.Write().unityMaterial = newValue;
+                    ve.IncrementVersion(VersionChangeType.Repaint | VersionChangeType.StyleSheet);
+                    break;
+                default:
+                    throw new ArgumentException("Invalid animation property id. Can't apply value of type 'MaterialDefinition' to property '" + id + "'. Please make sure that this property is animatable.", nameof(id));
+            }
+        }
+
         public void ApplyPropertyAnimation(VisualElement ve, StylePropertyId id, Ratio newValue)
         {
             switch (id)
             {
                 case StylePropertyId.AspectRatio:
                     layoutData.Write().aspectRatio = newValue;
-                    ve.layoutNode.AspectRatio = newValue;
+                    ve.layoutNode.MarkDirty();
                     ve.IncrementVersion(VersionChangeType.Layout);
                     break;
                 default:
@@ -1830,7 +1844,7 @@ namespace UnityEngine.UIElements
                 }
 
                 case StylePropertyId.Filter:
-                    return element.styleAnimation.Start(StylePropertyId.Filter, oldStyle.visualData.Read().filter, newStyle.visualData.Read().filter, durationMs, delayMs, easingCurve);
+                    return element.styleAnimation.Start(StylePropertyId.Filter, oldStyle.rareData.Read().filter, newStyle.rareData.Read().filter, durationMs, delayMs, easingCurve);
                 case StylePropertyId.Flex:
                 {
                     bool result = false;
@@ -1889,7 +1903,7 @@ namespace UnityEngine.UIElements
                 case StylePropertyId.Opacity:
                     return element.styleAnimation.Start(StylePropertyId.Opacity, oldStyle.visualData.Read().opacity, newStyle.visualData.Read().opacity, durationMs, delayMs, easingCurve);
                 case StylePropertyId.Overflow:
-                    return element.styleAnimation.StartEnum(StylePropertyId.Overflow, (int)oldStyle.visualData.Read().overflow, (int)newStyle.visualData.Read().overflow, durationMs, delayMs, easingCurve);
+                    return element.styleAnimation.StartEnum(StylePropertyId.Overflow, (int)oldStyle.layoutData.Read().overflow, (int)newStyle.layoutData.Read().overflow, durationMs, delayMs, easingCurve);
                 case StylePropertyId.Padding:
                 {
                     bool result = false;
@@ -1994,6 +2008,8 @@ namespace UnityEngine.UIElements
                     return element.styleAnimation.Start(StylePropertyId.UnityFontDefinition, oldStyle.inheritedData.Read().unityFontDefinition, newStyle.inheritedData.Read().unityFontDefinition, durationMs, delayMs, easingCurve);
                 case StylePropertyId.UnityFontStyleAndWeight:
                     return element.styleAnimation.StartEnum(StylePropertyId.UnityFontStyleAndWeight, (int)oldStyle.inheritedData.Read().unityFontStyleAndWeight, (int)newStyle.inheritedData.Read().unityFontStyleAndWeight, durationMs, delayMs, easingCurve);
+                case StylePropertyId.UnityMaterial:
+                    return element.styleAnimation.Start(StylePropertyId.UnityMaterial, oldStyle.inheritedData.Read().unityMaterial, newStyle.inheritedData.Read().unityMaterial, durationMs, delayMs, easingCurve);
                 case StylePropertyId.UnityOverflowClipBox:
                     return element.styleAnimation.StartEnum(StylePropertyId.UnityOverflowClipBox, (int)oldStyle.rareData.Read().unityOverflowClipBox, (int)newStyle.rareData.Read().unityOverflowClipBox, durationMs, delayMs, easingCurve);
                 case StylePropertyId.UnityParagraphSpacing:
@@ -2096,6 +2112,12 @@ namespace UnityEngine.UIElements
                     oldData.unityFontStyleAndWeight != newData.unityFontStyleAndWeight)
                 {
                     result |= element.styleAnimation.StartEnum(StylePropertyId.UnityFontStyleAndWeight, (int)oldData.unityFontStyleAndWeight, (int)newData.unityFontStyleAndWeight, durationMs, delayMs, easingCurve);
+                }
+
+                if (hasRunningAnimation ||
+                    oldData.unityMaterial != newData.unityMaterial)
+                {
+                    result |= element.styleAnimation.Start(StylePropertyId.UnityMaterial, oldData.unityMaterial, newData.unityMaterial, durationMs, delayMs, easingCurve);
                 }
 
                 if (hasRunningAnimation ||
@@ -2297,6 +2319,12 @@ namespace UnityEngine.UIElements
                 }
 
                 if (hasRunningAnimation ||
+                    oldData.overflow != newData.overflow)
+                {
+                    result |= element.styleAnimation.StartEnum(StylePropertyId.Overflow, (int)oldData.overflow, (int)newData.overflow, durationMs, delayMs, easingCurve);
+                }
+
+                if (hasRunningAnimation ||
                     oldData.paddingBottom != newData.paddingBottom)
                 {
                     result |= element.styleAnimation.Start(StylePropertyId.PaddingBottom, oldData.paddingBottom, newData.paddingBottom, durationMs, delayMs, easingCurve);
@@ -2350,6 +2378,12 @@ namespace UnityEngine.UIElements
             {
                 ref readonly var oldData = ref oldStyle.rareData.Read();
                 ref readonly var newData = ref newStyle.rareData.Read();
+                if (hasRunningAnimation ||
+                    oldData.filter != newData.filter)
+                {
+                    result |= element.styleAnimation.Start(StylePropertyId.Filter, oldData.filter, newData.filter, durationMs, delayMs, easingCurve);
+                }
+
                 if (hasRunningAnimation ||
                     oldData.textOverflow != newData.textOverflow)
                 {
@@ -2591,21 +2625,9 @@ namespace UnityEngine.UIElements
                 }
 
                 if (hasRunningAnimation ||
-                    oldData.filter != newData.filter)
-                {
-                    result |= element.styleAnimation.Start(StylePropertyId.Filter, oldData.filter, newData.filter, durationMs, delayMs, easingCurve);
-                }
-
-                if (hasRunningAnimation ||
                     oldData.opacity != newData.opacity)
                 {
                     result |= element.styleAnimation.Start(StylePropertyId.Opacity, oldData.opacity, newData.opacity, durationMs, delayMs, easingCurve);
-                }
-
-                if (hasRunningAnimation ||
-                    oldData.overflow != newData.overflow)
-                {
-                    result |= element.styleAnimation.StartEnum(StylePropertyId.Overflow, (int)oldData.overflow, (int)newData.overflow, durationMs, delayMs, easingCurve);
                 }
             }
 
@@ -2661,12 +2683,6 @@ namespace UnityEngine.UIElements
                     }
 
                     return result;
-                }
-
-                case StylePropertyId.BackgroundImage:
-                {
-                    var to = sv.keyword == StyleKeyword.Initial ? InitialStyle.backgroundImage : sv.resource.IsAllocated ? Background.FromObject(sv.resource.Target) : new Background();
-                    return element.styleAnimation.Start(StylePropertyId.BackgroundImage, computedStyle.visualData.Read().backgroundImage, to, durationMs, delayMs, easingCurve);
                 }
 
                 case StylePropertyId.BackgroundPositionX:
@@ -2918,7 +2934,7 @@ namespace UnityEngine.UIElements
                 case StylePropertyId.Overflow:
                 {
                     var to = sv.keyword == StyleKeyword.Initial ? InitialStyle.overflow : (OverflowInternal)sv.number;
-                    return element.styleAnimation.StartEnum(StylePropertyId.Overflow, (int)computedStyle.visualData.Read().overflow, (int)to, durationMs, delayMs, easingCurve);
+                    return element.styleAnimation.StartEnum(StylePropertyId.Overflow, (int)computedStyle.layoutData.Read().overflow, (int)to, durationMs, delayMs, easingCurve);
                 }
 
                 case StylePropertyId.PaddingBottom:
@@ -2979,18 +2995,6 @@ namespace UnityEngine.UIElements
                     }
 
                     return result;
-                }
-
-                case StylePropertyId.UnityFont:
-                {
-                    var to = sv.keyword == StyleKeyword.Initial ? InitialStyle.unityFont : sv.resource.IsAllocated ? sv.resource.Target as Font : null;
-                    return element.styleAnimation.Start(StylePropertyId.UnityFont, computedStyle.inheritedData.Read().unityFont, to, durationMs, delayMs, easingCurve);
-                }
-
-                case StylePropertyId.UnityFontDefinition:
-                {
-                    var to = sv.keyword == StyleKeyword.Initial ? InitialStyle.unityFontDefinition : sv.resource.IsAllocated ? FontDefinition.FromObject(sv.resource.Target) : new FontDefinition();
-                    return element.styleAnimation.Start(StylePropertyId.UnityFontDefinition, computedStyle.inheritedData.Read().unityFontDefinition, to, durationMs, delayMs, easingCurve);
                 }
 
                 case StylePropertyId.UnityFontStyleAndWeight:
@@ -3100,6 +3104,45 @@ namespace UnityEngine.UIElements
             }
         }
 
+        public static bool StartAnimationInlineManaged(VisualElement element, StylePropertyId id, ref ComputedStyle computedStyle, StyleValueManaged sv, int durationMs, int delayMs, Func<float, float> easingCurve)
+        {
+            switch (id)
+            {
+                case StylePropertyId.BackgroundImage:
+                {
+                    var to = sv.keyword == StyleKeyword.Initial ? InitialStyle.backgroundImage : sv.GetResource<UnityEngine.Object>()?.GetEntityId() ?? EntityId.None;
+                    return element.styleAnimation.Start(StylePropertyId.BackgroundImage, computedStyle.visualData.Read().backgroundImage, to, durationMs, delayMs, easingCurve);
+                }
+
+                case StylePropertyId.Filter:
+                {
+                    var to = sv.keyword == StyleKeyword.Initial ? InitialStyle.filter : (List<FilterFunction>)sv.value;
+                    return element.styleAnimation.Start(StylePropertyId.Filter, computedStyle.rareData.Read().filter, to, durationMs, delayMs, easingCurve);
+                }
+
+                case StylePropertyId.UnityFont:
+                {
+                    var to = sv.keyword == StyleKeyword.Initial ? InitialStyle.unityFont : sv.GetResource<UnityEngine.Font>();
+                    return element.styleAnimation.Start(StylePropertyId.UnityFont, computedStyle.inheritedData.Read().unityFont, to, durationMs, delayMs, easingCurve);
+                }
+
+                case StylePropertyId.UnityFontDefinition:
+                {
+                    var to = sv.keyword == StyleKeyword.Initial ? InitialStyle.unityFontDefinition : FontDefinition.FromObject(sv.GetResource<UnityEngine.Object>());
+                    return element.styleAnimation.Start(StylePropertyId.UnityFontDefinition, computedStyle.inheritedData.Read().unityFontDefinition, to, durationMs, delayMs, easingCurve);
+                }
+
+                case StylePropertyId.UnityMaterial:
+                {
+                    var to = sv.keyword == StyleKeyword.Initial ? InitialStyle.unityMaterial : (MaterialDefinition)sv.value;
+                    return element.styleAnimation.Start(StylePropertyId.UnityMaterial, computedStyle.inheritedData.Read().unityMaterial, to, durationMs, delayMs, easingCurve);
+                }
+
+                default:
+                    return false;
+            }
+        }
+
         public void ApplyStyleTransformOrigin(TransformOrigin st)
         {
             transformData.Write().transformOrigin = st;
@@ -3123,11 +3166,6 @@ namespace UnityEngine.UIElements
         public void ApplyStyleBackgroundSize(BackgroundSize backgroundSizeValue)
         {
             visualData.Write().backgroundSize = backgroundSizeValue;
-        }
-
-        public void ApplyStyleFilter(List<FilterFunction> st)
-        {
-            visualData.Write().filter = st;
         }
 
         public void ApplyInitialValue(StylePropertyReader reader)
@@ -3253,7 +3291,7 @@ namespace UnityEngine.UIElements
                     layoutData.Write().display = InitialStyle.display;
                     break;
                 case StylePropertyId.Filter:
-                    visualData.Write().filter.CopyFrom(InitialStyle.filter);
+                    rareData.Write().filter.CopyFrom(InitialStyle.filter);
                     break;
                 case StylePropertyId.Flex:
                     layoutData.Write().flexGrow = InitialStyle.flexGrow;
@@ -3324,7 +3362,7 @@ namespace UnityEngine.UIElements
                     visualData.Write().opacity = InitialStyle.opacity;
                     break;
                 case StylePropertyId.Overflow:
-                    visualData.Write().overflow = InitialStyle.overflow;
+                    layoutData.Write().overflow = InitialStyle.overflow;
                     break;
                 case StylePropertyId.Padding:
                     layoutData.Write().paddingTop = InitialStyle.paddingTop;
@@ -3373,23 +3411,18 @@ namespace UnityEngine.UIElements
                     transitionData.Write().transitionDuration.CopyFrom(InitialStyle.transitionDuration);
                     transitionData.Write().transitionProperty.CopyFrom(InitialStyle.transitionProperty);
                     transitionData.Write().transitionTimingFunction.CopyFrom(InitialStyle.transitionTimingFunction);
-                    ResetComputedTransitions();
                     break;
                 case StylePropertyId.TransitionDelay:
                     transitionData.Write().transitionDelay.CopyFrom(InitialStyle.transitionDelay);
-                    ResetComputedTransitions();
                     break;
                 case StylePropertyId.TransitionDuration:
                     transitionData.Write().transitionDuration.CopyFrom(InitialStyle.transitionDuration);
-                    ResetComputedTransitions();
                     break;
                 case StylePropertyId.TransitionProperty:
                     transitionData.Write().transitionProperty.CopyFrom(InitialStyle.transitionProperty);
-                    ResetComputedTransitions();
                     break;
                 case StylePropertyId.TransitionTimingFunction:
                     transitionData.Write().transitionTimingFunction.CopyFrom(InitialStyle.transitionTimingFunction);
-                    ResetComputedTransitions();
                     break;
                 case StylePropertyId.Translate:
                     transformData.Write().translate = InitialStyle.translate;
@@ -3611,6 +3644,11 @@ namespace UnityEngine.UIElements
                 {
                     changes |= VersionChangeType.BorderWidth | VersionChangeType.Layout | VersionChangeType.Repaint;
                 }
+
+                if (x.overflow != y.overflow)
+                {
+                    changes |= VersionChangeType.Layout | VersionChangeType.Overflow;
+                }
             }
 
             if (!x.inheritedData.ReferenceEquals(y.inheritedData))
@@ -3684,8 +3722,7 @@ namespace UnityEngine.UIElements
                     x.backgroundPositionX != y.backgroundPositionX ||
                     x.backgroundPositionY != y.backgroundPositionY ||
                     x.backgroundRepeat != y.backgroundRepeat ||
-                    x.backgroundSize != y.backgroundSize ||
-                    !AreListPropertiesEqual(x.filter, y.filter)))
+                    x.backgroundSize != y.backgroundSize))
                 {
                     changes |= VersionChangeType.Repaint;
                 }
@@ -3702,15 +3739,21 @@ namespace UnityEngine.UIElements
                 {
                     changes |= VersionChangeType.Opacity;
                 }
-
-                if (x.overflow != y.overflow)
-                {
-                    changes |= VersionChangeType.Layout | VersionChangeType.Overflow;
-                }
             }
 
             if (!x.rareData.ReferenceEquals(y.rareData))
             {
+                if ((changes & VersionChangeType.Repaint) == 0 && (x.filter != y.filter ||
+                    x.unityOverflowClipBox != y.unityOverflowClipBox ||
+                    x.unitySliceBottom != y.unitySliceBottom ||
+                    x.unitySliceLeft != y.unitySliceLeft ||
+                    x.unitySliceRight != y.unitySliceRight ||
+                    x.unitySliceTop != y.unitySliceTop ||
+                    x.unityTextOverflowPosition != y.unityTextOverflowPosition))
+                {
+                    changes |= VersionChangeType.Repaint;
+                }
+
                 if ((changes & (VersionChangeType.Layout | VersionChangeType.Repaint)) == 0 && (x.unitySliceType != y.unitySliceType ||
                     x.textOverflow != y.textOverflow ||
                     x.unitySliceScale != y.unitySliceScale))
@@ -3722,16 +3765,10 @@ namespace UnityEngine.UIElements
                 {
                     changes |= VersionChangeType.Color;
                 }
+            }
 
-                if ((changes & VersionChangeType.Repaint) == 0 && (x.unityOverflowClipBox != y.unityOverflowClipBox ||
-                    x.unitySliceBottom != y.unitySliceBottom ||
-                    x.unitySliceLeft != y.unitySliceLeft ||
-                    x.unitySliceRight != y.unitySliceRight ||
-                    x.unitySliceTop != y.unitySliceTop ||
-                    x.unityTextOverflowPosition != y.unityTextOverflowPosition))
-                {
-                    changes |= VersionChangeType.Repaint;
-                }
+            if (!x.customData.ReferenceEquals(y.customData))
+            {
             }
 
             return changes;

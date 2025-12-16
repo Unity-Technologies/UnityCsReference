@@ -16,7 +16,8 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
         static GUIStyle s_IconLabel;
         static GUIStyle s_IconLabelLeft;
         static GUIStyle s_Label;
-        static GUIStyle s_LabelWithRichtext;
+        static GUIStyle s_LabelWithRichText;
+        static GUIStyle s_LabelWithRichTextGrey;
         static GUIStyle s_LinkLabel;
         static GUIStyle s_TextArea;
 
@@ -279,12 +280,27 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
         {
             get
             {
-                if (s_LabelWithRichtext == null)
-                    s_LabelWithRichtext = new GUIStyle(EditorStyles.label)
+                if (s_LabelWithRichText == null)
+                    s_LabelWithRichText = new GUIStyle(EditorStyles.label)
                     {
                         richText = true
                     };
-                return s_LabelWithRichtext;
+                return s_LabelWithRichText;
+            }
+        }
+
+        public static GUIStyle LabelRichTextGrey
+        {
+            get
+            {
+                if (s_LabelWithRichTextGrey == null)
+                {
+                    s_LabelWithRichTextGrey = new GUIStyle(EditorStyles.label) { richText = true };
+                    s_LabelWithRichTextGrey.active.textColor = Color.grey;
+                    s_LabelWithRichTextGrey.hover.textColor = Color.grey;
+                    s_LabelWithRichTextGrey.normal.textColor = Color.grey;
+                }
+                return s_LabelWithRichTextGrey;
             }
         }
 
@@ -295,7 +311,7 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
                 if (s_LinkLabel == null)
                     s_LinkLabel = new GUIStyle(GetStyle("LinkLabel"))
                     {
-                        alignment   = TextAnchor.MiddleLeft
+                        alignment = TextAnchor.MiddleLeft
                     };
                 return s_LinkLabel;
             }

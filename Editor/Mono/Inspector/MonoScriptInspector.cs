@@ -129,7 +129,7 @@ namespace UnityEditor
                 if (field.FieldType.IsSubclassOf(typeof(Object)) || field.FieldType == typeof(Object))
                 {
                     Object oldTarget = importer.GetDefaultReference(field.Name, out var instanceID);
-                    if(oldTarget == null && instanceID != 0)
+                    if(oldTarget == null && instanceID != EntityId.None)
                     {
                         oldTarget = Object.CreateMissingReferenceObject(instanceID);
                     }

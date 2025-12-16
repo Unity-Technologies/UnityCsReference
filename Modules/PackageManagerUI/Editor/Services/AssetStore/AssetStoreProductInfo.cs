@@ -140,7 +140,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public AssetStoreProductInfo ParseProductInfo(string assetStoreUrl, long productId, IDictionary<string, object> productDetail)
         {
-            if (productId <= 0 || productDetail == null || !productDetail.Any())
+            if (productId <= 0 || productDetail == null || productDetail.Count == 0)
                 return null;
 
             var productInfo = new AssetStoreProductInfo();

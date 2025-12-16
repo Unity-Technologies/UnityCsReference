@@ -11,28 +11,30 @@ using System.Linq.Expressions;
 using System.Reflection;
 using UnityEditor.Actions;
 using UnityEditor.AnimatedValues;
-using UnityEditor.SceneManagement;
-using UnityEditor.ShortcutManagement;
-using UnityEditorInternal;
-using UnityEngine;
-using UnityEngine.Profiling;
-using UnityEngine.Rendering;
-using UnityEngine.Experimental.Rendering;
-using UnityEngine.SceneManagement;
-using Object = UnityEngine.Object;
-using RequiredByNativeCodeAttribute = UnityEngine.Scripting.RequiredByNativeCodeAttribute;
 using UnityEditor.EditorTools;
 using UnityEditor.Overlays;
 using UnityEditor.Profiling;
+using UnityEditor.SceneManagement;
+using UnityEditor.ShortcutManagement;
 using UnityEditor.UIElements;
+using UnityEditorInternal;
+using UnityEngine;
+using UnityEngine.Bindings;
+using UnityEngine.Experimental.Rendering;
+using UnityEngine.Profiling;
+using UnityEngine.Rendering;
+using UnityEngine.SceneManagement;
 using UnityEngine.Serialization;
 using UnityEngine.UIElements;
-using Component = UnityEngine.Component;
 using static UnityEditor.SceneViewMotion;
+using Component = UnityEngine.Component;
+using Object = UnityEngine.Object;
+using RequiredByNativeCodeAttribute = UnityEngine.Scripting.RequiredByNativeCodeAttribute;
 
 namespace UnityEditor
 {
     [EditorWindowTitle(title = "Scene", useTypeNameAsIconName = true)]
+    [NativeHeader("Editor/Src/SceneView/SceneViewBindings.h")]
     public partial class SceneView : SearchableEditorWindow, IHasCustomMenu, ISupportsOverlays
     {
         [Serializable]
@@ -256,17 +258,17 @@ namespace UnityEditor
             return parentObject;
         }
 
-        static void OnSelectedObjectWasDestroyed(int unused)
+        static void OnSelectedObjectWasDestroyed(EntityId unused)
         {
             s_ActiveEditorsDirty = true;
             s_SelectionCacheDirty = true;
         }
 
-        static void OnNonSelectedObjectWasDestroyed(int instanceID)
+        static void OnNonSelectedObjectWasDestroyed(EntityId entityId)
         {
             if ((!s_ActiveEditorsDirty) || (!s_SelectionCacheDirty))
             {
-                if (s_CachedChildRenderersForOutliningHashSet != null && s_CachedChildRenderersForOutliningHashSet.Contains(instanceID))
+                if (s_CachedChildRenderersForOutliningHashSet != null && s_CachedChildRenderersForOutliningHashSet.Contains(entityId))
                 {
                     s_ActiveEditorsDirty = true;
                     s_SelectionCacheDirty = true;
@@ -366,7 +368,7 @@ namespace UnityEditor
 
         internal bool isPingingObject { get; set; } = false;
         internal float alphaMultiplier { get; set; } = 0;
-        internal int submeshOutlineMaterialId { get; set; } = 0;
+        internal EntityId submeshOutlineMaterialId { get; set; } = EntityId.None;
 
         Scene m_CustomScene;
         protected internal Scene customScene
@@ -796,8 +798,12 @@ namespace UnityEditor
             const float defaultEasingDuration = .4f;
             internal const float kAbsoluteSpeedMin = .0001f;
             internal const float kAbsoluteSpeedMax = 10000f;
-            const float kAbsoluteEasingDurationMin = .1f;
-            const float kAbsoluteEasingDurationMax = 2f;
+            internal const float kAbsoluteEasingDurationMin = .1f;
+            internal const float kAbsoluteEasingDurationMax = 2f;
+            internal const float kAbsoluteAccelerationSpeedMin = 0.1f;
+            internal const float kAbsoluteAccelerationSpeedMax = 4f;
+            internal const float kAbsoluteSpeedModifierMin = 1.1f;
+            internal const float kAbsoluteSpeedModifierMax = 25f;
 
             [SerializeField]
             float m_Speed;
@@ -813,6 +819,10 @@ namespace UnityEditor
             float m_EasingDuration;
             [SerializeField]
             bool m_AccelerationEnabled;
+            [SerializeField]
+            float m_AccelerationSpeed;
+            [SerializeField]
+            float m_SpeedModifier;
 
             [SerializeField]
             float m_FieldOfViewHorizontalOrVertical; // either horizontal or vertical depending on aspect ratio
@@ -839,6 +849,8 @@ namespace UnityEditor
                 m_NearClip = .03f;
                 m_FarClip = 10000f;
                 m_AccelerationEnabled = true;
+                m_AccelerationSpeed = 0.8f;
+                m_SpeedModifier = 5.0f;
             }
 
             internal CameraSettings(CameraSettings other)
@@ -855,14 +867,13 @@ namespace UnityEditor
                 m_NearClip = other.m_NearClip;
                 m_FarClip = other.m_FarClip;
                 m_AccelerationEnabled = other.m_AccelerationEnabled;
+                m_AccelerationSpeed = other.m_AccelerationSpeed;
+                m_SpeedModifier = other.m_SpeedModifier;
             }
 
             public float speed
             {
-                get
-                {
-                    return m_Speed;
-                }
+                get => m_Speed;
                 set
                 {
                     speedNormalized = Mathf.InverseLerp(m_SpeedMin, m_SpeedMax, value);
@@ -871,10 +882,7 @@ namespace UnityEditor
 
             public float speedNormalized
             {
-                get
-                {
-                    return m_SpeedNormalized;
-                }
+                get => m_SpeedNormalized;
                 set
                 {
                     m_SpeedNormalized = Mathf.Clamp01(value);
@@ -898,18 +906,15 @@ namespace UnityEditor
             // current speed to the target speed over the course of `CameraSettings.easingDuration` seconds.
             public bool easingEnabled
             {
-                get { return m_EasingEnabled; }
-                set { m_EasingEnabled = value; }
+                get => m_EasingEnabled;
+                set => m_EasingEnabled = value;
             }
 
             // How many seconds should the camera take to go from stand-still to initial full speed. When setting an animated value
             // speed, use `1 / duration`.
             public float easingDuration
             {
-                get
-                {
-                    return m_EasingDuration;
-                }
+                get => m_EasingDuration;
                 set
                 {
                     // Clamp and round to 1 decimal point
@@ -921,8 +926,34 @@ namespace UnityEditor
             // is disabled, speed is a constant value defined by `CameraSettings.speed`
             public bool accelerationEnabled
             {
-                get { return m_AccelerationEnabled; }
-                set { m_AccelerationEnabled = value; }
+                get => m_AccelerationEnabled;
+                set => m_AccelerationEnabled = value;
+            }
+
+            /// <summary>
+            /// How fast the SceneView Camera should speed up while being continuous in motion. The valid values are between [0.1, 4.0].
+            /// </summary>
+            public float accelerationSpeed
+            {
+                get => m_AccelerationSpeed;
+                set
+                {
+                    // Clamp and round to 1 decimal point
+                    m_AccelerationSpeed = (float)Math.Round(Mathf.Clamp(value, kAbsoluteAccelerationSpeedMin, kAbsoluteAccelerationSpeedMax), 1);
+                }
+            }
+
+            /// <summary>
+            /// When holding down shift, this is the modifier that is multiplied to the SceneView Camera speed. The valid values are between [1.1, 25.0].
+            /// </summary>
+            public float speedModifier
+            {
+                get => m_SpeedModifier;
+                set
+                {
+                    // Clamp and round to 1 decimal point
+                    m_SpeedModifier = (float)Math.Round(Mathf.Clamp(value, kAbsoluteSpeedModifierMin, kAbsoluteSpeedModifierMax), 1);
+                }
             }
 
             // this ensures that the resolution the slider snaps to is sufficient given the minimum speed, and the
@@ -963,32 +994,32 @@ namespace UnityEditor
 
             public float fieldOfView
             {
-                get { return m_FieldOfViewHorizontalOrVertical; }
-                set { m_FieldOfViewHorizontalOrVertical = value; }
+                get => m_FieldOfViewHorizontalOrVertical;
+                set => m_FieldOfViewHorizontalOrVertical = value;
             }
 
             public float nearClip
             {
-                get { return m_NearClip; }
-                set { m_NearClip = value; }
+                get => m_NearClip;
+                set => m_NearClip = value;
             }
 
             public float farClip
             {
-                get { return m_FarClip; }
-                set { m_FarClip = value; }
+                get => m_FarClip;
+                set => m_FarClip = value;
             }
 
             public bool dynamicClip
             {
-                get { return m_DynamicClip; }
-                set { m_DynamicClip = value; }
+                get => m_DynamicClip;
+                set => m_DynamicClip = value;
             }
 
             public bool occlusionCulling
             {
-                get { return m_OcclusionCulling; }
-                set { m_OcclusionCulling = value; }
+                get => m_OcclusionCulling;  
+                set => m_OcclusionCulling = value;
             }
         }
 
@@ -997,8 +1028,8 @@ namespace UnityEditor
 
         public CameraSettings cameraSettings
         {
-            get { return m_CameraSettings; }
-            set { m_CameraSettings = value; }
+            get => m_CameraSettings;
+            set => m_CameraSettings = value;
         }
 
         internal Vector2 GetDynamicClipPlanes()
@@ -1010,7 +1041,7 @@ namespace UnityEditor
 
         internal SceneViewGrid sceneViewGrids
         {
-            get { return m_Grid; }
+            get => m_Grid;
         }
 
         public void ResetCameraSettings()
@@ -1635,6 +1666,7 @@ namespace UnityEditor
             }
         }
 
+        [RequiredByNativeCode]
         internal static Camera GetLastActiveSceneViewCamera()
         {
             SceneView view = lastActiveSceneView;
@@ -2363,7 +2395,7 @@ namespace UnityEditor
                 {
                     isPingingObject = false;
                     alphaMultiplier = 0;
-                    submeshOutlineMaterialId = 0;
+                    submeshOutlineMaterialId = EntityId.None;
                 }
                 else
                 {
@@ -2599,7 +2631,7 @@ namespace UnityEditor
                 Tools.InvalidateHandlePosition(); // Some cases that should invalidate the cached position are not handled correctly yet so we refresh it once per frame
             }
 
-            sceneViewGrids.UpdateGridColor();
+            sceneViewGrids.OnGUI();
 
             Color origColor = GUI.color;
             var origLabelWidth = EditorGUIUtility.labelWidth;
@@ -3675,44 +3707,8 @@ namespace UnityEditor
             return allHandled;
         }
 
-        internal static bool CanDoDrag(ICollection<EntityId> entityIds)
-        {
-            if (entityIds.Count < 2) return true;
-
-            int gameObjectCount = 0;
-            int assetCount = 0;
-            int materialCount = 0;
-
-            // Only allow dragging multiple GameObjects, or multiple non-GameObjects, but not mixed sets.
-            // For example when dragging GameObjects and Materials would sometimes apply material to
-            // already existing scene object, and other times to the object being spawned. It depends
-            // on the order in which the user selects those assets. We decided it was not an intuitive
-            // behavior and it should just not be allowed.
-            // Also we don't want multiple materials be dropped into scene because there is no case
-            // where we can handle it in a way that benefit the user. For example multiple skybox
-            // materials doesn't make sense and dropping multiple materials onto geometry will only
-            // drop the first material on the hovered material entry.
-            foreach (var entityId in entityIds)
-            {
-                var obj = InternalEditorUtility.GetObjectFromEntityId(entityId);
-                if (obj is GameObject)
-                {
-                    gameObjectCount++;
-                }
-                else
-                {
-                    assetCount++;
-                    if (obj is Material)
-                    {
-                        materialCount++;
-                    }
-                }
-
-                if (gameObjectCount > 0 && assetCount > 0 || materialCount > 1) return false;
-            }
-
-            return true;
-        }
+        [FreeFunction("SceneViewBindings::CanDoDrag")]
+        internal static extern bool CanDoDrag(ReadOnlySpan<EntityId> entityIds);
 
         internal void HandleDragging(Event evt)
         {
@@ -4347,6 +4343,10 @@ namespace UnityEditor
             HandleUtility.ignoreRaySnapObjects = null;
             Tools.vertexDragging = false;
             Tools.handleOffset = Vector3.zero;
+            
+            var gridSettings = GridSettings.instance;
+            gridSettings.rotation = Quaternion.identity;
+            gridSettings.position = Vector3.zero;
         }
 
         public static CameraMode AddCameraMode(string name, string section)
@@ -4408,7 +4408,7 @@ namespace UnityEditor
 
         internal void ResetGridPivot()
         {
-            sceneViewGrids.SetAllGridsPivot(Vector3.zero);
+            sceneViewGrids.SetAllGridsOffsetAlongAxis(Vector3.zero);
         }
 
         void CopyLastActiveSceneViewSettings()

@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
@@ -94,7 +93,7 @@ namespace Unity.GraphToolkit.Editor
             {
                 Rect otherBoundingRect = otherRect.Item1;
                 List<Model> otherBoundingRectElements = otherRect.Item2;
-                if (otherBoundingRectElements.Any(element => IsOnPlacemats(element.GetView<GraphElement>(m_GraphView), placematsOnBoundingRect)))
+                if (otherBoundingRectElements.HasAny(element => IsOnPlacemats(element.GetView<GraphElement>(m_GraphView), placematsOnBoundingRect)))
                 {
                     AdjustBoundingRect(ref boundingRect, otherBoundingRect);
                     elementsOnBoundingRect.AddRange(otherBoundingRectElements);
@@ -185,7 +184,7 @@ namespace Unity.GraphToolkit.Editor
 
         static bool IsOnPlacemats(GraphElement element, List<Placemat> placemats)
         {
-            return placemats.Any(placemat => !element.Equals(placemat) && element.layout.Overlaps(placemat.layout));
+            return placemats.HasAny(placemat => !element.Equals(placemat) && element.layout.Overlaps(placemat.layout));
         }
     }
 }

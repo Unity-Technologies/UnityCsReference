@@ -63,7 +63,8 @@ namespace UnityEngine.UIElements.HierarchyV2
             {
                 if (!Mathf.Approximately(m_ContainerOffset.x, value.x) || !Mathf.Approximately(m_ContainerOffset.y, value.y))
                 {
-                    m_ContainerOffset = value;
+                    m_ContainerOffset.x = horizontalScroller.highValue > 0 && value.x >= 0 ? value.x : 0;
+                    m_ContainerOffset.y = verticalScroller.highValue > 0 && value.y >= 0 ? value.y : 0;
                     m_Container.style.translate = new Vector3(-m_ContainerOffset.x, -m_ContainerOffset.y, 0);
                 }
             }
@@ -102,10 +103,12 @@ namespace UnityEngine.UIElements.HierarchyV2
             AddToClassList(ussClassName);
             m_Viewport = new VisualElement();
             m_Viewport.AddToClassList(contentViewportUssClassName);
+            m_Viewport.RegisterCallback<GeometryChangedEvent>(OnGeometryChanged);
 
             m_Container = new VisualElement();
             m_Container.AddToClassList(containerUssClassName);
             m_Container.RegisterCallback<WheelEvent>(OnScrollWheel);
+            m_Container.RegisterCallback<GeometryChangedEvent>(OnGeometryChanged);
 
             verticalScroller = new CollectionViewScroller();
             verticalScroller.AddToClassList(verticalScrollerUssClassName);
@@ -132,6 +135,22 @@ namespace UnityEngine.UIElements.HierarchyV2
         void OnScrollWheel(WheelEvent evt)
         {
             verticalScroller.value += evt.delta.y * (verticalScroller.lowValue < verticalScroller.highValue ? 1f : -1f) * k_MouseScrollFactor;
+        }
+
+        void OnGeometryChanged(GeometryChangedEvent evt)
+        {
+            if (evt.oldRect.size == evt.newRect.size)
+            {
+                return;
+            }
+
+            AdjustScroller();
+        }
+
+        void AdjustScroller()
+        {
+            horizontalScroller.Adjust();
+            verticalScroller.Adjust();
         }
     }
 }

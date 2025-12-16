@@ -55,6 +55,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 localization = LocalizationDatabase.GetCulture(LocalizationDatabase.currentEditorLanguage);
 
             var assembliesToScanForTypeDB = new HashSet<string>();
+            var unityAssembliesToScanForLifecycle = new HashSet<string>();
             var searchPaths = new HashSet<string>(BuildPlayerDataGenerator.GetStaticSearchPaths(buildTarget));
             EditorScriptCompilationOptions options;
 
@@ -97,6 +98,16 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 }
             }
 
+            foreach (var a in editorCompilation.GetUnityAssemblies())
+            {
+                if (!a.Flags.HasFlag(AssemblyFlags.EditorOnly) && !assembliesToScanForTypeDB.Contains(a.Path))
+                {
+                    var path = a.Path;
+                    unityAssembliesToScanForLifecycle.Add(path);
+                    searchPaths.Add(Path.GetDirectoryName(path));
+                }
+            }
+
             return new ScriptCompilationData()
             {
                 OutputDirectory = outputDirectory,
@@ -113,7 +124,16 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 ExtractRuntimeInitializeOnLoads = !buildingForEditor,
                 AssembliesToScanForTypeDB = assembliesToScanForTypeDB.OrderBy(p => p).ToArray(),
                 SearchPaths = searchPaths.OrderBy(p => p).ToArray(),
-                EmitInfoForScriptUpdater = enableScriptUpdater
+                UnityAssembliesToScanForLifecycle = unityAssembliesToScanForLifecycle.ToArray(),
+                EmitInfoForScriptUpdater = enableScriptUpdater,
+                TargetingPacks = new[]
+                {
+                    new TargetingPackData
+                    {
+                        Name = "Unity.BCLExtensions.Netstandard21",
+                        Path = BCLExtensions.NetstandardTargetingPackDirectory()
+                    }
+                }
             };
         }
 

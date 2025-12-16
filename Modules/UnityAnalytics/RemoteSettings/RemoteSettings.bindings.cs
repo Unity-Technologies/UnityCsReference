@@ -23,6 +23,9 @@ namespace UnityEngine
         public static event Action BeforeFetchFromServer;
         public static event Action<bool, bool, int> Completed;
 
+#pragma warning disable RS0030 // This [Preserve] usage will be addressed by https://jira.unity3d.com/browse/UUM-127673
+        [Preserve]
+#pragma warning restore RS0030
         [RequiredByNativeCode]
         internal static void RemoteSettingsUpdated(bool wasLastUpdatedFromServer)
         {
@@ -31,6 +34,9 @@ namespace UnityEngine
                 handler();
         }
 
+#pragma warning disable RS0030 // This [Preserve] usage be addressed by https://jira.unity3d.com/browse/UUM-127673
+        [Preserve]
+#pragma warning restore RS0030
         [RequiredByNativeCode]
         internal static void RemoteSettingsBeforeFetchFromServer()
         {
@@ -39,6 +45,9 @@ namespace UnityEngine
                 handler();
         }
 
+#pragma warning disable RS0030 // This [Preserve] usage be addressed by https://jira.unity3d.com/browse/UUM-127673
+        [Preserve]
+#pragma warning restore RS0030
         [RequiredByNativeCode]
         internal static void RemoteSettingsUpdateCompleted(bool wasLastUpdatedFromServer, bool settingsChanged, int response)
         {
@@ -176,6 +185,9 @@ namespace UnityEngine
         [ThreadSafe]
         internal static extern void Internal_Destroy(IntPtr ptr);
 
+#pragma warning disable RS0030 // This [Preserve] usage be addressed by https://jira.unity3d.com/browse/UUM-127673
+        [Preserve]
+#pragma warning restore RS0030
         [RequiredByNativeCode]
         internal static void RemoteConfigSettingsUpdated(RemoteConfigSettings rcs, bool wasLastUpdatedFromServer)
         {
@@ -275,6 +287,9 @@ namespace UnityEngine
 
     internal static class RemoteConfigSettingsHelper
     {
+#pragma warning disable RS0030 // This [Preserve] usage will be addressed by https://jira.unity3d.com/browse/UUM-127673
+        [Preserve]
+#pragma warning restore RS0030
         [RequiredByNativeCode]
         internal enum Tag
         {

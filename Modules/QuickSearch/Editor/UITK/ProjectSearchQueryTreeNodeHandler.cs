@@ -10,7 +10,7 @@ using UnityEngine.UIElements;
 
 namespace UnityEditor.Search
 {
-    partial class ProjectSearchQueryTreeNodeHandler : BaseSearchQueryNodeHandler
+    class ProjectSearchQueryTreeNodeHandler : BaseSearchQueryNodeHandler
     {
         class ProjectEntryInfo
         {
@@ -54,6 +54,7 @@ namespace UnityEditor.Search
 
         Dictionary<string, ProjectEntryInfo> m_ProjectEntries = new();
 
+        #region Overrides
         public override string Name => m_RootName;
         public override int HandlerId => HashingUtils.GetHashCode($"{nameof(ProjectSearchQueryTreeNodeHandler)}_{m_BaseFolder}");
 
@@ -61,7 +62,7 @@ namespace UnityEditor.Search
         {
             m_IsEditorResources = isEditorResources;
             m_BaseFolder = isEditorResources ? baseFolder.ToLowerInvariant() : baseFolder;
-            m_RootName = string.IsNullOrEmpty(rootName) ? Path.GetFileName(m_BaseFolder) : rootName;
+            m_RootName = string.IsNullOrEmpty(rootName) ? Utils.GetFileName(m_BaseFolder) : rootName;
 
             if (!isEditorResources && !Directory.Exists(m_BaseFolder))
             {
@@ -69,6 +70,23 @@ namespace UnityEditor.Search
             }
 
             SearchQueryAsset.ListenToAssetChanges();
+
+            Dispatcher.On(SearchEvent.ProjectQueryAdded, HandleProjectQueriesAdded, SearchEventManager.GetSearchEventHandlerHashCode(HandleProjectQueriesAdded));
+            Dispatcher.On(SearchEvent.ProjectQueryChanged, HandleProjectQueriesChanged, SearchEventManager.GetSearchEventHandlerHashCode(HandleProjectQueriesChanged));
+            Dispatcher.On(SearchEvent.ProjectQueryRemoved, HandleProjectQueriesRemoved, SearchEventManager.GetSearchEventHandlerHashCode(HandleProjectQueriesRemoved));
+            Dispatcher.On(SearchEvent.PostProcessProjectQueryAdded, HandleProjectQueriesAdded, SearchEventManager.GetSearchEventHandlerHashCode(HandleProjectQueriesAdded));
+            Dispatcher.On(SearchEvent.PostProcessProjectQueryMoved, HandleProjectQueriesMoved, SearchEventManager.GetSearchEventHandlerHashCode(HandleProjectQueriesMoved));
+            Dispatcher.On(SearchEvent.PostProcessProjectQueryRemoved, HandlePostProcessProjectQueriesRemoved, SearchEventManager.GetSearchEventHandlerHashCode(HandlePostProcessProjectQueriesRemoved));
+        }
+
+        public override void Dispose()
+        {
+            Dispatcher.Off(SearchEvent.ProjectQueryAdded, HandleProjectQueriesAdded);
+            Dispatcher.Off(SearchEvent.ProjectQueryChanged, HandleProjectQueriesChanged);
+            Dispatcher.Off(SearchEvent.ProjectQueryRemoved, HandleProjectQueriesRemoved);
+            Dispatcher.Off(SearchEvent.PostProcessProjectQueryAdded, HandleProjectQueriesAdded);
+            Dispatcher.Off(SearchEvent.PostProcessProjectQueryMoved, HandleProjectQueriesMoved);
+            Dispatcher.Off(SearchEvent.PostProcessProjectQueryRemoved, HandlePostProcessProjectQueriesRemoved);
         }
 
         public override void BuildRoots(SearchContext context, string queryFilter = null)
@@ -86,24 +104,7 @@ namespace UnityEditor.Search
             BuildRootItem();
         }
 
-        void BuildRootItem()
-        {
-            if (!m_ProjectEntries.TryGetValue("/", out var rootEntry) && m_ProjectEntries.Count > 0)
-                throw new ArgumentException($"Cannot find root entry for {m_BaseFolder} - {m_RootName} - Resources:{m_IsEditorResources}");
-
-            m_RootItem = rootEntry?.Children.Count > 0 ? BuildItem(rootEntry) : null;
-        }
-
-        static TreeViewItemData<SearchQueryNodeData> BuildItem(ProjectEntryInfo entry)
-        {
-            var childItems = new List<TreeViewItemData<SearchQueryNodeData>>();
-            foreach (var child in entry.Children)
-            {
-                childItems.Add(BuildItem(child));
-            }
-            return SearchQueryPanelTreeView.CreateItemData(entry.Id, entry.Node, childItems);
-        }
-
+        
         public override bool SupportsRename(ISearchQuery query)
         {
             // If Builtins -> no rename allowed
@@ -127,31 +128,224 @@ namespace UnityEditor.Search
             // If from project: use the Project Browser to rename.
         }
 
-        public override void AddQuery(ISearchQuery query)
+        public override void PopulateContextualMenu(TreeView tree, SearchContext context, SearchQueryTreeViewItem item, DropdownMenu menu)
+        {
+            var query = GetQuery(item.Data.TreeId);
+            if (query == null)
+                return;
+
+            var queryAsset = (SearchQueryAsset)query;
+
+            if (m_IsEditorResources)
+            {
+                // Editor resources are read-only - only allow to open in new window.
+                menu.AppendAction(k_OpenInNewWindowMenuLabel, (action) =>
+                {
+                    SearchQuery.Open(query, SearchFlags.None);
+                });
+
+                return;
+            }
+
+            base.PopulateContextualMenu(tree, context, item, menu);
+
+            menu.AppendAction(k_SetIconMenuLabel, (_) => SearchUtils.ShowIconPicker((newIcon, canceled) =>
+            {
+                if (canceled)
+                    return;
+                query.thumbnail = newIcon;
+                EditorUtility.SetDirty(queryAsset);
+                item.Emit(SearchEvent.ProjectQueryChanged, query);
+            }));
+            menu.AppendAction(k_SearchTemplateMenuLabel, (_) => queryAsset.isSearchTemplate = !queryAsset.isSearchTemplate, action =>
+            {
+                return query.isSearchTemplate ? DropdownMenuAction.Status.Checked : DropdownMenuAction.Status.Normal;
+            });
+            menu.AppendAction(k_EditInInspectorMenuLabel, (_) => Selection.activeObject = queryAsset);
+            menu.AppendAction(Utils.GetRevealInFinderLabel(), (_) => EditorUtility.RevealInFinder(query.filePath));
+            menu.AppendSeparator();
+            menu.AppendAction(k_DeleteMenuLabel, (_) =>
+            {
+                if (item.viewState.activeQuery == query)
+                    item.viewState.activeQuery = null;
+                SearchQueryAsset.RemoveQuery(queryAsset);
+            });
+        }
+        #endregion
+
+        void BuildRootItem()
+        {
+            if (!m_ProjectEntries.TryGetValue("/", out var rootEntry) && m_ProjectEntries.Count > 0)
+                throw new ArgumentException($"Cannot find root entry for {m_BaseFolder} - {m_RootName} - Resources:{m_IsEditorResources}");
+
+            m_RootItem = rootEntry?.Children.Count > 0 ? BuildItem(rootEntry) : null;
+        }
+
+        static TreeViewItemData<SearchQueryNodeData> BuildItem(ProjectEntryInfo entry)
+        {
+            var childItems = new List<TreeViewItemData<SearchQueryNodeData>>();
+            foreach (var child in entry.Children)
+            {
+                childItems.Add(BuildItem(child));
+            }
+            return SearchQueryPanelTreeView.CreateItemData(entry.Id, entry.Node, childItems);
+        }
+
+        bool IsQueryUnderRoot(ISearchQuery query)
+        {
+            return !m_IsEditorResources && query is SearchQueryAsset sqa && sqa.filePath.StartsWith(m_BaseFolder);
+        }
+
+        bool IsQueryOwned(ISearchQuery query)
+        {
+            return query is SearchQueryAsset sqa && m_ProjectEntries.ContainsKey(sqa.filePath);
+        }
+
+        void HandleProjectQueriesAdded(ISearchEvent evt)
+        {
+            var queries = SearchQueryPanelTreeUtils.ParseQueries(evt);
+            if (queries.GetCount() <= 0)
+                return;
+            var notifyQueryChanged = false;
+            foreach (var query in queries)
+            {
+                if (!IsQueryUnderRoot(query))
+                    continue;
+                AddQuery(query);
+                notifyQueryChanged = true;
+            }
+
+            if (notifyQueryChanged)
+                NotifyQueryListChanged();
+        }
+
+        void HandleProjectQueriesChanged(ISearchEvent evt)
+        {
+            var queries = SearchQueryPanelTreeUtils.ParseQueries(evt);
+            if (queries.GetCount() <= 0)
+                return;
+            var notifyQueryChanged = false;
+            foreach (var query in queries)
+            {
+                if (!IsQueryOwned(query))
+                    continue;
+                UpdateQuery(query);
+                notifyQueryChanged = true;
+            }
+            if (notifyQueryChanged)
+                NotifyQueryListChanged();
+        }
+
+        void HandleProjectQueriesMoved(ISearchEvent evt)
+        {
+            var queryPaths = SearchQueryPanelTreeUtils.ParseQueryPaths(evt);
+            if (queryPaths.GetCount() <= 0)
+                return;
+            var queries = new List<SearchQueryAsset>();
+            foreach (var queryPath in queryPaths)
+            {
+                var query = AssetDatabase.LoadAssetAtPath<SearchQueryAsset>(queryPath);
+                if (query == null)
+                    continue;
+                queries.Add(query);
+            }
+
+            if (queries.Count == 0)
+                return;
+
+            var notifyQueryChanged = false;
+            foreach (var query in queries)
+            {
+                if (m_QueryIdLookup.ContainsKey(query.GetTreeId()))
+                {
+                    notifyQueryChanged = true;
+                    RemoveQuery(query);
+                }
+
+                if (IsQueryUnderRoot(query))
+                {
+                    AddQuery(query);
+                    notifyQueryChanged = true;
+                }
+            }
+
+            if (notifyQueryChanged)
+                NotifyQueryListChanged();
+        }
+
+        void HandleProjectQueriesRemoved(ISearchEvent evt)
+        {
+            var queryIds = SearchQueryPanelTreeUtils.ParseQueryIds(evt);
+            if (queryIds.GetCount() <= 0)
+                return;
+
+            var notifyQueryChanged = false;
+            foreach (var queryId in queryIds)
+            {
+                var queryIdHash = HashingUtils.GetHashCode(queryId);
+                notifyQueryChanged = RemoveQuery(queryIdHash) || notifyQueryChanged;
+            }
+
+            if (notifyQueryChanged)
+                NotifyQueryListChanged();
+        }
+
+        void HandlePostProcessProjectQueriesRemoved(ISearchEvent evt)
+        {
+            var queryPaths = SearchQueryPanelTreeUtils.ParseQueryPaths(evt);
+            if (queryPaths.GetCount() <= 0)
+                return;
+
+            var notifyQueryChanged = false;
+            foreach (var queryPath in queryPaths)
+            {
+                var removedId = RemoveQuery(queryPath);
+                notifyQueryChanged = removedId != null || notifyQueryChanged;
+            }
+
+            if (notifyQueryChanged)
+                NotifyQueryListChanged();
+        }
+
+        private void AddQuery(ISearchQuery query)
         {
             var treeId = query.GetTreeId();
             if (m_QueryIdLookup.ContainsKey(treeId) || string.IsNullOrEmpty(query.filePath))
                 return;
 
-            var queryFolder = Path.GetDirectoryName(query.filePath)?.Replace("\\", "/");
+            var queryFolder = Utils.CleanPath(Path.GetDirectoryName(query.filePath));
             if (queryFolder != null)
             {
                 var folder = queryFolder.Replace(m_BaseFolder, "");
                 var tokens = folder.Split('/');
-                var path = "/";
+                var path = "";
 
                 ProjectEntryInfo parentEntry = null;
                 foreach(var t in tokens)
                 {
                     var isRoot = t == "";
                     var entryName = isRoot ? m_RootName : t;
+                    if (parentEntry != null && parentEntry.Path == "/" && m_BaseFolder == "Packages")
+                    {
+                        // Convert the raw package name to its nice display name:
+                        var basePackageFolder = $"Packages/{t}";
+                        var packageInfo = PackageManager.PackageInfo.FindForAssetPath(basePackageFolder);
+                        if (packageInfo != null && !string.IsNullOrEmpty(packageInfo.displayName))
+                        {
+                            entryName = packageInfo.displayName;
+                        }
+                    }
 
-                    path = Path.Combine(path, t);
+                    if (isRoot)
+                        path = "/";
+                    else if (parentEntry != null && parentEntry.Path == "/")
+                        path += t;
+                    else
+                        path += $"/{t}";
 
                     if (!m_ProjectEntries.TryGetValue(path, out var entry))
                     {
                         var projectEntryId = HashingUtils.GetHashCode(m_BaseFolder + path); // We need a unique id for each entry
-
                         entry = new ProjectEntryInfo { Id = projectEntryId, Path = path, Node = new SearchQueryNodeData(isRoot: isRoot, HandlerId, name: entryName) };
                         AddProjectEntry(entry, parentEntry);
                     }
@@ -169,7 +363,7 @@ namespace UnityEditor.Search
             }
         }
 
-        void AddProjectEntry(ProjectEntryInfo entry, ProjectEntryInfo parentEntry = null)
+        private void AddProjectEntry(ProjectEntryInfo entry, ProjectEntryInfo parentEntry = null)
         {
             if (parentEntry != null)
             {
@@ -187,7 +381,7 @@ namespace UnityEditor.Search
             }
         }
 
-        public override void UpdateQuery(ISearchQuery query)
+        private void UpdateQuery(ISearchQuery query)
         {
             var treeId = query.GetTreeId();
 
@@ -198,13 +392,13 @@ namespace UnityEditor.Search
             AddQuery(query);
         }
 
-        public override void RemoveQuery(ISearchQuery query)
+        private void RemoveQuery(ISearchQuery query)
         {
             var treeId = query.GetTreeId();
             RemoveQuery(treeId);
         }
 
-        public override void RemoveQuery(int treeId)
+        private bool RemoveQuery(int treeId)
         {
             if (m_QueryIdLookup.Remove(treeId))
             {
@@ -213,13 +407,15 @@ namespace UnityEditor.Search
                     if (entry.Id == treeId)
                     {
                         RemoveProjectEntry(entry);
-                        break;
+                        return true;
                     }
                 }
             }
+
+            return false;
         }
 
-        public string RemoveQuery(string queryPath)
+        private string RemoveQuery(string queryPath)
         {
             if (m_ProjectEntries.TryGetValue(queryPath, out var queryEntry))
             {
@@ -231,7 +427,7 @@ namespace UnityEditor.Search
             return null;
         }
 
-        void RemoveProjectEntry(ProjectEntryInfo entry)
+        private void RemoveProjectEntry(ProjectEntryInfo entry)
         {
             if (m_RootItem != null)
                 RemoveTreeViewItem(m_RootItem.Value, entry.Id);
@@ -280,50 +476,6 @@ namespace UnityEditor.Search
                 }
                 RemoveTreeViewItem(child, itemId);
             }
-        }
-
-        public override void PopulateContextualMenu(TreeView tree, SearchContext context, SearchQueryTreeViewItem item, DropdownMenu menu)
-        {
-            var query = GetQuery(item.Data.TreeId);
-            if (query == null)
-                return;
-
-            var queryAsset = (SearchQueryAsset)query;
-
-            if (m_IsEditorResources)
-            {
-                // Editor resources are read-only - only allow to open in new window.
-                menu.AppendAction(k_OpenInNewWindowMenuLabel, (action) =>
-                {
-                    SearchQuery.Open(query, SearchFlags.None);
-                });
-
-                return;
-            }
-
-            base.PopulateContextualMenu(tree, context, item, menu);
-
-            menu.AppendAction(k_SetIconMenuLabel, (_) => SearchUtils.ShowIconPicker((newIcon, canceled) =>
-            {
-                if (canceled)
-                    return;
-                query.thumbnail = newIcon;
-                EditorUtility.SetDirty(queryAsset);
-                item.Emit(SearchEvent.ProjectQueryChanged, query);
-            }));
-            menu.AppendAction(k_SearchTemplateMenuLabel, (_) => queryAsset.isSearchTemplate = !queryAsset.isSearchTemplate, action =>
-            {
-                return query.isSearchTemplate ? DropdownMenuAction.Status.Checked : DropdownMenuAction.Status.Normal;
-            });
-            menu.AppendAction(k_EditInInspectorMenuLabel, (_) => Selection.activeObject = queryAsset);
-            menu.AppendAction(Utils.GetRevealInFinderLabel(), (_) => EditorUtility.RevealInFinder(query.filePath));
-            menu.AppendSeparator();
-            menu.AppendAction(k_DeleteMenuLabel, (_) =>
-            {
-                if (item.viewState.activeQuery == query)
-                    item.viewState.activeQuery = null;
-                SearchQueryAsset.RemoveQuery(queryAsset);
-            });
         }
 
         IEnumerable<ISearchQuery> EnumerateQueries(string queryFilter = null)

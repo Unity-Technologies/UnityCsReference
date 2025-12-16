@@ -45,7 +45,8 @@ namespace UnityEngine.UIElements
         private StylePropertyData<StyleColor, Color> m_Color;
         private StylePropertyData<StyleCursor, Cursor> m_Cursor;
         private StylePropertyData<StyleEnum<DisplayStyle>, DisplayStyle> m_Display;
-        private StylePropertyData<StyleList<FilterFunction>, List<FilterFunction>> m_Filter;
+        private StylePropertyData<StyleList<FilterFunction>, List<FilterFunction>> m_Filter = new()
+        {computedValueComparer = ListEqualityComparer<List<FilterFunction>, FilterFunction>.Default};
         private StylePropertyData<StyleLength, Length> m_FlexBasis;
         private StylePropertyData<StyleEnum<FlexDirection>, FlexDirection> m_FlexDirection;
         private StylePropertyData<StyleFloat, float> m_FlexGrow;
@@ -78,10 +79,14 @@ namespace UnityEngine.UIElements
         private StylePropertyData<StyleTextShadow, TextShadow> m_TextShadow;
         private StylePropertyData<StyleLength, Length> m_Top;
         private StylePropertyData<StyleTransformOrigin, TransformOrigin> m_TransformOrigin;
-        private StylePropertyData<StyleList<TimeValue>, List<TimeValue>> m_TransitionDelay;
-        private StylePropertyData<StyleList<TimeValue>, List<TimeValue>> m_TransitionDuration;
-        private StylePropertyData<StyleList<StylePropertyName>, List<StylePropertyName>> m_TransitionProperty;
-        private StylePropertyData<StyleList<EasingFunction>, List<EasingFunction>> m_TransitionTimingFunction;
+        private StylePropertyData<StyleList<TimeValue>, List<TimeValue>> m_TransitionDelay = new()
+        {computedValueComparer = ListEqualityComparer<List<TimeValue>, TimeValue>.Default};
+        private StylePropertyData<StyleList<TimeValue>, List<TimeValue>> m_TransitionDuration = new()
+        {computedValueComparer = ListEqualityComparer<List<TimeValue>, TimeValue>.Default};
+        private StylePropertyData<StyleList<StylePropertyName>, List<StylePropertyName>> m_TransitionProperty = new()
+        {computedValueComparer = ListEqualityComparer<List<StylePropertyName>, StylePropertyName>.Default};
+        private StylePropertyData<StyleList<EasingFunction>, List<EasingFunction>> m_TransitionTimingFunction = new()
+        {computedValueComparer = ListEqualityComparer<List<EasingFunction>, EasingFunction>.Default};
         private StylePropertyData<StyleTranslate, Translate> m_Translate;
         private StylePropertyData<StyleColor, Color> m_UnityBackgroundImageTintColor;
         private StylePropertyData<StyleEnum<EditorTextRenderingMode>, EditorTextRenderingMode> m_UnityEditorTextRenderingMode;
@@ -1412,7 +1417,7 @@ namespace UnityEngine.UIElements
             alignSelf = ComputeStyleProperty(StylePropertyId.AlignSelf, nameof(alignSelf), element.style.alignSelf, element.computedStyle.alignSelf, in context);
             aspectRatio = ComputeStyleProperty(StylePropertyId.AspectRatio, nameof(aspectRatio), element.style.aspectRatio, element.computedStyle.aspectRatio, in context);
             backgroundColor = ComputeStyleProperty(StylePropertyId.BackgroundColor, nameof(backgroundColor), element.style.backgroundColor, element.computedStyle.backgroundColor, in context);
-            backgroundImage = ComputeStyleProperty(StylePropertyId.BackgroundImage, nameof(backgroundImage), element.style.backgroundImage, element.computedStyle.backgroundImage, in context);
+            backgroundImage = ComputeStyleProperty(StylePropertyId.BackgroundImage, nameof(backgroundImage), element.style.backgroundImage, Background.From(element.computedStyle.backgroundImage), in context);
             backgroundPositionX = ComputeStyleProperty(StylePropertyId.BackgroundPositionX, nameof(backgroundPositionX), element.style.backgroundPositionX, element.computedStyle.backgroundPositionX, in context);
             backgroundPositionY = ComputeStyleProperty(StylePropertyId.BackgroundPositionY, nameof(backgroundPositionY), element.style.backgroundPositionY, element.computedStyle.backgroundPositionY, in context);
             backgroundRepeat = ComputeStyleProperty(StylePropertyId.BackgroundRepeat, nameof(backgroundRepeat), element.style.backgroundRepeat, element.computedStyle.backgroundRepeat, in context);
@@ -1433,7 +1438,7 @@ namespace UnityEngine.UIElements
             color = ComputeStyleProperty(StylePropertyId.Color, nameof(color), element.style.color, element.computedStyle.color, in context);
             cursor = ComputeStyleProperty(StylePropertyId.Cursor, nameof(cursor), element.style.cursor, element.computedStyle.cursor, in context);
             display = ComputeStyleProperty(StylePropertyId.Display, nameof(display), element.style.display, element.computedStyle.display, in context);
-            filter = ComputeStyleProperty(StylePropertyId.Filter, nameof(filter), element.style.filter, element.computedStyle.filter, in context);
+            filter = ComputeStyleProperty(StylePropertyId.Filter, nameof(filter), element.style.filter, element.computedStyle.filter, in context, ListEqualityComparer<List<FilterFunction>, FilterFunction>.Default);
             flexBasis = ComputeStyleProperty(StylePropertyId.FlexBasis, nameof(flexBasis), element.style.flexBasis, element.computedStyle.flexBasis, in context);
             flexDirection = ComputeStyleProperty(StylePropertyId.FlexDirection, nameof(flexDirection), element.style.flexDirection, element.computedStyle.flexDirection, in context);
             flexGrow = ComputeStyleProperty(StylePropertyId.FlexGrow, nameof(flexGrow), element.style.flexGrow, element.computedStyle.flexGrow, in context);
@@ -1466,10 +1471,10 @@ namespace UnityEngine.UIElements
             textShadow = ComputeStyleProperty(StylePropertyId.TextShadow, nameof(textShadow), element.style.textShadow, element.computedStyle.textShadow, in context);
             top = ComputeStyleProperty(StylePropertyId.Top, nameof(top), element.style.top, element.computedStyle.top, in context);
             transformOrigin = ComputeStyleProperty(StylePropertyId.TransformOrigin, nameof(transformOrigin), element.style.transformOrigin, element.computedStyle.transformOrigin, in context);
-            transitionDelay = ComputeStyleProperty(StylePropertyId.TransitionDelay, nameof(transitionDelay), element.style.transitionDelay, element.computedStyle.transitionDelay, in context);
-            transitionDuration = ComputeStyleProperty(StylePropertyId.TransitionDuration, nameof(transitionDuration), element.style.transitionDuration, element.computedStyle.transitionDuration, in context);
-            transitionProperty = ComputeStyleProperty(StylePropertyId.TransitionProperty, nameof(transitionProperty), element.style.transitionProperty, element.computedStyle.transitionProperty, in context);
-            transitionTimingFunction = ComputeStyleProperty(StylePropertyId.TransitionTimingFunction, nameof(transitionTimingFunction), element.style.transitionTimingFunction, element.computedStyle.transitionTimingFunction, in context);
+            transitionDelay = ComputeStyleProperty(StylePropertyId.TransitionDelay, nameof(transitionDelay), element.style.transitionDelay, element.computedStyle.transitionDelay, in context, ListEqualityComparer<List<TimeValue>, TimeValue>.Default);
+            transitionDuration = ComputeStyleProperty(StylePropertyId.TransitionDuration, nameof(transitionDuration), element.style.transitionDuration, element.computedStyle.transitionDuration, in context, ListEqualityComparer<List<TimeValue>, TimeValue>.Default);
+            transitionProperty = ComputeStyleProperty(StylePropertyId.TransitionProperty, nameof(transitionProperty), element.style.transitionProperty, element.computedStyle.transitionProperty, in context, ListEqualityComparer<List<StylePropertyName>, StylePropertyName>.Default);
+            transitionTimingFunction = ComputeStyleProperty(StylePropertyId.TransitionTimingFunction, nameof(transitionTimingFunction), element.style.transitionTimingFunction, element.computedStyle.transitionTimingFunction, in context, ListEqualityComparer<List<EasingFunction>, EasingFunction>.Default);
             translate = ComputeStyleProperty(StylePropertyId.Translate, nameof(translate), element.style.translate, element.computedStyle.translate, in context);
             unityBackgroundImageTintColor = ComputeStyleProperty(StylePropertyId.UnityBackgroundImageTintColor, nameof(unityBackgroundImageTintColor), element.style.unityBackgroundImageTintColor, element.computedStyle.unityBackgroundImageTintColor, in context);
             unityEditorTextRenderingMode = ComputeStyleProperty(StylePropertyId.UnityEditorTextRenderingMode, nameof(unityEditorTextRenderingMode), element.style.unityEditorTextRenderingMode, element.computedStyle.unityEditorTextRenderingMode, in context);

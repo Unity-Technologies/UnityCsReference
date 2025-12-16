@@ -16,7 +16,7 @@ namespace UnityEngine
             if (pointsToKeep == null)
                 throw new ArgumentNullException("pointsToKeep");
 
-            GeneratePointsToKeep3D(points, tolerance, pointsToKeep);
+            GeneratePointsToKeep3D(NoAllocHelpers.CreateReadOnlySpan(points), tolerance, pointsToKeep);
         }
 
         public static void Simplify(List<Vector3> points, float tolerance, List<Vector3> simplifiedPoints)
@@ -26,7 +26,7 @@ namespace UnityEngine
             if (simplifiedPoints == null)
                 throw new ArgumentNullException("simplifiedPoints");
 
-            GenerateSimplifiedPoints3D(points, tolerance, simplifiedPoints);
+            GenerateSimplifiedPoints3D(NoAllocHelpers.CreateReadOnlySpan(points), tolerance, simplifiedPoints);
         }
 
         public static void Simplify(List<Vector2> points, float tolerance, List<int> pointsToKeep)
@@ -36,7 +36,7 @@ namespace UnityEngine
             if (pointsToKeep == null)
                 throw new ArgumentNullException("pointsToKeep");
 
-            GeneratePointsToKeep2D(points, tolerance, pointsToKeep);
+            GeneratePointsToKeep2D(NoAllocHelpers.CreateReadOnlySpan(points), tolerance, pointsToKeep);
         }
 
         public static void Simplify(List<Vector2> points, float tolerance, List<Vector2> simplifiedPoints)
@@ -46,7 +46,7 @@ namespace UnityEngine
             if (simplifiedPoints == null)
                 throw new ArgumentNullException("simplifiedPoints");
 
-            GenerateSimplifiedPoints2D(points, tolerance, simplifiedPoints);
+            GenerateSimplifiedPoints2D(NoAllocHelpers.CreateReadOnlySpan(points), tolerance, simplifiedPoints);
         }
     }
 }

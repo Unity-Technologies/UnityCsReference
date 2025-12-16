@@ -42,6 +42,21 @@ namespace UnityEngine
         }
 
         [RequiredByNativeCode]
+        static Type GetOldestAncestorExtendingANativeClass(Type type)
+        {
+            Type currentType = type;
+            Type retVal = null;
+            while (currentType != null && !currentType.Equals(typeof(Component)))
+            {
+                if (currentType.GetCustomAttributes(typeof(ExtensionOfNativeClassAttribute), true).Length != 0)
+                    retVal = currentType;
+                currentType = currentType.BaseType;
+            }
+
+            return retVal;
+        }
+
+        [RequiredByNativeCode]
         static Type[] GetRequiredComponents(Type klass)
         {
             // Generate an array for all required components

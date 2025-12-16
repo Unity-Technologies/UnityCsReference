@@ -31,6 +31,7 @@ namespace UnityEditor.PackageManager.UI.Internal
     {
         public event Action onCheckUpdateProgress = delegate {};
 
+        // The internal modifier is used (instead of private) to give our test project access to these properties/methods
         internal const int k_MaxFetchUpdateInfoCount = 30;
         internal const int k_MaxFetchPurchaseInfoCount = 30;
         internal const int k_FetchProductInfoCountPerUpdate = 5;
@@ -38,7 +39,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         internal const int k_ExtraFetchPackageInfoCountPerUpdate = 5;
         internal const int k_MaxExtraFetchPackageInfoCount = 20;
 
-        public bool isCheckUpdateInProgress => m_UnityConnect.isUserLoggedIn && (m_CheckUpdateInProgress.Any() || m_CheckUpdateStack.Any());
+        public bool isCheckUpdateInProgress => m_UnityConnect.isUserLoggedIn && (m_CheckUpdateInProgress.Count > 0 || m_CheckUpdateStack.Count > 0);
 
         public int checkUpdatePercentage
         {
@@ -233,7 +234,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 return;
 
             var numItemsAdded = 0;
-            while (m_FetchProductInfoQueue.Any() && numItemsAdded < k_FetchProductInfoCountPerUpdate && m_FetchProductInfoInProgress.Count < k_MaxFetchProductInfoCount)
+            while (m_FetchProductInfoQueue.Count > 0 && numItemsAdded < k_FetchProductInfoCountPerUpdate && m_FetchProductInfoInProgress.Count < k_MaxFetchProductInfoCount)
             {
                 var productId = m_FetchProductInfoQueue.Dequeue();
                 if (m_FetchProductInfoInProgress.Contains(productId) || !m_ProductInfosToFetch.Remove(productId) || m_AssetStoreCache.GetProductInfo(productId) != null)
@@ -261,7 +262,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         private void ExtraFetchPackageInfoFromQueue()
         {
             var numItemsAdded = 0;
-            while (m_ExtraFetchPackageInfoQueue.Any() && numItemsAdded < k_ExtraFetchPackageInfoCountPerUpdate && m_ExtraFetchPackageInfoInProgress.Count < k_MaxExtraFetchPackageInfoCount)
+            while (m_ExtraFetchPackageInfoQueue.Count > 0 && numItemsAdded < k_ExtraFetchPackageInfoCountPerUpdate && m_ExtraFetchPackageInfoInProgress.Count < k_MaxExtraFetchPackageInfoCount)
             {
                 var packageNameOrId = m_ExtraFetchPackageInfoQueue.Dequeue();
                 m_PackageNameToProductIdMap.TryGetValue(packageNameOrId, out var productId);
@@ -290,10 +291,10 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private void FetchPurchaseInfoFromQueue()
         {
-            if (!m_UnityConnect.isUserInfoReady || !m_FetchPurchaseInfoQueue.Any() || m_FetchPurchaseInfoInProgress.Any())
+            if (!m_UnityConnect.isUserInfoReady || m_FetchPurchaseInfoQueue.Count == 0 || m_FetchPurchaseInfoInProgress.Count > 0)
                 return;
 
-            while (m_FetchPurchaseInfoQueue.Any() && m_FetchPurchaseInfoInProgress.Count < k_MaxFetchPurchaseInfoCount)
+            while (m_FetchPurchaseInfoQueue.Count > 0 && m_FetchPurchaseInfoInProgress.Count < k_MaxFetchPurchaseInfoCount)
             {
                 var productId = m_FetchPurchaseInfoQueue.Dequeue();
                 if (m_FetchPurchaseInfoInProgress.Contains(productId) || m_AssetStoreCache.GetPurchaseInfo(productId) != null)
@@ -301,16 +302,16 @@ namespace UnityEditor.PackageManager.UI.Internal
                 m_FetchPurchaseInfoInProgress.Add(productId);
             }
 
-            if (m_FetchPurchaseInfoInProgress.Any())
+            if (m_FetchPurchaseInfoInProgress.Count > 0)
                 m_AssetStoreClient.FetchPurchaseInfos(m_FetchPurchaseInfoInProgress, () => m_FetchPurchaseInfoInProgress.Clear());
         }
 
         private void CheckUpdateFromStack()
         {
-            if (!m_UnityConnect.isUserInfoReady || !m_UnityConnect.isUserLoggedIn || m_CheckUpdateInProgress.Any() || !m_CheckUpdateStack.Any())
+            if (!m_UnityConnect.isUserInfoReady || !m_UnityConnect.isUserLoggedIn || m_CheckUpdateInProgress.Count > 0 || m_CheckUpdateStack.Count == 0)
                 return;
 
-            while (m_CheckUpdateStack.Any() && m_CheckUpdateInProgress.Count < k_MaxFetchUpdateInfoCount)
+            while (m_CheckUpdateStack.Count > 0 && m_CheckUpdateInProgress.Count < k_MaxFetchUpdateInfoCount)
             {
                 var productId = m_CheckUpdateStack.Pop();
                 if (m_CheckUpdateInProgress.Contains(productId))
@@ -320,14 +321,14 @@ namespace UnityEditor.PackageManager.UI.Internal
                     m_CheckUpdateInProgress.Add(productId);
             }
 
-            if (m_CheckUpdateInProgress.Any())
+            if (m_CheckUpdateInProgress.Count > 0)
             {
                 m_AssetStoreClient.FetchUpdateInfos(m_CheckUpdateInProgress, () =>
                 {
                     m_CheckUpdateInProgress.Clear();
                     onCheckUpdateProgress?.Invoke();
 
-                    if (m_RefreshAfterCheckUpdates && !m_CheckUpdateStack.Any())
+                    if (m_RefreshAfterCheckUpdates && m_CheckUpdateStack.Count == 0)
                     {
                         var page = m_PageManager.activePage;
                         if (page.filters.status == PageFilters.Status.UpdateAvailable)

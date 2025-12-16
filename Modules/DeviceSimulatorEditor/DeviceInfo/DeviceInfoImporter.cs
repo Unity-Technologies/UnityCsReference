@@ -25,7 +25,7 @@ namespace UnityEditor.DeviceSimulation
 
             var asset = ScriptableObject.CreateInstance<DeviceInfoAsset>();
 
-            var deviceJson = File.ReadAllText(ctx.assetPath);
+            var deviceJson = File.ReadAllText(FileUtil.PathToAbsolutePath(ctx.assetPath));
             asset.deviceInfo = ParseDeviceInfo(deviceJson, out var errors, out var systemInfoElement, out var graphicsDataElement);
 
             if (errors.Length > 0)

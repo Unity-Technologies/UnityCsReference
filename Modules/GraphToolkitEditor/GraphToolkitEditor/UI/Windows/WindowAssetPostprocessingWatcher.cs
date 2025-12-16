@@ -182,7 +182,7 @@ namespace Unity.GraphToolkit.Editor
         // Returns true if the window is displaying a subgraph of the graph parentGraphGuid.
         static bool IsWindowDisplayingSubgraphAssetOfParentGraphAsset(GraphViewEditorWindow window, GUID parentGraphGuid)
         {
-            return window.GraphTool != null && window.GraphTool.ToolState.SubgraphStack.Any(openedGraph => openedGraph.AssetGuid == parentGraphGuid);
+            return window.GraphTool != null && window.GraphTool.ToolState.SubgraphStack.HasAny(openedGraph => openedGraph.AssetGuid == parentGraphGuid);
         }
     }
 }

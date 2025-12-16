@@ -29,6 +29,8 @@ namespace UnityEditor.Build.Reporting
         {
             return path;
         }
+
+        /*UCBP-PUBLIC*/ internal bool isFromCache => flags.HasFlag(BuildFileFlags.IsFromCache);
     }
 
     [Flags]

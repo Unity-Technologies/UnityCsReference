@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Runtime.InteropServices;
 using System.Text;
 using Unity.Scripting.LifecycleManagement;
 using UnityEngine;
@@ -36,6 +37,7 @@ internal static partial class RttiResolver
             // object could be a pure native type, or an abstract interop type
             if (obj is UnityEngine.Object unityObject)
             {
+                return GetRTTI(unityObject.GetObjectUDMTypeID());
             }
         }
 
@@ -145,6 +147,9 @@ internal static partial class RttiResolver
             // object could be a pure native type, or an abstract interop type
             if (obj is UnityEngine.Object unityObject)
             {
+                var typeID = unityObject.GetObjectUDMTypeID();
+                var schema = Schema.GetSchemaByType(typeID, 0);
+                return GetRTTI(schema);
             }
         }
 
@@ -267,40 +272,52 @@ internal static partial class RttiResolver
         }
 
         rtti = AddTypeInternal(type, schema);
-        return true;
+        return rtti != null;
     }
 
-    private static Rtti AddTypeInternal(Type type, Schema schema)
+    internal static Rtti AddTypeInternal(Type type, Schema schema)
     {
         var typeID = schema.GetTypeId();
 
-        // We need to add them, so cycles are broken (like AnimationWindowClipPopup -> AnimationWindowState -> AnimEditor -> AnimationWindowClipPopup
-        TypeIDToRTTI[typeID] = null;
-        TypeToRTTI[type] = null;
+        // We are first creating the rtti instance and register it incomplete in TypeIDToRTTI and TypeToRTTI
+        // Because there could be recursive definitions (like a type A having directly or indirectly a
+        // field of type A (or Array/List of type A).
+        // In this way everyone can hold into the correct RTTI instance, even if it is incomplete.
+        // This is relevant only for reference types, for value types the problem is more complex and
+        // it will be dealt in the future.
+        var rtti = RttiBuilder.CreateManagedRtti(type, schema, out var rttiGroup);
 
-        var rtti = RttiBuilder.CreateManagedRtti(type, schema);
-
+        // Registering the RTTI entry
         TypeIDToRTTI[typeID] = rtti;
         TypeToRTTI[type] = rtti;
 
+        if (rtti != null)
+        {
+            // Add the commands to the already existing RTTI type
+            RttiBuilder.AddCommandsToRtti(type, schema, rttiGroup, ref rtti);
+        }
         return rtti;
     }
 
-    // TODO: move this code to SchemaReload (https://jira.unity3d.com/browse/CPN-803)
-    internal static void ReloadSchemas()
+    internal static Rtti AddNativeTypeInternal(Type type, Schema schema, bool hasDirectMapping)
+    {
+        var rtti = RttiBuilder.CreateNativeRtti(schema, type);
+        TypeIDToRTTI[schema.GetTypeId()] = rtti;
+        if (hasDirectMapping)
+        {
+            if (!TypeToRTTI.TryAdd(type, rtti))
+            {
+                throw new ArgumentException($"Managed type has already been registered: {type.Name}");
+            }
+        }
+        return rtti;
+    }
+
+    internal static void Clear()
     {
         TypeIDToRTTI.Clear();
         TypeToRTTI.Clear();
-
-        foreach (var entry in TypeTraitsRegistry.GetAll())
-        {
-            Type type = entry.Key;
-            TypeTraitsData traitsData = entry.Value;
-            AddTypeInternal(type, traitsData.Schema);
-        }
-
     }
-
 
     [RequiredByNativeCode]
     internal static Int32 GetPersistentTypeID(IntPtr schemaPtr)
@@ -333,20 +350,5 @@ internal static partial class RttiResolver
     {
         var rtti = GetRTTI(type);
         udmTypeID = rtti == null ? UdmTypeId.Default : rtti.Schema.GetTypeId();
-    }
-
-    [RequiredByNativeCode]
-    internal static void RegisterNativeType(IntPtr schemaPtr, Type managedType, bool hasDirectMapping)
-    {
-        Schema schema = schemaPtr;
-        var rtti = RttiBuilder.CreateNativeRtti(schema, managedType);
-        TypeIDToRTTI[schema.GetTypeId()] = rtti;
-        if (hasDirectMapping)
-        {
-            if (!TypeToRTTI.TryAdd(managedType, rtti))
-            {
-                throw new ArgumentException($"Managed type has already been registered: {managedType.Name}");
-            }
-        }
     }
 }

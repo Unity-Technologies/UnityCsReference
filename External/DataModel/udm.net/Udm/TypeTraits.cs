@@ -1,20 +1,20 @@
 
 namespace Unity.DataModel
 {
-internal unsafe partial struct TypeTraits<T>
-{
-    private static TypeTraitsData _traitsData;
-
-    internal static TypeTraitsData Get()
+    internal unsafe partial struct TypeTraits<T>
     {
-        return _traitsData;
-    }
+        private static TypeTraitsData _traitsData;
 
-    internal static void Set(TypeTraitsData traitsData)
-    {
-        _traitsData = traitsData;
+        internal static TypeTraitsData Get()
+        {
+            return _traitsData;
+        }
 
-        TypeTraitsRegistry.Register<T>(traitsData);
+        internal static void Set(TypeTraitsData traitsData)
+        {
+            _traitsData = traitsData;
+
+            TypeTraitsRegistry.Register<T>(traitsData);
+        }
     }
-}
 }

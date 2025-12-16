@@ -45,8 +45,27 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
 
         public static void OpenTextFile<T>(Location location) where T : UnityEngine.Object
         {
-            var obj = AssetDatabase.LoadAssetAtPath<T>(location.Path);
-            if (obj != null)
+            var path = location.Path;
+            var obj = AssetDatabase.LoadAssetAtPath<T>(path);
+            if (obj == null)
+            {
+                if (File.Exists(path))
+                {
+                    try
+                    {
+                        System.Diagnostics.Process.Start(path);
+                    }
+                    catch (Exception e)
+                    {
+                        Debug.LogError($"Failed to open external file {path}: {e.Message}");
+                    }
+                }
+                else
+                {
+                    Debug.LogError($"File not found: {path}");
+                }
+            }
+            else
             {
                 // open text file in the text editor
                 AssetDatabase.OpenAsset(obj, location.Line);

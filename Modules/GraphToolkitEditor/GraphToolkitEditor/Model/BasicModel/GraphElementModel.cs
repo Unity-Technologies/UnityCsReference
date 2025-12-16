@@ -4,7 +4,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using Unity.GraphToolkit.Editor.ContextualMenuItems;
 using UnityEngine;
 
@@ -37,8 +36,11 @@ namespace Unity.GraphToolkit.Editor
             {
                 m_GraphModel = value;
 
-                foreach (var subModel in DependentModels.Where(m => m != null))
+                foreach (var subModel in DependentModels)
                 {
+                    if (subModel == null)
+                        continue;
+
                     subModel.GraphModel = value;
                 }
             }
@@ -47,7 +49,7 @@ namespace Unity.GraphToolkit.Editor
         /// <summary>
         /// The dependent models for this model (for example, ports on a node, blocks in context node).
         /// </summary>
-        public virtual IEnumerable<GraphElementModel> DependentModels => Enumerable.Empty<GraphElementModel>();
+        public virtual IEnumerable<GraphElementModel> DependentModels => Array.Empty<GraphElementModel>();
 
         /// <summary>
         /// The container for this graph element.
@@ -98,8 +100,11 @@ namespace Unity.GraphToolkit.Editor
         /// <inheritdoc />
         public virtual void OnBeforeCopy()
         {
-            foreach (var callbackReceiver in DependentModels.OfType<ICopyPasteCallbackReceiver>())
+            foreach (var model in DependentModels)
             {
+                if (model is not ICopyPasteCallbackReceiver callbackReceiver)
+                    continue;
+
                 callbackReceiver.OnBeforeCopy();
             }
         }
@@ -107,8 +112,11 @@ namespace Unity.GraphToolkit.Editor
         /// <inheritdoc />
         public virtual void OnAfterCopy()
         {
-            foreach (var callbackReceiver in DependentModels.OfType<ICopyPasteCallbackReceiver>())
+            foreach (var model in DependentModels)
             {
+                if (model is not ICopyPasteCallbackReceiver callbackReceiver)
+                    continue;
+
                 callbackReceiver.OnAfterCopy();
             }
         }
@@ -116,8 +124,11 @@ namespace Unity.GraphToolkit.Editor
         /// <inheritdoc />
         public virtual void OnAfterPaste()
         {
-            foreach (var callbackReceiver in DependentModels.OfType<ICopyPasteCallbackReceiver>())
+            foreach (var model in DependentModels)
             {
+                if (model is not ICopyPasteCallbackReceiver callbackReceiver)
+                    continue;
+
                 callbackReceiver.OnAfterPaste();
             }
         }

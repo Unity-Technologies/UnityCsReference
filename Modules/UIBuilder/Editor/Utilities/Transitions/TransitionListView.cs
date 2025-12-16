@@ -164,8 +164,12 @@ namespace Unity.UI.Builder
             }
         }
 
-        public void Refresh(TransitionChangeType overrides, TransitionChangeType keywords, TransitionChangeType bindings)
+        public void Refresh(BuilderTransitionData data, TransitionChangeType changeType = TransitionChangeType.None)
         {
+            var overrides = data.GetOverrides() | changeType;
+            var bindings = data.GetBindings();
+            var keywords = data.GetKeywords();
+
             var durationAllZeroes = true;
             using (ListPool<FoldoutTransitionField>.Get(out var list))
             {
@@ -182,6 +186,8 @@ namespace Unity.UI.Builder
 
                     if (bindings.IsSet(TransitionChangeType.Property) && !BuilderBindingUtility.IsInlineEditingEnabled(foldout.propertyField))
                         foldout.propertyField.SetEnabled(false);
+                    else if (i < data.transitionProperty.GetPartsCount() && data.transitionProperty.IsVariableAtIndex(i))
+                        foldout.propertyField.SetEnabled(false);
                     else if (keywords.IsSet(TransitionChangeType.Property))
                         foldout.propertyField.SetEnabled(i == 0);
                     else
@@ -192,6 +198,8 @@ namespace Unity.UI.Builder
 
                     if (bindings.IsSet(TransitionChangeType.Duration) && !BuilderBindingUtility.IsInlineEditingEnabled(foldout.durationField))
                         foldout.durationField.SetEnabled(false);
+                    else if (i < data.transitionDuration.GetPartsCount() && data.transitionDuration.IsVariableAtIndex(i))
+                        foldout.durationField.SetEnabled(false);
                     else if (keywords.IsSet(TransitionChangeType.Duration))
                         foldout.durationField.SetEnabled(i == 0);
                     else
@@ -199,12 +207,16 @@ namespace Unity.UI.Builder
 
                     if (bindings.IsSet(TransitionChangeType.TimingFunction) && !BuilderBindingUtility.IsInlineEditingEnabled(foldout.timingFunctionField))
                         foldout.timingFunctionField.SetEnabled(false);
+                    else if (i < data.transitionTimingFunction.GetPartsCount() && data.transitionTimingFunction.IsVariableAtIndex(i))
+                        foldout.timingFunctionField.SetEnabled(false);
                     else if (keywords.IsSet(TransitionChangeType.TimingFunction))
                         foldout.timingFunctionField.SetEnabled(i == 0);
                     else
                         foldout.timingFunctionField.SetEnabled(true);
 
                     if (bindings.IsSet(TransitionChangeType.Delay)&& !BuilderBindingUtility.IsInlineEditingEnabled(foldout.delayField))
+                        foldout.delayField.SetEnabled(false);
+                    else if (i < data.transitionDelay.GetPartsCount() && data.transitionDelay.IsVariableAtIndex(i))
                         foldout.delayField.SetEnabled(false);
                     else if (keywords.IsSet(TransitionChangeType.Delay))
                         foldout.delayField.SetEnabled(i == 0);

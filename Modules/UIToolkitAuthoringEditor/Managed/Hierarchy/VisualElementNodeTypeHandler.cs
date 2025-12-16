@@ -1039,10 +1039,10 @@ internal abstract class VisualElementNodeTypeHandler :
 
     private IMemoryOwner<HierarchyNode> GetSelection(HierarchyView view, out SelectionContext selectionContext)
     {
-        var selectionCount = view.ViewModel.HasAllFlagsCount(HierarchyNodeFlags.Selected);
+        var selectionCount = view.ViewModel.HasFlagsCount(HierarchyNodeFlags.Selected);
         var owner = MemoryPool<HierarchyNode>.Shared.Rent(selectionCount);
         var selection = owner.Memory.Span[..selectionCount];
-        view.ViewModel.GetNodesWithAllFlags(HierarchyNodeFlags.Selected, selection);
+        view.ViewModel.GetNodesWithFlags(HierarchyNodeFlags.Selected, selection);
 
         var containsElements = false;
         var onlyContainsElements = true;

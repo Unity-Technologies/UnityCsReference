@@ -40,6 +40,7 @@ namespace Unity.GraphToolkit.ItemLibrary.Editor
         [SerializeField] string m_Help;
         [SerializeField] string[] m_Synonyms;
         [SerializeField] string m_StyleName;
+        [SerializeField] string m_IconPath;
         [SerializeField] int m_Priority;
 
         /// <summary>
@@ -108,6 +109,15 @@ namespace Unity.GraphToolkit.ItemLibrary.Editor
         {
             get => m_StyleName;
             set => m_StyleName = value;
+        }
+
+        /// <summary>
+        /// Custom path for the item's icon. If set, it takes precedence over the style defined by <see cref="StyleName"/>.
+        /// </summary>
+        public string IconPath
+        {
+            get => m_IconPath;
+            set => m_IconPath = value;
         }
 
         /// <summary>

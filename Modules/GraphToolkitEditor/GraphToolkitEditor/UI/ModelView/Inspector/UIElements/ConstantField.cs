@@ -143,7 +143,7 @@ namespace Unity.GraphToolkit.Editor
             {
                 foreach (var owner in Owners)
                 {
-                    if (owner is PortModel portModel && portModel.IsConnected() && portModel.GetConnectedPorts().Any(p => p.NodeModel.State == ModelState.Enabled))
+                    if (owner is PortModel portModel && portModel.IsConnected() && portModel.GetConnectedPorts().HasAny(p => p.NodeModel.State == ModelState.Enabled))
                     {
                         isConnected = true;
                         break;

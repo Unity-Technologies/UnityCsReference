@@ -11,8 +11,8 @@ namespace UnityEditor.PackageManager.UI.Internal
 {
     internal class InProgressDropdown : DropdownContent
     {
-        internal const int k_Width = 220;
-        internal const int k_LineHeight = 32;
+        private const int k_Width = 220;
+        private const int k_LineHeight = 32;
 
         private int m_Height;
         public override Vector2 windowSize => new Vector2(k_Width, m_Height);
@@ -130,7 +130,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         {
             var packagesInProgress = m_PackageDatabase.allPackages.Where(p =>
                 p.progress == progress && (tag == PackageTag.None || p.versions.primary.HasTag(tag))).ToArray();
-            if (packagesInProgress.Any())
+            if (packagesInProgress.Length > 0)
             {
                 m_PageManager.activePage = page;
                 page.LoadExtraItems(packagesInProgress);
@@ -141,7 +141,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private void OnPackagesChanged(PackagesChangeArgs args)
         {
-            if (args.progressUpdated.Any() || args.added.Any() || args.removed.Any())
+            if (args.progressUpdated.Count > 0 || args.added.Count > 0 || args.removed.Count > 0)
             {
                 if (Refresh())
                     ShowWithNewWindowSize();

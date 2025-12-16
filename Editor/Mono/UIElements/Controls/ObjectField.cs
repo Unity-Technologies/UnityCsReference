@@ -142,7 +142,7 @@ namespace UnityEditor.UIElements
             UpdateMixedValueContent();
         }
 
-        internal static bool IsMissingObjectReference(SerializedProperty p) => p.propertyType == SerializedPropertyType.ObjectReference && p.objectReferenceEntityIdValue != 0 && p.objectReferenceValue == null;
+        internal static bool IsMissingObjectReference(SerializedProperty p) => p.propertyType == SerializedPropertyType.ObjectReference && p.objectReferenceEntityIdValue != EntityId.None && p.objectReferenceValue == null;
 
         [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         internal class ObjectFieldDisplay : VisualElement

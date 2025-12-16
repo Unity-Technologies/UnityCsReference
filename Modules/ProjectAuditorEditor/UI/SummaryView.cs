@@ -19,6 +19,7 @@ namespace Unity.ProjectAuditor.Editor.UI
 #pragma warning disable CS0649
         struct StatSeverities
         {
+            public int Error;
             public int Critical;
             public int Major;
             public int Moderate;
@@ -37,6 +38,10 @@ namespace Unity.ProjectAuditor.Editor.UI
             public int NumAssetIssues;
             public int NumShaders;
             public int NumPackages;
+
+            public long CodeAnalysisTime;
+            public long AssetsAnalysisTime;
+            public long SettingsAnalysisTime;
 
             public StatSeverities[] SeveritiesByCategory;
             public int IgnoredIssues;
@@ -63,20 +68,20 @@ namespace Unity.ProjectAuditor.Editor.UI
         bool m_AnyAdditionalInsights;
         bool m_AnyCompilationErrors;
 
-        Color[] m_SeverityColors = new[]
-        {
+        Color[] m_SeverityColors =
+        [
             new Color(0.96f, 0.3f, 0.26f),          // Critical
-            new Color(0.902f, 0.314f, 0f),            // Major
-            new Color(0.788f, 0.451f, 0.067f),            // Moderate
-            new Color(0.055f, 0.502f, 0.945f),            // Minor
+            new Color(0.902f, 0.314f, 0f),          // Major
+            new Color(0.788f, 0.451f, 0.067f),      // Moderate
+            new Color(0.055f, 0.502f, 0.945f),      // Minor
             new Color(0.768f, 0.768f, 0.768f, 1f)   // Ignored
-        };
+        ];
 
         readonly Areas[] k_AreasPriorityList =
-        {
+        [
             Areas.Support, Areas.Requirement, Areas.Quality, Areas.IterationTime, Areas.Memory, Areas.CPU, Areas.GPU,
             Areas.LoadTime, Areas.BuildTime, Areas.BuildSize
-        };
+        ];
 
         public override string Description => "A high level overview of the Project Report.";
         public override bool ShowVerticalScrollView => true;
@@ -92,24 +97,20 @@ namespace Unity.ProjectAuditor.Editor.UI
         {
         }
 
-        void AddSeverityStats(IssueCategory category, IEnumerable<ReportItem> newIssues,
+        void AddSeverityStats(IReadOnlyCollection<ReportItem> newIssues,
             ref StatSeverities codeSeverities)
         {
             foreach (var i in newIssues)
             {
-                if (i.Category != category)
-                    continue;
-
-                if (!m_ProjectAuditorWindow.PackageFilterMatch(i))
-                    continue;
-
-                if (i.Severity == Severity.None || IsIgnored(i))
+                if (i.Severity == Severity.None || i.Severity == Severity.Hidden || IsIgnored(i))
                     codeSeverities.Ignored++;
+                else if (i.Severity == Severity.Error)
+                    codeSeverities.Error++;
                 else if (i.Severity == Severity.Critical)
                     codeSeverities.Critical++;
                 else if (i.Severity == Severity.Major)
                     codeSeverities.Major++;
-                else if (i.Severity == Severity.Moderate)
+                else if (i.Severity == Severity.Moderate || i.Severity == Severity.Default)
                     codeSeverities.Moderate++;
                 else if (i.Severity == Severity.Minor)
                     codeSeverities.Minor++;
@@ -142,14 +143,10 @@ namespace Unity.ProjectAuditor.Editor.UI
             if (item.WasFixed)
                 return true;
 
-            if (!m_ProjectAuditorWindow.PackageFilterMatch(item))
-                return true;
-
             if (item.Category != IssueCategory.Code)
                 return false;
 
-            var assembly = item.GetCustomProperty(CodeProperty.Assembly);
-            return !m_ProjectAuditorWindow.DefaultAssemblies.Contains(assembly);
+            return false;
         }
 
         public void AddDiagnosticStats(IssueCategory category, IEnumerable<ReportItem> newIssues)
@@ -157,21 +154,22 @@ namespace Unity.ProjectAuditor.Editor.UI
             if (m_Stats.SeveritiesByCategory == null || m_Stats.SeveritiesByCategory.Length == 0)
                 m_Stats.SeveritiesByCategory = new StatSeverities[Enum.GetNames(typeof(IssueCategory)).Length];
 
-            var thisCount = newIssues.Count(i => (i.Category == category && m_ProjectAuditorWindow.PackageFilterMatch(i)));
+            var filteredIssues = newIssues.Where(i => i.Category == category).ToArray();
+            var thisCount = filteredIssues.Length;
 
             switch (category)
             {
                 case IssueCategory.Code:
                     m_Stats.NumCodeIssues += thisCount;
-                    AddSeverityStats(category, newIssues, ref m_Stats.SeveritiesByCategory[(int)category]);
+                    AddSeverityStats(filteredIssues, ref m_Stats.SeveritiesByCategory[(int)category]);
                     break;
                 case IssueCategory.ProjectSetting:
                     m_Stats.NumSettingIssues += thisCount;
-                    AddSeverityStats(category, newIssues, ref m_Stats.SeveritiesByCategory[(int)category]);
+                    AddSeverityStats(filteredIssues, ref m_Stats.SeveritiesByCategory[(int)category]);
                     break;
                 case IssueCategory.AssetIssue:
                     m_Stats.NumAssetIssues += thisCount;
-                    AddSeverityStats(category, newIssues, ref m_Stats.SeveritiesByCategory[(int)category]);
+                    AddSeverityStats(filteredIssues, ref m_Stats.SeveritiesByCategory[(int)category]);
                     break;
 
                 default:
@@ -179,12 +177,18 @@ namespace Unity.ProjectAuditor.Editor.UI
             }
         }
 
-        void RefreshStats(IEnumerable<ReportItem> allIssues)
+        void RefreshStats(Report report)
         {
+            var allIssues = report.GetAllIssues();
+
             // Stats that also count issues by severity
             AddDiagnosticStats(IssueCategory.Code, allIssues);
             AddDiagnosticStats(IssueCategory.ProjectSetting, allIssues);
             AddDiagnosticStats(IssueCategory.AssetIssue, allIssues);
+
+            m_Stats.CodeAnalysisTime = report.CalculateIssueCategoryAnalysisDuration(IssueCategory.Code);
+            m_Stats.AssetsAnalysisTime = report.CalculateIssueCategoryAnalysisDuration(IssueCategory.AssetIssue);
+            m_Stats.SettingsAnalysisTime = report.CalculateIssueCategoryAnalysisDuration(IssueCategory.ProjectSetting);
 
             // Various stats
             m_Stats.NumBuildSteps += allIssues.Count(i => i.Category == IssueCategory.BuildStep);
@@ -196,13 +200,6 @@ namespace Unity.ProjectAuditor.Editor.UI
 
             m_Stats.NumCompiledAssemblies += allIssues.Count(i => i.Category == IssueCategory.Assembly && i.Severity != Severity.Error);
             m_Stats.NumTotalAssemblies += allIssues.Count(i => i.Category == IssueCategory.Assembly);
-        }
-
-        public override void AddIssues(IEnumerable<ReportItem> allIssues)
-        {
-            base.AddIssues(allIssues);
-
-            RefreshStats(allIssues);
         }
 
         public override void Clear()
@@ -254,7 +251,7 @@ namespace Unity.ProjectAuditor.Editor.UI
 
                 m_Stats = new Stats();
                 m_Stats.SeveritiesByCategory = new StatSeverities[Enum.GetNames(typeof(IssueCategory)).Length];
-                RefreshStats(m_ViewManager.Report.GetAllIssues());
+                RefreshStats(m_ViewManager.Report);
             }
 
             if (m_ViewManager.Report == null)
@@ -342,11 +339,11 @@ namespace Unity.ProjectAuditor.Editor.UI
 
                     using (new GUILayout.VerticalScope())
                     {
-                        DrawSummaryItem("Code", m_Stats.NumCodeIssues, IssueCategory.Code);
+                        DrawSummaryItem("Code", m_Stats.NumCodeIssues, m_Stats.CodeAnalysisTime, IssueCategory.Code);
                         GUILayout.Space(8);
-                        DrawSummaryItem("Assets", m_Stats.NumAssetIssues, IssueCategory.AssetIssue);
+                        DrawSummaryItem("Assets", m_Stats.NumAssetIssues, m_Stats.AssetsAnalysisTime, IssueCategory.AssetIssue);
                         GUILayout.Space(8);
-                        DrawSummaryItem("Project Settings", m_Stats.NumSettingIssues, IssueCategory.ProjectSetting);
+                        DrawSummaryItem("Project Settings", m_Stats.NumSettingIssues, m_Stats.SettingsAnalysisTime, IssueCategory.ProjectSetting);
                         GUILayout.Space(8);
                     }
                 }
@@ -374,8 +371,8 @@ namespace Unity.ProjectAuditor.Editor.UI
             var highestSeverity = Severity.Minor;
             foreach (var item in group)
             {
-                if (item.Severity == Severity.Critical)
-                    return Severity.Critical;
+                if (item.Severity == Severity.Error)
+                    return Severity.Error;
 
                 if (item.Severity < highestSeverity)
                     highestSeverity = item.Severity;
@@ -395,8 +392,7 @@ namespace Unity.ProjectAuditor.Editor.UI
                     m_TopTenIssues = m_ViewManager.Report.GetAllIssues()
                         .Where(i =>
                             !IsIssueIgnoredOrFiltered(i)
-                            && (i.Severity == Severity.Critical || i.Severity == Severity.Major
-                                || i.Severity == Severity.Moderate)
+                            && (i.Severity == Severity.Error || i.Severity == Severity.Critical || i.Severity == Severity.Major || i.Severity == Severity.Moderate)
                         ).GroupBy(i => i.DescriptorIdAsString)
                         .OrderBy(group => GetHighestGroupSeverity(group))
                         .ThenByDescending(group => group.Count())
@@ -505,7 +501,7 @@ namespace Unity.ProjectAuditor.Editor.UI
                         {
                             const int boxMinWidth = 280;
                             const int boxMinHeight = 80;
-                            const int buttonWidth = 120;
+                            const int buttonWidth = 170;
 
                             EditorGUILayout.Space(10); // padding
 
@@ -581,6 +577,21 @@ namespace Unity.ProjectAuditor.Editor.UI
                                     m_ViewManager.GetActiveView().FrameSelection();
 
                                     GUIUtility.ExitGUI();
+                                }
+
+                                if (descriptor.Fixer != null)
+                                {
+                                    GUI.enabled = !firstIssue.WasFixed;
+
+                                    var content = string.IsNullOrEmpty(descriptor.FixerLabel) ? Contents.QuickFix : EditorGUIUtility.TrTempContent(descriptor.FixerLabel);
+                                    if (GUILayout.Button(GUI.enabled ? content : Contents.QuickFixDone, EditorStyles.miniButton,
+                                        GUILayout.Width(buttonWidth)))
+                                    {
+                                        descriptor.Fix(firstIssue, m_ViewManager.Report.SessionInfo);
+                                        m_ViewManager.OnSelectedIssuesQuickFixRequested?.Invoke([firstIssue]);
+                                    }
+
+                                    GUI.enabled = true;
                                 }
 
                                 var docUrls = new List<string>();
@@ -744,8 +755,8 @@ namespace Unity.ProjectAuditor.Editor.UI
 
         void DrawSessionInfo(SessionInfo sessionInfo)
         {
-            var keyValues = new[]
-            {
+            var keyValues = new List<KeyValuePair<string, string>>(
+            [
                 new KeyValuePair<string, string>("Date and Time", Formatting.FormatDateTime(Utils.Json.DeserializeDateTime(sessionInfo.DateTime))),
                 new KeyValuePair<string, string>("Host Name", sessionInfo.HostName),
                 new KeyValuePair<string, string>("Host Platform", sessionInfo.HostPlatform),
@@ -754,8 +765,17 @@ namespace Unity.ProjectAuditor.Editor.UI
                 new KeyValuePair<string, string>("Project Revision", sessionInfo.ProjectRevision),
                 new KeyValuePair<string, string>("Unity Version", sessionInfo.UnityVersion),
                 new KeyValuePair<string, string>("Project ID", sessionInfo.ProjectId),
-                new KeyValuePair<string, string>("Rules Version", sessionInfo.ProjectAuditorRulesVersion)
-            };
+                new KeyValuePair<string, string>("Rules Version", sessionInfo.ProjectAuditorRulesVersion),
+                new KeyValuePair<string, string>("Project Areas", sessionInfo.ProjectAreas.ToString()),
+                new KeyValuePair<string, string>("Analysis Platform", Formatting.GetModernBuildTargetName(sessionInfo.Platform))
+            ]);
+
+            if ((sessionInfo.ProjectAreas & ProjectAreaFlags.Code) != 0)
+            {
+                keyValues.Add(new KeyValuePair<string, string>("Code Analysis Areas", sessionInfo.CodeAnalysisFlags.ToString()));
+                if (Unsupported.IsDeveloperMode())
+                    keyValues.Add(new KeyValuePair<string, string>("Code Owners", sessionInfo.CodeOwnerFlags.ToString()));
+            }
 
             using (new EditorGUILayout.HorizontalScope())
             {
@@ -780,7 +800,7 @@ namespace Unity.ProjectAuditor.Editor.UI
             }
         }
 
-        void DrawSummaryItem(string title, int value, IssueCategory category, GUIContent icon = null, int total = 0)
+        void DrawSummaryItem(string title, int value, long analysisTimeMs, IssueCategory category, GUIContent icon = null)
         {
             if (!m_ViewManager.HasView(category))
                 return;
@@ -791,18 +811,25 @@ namespace Unity.ProjectAuditor.Editor.UI
                 m_FoldoutStates.Add(title, foldoutState);
             }
 
+            // Display analysis time in sensible units
+            var timeSpan = TimeSpan.FromMilliseconds(analysisTimeMs);
+            string time;
+            if (timeSpan.TotalHours >= 1)
+                time = $"{timeSpan.TotalHours:F0}h {timeSpan.Minutes}m";
+            else if (timeSpan.TotalMinutes >= 1)
+                time = $"{timeSpan.Minutes}m {timeSpan.Seconds}s";
+            else if (timeSpan.TotalSeconds >= 2)
+                time = $"{timeSpan.TotalSeconds:F0} seconds";
+            else if (timeSpan.TotalSeconds >= 1)
+                time = $"{timeSpan.TotalSeconds:F0} second";
+            else
+                time = $"{timeSpan.TotalMilliseconds:F0}ms";
+            time = $"found in {time}";
+
             bool newFoldoutState = true;
             using (new EditorGUILayout.HorizontalScope())
             {
-                var critical = m_Stats.SeveritiesByCategory[(int)category].Critical;
-                var major = m_Stats.SeveritiesByCategory[(int)category].Major;
-                var moderate = m_Stats.SeveritiesByCategory[(int)category].Moderate;
-                var minor = m_Stats.SeveritiesByCategory[(int)category].Minor;
-                var ignored = m_Stats.SeveritiesByCategory[(int)category].Ignored;
-                var total_issues = critical + major + moderate + minor + ignored;
-
                 newFoldoutState = EditorGUILayout.Foldout(foldoutState, $"{title} ({value} issues)", SharedStyles.Foldout);
-
                 GUILayout.FlexibleSpace();
             }
 
@@ -820,7 +847,7 @@ namespace Unity.ProjectAuditor.Editor.UI
                         GUILayout.Space(20);
 
                         if (m_ViewManager.Report.HasCategory(category))
-                            GUILayout.Label($"No {title} issues have been found.");
+                            GUILayout.Label($"No {title} issues found in {time}.");
                         else
                             GUILayout.Label($"{title} analysis is not yet included in this report.");
                     }
@@ -858,6 +885,7 @@ namespace Unity.ProjectAuditor.Editor.UI
 
                 EditorGUILayout.EndHorizontal();
 
+                var error = m_Stats.SeveritiesByCategory[(int)category].Error;
                 var critical = m_Stats.SeveritiesByCategory[(int)category].Critical;
                 var major = m_Stats.SeveritiesByCategory[(int)category].Major;
                 var moderate = m_Stats.SeveritiesByCategory[(int)category].Moderate;
@@ -865,6 +893,8 @@ namespace Unity.ProjectAuditor.Editor.UI
                 var ignored = m_Stats.SeveritiesByCategory[(int)category].Ignored;
 
                 List<ChartUtil.Element> inValues = new List<ChartUtil.Element>();
+                if (error != 0)
+                    inValues.Add(new ChartUtil.Element("Error", "Errors", error, m_SeverityColors[0], Utility.GetIcon(Utility.IconType.Error)));
                 if (critical != 0)
                     inValues.Add(new ChartUtil.Element("Critical", "Critical issues", critical, m_SeverityColors[0], Utility.GetIcon(Utility.IconType.Critical)));
                 if (major != 0)
@@ -880,8 +910,8 @@ namespace Unity.ProjectAuditor.Editor.UI
                 GUILayout.Space(20);
 
                 // Note: Using PA window's Draw2D allows custom geometry drawn here to be clipped (via Draw2D.SetClipRect) to stay inside scroll view handled in PA window
-                ChartUtil.DrawHorizontalStackedBar(m_ProjectAuditorWindow.Draw2D, 14, null, inValues.ToArray(), "{0}", "N0",
-                    true, false, true);
+                ChartUtil.DrawHorizontalStackedBar(m_ProjectAuditorWindow.Draw2D, 14, null, inValues, "{0}", "N0",
+                    true, false, true, time);
 
                 GUILayout.Space(20);
 
@@ -945,6 +975,8 @@ namespace Unity.ProjectAuditor.Editor.UI
             public static readonly GUIContent Recommendation =
                 new GUIContent("Recommendation", "Recommendation on how to solve the issue");
             public static readonly GUIContent MoreDetails = new GUIContent("More Details");
+            public static readonly GUIContent QuickFix = new GUIContent("Quick Fix", "Automatically fix the issue");
+            public static readonly GUIContent QuickFixDone = new GUIContent("Fixed", "Quick fix applied");
             public static readonly GUIContent Documentation = new GUIContent("Documentation", "Open documentation");
         }
     }

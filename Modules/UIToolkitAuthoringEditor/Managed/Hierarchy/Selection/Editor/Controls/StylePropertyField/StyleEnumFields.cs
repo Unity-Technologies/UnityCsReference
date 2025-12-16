@@ -430,6 +430,16 @@ namespace Unity.UIToolkit.Editor
 
         public FontStyleStyleEnumField(string label)
             : base(label, new FontStyleToggleField()) { }
+
+        protected override FontStyleToggleField CreateValueField()
+        {
+            return new FontStyleToggleField();
+        }
+
+        protected override StyleEnum<FontStyle> CreateStyleValue(FontStyle v)
+        {
+            return v;
+        }
     }
 
     internal class TextAlignStyleEnumField : StylePropertyField<StyleEnum<TextAnchor>, TextAlignToggleField, TextAnchor>
@@ -452,6 +462,16 @@ namespace Unity.UIToolkit.Editor
 
         public TextAlignStyleEnumField(string label)
             : base(label, new TextAlignToggleField()) { }
+
+        protected override TextAlignToggleField CreateValueField()
+        {
+            return new TextAlignToggleField();
+        }
+
+        protected override StyleEnum<TextAnchor> CreateStyleValue(TextAnchor v)
+        {
+            return v;
+        }
     }
 
     internal class SliceTypeStyleEnumField : StyleEnumField<SliceType>

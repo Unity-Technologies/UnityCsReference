@@ -41,11 +41,11 @@ namespace UnityEditor.AssetImporters
 
             public UnityEngine.Object context
             {
-                get => Object.FindObjectFromInstanceID(instanceID);
-                set => instanceID = value.GetInstanceID();
+                get => Object.FindObjectFromInstanceID(entityId);
+                set => entityId = value.GetEntityId();
             }
 
-            internal int instanceID;
+            internal EntityId entityId;
         };
 
         public extern ImportLogEntry[] logEntries

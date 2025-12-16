@@ -5,7 +5,6 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using UnityEngine;
 using UnityEngine.Bindings;
 using UnityEngine.Scripting;
@@ -74,12 +73,12 @@ namespace UnityEditor.ShortcutManagement
                 if (value)
                 {
                     EditorApplication.globalEventHandler += EventHandler;
-                    GUIUtility.beforeEventProcessed += BeforeEventProcessedHandler;
+                    GUIView.beforeEventProcessed += BeforeEventProcessedHandler;
                 }
                 else
                 {
                     EditorApplication.globalEventHandler -= EventHandler;
-                    GUIUtility.beforeEventProcessed -= BeforeEventProcessedHandler;
+                    GUIView.beforeEventProcessed -= BeforeEventProcessedHandler;
                 }
 
                 s_Enabled = value;

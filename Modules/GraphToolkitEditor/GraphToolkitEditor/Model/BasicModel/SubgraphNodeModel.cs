@@ -41,6 +41,10 @@ namespace Unity.GraphToolkit.Editor
         [SerializeReference]
         GraphModel m_CopyPasteLocalSubgraphModelReference;
 
+        readonly Color m_DefaultColorValue = new(107 / 255f, 204 / 255f, 134 / 255f, 1f);
+
+        bool m_UpdateWasCalled;
+
         /// <summary>
         /// The default subtitle when the subgraph is a local graph.
         /// </summary>
@@ -91,6 +95,9 @@ namespace Unity.GraphToolkit.Editor
 
         /// <inheritdoc />
         public override bool UseColorAlpha => false;
+
+        /// <inheritdoc />
+        public override Color DefaultColor => m_DefaultColorValue;
 
         public GraphReference SubgraphReference => m_SubgraphReference;
 
@@ -181,11 +188,7 @@ namespace Unity.GraphToolkit.Editor
             }
 
             // Each duplicated local subgraph node should have their own instance of graph model
-            var newSubgraph = GraphModel.CreateLocalSubgraph(
-                sourceGraphModel.GetType(),
-                sourceNode.Title);
-
-            newSubgraph.CloneGraph(sourceSubgraphNode.GetSubgraphModel(), true);
+            var newSubgraph = GraphModel.DuplicateLocalSubGraph(sourceGraphModel, sourceNode.Title);
             SetSubgraphModel(newSubgraph.GetGraphReference(true));
         }
 
@@ -216,6 +219,7 @@ namespace Unity.GraphToolkit.Editor
 
             GraphModel.CurrentGraphChangeDescription.AddChangedModels(elementsToUpdate, ChangeHint.Data);
 
+            m_UpdateWasCalled = true;
             return elementsToUpdate;
         }
 
@@ -286,13 +290,11 @@ namespace Unity.GraphToolkit.Editor
 
         void AddPort(VariableDeclarationModelBase variableDeclaration, string portId, bool isInput, PortType portType, NodeDefinitionScope scope)
         {
-            if (variableDeclaration.ShowOnInspectorOnly)
-                return;
-
             PortModel portModel;
             if (isInput)
             {
-                portModel = scope.AddInputPort(variableDeclaration.Title, variableDeclaration.DataType, portType, portId,
+                var options = variableDeclaration.ShowOnInspectorOnly ? PortModelOptions.Hidden : PortModelOptions.Default;
+                portModel = scope.AddInputPort(variableDeclaration.Title, variableDeclaration.DataType, portType, portId, options: options,
                     initializationCallback: c =>
                     {
                         if (variableDeclaration.InitializationModel != null)
@@ -431,5 +433,18 @@ namespace Unity.GraphToolkit.Editor
             ContextualMenuHelpers.unpackToLocalSubgraphItem,
             ContextualMenuHelpers.findAssetInProjectItem,
         };
+
+        public class TestAccess
+        {
+            public readonly SubgraphNodeModel m_SubgraphNodeModel;
+
+            public TestAccess(SubgraphNodeModel subgraphNodeModel)
+            {
+                m_SubgraphNodeModel = subgraphNodeModel;
+            }
+
+            public bool UpdateWasCalled => m_SubgraphNodeModel.m_UpdateWasCalled;
+            public Color DefaultColorValue => m_SubgraphNodeModel.m_DefaultColorValue;
+        }
     }
 }

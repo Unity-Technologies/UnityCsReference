@@ -14,7 +14,7 @@ namespace UnityEditor.PackageManager.UI.Internal
     [Serializable]
     internal class PageSelection : IEnumerable<string>, ISerializationCallbackReceiver
     {
-        private IEnumerable<string> m_PreviousSelections = Enumerable.Empty<string>();
+        private IReadOnlyCollection<string> m_PreviousSelections = Array.Empty<string>();
 
         private HashSet<string> m_SelectionsLookup = new ();
 
@@ -26,7 +26,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         [SerializeField]
         private string[] m_SerializedSelectionsLookup = Array.Empty<string>();
 
-        public IEnumerable<string> previousSelections => m_PreviousSelections;
+        public IReadOnlyCollection<string> previousSelections => m_PreviousSelections;
         public IEnumerable<string> orderedSelections => m_OrderedSelections.Where(s => Contains(s));
 
         public string firstSelection => orderedSelections.FirstOrDefault();
@@ -61,7 +61,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         {
             var itemsToAdd = toAddOrUpdate?.Where(s => !Contains(s)).ToArray() ?? Array.Empty<string>();
             var itemsToRemove = toRemove?.Where(s => Contains(s)).ToArray() ?? Array.Empty<string>();
-            if (!itemsToAdd.Any() && !itemsToRemove.Any())
+            if (itemsToAdd.Length == 0 && itemsToRemove.Length == 0)
                 return false;
 
             m_PreviousSelections = orderedSelections.ToArray();

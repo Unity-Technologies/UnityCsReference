@@ -74,7 +74,7 @@ namespace UnityEditor.U2D.Physics2D
                 if (entityId == ProjectBrowser.kAssetCreationInstanceID_ForNonExistingAssets && !string.IsNullOrEmpty(resourceFile))
                 {
                     AssetDatabase.CopyAsset(resourceFile, uniqueName);
-                    entityId = AssetDatabase.LoadMainAssetAtPath(uniqueName).GetInstanceID();
+                    entityId = AssetDatabase.LoadMainAssetAtPath(uniqueName).GetEntityId();
                 }
                 else
                 {

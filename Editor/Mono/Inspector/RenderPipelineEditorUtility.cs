@@ -6,11 +6,13 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using UnityEngine;
 using UnityEngine.Pool;
 using UnityEngine.Rendering;
 using Object = UnityEngine.Object;
 
+[assembly: InternalsVisibleTo("Unity.InternalAPIEngineBridge.RenderPipelines.Core.Runtime.Shared")]
 namespace UnityEditor.Rendering
 {
     public static class RenderPipelineEditorUtility
@@ -79,6 +81,34 @@ namespace UnityEditor.Rendering
             => TagManager.Internal_TryRemoveLastRenderingLayerName();
 
         public static Action onRenderingLayerCountChanged;
+
+        /// <summary>
+        /// Migrate Rendering Layers data from Global Settings to Tags and Layers.
+        /// </summary>
+        /// <param name="renderingLayerNames">A list of rendering layer names.</param>
+        /// <typeparam name="T">Render Pipeline type.</typeparam>
+        /// <returns>Returns true if it was succesful.</returns>
+        /// <exception cref="InvalidOperationException">Throw an exception if rendering layer names list is null or empty.</exception>
+        internal static bool TryMigrateRenderingLayersToTagManager<T>(string[] renderingLayerNames)
+            where T: RenderPipeline
+        {
+            if (renderingLayerNames == null || renderingLayerNames.Length == 0)
+                throw new InvalidOperationException("renderingLayerNames is null or empty");
+
+            var renderPipelineFullName = typeof(T).FullName;
+            var trimmedNames = new string[renderingLayerNames.Length];
+            for (int i = 0; i < renderingLayerNames.Length; i++)
+            {
+                trimmedNames[i] = renderingLayerNames[i]?.Trim() ?? string.Empty;
+            }
+
+            return TagManager.TryMigrateRenderingLayers(renderPipelineFullName, trimmedNames);
+        }
+
+        internal static void ClearMigratedRenderPipelines()
+        {
+            TagManager.ClearMigratedRenderPipelines();
+        }
 
         /// <summary>
         /// Retrieves the maximum number of rendering layers supported by the currently active render pipeline.

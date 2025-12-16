@@ -248,8 +248,20 @@ namespace UnityEngine
             return physicsShape.Count;
         }
 
+        public ReadOnlySpan<Vector2> GetPhysicsShape(int shapeIdx)
+        {
+            int physicsShapeCount = GetPhysicsShapeCount();
+            if (shapeIdx < 0 || shapeIdx >= physicsShapeCount)
+                throw new IndexOutOfRangeException(String.Format("Index({0}) is out of bounds(0 - {1})", shapeIdx, physicsShapeCount - 1));
+
+            return GetPhysicsShapeSpanImpl(this, shapeIdx);
+        }
+
         [FreeFunction("SpritesBindings::GetPhysicsShape", ThrowsException = true)]
         private extern static void GetPhysicsShapeImpl(Sprite sprite, int shapeIdx, [NotNull] List<Vector2> physicsShape);
+
+        [FreeFunction("SpritesBindings::GetPhysicsShape", ThrowsException = true)]
+        private extern static ReadOnlySpan<Vector2> GetPhysicsShapeSpanImpl(Sprite sprite, int shapeIdx);
 
         public void OverridePhysicsShape(IList<Vector2[]> physicsShapes)
         {

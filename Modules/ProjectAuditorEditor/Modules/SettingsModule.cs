@@ -48,7 +48,7 @@ namespace Unity.ProjectAuditor.Editor.Modules
                     progress.Advance();
 
                 var issues = analyzer.Analyze(context).ToArray();
-                if (issues.Any())
+                if (issues.Length > 0)
                     analysisParams.OnIncomingIssues(issues);
             }
 

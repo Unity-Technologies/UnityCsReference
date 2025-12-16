@@ -5,10 +5,13 @@
 using System;
 using System.IO;
 using System.Text;
+using Unity.Collections.LowLevel.Unsafe;
 using UnityEditor;
 using UnityEditor.Experimental;
+using UnityEditor.Multiplayer.Internal;
 using UnityEditorInternal;
 using UnityEngine;
+using UnityEngine.Multiplayer.Internal;
 
 namespace Unity.Multiplayer.PlayMode.Editor
 {
@@ -51,7 +54,7 @@ namespace Unity.Multiplayer.PlayMode.Editor
                 if (SessionState.GetBool(k_CurrentWindowSetKey, false))
                 {
                     var value = SessionState.GetInt(k_CurrentWindowIdKey, 0);
-                    return ContainerWindowProxy.FromInstanceID(value);
+                    return ContainerWindowProxy.FromInstanceID(EntityId.From(value));
                 }
 
                 return null;
@@ -65,7 +68,8 @@ namespace Unity.Multiplayer.PlayMode.Editor
                 }
                 else
                 {
-                    SessionState.SetInt(k_CurrentWindowIdKey, value.GetInstanceID());
+                    Debug.Assert(sizeof(int)==UnsafeUtility.SizeOf<EntityId>(), "EntityId is not the same size as int, update this code to use ulong");
+                    SessionState.SetInt(k_CurrentWindowIdKey, (int)value.GetEntityId().GetRawData());
                     SessionState.SetBool(k_CurrentWindowSetKey, true);
                 }
             }
@@ -221,7 +225,8 @@ namespace Unity.Multiplayer.PlayMode.Editor
             if (hasPlayer)
             {
                 var tag = player.Tags.Count <= 0 ? string.Empty : $" [{string.Join('|', player.Tags)}]";
-                CurrentWindow.title = $"{player.Name}{tag}";
+                var roleText = InternalUtilities.GetMultiplayerRoleDisplayText((MultiplayerRoleFlags)player.MultiplayerRole);
+                CurrentWindow.title = EditorMultiplayerManager.enableMultiplayerRoles ? $"{player.Name} ({roleText}){tag}" : $"{player.Name}{tag}";
             }
             else
             {

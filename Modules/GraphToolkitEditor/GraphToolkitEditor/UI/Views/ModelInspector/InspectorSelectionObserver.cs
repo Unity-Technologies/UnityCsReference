@@ -62,7 +62,7 @@ namespace Unity.GraphToolkit.Editor
                         var selection = m_SelectionStates.SelectMany(s => s.GetSelection(graphModel));
                         var selectedModels = m_ToolState.GraphModel.GetModelsDisplayableInInspector(selection).Distinct().ToList();
 
-                        if (m_SelectionStates.Any(t => t.DisplayInInspector))
+                        if (m_SelectionStates.HasAny(t => t.DisplayInInspector))
                         {
                             using (var updater = m_ModelInspectorState.UpdateScope)
                             {

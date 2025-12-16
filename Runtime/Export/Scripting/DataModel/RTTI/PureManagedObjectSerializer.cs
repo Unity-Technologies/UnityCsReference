@@ -30,15 +30,20 @@ internal static class PureManagedObjectSerializer
     {
         foreach (var objectGroup in objects.objectGroups)
         {
-            var accessor = new ConstAccessor {
-                Schema = objectGroup.rtti.Schema,
-                Data = default,
-            };
-
-            for (int i = 0; i < objectGroup.objectPtrs.Length; i++)
+            unsafe
             {
-                accessor.Data = objectGroup.objectPtrs[i];
-                UdmManagedSerialization.ReadFromAccessor(objectGroup.rtti.TransferData, accessor, objectGroup.instances[i], context);
+                var accessor = new ConstAccessor
+                {
+                    Schema = objectGroup.rtti.Schema,
+                    Data = default,
+                    References = (IntPtr)context.DocumentModel.GetReferences()
+                };
+
+                for (int i = 0; i < objectGroup.objectPtrs.Length; i++)
+                {
+                    accessor.Data = objectGroup.objectPtrs[i];
+                    UdmManagedSerialization.ReadFromAccessor(objectGroup.rtti.TransferData, accessor, objectGroup.instances[i], context);
+                }
             }
         }
     }

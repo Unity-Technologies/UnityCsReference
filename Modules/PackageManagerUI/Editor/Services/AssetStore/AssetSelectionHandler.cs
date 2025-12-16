@@ -9,14 +9,14 @@ namespace UnityEditor.PackageManager.UI.Internal;
 
 internal interface IAssetSelectionHandler : IService
 {
-    event Action<IEnumerable<Asset>> onRemoveSelectionDone;
+    event Action<IReadOnlyCollection<Asset>> onRemoveSelectionDone;
 
-    void Remove(IEnumerable<Asset> assets, string packageName, string versionString);
+    void Remove(IReadOnlyCollection<Asset> assets, string packageName, string versionString);
 }
 
 internal class AssetSelectionHandler : BaseService<IAssetSelectionHandler>, IAssetSelectionHandler
 {
-    public event Action<IEnumerable<Asset>> onRemoveSelectionDone = delegate {};
+    public event Action<IReadOnlyCollection<Asset>> onRemoveSelectionDone = delegate {};
 
     private readonly ISelectionWindowProxy m_SelectionWindowProxy;
     public AssetSelectionHandler(ISelectionWindowProxy selectionWindowProxy)
@@ -34,12 +34,12 @@ internal class AssetSelectionHandler : BaseService<IAssetSelectionHandler>, IAss
         m_SelectionWindowProxy.onRemoveSelectionDone -= OnRemoveSelectionDone;
     }
 
-    public void Remove(IEnumerable<Asset> assets, string packageName, string versionString)
+    public void Remove(IReadOnlyCollection<Asset> assets, string packageName, string versionString)
     {
         m_SelectionWindowProxy.Open(new SelectionWindowData(assets, packageName, versionString));
     }
 
-    private void OnRemoveSelectionDone(IEnumerable<Asset> selections)
+    private void OnRemoveSelectionDone(IReadOnlyCollection<Asset> selections)
     {
         onRemoveSelectionDone?.Invoke(selections);
     }

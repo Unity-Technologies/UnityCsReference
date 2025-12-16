@@ -101,6 +101,7 @@ namespace Unity.PlayMode.Editor
         public void EnableEditMode()
         {
             TextField.SetValueWithoutNotify(Label.text);
+            TextField.maxLength = 100;
             TextField.UnregisterCallback<ChangeEvent<string>>(OnTextFieldChange);
             TextField.RegisterCallback<ChangeEvent<string>>(OnTextFieldChange);
 

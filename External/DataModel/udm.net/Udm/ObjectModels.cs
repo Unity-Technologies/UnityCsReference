@@ -5,97 +5,97 @@ using System.Collections;
 
 namespace Unity.DataModel
 {
-[StructLayout(LayoutKind.Sequential)]
-internal unsafe struct ObjectModels : IEnumerable
-{
-    internal ObjectModels(DocumentModel doc)
-    {
-        document = doc;
-    }
-
     [StructLayout(LayoutKind.Sequential)]
-    internal unsafe struct Enumerator : IEnumerator, IDisposable
+    internal unsafe struct ObjectModels : IEnumerable
     {
-        public Enumerator()
+        internal ObjectModels(DocumentModel doc)
         {
-            first = true;
-            iterator = null;
+            document = doc;
         }
 
         [StructLayout(LayoutKind.Sequential)]
-        internal struct Iterator
+        internal unsafe struct Enumerator : IEnumerator, IDisposable
         {
-            internal IntPtr data_structure;
-            internal IntPtr iterator;
-            internal ObjectModel current;
-        }
-
-        internal Enumerator(DocumentModel document)
-        {
-            first = true;
-            iterator = UdmInterop.Instance.udm_object_model_iterator_new(document.DocumentPtr);
-        }
-
-        public void Dispose()
-        {
-            if (iterator != null)
+            public Enumerator()
             {
-                UdmInterop.Instance.udm_object_model_iterator_delete(iterator);
+                first = true;
                 iterator = null;
             }
-        }
 
-        public bool MoveNext()
-        {
-            if (!first)
+            [StructLayout(LayoutKind.Sequential)]
+            internal struct Iterator
             {
-                UdmInterop.Instance.udm_object_model_iterator_next(iterator);
+                internal IntPtr data_structure;
+                internal IntPtr iterator;
+                internal ObjectModel current;
             }
-            else
-                first = false;
-            return iterator->current.Accessor.Data != IntPtr.Zero;
-        }
 
-        internal bool Valid()
-        {
-            return iterator->current.Accessor.Data != IntPtr.Zero;
-        }
+            internal Enumerator(DocumentModel document)
+            {
+                first = true;
+                iterator = UdmInterop.Instance.udm_object_model_iterator_new(document.DocumentPtr);
+            }
 
-        public void Reset()
-        {
-            UdmInterop.Instance.udm_object_model_iterator_reset(iterator);
-            first = true;
-        }
+            public void Dispose()
+            {
+                if (iterator != null)
+                {
+                    UdmInterop.Instance.udm_object_model_iterator_delete(iterator);
+                    iterator = null;
+                }
+            }
 
-        public ref readonly ObjectModel Current
-        {
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get => ref iterator->current;
-        }
+            public bool MoveNext()
+            {
+                if (!first)
+                {
+                    UdmInterop.Instance.udm_object_model_iterator_next(iterator);
+                }
+                else
+                    first = false;
+                return iterator->current.Accessor.Data != IntPtr.Zero;
+            }
 
-        object IEnumerator.Current => Current;
+            internal bool Valid()
+            {
+                return iterator->current.Accessor.Data != IntPtr.Zero;
+            }
 
-    #pragma warning disable CS0649 // Field is never assigned to, and will always have its default value
-        // After profiling, having a pointer to dynamically allocated memory is faster in release than having just the field and fix its address on every call.
-        // This whole implementation will be revisited once we get a map implementation that can be used in C# and C++
-        // private Iterator iterator;
-        private Iterator* iterator;
-        private bool first = true;
-    #pragma warning restore CS0649 // Field is never assigned to, and will always have its default value
-    }
+            public void Reset()
+            {
+                UdmInterop.Instance.udm_object_model_iterator_reset(iterator);
+                first = true;
+            }
 
-    IEnumerator IEnumerable.GetEnumerator()
-    {
-        return (IEnumerator)GetEnumerator();
-    }
+            public ref readonly ObjectModel Current
+            {
+                [MethodImpl(MethodImplOptions.AggressiveInlining)]
+                get => ref iterator->current;
+            }
 
-    public Enumerator GetEnumerator()
-    {
-        return new Enumerator(document.DocumentPtr);
-    }
+            object IEnumerator.Current => Current;
 
 #pragma warning disable CS0649 // Field is never assigned to, and will always have its default value
-    internal DocumentModel document;
+            // After profiling, having a pointer to dynamically allocated memory is faster in release than having just the field and fix its address on every call.
+            // This whole implementation will be revisited once we get a map implementation that can be used in C# and C++
+            // private Iterator iterator;
+            private Iterator* iterator;
+            private bool first = true;
 #pragma warning restore CS0649 // Field is never assigned to, and will always have its default value
-}
+        }
+
+        IEnumerator IEnumerable.GetEnumerator()
+        {
+            return (IEnumerator)GetEnumerator();
+        }
+
+        public Enumerator GetEnumerator()
+        {
+            return new Enumerator(document.DocumentPtr);
+        }
+
+#pragma warning disable CS0649 // Field is never assigned to, and will always have its default value
+        internal DocumentModel document;
+#pragma warning restore CS0649 // Field is never assigned to, and will always have its default value
+    }
 }

@@ -101,11 +101,6 @@ namespace Unity.UI.Builder
         internal TempSerializedData tempSerializedData { get; private set; }
 
         /// <summary>
-        /// Indicates whether the current element uses UxmlTraits for attribute editing.
-        /// </summary>
-        public bool usesUxmlTraits => uxmlSerializedDataDescription == null;
-
-        /// <summary>
         /// Indicates whether the undo system is enabled for this context.
         /// </summary>
         public bool undoEnabled { get; set; } = true;

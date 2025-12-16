@@ -8,9 +8,11 @@ using System.IO;
 using UnityEditor.Scripting.Compilers;
 using UnityEditor.Utils;
 using UnityEngine;
+using UnityEngine.Bindings;
 
 namespace UnityEditor.Scripting
 {
+    [VisibleToOtherModules("UnityEditor.BurstModule")]
     internal class NetCoreRunProgram : Program
     {
         static string netcoreRunPath;

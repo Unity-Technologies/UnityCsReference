@@ -11,6 +11,7 @@ using UnityEditor.PackageManager;
 using UnityEngine;
 using System.Threading;
 using Unity.PlayMode.Editor;
+using UnityEditor.Multiplayer.Internal;
 
 namespace Unity.Multiplayer.PlayMode.Editor
 {
@@ -47,6 +48,7 @@ namespace Unity.Multiplayer.PlayMode.Editor
             descriptionText.AddToClassList("unity-base-field__aligned");
             descriptionText.multiline = true;
             descriptionText.style.whiteSpace = new StyleEnum<WhiteSpace>(WhiteSpace.Normal);
+            descriptionText.maxLength = 500;
             descriptionText.BindProperty(descriptionField);
             descriptionText.Bind(serializedObject);
             container.Add(descriptionText);
@@ -67,17 +69,7 @@ namespace Unity.Multiplayer.PlayMode.Editor
                 string.Join("\n\t", missingPacks)
                 , HelpBoxMessageType.Info);
             var dashboardButton = new Button(() => Application.OpenURL("https://cloud.unity.com/")) { text = "Open Dashboard" };
-            var installPackages = new Button(() =>
-            {
-                var request = Client.AddAndRemove(missingPacks.ToArray());
-                while (!request.IsCompleted)
-                {
-                    Thread.Sleep(100);
-                    Thread.Yield();
-                }
-                if (request.Error != null)
-                    Debug.LogError($"Failed to install packages: {request.Error.message}");
-            })
+            var installPackages = new Button(async void () =>  await OrchestratedScenario.LoadPackagesAsync())
             {
                 name = k_InstallMissingPackagesButtonName,
                 text = "Install missing packages"
@@ -92,7 +84,7 @@ namespace Unity.Multiplayer.PlayMode.Editor
         }
 
         // We have to override the default behaviour of the list view, because we need some custom logic in it.
-        void SetupListView(ListView listView, SerializedProperty listProperty, Type instanceType, int maxInstanceCount)
+        void SetupListView(ListView listView, SerializedProperty listProperty, Type instanceType, int maxInstanceCount, string tooltip)
         {
             if (listView == null)
             {
@@ -124,6 +116,13 @@ namespace Unity.Multiplayer.PlayMode.Editor
             };
 
             RefreshListViewAddRemoveToggles(listView, instanceType, listProperty);
+
+            var foldout = listView.Q<Foldout>();
+            var toggle = foldout?.Q<Toggle>();
+            if (toggle != null)
+            {
+                toggle.tooltip = tooltip;
+            }
         }
 
         // Mimic the naming that is used in Unity.
@@ -225,7 +224,8 @@ namespace Unity.Multiplayer.PlayMode.Editor
                 if (listView == null || listView.reorderable == false)
                     return;
 
-                SetupListView(listView, serializedObject.FindProperty("m_EditorInstances"), typeof(VirtualEditorInstanceDescription), MaxEditorInstanceCount);
+                SetupListView(listView, serializedObject.FindProperty("m_EditorInstances"), typeof(VirtualEditorInstanceDescription), MaxEditorInstanceCount,
+                    "Initial Editor Instances when entering playmode. Editor Instances will only have limited authoring capabilities.");
             });
 
             content.Add(additionalEditors);
@@ -247,7 +247,8 @@ namespace Unity.Multiplayer.PlayMode.Editor
                 // Use the reorderable flag to check if the setup already happened.
                 if (listView == null || listView.reorderable == false)
                     return;
-                SetupListView(listView, serializedObject.FindProperty("m_LocalInstances"), typeof(LocalInstanceDescription), MaxLocalInstanceCount);
+                SetupListView(listView, serializedObject.FindProperty("m_LocalInstances"), typeof(LocalInstanceDescription), MaxLocalInstanceCount,
+                    "Local Instances are builds that will run on the same machine as the editor.");
             });
 
             container.Add(localInstanceUI);
@@ -256,6 +257,9 @@ namespace Unity.Multiplayer.PlayMode.Editor
 
         private VisualElement CreateRemoteInstanceElement()
         {
+            if (!EditorMultiplayerManager.enablePlayModeRemoteDeployment)
+                return null;
+
             var container = new VisualElement();
             container.AddToClassList("instances-group");
             var remoteInstancesProperty = serializedObject.FindProperty("m_RemoteInstances");
@@ -274,9 +278,9 @@ namespace Unity.Multiplayer.PlayMode.Editor
                 // Use the reorderable flag to check if the setup already happened.
                 if (listView == null || listView.reorderable == false)
                     return;
-                SetupListView(listView, remoteInstancesProperty, typeof(RemoteInstanceDescription), MaxServerCount);
+                SetupListView(listView, remoteInstancesProperty, typeof(RemoteInstanceDescription), MaxServerCount,
+                    "Remote Instances are builds that will get deployed to UGS and will run there.");
             });
-
             container.Add(remoteInstancesUI);
             return container;
         }

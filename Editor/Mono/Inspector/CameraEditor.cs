@@ -15,7 +15,6 @@ using UnityEngine.Scripting;
 using UnityEditor.Modules;
 using UnityEditor.Overlays;
 using UnityEditor.UIElements;
-using UnityEditorInternal.VR;
 using UnityEngine.UIElements;
 using Object = UnityEngine.Object;
 

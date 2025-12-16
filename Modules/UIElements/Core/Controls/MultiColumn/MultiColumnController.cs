@@ -306,7 +306,7 @@ namespace UnityEngine.UIElements
 
         void UpdateContentContainer(BaseVerticalCollectionView collectionView)
         {
-            var headerTotalWidth = m_MultiColumnHeader.columnContainer.layout.width;
+            var headerTotalWidth = m_MultiColumnHeader.columnContainer.layoutSize.x;
             var targetWidth = Mathf.Max(headerTotalWidth, collectionView.scrollView.contentViewport.resolvedStyle.width);
             collectionView.scrollView.contentContainer.style.width = targetWidth;
         }

@@ -82,7 +82,7 @@ namespace UnityEngine.AI
                 rotation = rotation
             };
 
-            UpdateNavMeshDataListInternal(data, buildSettings, sources, localBounds);
+            UpdateNavMeshDataListInternal(data, buildSettings, NoAllocHelpers.CreateReadOnlySpan(sources), localBounds);
             return data;
         }
 
@@ -95,11 +95,11 @@ namespace UnityEngine.AI
             if (sources == null)
                 throw new ArgumentNullException(nameof(sources));
 
-            return UpdateNavMeshDataListInternal(data, buildSettings, sources, localBounds);
+            return UpdateNavMeshDataListInternal(data, buildSettings, NoAllocHelpers.CreateReadOnlySpan(sources), localBounds);
         }
 
         static extern bool UpdateNavMeshDataListInternal(
-            NavMeshData data, NavMeshBuildSettings buildSettings, object sources, Bounds localBounds);
+            NavMeshData data, NavMeshBuildSettings buildSettings, ReadOnlySpan<NavMeshBuildSource> sources, Bounds localBounds);
 
         // Async NavMeshData updating
         public static AsyncOperation UpdateNavMeshDataAsync(
@@ -110,7 +110,7 @@ namespace UnityEngine.AI
             if (sources == null)
                 throw new ArgumentNullException(nameof(sources));
 
-            return UpdateNavMeshDataAsyncListInternal(data, buildSettings, sources, localBounds);
+            return UpdateNavMeshDataAsyncListInternal(data, buildSettings, NoAllocHelpers.CreateReadOnlySpan(sources), localBounds);
         }
 
         [NativeHeader("Modules/AI/NavMeshManager.h")]
@@ -119,6 +119,6 @@ namespace UnityEngine.AI
         public static extern void Cancel(NavMeshData data);
 
         static extern AsyncOperation UpdateNavMeshDataAsyncListInternal(
-            NavMeshData data, NavMeshBuildSettings buildSettings, object sources, Bounds localBounds);
+            NavMeshData data, NavMeshBuildSettings buildSettings, ReadOnlySpan<NavMeshBuildSource> sources, Bounds localBounds);
     }
 }

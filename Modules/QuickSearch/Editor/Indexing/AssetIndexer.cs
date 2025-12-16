@@ -88,11 +88,10 @@ namespace UnityEditor.Search
         {
             var gid = GlobalObjectId.GetGlobalObjectIdSlow(subObj);
             var id = gid.ToString();
-            var containerName = Path.GetFileNameWithoutExtension(containerPath);
+            var containerName = Utils.GetFileNameWithoutExtension(containerPath);
             var isPrefabDocument = containerPath.EndsWith(".prefab");
-            var objPathName = Utils.ReplaceInvalidCharsFromPath($"{containerName}/{subObj.name}", ' ');
+            var objPathName = $"{containerName}/{subObj.name}";
             var subObjDocumentIndex = AddDocument(id, objPathName, containerPath, checkIfDocumentExists, SearchDocumentFlags.Nested | SearchDocumentFlags.Asset);
-
             IndexTypes(subObj.GetType(), subObjDocumentIndex, isPrefabDocument, exact: true);
             IndexFolder(subObjDocumentIndex, containerPath);
             IndexDocumentAreaFromPath(subObjDocumentIndex, containerPath);
@@ -100,12 +99,12 @@ namespace UnityEditor.Search
             {
                 IndexComponents(subObjDocumentIndex, subGo);
             }
-            IndexProperty(subObjDocumentIndex, "is", "nested", saveKeyword: true);
-            IndexProperty(subObjDocumentIndex, "is", "subasset", saveKeyword: true);
+            AddProperty("is", "nested", settings.baseScore, subObjDocumentIndex, saveKeyword: true);
+            AddProperty("is", "subasset", settings.baseScore, subObjDocumentIndex, saveKeyword: true);
             if (settings.options.dependencies)
             {
                 AddProperty("ref", containerPath.ToLowerInvariant(), subObjDocumentIndex);
-                AddProperty("ref", containerGlobalObjectId, subObjDocumentIndex);
+                AddProperty("ref", containerGlobalObjectId.ToLowerInvariant(), subObjDocumentIndex);
             }
 
             IndexLabels(subObjDocumentIndex, subObj);
@@ -133,7 +132,7 @@ namespace UnityEditor.Search
 
             IndexDocumentAreaFromPath(documentIndex, path);
 
-            var fi = new FileInfo(path);
+            var fi = new FileInfo(FileUtil.PathToAbsolutePath(path));
             if (fi.Exists)
             {
                 IndexNumber(documentIndex, "size", (double)fi.Length);
@@ -223,47 +222,35 @@ namespace UnityEditor.Search
 
         internal void IndexFileName(in int documentIndex, string filePath)
         {
-            var fileName = Path.GetFileName(filePath);
-            var extension = Path.GetExtension(fileName);
-            if (!string.IsNullOrEmpty(extension))
-            {
-                extension = extension.Substring(1).ToLowerInvariant();
-            }
-            var components = SearchUtils.SplitFileEntryComponents(fileName, SearchUtils.entrySeparators, 1).ToArray();
+            var fileName = Utils.GetFileName(filePath);
+            var extension = Utils.GetExtensionWithoutDot(fileName);
+            var components = SearchUtils.SplitEntryComponents(fileName, SearchUtils.entrySeparators, 1);
             int scoreModifier = 0;
-            double number = 0;
             var minIndexationLength = minWordIndexationLength;
             minWordIndexationLength = 1;
+            var componentCount = 0;
             foreach (var c in components)
             {
                 // Skip indexing variations on extension
                 if (c == extension)
                     continue;
 
+                var component = c.ToLowerInvariant();
                 var score = settings.baseScore + scoreModifier++;
-                IndexWord(documentIndex, c, scoreModifier: scoreModifier);
-
-                if (Utils.TryParse(c, out number))
-                {
-                    AddNumber("name", number, score, documentIndex);
-                }
-                else
-                {
-                    AddProperty("name", c, score, documentIndex, saveKeyword: false);
-                }
+                AddWord(component, score, documentIndex);
+                componentCount++;
             }
 
-            fileName = fileName.ToLowerInvariant();
-            var fileNameWithoutExtension = Path.GetFileNameWithoutExtension(fileName);
-            if (components.Length > 1)
+            if (componentCount > 1)
             {
-                AddProperty("name", fileNameWithoutExtension, scoreModifier, documentIndex, saveKeyword: false);
+                var fileNameWithoutExtension = Utils.GetFileNameWithoutExtension(fileName);
+                IndexProperty(documentIndex, "name", fileNameWithoutExtension, saveKeyword: false, scoreModifier);
                 IndexWord(documentIndex, fileNameWithoutExtension, scoreModifier: scoreModifier);
             }
 
             if (!string.IsNullOrEmpty(extension))
             {
-                AddProperty("name", fileName, scoreModifier, documentIndex, saveKeyword: false);
+                IndexProperty(documentIndex, "name", fileName, saveKeyword: false, scoreModifier);
                 IndexWord(documentIndex, fileName, scoreModifier: scoreModifier);
                 IndexWord(documentIndex, extension, scoreModifier: scoreModifier);
             }
@@ -307,8 +294,6 @@ namespace UnityEditor.Search
                     {
                         if (!v || v.GetType() == typeof(Transform) || (v.hideFlags & (HideFlags.DontSave | HideFlags.HideInInspector)) != 0)
                             continue;
-                        IndexPropertyComponents(documentIndex, "t", v.GetType().Name);
-
                         if (settings.options.properties)
                         {
                             IndexObject(documentIndex, v, dependencies: settings.options.dependencies);
@@ -356,7 +341,7 @@ namespace UnityEditor.Search
             var bundleName = AssetDatabase.GetImplicitAssetBundleName(path);
             if (string.IsNullOrEmpty(bundleName))
                 return;
-            IndexPropertyComponents(documentIndex, "b", bundleName);
+            IndexProperty(documentIndex, "b", bundleName, saveKeyword:false);
         }
 
         private void IndexLabels(in int documentIndex, in string path)
@@ -364,14 +349,14 @@ namespace UnityEditor.Search
             var guid = AssetDatabase.GUIDFromAssetPath(path);
             var labels = AssetDatabase.GetLabels(guid);
             foreach (var label in labels)
-                IndexPropertyComponents(documentIndex, "l", label);
+                IndexProperty(documentIndex, "l", label, saveKeyword: false);
         }
 
         private void IndexLabels(in int documentIndex, in UnityEngine.Object obj)
         {
             var labels = AssetDatabase.GetLabels(obj);
             foreach (var label in labels)
-                IndexPropertyComponents(documentIndex, "l", label);
+                IndexProperty(documentIndex, "l", label, saveKeyword: false);
         }
 
         public bool IndexSceneDocument(string scenePath, bool checkIfDocumentExists)
@@ -431,7 +416,7 @@ namespace UnityEditor.Search
                 // TODO Deep Indexing: we are currently not indexing all the properties of a nested objects. It could be worth indexing the same set of properties as a root object:
                 // types, path, dir, name, size, age, ext
 
-                IndexWord(documentIndex, Utils.ReplaceInvalidCharsFromPath(obj.transform.name, '_'));
+                IndexWord(documentIndex, obj.transform.name);
                 IndexProperty(documentIndex, "is", "nested", saveKeyword: true);
                 IndexDocumentArea(documentIndex, containerSearchArea);
 

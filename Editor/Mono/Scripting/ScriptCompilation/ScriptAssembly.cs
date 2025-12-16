@@ -8,6 +8,7 @@ using System.Linq;
 using UnityEditor.Scripting.Compilers;
 using UnityEditor.Compilation;
 using UnityEditor.Modules;
+using UnityEngine.Bindings;
 
 namespace UnityEditor.Scripting.ScriptCompilation
 {
@@ -36,6 +37,11 @@ namespace UnityEditor.Scripting.ScriptCompilation
             AdditionalCompilerArguments = new string[0];
         }
 
+        bool BuildingWithoutOptimization
+        {
+            get { return (CompilationOptions & EditorScriptCompilationOptions.BuildingWithoutOptimization) == EditorScriptCompilationOptions.BuildingWithoutOptimization; }
+        }
+
         public bool BuildingForEditor
         {
             get { return (CompilationOptions & EditorScriptCompilationOptions.BuildingForEditor) == EditorScriptCompilationOptions.BuildingForEditor; }
@@ -48,7 +54,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
 
         public CodeOptimization CodeOptimization
         {
-            get { return BuildingForEditor ? EditorCodeOptimization : BuildingDevelopmentBuild? CodeOptimization.Debug : CodeOptimization.Release; }
+            get { return BuildingForEditor ? EditorCodeOptimization : BuildingWithoutOptimization ? CodeOptimization.Debug : CodeOptimization.Release; }
         }
 
         public bool BuildingWithoutScriptUpdater
@@ -57,6 +63,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
         }
     }
 
+    [VisibleToOtherModules("UnityEditor.BurstModule")]
     [DebuggerDisplay("{Filename}")]
     class ScriptAssembly
     {

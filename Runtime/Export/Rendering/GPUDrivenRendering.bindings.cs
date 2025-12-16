@@ -17,78 +17,85 @@ using System.Collections.Generic;
 namespace UnityEngine.Rendering
 {
     delegate void GPUDrivenLODGroupDataCallback(in GPUDrivenLODGroupData lodGroupData);
-    delegate void GPUDrivenLODGroupDataNativeCallback(in GPUDrivenLODGroupDataNative lodGroupDataNative, GPUDrivenLODGroupDataCallback callback);
     delegate void GPUDrivenRendererDataCallback(in GPUDrivenRendererGroupData rendererData, IList<Mesh> meshes, IList<Material> materials);
-    delegate void GPUDrivenRendererDataNativeCallback(in GPUDrivenRendererGroupDataNative rendererDataNative, List<Mesh> meshes, List<Material> materials, GPUDrivenRendererDataCallback callback);
-
+    
     [RequiredByNativeCode]
     internal static class GPUDrivenCallbacks
     {
         [RequiredByNativeCode(GenerateProxy = true)]
-        public static void InvokeGPUDrivenLODGroupDataNativeCallback(
-            GPUDrivenLODGroupDataNativeCallback callback,
-            in GPUDrivenLODGroupDataNative lodGroupDataNative,
-            GPUDrivenLODGroupDataCallback target)
+        public static unsafe void InvokeGPUDrivenLODGroupDataNativeCallback(
+            in GPUDrivenLODGroupDataNative nativeData,
+            GPUDrivenLODGroupDataCallback callback)
         {
-            callback.Invoke(lodGroupDataNative, target);
+            var lodGroupID = NativeArrayUnsafeUtility.ConvertExistingDataToNativeArray<EntityId>(nativeData.lodGroupID, nativeData.lodGroupCount, Allocator.Invalid);
+            var lodOffset = NativeArrayUnsafeUtility.ConvertExistingDataToNativeArray<int>(nativeData.lodOffset, nativeData.lodGroupCount, Allocator.Invalid);
+            var lodCount = NativeArrayUnsafeUtility.ConvertExistingDataToNativeArray<int>(nativeData.lodCount, nativeData.lodGroupCount, Allocator.Invalid);
+            var fadeMode = NativeArrayUnsafeUtility.ConvertExistingDataToNativeArray<LODFadeMode>(nativeData.fadeMode, nativeData.lodGroupCount, Allocator.Invalid);
+            var worldSpaceReferencePoint = NativeArrayUnsafeUtility.ConvertExistingDataToNativeArray<Vector3>(nativeData.worldSpaceReferencePoint, nativeData.lodGroupCount, Allocator.Invalid);
+            var worldSpaceSize = NativeArrayUnsafeUtility.ConvertExistingDataToNativeArray<float>(nativeData.worldSpaceSize, nativeData.lodGroupCount, Allocator.Invalid);
+            var renderersCount = NativeArrayUnsafeUtility.ConvertExistingDataToNativeArray<short>(nativeData.renderersCount, nativeData.lodGroupCount, Allocator.Invalid);
+            var lastLODIsBillboard = NativeArrayUnsafeUtility.ConvertExistingDataToNativeArray<bool>(nativeData.lastLODIsBillboard, nativeData.lodGroupCount, Allocator.Invalid);
+            var forceLODMask = NativeArrayUnsafeUtility.ConvertExistingDataToNativeArray<byte>(nativeData.forceLODMask, nativeData.lodGroupCount, Allocator.Invalid);
+
+            var invalidLODGroupID = NativeArrayUnsafeUtility.ConvertExistingDataToNativeArray<EntityId>(nativeData.invalidLODGroupID, nativeData.invalidLODGroupCount, Allocator.Invalid);
+
+            var lodRenderersCount = NativeArrayUnsafeUtility.ConvertExistingDataToNativeArray<short>(nativeData.lodRenderersCount, nativeData.lodDataCount, Allocator.Invalid);
+            var lodScreenRelativeTransitionHeight = NativeArrayUnsafeUtility.ConvertExistingDataToNativeArray<float>(nativeData.lodScreenRelativeTransitionHeight, nativeData.lodDataCount, Allocator.Invalid);
+            var lodFadeTransitionWidth = NativeArrayUnsafeUtility.ConvertExistingDataToNativeArray<float>(nativeData.lodFadeTransitionWidth, nativeData.lodDataCount, Allocator.Invalid);
+
+            NativeArrayUnsafeUtility.SetAtomicSafetyHandle(ref lodGroupID, AtomicSafetyHandle.Create());
+            NativeArrayUnsafeUtility.SetAtomicSafetyHandle(ref lodOffset, AtomicSafetyHandle.Create());
+            NativeArrayUnsafeUtility.SetAtomicSafetyHandle(ref lodCount, AtomicSafetyHandle.Create());
+            NativeArrayUnsafeUtility.SetAtomicSafetyHandle(ref fadeMode, AtomicSafetyHandle.Create());
+            NativeArrayUnsafeUtility.SetAtomicSafetyHandle(ref worldSpaceReferencePoint, AtomicSafetyHandle.Create());
+            NativeArrayUnsafeUtility.SetAtomicSafetyHandle(ref worldSpaceSize, AtomicSafetyHandle.Create());
+            NativeArrayUnsafeUtility.SetAtomicSafetyHandle(ref renderersCount, AtomicSafetyHandle.Create());
+            NativeArrayUnsafeUtility.SetAtomicSafetyHandle(ref lastLODIsBillboard, AtomicSafetyHandle.Create());
+            NativeArrayUnsafeUtility.SetAtomicSafetyHandle(ref forceLODMask, AtomicSafetyHandle.Create());
+            NativeArrayUnsafeUtility.SetAtomicSafetyHandle(ref invalidLODGroupID, AtomicSafetyHandle.Create());
+            NativeArrayUnsafeUtility.SetAtomicSafetyHandle(ref lodRenderersCount, AtomicSafetyHandle.Create());
+            NativeArrayUnsafeUtility.SetAtomicSafetyHandle(ref lodScreenRelativeTransitionHeight, AtomicSafetyHandle.Create());
+            NativeArrayUnsafeUtility.SetAtomicSafetyHandle(ref lodFadeTransitionWidth, AtomicSafetyHandle.Create());
+            GPUDrivenLODGroupData data = new GPUDrivenLODGroupData
+            {
+                lodGroupID = lodGroupID,
+                lodOffset = lodOffset,
+                lodCount = lodCount,
+                fadeMode = fadeMode,
+                worldSpaceReferencePoint = worldSpaceReferencePoint,
+                worldSpaceSize = worldSpaceSize,
+                renderersCount = renderersCount,
+                lastLODIsBillboard = lastLODIsBillboard,
+                forceLODMask = forceLODMask,
+                invalidLODGroupID = invalidLODGroupID,
+                lodRenderersCount = lodRenderersCount,
+                lodScreenRelativeTransitionHeight = lodScreenRelativeTransitionHeight,
+                lodFadeTransitionWidth = lodFadeTransitionWidth
+            };
+
+            callback(data);
+
+            AtomicSafetyHandle.Release(NativeArrayUnsafeUtility.GetAtomicSafetyHandle(lodGroupID));
+            AtomicSafetyHandle.Release(NativeArrayUnsafeUtility.GetAtomicSafetyHandle(lodOffset));
+            AtomicSafetyHandle.Release(NativeArrayUnsafeUtility.GetAtomicSafetyHandle(lodCount));
+            AtomicSafetyHandle.Release(NativeArrayUnsafeUtility.GetAtomicSafetyHandle(fadeMode));
+            AtomicSafetyHandle.Release(NativeArrayUnsafeUtility.GetAtomicSafetyHandle(worldSpaceReferencePoint));
+            AtomicSafetyHandle.Release(NativeArrayUnsafeUtility.GetAtomicSafetyHandle(worldSpaceSize));
+            AtomicSafetyHandle.Release(NativeArrayUnsafeUtility.GetAtomicSafetyHandle(renderersCount));
+            AtomicSafetyHandle.Release(NativeArrayUnsafeUtility.GetAtomicSafetyHandle(invalidLODGroupID));
+            AtomicSafetyHandle.Release(NativeArrayUnsafeUtility.GetAtomicSafetyHandle(lodRenderersCount));
+            AtomicSafetyHandle.Release(NativeArrayUnsafeUtility.GetAtomicSafetyHandle(lastLODIsBillboard));
+            AtomicSafetyHandle.Release(NativeArrayUnsafeUtility.GetAtomicSafetyHandle(forceLODMask));
+            AtomicSafetyHandle.Release(NativeArrayUnsafeUtility.GetAtomicSafetyHandle(lodScreenRelativeTransitionHeight));
+            AtomicSafetyHandle.Release(NativeArrayUnsafeUtility.GetAtomicSafetyHandle(lodFadeTransitionWidth));
         }
 
         [RequiredByNativeCode(GenerateProxy = true)]
-        public static void InvokeGPUDrivenRendererDataNativeCallback(
-            GPUDrivenRendererDataNativeCallback callback,
-            in GPUDrivenRendererGroupDataNative rendererDataNative,
+        public static unsafe void InvokeGPUDrivenRendererDataNativeCallback(
+            in GPUDrivenRendererGroupDataNative nativeData,
+            ReadOnlySpan<IntPtr> meshHandles, ReadOnlySpan<IntPtr> materialHandles,
             List<Mesh> meshes, List<Material> materials,
-            GPUDrivenRendererDataCallback target)
-        {
-            callback.Invoke(rendererDataNative, meshes, materials, target);
-        }
-    }
-
-    [RequiredByNativeCode]
-    [NativeHeader("Runtime/Camera/GPUDrivenProcessor.h")]
-    internal class GPUDrivenProcessor
-    {
-        internal IntPtr m_Ptr;
-
-        internal List<Mesh> scratchMeshes { get; private set; }
-        internal List<Material> scratchMaterials { get; private set; }
-
-        public GPUDrivenProcessor()
-        {
-            m_Ptr = Internal_Create();
-
-            scratchMeshes = new List<Mesh>();
-            scratchMaterials = new List<Material>();
-        }
-
-        ~GPUDrivenProcessor()
-        {
-            Destroy();
-        }
-
-        public void Dispose()
-        {
-            scratchMeshes = null;
-            scratchMaterials = null;
-
-            Destroy();
-            GC.SuppressFinalize(this);
-        }
-
-        private void Destroy()
-        {
-            if (m_Ptr != IntPtr.Zero)
-            {
-                Internal_Destroy(m_Ptr);
-                m_Ptr = IntPtr.Zero;
-            }
-        }
-
-        private static extern IntPtr Internal_Create();
-
-        private static extern void Internal_Destroy(IntPtr ptr);
-
-        private static unsafe GPUDrivenRendererDataNativeCallback s_NativeRendererCallback = (in GPUDrivenRendererGroupDataNative nativeData, List<Mesh> meshes, List<Material> materials, GPUDrivenRendererDataCallback callback) =>
+            GPUDrivenRendererDataCallback callback)
         {
             var rendererGroupID = NativeArrayUnsafeUtility.ConvertExistingDataToNativeArray<EntityId>(nativeData.rendererGroupID, nativeData.rendererGroupCount, Allocator.Invalid);
             var localBounds = NativeArrayUnsafeUtility.ConvertExistingDataToNativeArray<Bounds>(nativeData.localBounds, nativeData.localBounds == null ? 0 : nativeData.rendererGroupCount, Allocator.Invalid);
@@ -159,6 +166,20 @@ namespace UnityEngine.Rendering
             NativeArrayUnsafeUtility.SetAtomicSafetyHandle(ref materialID, AtomicSafetyHandle.Create());
             NativeArrayUnsafeUtility.SetAtomicSafetyHandle(ref packedMaterialData, AtomicSafetyHandle.Create());
             NativeArrayUnsafeUtility.SetAtomicSafetyHandle(ref materialFilterFlags, AtomicSafetyHandle.Create());
+
+            meshes.Clear();
+            if (meshes.Capacity < meshHandles.Length)
+                meshes.Capacity = meshHandles.Length;
+            
+            foreach (var meshHandle in meshHandles)
+                meshes.Add(UnsafeUtility.As<Mesh>(GCHandle.FromIntPtr(meshHandle).Target));
+
+            materials.Clear();
+            if (materials.Capacity < materialHandles.Length)
+                materials.Capacity = materialHandles.Length;
+            
+            foreach (var matrialHandle in materialHandles)
+                materials.Add(UnsafeUtility.As<Material>(GCHandle.FromIntPtr(matrialHandle).Target));
             GPUDrivenRendererGroupData data = new GPUDrivenRendererGroupData
             {
                 rendererGroupID = rendererGroupID,
@@ -227,87 +248,68 @@ namespace UnityEngine.Rendering
             AtomicSafetyHandle.Release(NativeArrayUnsafeUtility.GetAtomicSafetyHandle(materialID));
             AtomicSafetyHandle.Release(NativeArrayUnsafeUtility.GetAtomicSafetyHandle(packedMaterialData));
             AtomicSafetyHandle.Release(NativeArrayUnsafeUtility.GetAtomicSafetyHandle(materialFilterFlags));
-        };
+        }
+    }
 
-        private static unsafe GPUDrivenLODGroupDataNativeCallback s_NativeLODGroupCallback = (in GPUDrivenLODGroupDataNative nativeData, GPUDrivenLODGroupDataCallback callback) =>
+    [RequiredByNativeCode]
+    [NativeHeader("Runtime/Camera/GPUDrivenProcessor.h")]
+    internal class GPUDrivenProcessor
+    {
+        internal IntPtr m_Ptr;
+
+        internal List<Mesh> scratchMeshes { get; private set; }
+        internal List<Material> scratchMaterials { get; private set; }
+
+        public GPUDrivenProcessor()
         {
-            var lodGroupID = NativeArrayUnsafeUtility.ConvertExistingDataToNativeArray<EntityId>(nativeData.lodGroupID, nativeData.lodGroupCount, Allocator.Invalid);
-            var lodOffset = NativeArrayUnsafeUtility.ConvertExistingDataToNativeArray<int>(nativeData.lodOffset, nativeData.lodGroupCount, Allocator.Invalid);
-            var lodCount = NativeArrayUnsafeUtility.ConvertExistingDataToNativeArray<int>(nativeData.lodCount, nativeData.lodGroupCount, Allocator.Invalid);
-            var fadeMode = NativeArrayUnsafeUtility.ConvertExistingDataToNativeArray<LODFadeMode>(nativeData.fadeMode, nativeData.lodGroupCount, Allocator.Invalid);
-            var worldSpaceReferencePoint = NativeArrayUnsafeUtility.ConvertExistingDataToNativeArray<Vector3>(nativeData.worldSpaceReferencePoint, nativeData.lodGroupCount, Allocator.Invalid);
-            var worldSpaceSize = NativeArrayUnsafeUtility.ConvertExistingDataToNativeArray<float>(nativeData.worldSpaceSize, nativeData.lodGroupCount, Allocator.Invalid);
-            var renderersCount = NativeArrayUnsafeUtility.ConvertExistingDataToNativeArray<short>(nativeData.renderersCount, nativeData.lodGroupCount, Allocator.Invalid);
-            var lastLODIsBillboard = NativeArrayUnsafeUtility.ConvertExistingDataToNativeArray<bool>(nativeData.lastLODIsBillboard, nativeData.lodGroupCount, Allocator.Invalid);
-            var forceLODMask = NativeArrayUnsafeUtility.ConvertExistingDataToNativeArray<byte>(nativeData.forceLODMask, nativeData.lodGroupCount, Allocator.Invalid);
+            m_Ptr = Internal_Create();
 
-            var invalidLODGroupID = NativeArrayUnsafeUtility.ConvertExistingDataToNativeArray<EntityId>(nativeData.invalidLODGroupID, nativeData.invalidLODGroupCount, Allocator.Invalid);
+            scratchMeshes = new List<Mesh>();
+            scratchMaterials = new List<Material>();
+        }
 
-            var lodRenderersCount = NativeArrayUnsafeUtility.ConvertExistingDataToNativeArray<short>(nativeData.lodRenderersCount, nativeData.lodDataCount, Allocator.Invalid);
-            var lodScreenRelativeTransitionHeight = NativeArrayUnsafeUtility.ConvertExistingDataToNativeArray<float>(nativeData.lodScreenRelativeTransitionHeight, nativeData.lodDataCount, Allocator.Invalid);
-            var lodFadeTransitionWidth = NativeArrayUnsafeUtility.ConvertExistingDataToNativeArray<float>(nativeData.lodFadeTransitionWidth, nativeData.lodDataCount, Allocator.Invalid);
+        ~GPUDrivenProcessor()
+        {
+            Destroy();
+        }
 
-            NativeArrayUnsafeUtility.SetAtomicSafetyHandle(ref lodGroupID, AtomicSafetyHandle.Create());
-            NativeArrayUnsafeUtility.SetAtomicSafetyHandle(ref lodOffset, AtomicSafetyHandle.Create());
-            NativeArrayUnsafeUtility.SetAtomicSafetyHandle(ref lodCount, AtomicSafetyHandle.Create());
-            NativeArrayUnsafeUtility.SetAtomicSafetyHandle(ref fadeMode, AtomicSafetyHandle.Create());
-            NativeArrayUnsafeUtility.SetAtomicSafetyHandle(ref worldSpaceReferencePoint, AtomicSafetyHandle.Create());
-            NativeArrayUnsafeUtility.SetAtomicSafetyHandle(ref worldSpaceSize, AtomicSafetyHandle.Create());
-            NativeArrayUnsafeUtility.SetAtomicSafetyHandle(ref renderersCount, AtomicSafetyHandle.Create());
-            NativeArrayUnsafeUtility.SetAtomicSafetyHandle(ref lastLODIsBillboard, AtomicSafetyHandle.Create());
-            NativeArrayUnsafeUtility.SetAtomicSafetyHandle(ref forceLODMask, AtomicSafetyHandle.Create());
-            NativeArrayUnsafeUtility.SetAtomicSafetyHandle(ref invalidLODGroupID, AtomicSafetyHandle.Create());
-            NativeArrayUnsafeUtility.SetAtomicSafetyHandle(ref lodRenderersCount, AtomicSafetyHandle.Create());
-            NativeArrayUnsafeUtility.SetAtomicSafetyHandle(ref lodScreenRelativeTransitionHeight, AtomicSafetyHandle.Create());
-            NativeArrayUnsafeUtility.SetAtomicSafetyHandle(ref lodFadeTransitionWidth, AtomicSafetyHandle.Create());
-            GPUDrivenLODGroupData data = new GPUDrivenLODGroupData
+        public void Dispose()
+        {
+            scratchMeshes = null;
+            scratchMaterials = null;
+
+            Destroy();
+            GC.SuppressFinalize(this);
+        }
+
+        private void Destroy()
+        {
+            if (m_Ptr != IntPtr.Zero)
             {
-                lodGroupID = lodGroupID,
-                lodOffset = lodOffset,
-                lodCount = lodCount,
-                fadeMode = fadeMode,
-                worldSpaceReferencePoint = worldSpaceReferencePoint,
-                worldSpaceSize = worldSpaceSize,
-                renderersCount = renderersCount,
-                lastLODIsBillboard = lastLODIsBillboard,
-                forceLODMask = forceLODMask,
-                invalidLODGroupID = invalidLODGroupID,
-                lodRenderersCount = lodRenderersCount,
-                lodScreenRelativeTransitionHeight = lodScreenRelativeTransitionHeight,
-                lodFadeTransitionWidth = lodFadeTransitionWidth
-            };
+                Internal_Destroy(m_Ptr);
+                m_Ptr = IntPtr.Zero;
+            }
+        }
 
-            callback(data);
+        private static extern IntPtr Internal_Create();
 
-            AtomicSafetyHandle.Release(NativeArrayUnsafeUtility.GetAtomicSafetyHandle(lodGroupID));
-            AtomicSafetyHandle.Release(NativeArrayUnsafeUtility.GetAtomicSafetyHandle(lodOffset));
-            AtomicSafetyHandle.Release(NativeArrayUnsafeUtility.GetAtomicSafetyHandle(lodCount));
-            AtomicSafetyHandle.Release(NativeArrayUnsafeUtility.GetAtomicSafetyHandle(fadeMode));
-            AtomicSafetyHandle.Release(NativeArrayUnsafeUtility.GetAtomicSafetyHandle(worldSpaceReferencePoint));
-            AtomicSafetyHandle.Release(NativeArrayUnsafeUtility.GetAtomicSafetyHandle(worldSpaceSize));
-            AtomicSafetyHandle.Release(NativeArrayUnsafeUtility.GetAtomicSafetyHandle(renderersCount));
-            AtomicSafetyHandle.Release(NativeArrayUnsafeUtility.GetAtomicSafetyHandle(invalidLODGroupID));
-            AtomicSafetyHandle.Release(NativeArrayUnsafeUtility.GetAtomicSafetyHandle(lodRenderersCount));
-            AtomicSafetyHandle.Release(NativeArrayUnsafeUtility.GetAtomicSafetyHandle(lastLODIsBillboard));
-            AtomicSafetyHandle.Release(NativeArrayUnsafeUtility.GetAtomicSafetyHandle(forceLODMask));
-            AtomicSafetyHandle.Release(NativeArrayUnsafeUtility.GetAtomicSafetyHandle(lodScreenRelativeTransitionHeight));
-            AtomicSafetyHandle.Release(NativeArrayUnsafeUtility.GetAtomicSafetyHandle(lodFadeTransitionWidth));
-        };
+        private static extern void Internal_Destroy(IntPtr ptr);
 
-        private extern void EnableGPUDrivenRenderingAndDispatchRendererData(ReadOnlySpan<EntityId> renderersID, GPUDrivenRendererDataNativeCallback callback, List<Mesh> meshes, List<Material> materials, GPUDrivenRendererDataCallback param, bool materialUpdateOnly);
+        private extern void EnableGPUDrivenRenderingAndDispatchRendererData(ReadOnlySpan<EntityId> renderersID, [UnityMarshalAs(NativeType.ScriptingObjectPtr)] List<Mesh> meshes, [UnityMarshalAs(NativeType.ScriptingObjectPtr)] List<Material> materials, GPUDrivenRendererDataCallback param, bool materialUpdateOnly);
         public void EnableGPUDrivenRenderingAndDispatchRendererData(ReadOnlySpan<EntityId> renderersID, GPUDrivenRendererDataCallback callback, bool materialUpdateOnly = false)
         {
             scratchMeshes.Clear();
             scratchMaterials.Clear();
-            EnableGPUDrivenRenderingAndDispatchRendererData(renderersID, s_NativeRendererCallback, scratchMeshes, scratchMaterials, callback, materialUpdateOnly);
+            EnableGPUDrivenRenderingAndDispatchRendererData(renderersID, scratchMeshes, scratchMaterials, callback, materialUpdateOnly);
         }
         public extern void DisableGPUDrivenRendering(ReadOnlySpan<EntityId> renderersID);
 
-        private extern void DispatchLODGroupData(ReadOnlySpan<EntityId> lodGroupID, GPUDrivenLODGroupDataNativeCallback callback, GPUDrivenLODGroupDataCallback param);
+        [NativeMethod("DispatchLODGroupData")]
+        private extern void DispatchLODGroupDataBinding(ReadOnlySpan<EntityId> lodGroupID, GPUDrivenLODGroupDataCallback param);
         public void DispatchLODGroupData(ReadOnlySpan<EntityId> lodGroupID, GPUDrivenLODGroupDataCallback callback)
         {
             Debug.Assert(UnsafeUtility.SizeOf<EntityId>() == sizeof(int), "EntityId size has changed, please fix the code.");
-            DispatchLODGroupData(lodGroupID, s_NativeLODGroupCallback, callback);
+            DispatchLODGroupDataBinding(lodGroupID, callback);
         }
 
         public extern bool enablePartialRendering { set; get; }

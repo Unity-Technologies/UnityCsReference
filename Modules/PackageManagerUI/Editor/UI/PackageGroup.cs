@@ -57,7 +57,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             EnableInClassList("empty", !packageItems.Any(item => item.visualState.visible));
         }
 
-        internal PackageItem AddPackageItem(IPackage package, VisualState state)
+        public PackageItem AddPackageItem(IPackage package, VisualState state)
         {
             var packageItem = new PackageItem(m_PageManager, m_PackageDatabase) {packageGroup = this};
             packageItem.SetPackageAndVisualState(package, state);
@@ -65,17 +65,17 @@ namespace UnityEditor.PackageManager.UI.Internal
             return packageItem;
         }
 
-        internal void AddPackageItem(PackageItem item)
+        public void AddPackageItem(PackageItem item)
         {
             groupContainer.Add(item);
         }
 
-        internal void ClearPackageItems()
+        public void ClearPackageItems()
         {
             groupContainer.Clear();
         }
 
-        internal void RemovePackageItem(PackageItem item)
+        public void RemovePackageItem(PackageItem item)
         {
             if (groupContainer.Contains(item))
                 groupContainer.Remove(item);

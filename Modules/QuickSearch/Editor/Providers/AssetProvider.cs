@@ -7,6 +7,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Threading;
 using UnityEditor.ShortcutManagement;
 using UnityEngine;
 using Object = UnityEngine.Object;
@@ -162,6 +163,8 @@ namespace UnityEditor.Search.Providers
 
         private const string k_NoResultsLimitToggle = "noResultsLimit";
 
+        static readonly TimeSpan k_MaxKillSearchWaitTime = TimeSpan.FromSeconds(5);
+
         [SearchItemProvider]
         internal static SearchProvider CreateProvider()
         {
@@ -176,7 +179,7 @@ namespace UnityEditor.Search.Providers
                 toObject = (item, type) => GetObject(item, type),
                 toType = (item, constrainedType) => GetItemAssetType(item, constrainedType),
                 toKey = (item) => GetDocumentKey(item),
-                toInstanceId = (item) => GetItemInstanceId(item),
+                toEntityId = (item) => GetItemEntityId(item),
                 fetchItems = (context, items, provider) => SearchAssets(context, provider),
                 fetchLabel = (item, context) => FetchLabel(item),
                 fetchDescription = (item, context) => FetchDescription(item),
@@ -214,7 +217,7 @@ namespace UnityEditor.Search.Providers
             s_KeywordPropositions = null;
         }
 
-        private static int GetItemInstanceId(in SearchItem item)
+        private static EntityId GetItemEntityId(in SearchItem item)
         {
             var info = GetInfo(item);
             if (info.gid.targetObjectId == 0)
@@ -240,7 +243,7 @@ namespace UnityEditor.Search.Providers
                 return AssetDatabase.GetCachedIcon(info.source) as Texture2D;
 
             var objEntityId = info.obj ? info.obj.GetEntityId() : EntityId.None;
-            var clientId = context.searchView != null ? context.searchView.GetViewId() : 0;
+            var clientId = context.searchView != null ? context.searchView.GetViewId() : EntityId.None;
 
             if (info.gid.identifierType == (int)IdentifierType.kBuiltInAsset)
                 return AssetPreview.GetAssetPreview(objEntityId, clientId) ?? AssetPreview.GetMiniThumbnail(info.obj);
@@ -313,7 +316,7 @@ namespace UnityEditor.Search.Providers
 
             if (info.flags.HasAny(SearchDocumentFlags.Object))
                 return TrimLabel((item.label = info.path), displayCompact);
-            item.label = Path.GetFileName(info.path);
+            item.label = Utils.GetFileName(info.path);
             if (string.IsNullOrEmpty(item.label) && info.obj != null)
             {
                 item.label = info.obj.name;
@@ -536,23 +539,28 @@ namespace UnityEditor.Search.Providers
             if (string.IsNullOrEmpty(searchQuery))
                 yield break;
 
-            // Search by GUID
-            var guidPath = AssetDatabase.GUIDToAssetPath(searchQuery);
-            if (!string.IsNullOrEmpty(guidPath))
-            {
-                var info = new AssetMetaInfo(guidPath, GetGID(guidPath), SearchDocumentFlags.Asset);
-                yield return provider.CreateItem(context, info.gid.ToString(), -1, $"{Path.GetFileName(guidPath)} ({searchQuery})", null, null, info);
-            }
-
             if (searchQuery.StartsWith("GlobalObjectId", StringComparison.Ordinal))
             {
                 if (GlobalObjectId.TryParse(searchQuery, out var gid))
                 {
                     var obj = GlobalObjectId.GlobalObjectIdentifierToObjectSlow(gid);
-                    var objPath = SearchUtils.GetObjectPath(obj, false);
+                    var objPath = SearchUtils.GetObjectPath(obj);
                     var info = new AssetMetaInfo(objPath, gid,
                         gid.identifierType == (int)IdentifierType.kImportedAsset ? SearchDocumentFlags.Asset : SearchDocumentFlags.Nested | SearchDocumentFlags.Object);
                     yield return provider.CreateItem(context, gid.ToString(), -1, objPath, null, null, info);
+                }
+            }
+            else
+            {
+                var assetPath = AssetDatabase.GUIDToAssetPath(searchQuery);
+                if (string.IsNullOrEmpty(assetPath) && Guid.TryParse(searchQuery, out var guid))
+                {
+                    var guidStr = searchQuery.Replace("-", "");
+                    assetPath = AssetDatabase.GUIDToAssetPath(guidStr);
+                }
+                if (!string.IsNullOrEmpty(assetPath))
+                {
+                    yield return CreateItemFromPath(context, provider, assetPath);
                 }
             }
 
@@ -601,14 +609,22 @@ namespace UnityEditor.Search.Providers
             return resultsLimit;
         }
 
+        internal static SearchItem CreateItemFromPath(SearchContext context, SearchProvider provider, string assetPath)
+        {
+            var info = new AssetMetaInfo(assetPath, GetGID(assetPath), SearchDocumentFlags.Asset);
+            return provider.CreateItem(context, info.gid.ToString(), -1, $"{Utils.GetFileName(assetPath)} ({context.searchQuery})", null, null, info);
+        }
+
         private static IEnumerator SearchIndexes(string searchQuery, SearchContext context, SearchProvider provider, SearchDatabase db)
         {
-            var cancelToken = context.sessions.cancelToken;
+            var cancelToken = context.session.cancelToken;
             if (!db.ready)
             {
                 if (!Utils.IsRunningTests())
                 {
                     var findOptions = FindOptions.Words | FindOptions.Regex | FindOptions.Glob;
+                    if (context.options.HasAny(SearchFlags.Packages))
+                        findOptions |= FindOptions.Packages;
                     foreach (var e in FindProvider.Search(searchQuery, db.settings.roots, context, provider, findOptions))
                     {
                         if (!e.valid)
@@ -640,32 +656,55 @@ namespace UnityEditor.Search.Providers
             index.fetchDefaultFiler = PopulateDefaultFilters;
             var resultsLimit = GetResultLimit(query);
 
+            var indexerInThreadCancellationTokenSource = new CancellationTokenSource();
+            using var linkedTokenSource = CancellationTokenSource.CreateLinkedTokenSource(cancelToken, indexerInThreadCancellationTokenSource.Token);
             var results = new System.Collections.Concurrent.ConcurrentBag<SearchResult>();
             var searchTask = System.Threading.Tasks.Task.Run(() =>
             {
                 // Search index
                 using var immutableScope = db.GetImmutableScope();
                 foreach (var r in index.Search(query, context, provider, patternMatchLimit: resultsLimit))
+                {
+                    if (linkedTokenSource.IsCancellationRequested)
+                        break;
                     results.Add(r);
-            }, context.sessions.cancelToken);
+                }
+            }, linkedTokenSource.Token);
 
+            // Listen to AssemblyReload events to cancel the search if the assembly is reloaded
+            using var indexInThreadScope = new SearchIndexer.IndexerThreadScope(() =>
+            {
+                indexerInThreadCancellationTokenSource.Cancel();
+                searchTask.Wait(k_MaxKillSearchWaitTime);
+            });
+
+            var rejectPackageResult = IsRejectPackageResult(db, context);
             while (results.Count > 0 || !searchTask.IsCompleted || results.Count > 0)
             {
                 while (results.TryTake(out var e))
-                    yield return CreateItem(context, provider, db, e);
+                    yield return CreateItem(context, provider, db, e, rejectPackageResult);
 
                 if (!searchTask.Wait(0))
                     yield return null;
             }
         }
 
-        private static SearchItem CreateItem(in SearchContext context, in SearchProvider provider, in SearchDatabase db, in SearchResult e)
+        internal static bool IsRejectPackageResult(SearchDatabase db, SearchContext context)
+        {
+            // By default, we will yield any results regardless of if they are from a Package or Assets. Decide if we need to reject Package result:
+            // This switch is a global way of hiding or showing Package results AFTER the query has been fully resolved.
+            return db.settings.IsPackagesIndexingEnabled() && !context.options.HasFlag(SearchFlags.Packages);
+        }
+
+        private static SearchItem CreateItem(in SearchContext context, in SearchProvider provider, in SearchDatabase db, in SearchResult e, in bool rejectPackageResult)
         {
             var doc = db.index.GetDocument(e.index);
             if (string.IsNullOrEmpty(doc.id))
                 return null;
-            var score = ComputeSearchDocumentScore(context, doc, e.score);
+            if (rejectPackageResult && doc.source.StartsWith("Packages"))
+                return null;
 
+            var score = ComputeSearchDocumentScore(context, doc, e.score);
             var flags = doc.flags;
             if (!IsProjectIndex(db))
                 flags |= SearchDocumentFlags.Grouped;
@@ -674,7 +713,7 @@ namespace UnityEditor.Search.Providers
 
         static int ComputeSearchDocumentScore(in SearchContext context, in SearchDocument doc, int score)
         {
-            var docPath = doc.m_Name ?? (string.IsNullOrEmpty(doc.m_Source) ? null : Path.GetFileName(Utils.ReplaceInvalidCharsFromPath(doc.m_Source, '_')));
+            var docPath = doc.m_Name ?? (string.IsNullOrEmpty(doc.m_Source) ? null : Utils.GetFileName(doc.m_Source));
             if (doc.m_Name != null)
                 score <<= 2;
             if (!string.IsNullOrEmpty(docPath))
@@ -719,8 +758,7 @@ namespace UnityEditor.Search.Providers
             string filename = null;
             if (context.options.HasAny(SearchFlags.Debug) && !string.IsNullOrEmpty(tag))
             {
-                filename = Path.GetFileName(path);
-                filename += $" ({tag}, {itemScore})";
+                filename = $"{Utils.GetFileName(path)} ({tag}, {itemScore})";
             }
 
             if (flags.HasAny(SearchDocumentFlags.Grouped))
@@ -964,6 +1002,6 @@ namespace UnityEditor.Search.Providers
         }
 
         [SearchTemplate(description = "Find all textures", providerId = type)] internal static string ST1() => @"t:texture";
-        [SearchTemplate(description = "Search current folder", providerId = type)] internal static string ST2() => $"dir=\"{Path.GetFileName(ProjectWindowUtil.GetActiveFolderPath())}\" ";
+        [SearchTemplate(description = "Search current folder", providerId = type)] internal static string ST2() => $"dir=\"{Utils.GetFileName(ProjectWindowUtil.GetActiveFolderPath())}\" ";
     }
 }

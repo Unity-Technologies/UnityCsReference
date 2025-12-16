@@ -107,7 +107,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 SetProgress(package, item.progress);
                 packagesUpdated.Add(package);
             }
-            if (packagesUpdated.Any())
+            if (packagesUpdated.Count > 0)
                 m_PackageDatabase.OnPackagesModified(packagesUpdated, true);
         }
 
@@ -142,10 +142,10 @@ namespace UnityEditor.PackageManager.UI.Internal
                 GeneratePackagesAndTriggerChangeEvent(new[] { packageInfo.name });
         }
 
-        private void OnPackageInfosUpdated(IReadOnlyCollection<(PackageInfo oldInfo, PackageInfo newInfo)> updatedInfos)
+        private void OnPackageInfosUpdated(IReadOnlyCollection<(PackageInfo oldInfo, PackageInfo newInfo)> updatedInfos, PackagesChangedSource changedSource)
         {
             var packageNames = updatedInfos.Select(i => i.oldInfo?.name ?? i.newInfo?.name).ToArray();
-            GeneratePackagesAndTriggerChangeEvent(packageNames);
+            GeneratePackagesAndTriggerChangeEvent(packageNames, changedSource);
         }
 
         private void OnLoadAllVersionsChanged(string packageUniqueId, bool _)
@@ -160,7 +160,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             GeneratePackagesAndTriggerChangeEvent(allPackageNames);
         }
 
-        public void GeneratePackagesAndTriggerChangeEvent(IEnumerable<string> packageNames)
+        public void GeneratePackagesAndTriggerChangeEvent(IEnumerable<string> packageNames, PackagesChangedSource changedSource = PackagesChangedSource.Other)
         {
             if (packageNames?.Any() != true)
                 return;
@@ -204,8 +204,8 @@ namespace UnityEditor.PackageManager.UI.Internal
                 }
             }
 
-            if (updatedPackages.Any() || packagesToRemove.Any())
-                m_PackageDatabase.UpdatePackages(toAddOrUpdate: updatedPackages, toRemove: packagesToRemove);
+            if (updatedPackages.Count > 0 || packagesToRemove.Count > 0)
+                m_PackageDatabase.UpdatePackages(toAddOrUpdate: updatedPackages, toRemove: packagesToRemove, changedSource);
         }
     }
 
@@ -378,7 +378,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
                 packagesChanged.Add(package);
             }
-            if (packagesChanged.Any())
+            if (packagesChanged.Count > 0)
                 m_PackageDatabase.UpdatePackages(packagesChanged);
         }
 
@@ -398,7 +398,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             GeneratePackagesAndTriggerChangeEvent(purchaseInfos.Select(info => info.productId));
         }
 
-        private void OnPackageInfosUpdated(IReadOnlyCollection<(PackageInfo oldInfo, PackageInfo newInfo)> updatedInfos)
+        private void OnPackageInfosUpdated(IReadOnlyCollection<(PackageInfo oldInfo, PackageInfo newInfo)> updatedInfos, PackagesChangedSource changedSource = PackagesChangedSource.Other)
         {
             var productIds = new List<long>();
             foreach (var (oldInfo, newInfo) in updatedInfos)
@@ -460,7 +460,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 .Where(p => p.product != null && p.versions.Any(v => v.HasTag(PackageTag.UpmFormat)) &&
                             p.versions.installed == null).Select(p => p.uniqueId).ToArray();
 
-            if (packagesToRemove.Any())
+            if (packagesToRemove.Length > 0)
                 m_PackageDatabase.UpdatePackages(toRemove: packagesToRemove);
 
             var productIds = m_UpmCache.installedPackageInfos.Select(info => info.ParseProductId()).Where(id => id > 0);

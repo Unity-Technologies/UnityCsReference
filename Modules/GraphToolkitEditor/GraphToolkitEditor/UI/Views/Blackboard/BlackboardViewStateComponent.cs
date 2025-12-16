@@ -45,6 +45,19 @@ namespace Unity.GraphToolkit.Editor
             }
 
             /// <summary>
+            /// Sets the expanded state of the variable declaration models in the blackboard.
+            /// </summary>
+            /// <param name="models">The models for which to set the state.</param>
+            /// <param name="expanded">True if the variable should be expanded, false otherwise.</param>
+            public void SetVariableDeclarationModelExpanded(IReadOnlyList<VariableDeclarationModelBase> models, bool expanded)
+            {
+                foreach (var model in models)
+                {
+                    SetVariableDeclarationModelExpanded(model, expanded);
+                }
+            }
+
+            /// <summary>
             /// Sets the expanded state of the group model in the blackboard.
             /// </summary>
             /// <param name="model">The model for which to set the state.</param>
@@ -63,6 +76,19 @@ namespace Unity.GraphToolkit.Editor
                     m_State.m_BlackboardCollapsedGroupHashStates?.Add(model.Guid);
                     m_State.CurrentChangeset.ChangedModels.Add(model.Guid);
                     m_State.SetUpdateType(UpdateType.Partial);
+                }
+            }
+
+            /// <summary>
+            /// Sets the expanded state of the group models in the blackboard.
+            /// </summary>
+            /// <param name="models">The models for which to set the state.</param>
+            /// <param name="expanded">True if the groups should be expanded, false otherwise.</param>
+            public void SetGroupModelExpanded(IReadOnlyList<GroupModelBase> models, bool expanded)
+            {
+                foreach (var model in models)
+                {
+                    SetGroupModelExpanded(model, expanded);
                 }
             }
 

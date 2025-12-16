@@ -6,18 +6,19 @@ using System;
 using System.Runtime.InteropServices;
 using Unity.Collections.LowLevel.Unsafe;
 using UnityEngine.Assertions;
+using UnityEngine.UIElements.Unmanaged;
 
 namespace UnityEngine.UIElements.Layout;
 
 [StructLayout(LayoutKind.Sequential)]
 partial struct LayoutNode : IEquatable<LayoutNode>
 {
-    public static LayoutNode Undefined => new(default, LayoutHandle.Undefined);
+    public static LayoutNode Undefined => new(default, UnmanagedDataHandle.Undefined);
 
     readonly LayoutDataAccess m_Access;
-    readonly LayoutHandle m_Handle;
+    readonly UnmanagedDataHandle m_Handle;
 
-    internal LayoutNode(LayoutDataAccess access, LayoutHandle handle)
+    internal LayoutNode(LayoutDataAccess access, UnmanagedDataHandle handle)
     {
         m_Access = access;
         m_Handle = handle;
@@ -26,12 +27,12 @@ partial struct LayoutNode : IEquatable<LayoutNode>
     /// <summary>
     /// Returns <see langword="true"/> if this is an invalid/undefined node.
     /// </summary>
-    public bool IsUndefined => m_Handle.Equals(LayoutHandle.Undefined);
+    public bool IsUndefined => m_Handle.Equals(UnmanagedDataHandle.Undefined);
 
     /// <summary>
     /// Returns the handle for this node.
     /// </summary>
-    public LayoutHandle Handle => m_Handle;
+    public UnmanagedDataHandle Handle => m_Handle;
 
     /// <summary>
     /// Gets the computed layout struct for this node.
@@ -39,14 +40,22 @@ partial struct LayoutNode : IEquatable<LayoutNode>
     public ref LayoutComputedData Layout => ref m_Access.GetComputedData(m_Handle);
 
     /// <summary>
-    /// Gets the style input struct for this node.
+    /// For internal setters only. Gets the style input struct for this node.
     /// </summary>
-    public ref LayoutStyleData Style => ref m_Access.GetStyleData(m_Handle);
+    private ref readonly LayoutData ReadOnlyStyle => ref m_Access.GetComputedStyle(m_Handle).layoutData.Read();
+
+    // For internal setters only. The readonly version is also used in CalculateLayout().
+    private ref LayoutData Style => ref m_Access.GetComputedStyle(m_Handle).layoutData.Write();
 
     /// <summary>
     /// Gets the style input struct for this node.
     /// </summary>
     internal ref LayoutCacheData Cache => ref m_Access.GetCacheData(m_Handle);
+
+    /// <summary>
+    /// Gets the ComputedStyle data for this node.
+    /// </summary>
+    internal ref ComputedStyle ComputedStyle => ref m_Access.GetComputedStyle(m_Handle);
 
     /// <summary>
     /// Gets or sets the dirty flag for this node. Used when calculating layout.
@@ -135,45 +144,6 @@ partial struct LayoutNode : IEquatable<LayoutNode>
         HasNewLayout = false;
     }
 
-    public void CopyFromComputedStyle(ComputedStyle style)
-    {
-        FlexGrow = style.flexGrow;
-        FlexShrink = style.flexShrink;
-        FlexBasis = style.flexBasis.ToLayoutValue();
-        Left = style.left.ToLayoutValue();
-        Top = style.top.ToLayoutValue();
-        Right = style.right.ToLayoutValue();
-        Bottom = style.bottom.ToLayoutValue();
-        MarginLeft = style.marginLeft.ToLayoutValue();
-        MarginTop = style.marginTop.ToLayoutValue();
-        MarginRight = style.marginRight.ToLayoutValue();
-        MarginBottom = style.marginBottom.ToLayoutValue();
-        PaddingLeft = style.paddingLeft.ToLayoutValue();
-        PaddingTop = style.paddingTop.ToLayoutValue();
-        PaddingRight = style.paddingRight.ToLayoutValue();
-        PaddingBottom = style.paddingBottom.ToLayoutValue();
-        BorderLeftWidth = style.borderLeftWidth;
-        BorderTopWidth = style.borderTopWidth;
-        BorderRightWidth = style.borderRightWidth;
-        BorderBottomWidth = style.borderBottomWidth;
-        Width = style.width.ToLayoutValue();
-        Height = style.height.ToLayoutValue();
-        PositionType = (LayoutPositionType)style.position;
-        Overflow = (LayoutOverflow)style.overflow;
-        AlignSelf = (LayoutAlign)style.alignSelf;
-        MaxWidth = style.maxWidth.ToLayoutValue();
-        MaxHeight = style.maxHeight.ToLayoutValue();
-        MinWidth = style.minWidth.ToLayoutValue();
-        MinHeight = style.minHeight.ToLayoutValue();
-        FlexDirection = (LayoutFlexDirection)style.flexDirection;
-        AlignContent = (LayoutAlign)style.alignContent;
-        AlignItems = (LayoutAlign)style.alignItems;
-        JustifyContent = (LayoutJustify)style.justifyContent;
-        Wrap = (LayoutWrap)style.flexWrap;
-        Display = (LayoutDisplay)style.display;
-        AspectRatio = style.aspectRatio.value;
-    }
-
     /// <summary>
     /// Copies the style from the given <see cref="LayoutNode"/>.
     /// </summary>
@@ -183,12 +153,12 @@ partial struct LayoutNode : IEquatable<LayoutNode>
         var markDirty = false;
         unsafe
         {
-            fixed (LayoutStyleData* dstStyle = &Style)
-            fixed (LayoutStyleData* srcStyle = &node.Style)
+            fixed (LayoutData* dstStyle = &ReadOnlyStyle)
+            fixed (LayoutData* srcStyle = &node.ReadOnlyStyle)
             {
-                if (UnsafeUtility.MemCmp(dstStyle, srcStyle, UnsafeUtility.SizeOf<LayoutStyleData>()) != 0)
+                if (UnsafeUtility.MemCmp(dstStyle, srcStyle, UnsafeUtility.SizeOf<LayoutData>()) != 0)
                 {
-                    Style = node.Style;
+                    Style = node.ReadOnlyStyle;
                     markDirty = true;
                 }
             }
@@ -226,10 +196,10 @@ partial struct LayoutNode : IEquatable<LayoutNode>
 
         data.Parent = default;
         data.HasNewLayout = true;
-        data.ResolvedDimensions = new FixedBuffer2<LayoutValue>
+        data.ResolvedDimensions = new FixedBuffer2<Length>
         {
-            [0] = LayoutValue.Undefined(),
-            [1] = LayoutValue.Undefined()
+            [0] = Length.None(),
+            [1] = Length.None()
         };
         data.UsesMeasure = false;
         data.UsesBaseline = false;
@@ -237,7 +207,7 @@ partial struct LayoutNode : IEquatable<LayoutNode>
         SetOwner(null);
 
         Layout = LayoutComputedData.Default;
-        Style = LayoutStyleData.Default;
+        Style = LayoutData.Default;
     }
 
     public bool Equals(LayoutNode other)
@@ -277,6 +247,6 @@ partial struct LayoutNode : IEquatable<LayoutNode>
     /// <param name="height">The desired height.</param>
     public void CalculateLayout(float width = float.NaN, float height = float.NaN)
     {
-        LayoutProcessor.CalculateLayout(this, width, height, Style.Direction);
+        LayoutProcessor.CalculateLayout(this, width, height, ReadOnlyStyle.Direction);
     }
 }

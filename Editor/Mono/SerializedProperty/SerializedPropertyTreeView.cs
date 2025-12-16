@@ -7,10 +7,6 @@ using System.Linq;
 using UnityEngine;
 using UnityEditor.IMGUI.Controls;
 using UnityEngine.Profiling;
-using TreeView = UnityEditor.IMGUI.Controls.TreeView<int>;
-using TreeViewItem = UnityEditor.IMGUI.Controls.TreeViewItem<int>;
-using TreeViewUtility = UnityEditor.IMGUI.Controls.TreeViewUtility<int>;
-using TreeViewState = UnityEditor.IMGUI.Controls.TreeViewState<int>;
 
 namespace UnityEditor
 {
@@ -51,15 +47,15 @@ namespace UnityEditor
             public SerializedObject serializedObject { get { return m_SerializedObject; } }
             public SerializedProperty[] properties { get { return m_Properties; } }
 
-            public int objectId
+            public EntityId objectId
             {
                 get
                 {
                     if (!m_Object)
-                        return 0;
+                        return EntityId.None;
 
                     Component comp = m_Object as Component;
-                    return comp != null ? comp.gameObject.GetInstanceID() : m_Object.GetInstanceID();
+                    return comp != null ? comp.gameObject.GetEntityId() : m_Object.GetEntityId();
                 }
             }
 
@@ -205,7 +201,7 @@ namespace UnityEditor
         }
     }
 
-    internal class SerializedPropertyTreeView : TreeView
+    internal class SerializedPropertyTreeView : TreeView<EntityId>
     {
         internal static class Styles
         {
@@ -223,11 +219,11 @@ namespace UnityEditor
         }
 
         // this gets stuffed into the view and displayed on screen. It is a visible subset of the actual data
-        internal class SerializedPropertyItem : TreeViewItem
+        internal class SerializedPropertyItem : TreeViewItem<EntityId>
         {
             SerializedPropertyDataStore.Data m_Data;
 
-            public SerializedPropertyItem(int id, int depth, SerializedPropertyDataStore.Data ltd) : base(id, depth, ltd != null ? ltd.name : "root")
+            public SerializedPropertyItem(EntityId id, int depth, SerializedPropertyDataStore.Data ltd) : base(id, depth, ltd != null ? ltd.name : "root")
             {
                 m_Data = ltd;
             }
@@ -327,16 +323,16 @@ namespace UnityEditor
             };
         }
         // reference to the data store (not owned by this class)
-        SerializedPropertyDataStore m_DataStore;
-        ColumnInternal[]            m_ColumnsInternal;
-        List<TreeViewItem>          m_Items;
-        int                         m_ChangedId;
-        bool                        m_bFilterSelection;
-        bool                        m_ShowInactiveObjects;
-        int[]                       m_SelectionFilter;
-        bool                        m_ShowFilterGUI;
+        SerializedPropertyDataStore  m_DataStore;
+        ColumnInternal[]             m_ColumnsInternal;
+        List<TreeViewItem<EntityId>> m_Items;
+        int                          m_ChangedId;
+        bool                         m_bFilterSelection;
+        bool                         m_ShowInactiveObjects;
+        EntityId[]                   m_SelectionFilter;
+        bool                         m_ShowFilterGUI;
 
-        public SerializedPropertyTreeView(TreeViewState state, MultiColumnHeader multicolumnHeader, SerializedPropertyDataStore dataStore, bool showFilterGUI) : base(state, multicolumnHeader)
+        public SerializedPropertyTreeView(TreeViewState<EntityId> state, MultiColumnHeader multicolumnHeader, SerializedPropertyDataStore dataStore, bool showFilterGUI) : base(state, multicolumnHeader)
         {
             m_DataStore = dataStore;
             // initialize internal data for the columns
@@ -458,18 +454,18 @@ namespace UnityEditor
                 Repaint();
         }
 
-        protected override TreeViewItem BuildRoot()
+        protected override TreeViewItem<EntityId> BuildRoot()
         {
-            return new SerializedPropertyItem(-1, -1, null);
+            return new SerializedPropertyItem(EntityId.None, -1, null);
         }
 
         // this gets called whenever someone issues a reload() call to the parent
-        protected override IList<TreeViewItem> BuildRows(TreeViewItem root)
+        protected override IList<TreeViewItem<EntityId>> BuildRows(TreeViewItem<EntityId> root)
         {
             if (m_Items == null)
             {
                 var rawData = m_DataStore.GetElements();
-                m_Items = new List<TreeViewItem>(rawData.Length);
+                m_Items = new List<TreeViewItem<EntityId>>(rawData.Length);
 
                 for (int i = 0; i < rawData.Length; i++)
                 {
@@ -479,16 +475,16 @@ namespace UnityEditor
             }
 
             // filtering
-            IEnumerable<TreeViewItem> tmprows = m_Items;
+            IEnumerable<TreeViewItem<EntityId>> tmprows = m_Items;
 
             if (!m_ShowInactiveObjects && m_ShowFilterGUI)
-                tmprows = m_Items.Where((TreeViewItem item) => { return ((SerializedPropertyItem)item).GetData().activeInHierarchy; });
+                tmprows = m_Items.Where((TreeViewItem<EntityId> item) => { return ((SerializedPropertyItem)item).GetData().activeInHierarchy; });
 
             if (m_bFilterSelection && m_ShowFilterGUI)
             {
                 if (m_SelectionFilter == null)
-                    m_SelectionFilter = Selection.entityIds.ToIntArray();
-                tmprows = m_Items.Where((TreeViewItem item) => { return m_SelectionFilter.Contains(item.id); });
+                    m_SelectionFilter = Selection.entityIds;
+                tmprows = m_Items.Where((TreeViewItem<EntityId> item) => { return m_SelectionFilter.Contains(item.id); });
             }
             else
                 m_SelectionFilter = null;
@@ -504,7 +500,7 @@ namespace UnityEditor
 
             // We still need to setup the child parent information for the rows since this
             // information is used by the TreeView internal logic (navigation, dragging etc)
-            TreeViewUtility.SetParentAndChildrenForItems(rows, root);
+            TreeViewUtility<EntityId>.SetParentAndChildrenForItems(rows, root);
 
             return rows;
         }
@@ -568,7 +564,7 @@ namespace UnityEditor
 
                     if (selIds.Contains(ltd.objectId))
                     {
-                        IList<TreeViewItem> rows = FindRows(selIds);
+                        IList<TreeViewItem<EntityId>> rows = FindRows(selIds);
 
                         Undo.RecordObjects(rows.Select(r => ((SerializedPropertyItem)r).GetData().serializedObject.targetObject).ToArray(), "Modify Multiple Properties");
 
@@ -669,9 +665,9 @@ namespace UnityEditor
                 Reload();
         }
 
-        protected override void SelectionChanged(IList<int> selectedIds)
+        protected override void SelectionChanged(IList<EntityId> selectedIds)
         {
-            Selection.entityIds = selectedIds.ToArray().ToEntityIdArray();
+            Selection.entityIds = selectedIds.ToArray();
         }
 
         protected override void KeyEvent()
@@ -704,37 +700,37 @@ namespace UnityEditor
             Sort(rows, multiColumnHeader.sortedColumnIndex);
         }
 
-        void Sort(IList<TreeViewItem> rows, int sortIdx)
+        void Sort(IList<TreeViewItem<EntityId>> rows, int sortIdx)
         {
             Debug.Assert(sortIdx >= 0);
 
             bool ascend = multiColumnHeader.IsSortedAscending(sortIdx);
             var comp = Col(sortIdx).compareDelegate;
-            var myRows = rows as List<TreeViewItem>;
+            var myRows = rows as List<TreeViewItem<EntityId>>;
 
-            System.Comparison<TreeViewItem> sortAscend, sortDescend;
+            System.Comparison<TreeViewItem<EntityId>> sortAscend, sortDescend;
             if (comp == null)
             {
                 return;
             }
             else if (comp == DefaultDelegates.CompareName) // special case for sorting by the object name
             {
-                sortAscend = (TreeViewItem lhs, TreeViewItem rhs) =>
+                sortAscend = (TreeViewItem<EntityId> lhs, TreeViewItem<EntityId> rhs) =>
                 {
                     return EditorUtility.NaturalCompare(((SerializedPropertyItem)lhs).GetData().name, ((SerializedPropertyItem)rhs).GetData().name);
                 };
-                sortDescend = (TreeViewItem lhs, TreeViewItem rhs) =>
+                sortDescend = (TreeViewItem<EntityId> lhs, TreeViewItem<EntityId> rhs) =>
                 {
                     return -EditorUtility.NaturalCompare(((SerializedPropertyItem)lhs).GetData().name, ((SerializedPropertyItem)rhs).GetData().name);
                 };
             }
             else
             {
-                sortAscend = (TreeViewItem lhs, TreeViewItem rhs) =>
+                sortAscend = (TreeViewItem<EntityId> lhs, TreeViewItem<EntityId> rhs) =>
                 {
                     return comp(((SerializedPropertyItem)lhs).GetData().properties[sortIdx], ((SerializedPropertyItem)rhs).GetData().properties[sortIdx]);
                 };
-                sortDescend = (TreeViewItem lhs, TreeViewItem rhs) =>
+                sortDescend = (TreeViewItem<EntityId> lhs, TreeViewItem<EntityId> rhs) =>
                 {
                     return -comp(((SerializedPropertyItem)lhs).GetData().properties[sortIdx], ((SerializedPropertyItem)rhs).GetData().properties[sortIdx]);
                 };
@@ -743,7 +739,7 @@ namespace UnityEditor
             myRows.Sort(ascend ? sortAscend : sortDescend);
         }
 
-        IEnumerable<TreeViewItem> Filter(IEnumerable<TreeViewItem> rows)
+        IEnumerable<TreeViewItem<EntityId>> Filter(IEnumerable<TreeViewItem<EntityId>> rows)
         {
             var tmp = rows;
             int cnt = m_ColumnsInternal.Length;
@@ -762,11 +758,11 @@ namespace UnityEditor
                     if (c.filter.GetType().Equals(typeof(SerializedPropertyFilters.Name)))
                     {
                         var f = (SerializedPropertyFilters.Name)c.filter;
-                        tmp = tmp.Where((TreeViewItem item) => { return f.Filter(((SerializedPropertyItem)item).GetData().name); });
+                        tmp = tmp.Where((TreeViewItem<EntityId> item) => { return f.Filter(((SerializedPropertyItem)item).GetData().name); });
                     }
                     else
                     {
-                        tmp = tmp.Where((TreeViewItem item) => { return c.filter.Filter(((SerializedPropertyItem)item).GetData().properties[idx]); });
+                        tmp = tmp.Where((TreeViewItem<EntityId> item) => { return c.filter.Filter(((SerializedPropertyItem)item).GetData().properties[idx]); });
                     }
                 }
             }

@@ -25,12 +25,9 @@ namespace UnityEngine.UIElements.StyleSheets
         [FieldOffset(8)]
         public Color color;
         [FieldOffset(8)]
-        public GCHandle resource;
-        [FieldOffset(8)]
         public BackgroundPosition position;
         [FieldOffset(8)]
         public BackgroundRepeat repeat;
-
     }
 
     internal struct StyleValueManaged
@@ -38,5 +35,10 @@ namespace UnityEngine.UIElements.StyleSheets
         public StylePropertyId id;
         public StyleKeyword keyword;
         public object value;
+
+        public T GetResource<T>() where T : Object
+        {
+            return value as T;
+        }
     }
 }

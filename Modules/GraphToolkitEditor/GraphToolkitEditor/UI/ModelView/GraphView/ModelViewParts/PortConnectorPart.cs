@@ -193,7 +193,7 @@ namespace Unity.GraphToolkit.Editor
 
             m_Root.Add(m_CreateFromPortHitBox);
 
-            if (portModel != null && portModel.Direction == PortDirection.Output)
+            if (portModel is { Direction: PortDirection.Output, Orientation: PortOrientation.Horizontal })
             {
                 var outputSpacer = new VisualElement();
                 outputSpacer.AddToClassList(outputSpacerUssClassName);
@@ -275,9 +275,12 @@ namespace Unity.GraphToolkit.Editor
                 {
                     string portLabel = portModel.ComputePortLabel(false);
                     m_ConnectorLabel.text = portLabel;
-                    m_ConnectorLabel.tooltip = portModel.Orientation == PortOrientation.Horizontal ? portModel.ToolTip :
-                        string.IsNullOrEmpty(portModel.ToolTip) ? portModel.UniqueName :
-                        portModel.UniqueName + "\n" + portModel.ToolTip;
+                    m_ConnectorLabel.tooltip = portModel.ToolTip;
+                }
+
+                if (portModel.Orientation == PortOrientation.Vertical)
+                {
+                    m_CreateFromPortHitBox.tooltip = portModel.ToolTip;
                 }
             }
             else if (m_ConnectorLabel != null && visitor.ChangeHints.HasChange(ChangeHint.Data))

@@ -4,6 +4,7 @@
 
 namespace UnityEditor
 {
+    using UnityEngine;
     using DiscoveredTargetInfo = BuildTargetDiscovery.DiscoveredTargetInfo;
 
     internal interface IDerivedBuildTarget : IBuildTarget

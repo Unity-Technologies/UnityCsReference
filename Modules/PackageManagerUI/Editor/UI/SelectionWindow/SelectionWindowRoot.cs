@@ -10,7 +10,7 @@ namespace UnityEditor.PackageManager.UI.Internal;
 
 internal class SelectionWindowRoot : VisualElement
 {
-    public event Action<IEnumerable<Asset>> onSelectionCompleted = delegate {};
+    public event Action<IReadOnlyCollection<Asset>> onSelectionCompleted = delegate {};
 
     private SelectionWindowData m_WindowData;
 

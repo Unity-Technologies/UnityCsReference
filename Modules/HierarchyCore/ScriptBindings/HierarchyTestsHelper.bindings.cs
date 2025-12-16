@@ -21,7 +21,7 @@ namespace Unity.Hierarchy
             Descending
         }
 
-        internal delegate void ForEachDelegate(in HierarchyNode node, int index);
+        internal delegate void ForEachCallback(in HierarchyNode node, int index);
 
         /// <summary>
         /// Generate a tree of nodes with the specified <paramref name="width"/> and <paramref name="depth"/>, up to a maximum of <paramref name="maxCount"/> nodes.
@@ -81,7 +81,7 @@ namespace Unity.Hierarchy
         /// <param name="root"></param>
         /// <param name="func"></param>
         /// <exception cref="InvalidOperationException"></exception>
-        internal static void ForEachRecursive(Hierarchy hierarchy, in HierarchyNode root, ForEachDelegate func)
+        internal static void ForEachRecursive(Hierarchy hierarchy, in HierarchyNode root, ForEachCallback func)
         {
             var stack = new Stack<HierarchyNode>();
             stack.Push(root);
@@ -139,7 +139,7 @@ namespace Unity.Hierarchy
         internal static extern int GetChildrenCapacity(Hierarchy hierarchy, in HierarchyNode node);
 
         [NativeMethod(IsThreadSafe = true)]
-        internal static extern bool CompareSortIndex(Hierarchy hierarchy, in HierarchyNode a, in HierarchyNode b);
+        internal static extern bool CompareNodeSortIndex(Hierarchy hierarchy, in HierarchyNode a, in HierarchyNode b);
 
         [NativeMethod(IsThreadSafe = true)]
         internal static extern object GetHierarchyScriptingObject(Hierarchy hierarchy);

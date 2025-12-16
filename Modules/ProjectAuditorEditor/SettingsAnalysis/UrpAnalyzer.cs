@@ -34,7 +34,7 @@ namespace Unity.ProjectAuditor.Editor.SettingsAnalysis
             "<b>HDR</b> (High Dynamic Range) is enabled in a URP Asset for mobile platforms. HDR rendering can be very intensive on low-end mobile GPUs.",
             "Disable <b>HDR</b> in the URP Asset.")
         {
-            Platforms = new SerializableEnum<BuildTarget>[] { BuildTarget.Android, BuildTarget.iOS, BuildTarget.Switch},
+            Platforms = [BuildTarget.Android, BuildTarget.iOS, BuildTarget.Switch],
             MessageFormat = "URP: HDR is enabled in {0}.asset in {1}",
             Fixer = FixHdrSetting
         };
@@ -46,7 +46,7 @@ namespace Unity.ProjectAuditor.Editor.SettingsAnalysis
             "<b>Anti Aliasing (MSAA)</b> is set to <b>4x</b> or <b>8x</b> in a URP Asset for mobile platforms. MSAA 4x/8x rendering can be intensive on low-end mobile GPUs.",
             "Decrease <b>Anti Aliasing (MSAA)</b> value to <b>2x</b> in the URP Asset.")
         {
-            Platforms = new SerializableEnum<BuildTarget>[] { BuildTarget.Android, BuildTarget.iOS, BuildTarget.Switch},
+            Platforms = [BuildTarget.Android, BuildTarget.iOS, BuildTarget.Switch],
             MessageFormat = "URP: MSAA is set to 4x or 8x in {0}.asset in {1}",
             Fixer = FixMsaaSampleCountSetting
         };
@@ -59,7 +59,7 @@ namespace Unity.ProjectAuditor.Editor.SettingsAnalysis
             "Disable <b>Stop NaNs</b> on as Camera components as you can."
         )
         {
-            Platforms = new SerializableEnum<BuildTarget>[] { BuildTarget.Android, BuildTarget.iOS, BuildTarget.Switch}
+            Platforms = [BuildTarget.Android, BuildTarget.iOS, BuildTarget.Switch]
         };
 
         public override void Initialize(Action<Descriptor> registerDescriptor)
@@ -75,12 +75,14 @@ namespace Unity.ProjectAuditor.Editor.SettingsAnalysis
             yield break;
         }
 
-        private static void FixHdrSetting(ReportItem issue, AnalysisParams analysisParams)
+        private static bool FixHdrSetting(ReportItem issue, AnalysisParams analysisParams)
         {
+            return false;
         }
 
-        static void FixMsaaSampleCountSetting(ReportItem issue, AnalysisParams analysisParams)
+        static bool FixMsaaSampleCountSetting(ReportItem issue, AnalysisParams analysisParams)
         {
+            return false;
         }
 
         IEnumerable<ReportItem> Analyze(SettingsAnalysisContext context, RenderPipelineAsset renderPipeline, int qualityLevel)

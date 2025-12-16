@@ -7,6 +7,7 @@ using System.Runtime.CompilerServices;
 using Unity.EntitiesLike;
 using UnityEngine;
 using UnityEngine.Assertions;
+using Unsafe = Unity.DataModel.UnsafeHelper;
 
 namespace Unity.DataModel;
 
@@ -18,7 +19,11 @@ internal static class EcsComponentSerializer
         {
             if (!componentType.IsZeroSized)
             {
-                byte* componentDataRawRO = (byte*)context.EntityManager.GetComponentDataRawRO(new Entity(entityId), componentType.TypeIndex);
+                byte* componentDataRawRO = (byte*)context.EntityManager.GetComponentDataRawRO(entityId, componentType.TypeIndex);
+                ref byte objectModelBasePtr = ref Unsafe.AsRef<byte>(componentAccessor.Data.ToPointer());
+                ref byte runtimeComponentPtr = ref Unsafe.AsRef<byte>(componentDataRawRO);
+
+                UdmManagedSerialization.FromLiveToObjModel(ref runtimeComponentPtr, ref objectModelBasePtr, rtti.TransferData, context);
             }
         }
     }
@@ -34,7 +39,7 @@ internal static class EcsComponentSerializer
         if (bufferLength == 0)
             return;
 
-        byte* componentDataRawRO = (byte*)context.EntityManager.GetBufferRawRO(new Entity(entityId), componentType.TypeIndex);
+        byte* componentDataRawRO = (byte*)context.EntityManager.GetBufferRawRO(entityId, componentType.TypeIndex);
         var modelVector = new Vector
         {
             ElementSchema = elementRtti.Schema,
@@ -68,7 +73,7 @@ internal static class EcsComponentSerializer
         int serializedCount = 0;
         if (context.EntityManager.GetComponentCount(entityId) > 0)
         {
-            using var componentTypes = context.EntityManager.GetComponentTypes(new Entity(entityId));
+            using var componentTypes = context.EntityManager.GetComponentTypes(entityId);
             foreach (var componentType in componentTypes)
             {
                 var runtimeType = TypeManager.GetType(componentType.TypeIndex);
@@ -113,6 +118,10 @@ internal static class EcsComponentSerializer
 
     internal static unsafe void DeserializeEcsComponent(PureManagedObjectRtti rtti, DeserializeContext context, ConstAccessor constAccessor, byte* componentDataPtr)
     {
+        ref var componentObjectModelBasePtr = ref Unsafe.AsRef<byte>(constAccessor.Data.ToPointer());
+        ref byte runtimeComponentPtr = ref Unsafe.AsRef<byte>(componentDataPtr);
+
+        UdmManagedSerialization.FromObjModelToLive(ref runtimeComponentPtr, ref componentObjectModelBasePtr, rtti.TransferData, context);
     }
 
     internal static unsafe void DeserializeDynamicBuffer(PureManagedObjectRtti elementRtti, DeserializeContext context, ConstAccessor constAccessor, BufferHeader* bufferHeaderPtr, int typeIndex)
@@ -268,9 +277,14 @@ internal static class EcsComponentSerializer
 
             PureManagedObjectRtti rtti = (PureManagedObjectRtti)RttiResolver.GetOrAddRTTI(type);
 
+            var objectModel = serializeContext.Document.CreateObjectModel(rtti.Schema, gameObjectInstanceID.GetRawData());
             if (!typeIndex.IsZeroSized)
             {
                 var componentDataRawRO = (byte*)serializeContext.EntityManager.GetComponentDataRawRO(gameObjectInstanceID, typeIndex);
+
+                ref byte runtimeComponentPtr = ref Unsafe.AsRef<byte>(componentDataRawRO);
+                ref byte objectModelBasePtr = ref Unsafe.AsRef<byte>(objectModel.GetAccessor().Data.ToPointer());
+                UdmManagedSerialization.FromLiveToObjModel(ref runtimeComponentPtr, ref objectModelBasePtr, rtti.TransferData, serializeContext);
             }
 
             documentModelPtr = documentModel.DocumentPtr;
@@ -297,7 +311,7 @@ internal static class EcsComponentSerializer
             }
 
             var deserializeContext = new DeserializeContext(document, entityManager);
-            ObjectModel objectModel = default(ObjectModel);
+            var objectModel = document.GetConstObjectModel(dataEntityId.GetRawData());
 
             var rtti = (PureManagedObjectRtti)RttiResolver.GetRTTI(objectModel.GetSchema());
             if (rtti == null)
@@ -314,7 +328,7 @@ internal static class EcsComponentSerializer
                var componentAccessor = objectModel.GetAccessor();
                Reference parentReference = componentAccessor.GetReferenceFieldValue("Value");
                var parentEntityId = deserializeContext.ResolveInstanceID(parentReference);
-               deserializeContext.EntityManager.SetParent(new Entity(gameObjectInstanceID), new Entity(parentEntityId), false);
+               deserializeContext.EntityManager.SetParent(gameObjectInstanceID, parentEntityId, false);
                return;
             }
             else if (rtti.Type == typeof(Child))

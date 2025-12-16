@@ -34,6 +34,22 @@ namespace UnityEditor.Build.Reporting
         [NativeProperty("BuildReporting::CommonRoles::assetBundleTextManifest", true, TargetType.Field)]
         public static extern string assetBundleTextManifest { get; }
 
+        ///<summary>The <see cref="BuildFile.role" /> value of a build manifest file.</summary>
+        [NativeProperty("BuildReporting::CommonRoles::buildManifest", true, TargetType.Field)]
+        /*UCBP-PUBLIC*/ internal static extern string buildManifest { get; }
+
+        ///<summary>The <see cref="BuildFile.role" /> value of a build manifest pointer file.</summary>
+        [NativeProperty("BuildReporting::CommonRoles::buildManifestPointer", true, TargetType.Field)]
+        /*UCBP-PUBLIC*/ internal static extern string buildManifestPointer { get; }
+
+        ///<summary>The <see cref="BuildFile.role" /> value of a Unity Serialized File containing built content.</summary>
+        [NativeProperty("BuildReporting::CommonRoles::contentFile", true, TargetType.Field)]
+        /*UCBP-PUBLIC*/ internal static extern string contentFile { get; }
+
+        ///<summary>The <see cref="BuildFile.role" /> value of a Unity Archive containing built content.</summary>
+        [NativeProperty("BuildReporting::CommonRoles::contentArchive", true, TargetType.Field)]
+        /*UCBP-PUBLIC*/ internal static extern string contentArchive { get; }
+
         ///<summary>The <see cref="BuildFile.role" /> value of a managed assembly, containing compiled script code.</summary>
         [NativeProperty("BuildReporting::CommonRoles::managedLibrary", true, TargetType.Field)]
         public static extern string managedLibrary { get; }

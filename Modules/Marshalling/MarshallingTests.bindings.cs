@@ -421,6 +421,16 @@ namespace UnityEngine
         [NativeThrows] public static extern MyManagedObject[] ParameterManagedObjectVector(MyManagedObject[] param);
 
         [NativeThrows] public static extern StructManagedObjectVector ParameterStructManagedObjectVector(StructManagedObjectVector param);
+
+        public static extern void ManagedObjectToGCHandleInNative([UnityMarshalAs(NativeType.ScriptingObjectPtr)] object param);
+        public static extern void ManagedObjectMarshalledAsGCHandle([UnityMarshalAs(NativeType.GCHandle, GCHandleOptions = GCHandleOptions.Strong)] object param);
+
+        [return: UnityMarshalAs(NativeType.ScriptingObjectPtr)]
+        public static extern object GCHandleReturnsAsManagedObject(GCHandle handle);
+
+        [return: UnityMarshalAs(NativeType.GCHandle)]
+        public static extern object GCHandleReturnsMarshalledAsObject(GCHandle handle);
+
     }
 
     // --------------------------------------------------------------------
@@ -681,7 +691,7 @@ namespace UnityEngine
             if (other is StructWithStringIntAndFloat)
             {
                 StructWithStringIntAndFloat otherStruct = (StructWithStringIntAndFloat)other;
-                return a.Equals(otherStruct.a) && b == otherStruct.b && c == otherStruct.c;
+                return string.Equals(a, otherStruct.a) && b == otherStruct.b && c == otherStruct.c;
             }
             return false;
         }
@@ -730,6 +740,18 @@ namespace UnityEngine
         public StructWithStringIntAndFloat[] field;
     }
 
+    [ExcludeFromDocs]
+    internal struct StructWithNullableString
+    {
+        public string field;
+    }
+
+    [ExcludeFromDocs]
+    internal struct StructWithNullableArray
+    {
+        public string[] field;
+    }
+
     [NativeHeader("Modules/Marshalling/MarshallingTests.h")]
     [ExcludeFromDocs]
     internal class NonBlittableStructTests
@@ -747,12 +769,21 @@ namespace UnityEngine
         public static extern StructWithNonBlittableArrayField ReturnStructWithNonBlittableArrayField();
 
         [NativeThrows] public static extern void CanMarshalManagedObjectToStruct(ClassToStruct param);
-        [NativeThrows] public static extern void CanMarshalOutManagedObjectToStruct([Out] ClassToStruct param);
+        [NativeThrows] public static extern void CanMarshalOutManagedObjectToStruct([In, Out] ClassToStruct param);
         [NativeThrows] public static extern void CanMarshalStructWithNativeAsStructField(StructWithClassToStruct param);
         [NativeThrows] public static extern void CanMarshalNativeAsStructArray(ClassToStruct[] param);
         public static extern ClassToStruct CanUnmarshalManagedObjectFromStruct();
         public static extern StructWithClassToStruct CanUnmarshalStructWithNativeAsStructField();
         public static extern ClassToStruct[] CanUnmarshalNativeAsStructArray();
+
+        [NativeThrows] public static extern void ParamStructWithNullableStringInAndOutNull(StructWithNullableString param, out StructWithNullableString outputParam);
+        [NativeThrows] public static extern void ParamStructWithNullableArrayInAndOutNull(StructWithNullableArray param, out StructWithNullableArray outputParam);
+
+        [NativeThrows] public static extern void ParamStructWithNullableStringInAndOutEmpty(StructWithNullableString param, out StructWithNullableString outputParam);
+        [NativeThrows] public static extern void ParamStructWithNullableArrayInAndOutEmpty(StructWithNullableArray param, out StructWithNullableArray outputParam);
+
+        [NativeThrows] public static extern void ParamStructWithNullableStringInAndOutNotNullNotEmpty(StructWithNullableString param, out StructWithNullableString outputParam);
+        [NativeThrows] public static extern void ParamStructWithNullableArrayInAndOutNotNullNotEmpty(StructWithNullableArray param, out StructWithNullableArray outputParam);
     }
 
     // --------------------------------------------------------------------
@@ -790,12 +821,24 @@ namespace UnityEngine
     {
         public static extern void OutArrayOfPrimitiveTypeWorks([Out] int[] array, int value);
         public static extern void OutArrayOfStringTypeWorks([Out] string[] array, string value);
+        public static extern void InOutArrayOfStringWhenItemIsDeletedWorks([In, Out] string[] array);
 
-        public static extern void OutArrayOfBlittableStructTypeWorks([Out] StructInt[] array, StructInt value);
-        public static extern void OutArrayOfIntPtrObjectTypeWorks([Out] MyIntPtrObject[] array, MyIntPtrObject value);
-        public static extern void OutArrayOfNestedBlittableStructTypeWorks([Out] StructNestedBlittable[] array, StructNestedBlittable value);
+        public static extern void InOutArrayOfBlittableStructTypeWorks([In, Out] StructInt[] array, StructInt value);
+        public static extern void InOutArrayOfManagedTypeWorks([In, Out] object[] array, object value);
+        public static extern void InOutArrayOfIntPtrObjectTypeWorks([In, Out] MyIntPtrObject[] array, MyIntPtrObject value);
+        public static extern void InOutArrayOfIntPtrObjectTypeWhenItemIsDeletedWorks([In, Out] MyIntPtrObject[] array);
 
-        public static extern void OutArrayOfNonBlittableTypeWorks([Out] StructWithStringIntAndFloat[] array, StructWithStringIntAndFloat value);
+        public static extern void InOutArrayOfUnityObjectTypeWorks([In, Out] MarshallingTestObject[] array, MarshallingTestObject value);
+        public static extern void InOutArrayOfUnityObjectTypeWhenItemIsDeletedWorks([In, Out] MarshallingTestObject[] array);
+
+        public static extern void InOutArrayOfUnityObjectTypePPtrWorks([In, Out] MarshallingTestObject[] array, MarshallingTestObject value);
+        public static extern void InOutArrayOfUnityObjectTypePPtrWhenItemIsDeletedWorks([In, Out] MarshallingTestObject[] array);
+
+        public static extern void InOutArrayOfNestedBlittableStructTypeWorks([In, Out] StructNestedBlittable[] array, StructNestedBlittable value);
+        public static extern void InOutArrayOfSystemTypeWorks([In, Out] Type[] array, Type value);
+
+        public static extern void InOutArrayOfNonBlittableTypeWorks([In, Out] StructWithStringIntAndFloat[] array, StructWithStringIntAndFloat value);
+        public static extern void InOutArrayOfNonBlittableTypeWhenItemIsDeletedWorks([In, Out] StructWithStringIntAndFloat[] array);
     }
 
     [NativeHeader("Modules/Marshalling/ReturnArrayMarshallingTests.h")]
@@ -975,6 +1018,7 @@ namespace UnityEngine
     {
         [NativeThrows] public static extern void ParameterListOfIntRead(List <int> param);
         [NativeThrows] public static extern void ParameterListOfIntReadChangeVaules(List <int> param);
+        [NativeThrows, NativeMethod(Name = "ParameterListOfIntReadChangeVaules")] public static extern void ParameterListOfIntReadChangeVaulesWithOutAttribute([Out] List <int> param);
         [NativeThrows] public static extern void ParameterListOfIntAddNoGrow(List <int> param);
         [NativeThrows] public static extern void ParameterListOfIntAddAndGrow(List <int> param);
         [NativeThrows] public static extern void ParameterListOfIntPassNullThrow([NotNull] List <int> param);
@@ -988,7 +1032,35 @@ namespace UnityEngine
         [NativeThrows] public static extern void ParameterListOfCornerCaseStructReadWrite(List<BlittableCornerCases> param);
     }
 
-        // --------------------------------------------------------------------
+    // --------------------------------------------------------------------
+    // Blittable System.Collections.Generic.List tests
+    [NativeHeader("Modules/Marshalling/MarshallingTests.h")]
+    internal class NonBlittableListOfTTests
+    {
+        [NativeThrows] public static extern void ParameterRead([In] List<StructWithStringIntAndFloat> param);
+        [NativeThrows] public static extern void ParameterReadChangeValues([In,Out] List<StructWithStringIntAndFloat> param);
+        [NativeThrows] public static extern void ParameterAdd([In,Out] List<StructWithStringIntAndFloat> param);
+        [NativeThrows] public static extern void ParameterPassNullThrow([NotNull,In] List<StructWithStringIntAndFloat> param);
+        [NativeThrows] public static extern void ParameterPassNullNoThrow([In] List<StructWithStringIntAndFloat> param);
+        [NativeThrows] public static extern void ParameterNativeAllocateSmaller([In,Out] List<StructWithStringIntAndFloat> param);
+        [NativeThrows] public static extern void ParameterNativeAttachOtherMemoryBlock([In,Out] List<StructWithStringIntAndFloat> param);
+        [NativeThrows] public static extern void ParameterNativeCallsClear([In,Out] List<StructWithStringIntAndFloat> param);
+        [NativeThrows] public static extern void ParameterNativeRemovesItem([In,Out] List<StructWithStringIntAndFloat> param);
+        [NativeThrows] public static extern void ParameterOutOnly([Out] List<StructWithStringIntAndFloat> param, StructWithStringIntAndFloat item1, StructWithStringIntAndFloat item2);
+
+        [NativeThrows] public static extern void ParameterReadUnityObjectVector([In] List<MarshallingTestObject> param);
+        [NativeThrows] public static extern void ParameterReadUnityObjectPPtrVector([In] List<MarshallingTestObject> param);
+        [NativeThrows] public static extern void ParameterReadChangeValuesUnityObjectVector([In,Out] List<MarshallingTestObject> param);
+        [NativeThrows] public static extern void ParameterReadChangeValuesUnityObjectPPtrVector([In,Out] List<MarshallingTestObject> param);
+        [NativeThrows] public static extern void ParameterAddUnityObjectVector([In,Out] List<MarshallingTestObject> param);
+        [NativeThrows] public static extern void ParameterAddUnityObjectPPtrVector([In,Out] List<MarshallingTestObject> param);
+        [NativeThrows] public static extern void ParameterNativeRemovesItemUnityObjectVector([In,Out] List<MarshallingTestObject> param);
+        [NativeThrows] public static extern void ParameterNativeRemovesItemUnityObjectPPtrVector([In,Out] List<MarshallingTestObject> param);
+
+        [NativeThrows] public static extern void ParameterTwoListOfStringAddWithCapacity([In,Out] List<string> param1, [In,Out] List<string> param2);
+    }
+
+    // --------------------------------------------------------------------
     // Invoke tests (calling from native to managed)
     [NativeType("Modules/Marshalling/MarshallingTests.h")]
     internal class InvokeTests
@@ -1263,8 +1335,6 @@ namespace UnityEngine
         [NativeMethod("BlittableStructTests::ParameterStructIntVector", IsFreeFunction = true, ThrowsException = true)]
         public extern static void PassClassWithPinnableInnerData_AsArray(ClassWithPinnableInnerData[] arr);
     }
-
-
     internal class BlittableNestedCollectionMarshallerTests
     {
         [NativeThrows]
@@ -1278,6 +1348,58 @@ namespace UnityEngine
         [NativeThrows]
         [NativeMethod("BlittableNestedCollectionMarshallerTests::PassInNestedCollection")]
         public extern static void PassInListOfInts([UnityMarshalAs(NativeType.Custom, CustomMarshaller = typeof(BlittableNestedCollectionMarshaller<int>))] List<int[]> nested, int exectedCount, int[] expectedValues1, int[] expectedValues2);
+    }
+
+    internal static class ObjectAsGCHandleMarshallingTests
+    {
+        [NativeName("ObjectAsGCHandleParameter")]
+        [NativeThrows]
+        extern static void ObjectAsStrongGCHandleParameter([UnityMarshalAs(NativeType.GCHandle, GCHandleOptions = GCHandleOptions.Strong)] object obj, bool hasTarget);
+
+        [NativeName("ObjectAsGCHandleParameter")]
+        [NativeThrows]
+        extern static void ObjectAsWeakGCHandleParameter([UnityMarshalAs(NativeType.GCHandle, GCHandleOptions = GCHandleOptions.Weak)] object obj, bool hasTarget);
+
+        [NativeName("ObjectAsGCHandleParameter")]
+        [NativeThrows]
+        extern static void ObjectAsPinnedGCHandleParameter([UnityMarshalAs(NativeType.GCHandle, GCHandleOptions = GCHandleOptions.Pinned)] object obj, bool hasTarget);
+
+        public static void ObjectAsGCHandleParameter(object obj, GCHandleType type)
+        {
+            switch (type)
+            {
+                case GCHandleType.Normal:
+                    ObjectAsStrongGCHandleParameter(obj, obj != null);
+                    break;
+                case GCHandleType.Weak:
+                    ObjectAsWeakGCHandleParameter(obj, obj != null);
+                    break;
+                case GCHandleType.Pinned:
+                    ObjectAsPinnedGCHandleParameter(obj, obj != null);
+                    break;
+                default:
+                    throw new ArgumentException("Unsupported GCHandleType", nameof(type));
+            }
+        }
+
+        [return: UnityMarshalAs(NativeType.GCHandle)]
+        extern static object ReturnObjectAsGCHandle([UnityMarshalAs(NativeType.ScriptingObjectPtr)] object obj, out IntPtr rawHandle);
+
+        public static object ReturnObjectAsGCHandle(object obj)
+        {
+            var outObj = ReturnObjectAsGCHandle(obj, out var rawHandle);
+            if (rawHandle != IntPtr.Zero)
+                GCHandle.FromIntPtr(rawHandle).Free();
+            return outObj;
+        }
+    }
+
+    internal static class GCHandleMarshallingTests
+    {
+        [NativeThrows]
+        public extern static void GCHandleParameter(GCHandle handle, bool hasTarget);
+
+        public extern static GCHandle GCHandleReturn(GCHandle handle);
     }
 
     internal static class MarshallingTests

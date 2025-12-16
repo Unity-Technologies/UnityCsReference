@@ -360,9 +360,9 @@ namespace Unity.GraphToolkit.Editor.Implementation
         }
 
         [OnOpenAsset(999)]
-        public static bool OpenGraphAsset(InstanceID instanceId, int line)
+        public static bool OpenGraphAsset(EntityId entityId, int line)
         {
-            var path = AssetDatabase.GetAssetPath((EntityId)instanceId);
+            var path = AssetDatabase.GetAssetPath(entityId);
 
             if( string.IsNullOrEmpty(path) )
                 return false;
@@ -413,7 +413,7 @@ namespace Unity.GraphToolkit.Editor.Implementation
             });
 
             ProjectWindowUtil.StartNameEditingIfProjectWindowExists(
-                graphObject.GetInstanceID(),
+                graphObject.GetEntityId(),
                 endAction,
                 $"{template.NewAssetName}.{template.GraphFileExtension}",
                 AssetPreview.GetMiniThumbnail(graphObject),

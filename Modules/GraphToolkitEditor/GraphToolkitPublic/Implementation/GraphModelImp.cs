@@ -33,6 +33,18 @@ namespace Unity.GraphToolkit.Editor.Implementation
 
         public override bool AllowSubgraphCreation => Graph?.GetType().GetCustomAttribute<GraphAttribute>()?.Options.HasFlag(GraphOptions.SupportsSubgraphs) ?? false;
 
+        public override bool AllowDeleteAndReconnect => true;
+
+        // This method is meant to be called on new GraphObjectImps, before OnEnable is called, to override the default behaviour which is to create the graph based on the GraphObjectImp.GraphType, if it is null.
+        internal void InstantiateGraph(Type graphType)
+        {
+            if (m_Graph != null)
+            {
+                Debug.LogError("InstantiateGraph called while Graph was already created.");
+            }
+            m_Graph = (Graph)Activator.CreateInstance(graphType);
+        }
+
         public override void OnEnable()
         {
             var graphObject = GraphObject as GraphObjectImp;
@@ -486,14 +498,6 @@ namespace Unity.GraphToolkit.Editor.Implementation
             m_SupportedTypes.Sort((a, b) => Comparer<string>.Default.Compare(a.Name, b.Name));
         }
 
-        public void RecreateGraph(Type graphType)
-        {
-            // This will recreate the graph. Can be called when pasting or creating a local subgraph, where the graph is originally
-            // the graph type of the GraphObjectImp, but we want to use a different graph type.
-            m_Graph = (Graph)Activator.CreateInstance(graphType);
-            m_Graph.SetImplementation(this);
-        }
-
         public override void CloneGraph(GraphModel sourceGraphModel, bool keepVariableDeclarationGuids = false)
         {
             base.CloneGraph(sourceGraphModel, keepVariableDeclarationGuids);
@@ -502,7 +506,7 @@ namespace Unity.GraphToolkit.Editor.Implementation
             {
                 var sourceGraphType = sourceGraphModelImp.Graph.GetType();
                 if (!sourceGraphType.IsInstanceOfType(Graph))
-                    RecreateGraph(sourceGraphType);
+                    Debug.LogError("Graph was cloned with a different graph type than the original.");
             }
         }
 
@@ -547,6 +551,24 @@ namespace Unity.GraphToolkit.Editor.Implementation
                     }
                 }
             }
+        }
+
+        internal override GraphModel DuplicateLocalSubGraph(GraphModel sourceGraphModel, string name)
+        {
+            var subgraphType = (sourceGraphModel as GraphModelImp)?.Graph?.GetType();
+
+            if (subgraphType == null)
+                return null;
+
+            // We use a SubgraphTemplate to pass the correct subgraph type. See SubgraphTemplateImp.LocalSubgraphPreOnEnableInit
+            var subgraphTemplate = new SubgraphTemplateImp(subgraphType);
+            var newSubgraph = CreateLocalSubgraph(
+                sourceGraphModel.GetType(),
+                name, subgraphTemplate);
+
+            newSubgraph.CloneGraph(sourceGraphModel, true);
+
+            return newSubgraph;
         }
 
         internal static class TestAccessImp

@@ -71,7 +71,10 @@ namespace UnityEngine
         public void GetPropertyBlock(MaterialPropertyBlock properties) { Internal_GetPropertyBlock(properties); }
         public void GetPropertyBlock(MaterialPropertyBlock properties, int materialIndex) { Internal_GetPropertyBlockMaterialIndex(properties, materialIndex); }
 
-        [FreeFunction(Name = "RendererScripting::GetClosestReflectionProbes", HasExplicitThis = true)] extern private void GetClosestReflectionProbesInternal(object result);
+        [FreeFunction(Name = "RendererScripting::GetClosestReflectionProbes", HasExplicitThis = true)] extern private void GetClosestReflectionProbesInternal([Out]List<ReflectionProbeBlendInfo> result);
+
+        [NativeName("Renderer::GetMaskInteraction")] extern internal SpriteMaskInteraction Internal_GetSpriteMaskInteraction();
+        [NativeName("Renderer::SetMaskInteraction")] extern internal void Internal_SetSpriteMaskInteraction(SpriteMaskInteraction maskInteraction);
     }
 
     [NativeHeader("Runtime/Graphics/Renderer.h")]
@@ -430,6 +433,9 @@ namespace UnityEngine
         public void SetShaderUserValue(UInt32 v) => Internal_SetShaderUserValueUInt(v);
         [FreeFunction(Name = "SkinnedMeshRendererScripting::GetShaderUserValue", HasExplicitThis = true)] extern internal UInt32 Internal_GetShaderUserValueUInt();
         public UInt32 GetShaderUserValue() { return Internal_GetShaderUserValueUInt(); }
+
+        [NativeMethod("RetrieveSkeletonPose", ThrowsException = true)]
+        extern internal bool Internal_RetrieveSkeletonPose([Out] Matrix4x4[] outPoses);
     }
 
     [NativeHeader("Runtime/Graphics/Mesh/MeshRenderer.h")]

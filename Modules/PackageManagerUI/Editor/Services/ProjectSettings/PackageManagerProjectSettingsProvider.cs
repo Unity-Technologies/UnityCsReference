@@ -9,9 +9,11 @@ namespace UnityEditor.PackageManager.UI.Internal
 {
     internal class PackageManagerProjectSettingsProvider : SettingsProvider
     {
-        internal VisualElement rootVisualElement { get; private set; }
+        private VisualElement m_RootVisualElement;
 
-        internal const string k_PackageManagerSettingsPath = "Project/Package Manager";
+        // The naming of this constant does not follow typical conventions for our codebase.
+        // However, it cannot be changed as it is referenced by other test projects.
+        public const string k_PackageManagerSettingsPath = "Project/Package Manager";
         const string k_GeneralServicesTemplatePath = "UXML/PackageManager/PackageManagerProjectSettings.uxml";
         protected VisualTreeAsset m_GeneralTemplate;
 
@@ -31,14 +33,14 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         internal static class StylesheetPath
         {
-            internal static readonly string scopedRegistriesSettings = "StyleSheets/PackageManager/ScopedRegistriesSettings.uss";
-            internal static readonly string projectSettings = "StyleSheets/PackageManager/PackageManagerProjectSettings.uss";
-            internal static readonly string stylesheetCommon = "StyleSheets/Extensions/base/common.uss";
-            internal static readonly string stylesheetDark = "StyleSheets/Extensions/base/dark.uss";
-            internal static readonly string stylesheetLight = "StyleSheets/Extensions/base/light.uss";
+            public static readonly string scopedRegistriesSettings = "StyleSheets/PackageManager/ScopedRegistriesSettings.uss";
+            public static readonly string projectSettings = "StyleSheets/PackageManager/PackageManagerProjectSettings.uss";
+            public static readonly string stylesheetCommon = "StyleSheets/Extensions/base/common.uss";
+            public static readonly string stylesheetDark = "StyleSheets/Extensions/base/dark.uss";
+            public static readonly string stylesheetLight = "StyleSheets/Extensions/base/light.uss";
             // We use those stylesheet variables for icons
-            internal static readonly string styleSheetPackageManagerDark = "StyleSheets/PackageManager/Dark.uss";
-            internal static readonly string styleSheetPackageManagerLight = "StyleSheets/PackageManager/Light.uss";
+            public static readonly string styleSheetPackageManagerDark = "StyleSheets/PackageManager/Dark.uss";
+            public static readonly string styleSheetPackageManagerLight = "StyleSheets/PackageManager/Light.uss";
         }
 
         public PackageManagerProjectSettingsProvider(string path, SettingsScope scopes, IEnumerable<string> keywords = null)
@@ -49,24 +51,24 @@ namespace UnityEditor.PackageManager.UI.Internal
                 ResolveDependencies();
 
                 // Create a child to make sure all the style sheets are not added to the root.
-                rootVisualElement = new ScrollView();
-                rootVisualElement.StretchToParentSize();
-                rootVisualElement.AddStyleSheetPath(StylesheetPath.scopedRegistriesSettings);
-                rootVisualElement.AddStyleSheetPath(StylesheetPath.projectSettings);
-                rootVisualElement.AddStyleSheetPath(EditorGUIUtility.isProSkin ? StylesheetPath.stylesheetDark : StylesheetPath.stylesheetLight);
-                rootVisualElement.AddStyleSheetPath(EditorGUIUtility.isProSkin ? StylesheetPath.styleSheetPackageManagerDark : StylesheetPath.styleSheetPackageManagerLight);
-                rootVisualElement.AddStyleSheetPath(StylesheetPath.stylesheetCommon);
-                rootVisualElement.styleSheets.Add(m_ResourceLoader.packageManagerCommonStyleSheet);
+                m_RootVisualElement = new ScrollView();
+                m_RootVisualElement.StretchToParentSize();
+                m_RootVisualElement.AddStyleSheetPath(StylesheetPath.scopedRegistriesSettings);
+                m_RootVisualElement.AddStyleSheetPath(StylesheetPath.projectSettings);
+                m_RootVisualElement.AddStyleSheetPath(EditorGUIUtility.isProSkin ? StylesheetPath.stylesheetDark : StylesheetPath.stylesheetLight);
+                m_RootVisualElement.AddStyleSheetPath(EditorGUIUtility.isProSkin ? StylesheetPath.styleSheetPackageManagerDark : StylesheetPath.styleSheetPackageManagerLight);
+                m_RootVisualElement.AddStyleSheetPath(StylesheetPath.stylesheetCommon);
+                m_RootVisualElement.styleSheets.Add(m_ResourceLoader.packageManagerCommonStyleSheet);
 
-                element.Add(rootVisualElement);
+                element.Add(m_RootVisualElement);
 
                 m_GeneralTemplate = EditorGUIUtility.Load(k_GeneralServicesTemplatePath) as VisualTreeAsset;
 
                 VisualElement newVisualElement = new VisualElement();
                 m_GeneralTemplate.CloneTree(newVisualElement);
-                rootVisualElement.Add(newVisualElement);
+                m_RootVisualElement.Add(newVisualElement);
 
-                cache = new VisualElementCache(rootVisualElement);
+                cache = new VisualElementCache(m_RootVisualElement);
 
                 advancedSettingsFoldout.SetValueWithoutNotify(m_SettingsProxy.advancedSettingsExpanded);
                 m_SettingsProxy.onAdvancedSettingsFoldoutChanged += OnAdvancedSettingsFoldoutChanged;
@@ -170,10 +172,10 @@ namespace UnityEditor.PackageManager.UI.Internal
         private VisualElementCache cache { get; set; }
 
         private ExtendedHelpBox preReleaseInfoBox => cache.Get<ExtendedHelpBox>("preReleaseInfoBox");
-        private Toggle enablePreReleasePackages => rootVisualElement.Q<Toggle>("enablePreReleasePackages");
-        private Foldout advancedSettingsFoldout => rootVisualElement.Q<Foldout>("advancedSettingsFoldout");
-        private Foldout scopedRegistriesSettingsFoldout => rootVisualElement.Q<Foldout>("scopedRegistriesSettingsFoldout");
-        private Toggle seeAllPackageVersions => rootVisualElement.Q<Toggle>("seeAllVersions");
-        private HelpBox seeAllVersionsInfoBox => rootVisualElement.Q<HelpBox>("seeAllVersionsInfoBox");
+        private Toggle enablePreReleasePackages => cache.Get<Toggle>("enablePreReleasePackages");
+        private Foldout advancedSettingsFoldout => cache.Get<Foldout>("advancedSettingsFoldout");
+        private Foldout scopedRegistriesSettingsFoldout => cache.Get<Foldout>("scopedRegistriesSettingsFoldout");
+        private Toggle seeAllPackageVersions => cache.Get<Toggle>("seeAllVersions");
+        private HelpBox seeAllVersionsInfoBox => cache.Get<HelpBox>("seeAllVersionsInfoBox");
     }
 }

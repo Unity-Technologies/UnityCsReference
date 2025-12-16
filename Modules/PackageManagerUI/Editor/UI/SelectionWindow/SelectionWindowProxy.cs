@@ -10,14 +10,14 @@ namespace UnityEditor.PackageManager.UI.Internal;
 
 internal interface ISelectionWindowProxy : IService
 {
-    event Action<IEnumerable<Asset>> onRemoveSelectionDone;
+    event Action<IReadOnlyCollection<Asset>> onRemoveSelectionDone;
     void Open(SelectionWindowData data);
 }
 
 [ExcludeFromCodeCoverage]
 internal class SelectionWindowProxy : BaseService<ISelectionWindowProxy>, ISelectionWindowProxy
 {
-    public event Action<IEnumerable<Asset>> onRemoveSelectionDone = delegate {};
+    public event Action<IReadOnlyCollection<Asset>> onRemoveSelectionDone = delegate {};
 
     public void Open(SelectionWindowData data)
     {
@@ -34,7 +34,7 @@ internal class SelectionWindowProxy : BaseService<ISelectionWindowProxy>, ISelec
         SelectionWindow.onRemoveSelectionDone -= OnRemoveSelectionDone;
     }
 
-    private void OnRemoveSelectionDone(IEnumerable<Asset> selections)
+    private void OnRemoveSelectionDone(IReadOnlyCollection<Asset> selections)
     {
         onRemoveSelectionDone?.Invoke(selections);
     }

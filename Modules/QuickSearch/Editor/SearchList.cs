@@ -72,6 +72,7 @@ namespace UnityEditor.Search
     abstract class BaseSearchList : ISearchList, IList
     {
         private bool m_Disposed = false;
+        bool m_OwnsContext;
 
         public SearchContext context { get; private set; }
 
@@ -110,8 +111,13 @@ namespace UnityEditor.Search
         }
 
         public BaseSearchList(SearchContext searchContext, bool trackAsyncItems = true)
+            : this(searchContext, trackAsyncItems, false)
+        {}
+
+        public BaseSearchList(SearchContext searchContext, bool trackAsyncItems, bool ownsContext)
         {
             context = searchContext;
+            m_OwnsContext = ownsContext;
             if (trackAsyncItems)
                 context.asyncItemReceived += OnAsyncItemsReceived;
         }
@@ -136,6 +142,9 @@ namespace UnityEditor.Search
             {
                 if (context != null)
                     context.asyncItemReceived -= OnAsyncItemsReceived;
+
+                if (m_OwnsContext)
+                    context?.Dispose();
 
                 m_Disposed = true;
             }
@@ -383,7 +392,7 @@ namespace UnityEditor.Search
             m_Items.Add(item);
             m_IdHashes.Add(itemHash);
             m_Sorted = false;
-            
+
             return true;
         }
 
@@ -687,24 +696,16 @@ namespace UnityEditor.Search
             foreach (var item in items)
                 Add(item);
 
-            if (!Sorted)
-            {
-                if (m_SortingStrategy == SearchListSortingStrategy.OnAddItems)
-                {
-                    SortAllGroups();
-                }
-                else if (m_SortingStrategy == SearchListSortingStrategy.OnAddItemsThrottled)
-                {
-                    if (Delayer.ThrottleTrigger(ref m_ThrottlerTimer, k_ThrottleDelay))
-                    {
-                        SortAllGroups();
-                    }
-                }
-            }
+            SortOnAddItems();
+            RestoreCurrentGroupIfNeeded();
+        }
 
-            // Restore current group if possible
-            if (m_CurrentGroupIndex == -1 && !string.IsNullOrEmpty(m_CurrentGroupId))
-                RestoreCurrentGroup(m_CurrentGroupId);
+        public void AddItem(SearchItem item)
+        {
+            Add(item);
+
+            SortOnAddItems();
+            RestoreCurrentGroupIfNeeded();
         }
 
         public override void Clear()
@@ -772,6 +773,12 @@ namespace UnityEditor.Search
             return m_CurrentGroupIndex != -1;
         }
 
+        void RestoreCurrentGroupIfNeeded()
+        {
+            if (m_CurrentGroupIndex == -1 && !string.IsNullOrEmpty(m_CurrentGroupId))
+                RestoreCurrentGroup(m_CurrentGroupId);
+        }
+
         internal int GetItemCount(IEnumerable<string> activeProviderTypes)
         {
             int queryItemCount = 0;
@@ -812,6 +819,24 @@ namespace UnityEditor.Search
             m_DefaultComparer = comparer;
             m_Groups[m_CurrentGroupIndex].SortBy(comparer);
         }
+
+        void SortOnAddItems()
+        {
+            if (!Sorted)
+            {
+                if (m_SortingStrategy == SearchListSortingStrategy.OnAddItems)
+                {
+                    SortAllGroups();
+                }
+                else if (m_SortingStrategy == SearchListSortingStrategy.OnAddItemsThrottled)
+                {
+                    if (Delayer.ThrottleTrigger(ref m_ThrottlerTimer, k_ThrottleDelay))
+                    {
+                        SortAllGroups();
+                    }
+                }
+            }
+        }
     }
 
     class AsyncSearchList : BaseSearchList, ISearchList
@@ -826,7 +851,7 @@ namespace UnityEditor.Search
             set => m_UnorderedItems[index] = value;
         }
 
-        public AsyncSearchList(SearchContext searchContext) : base(searchContext)
+        public AsyncSearchList(SearchContext searchContext, bool ownsContext) : base(searchContext, true, ownsContext)
         {
             m_UnorderedItems = new List<SearchItem>();
         }
@@ -892,8 +917,12 @@ namespace UnityEditor.Search
 
         public override void InsertRange(int index, IEnumerable<SearchItem> items)
         {
-            foreach (var item in items.Where(e => e != null))
-                SearchItem.Insert(m_UnorderedItems, item, SearchItem.DefaultComparer);
+            m_UnorderedItems.InsertRange(index, items);
+        }
+
+        public override int IndexOf(SearchItem item)
+        {
+            return m_UnorderedItems.IndexOf(item);
         }
 
         public override bool Remove(SearchItem item)
@@ -914,7 +943,7 @@ namespace UnityEditor.Search
         bool m_SearchStarted;
         bool m_GetItemsDone;
 
-        public ConcurrentSearchList(SearchContext searchContext) : base(searchContext)
+        public ConcurrentSearchList(SearchContext searchContext, bool ownsContext) : base(searchContext, true, ownsContext)
         {
             m_UnorderedItems = new ConcurrentBag<SearchItem>();
             searchContext.sessionStarted += SearchContextOnsessionStarted;

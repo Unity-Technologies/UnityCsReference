@@ -185,12 +185,6 @@ namespace Unity.Hierarchy
             if (node == HierarchyNode.Null)
                 return;
 
-            // Patch: normally unnecessary, but since BindCell can be called whenever UI is repaint
-            // outside the regular update loop, it is possible the node no longer exists in the hierarchy
-            // even though it still exists in the view model.
-            if (!m_View.Source.Exists(node))
-                return;
-
             cell.Node = node;
             cell.NodeIndex = index;
             cell.Handler = m_View.Source.GetNodeTypeHandler(node);

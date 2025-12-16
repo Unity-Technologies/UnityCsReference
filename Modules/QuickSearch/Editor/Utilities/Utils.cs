@@ -11,11 +11,15 @@ using System.IO;
 using System.Reflection;
 using System.Globalization;
 using System.Text.RegularExpressions;
+using Unity.Collections.LowLevel.Unsafe;
 using UnityEditor.ShortcutManagement;
 using UnityEditor.Utils;
 using UnityEngine;
 using UnityEditorInternal;
 using UnityEngine.UIElements;
+using UnityEditor.PackageManager;
+
+using Debug = UnityEngine.Debug;
 
 using UnityEditor.Connect;
 using UnityEditor.StyleSheets;
@@ -122,13 +126,66 @@ namespace UnityEditor.Search
             return SettingsService.FetchSettingsProviders();
         }
 
-        internal static string GetNameFromPath(string path)
+        // Split path and won't throw exception if the path contains invalid chars.
+        internal static void SplitPath(in string path, out string dir, out string fileNameWithoutExtension, out string extension)
         {
+            dir = fileNameWithoutExtension = extension = string.Empty;
+            if (path == null)
+                return;
             var lastSep = path.LastIndexOf('/');
+            if (lastSep == -1)
+            {
+                lastSep = path.LastIndexOf('\\');
+            }
+
+            dir = lastSep == -1 ? string.Empty : path.Substring(0, lastSep);
+            var dot = path.LastIndexOf('.');
+            if (dot == -1)
+            {
+                // Note: if lastSep == -1 we return path to avoid the copy done by Substring.
+                fileNameWithoutExtension = lastSep == -1 ? path : path.Substring(lastSep + 1);
+            }
+            else
+            {
+                var startOfFileName = lastSep + 1;
+                fileNameWithoutExtension = path.Substring(startOfFileName, dot - startOfFileName);
+                extension = path.Substring(dot + 1);
+            }
+        }
+
+        // GetFileName and won't throw exception if the path contains invalid chars.
+        internal static string GetFileName(string path)
+        {
+            if (path == null)
+                return string.Empty;
+
+            var lastSep = path.LastIndexOf('/');
+            if (lastSep != -1)
+                return path.Substring(lastSep + 1);
+
+            lastSep = path.LastIndexOf('\\');
             if (lastSep == -1)
                 return path;
 
             return path.Substring(lastSep + 1);
+        }
+
+        // GetFileNameWithoutExtension and won't throw exception if the path contains invalid chars.
+        internal static string GetFileNameWithoutExtension(string path)
+        {
+            var filename = Utils.GetFileName(path);
+            var lastSep = filename.LastIndexOf('.');
+            return lastSep == -1 ? filename : filename.Substring(0, lastSep);
+        }
+
+        // GetExtensionWithoutDot and won't throw exception if the path contains invalid chars.
+        internal static string GetExtensionWithoutDot(string path)
+        {
+            if (path == null)
+                return string.Empty;
+
+            var lastSep = path.LastIndexOf('.');
+            return lastSep == -1 ? string.Empty : path.Substring(lastSep + 1);
         }
 
         internal static Hash128 GetSourceAssetFileHash(string guid)
@@ -233,7 +290,7 @@ namespace UnityEditor.Search
 
         public static EntityId GetMainAssetEntityId(string assetPath)
         {
-            return (int)AssetDatabase.GetMainAssetEntityId(assetPath);
+            return AssetDatabase.GetMainAssetEntityId(assetPath);
         }
 
         internal static GUIContent GUIContentTemp(string text, string tooltip)
@@ -253,7 +310,7 @@ namespace UnityEditor.Search
 
         internal static Texture2D GetAssetPreview(SearchContext ctx, UnityEngine.Object obj, FetchPreviewOptions previewOptions)
         {
-            var preview = AssetPreview.GetAssetPreview(obj.GetInstanceID(), GetClientId(ctx));
+            var preview = AssetPreview.GetAssetPreview(obj.GetEntityId(), GetClientId(ctx));
             if (preview == null || previewOptions.HasAny(FetchPreviewOptions.Large))
             {
                 var largePreview = AssetPreview.GetMiniThumbnail(obj);
@@ -355,7 +412,7 @@ namespace UnityEditor.Search
                 if (v == null)
                     sb.AppendLine($"{PrintTabs(level)}{name}: nil");
                 else if (v is UnityEngine.Object ueo)
-                    sb.AppendLine($"{PrintTabs(level)}{name}: ({ueo.GetInstanceID()}) {ueo.name} [{ueo.GetType()}]");
+                    sb.AppendLine($"{PrintTabs(level)}{name}: ({ueo.GetEntityId()}) {ueo.name} [{ueo.GetType()}]");
                 else if (v is string s)
                     sb.AppendLine($"{PrintTabs(level)}{name}: {s}");
                 else if (vt.IsPrimitive)
@@ -417,11 +474,11 @@ namespace UnityEditor.Search
             {
                 var fetchTime = p.fetchTime;
                 if (fullTimingInfo)
-                    return $"{p.name} ({fetchTime:0.#} ms, Enable: {p.enableTime:0.#} ms, Init: {p.loadTime:0.#} ms)";
+                    return $"{p.name} ({fetchTime.TotalMilliseconds:0.#} ms, Enable: {p.enableTime:0.#} ms, Init: {p.loadTime:0.#} ms)";
 
                 var avgTimeLabel = String.Empty;
-                if (showFetchTime && fetchTime > 9.99)
-                    avgTimeLabel = $" ({fetchTime:#} ms)";
+                if (showFetchTime && fetchTime.TotalMilliseconds > 9.99)
+                    avgTimeLabel = $" ({fetchTime.TotalMilliseconds:#} ms)";
                 return $"<b>{p.name}</b>{avgTimeLabel}";
             }));
         }
@@ -687,6 +744,27 @@ namespace UnityEditor.Search
             return item.provider.toObject?.Invoke(item, filterType);
         }
 
+        internal static UnityEngine.Object ToObject(SearchItem item, Type[] filterTypes)
+        {
+            if (item == null || item.provider == null)
+                return null;
+
+            var obj = item.provider.toObject?.Invoke(item, typeof(UnityEngine.Object));
+            if (!obj)
+                return null;
+
+            var type= obj.GetType();
+            foreach (var filterType in filterTypes)
+            {
+                if (filterType.IsAssignableFrom(type))
+                {
+                    return obj;
+                }
+            }
+
+            return null;
+        }
+
         internal static bool IsFocusedWindowTypeName(string focusWindowName)
         {
             return EditorWindow.focusedWindow != null && EditorWindow.focusedWindow.GetType().ToString().EndsWith("." + focusWindowName);
@@ -706,6 +784,8 @@ namespace UnityEditor.Search
 
         internal static string CleanPath(string path)
         {
+            if (path == null)
+                return null;
             return path.Replace("\\", "/");
         }
 
@@ -739,9 +819,9 @@ namespace UnityEditor.Search
             return path;
         }
 
-        private static int GetClientId(SearchContext ctx)
+        private static EntityId GetClientId(SearchContext ctx)
         {
-            return ctx != null && ctx.searchView != null ? ctx.searchView.GetViewId() : 0;
+            return ctx != null && ctx.searchView != null ? ctx.searchView.GetViewId() : EntityId.None;
         }
 
         internal static Texture2D GetSceneObjectPreview(SearchContext ctx, GameObject obj, Vector2 previewSize, FetchPreviewOptions options, Texture2D defaultThumbnail)
@@ -755,17 +835,17 @@ namespace UnityEditor.Search
             var clientId = GetClientId(ctx);
             if (!options.HasAny(FetchPreviewOptions.Large))
             {
-                var preview = AssetPreview.GetAssetPreview(obj.GetInstanceID(), clientId);
+                var preview = AssetPreview.GetAssetPreview(obj.GetEntityId(), clientId);
                 if (preview)
                     return preview;
 
-                if (AssetPreview.IsLoadingAssetPreview(obj.GetInstanceID(), clientId))
+                if (AssetPreview.IsLoadingAssetPreview(obj.GetEntityId(), clientId))
                     return null;
             }
 
             var assetPath = SearchUtils.GetHierarchyAssetPath(obj, true);
             if (string.IsNullOrEmpty(assetPath))
-                return AssetPreview.GetAssetPreview(obj.GetInstanceID(), clientId) ?? defaultThumbnail;
+                return AssetPreview.GetAssetPreview(obj.GetEntityId(), clientId) ?? defaultThumbnail;
             return GetAssetPreviewFromPath(ctx, assetPath, previewSize, options);
         }
 
@@ -1238,6 +1318,12 @@ namespace UnityEditor.Search
                 success = ulong.TryParse(expression, NumberStyles.Integer, CultureInfo.InvariantCulture.NumberFormat, out var temp);
                 result = (T)(object)temp;
             }
+            else if (typeof(T) == typeof(EntityId))
+            {
+                Debug.Assert(sizeof(int)==UnsafeUtility.SizeOf<EntityId>(), "EntityId is not the same size as int, update this code to use ulong");
+                success = int.TryParse(expression, NumberStyles.Integer, CultureInfo.InvariantCulture.NumberFormat, out var temp);
+                result = (T)(object)EntityId.From(temp);
+            }
             return success;
         }
 
@@ -1262,9 +1348,8 @@ namespace UnityEditor.Search
 
         public static string ReplaceInvalidCharsFromPath(string path, char repl = '/')
         {
-            foreach (var c in Path.GetInvalidPathChars())
-                path = path.Replace(c, repl);
-            return path;
+            var tokens = path.Split(Path.GetInvalidPathChars());
+            return string.Join(repl, tokens);
         }
 
         internal static string RemoveInvalidCharsFromFileName(string filename)
@@ -1305,9 +1390,9 @@ namespace UnityEditor.Search
             return property.objectReferenceStringValue;
         }
 
-        public static GUIContent ObjectContent(UnityEngine.Object obj, Type type, int instanceID)
+        public static GUIContent ObjectContent(UnityEngine.Object obj, Type type, EntityId entityId)
         {
-            return EditorGUIUtility.ObjectContent(obj, type, instanceID);
+            return EditorGUIUtility.ObjectContent(obj, type, entityId);
         }
 
         public static bool IsCommandDelete(string commandName)
@@ -1372,7 +1457,7 @@ namespace UnityEditor.Search
             if (string.IsNullOrEmpty(name))
                 return name;
 
-            var oldName = Path.GetFileName(name);
+            var oldName = Utils.GetFileName(name);
             var dirName = Path.GetDirectoryName(name);
             var newName = oldName.StartsWith("d_") ? oldName.Substring(2) : oldName;
             if (!string.IsNullOrEmpty(dirName))
@@ -1466,9 +1551,10 @@ namespace UnityEditor.Search
             return attrs[0] as T;
         }
 
-        internal static bool TryParseObjectValue(in string value, out UnityEngine.Object objValue)
+        internal static bool TryParseObjectValue(string value, out UnityEngine.Object objValue)
         {
             objValue = null;
+            value = SearchUtils.UnescapeLiteralString(value);
             if (string.IsNullOrEmpty(value))
             {
                 return false;
@@ -1484,13 +1570,24 @@ namespace UnityEditor.Search
             }
 
             // ADB prints a warning if the path starts with /
-            if (!value.StartsWith("/") && AssetDatabase.AssetPathExists(value))
+            if (!value.StartsWith("/"))
             {
-                var guid = AssetDatabase.AssetPathToGUID(value);
-                if (!string.IsNullOrEmpty(guid))
+                var assetPath = "";
+                if (value.StartsWith("Assets/") || value.StartsWith("Packages/"))
                 {
-                    objValue = AssetDatabase.LoadMainAssetAtPath(value);
-                    return true;
+                    assetPath = value;
+                }
+                else
+                {
+                    assetPath = AssetDatabase.GUIDToAssetPath(value);
+                }
+
+                if (AssetDatabase.AssetPathExists(assetPath))
+                {
+                    objValue = AssetDatabase.LoadMainAssetAtPath(assetPath);
+                    if (objValue)
+                        return true;
+                    return false;
                 }
             }
 
@@ -1578,6 +1675,28 @@ namespace UnityEditor.Search
                     onEnumeration(objType.FullName, true);
                 objType = objType.BaseType;
             }
+        }
+
+        internal static bool IsPackageReadOnly(PackageManager.PackageInfo pi)
+        {
+            if (pi.source == PackageSource.Embedded || pi.source == PackageSource.Local)
+                return false;
+            return true;
+        }
+
+        internal static bool IsAssetReadOnly(string assetPath)
+        {
+            if (string.IsNullOrEmpty(assetPath) || assetPath.StartsWith("Library/"))
+                return true;
+
+            if (assetPath.StartsWith("Packages/"))
+            {
+                var pi = PackageManager.PackageInfo.FindForAssetPath(assetPath);
+                return pi != null && IsPackageReadOnly(pi);
+            }
+
+            // Assumes all assets in projects are writable.
+            return false;
         }
     }
 

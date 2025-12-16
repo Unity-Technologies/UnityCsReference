@@ -9,8 +9,11 @@ using Object = UnityEngine.Object;
 
 namespace UnityEditor.Build.Reporting
 {
+    /// <summary>
+    /// Statistics for a specific Unity Object type included in a build.
+    /// </summary>
     [NativeHeader("Modules/BuildReportingEditor/Public/ContentSummary.h")]
-    internal struct TypeStats
+    /*UCBP-PUBLIC*/ internal struct TypeStats
     {
         public Type type { get; }
 
@@ -30,8 +33,11 @@ namespace UnityEditor.Build.Reporting
         public int resourceCount { get; }
     }
 
+    /// <summary>
+    /// Statistics for a specific Asset included in a build.
+    /// </summary>
     [NativeHeader("Modules/BuildReportingEditor/Public/ContentSummary.h")]
-    internal struct AssetStats
+    /*UCBP-PUBLIC*/ internal struct AssetStats
     {
         /// <summary>
         /// AssetDatabase GUID of the Asset.
@@ -59,9 +65,21 @@ namespace UnityEditor.Build.Reporting
         public int resourceCount { get; }
     }
 
+    /// <summary>
+    /// Provides a high-level summary of the content included in a build.
+    /// </summary>
+    /// <remarks>
+    /// ContentSummary is only populated for builds created with <see cref="BuildPipeline.BuildContentDirectory"/>. It is not
+    /// populated for Player or AssetBundle builds.
+    ///
+    /// This provides a high-level summary of the content of the build that is much more compact than the <see cref="PackedAssets"/> data. It
+    /// includes aggregate statistics such as total sizes, counts, and breakdowns by type and source asset.
+    /// </remarks>
+    /// <seealso cref="BuildPipeline.BuildContentDirectory"/>
+    /// <seealso cref="BuildReport"/>
     [NativeHeader("Modules/BuildReportingEditor/Public/ContentSummary.h")]
     [NativeClass("BuildReporting::ContentSummary")]
-    internal sealed class ContentSummary : Object
+    /*UCBP-PUBLIC*/ internal sealed class ContentSummary : Object
     {
         /// <summary>
         /// Size of the content portion of the build.  This is the size prior to any compression that is applied if the content is built into Unity Archives.
@@ -79,7 +97,7 @@ namespace UnityEditor.Build.Reporting
         /// Size of the content portion of the build that is newly created in this build.
         /// </summary>
         /// <remarks>
-        /// This size is calculated similarly to <see cref="serializedFileSize"/>, 
+        /// This size is calculated similarly to <see cref="serializedFileSize"/>,
         /// but it only includes the serialized files and resource files that are newly generated and not retrieved from previous build results.
         /// These files may not be copied to the output destination if identical files already exist there.
         /// This size is calculated before any compression is applied.

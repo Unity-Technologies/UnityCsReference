@@ -5,7 +5,6 @@
 using System;
 using System.Collections.Generic;
 using System.Reflection;
-using Unity.EntitiesLike;
 using Unity.Collections.LowLevel.Unsafe;
 using UnityEngine;
 using UnityEngine.Assertions;
@@ -64,7 +63,7 @@ internal sealed class EngineHelper
 
     internal static void ResizeListContents(object list, Type elementType, int newSize)
     {
-// ResizeListContents uses Unsafe.As, which is in a nuget package
+        NoAllocHelpers.ResizeListContents(list, elementType, newSize);
     }
 
 

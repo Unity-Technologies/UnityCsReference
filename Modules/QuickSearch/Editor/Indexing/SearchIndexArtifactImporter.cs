@@ -45,7 +45,7 @@ namespace UnityEditor.Search
 
                 var indexArtifactPath = ctx.GetOutputArtifactFilePath($"{(int)options:X}.index".ToLowerInvariant());
 
-                using (var fileStream = new FileStream(indexArtifactPath, FileMode.CreateNew, FileAccess.Write, FileShare.None))
+                using (var fileStream = new FileStream(FileUtil.PathToAbsolutePath(indexArtifactPath), FileMode.CreateNew, FileAccess.Write, FileShare.None))
                     indexer.storage.Write(fileStream);
 
                 ctx.DependsOnSourceAsset(ctx.assetPath);

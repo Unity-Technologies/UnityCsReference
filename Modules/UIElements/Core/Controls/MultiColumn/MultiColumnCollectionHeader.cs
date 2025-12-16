@@ -320,7 +320,7 @@ namespace UnityEngine.UIElements.Internal
         /// </summary>
         void ResizeToFit()
         {
-            columnLayout.ResizeToFit(layout.width);
+            columnLayout.ResizeToFit(layoutSize.x);
         }
 
         /// <summary>
@@ -627,7 +627,7 @@ namespace UnityEngine.UIElements.Internal
         /// </summary>
         void DoLayout()
         {
-            columnLayout.DoLayout(layout.width);
+            columnLayout.DoLayout(layoutSize.x);
             m_DoLayoutScheduled = false;
         }
 

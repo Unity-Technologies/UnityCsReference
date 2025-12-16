@@ -20,6 +20,9 @@ namespace Unity.Multiplayer.PlayMode.Editor
             string[] movedFromAssetPaths,
             bool didDomainReload)
         {
+            if (MigrationUtility.ShouldDisableMultiplayerPlayMode())
+                return;
+
             var totalCount = importedAssets.Length + deletedAssets.Length + movedAssets.Length + movedFromAssetPaths.Length;
             // AssetPostprocessingInternal::PostprocessAllAssets also does logic based off of containing no assets.
             // We need to pass this through to mirror the same logic

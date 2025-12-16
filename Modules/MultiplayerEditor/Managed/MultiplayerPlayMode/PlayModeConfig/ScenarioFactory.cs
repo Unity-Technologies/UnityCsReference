@@ -113,9 +113,13 @@ namespace Unity.Multiplayer.PlayMode.Editor
 
         private static Instance CreateInstance(InstanceDescription instanceDescription, bool hasMainEditor)
         {
+            if (instanceDescription is VirtualEditorInstanceDescription virtualEditorDescription)
+            {
+                return CreateCloneEditorInstance(virtualEditorDescription);
+            }
             if (instanceDescription is EditorInstanceDescription editorDescription)
             {
-                return CreateEditorInstance(editorDescription);
+                return CreateMainEditorInstance(editorDescription);
             }
             if (instanceDescription is LocalInstanceDescription localDescription)
             {
@@ -128,9 +132,20 @@ namespace Unity.Multiplayer.PlayMode.Editor
             throw new System.NotImplementedException();
         }
 
-        static Instance CreateEditorInstance(EditorInstanceDescription editorInstanceDescription)
+        static Instance CreateMainEditorInstance(EditorInstanceDescription editorInstanceDescription)
         {
-            var editorController = new EditorInstanceController(editorInstanceDescription);
+            var editorController = MainEditorController.CreateInstance(editorInstanceDescription);
+            var instance = Instance.Create(editorInstanceDescription, editorController);
+            var executionGraph = instance.GetExecutionGraph();
+
+            editorController.SetupExecutionGraph(executionGraph);
+
+            return instance;
+        }
+
+        static Instance CreateCloneEditorInstance(VirtualEditorInstanceDescription editorInstanceDescription)
+        {
+            var editorController = CloneEditorController.CreateInstance(editorInstanceDescription);
             var instance = Instance.Create(editorInstanceDescription, editorController);
             var executionGraph = instance.GetExecutionGraph();
 
@@ -141,7 +156,8 @@ namespace Unity.Multiplayer.PlayMode.Editor
 
         private static Instance CreateLocalInstance(LocalInstanceDescription description, bool hasMainEditor)
         {
-            var localController = new LocalInstanceController(description, hasMainEditor);
+            var localController = LocalPlayerController.CreateInstance(description);
+            localController.HasEditorInstance = hasMainEditor;
             var instance = Instance.Create(description, localController);
             var executionGraph = instance.GetExecutionGraph();
 
@@ -152,7 +168,7 @@ namespace Unity.Multiplayer.PlayMode.Editor
 
         private static Instance CreateRemoteInstance(RemoteInstanceDescription description)
         {
-            var remoteController = new RemoteInstanceController(description);
+            var remoteController = MultiplayController.CreateInstance(description);
             var instance = Instance.Create(description, remoteController);
             var executionGraph = instance.GetExecutionGraph();
 

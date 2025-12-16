@@ -4,14 +4,14 @@
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using UnityEngine;
+using UnityEngine.Pool;
 
 namespace Unity.GraphToolkit.Editor
 {
     /// <summary>
     /// The base class for models having <see cref="IGroupItemModel"/> items.
     /// </summary>
+    [Serializable]
     [UnityRestricted]
     internal abstract class GroupModelBase : GraphElementModel, IGroupItemModel, IGraphElementContainer, IRenamable, IHasTitle
     {
@@ -43,7 +43,20 @@ namespace Unity.GraphToolkit.Editor
         public GroupModelBase ParentGroup { get; set; }
 
         /// <inheritdoc />
-        public virtual IEnumerable<GraphElementModel> ContainedModels => Items.SelectMany(t => Enumerable.Repeat(t as GraphElementModel, 1).Concat(t.ContainedModels));
+        public virtual IEnumerable<GraphElementModel> ContainedModels
+        {
+            get
+            {
+                foreach (var item in Items)
+                {
+                    if (item is GraphElementModel graphElement)
+                        yield return graphElement;
+
+                    foreach (var containedModel in item.ContainedModels)
+                        yield return containedModel;
+                }
+            }
+        }
 
         /// <inheritdoc />
         public virtual void Rename(string name)
@@ -52,7 +65,14 @@ namespace Unity.GraphToolkit.Editor
         }
 
         /// <inheritdoc />
-        public IEnumerable<GraphElementModel> GetGraphElementModels() => Items.OfType<GraphElementModel>();
+        public IEnumerable<GraphElementModel> GetGraphElementModels()
+        {
+            foreach (var item in Items)
+            {
+                if (item is GraphElementModel gem)
+                    yield return gem;
+            }
+        }
 
         /// <inheritdoc />
         public virtual void RemoveContainerElements(IReadOnlyCollection<GraphElementModel> elementModels) { }
@@ -87,14 +107,14 @@ namespace Unity.GraphToolkit.Editor
         /// <returns>Whether this element can accept elements as its items.</returns>
         public virtual bool CanAcceptDrop(IEnumerable<GraphElementModel> draggedObjects)
         {
-            var items = draggedObjects.OfType<IGroupItemModel>();
-
+            using var dispose = draggedObjects.OfTypeToPooledList<IGroupItemModel, GraphElementModel>(out var items);
             foreach (var obj in items)
             {
                 if (obj is GroupModel vgm && this.IsIn(vgm))
                     return false;
             }
-            var variables = new List<VariableDeclarationModelBase>();
+
+            using var disposeVariables = ListPool<VariableDeclarationModelBase>.Get(out var variables);
             RecurseGetVariables(items, variables);
 
             var section = GetSection();
@@ -103,10 +123,13 @@ namespace Unity.GraphToolkit.Editor
             if (variables.Count == 0) // We can always drag empty groups.
                 return true;
 
-            if (variables.All(t => t.GetSection() != section && !GraphModel.CanConvertVariable(t, sectionName)))
-                return false;
+            foreach (var t in variables)
+            {
+                if (t.GetSection() == section || GraphModel.CanConvertVariable(t, sectionName))
+                    return true;
+            }
 
-            return true;
+            return false;
         }
 
         /// <inheritdoc />

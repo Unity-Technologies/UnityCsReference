@@ -2133,6 +2133,7 @@ namespace UnityEditor
             string newValue = string.Empty;
             using (new ScrollableAreaScope(id, ref position, text, ref scrollPosition, ref style))
             {
+                bool initialClick = !s_RecycledEditor.IsEditingControl(id);
                 //Events cannot be handled at the scope level
                 EventType beforeTextFieldEventType = Event.current.type;
                 newValue = DoTextField(s_RecycledEditor, id, position, text, style, null, out _, false, true,
@@ -2140,7 +2141,14 @@ namespace UnityEditor
 
                 //Only update the out scrollPosition if the user has interacted with the TextArea (the current event was used)
                 if (beforeTextFieldEventType != Event.current.type)
-                    scrollPosition = s_RecycledEditor.scrollOffset;
+                {
+                    // If it's the initial click, we want the scrollOffset to be the same as the scrollbar (UUM-127680)
+                    if (initialClick)
+                        s_RecycledEditor.scrollOffset = scrollPosition;
+                    else
+                        scrollPosition = s_RecycledEditor.scrollOffset;
+                }
+               
             }
 
             return newValue;
@@ -4533,6 +4541,14 @@ namespace UnityEditor
             return DoObjectField(position, position, id, obj, null, objType, null, allowSceneObjects);
         }
 
+        internal static Object ObjectField(Rect position, GUIContent label, Object obj, Type objType, Type additionalType, bool allowSceneObjects)
+        {
+            int id = GUIUtility.GetControlID(s_ObjectFieldHash, FocusType.Keyboard, position);
+            position = PrefixLabel(position, id, label);
+            position = GetObjectFieldThumbnailRect(position, objType);
+            return DoObjectField(position, position, id, obj, null, objType, null, allowSceneObjects, additionalType);
+        }
+
         internal static void GetRectsForMiniThumbnailField(Rect position, out Rect thumbRect, out Rect labelRect)
         {
             thumbRect = IndentedRect(position);
@@ -6370,7 +6386,7 @@ namespace UnityEditor
             }
         }
 
-        internal static bool ToggleTitlebar(Rect position, GUIContent label, bool foldout, ref bool toggleValue)
+        internal static bool ToggleTitlebar(Rect position, GUIContent label, bool foldout, ref bool toggleValue, bool supportHover = false)
         {
             // Important to get controlId for the foldout first, so it gets keyboard focus before the toggle does.
             int id = GUIUtility.GetControlID(s_TitlebarHash, FocusType.Keyboard, position);
@@ -6388,7 +6404,8 @@ namespace UnityEditor
 
             if (Event.current.type == EventType.Repaint)
             {
-                baseStyle.Draw(position, GUIContent.none, id, foldout);
+                bool hover = supportHover && position.Contains(Event.current.mousePosition);
+                baseStyle.Draw(position, GUIContent.none, id, foldout, hover);
                 foldoutStyle.Draw(GetInspectorTitleBarObjectFoldoutRenderRect(position, baseStyle), GUIContent.none, id, foldout);
                 position = baseStyle.padding.Remove(position);
                 textStyle.Draw(textRect, label, id, foldout);
@@ -7581,6 +7598,7 @@ namespace UnityEditor
                 case SerializedPropertyType.Bounds:
                 case SerializedPropertyType.BoundsInt:
                 case SerializedPropertyType.Hash128:
+                case SerializedPropertyType.GUID:
                 case SerializedPropertyType.EntityId:
                     return false;
             }
@@ -7794,7 +7812,8 @@ namespace UnityEditor
                         string newValue = TextField(position, label, new string(value));
                         if (GUI.changed)
                         {
-                            if (newValue.Length == 1)
+                            if ((newValue.Length == 1 && newValue[0] != '\0') ||
+                                (newValue.Length == 2 && newValue[1] == '\0'))
                             {
                                 property.intValue = newValue[0];
                             }
@@ -7871,6 +7890,16 @@ namespace UnityEditor
                         if (EndChangeCheck())
                         {
                             property.hash128Value = Hash128.Parse(newValue);
+                        }
+                        break;
+                    }
+                    case SerializedPropertyType.GUID:
+                    {
+                        BeginChangeCheck();
+                        string newValue = TextField(position, label, property.guidValue.ToString());
+                        if (EndChangeCheck())
+                        {
+                            property.guidValue = new GUID(newValue);
                         }
                         break;
                     }

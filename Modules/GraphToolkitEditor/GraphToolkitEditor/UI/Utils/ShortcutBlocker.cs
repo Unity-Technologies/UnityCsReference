@@ -3,8 +3,6 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System.Collections.Generic;
-using System.Linq;
-using Unity.GraphToolkit.InternalBridge;
 using Unity.GraphToolsAuthoringFramework.InternalEditorBridge;
 using UnityEditor.ShortcutManagement;
 using UnityEngine.UIElements;
@@ -140,7 +138,7 @@ namespace Unity.GraphToolkit.Editor
         {
             var currentCombination = EditorBridge.FromKeyboardInput(evt.keyCode, evt.modifiers);
 
-            if (m_ForbiddenShortcuts.Values.Any(set => set.Contains(currentCombination)))
+            if (m_ForbiddenShortcuts.Values.HasAny(set => set.Contains(currentCombination)))
             {
                 evt.StopPropagation();
             }

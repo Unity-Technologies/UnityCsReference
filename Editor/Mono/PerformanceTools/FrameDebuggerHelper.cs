@@ -150,6 +150,14 @@ namespace UnityEditorInternal.FrameDebuggerInternal
             Blit(ref output, frameDebuggerMaterial);
         }
 
+        private static void SetKeyWord(Material mat, string keyWord, bool value)
+        {
+            if (value)
+                mat.EnableKeyword(keyWord);
+            else
+                mat.DisableKeyword(keyWord);
+        }
+
         private static void SetMaterialProperties(
             int width,
             int height,
@@ -163,25 +171,16 @@ namespace UnityEditorInternal.FrameDebuggerInternal
         {
             Material mat = frameDebuggerMaterial;
 
-            frameDebuggerMaterial.DisableKeyword(ShaderPropertyIDs._TEX2DARRAY);
-            frameDebuggerMaterial.DisableKeyword(ShaderPropertyIDs._CUBEMAP);
-            if (samplerType == TextureDimension.Tex2DArray)
-                frameDebuggerMaterial.EnableKeyword(ShaderPropertyIDs._TEX2DARRAY);
-            else if (samplerType == TextureDimension.CubeArray)
-                frameDebuggerMaterial.EnableKeyword(ShaderPropertyIDs._CUBEMAP);
+            bool isCubeMap = samplerType == TextureDimension.Cube;
+            SetKeyWord(mat, ShaderPropertyIDs._CUBEMAP, isCubeMap);
+            SetKeyWord(mat, ShaderPropertyIDs._TEX2DARRAY, samplerType == TextureDimension.Tex2DArray);
+            
+            // Cubemaps don't support MSAA, so only enable MSAA keywords for non-cubemap textures
+            SetKeyWord(mat, ShaderPropertyIDs._MSAA_2, msaaValue == 2 && !isCubeMap);
+            SetKeyWord(mat, ShaderPropertyIDs._MSAA_4, msaaValue == 4 && !isCubeMap);
+            SetKeyWord(mat, ShaderPropertyIDs._MSAA_8, msaaValue == 8 && !isCubeMap);
 
-            mat.DisableKeyword(ShaderPropertyIDs._MSAA_2);
-            mat.DisableKeyword(ShaderPropertyIDs._MSAA_4);
-            mat.DisableKeyword(ShaderPropertyIDs._MSAA_8);
-
-            if (msaaValue == 2)
-                mat.EnableKeyword(ShaderPropertyIDs._MSAA_2);
-            else if (msaaValue == 4)
-                mat.EnableKeyword(ShaderPropertyIDs._MSAA_4);
-            else if (msaaValue == 8)
-                mat.EnableKeyword(ShaderPropertyIDs._MSAA_8);
-
-            // Create the RenderTexture
+            // Set shader properties
             mat.SetFloat(ShaderPropertyIDs._MainTexWidth, width);
             mat.SetFloat(ShaderPropertyIDs._MainTexHeight, height);
             mat.SetFloat(ShaderPropertyIDs._MainTexDepth, depth);

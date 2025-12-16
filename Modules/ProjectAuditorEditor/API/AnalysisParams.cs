@@ -58,9 +58,15 @@ namespace Unity.ProjectAuditor.Editor
         public SerializableEnum<CodeOptimization> CodeOptimization;
 
         /// <summary>
-        /// The Compilation mode to use during code analysis. The default is <see cref="CompilationMode.Player"/>.
+        /// The Compilation flags to use during code analysis.
         /// </summary>
-        public SerializableEnum<CompilationMode> CompilationMode;
+        public SerializableEnum<CodeAnalysisFlags> CodeAnalysisFlags;
+
+        /// <summary>
+        /// The Compilation flags to use during code analysis.
+        /// </summary>
+        [SerializeField]
+        internal SerializableEnum<CodeOwnerFlags> CodeOwnerFlags;
 
         /// <summary>
         /// Reports a batch of new issues. Note that this be called multiple times per analysis.
@@ -97,6 +103,10 @@ namespace Unity.ProjectAuditor.Editor
         [NonSerialized]
         internal Report ExistingReport;
 
+        // Passed along by the UI to ensure the session info is updated when we analyze extra areas after the initial analysis
+        [NonSerialized]
+        internal ProjectAreaFlags ExistingReportProjectAreas;
+
         [NonSerialized]
         internal Predicate<string> AssetPathFilter;
 
@@ -120,7 +130,8 @@ namespace Unity.ProjectAuditor.Editor
 
             Platform = BuildTarget.NoTarget;
             CodeOptimization = Editor.CodeOptimization.Release;
-            CompilationMode = Editor.CompilationMode.Player;
+            CodeAnalysisFlags = CodeAnalysisFlagsExtensions.Default;
+            CodeOwnerFlags = Editor.CodeOwnerFlags.User;
             SupportedBuildTarget = BuildPipeline.IsBuildTargetSupported;
         }
 
@@ -137,7 +148,8 @@ namespace Unity.ProjectAuditor.Editor
             Platform = original.Platform;
             AssemblyNames = original.AssemblyNames;
             CodeOptimization = original.CodeOptimization;
-            CompilationMode = original.CompilationMode;
+            CodeAnalysisFlags = original.CodeAnalysisFlags;
+            CodeOwnerFlags = original.CodeOwnerFlags;
 
             OnIncomingIssues = original.OnIncomingIssues;
             OnCompleted = original.OnCompleted;

@@ -36,7 +36,7 @@ namespace Unity.GraphToolkit.Editor
             {
                 return s_Assemblies ??= AppDomain.CurrentDomain.GetAssemblies()
                     .Where(a => !a.IsDynamic
-                        && !k_BlackListedAssemblies.Any(b => a.GetName().Name.ToLower().Contains(b)))
+                        && !k_BlackListedAssemblies.HasAny(b => a.GetName().Name.ToLower().Contains(b)))
                     .ToList();
             }
         }

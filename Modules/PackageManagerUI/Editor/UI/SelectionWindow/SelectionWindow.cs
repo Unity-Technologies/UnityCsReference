@@ -19,7 +19,7 @@ internal class SelectionWindow : EditorWindow
         window.Show();
     }
 
-    public static event Action<IEnumerable<Asset>> onRemoveSelectionDone = delegate {};
+    public static event Action<IReadOnlyCollection<Asset>> onRemoveSelectionDone = delegate {};
 
     private SelectionWindowRoot m_Root;
     private bool m_SelectionCompleted;
@@ -38,6 +38,7 @@ internal class SelectionWindow : EditorWindow
             m_Root.SetData(m_Data, false);
     }
 
+    // The internal modifier is used (instead of private) to give our test project access to these properties/methods
     internal void SetData(SelectionWindowData data)
     {
         // We're storing a reference to "data" because we need to serialize it for domain reload.
@@ -52,10 +53,10 @@ internal class SelectionWindow : EditorWindow
         // In the case when user's force quit the window, m_SelectionCompleted will be false and onRemoveSelectionDone will not have been called yet.
         // This is a special handling to catch that case.
         if (!m_SelectionCompleted)
-            onRemoveSelectionDone?.Invoke(Enumerable.Empty<Asset>());
+            onRemoveSelectionDone?.Invoke(Array.Empty<Asset>());
     }
 
-    private void OnSelectionCompleted(IEnumerable<Asset> selections)
+    private void OnSelectionCompleted(IReadOnlyCollection<Asset> selections)
     {
         m_SelectionCompleted = true;
         onRemoveSelectionDone?.Invoke(selections);

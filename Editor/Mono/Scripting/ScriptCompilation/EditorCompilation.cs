@@ -27,9 +27,11 @@ using Directory = System.IO.Directory;
 using File = System.IO.File;
 using UnityEditor.Build;
 using UnityEngine.Pool;
+using UnityEngine.Bindings;
 
 namespace UnityEditor.Scripting.ScriptCompilation
 {
+    [VisibleToOtherModules("UnityEditor.BurstModule")]
     internal interface IEditorCompilation
     {
         PrecompiledAssemblyProviderBase PrecompiledAssemblyProvider { get; set; }
@@ -41,6 +43,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
             string[] defines);
     }
 
+    [VisibleToOtherModules("UnityEditor.BurstModule")]
     class EditorCompilation : IEditorCompilation
     {
         const int kLogIdentifierFor_EditorMessages = 1234;
@@ -1186,7 +1189,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
         private static void LogCompilerMessages(int logIdentifier, IEnumerable<CompilerMessage> compilerMessages, bool buildingForEditor)
         {
             Debug.RemoveLogEntriesByIdentifier(logIdentifier);
-            var fileInstanceIdCache = new Dictionary<string, int>();
+            var fileInstanceIdCache = new Dictionary<string, EntityId>();
 
             foreach (var message in compilerMessages)
             {
@@ -1204,12 +1207,12 @@ namespace UnityEditor.Scripting.ScriptCompilation
             }
         }
 
-        private static int LookupInstanceId(IDictionary<string, int> fileInstanceIdCache, string filePath)
+        private static EntityId LookupInstanceId(IDictionary<string, EntityId> fileInstanceIdCache, string filePath)
         {
             // in batch mode, we don't have a Console Window, so we don't need an instance id
             if (Application.isBatchMode || string.IsNullOrEmpty(filePath))
             {
-                return 0;
+                return EntityId.None;
             }
 
             if (fileInstanceIdCache.TryGetValue(filePath, out var instanceId))
@@ -1222,7 +1225,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
             var logicalFilePath = FileUtil.GetLogicalPath(filePath);
             if (string.IsNullOrEmpty(logicalFilePath))
             {
-                return 0;
+                return EntityId.None;
             }
 
             var guid = AssetDatabase.GUIDFromAssetPath(logicalFilePath);

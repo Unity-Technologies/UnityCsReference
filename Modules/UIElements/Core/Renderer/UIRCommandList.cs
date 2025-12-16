@@ -15,7 +15,9 @@ namespace UnityEngine.UIElements.UIR
         DrawRanges,
         SetTexture,
         ApplyBatchProps,
+        ApplyUserProps
     }
+
 
     struct SerializedCommand
     {
@@ -26,10 +28,12 @@ namespace UnityEngine.UIElements.UIR
         public int rangeCount;
 
         public int textureName;
-        public IntPtr texturePtr;
+        public IntPtr textureRefPtr;
         public int gpuDataOffset;
         public Vector4 gpuData0;
         public Vector4 gpuData1;
+
+        public MaterialPropertyBlock userProps;
     }
 
     class CommandList : IDisposable
@@ -64,6 +68,14 @@ namespace UnityEngine.UIElements.UIR
             m_Owner = null;
             m_Renderer = null;
             m_Material = null;
+            for (int i = 0; i < m_Commands.Count; i++)
+            {
+                SerializedCommand cmd = m_Commands[i];
+                if (cmd.type == SerializedCommandType.SetTexture)
+                {
+                    Utility.ReleaseTextureRef(cmd.textureRefPtr);
+                }
+            }
             m_Commands.Clear();
             m_DrawRanges.Clear();
             constantProps.Clear();
@@ -91,7 +103,7 @@ namespace UnityEngine.UIElements.UIR
 
             int textureCount = 0;
             int* textureNames = stackalloc int[8];
-            IntPtr* texturePtrs = stackalloc IntPtr[8];
+            IntPtr* textureRefPtrs = stackalloc IntPtr[8];
 
             IntPtr shaderPropertySheetPtr = Utility.AllocateShaderPropertySheet();
             try
@@ -104,16 +116,19 @@ namespace UnityEngine.UIElements.UIR
                     {
                         case SerializedCommandType.SetTexture:
                             textureNames[textureCount] = cmd.textureName;
-                            texturePtrs[textureCount] = cmd.texturePtr;
+                            textureRefPtrs[textureCount] = cmd.textureRefPtr;
                             textureCount++;
                             m_GpuTextureData[cmd.gpuDataOffset + 0] = cmd.gpuData0;
                             m_GpuTextureData[cmd.gpuDataOffset + 1] = cmd.gpuData1;
                             break;
                         case SerializedCommandType.ApplyBatchProps:
-                            Utility.SetAllTextures(shaderPropertySheetPtr, new IntPtr(textureNames), new IntPtr(texturePtrs), textureCount);
+                            Utility.SetAllTextures(shaderPropertySheetPtr, new IntPtr(textureNames), new IntPtr(textureRefPtrs), textureCount);
                             textureCount = 0;
                             Utility.SetVectorArray(shaderPropertySheetPtr, TextureSlotManager.textureTableId, m_GpuTextureData);
                             Utility.ApplyShaderPropertySheet(shaderPropertySheetPtr);
+                            break;
+                        case SerializedCommandType.ApplyUserProps:
+                            Utility.SetPropertyBlock(cmd.userProps);
                             break;
                         case SerializedCommandType.DrawRanges:
                             vStream[0] = cmd.vertexBuffer;
@@ -136,12 +151,22 @@ namespace UnityEngine.UIElements.UIR
             {
                 type = SerializedCommandType.SetTexture,
                 textureName = name,
-                texturePtr = UnityEngine.Object.MarshalledUnityObject.MarshalNotNull<Texture>(texture),
+                textureRefPtr = Utility.AllocateTextureRef(texture),
                 gpuDataOffset = gpuDataOffset,
                 gpuData0 = gpuData0,
                 gpuData1 = gpuData1,
             };
 
+            m_Commands.Add(cmd);
+        }
+
+        public void ApplyUserProps(MaterialPropertyBlock userProps)
+        {
+            var cmd = new SerializedCommand
+            {
+                type = SerializedCommandType.ApplyUserProps,
+                userProps = userProps
+            };
             m_Commands.Add(cmd);
         }
 
@@ -190,6 +215,15 @@ namespace UnityEngine.UIElements.UIR
                 m_DrawRanges = null;
                 if (handle.IsAllocated)
                     handle.Free();
+
+                for (int i = 0; i < m_Commands.Count; i++)
+                {
+                    SerializedCommand cmd = m_Commands[i];
+                    if (cmd.type == SerializedCommandType.SetTexture)
+                    {
+                        Utility.ReleaseTextureRef(cmd.textureRefPtr);
+                    }
+                }
             }
             else DisposeHelper.NotifyMissingDispose(this);
 

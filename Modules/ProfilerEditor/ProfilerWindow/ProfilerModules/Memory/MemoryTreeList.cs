@@ -245,7 +245,7 @@ namespace UnityEditor
             m_MemorySelection.SetSelection(memoryElement);
             GUIUtility.keyboardControl = m_ControlID;
 
-            if (evt.clickCount == 2 && memoryElement.memoryInfo != null && memoryElement.memoryInfo.entityId != 0)
+            if (evt.clickCount == 2 && memoryElement.memoryInfo != null && memoryElement.memoryInfo.entityId != EntityId.None)
             {
                 Selection.activeEntityId = memoryElement.memoryInfo.entityId;
             }

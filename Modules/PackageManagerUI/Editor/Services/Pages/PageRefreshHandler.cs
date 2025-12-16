@@ -262,7 +262,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         private void OnRefreshOperationFinalized(IOperation operation)
         {
             m_RefreshOperationsInProgress.Remove(operation);
-            if (m_RefreshOperationsInProgress.Any())
+            if (m_RefreshOperationsInProgress.Count > 0)
                 return;
             onRefreshOperationFinish?.Invoke();
         }

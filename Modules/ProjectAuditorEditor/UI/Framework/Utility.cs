@@ -6,7 +6,6 @@ using Unity.ProjectAuditor.Editor.Utils;
 using UnityEditor;
 using UnityEditor.Experimental;
 using UnityEngine;
-using UnityEngine.Profiling;
 
 namespace Unity.ProjectAuditor.Editor.UI.Framework
 {
@@ -65,8 +64,8 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
         static readonly string k_GreenCheckMarkIconName = "TestPassed";
         static readonly string k_HierarchyIconName = "UnityEditor.SceneHierarchyWindow";
         static readonly string k_ZoomToolIconName = "ViewToolZoom";
-        static readonly string k_FixIconName = "Profiler.Custom"; // Only available in 2020+
-        static readonly string k_DownloadIconName = "Download-Available"; // Only available in 2020+
+        static readonly string k_FixIconName = "Profiler.Custom";
+        static readonly string k_DownloadIconName = "Download-Available";
         static readonly string k_LoadIconName = "Import";
         static readonly string k_SaveIconName = "SaveAs";
         static readonly string k_TrashIconName = "TreeEditor.Trash";
@@ -356,11 +355,14 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
         {
             switch (severity)
             {
+                case Severity.Error:
+                    return GetIcon(IconType.Error);
                 case Severity.Critical:
                     return GetIcon(IconType.Critical);
                 case Severity.Major:
                     return GetIcon(IconType.Major);
                 case Severity.Moderate:
+                case Severity.Default:
                     return GetIcon(IconType.Moderate);
                 default:
                     return GetIcon(IconType.Minor);
@@ -376,6 +378,7 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
                         s_MinorIcon = LoadIcon(k_MinorIconName);
                     return EditorGUIUtility.TrTextContentWithIcon("Minor", s_MinorIcon);
                 case Severity.Moderate:
+                case Severity.Default:
                     if (s_ModerateIcon == null)
                         s_ModerateIcon = LoadIcon(k_ModerateIconName);
                     return EditorGUIUtility.TrTextContentWithIcon("Moderate", s_ModerateIcon);
@@ -387,6 +390,8 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
                     if (s_CriticalIcon == null)
                         s_CriticalIcon = LoadIcon(k_CriticalIconName);
                     return EditorGUIUtility.TrTextContentWithIcon("Critical", s_CriticalIcon);
+                case Severity.Error:
+                    return EditorGUIUtility.TrTextContentWithIcon("Error", k_ErrorIconName);
                 default:
                     return EditorGUIUtility.TrTextContentWithIcon("Unknown", MessageType.None);
             }
@@ -401,6 +406,7 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
                         s_MinorIcon = LoadIcon(k_MinorIconName);
                     return EditorGUIUtility.TrTextContentWithIcon(text, s_MinorIcon);
                 case Severity.Moderate:
+                case Severity.Default:
                     if (s_ModerateIcon == null)
                         s_ModerateIcon = LoadIcon(k_ModerateIconName);
                     return EditorGUIUtility.TrTextContentWithIcon(text, s_ModerateIcon);
@@ -412,6 +418,8 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
                     if (s_CriticalIcon == null)
                         s_CriticalIcon = LoadIcon(k_CriticalIconName);
                     return EditorGUIUtility.TrTextContentWithIcon(text, s_CriticalIcon);
+                case Severity.Error:
+                    return EditorGUIUtility.TrTextContentWithIcon(text, k_ErrorIconName);
                 default:
                     return EditorGUIUtility.TrTextContentWithIcon("Unknown", MessageType.None);
             }
@@ -479,8 +487,6 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
             if (string.IsNullOrEmpty(text))
                 return 0;
 
-            Profiler.BeginSample("Utility.EstimateWidth");
-
             if (s_LetterWidths == null)
                 s_LetterWidths = new byte[256];
 
@@ -506,14 +512,11 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
                 totalWidth += charWidth;
             }
 
-            Profiler.EndSample();
             return totalWidth;
         }
 
         public static float GetWidth_SlowButAccurate(string text, int fontSize)
         {
-            Profiler.BeginSample("Utility.GetWidth_SlowButAccurate");
-
             if (s_Style == null)
                 s_Style = EditorStyles.label;
 
@@ -523,8 +526,6 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
             s_Style.fontSize = fontSize;
             s_GUIContent.text = text;
             var width = s_Style.CalcSize(s_GUIContent).x;
-
-            Profiler.EndSample();
 
             return width;
         }

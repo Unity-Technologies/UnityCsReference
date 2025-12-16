@@ -46,5 +46,20 @@ namespace Unity.UIToolkit.Editor
             labelElement.AddToClassList(labelUssClassName);
             visualInput.AddToClassList(inputUssClassName);
         }
+
+        protected override PercentSlider CreateValueField()
+        {
+            return new PercentSlider();
+        }
+
+        protected override StyleFloat CreateStyleValue(float v)
+        {
+            return v;
+        }
+
+        internal override bool EqualsCurrentValue(StyleFloat v)
+        {
+            return value == v;
+        }
     }
 }

@@ -92,10 +92,10 @@ namespace UnityEditor.PackageManager.UI.Internal
             }
 
             // We use `ToArray` here as m_PackageDatabase.UpdatePackages will modify the enumerable and throw an error if we don't
-            if (packagesToRemove.Any())
+            if (packagesToRemove.Count > 0)
                 m_PackageDatabase.UpdatePackages(toRemove: packagesToRemove.Select(p => p.uniqueId).ToArray());
 
-            if (packagesToRegenerate.Any())
+            if (packagesToRegenerate.Count > 0)
                 GeneratePackagesAndTriggerChangeEvent(packagesToRegenerate.Select(p => p.product.id));
         }
 
@@ -110,7 +110,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             var packagesUpdated = packages.OfType<Package>().Where(p => p.progress != progress).ToArray();
             foreach (var package in packagesUpdated)
                 SetProgress(package, progress);
-            if (packagesUpdated.Any())
+            if (packagesUpdated.Length > 0)
                 m_PackageDatabase.OnPackagesModified(packagesUpdated, true);
         }
 
@@ -272,7 +272,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 packagesChanged.Add(package);
             }
 
-            if (packagesChanged.Any() || packagesToRemove.Any())
+            if (packagesChanged.Count > 0 || packagesToRemove.Count > 0)
                 m_PackageDatabase.UpdatePackages(packagesChanged, packagesToRemove);
         }
     }

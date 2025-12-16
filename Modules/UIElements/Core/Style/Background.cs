@@ -14,6 +14,18 @@ namespace UnityEngine.UIElements
     [Serializable]
     public partial struct Background : IEquatable<Background>
     {
+        internal static Background From(in EntityId entityId)
+        {
+            var obj = Resources.EntityIdToObject(entityId);
+            return FromObject(obj);
+        }
+
+        internal static void To(in Background background, out EntityId entityId)
+        {
+            var obj = background.GetSelectedImage();
+            entityId = obj?.GetEntityId() ?? EntityId.None;
+        }
+
         [SerializeField]
         Texture2D m_Texture;
         /// <summary>

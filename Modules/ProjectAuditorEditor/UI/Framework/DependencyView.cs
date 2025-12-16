@@ -4,7 +4,7 @@
 
 using System;
 using System.Collections.Generic;
-
+using Unity.ProjectAuditor.Editor.CodeAnalysis;
 using TreeView = UnityEditor.IMGUI.Controls.TreeView<int>;
 using TreeViewItem = UnityEditor.IMGUI.Controls.TreeViewItem<int>;
 using TreeViewState = UnityEditor.IMGUI.Controls.TreeViewState<int>;
@@ -68,9 +68,11 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
 
             m_NodeDictionary.Add(id, node);
 
-            // if the tree is too deep, serialization will exceed the 7 levels limit.
-            if (!node.HasValidChildren)
-                items.Add(new TreeViewItem {id = id + 1, depth = depth + 1, displayName = "<Serialization Limit>"});
+            // if the tree is too deep, serialization will exceed the 10 levels limit. (see kClassSerializationDepthLimit)
+            if (!node.HasValidChildren || depth >= CallCrawler.k_MaxDepth)
+            {
+                items.Add(new TreeViewItem { id = id + 1, depth = depth + 1, displayName = "<Serialization Limit>" });
+            }
             else
             {
                 namesStack.Push(name);

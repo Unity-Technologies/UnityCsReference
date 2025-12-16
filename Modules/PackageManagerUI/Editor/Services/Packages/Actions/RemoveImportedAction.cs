@@ -24,7 +24,7 @@ internal class RemoveImportedAction : PackageAction
         return true;
     }
 
-    protected override bool TriggerActionImplementation(IList<IPackage> packages)
+    protected override bool TriggerActionImplementation(IReadOnlyCollection<IPackage> packages)
     {
         if (!m_Application.DisplayDialog("removeMultiImported", L10n.Tr("Removing imported packages"),
                 L10n.Tr("Remove all assets from these packages?\nAny changes you made to the assets will be lost."),
@@ -38,7 +38,7 @@ internal class RemoveImportedAction : PackageAction
 
     public override bool IsVisible(IPackageVersion version)
     {
-        return version?.importedAssets?.Any() == true;
+        return version?.importedAssets?.Count >0;
     }
 
     public override string GetTooltip(IPackageVersion version, bool isInProgress)

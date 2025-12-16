@@ -13,9 +13,11 @@ namespace UnityEngine
     [NativeHeader("Runtime/BaseClasses/BitField.h")]
     [NativeHeader("Runtime/BaseClasses/TagManager.h")]
     [NativeClass("BitField", "struct BitField;")]
+    [Serializable]
     public struct LayerMask
     {
         [NativeName("m_Bits")]
+        [SerializeField]
         private int m_Mask;
 
         public static implicit operator int(LayerMask mask)

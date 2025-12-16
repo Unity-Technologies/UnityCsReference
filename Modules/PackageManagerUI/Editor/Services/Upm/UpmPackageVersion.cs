@@ -19,7 +19,6 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private const string k_NoSubscriptionUpmErrorMessage = "You do not have a subscription for this package";
         private const string k_NotAcquiredUpmErrorMessage = "Your account does not grant permission to use the package";
-        private const string k_NotSignedInUpmErrorMessage = "You are not signed in";
 
         [SerializeField]
         private string m_Category;
@@ -35,7 +34,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         [SerializeField]
         private List<UIError> m_Errors = new();
-        public override IEnumerable<UIError> errors => m_Errors ?? Enumerable.Empty<UIError>();
+        public override IReadOnlyCollection<UIError> errors => (IReadOnlyCollection<UIError>)m_Errors ?? Array.Empty<UIError>();
 
         [SerializeField]
         private string m_PackageId;
@@ -203,7 +202,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             return PackageTag.None;
         }
 
-        private static TrustAndSignature GetTrustAndSignature(PackageInfo packageInfo, bool isInstalled)
+        public static TrustAndSignature GetTrustAndSignature(PackageInfo packageInfo, bool isInstalled)
         {
             if (!isInstalled)
                 return TrustAndSignature.NotApplicable;
@@ -221,6 +220,10 @@ namespace UnityEditor.PackageManager.UI.Internal
                             return TrustAndSignature.FullTrustUnitySignature;
                         return TrustAndSignature.FullTrustValidSignature;
                     }
+
+                    if (packageInfo.source == PackageSource.BuiltIn)
+                        return TrustAndSignature.FullTrustBuiltInPackage;
+
                     return TrustAndSignature.FullTrustNoSignature;
                 }
                 case TrustLevel.LimitedTrust:
@@ -285,8 +288,6 @@ namespace UnityEditor.PackageManager.UI.Internal
             {
                 if (error.message.Contains(k_NotAcquiredUpmErrorMessage))
                     m_Errors.Add(new UIError(UIErrorCode.UpmError_NotAcquired, error.message));
-                else if (error.message.Contains(k_NotSignedInUpmErrorMessage))
-                    m_Errors.Add(new UIError(UIErrorCode.UpmError_NotSignedIn, error.message));
                 else
                     m_Errors.Add(new UIError(error));
             }

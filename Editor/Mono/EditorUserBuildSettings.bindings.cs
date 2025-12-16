@@ -927,6 +927,9 @@ namespace UnityEditor
         // Build the player with deep profiler support.
         public static extern bool buildWithDeepProfilingSupport { get; set; }
 
+        // Build the player with code coverage support.
+        public static extern bool buildWithCodeCoverage { get; set; }
+
         // Enable source-level debuggers to connect.
         public static extern bool allowDebugging { get; set; }
 
@@ -952,7 +955,6 @@ namespace UnityEditor
 
         // Symlink trampoline for iOS Xcode project.
         internal static extern bool symlinkTrampoline { get; set; }
-
 
         public static extern XcodeBuildConfig iOSXcodeBuildConfig
         {

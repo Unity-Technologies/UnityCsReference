@@ -36,10 +36,6 @@ namespace Unity.UI.Builder
         public static string projectPath { get; } = assetsPath.Substring(0, Application.dataPath.Length - "/Assets".Length);
         public static string packagesPath { get; } = projectPath + "/Packages";
 
-        public const string defaultRuntimeThemeContent = "@import url(\"" + ThemeRegistry.kThemeScheme +
-                                                           "://default\");\nVisualElement {}";
-
-
         static readonly Dictionary<string, string[]> s_PathPartsCache = new();
         static bool s_DocumentUndoRecorded;
 
@@ -52,34 +48,6 @@ namespace Unity.UI.Builder
         // Sync path
         static readonly List<UxmlObjectAsset> s_TempUxmlAssets = new();
         static readonly object[] s_SingleUxmlSerializedData = new object[1];
-
-        internal static bool IsProjectDefaultRuntimeAsset(string path)
-        {
-            if (path == ThemeRegistry.k_DefaultStyleSheetPath)
-            {
-                return false;
-            }
-
-            if (!File.Exists(path))
-            {
-                return false;
-            }
-
-            var assetString = File.ReadAllText(path);
-
-            if (!string.IsNullOrEmpty(assetString))
-            {
-                assetString = DeleteNewlinesAndWhitespaces(assetString);
-            }
-
-            return assetString == DeleteNewlinesAndWhitespaces(defaultRuntimeThemeContent)
-                || assetString == DeleteNewlinesAndWhitespaces(PanelSettingsCreator.GetTssTemplateContent());
-        }
-
-        private static string DeleteNewlinesAndWhitespaces(string str)
-        {
-            return Regex.Replace(str, @"[\r\n\s]+", string.Empty);
-        }
 
         static string GetFullPath(string path)
         {
@@ -418,6 +386,8 @@ namespace Unity.UI.Builder
                     if (IsElementInOverridePath(visualTreeAsset, overwrittenElement, attributeOverride))
                     {
                         overwrittenElement.SetAttribute(attributeOverride.m_AttributeName, attributeOverride.m_Value);
+                        if (overwrittenElement.serializedData != null)
+                            UxmlSerializer.TryParseSerializedAttribute(attributeOverride.m_AttributeName, attributeOverride.m_Value, overwrittenElement.serializedData, new CreationContext(visualTreeAsset));
                     }
                 }
             }
@@ -1171,11 +1141,8 @@ namespace Unity.UI.Builder
                             if (templateVea == null)
                                 return;
 
-                            if (!context.usesUxmlTraits)
-                            {
-                                UxmlSerializer.SyncVisualTreeAssetSerializedData(new CreationContext(context.visualTree), false);
-                                CallDeserializeOnElement(context, x);
-                            }
+                            UxmlSerializer.CreateSerializedDataOverrides(context.visualTree);
+                            CallDeserializeOnElement(context, x);
                         });
                     }
                 }

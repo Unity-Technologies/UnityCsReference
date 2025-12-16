@@ -12,6 +12,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 {
     internal class PackageDetailsImportedAssetsTab : PackageDetailsTabElement
     {
+        // The internal modifier is used (instead of private) to give our test project access to these properties/methods
         internal const string k_Id = "importedassets";
         internal const int k_LabelColumnId = 0;
         internal const int k_LocationColumnId = 1;
@@ -28,7 +29,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public override bool IsValid(IPackageVersion version)
         {
-            return version?.importedAssets?.Any() == true;
+            return version?.importedAssets?.Count > 0;
         }
 
         private readonly IIOProxy m_IOProxy;

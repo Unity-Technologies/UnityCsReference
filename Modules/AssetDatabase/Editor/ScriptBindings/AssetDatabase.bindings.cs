@@ -77,6 +77,7 @@ namespace UnityEditor
         kGatheringDependenciesFromSourceFile = 1 << 3,
         kPreventForceReserializeAssets = 1 << 4,
         kDomainBackup = 1 << 5,
+        kCodeReload = 1 << 6,
     }
 
     public struct CacheServerConnectionChangedParameters
@@ -126,43 +127,63 @@ namespace UnityEditor
     public partial class AssetDatabase
     {
         private const string kPreventExecutionDuringImportHowToFixMsg = "Please make sure this function is not called from ScriptedImporters or PostProcessors, as it is a source of non-determinism.";
+        internal const string kPreventExecutionDuringCodeReloadHowToFixMsg = "Please make sure this function is not called from code that runs during code reload (e.g. [AfterCodeLoaded])";
 
+        [PreventExecutionInState(AssetDatabasePreventExecution.kCodeReload, PreventExecutionSeverity.PreventExecution_ManagedException, kPreventExecutionDuringCodeReloadHowToFixMsg)]
         extern internal static bool CanGetAssetMetaInfo(string path);
+
+        [PreventExecutionInState(AssetDatabasePreventExecution.kCodeReload, PreventExecutionSeverity.PreventExecution_ManagedException, kPreventExecutionDuringCodeReloadHowToFixMsg)]
         extern internal static void RegisterAssetFolder(string path, bool immutable, string guid);
+
+        [PreventExecutionInState(AssetDatabasePreventExecution.kCodeReload, PreventExecutionSeverity.PreventExecution_ManagedException, kPreventExecutionDuringCodeReloadHowToFixMsg)]
         extern internal static void UnregisterAssetFolder(string path);
 
         // used by integration tests
+        [PreventExecutionInState(AssetDatabasePreventExecution.kCodeReload, PreventExecutionSeverity.PreventExecution_ManagedException, kPreventExecutionDuringCodeReloadHowToFixMsg)]
         extern internal static void RegisterRedirectedAssetFolder(string mountPoint, string folder, string physicalPath, bool immutable, string guid);
+
+        [PreventExecutionInState(AssetDatabasePreventExecution.kCodeReload, PreventExecutionSeverity.PreventExecution_ManagedException, kPreventExecutionDuringCodeReloadHowToFixMsg)]
         extern internal static void UnregisterRedirectedAssetFolder(string mountPoint, string folder);
+        [FreeFunction("AssetDatabase::GetHashOfRootFolders")]
+        extern internal static Hash128 GetHashOfRootFolders();
 
         // This will return all registered roots, i.e. Assets/, Packages/** (all registered package roots), Workspaces/, etc.
         [FreeFunction("AssetDatabase::GetAssetRootFolders")]
+        [PreventExecutionInState(AssetDatabasePreventExecution.kCodeReload, PreventExecutionSeverity.PreventExecution_ManagedException, kPreventExecutionDuringCodeReloadHowToFixMsg)]
         extern internal static string[] GetAssetRootFolders();
 
         // returns true if the folder is known by the asset database
         // rootFolder is true if the path is a registered root folder
         // immutable is true when the root of the path was registered with the immutable flag (e.g. shared package)
         // asset folders marked immutable are not modified by the asset database
+        [PreventExecutionInState(AssetDatabasePreventExecution.kCodeReload, PreventExecutionSeverity.PreventExecution_ManagedException, kPreventExecutionDuringCodeReloadHowToFixMsg)]
         extern public static bool TryGetAssetFolderInfo(string path, out bool rootFolder, out bool immutable);
 
         public static bool Contains(Object obj) { return Contains(obj.GetEntityId()); }
+
+        [PreventExecutionInState(AssetDatabasePreventExecution.kCodeReload, PreventExecutionSeverity.PreventExecution_ManagedException, kPreventExecutionDuringCodeReloadHowToFixMsg)]
         extern public static bool Contains(EntityId entityId);
 
         [System.Obsolete(@"Please use Contains(EntityId) with the EntityId type instead.", false)]
         public static bool Contains(int instanceID) => Contains((EntityId)instanceID);
 
         [PreventExecutionInState(AssetDatabasePreventExecution.kImportingInWorkerProcess, PreventExecutionSeverity.PreventExecution_ManagedException, kPreventExecutionDuringImportHowToFixMsg)]
+        [PreventExecutionInState(AssetDatabasePreventExecution.kCodeReload, PreventExecutionSeverity.PreventExecution_ManagedException, kPreventExecutionDuringCodeReloadHowToFixMsg)]
         extern public static string CreateFolder(string parentFolder, string newFolderName);
 
         public static bool IsMainAsset(Object obj) { return IsMainAsset(obj.GetEntityId()); }
+
         [FreeFunction("AssetDatabase::IsMainAsset")]
+        [PreventExecutionInState(AssetDatabasePreventExecution.kCodeReload, PreventExecutionSeverity.PreventExecution_ManagedException, kPreventExecutionDuringCodeReloadHowToFixMsg)]
         extern public static bool IsMainAsset(EntityId entityId);
 
         [System.Obsolete(@"Please use IsMainAsset(EntityId) with the EntityId type instead.", false)]
         public static bool IsMainAsset(int instanceID) => IsMainAsset((EntityId)instanceID);
 
         public static bool IsSubAsset(Object obj) { return IsSubAsset(obj.GetEntityId()); }
+
         [FreeFunction("AssetDatabase::IsSubAsset")]
+        [PreventExecutionInState(AssetDatabasePreventExecution.kCodeReload, PreventExecutionSeverity.PreventExecution_ManagedException, kPreventExecutionDuringCodeReloadHowToFixMsg)]
         extern public static bool IsSubAsset(EntityId entityId);
 
         [System.Obsolete(@"Please use IsSubAsset(EntityId) with the EntityId type instead.", false)]
@@ -175,6 +196,7 @@ namespace UnityEditor
             return IsForeignAsset(obj.GetEntityId());
         }
 
+        [PreventExecutionInState(AssetDatabasePreventExecution.kCodeReload, PreventExecutionSeverity.PreventExecution_ManagedException, kPreventExecutionDuringCodeReloadHowToFixMsg)]
         extern public static bool IsForeignAsset(EntityId entityId);
 
         [System.Obsolete(@"Please use IsForeignAsset(EntityId) with the EntityId type instead.", false)]
@@ -187,31 +209,38 @@ namespace UnityEditor
             return IsNativeAsset(obj.GetEntityId());
         }
 
+        [PreventExecutionInState(AssetDatabasePreventExecution.kCodeReload, PreventExecutionSeverity.PreventExecution_ManagedException, kPreventExecutionDuringCodeReloadHowToFixMsg)]
         extern public static bool IsNativeAsset(EntityId entityId);
 
         [System.Obsolete(@"Please use IsNativeAsset(EntityId) with the EntityId type instead.", false)]
         public static bool IsNativeAsset(int instanceID) => IsNativeAsset((EntityId)instanceID);
 
         [NativeThrows]
+        [PreventExecutionInState(AssetDatabasePreventExecution.kCodeReload, PreventExecutionSeverity.PreventExecution_ManagedException, kPreventExecutionDuringCodeReloadHowToFixMsg)]
         extern public static int GetScriptableObjectsWithMissingScriptCount(string assetPath);
 
         [PreventExecutionInState(AssetDatabasePreventExecution.kImportingInWorkerProcess, PreventExecutionSeverity.PreventExecution_ManagedException, kPreventExecutionDuringImportHowToFixMsg)]
         [NativeThrows]
+        [PreventExecutionInState(AssetDatabasePreventExecution.kCodeReload, PreventExecutionSeverity.PreventExecution_ManagedException, kPreventExecutionDuringCodeReloadHowToFixMsg)]
         extern public static int RemoveScriptableObjectsWithMissingScript(string assetPath);
 
         [FreeFunction()]
+        [PreventExecutionInState(AssetDatabasePreventExecution.kCodeReload, PreventExecutionSeverity.PreventExecution_ManagedException, kPreventExecutionDuringCodeReloadHowToFixMsg)]
         extern public static string GetCurrentCacheServerIp();
 
+        [PreventExecutionInState(AssetDatabasePreventExecution.kCodeReload, PreventExecutionSeverity.PreventExecution_ManagedException, kPreventExecutionDuringCodeReloadHowToFixMsg)]
         extern public static string GenerateUniqueAssetPath(string path);
 
         [FreeFunction("AssetDatabase::StartAssetImporting")]
         [PreventExecutionInState(AssetDatabasePreventExecution.kImportingInWorkerProcess, PreventExecutionSeverity.PreventExecution_ManagedException)]
         [PreventExecutionInState(AssetDatabasePreventExecution.kImportingAsset, PreventExecutionSeverity.PreventExecution_ManagedException, kPreventExecutionDuringImportHowToFixMsg)]
+        [PreventExecutionInState(AssetDatabasePreventExecution.kCodeReload, PreventExecutionSeverity.PreventExecution_ManagedException, kPreventExecutionDuringCodeReloadHowToFixMsg)]
         extern public static void StartAssetEditing();
 
         [FreeFunction("AssetDatabase::StopAssetImporting")]
         [PreventExecutionInState(AssetDatabasePreventExecution.kImportingInWorkerProcess, PreventExecutionSeverity.PreventExecution_ManagedException)]
         [PreventExecutionInState(AssetDatabasePreventExecution.kImportingAsset, PreventExecutionSeverity.PreventExecution_ManagedException, kPreventExecutionDuringImportHowToFixMsg)]
+        [PreventExecutionInState(AssetDatabasePreventExecution.kCodeReload, PreventExecutionSeverity.PreventExecution_ManagedException, kPreventExecutionDuringCodeReloadHowToFixMsg)]
         extern public static void StopAssetEditing();
 
         // A class used for Starting/Stopping asset editing. Let's a user start/stop using RAII
@@ -258,28 +287,36 @@ namespace UnityEditor
         }
 
         [FreeFunction("AssetDatabase::UnloadAllFileStreams")]
+        [PreventExecutionInState(AssetDatabasePreventExecution.kCodeReload, PreventExecutionSeverity.PreventExecution_ManagedException, kPreventExecutionDuringCodeReloadHowToFixMsg)]
         extern public static void ReleaseCachedFileHandles();
 
+        [PreventExecutionInState(AssetDatabasePreventExecution.kCodeReload, PreventExecutionSeverity.PreventExecution_ManagedException, kPreventExecutionDuringCodeReloadHowToFixMsg)]
         extern public static string ValidateMoveAsset(string oldPath, string newPath);
+
         [PreventExecutionInState(AssetDatabasePreventExecution.kImportingInWorkerProcess, PreventExecutionSeverity.PreventExecution_ManagedException)]
+        [PreventExecutionInState(AssetDatabasePreventExecution.kCodeReload, PreventExecutionSeverity.PreventExecution_ManagedException, kPreventExecutionDuringCodeReloadHowToFixMsg)]
         [PreventExecutionInState(AssetDatabasePreventExecution.kImportingAsset, PreventExecutionSeverity.PreventExecution_ManagedException, kPreventExecutionDuringImportHowToFixMsg)]
         extern public static string MoveAsset(string oldPath, string newPath);
 
         [NativeThrows]
-        [PreventExecutionInState(AssetDatabasePreventExecution.kImportingInWorkerProcess, PreventExecutionSeverity.PreventExecution_Warning)]
+        [PreventExecutionInState(AssetDatabasePreventExecution.kImportingInWorkerProcess, PreventExecutionSeverity.PreventExecution_ManagedException)]
         [PreventExecutionInState(AssetDatabasePreventExecution.kImportingAsset, PreventExecutionSeverity.PreventExecution_ManagedException, kPreventExecutionDuringImportHowToFixMsg)]
+        [PreventExecutionInState(AssetDatabasePreventExecution.kCodeReload, PreventExecutionSeverity.PreventExecution_ManagedException, kPreventExecutionDuringCodeReloadHowToFixMsg)]
         extern public static string ExtractAsset(Object asset, string newPath);
 
         [PreventExecutionInState(AssetDatabasePreventExecution.kImportingInWorkerProcess, PreventExecutionSeverity.PreventExecution_ManagedException)]
         [PreventExecutionInState(AssetDatabasePreventExecution.kImportingAsset, PreventExecutionSeverity.PreventExecution_ManagedException, kPreventExecutionDuringImportHowToFixMsg)]
+        [PreventExecutionInState(AssetDatabasePreventExecution.kCodeReload, PreventExecutionSeverity.PreventExecution_ManagedException, kPreventExecutionDuringCodeReloadHowToFixMsg)]
         extern public static string RenameAsset(string pathName, string newName);
 
         [PreventExecutionInState(AssetDatabasePreventExecution.kImportingInWorkerProcess, PreventExecutionSeverity.PreventExecution_ManagedException)]
         [PreventExecutionInState(AssetDatabasePreventExecution.kImportingAsset, PreventExecutionSeverity.PreventExecution_ManagedException, kPreventExecutionDuringImportHowToFixMsg)]
+        [PreventExecutionInState(AssetDatabasePreventExecution.kCodeReload, PreventExecutionSeverity.PreventExecution_ManagedException, kPreventExecutionDuringCodeReloadHowToFixMsg)]
         extern public static bool MoveAssetToTrash(string path);
 
         [PreventExecutionInState(AssetDatabasePreventExecution.kImportingInWorkerProcess, PreventExecutionSeverity.PreventExecution_ManagedException)]
         [PreventExecutionInState(AssetDatabasePreventExecution.kImportingAsset, PreventExecutionSeverity.PreventExecution_ManagedException, kPreventExecutionDuringImportHowToFixMsg)]
+        [PreventExecutionInState(AssetDatabasePreventExecution.kCodeReload, PreventExecutionSeverity.PreventExecution_ManagedException, kPreventExecutionDuringCodeReloadHowToFixMsg)]
         extern private static bool DeleteAssetsCommon(string[] paths, object outFailedPaths, bool moveAssetsToTrash);
 
         public static bool MoveAssetsToTrash(string[] paths, List<string> outFailedPaths)
@@ -291,8 +328,10 @@ namespace UnityEditor
             return DeleteAssetsCommon(paths, outFailedPaths, true);
         }
 
+        [NativeThrows]
         [PreventExecutionInState(AssetDatabasePreventExecution.kImportingInWorkerProcess, PreventExecutionSeverity.PreventExecution_ManagedException)]
         [PreventExecutionInState(AssetDatabasePreventExecution.kImportingAsset, PreventExecutionSeverity.PreventExecution_ManagedException, kPreventExecutionDuringImportHowToFixMsg)]
+        [PreventExecutionInState(AssetDatabasePreventExecution.kCodeReload, PreventExecutionSeverity.PreventExecution_ManagedException, kPreventExecutionDuringCodeReloadHowToFixMsg)]
         extern public static bool DeleteAsset(string path);
 
         public static bool DeleteAssets(string[] paths, List<string> outFailedPaths)
@@ -305,51 +344,68 @@ namespace UnityEditor
         }
 
         [uei.ExcludeFromDocs] public static void ImportAsset(string path) { ImportAsset(path, ImportAssetOptions.Default); }
-        [PreventExecutionInState(AssetDatabasePreventExecution.kImportingInWorkerProcess, PreventExecutionSeverity.PreventExecution_Warning)]
-        [PreventExecutionInState(AssetDatabasePreventExecution.kImportingAsset, PreventExecutionSeverity.PreventExecution_ManagedException, kPreventExecutionDuringImportHowToFixMsg)]
-        extern public static void ImportAsset(string path, [uei.DefaultValue("ImportAssetOptions.Default")] ImportAssetOptions options);
         [PreventExecutionInState(AssetDatabasePreventExecution.kImportingInWorkerProcess, PreventExecutionSeverity.PreventExecution_ManagedException)]
         [PreventExecutionInState(AssetDatabasePreventExecution.kImportingAsset, PreventExecutionSeverity.PreventExecution_ManagedException, kPreventExecutionDuringImportHowToFixMsg)]
+        [PreventExecutionInState(AssetDatabasePreventExecution.kCodeReload, PreventExecutionSeverity.PreventExecution_ManagedException, kPreventExecutionDuringCodeReloadHowToFixMsg)]
+        extern public static void ImportAsset(string path, [uei.DefaultValue("ImportAssetOptions.Default")] ImportAssetOptions options);
+
+        [PreventExecutionInState(AssetDatabasePreventExecution.kImportingInWorkerProcess, PreventExecutionSeverity.PreventExecution_ManagedException)]
+        [PreventExecutionInState(AssetDatabasePreventExecution.kImportingAsset, PreventExecutionSeverity.PreventExecution_ManagedException, kPreventExecutionDuringImportHowToFixMsg)]
+        [PreventExecutionInState(AssetDatabasePreventExecution.kCodeReload, PreventExecutionSeverity.PreventExecution_ManagedException, kPreventExecutionDuringCodeReloadHowToFixMsg)]
         extern public static bool CopyAsset(string path, string newPath);
 
         [NativeThrows]
         [PreventExecutionInState(AssetDatabasePreventExecution.kImportingInWorkerProcess, PreventExecutionSeverity.PreventExecution_ManagedException)]
         [PreventExecutionInState(AssetDatabasePreventExecution.kImportingAsset, PreventExecutionSeverity.PreventExecution_ManagedException, kPreventExecutionDuringImportHowToFixMsg)]
+        [PreventExecutionInState(AssetDatabasePreventExecution.kCodeReload, PreventExecutionSeverity.PreventExecution_ManagedException, kPreventExecutionDuringCodeReloadHowToFixMsg)]
         extern public static bool CopyAssets(string[] paths, string[] newPaths);
+
+        [PreventExecutionInState(AssetDatabasePreventExecution.kCodeReload, PreventExecutionSeverity.PreventExecution_ManagedException, kPreventExecutionDuringCodeReloadHowToFixMsg)]
         extern public static bool WriteImportSettingsIfDirty(string path);
 
         [NativeThrows]
+        [PreventExecutionInState(AssetDatabasePreventExecution.kCodeReload, PreventExecutionSeverity.PreventExecution_ManagedException, kPreventExecutionDuringCodeReloadHowToFixMsg)]
         extern public static string[] GetSubFolders([NotNull] string path);
 
         [FreeFunction("AssetDatabase::IsFolderAsset")]
+        [PreventExecutionInState(AssetDatabasePreventExecution.kCodeReload, PreventExecutionSeverity.PreventExecution_ManagedException, kPreventExecutionDuringCodeReloadHowToFixMsg)]
         extern public static bool IsValidFolder(string path);
 
         [NativeThrows]
         [PreventExecutionInState(AssetDatabasePreventExecution.kGatheringDependenciesFromSourceFile, PreventExecutionSeverity.PreventExecution_ManagedException, "Assets may not be created during gathering of import dependencies")]
         [PreventExecutionInState(AssetDatabasePreventExecution.kImportingInWorkerProcess, PreventExecutionSeverity.PreventExecution_ManagedException)]
         [PreventExecutionInState(AssetDatabasePreventExecution.kImportingAsset, PreventExecutionSeverity.PreventExecution_ManagedException, kPreventExecutionDuringImportHowToFixMsg)]
+        [PreventExecutionInState(AssetDatabasePreventExecution.kCodeReload, PreventExecutionSeverity.PreventExecution_ManagedException, kPreventExecutionDuringCodeReloadHowToFixMsg)]
         extern public static void CreateAsset([NotNull] Object asset, string path);
 
         [NativeThrows]
         [PreventExecutionInState(AssetDatabasePreventExecution.kImportingInWorkerProcess, PreventExecutionSeverity.PreventExecution_Warning)]
         [PreventExecutionInState(AssetDatabasePreventExecution.kImportingAsset, PreventExecutionSeverity.PreventExecution_ManagedException, kPreventExecutionDuringImportHowToFixMsg)]
+        [PreventExecutionInState(AssetDatabasePreventExecution.kCodeReload, PreventExecutionSeverity.PreventExecution_ManagedException, kPreventExecutionDuringCodeReloadHowToFixMsg)]
         extern static internal void CreateAssetFromObjects(Object[] assets, string path);
 
         [NativeThrows]
         [PreventExecutionInState(AssetDatabasePreventExecution.kImportingInWorkerProcess, PreventExecutionSeverity.PreventExecution_ManagedException, kPreventExecutionDuringImportHowToFixMsg)]
+        [PreventExecutionInState(AssetDatabasePreventExecution.kCodeReload, PreventExecutionSeverity.PreventExecution_ManagedException, kPreventExecutionDuringCodeReloadHowToFixMsg)]
         extern public static void AddObjectToAsset([NotNull] Object objectToAdd, string path);
         static public void AddObjectToAsset(Object objectToAdd, Object assetObject) { AddObjectToAsset_Obj(objectToAdd, assetObject); }
 
         [NativeThrows]
         [PreventExecutionInState(AssetDatabasePreventExecution.kImportingInWorkerProcess, PreventExecutionSeverity.PreventExecution_ManagedException, "AssetDatabase.AddObjectToAsset() was called as part of running an import in a worker process.")]
+        [PreventExecutionInState(AssetDatabasePreventExecution.kCodeReload, PreventExecutionSeverity.PreventExecution_ManagedException, kPreventExecutionDuringCodeReloadHowToFixMsg)]
         extern private static void AddObjectToAsset_Obj([NotNull] Object newAsset, [NotNull] Object sameAssetFile);
 
-        [System.Obsolete(@"Please use AddInstanceIDToAssetWithRandomFileId instead.", false)]
+        [System.Obsolete(@"Please use AddEntityIdToAssetWithRandomFileId instead.", false)]
         static internal void AddInstanceIDToAssetWithRandomFileId(int instanceIDToAdd, Object assetObject, bool hide) => AddEntityIdToAssetWithRandomFileId(instanceIDToAdd, assetObject, hide);
+
+        [PreventExecutionInState(AssetDatabasePreventExecution.kCodeReload, PreventExecutionSeverity.PreventExecution_ManagedException, kPreventExecutionDuringCodeReloadHowToFixMsg)]
         extern static internal void AddEntityIdToAssetWithRandomFileId(EntityId entityIdToAdd, Object assetObject, bool hide);
 
         [NativeThrows]
+        [PreventExecutionInState(AssetDatabasePreventExecution.kCodeReload, PreventExecutionSeverity.PreventExecution_ManagedException, kPreventExecutionDuringCodeReloadHowToFixMsg)]
         extern public static void SetMainObject([NotNull] Object mainObject, string assetPath);
+
+        [PreventExecutionInState(AssetDatabasePreventExecution.kCodeReload, PreventExecutionSeverity.PreventExecution_ManagedException, kPreventExecutionDuringCodeReloadHowToFixMsg)]
         extern public static string GetAssetPath(Object assetObject);
 
         [System.Obsolete(@"Please use GetAssetPath(EntityId) with the EntityId parameter type instead.", false)]
@@ -357,6 +413,7 @@ namespace UnityEditor
         public static string GetAssetPath(EntityId entityId) { return GetAssetPathFromEntityId(entityId); }
 
         [FreeFunction("::GetAssetPathFromEntityId")]
+        [PreventExecutionInState(AssetDatabasePreventExecution.kCodeReload, PreventExecutionSeverity.PreventExecution_ManagedException, kPreventExecutionDuringCodeReloadHowToFixMsg)]
         extern private static string GetAssetPathFromEntityId(EntityId entityId);
 
         [System.Obsolete(@"Please use GetMainAssetEntityId instead.", false)]
@@ -364,46 +421,59 @@ namespace UnityEditor
         [System.Obsolete(@"Please use GetMainAssetOrInProgressProxyEntityId instead.", false)]
         internal static int GetMainAssetOrInProgressProxyInstanceID(string assetPath) => GetMainAssetOrInProgressProxyEntityId(assetPath);
 
+        [PreventExecutionInState(AssetDatabasePreventExecution.kCodeReload, PreventExecutionSeverity.PreventExecution_ManagedException, kPreventExecutionDuringCodeReloadHowToFixMsg)]
         extern internal static EntityId GetMainAssetEntityId(string assetPath);
+
+        [PreventExecutionInState(AssetDatabasePreventExecution.kCodeReload, PreventExecutionSeverity.PreventExecution_ManagedException, kPreventExecutionDuringCodeReloadHowToFixMsg)]
         extern internal static EntityId GetMainAssetOrInProgressProxyEntityId(string assetPath);
 
         [FreeFunction("::GetAssetOrScenePath")]
+        [PreventExecutionInState(AssetDatabasePreventExecution.kCodeReload, PreventExecutionSeverity.PreventExecution_ManagedException, kPreventExecutionDuringCodeReloadHowToFixMsg)]
         extern public static string GetAssetOrScenePath(Object assetObject);
 
         [FreeFunction("AssetDatabase::TextMetaFilePathFromAssetPath")]
+        [PreventExecutionInState(AssetDatabasePreventExecution.kCodeReload, PreventExecutionSeverity.PreventExecution_ManagedException, kPreventExecutionDuringCodeReloadHowToFixMsg)]
         extern public static string GetTextMetaFilePathFromAssetPath(string path);
 
         [FreeFunction("AssetDatabase::AssetPathFromTextMetaFilePath")]
+        [PreventExecutionInState(AssetDatabasePreventExecution.kCodeReload, PreventExecutionSeverity.PreventExecution_ManagedException, kPreventExecutionDuringCodeReloadHowToFixMsg)]
         extern public static string GetAssetPathFromTextMetaFilePath(string path);
 
         [NativeThrows]
         [TypeInferenceRule(TypeInferenceRules.TypeReferencedBySecondArgument)]
         [PreventExecutionInState(AssetDatabasePreventExecution.kGatheringDependenciesFromSourceFile, PreventExecutionSeverity.PreventExecution_ManagedException, "Assets may not be loaded while dependencies are being gathered, as these assets may not have been imported yet.")]
         [PreventExecutionInState(AssetDatabasePreventExecution.kDomainBackup, PreventExecutionSeverity.PreventExecution_ManagedException, "Assets may not be loaded while domain backup is running, as this will change the underlying state.")]
+        [PreventExecutionInState(AssetDatabasePreventExecution.kCodeReload, PreventExecutionSeverity.PreventExecution_ManagedException, kPreventExecutionDuringCodeReloadHowToFixMsg)]
         extern public static Object LoadAssetAtPath(string assetPath, Type type);
 
         public static T LoadAssetAtPath<T>(string assetPath) where T : Object
         {
             return (T)LoadAssetAtPath(assetPath, typeof(T));
         }
+
         [NativeThrows]
         [TypeInferenceRule(TypeInferenceRules.TypeReferencedBySecondArgument)]
         [PreventExecutionInState(AssetDatabasePreventExecution.kGatheringDependenciesFromSourceFile, PreventExecutionSeverity.PreventExecution_ManagedException, "Assets may not be loaded while dependencies are being gathered, as these assets may not have been imported yet.")]
         [PreventExecutionInState(AssetDatabasePreventExecution.kDomainBackup, PreventExecutionSeverity.PreventExecution_ManagedException, "Assets may not be loaded while domain backup is running, as this will change the underlying state.")]
+        [PreventExecutionInState(AssetDatabasePreventExecution.kCodeReload, PreventExecutionSeverity.PreventExecution_ManagedException, kPreventExecutionDuringCodeReloadHowToFixMsg)]
         extern public static Object LoadAssetByGUID(GUID assetGUID, Type type);
 
         public static T LoadAssetByGUID<T>(GUID assetGUID) where T : Object
         {
             return (T)LoadAssetByGUID(assetGUID, typeof(T));
         }
+
         [PreventExecutionInState(AssetDatabasePreventExecution.kGatheringDependenciesFromSourceFile, PreventExecutionSeverity.PreventExecution_ManagedException, "Assets may not be loaded while dependencies are being gathered, as these assets may not have been imported yet.")]
+        [PreventExecutionInState(AssetDatabasePreventExecution.kCodeReload, PreventExecutionSeverity.PreventExecution_ManagedException, kPreventExecutionDuringCodeReloadHowToFixMsg)]
         extern public static Object LoadMainAssetAtPath(string assetPath);
 
         [FreeFunction("AssetDatabase::GetMainAssetObject")]
         [PreventExecutionInState(AssetDatabasePreventExecution.kGatheringDependenciesFromSourceFile, PreventExecutionSeverity.PreventExecution_ManagedException, "Assets may not be loaded while dependencies are being gathered, as these assets may not have been imported yet.")]
+        [PreventExecutionInState(AssetDatabasePreventExecution.kCodeReload, PreventExecutionSeverity.PreventExecution_ManagedException, kPreventExecutionDuringCodeReloadHowToFixMsg)]
         extern internal static Object LoadMainAssetAtGUID(GUID assetGUID);
 
         [FreeFunction("AssetDatabase::EntityIdsToGUIDs")]
+        [PreventExecutionInState(AssetDatabasePreventExecution.kCodeReload, PreventExecutionSeverity.PreventExecution_ManagedException, kPreventExecutionDuringCodeReloadHowToFixMsg)]
         extern internal static void EntityIdsToGUIDs(IntPtr entityIdsPtr, IntPtr guidsPtr, int len);
 
 
@@ -440,34 +510,44 @@ namespace UnityEditor
         }
 
         [FreeFunction("AssetDatabase::ReserveMonoScriptEntityId")]
+        [PreventExecutionInState(AssetDatabasePreventExecution.kCodeReload, PreventExecutionSeverity.PreventExecution_ManagedException, kPreventExecutionDuringCodeReloadHowToFixMsg)]
         extern internal static EntityId ReserveMonoScriptEntityId(GUID guid);
 
         [System.Obsolete(@"Please use ReserveMonoScriptEntityId() instead.", false)]
         internal static int ReserveMonoScriptInstanceID(GUID guid) => ReserveMonoScriptEntityId(guid);
 
+        [PreventExecutionInState(AssetDatabasePreventExecution.kCodeReload, PreventExecutionSeverity.PreventExecution_ManagedException, kPreventExecutionDuringCodeReloadHowToFixMsg)]
         extern public static System.Type GetMainAssetTypeAtPath(string assetPath);
 
+        [PreventExecutionInState(AssetDatabasePreventExecution.kCodeReload, PreventExecutionSeverity.PreventExecution_ManagedException, kPreventExecutionDuringCodeReloadHowToFixMsg)]
         extern public static System.Type GetMainAssetTypeFromGUID(GUID guid);
 
+        [PreventExecutionInState(AssetDatabasePreventExecution.kCodeReload, PreventExecutionSeverity.PreventExecution_ManagedException, kPreventExecutionDuringCodeReloadHowToFixMsg)]
         extern public static System.Type GetTypeFromPathAndFileID(string assetPath, long localIdentifierInFile);
 
+        [PreventExecutionInState(AssetDatabasePreventExecution.kCodeReload, PreventExecutionSeverity.PreventExecution_ManagedException, kPreventExecutionDuringCodeReloadHowToFixMsg)]
         extern public static bool IsMainAssetAtPathLoaded(string assetPath);
 
         [PreventExecutionInState(AssetDatabasePreventExecution.kGatheringDependenciesFromSourceFile, PreventExecutionSeverity.PreventExecution_ManagedException, "Assets may not be loaded while dependencies are being gathered, as these assets may not have been imported yet.")]
+        [PreventExecutionInState(AssetDatabasePreventExecution.kCodeReload, PreventExecutionSeverity.PreventExecution_ManagedException, kPreventExecutionDuringCodeReloadHowToFixMsg)]
         extern public static Object[] LoadAllAssetRepresentationsAtPath(string assetPath);
 
         [PreventExecutionInState(AssetDatabasePreventExecution.kGatheringDependenciesFromSourceFile, PreventExecutionSeverity.PreventExecution_ManagedException, "Assets may not be loaded while dependencies are being gathered, as these assets may not have been imported yet.")]
+        [PreventExecutionInState(AssetDatabasePreventExecution.kCodeReload, PreventExecutionSeverity.PreventExecution_ManagedException, kPreventExecutionDuringCodeReloadHowToFixMsg)]
         extern public static Object[] LoadAllAssetsAtPath(string assetPath);
+
+        [PreventExecutionInState(AssetDatabasePreventExecution.kCodeReload, PreventExecutionSeverity.PreventExecution_ManagedException, kPreventExecutionDuringCodeReloadHowToFixMsg)]
         extern public static string[] GetAllAssetPaths();
 
         [uei.ExcludeFromDocs] public static void Refresh() { Refresh(ImportAssetOptions.Default); }
 
         [PreventExecutionInState(AssetDatabasePreventExecution.kImportingInWorkerProcess, PreventExecutionSeverity.PreventExecution_ManagedException)]
         [PreventExecutionInState(AssetDatabasePreventExecution.kImportingAsset, PreventExecutionSeverity.PreventExecution_ManagedException, kPreventExecutionDuringImportHowToFixMsg)]
+        [PreventExecutionInState(AssetDatabasePreventExecution.kCodeReload, PreventExecutionSeverity.PreventExecution_ManagedException, kPreventExecutionDuringCodeReloadHowToFixMsg)]
         extern public static void Refresh([uei.DefaultValue("ImportAssetOptions.Default")] ImportAssetOptions options);
 
-
         [FreeFunction("::CanOpenAssetInEditor")]
+        [PreventExecutionInState(AssetDatabasePreventExecution.kCodeReload, PreventExecutionSeverity.PreventExecution_ManagedException, kPreventExecutionDuringCodeReloadHowToFixMsg)]
         extern public static bool CanOpenAssetInEditor(EntityId entityId);
         [System.Obsolete(@"Please use CanOpenAssetInEditor(EntityId) with the EntityId parameter type instead.", false)]
         public static bool CanOpenAssetInEditor(int instanceID) => CanOpenAssetInEditor((EntityId)instanceID);
@@ -483,6 +563,7 @@ namespace UnityEditor
         public static bool OpenAsset(int instanceID, [uei.DefaultValue("-1")] int lineNumber) { return OpenAsset((EntityId)instanceID, lineNumber, -1); }
 
         [FreeFunction("::OpenAsset")]
+        [PreventExecutionInState(AssetDatabasePreventExecution.kCodeReload, PreventExecutionSeverity.PreventExecution_ManagedException, kPreventExecutionDuringCodeReloadHowToFixMsg)]
         extern public static bool OpenAsset(EntityId entityId, int lineNumber, int columnNumber);
 
         [System.Obsolete(@"Please use OpenAsset(EntityId, int, int) with the EntityId parameter type instead.", false)]
@@ -509,7 +590,9 @@ namespace UnityEditor
         }
 
         [FreeFunction("AssetDatabase::GetAssetOrigin")]
+        [PreventExecutionInState(AssetDatabasePreventExecution.kCodeReload, PreventExecutionSeverity.PreventExecution_ManagedException, kPreventExecutionDuringCodeReloadHowToFixMsg)]
         extern private static AssetOrigin GetAssetOrigin_Internal(GUID guid);
+
         internal static AssetOrigin GetAssetOrigin(GUID guid)
         {
             return GetAssetOrigin_Internal(guid);
@@ -519,7 +602,10 @@ namespace UnityEditor
             return GetAssetOrigin_Internal(new GUID(guid));
         }
 
+        [PreventExecutionInState(AssetDatabasePreventExecution.kCodeReload, PreventExecutionSeverity.PreventExecution_ManagedException, kPreventExecutionDuringCodeReloadHowToFixMsg)]
         extern internal static string GUIDToAssetPath_Internal(GUID guid);
+
+        [PreventExecutionInState(AssetDatabasePreventExecution.kCodeReload, PreventExecutionSeverity.PreventExecution_ManagedException, kPreventExecutionDuringCodeReloadHowToFixMsg)]
         extern internal static GUID AssetPathToGUID_Internal(string path);
 
         public static string GUIDToAssetPath(string guid)
@@ -559,8 +645,10 @@ namespace UnityEditor
             return guid.Empty() ? "" : guid.ToString();
         }
 
+        [PreventExecutionInState(AssetDatabasePreventExecution.kCodeReload, PreventExecutionSeverity.PreventExecution_ManagedException, kPreventExecutionDuringCodeReloadHowToFixMsg)]
         extern public static bool AssetPathExists(string path);
 
+        [PreventExecutionInState(AssetDatabasePreventExecution.kCodeReload, PreventExecutionSeverity.PreventExecution_ManagedException, kPreventExecutionDuringCodeReloadHowToFixMsg)]
         extern public static Hash128 GetAssetDependencyHash(GUID guid);
 
         public static Hash128 GetAssetDependencyHash(string path)
@@ -568,17 +656,22 @@ namespace UnityEditor
             return GetAssetDependencyHash(GUIDFromAssetPath(path));
         }
 
+        [PreventExecutionInState(AssetDatabasePreventExecution.kCodeReload, PreventExecutionSeverity.PreventExecution_ManagedException, kPreventExecutionDuringCodeReloadHowToFixMsg)]
         extern internal static Hash128 GetSourceAssetFileHash(string guid);
+
+        [PreventExecutionInState(AssetDatabasePreventExecution.kCodeReload, PreventExecutionSeverity.PreventExecution_ManagedException, kPreventExecutionDuringCodeReloadHowToFixMsg)]
         extern internal static Hash128 GetSourceAssetMetaFileHash(string guid);
 
         [FreeFunction("AssetDatabase::SaveAssets")]
         [PreventExecutionInState(AssetDatabasePreventExecution.kImportingInWorkerProcess, PreventExecutionSeverity.PreventExecution_ManagedException)]
         [PreventExecutionInState(AssetDatabasePreventExecution.kImportingAsset, PreventExecutionSeverity.PreventExecution_ManagedException, kPreventExecutionDuringImportHowToFixMsg)]
+        [PreventExecutionInState(AssetDatabasePreventExecution.kCodeReload, PreventExecutionSeverity.PreventExecution_ManagedException, kPreventExecutionDuringCodeReloadHowToFixMsg)]
         extern public static void SaveAssets();
 
         [FreeFunction("AssetDatabase::SaveAssetIfDirty")]
-        [PreventExecutionInState(AssetDatabasePreventExecution.kImportingInWorkerProcess, PreventExecutionSeverity.PreventExecution_Warning)]
+        [PreventExecutionInState(AssetDatabasePreventExecution.kImportingInWorkerProcess, PreventExecutionSeverity.PreventExecution_ManagedException)]
         [PreventExecutionInState(AssetDatabasePreventExecution.kImportingAsset, PreventExecutionSeverity.PreventExecution_ManagedException, kPreventExecutionDuringImportHowToFixMsg)]
+        [PreventExecutionInState(AssetDatabasePreventExecution.kCodeReload, PreventExecutionSeverity.PreventExecution_ManagedException, kPreventExecutionDuringCodeReloadHowToFixMsg)]
         extern public static void SaveAssetIfDirty(GUID guid);
 
         public static void SaveAssetIfDirty(Object obj)
@@ -590,11 +683,15 @@ namespace UnityEditor
                 SaveAssetIfDirty(new GUID(guidString));
         }
 
+        [PreventExecutionInState(AssetDatabasePreventExecution.kCodeReload, PreventExecutionSeverity.PreventExecution_ManagedException, kPreventExecutionDuringCodeReloadHowToFixMsg)]
         extern public static Texture GetCachedIcon(string path);
 
-        [PreventExecutionInState(AssetDatabasePreventExecution.kImportingInWorkerProcess, PreventExecutionSeverity.PreventExecution_Warning)]
+        [PreventExecutionInState(AssetDatabasePreventExecution.kImportingInWorkerProcess, PreventExecutionSeverity.PreventExecution_ManagedException)]
         [PreventExecutionInState(AssetDatabasePreventExecution.kImportingAsset, PreventExecutionSeverity.PreventExecution_ManagedException, kPreventExecutionDuringImportHowToFixMsg)]
+        [PreventExecutionInState(AssetDatabasePreventExecution.kCodeReload, PreventExecutionSeverity.PreventExecution_ManagedException, kPreventExecutionDuringCodeReloadHowToFixMsg)]
         extern public static void SetLabels(Object obj, string[] labels);
+
+        [PreventExecutionInState(AssetDatabasePreventExecution.kCodeReload, PreventExecutionSeverity.PreventExecution_ManagedException, kPreventExecutionDuringCodeReloadHowToFixMsg)]
         extern private static void GetAllLabelsImpl(object labelsList, object scoresList);
 
         internal static Dictionary<string, float> GetAllLabels()
@@ -612,38 +709,57 @@ namespace UnityEditor
         }
 
         [FreeFunction("AssetDatabase::GetLabels")]
+        [PreventExecutionInState(AssetDatabasePreventExecution.kCodeReload, PreventExecutionSeverity.PreventExecution_ManagedException, kPreventExecutionDuringCodeReloadHowToFixMsg)]
         extern private static string[] GetLabelsInternal(GUID guid);
         public static string[] GetLabels(GUID guid)
         {
             return GetLabelsInternal(guid);
         }
 
+        [PreventExecutionInState(AssetDatabasePreventExecution.kCodeReload, PreventExecutionSeverity.PreventExecution_ManagedException, kPreventExecutionDuringCodeReloadHowToFixMsg)]
         extern public static string[] GetLabels(Object obj);
 
-        [PreventExecutionInState(AssetDatabasePreventExecution.kImportingInWorkerProcess, PreventExecutionSeverity.PreventExecution_Warning)]
+        [PreventExecutionInState(AssetDatabasePreventExecution.kImportingInWorkerProcess, PreventExecutionSeverity.PreventExecution_ManagedException)]
         [PreventExecutionInState(AssetDatabasePreventExecution.kImportingAsset, PreventExecutionSeverity.PreventExecution_ManagedException, kPreventExecutionDuringImportHowToFixMsg)]
+        [PreventExecutionInState(AssetDatabasePreventExecution.kCodeReload, PreventExecutionSeverity.PreventExecution_ManagedException, kPreventExecutionDuringCodeReloadHowToFixMsg)]
         extern public static void ClearLabels(Object obj);
 
+        [PreventExecutionInState(AssetDatabasePreventExecution.kCodeReload, PreventExecutionSeverity.PreventExecution_ManagedException, kPreventExecutionDuringCodeReloadHowToFixMsg)]
         extern public static string[] GetAllAssetBundleNames();
 
         [System.Obsolete("Method GetAssetBundleNames has been deprecated. Use GetAllAssetBundleNames instead.",true)] public string[] GetAssetBundleNames() { return GetAllAssetBundleNames(); } // TODO DELETE IN 2024
 
+        [PreventExecutionInState(AssetDatabasePreventExecution.kCodeReload, PreventExecutionSeverity.PreventExecution_ManagedException, kPreventExecutionDuringCodeReloadHowToFixMsg)]
         extern internal static string[] GetAllAssetBundleNamesWithoutVariant();
+
+        [PreventExecutionInState(AssetDatabasePreventExecution.kCodeReload, PreventExecutionSeverity.PreventExecution_ManagedException, kPreventExecutionDuringCodeReloadHowToFixMsg)]
         extern internal static string[] GetAllAssetBundleVariants();
+
+        [PreventExecutionInState(AssetDatabasePreventExecution.kCodeReload, PreventExecutionSeverity.PreventExecution_ManagedException, kPreventExecutionDuringCodeReloadHowToFixMsg)]
         extern public static string[] GetUnusedAssetBundleNames();
 
         [FreeFunction("AssetDatabase::RemoveAssetBundleByName")]
+        [PreventExecutionInState(AssetDatabasePreventExecution.kCodeReload, PreventExecutionSeverity.PreventExecution_ManagedException, kPreventExecutionDuringCodeReloadHowToFixMsg)]
         extern public static bool RemoveAssetBundleName(string assetBundleName, bool forceRemove);
 
         [FreeFunction("AssetDatabase::RemoveUnusedAssetBundleNames")]
+        [PreventExecutionInState(AssetDatabasePreventExecution.kCodeReload, PreventExecutionSeverity.PreventExecution_ManagedException, kPreventExecutionDuringCodeReloadHowToFixMsg)]
         extern public static void RemoveUnusedAssetBundleNames();
 
+        [PreventExecutionInState(AssetDatabasePreventExecution.kCodeReload, PreventExecutionSeverity.PreventExecution_ManagedException, kPreventExecutionDuringCodeReloadHowToFixMsg)]
         extern public static string[] GetAssetPathsFromAssetBundle(string assetBundleName);
+
+        [PreventExecutionInState(AssetDatabasePreventExecution.kCodeReload, PreventExecutionSeverity.PreventExecution_ManagedException, kPreventExecutionDuringCodeReloadHowToFixMsg)]
         extern public static string[] GetAssetPathsFromAssetBundleAndAssetName(string assetBundleName, string assetName);
         [NativeThrows]
+        [PreventExecutionInState(AssetDatabasePreventExecution.kCodeReload, PreventExecutionSeverity.PreventExecution_ManagedException, kPreventExecutionDuringCodeReloadHowToFixMsg)]
         extern public static string GetImplicitAssetBundleName(string assetPath);
+
         [NativeThrows]
+        [PreventExecutionInState(AssetDatabasePreventExecution.kCodeReload, PreventExecutionSeverity.PreventExecution_ManagedException, kPreventExecutionDuringCodeReloadHowToFixMsg)]
         extern public static string GetImplicitAssetBundleVariantName(string assetPath);
+
+        [PreventExecutionInState(AssetDatabasePreventExecution.kCodeReload, PreventExecutionSeverity.PreventExecution_ManagedException, kPreventExecutionDuringCodeReloadHowToFixMsg)]
         extern public static string[] GetAssetBundleDependencies(string assetBundleName, bool recursive);
 
         public static string[] GetDependencies(string pathName) { return GetDependencies(pathName, true); }
@@ -655,6 +771,7 @@ namespace UnityEditor
         }
 
         public static string[] GetDependencies(string[] pathNames) { return GetDependencies(pathNames, true); }
+        [PreventExecutionInState(AssetDatabasePreventExecution.kCodeReload, PreventExecutionSeverity.PreventExecution_ManagedException, kPreventExecutionDuringCodeReloadHowToFixMsg)]
         extern public static string[] GetDependencies(string[] pathNames, bool recursive);
 
         public static void ExportPackage(string assetPathName, string fileName)
@@ -673,8 +790,10 @@ namespace UnityEditor
 
         [uei.ExcludeFromDocs] public static void ExportPackage(string[] assetPathNames, string fileName) { ExportPackage(assetPathNames, fileName, ExportPackageOptions.Default); }
         [NativeThrows]
+        [PreventExecutionInState(AssetDatabasePreventExecution.kCodeReload, PreventExecutionSeverity.PreventExecution_ManagedException, kPreventExecutionDuringCodeReloadHowToFixMsg)]
         extern public static void ExportPackage(string[] assetPathNames, string fileName, [uei.DefaultValue("ExportPackageOptions.Default")] ExportPackageOptions flags);
 
+        [PreventExecutionInState(AssetDatabasePreventExecution.kCodeReload, PreventExecutionSeverity.PreventExecution_ManagedException, kPreventExecutionDuringCodeReloadHowToFixMsg)]
         extern internal static string GetUniquePathNameAtSelectedPath(string fileName);
 
         [uei.ExcludeFromDocs]
@@ -797,35 +916,48 @@ namespace UnityEditor
 
         [NativeThrows]
         [TypeInferenceRule(TypeInferenceRules.TypeReferencedByFirstArgument)]
+        [PreventExecutionInState(AssetDatabasePreventExecution.kCodeReload, PreventExecutionSeverity.PreventExecution_ManagedException, kPreventExecutionDuringCodeReloadHowToFixMsg)]
         extern public static Object GetBuiltinExtraResource(Type type, string path);
 
         [NativeThrows]
+        [PreventExecutionInState(AssetDatabasePreventExecution.kCodeReload, PreventExecutionSeverity.PreventExecution_ManagedException, kPreventExecutionDuringCodeReloadHowToFixMsg)]
         extern internal static string[] CollectAllChildren(string guid, string[] collection);
 
         internal extern static string assetFolderGUID
         {
             [FreeFunction("AssetDatabaseBindings::GetAssetFolderGUID")]
+            [PreventExecutionInState(AssetDatabasePreventExecution.kCodeReload, PreventExecutionSeverity.PreventExecution_ManagedException, kPreventExecutionDuringCodeReloadHowToFixMsg)]
             get;
         }
 
         [FreeFunction("AssetDatabase::IsV1Enabled")]
+        [PreventExecutionInState(AssetDatabasePreventExecution.kCodeReload, PreventExecutionSeverity.PreventExecution_ManagedException, kPreventExecutionDuringCodeReloadHowToFixMsg)]
         extern internal static bool IsV1Enabled();
+
         [FreeFunction("AssetDatabase::IsV2Enabled")]
+        [PreventExecutionInState(AssetDatabasePreventExecution.kCodeReload, PreventExecutionSeverity.PreventExecution_ManagedException, kPreventExecutionDuringCodeReloadHowToFixMsg)]
         extern internal static bool IsV2Enabled();
+
         [FreeFunction("AssetDatabase::CloseCachedFiles")]
+        [PreventExecutionInState(AssetDatabasePreventExecution.kCodeReload, PreventExecutionSeverity.PreventExecution_ManagedException, kPreventExecutionDuringCodeReloadHowToFixMsg)]
         extern internal static void CloseCachedFiles();
 
         [NativeThrows]
+        [PreventExecutionInState(AssetDatabasePreventExecution.kCodeReload, PreventExecutionSeverity.PreventExecution_ManagedException, kPreventExecutionDuringCodeReloadHowToFixMsg)]
         extern internal static string[] GetSourceAssetImportDependenciesAsGUIDs(string path);
+
         [NativeThrows]
+        [PreventExecutionInState(AssetDatabasePreventExecution.kCodeReload, PreventExecutionSeverity.PreventExecution_ManagedException, kPreventExecutionDuringCodeReloadHowToFixMsg)]
         extern internal static string[] GetImportedAssetImportDependenciesAsGUIDs(string path);
+
         [NativeThrows]
+        [PreventExecutionInState(AssetDatabasePreventExecution.kCodeReload, PreventExecutionSeverity.PreventExecution_ManagedException, kPreventExecutionDuringCodeReloadHowToFixMsg)]
         extern internal static string[] GetGuidOfPathLocationImportDependencies(string path);
 
         [FreeFunction("AssetDatabase::ReSerializeAssetsForced")]
         [PreventExecutionInState(AssetDatabasePreventExecution.kPreventForceReserializeAssets, PreventExecutionSeverity.PreventExecution_ManagedException, "Consider calling ForceReserializeAssets from menu style entry point.")]
+        [PreventExecutionInState(AssetDatabasePreventExecution.kCodeReload, PreventExecutionSeverity.PreventExecution_ManagedException, kPreventExecutionDuringCodeReloadHowToFixMsg)]
         extern private static void ForceReserializeAssets(GUID[] guids, ForceReserializeAssetsOptions options);
-
 
         public static void ForceReserializeAssets(IEnumerable<string> assetPaths, ForceReserializeAssetsOptions options = ForceReserializeAssetsOptions.ReserializeAssetsAndMetadata)
         {
@@ -871,9 +1003,11 @@ namespace UnityEditor
             ForceReserializeAssets(guids, options);
         }
 
+        [PreventExecutionInState(AssetDatabasePreventExecution.kCodeReload, PreventExecutionSeverity.PreventExecution_ManagedException, kPreventExecutionDuringCodeReloadHowToFixMsg)]
         extern internal static System.Type GetTypeFromVisibleGUIDAndLocalFileIdentifier(GUID guid, long localId);
 
         [FreeFunction("AssetDatabase::GetGUIDAndLocalIdentifierInFile")]
+        [PreventExecutionInState(AssetDatabasePreventExecution.kCodeReload, PreventExecutionSeverity.PreventExecution_ManagedException, kPreventExecutionDuringCodeReloadHowToFixMsg)]
         extern private static bool GetGUIDAndLocalIdentifierInFile(EntityId entityId, out GUID outGuid, out long outLocalId);
 
         public static bool TryGetGUIDAndLocalFileIdentifier(Object obj, out string guid, out long localId)
@@ -910,19 +1044,24 @@ namespace UnityEditor
 
         [FreeFunction("AssetDatabase::RemoveObjectFromAsset")]
         [PreventExecutionInState(AssetDatabasePreventExecution.kImportingInWorkerProcess, PreventExecutionSeverity.PreventExecution_ManagedException, kPreventExecutionDuringImportHowToFixMsg)]
+        [PreventExecutionInState(AssetDatabasePreventExecution.kCodeReload, PreventExecutionSeverity.PreventExecution_ManagedException, kPreventExecutionDuringCodeReloadHowToFixMsg)]
         extern public static void RemoveObjectFromAsset([NotNull] Object objectToRemove);
 
         [PreventExecutionInState(AssetDatabasePreventExecution.kGatheringDependenciesFromSourceFile, PreventExecutionSeverity.PreventExecution_ManagedException, "Cannot call AssetDatabase.LoadObjectAsync during the gathering of import dependencies.")]
         [PreventExecutionInState(AssetDatabasePreventExecution.kImportingAsset, PreventExecutionSeverity.PreventExecution_ManagedException, "Cannot use AssetDatabase.LoadObjectAsync while assets are importing.")]
+        [PreventExecutionInState(AssetDatabasePreventExecution.kCodeReload, PreventExecutionSeverity.PreventExecution_ManagedException, kPreventExecutionDuringCodeReloadHowToFixMsg)]
         extern public static AssetDatabaseLoadOperation LoadObjectAsync(string assetPath, long localId);
 
         [FreeFunction("AssetDatabase::GUIDFromExistingAssetPath")]
+        [PreventExecutionInState(AssetDatabasePreventExecution.kCodeReload, PreventExecutionSeverity.PreventExecution_ManagedException, kPreventExecutionDuringCodeReloadHowToFixMsg)]
         extern internal static GUID GUIDFromExistingAssetPath(string path);
 
         [FreeFunction("::ImportPackage")]
+        [PreventExecutionInState(AssetDatabasePreventExecution.kCodeReload, PreventExecutionSeverity.PreventExecution_ManagedException, kPreventExecutionDuringCodeReloadHowToFixMsg)]
         extern private static bool ImportPackage(string packagePath, ImportPackageOptions options);
 
         [FreeFunction("::ImportPackageWithOrigin")]
+        [PreventExecutionInState(AssetDatabasePreventExecution.kCodeReload, PreventExecutionSeverity.PreventExecution_ManagedException, kPreventExecutionDuringCodeReloadHowToFixMsg)]
         extern private static bool ImportPackageWithOrigin(string packagePath, AssetOrigin origin, ImportPackageOptions options);
 
         //TODO: This API should be Obsoleted when there is time available to update all the uses of it in Package Manager packages
@@ -942,35 +1081,48 @@ namespace UnityEditor
         }
 
         [FreeFunction("ApplicationDisallowAutoRefresh")]
+        [PreventExecutionInState(AssetDatabasePreventExecution.kCodeReload, PreventExecutionSeverity.PreventExecution_ManagedException, kPreventExecutionDuringCodeReloadHowToFixMsg)]
         public static extern void DisallowAutoRefresh();
 
         [FreeFunction("ApplicationAllowAutoRefresh")]
+        [PreventExecutionInState(AssetDatabasePreventExecution.kCodeReload, PreventExecutionSeverity.PreventExecution_ManagedException, kPreventExecutionDuringCodeReloadHowToFixMsg)]
         public static extern void AllowAutoRefresh();
 
         [FreeFunction("ApplicationDisableUpdating")]
+        [PreventExecutionInState(AssetDatabasePreventExecution.kCodeReload, PreventExecutionSeverity.PreventExecution_ManagedException, kPreventExecutionDuringCodeReloadHowToFixMsg)]
         internal static extern void DisableUpdating();
 
         [FreeFunction("ApplicationEnableUpdating")]
+        [PreventExecutionInState(AssetDatabasePreventExecution.kCodeReload, PreventExecutionSeverity.PreventExecution_ManagedException, kPreventExecutionDuringCodeReloadHowToFixMsg)]
         internal static extern void EnableUpdating(bool forceSceneUpdate);
 
+        [PreventExecutionInState(AssetDatabasePreventExecution.kCodeReload, PreventExecutionSeverity.PreventExecution_ManagedException, kPreventExecutionDuringCodeReloadHowToFixMsg)]
         public extern static UInt32 GlobalArtifactDependencyVersion
         {
-            [FreeFunction("AssetDatabase::GetGlobalArtifactDependencyVersion")] get;
+            [FreeFunction("AssetDatabase::GetGlobalArtifactDependencyVersion")]
+            [PreventExecutionInState(AssetDatabasePreventExecution.kCodeReload, PreventExecutionSeverity.PreventExecution_ManagedException, kPreventExecutionDuringCodeReloadHowToFixMsg)]
+            get;
         }
 
+        [PreventExecutionInState(AssetDatabasePreventExecution.kCodeReload, PreventExecutionSeverity.PreventExecution_ManagedException, kPreventExecutionDuringCodeReloadHowToFixMsg)]
         public extern static UInt32 GlobalArtifactProcessedVersion
         {
-            [FreeFunction("AssetDatabase::GetGlobalArtifactProcessedVersion")] get;
+            [FreeFunction("AssetDatabase::GetGlobalArtifactProcessedVersion")]
+            [PreventExecutionInState(AssetDatabasePreventExecution.kCodeReload, PreventExecutionSeverity.PreventExecution_ManagedException, kPreventExecutionDuringCodeReloadHowToFixMsg)]
+            get;
         }
 
         [NativeThrows]
         [return: UnityMarshalAs(NativeType.ScriptingObjectPtr)]
+        [PreventExecutionInState(AssetDatabasePreventExecution.kCodeReload, PreventExecutionSeverity.PreventExecution_ManagedException, kPreventExecutionDuringCodeReloadHowToFixMsg)]
         private extern static ArtifactInfo[] GetArtifactInfos_Internal(GUID guid);
 
         [return: UnityMarshalAs(NativeType.ScriptingObjectPtr)]
+        [PreventExecutionInState(AssetDatabasePreventExecution.kCodeReload, PreventExecutionSeverity.PreventExecution_ManagedException, kPreventExecutionDuringCodeReloadHowToFixMsg)]
         private extern static ArtifactInfo[] GetCurrentRevisions_Internal(GUID[] guids);
 
         [return: UnityMarshalAs(NativeType.ScriptingObjectPtr)]
+        [PreventExecutionInState(AssetDatabasePreventExecution.kCodeReload, PreventExecutionSeverity.PreventExecution_ManagedException, kPreventExecutionDuringCodeReloadHowToFixMsg)]
         private extern static ArtifactInfo[] GetImportActivityWindowStartupData_Internal(ImportActivityWindowStartupData dataType);
 
         internal static ArtifactInfo[] GetCurrentRevisions(GUID[] guids)
@@ -991,12 +1143,15 @@ namespace UnityEditor
         }
 
         [FreeFunction("AssetDatabase::ClearImporterOverride")]
+        [PreventExecutionInState(AssetDatabasePreventExecution.kCodeReload, PreventExecutionSeverity.PreventExecution_ManagedException, kPreventExecutionDuringCodeReloadHowToFixMsg)]
         extern public static void ClearImporterOverride(string path);
 
         [FreeFunction("AssetDatabase::IsCacheServerEnabled")]
+                [PreventExecutionInState(AssetDatabasePreventExecution.kCodeReload, PreventExecutionSeverity.PreventExecution_ManagedException, kPreventExecutionDuringCodeReloadHowToFixMsg)]
         public extern static bool IsCacheServerEnabled();
 
         [FreeFunction("AssetDatabase::SetImporterOverride")]
+        [PreventExecutionInState(AssetDatabasePreventExecution.kCodeReload, PreventExecutionSeverity.PreventExecution_ManagedException, kPreventExecutionDuringCodeReloadHowToFixMsg)]
         extern internal static void SetImporterOverrideInternal(string path, System.Type importer);
 
         public static void SetImporterOverride<T>(string path)
@@ -1030,6 +1185,7 @@ namespace UnityEditor
         }
 
         [FreeFunction("AssetDatabase::GetImporterOverride")]
+        [PreventExecutionInState(AssetDatabasePreventExecution.kCodeReload, PreventExecutionSeverity.PreventExecution_ManagedException, kPreventExecutionDuringCodeReloadHowToFixMsg)]
         extern public static System.Type GetImporterOverride(string path);
 
         [Obsolete("GetAvailableImporterTypes() has been deprecated. Use GetAvailableImporters() instead (UnityUpgradable) -> GetAvailableImporters(*)", true)]
@@ -1039,18 +1195,23 @@ namespace UnityEditor
         }
 
         [FreeFunction("AssetDatabase::GetAvailableImporters")]
+        [PreventExecutionInState(AssetDatabasePreventExecution.kCodeReload, PreventExecutionSeverity.PreventExecution_ManagedException, kPreventExecutionDuringCodeReloadHowToFixMsg)]
         extern public static Type[] GetAvailableImporters(string path);
 
         [FreeFunction("AssetDatabase::GetDefaultImporter")]
+        [PreventExecutionInState(AssetDatabasePreventExecution.kCodeReload, PreventExecutionSeverity.PreventExecution_ManagedException, kPreventExecutionDuringCodeReloadHowToFixMsg)]
         extern public static Type GetDefaultImporter(string path);
 
         [FreeFunction("RefreshProfiler::EnableVerboseProfiling")]
+        [PreventExecutionInState(AssetDatabasePreventExecution.kCodeReload, PreventExecutionSeverity.PreventExecution_ManagedException, kPreventExecutionDuringCodeReloadHowToFixMsg)]
         internal static extern bool EnableVerboseProfiling(bool enable);
 
         [FreeFunction("AcceleratorClientCanConnectTo")]
+        [PreventExecutionInState(AssetDatabasePreventExecution.kCodeReload, PreventExecutionSeverity.PreventExecution_ManagedException, kPreventExecutionDuringCodeReloadHowToFixMsg)]
         public extern static bool CanConnectToCacheServer(string ip, UInt16 port);
 
         [FreeFunction("RefreshSettings")]
+        [PreventExecutionInState(AssetDatabasePreventExecution.kCodeReload, PreventExecutionSeverity.PreventExecution_ManagedException, kPreventExecutionDuringCodeReloadHowToFixMsg)]
         private extern static void _RefreshSettings();
         public static void RefreshSettings() => _RefreshSettings();
 
@@ -1066,35 +1227,45 @@ namespace UnityEditor
         }
 
         [FreeFunction("AcceleratorClientIsConnected")]
+        [PreventExecutionInState(AssetDatabasePreventExecution.kCodeReload, PreventExecutionSeverity.PreventExecution_ManagedException, kPreventExecutionDuringCodeReloadHowToFixMsg)]
         private extern static bool _IsConnectedToCacheServer();
         public static bool IsConnectedToCacheServer() => _IsConnectedToCacheServer();
 
         [FreeFunction("AcceleratorClientResetReconnectTimer")]
+        [PreventExecutionInState(AssetDatabasePreventExecution.kCodeReload, PreventExecutionSeverity.PreventExecution_ManagedException, kPreventExecutionDuringCodeReloadHowToFixMsg)]
         public extern static void ResetCacheServerReconnectTimer();
 
         [FreeFunction("AcceleratorClientCloseConnection")]
+        [PreventExecutionInState(AssetDatabasePreventExecution.kCodeReload, PreventExecutionSeverity.PreventExecution_ManagedException, kPreventExecutionDuringCodeReloadHowToFixMsg)]
         public extern static void CloseCacheServerConnection();
 
         [FreeFunction()]
+        [PreventExecutionInState(AssetDatabasePreventExecution.kCodeReload, PreventExecutionSeverity.PreventExecution_ManagedException, kPreventExecutionDuringCodeReloadHowToFixMsg)]
         public extern static string GetCacheServerAddress();
 
         [FreeFunction()]
+        [PreventExecutionInState(AssetDatabasePreventExecution.kCodeReload, PreventExecutionSeverity.PreventExecution_ManagedException, kPreventExecutionDuringCodeReloadHowToFixMsg)]
         public extern static UInt16 GetCacheServerPort();
 
         [FreeFunction("AssetDatabase::GetCacheServerNamespacePrefix")]
+        [PreventExecutionInState(AssetDatabasePreventExecution.kCodeReload, PreventExecutionSeverity.PreventExecution_ManagedException, kPreventExecutionDuringCodeReloadHowToFixMsg)]
         public extern static string GetCacheServerNamespacePrefix();
 
         [FreeFunction("AssetDatabase::GetCacheServerEnableDownload")]
+        [PreventExecutionInState(AssetDatabasePreventExecution.kCodeReload, PreventExecutionSeverity.PreventExecution_ManagedException, kPreventExecutionDuringCodeReloadHowToFixMsg)]
         public extern static bool GetCacheServerEnableDownload();
 
         [FreeFunction("AssetDatabase::GetCacheServerEnableUpload")]
+        [PreventExecutionInState(AssetDatabasePreventExecution.kCodeReload, PreventExecutionSeverity.PreventExecution_ManagedException, kPreventExecutionDuringCodeReloadHowToFixMsg)]
         public extern static bool GetCacheServerEnableUpload();
 
         [FreeFunction("AssetDatabase::WaitForPendingCacheServerRequestsToComplete")]
+        [PreventExecutionInState(AssetDatabasePreventExecution.kCodeReload, PreventExecutionSeverity.PreventExecution_ManagedException, kPreventExecutionDuringCodeReloadHowToFixMsg)]
         private extern static void _WaitForPendingCacheServerRequestsToComplete();
         internal static void WaitForPendingCacheServerRequestsToComplete() => _WaitForPendingCacheServerRequestsToComplete();
 
         [FreeFunction("AssetDatabase::IsDirectoryMonitoringEnabled")]
+        [PreventExecutionInState(AssetDatabasePreventExecution.kCodeReload, PreventExecutionSeverity.PreventExecution_ManagedException, kPreventExecutionDuringCodeReloadHowToFixMsg)]
         public extern static bool IsDirectoryMonitoringEnabled();
 
         [FreeFunction("AssetDatabase::RegisterCustomDependency")]
@@ -1106,18 +1277,22 @@ namespace UnityEditor
         public extern static UInt32 UnregisterCustomDependencyPrefixFilter(string prefixFilter);
 
         [FreeFunction("AssetDatabase::IsAssetImportProcess")]
+        [PreventExecutionInState(AssetDatabasePreventExecution.kCodeReload, PreventExecutionSeverity.PreventExecution_ManagedException, kPreventExecutionDuringCodeReloadHowToFixMsg)]
         public extern static bool IsAssetImportWorkerProcess();
 
         [FreeFunction("AssetDatabase::GetImporterType")]
+        [PreventExecutionInState(AssetDatabasePreventExecution.kCodeReload, PreventExecutionSeverity.PreventExecution_ManagedException, kPreventExecutionDuringCodeReloadHowToFixMsg)]
         public extern static Type GetImporterType(GUID guid);
 
         [FreeFunction("AssetDatabase::GetImporterTypes")]
+        [PreventExecutionInState(AssetDatabasePreventExecution.kCodeReload, PreventExecutionSeverity.PreventExecution_ManagedException, kPreventExecutionDuringCodeReloadHowToFixMsg)]
         public static extern Type[] GetImporterTypes(ReadOnlySpan<GUID> guids);
 
         //Since extern method overloads are not supported
         //this is the name we pick, but users end up being able
         //to call either of the overloads
         [FreeFunction("AssetDatabase::GetImporterTypesAtPaths")]
+        [PreventExecutionInState(AssetDatabasePreventExecution.kCodeReload, PreventExecutionSeverity.PreventExecution_ManagedException, kPreventExecutionDuringCodeReloadHowToFixMsg)]
         private static extern Type[] GetImporterTypesAtPaths(string[] paths);
 
         public static Type GetImporterType(string assetPath)
@@ -1129,6 +1304,7 @@ namespace UnityEditor
         //this is the name we pick, but users end up being able
         //to call either of the overloads
         [FreeFunction("AssetDatabase::GetImporterTypeAtPath")]
+        [PreventExecutionInState(AssetDatabasePreventExecution.kCodeReload, PreventExecutionSeverity.PreventExecution_ManagedException, kPreventExecutionDuringCodeReloadHowToFixMsg)]
         private static extern Type GetImporterTypeAtPath(string assetPath);
 
         public static Type[] GetImporterTypes(string[] paths)
@@ -1162,23 +1338,33 @@ namespace UnityEditor
             InProcess = 0,
             OutOfProcessPerQueue = 1
         }
+
+        [PreventExecutionInState(AssetDatabasePreventExecution.kCodeReload, PreventExecutionSeverity.PreventExecution_ManagedException, kPreventExecutionDuringCodeReloadHowToFixMsg)]
         public extern static RefreshImportMode ActiveRefreshImportMode
         {
             [FreeFunction("AssetDatabase::GetRefreshImportMode")]
+            [PreventExecutionInState(AssetDatabasePreventExecution.kCodeReload, PreventExecutionSeverity.PreventExecution_ManagedException, kPreventExecutionDuringCodeReloadHowToFixMsg)]
             get;
+
             [FreeFunction("AssetDatabase::SetRefreshImportMode")]
+            [PreventExecutionInState(AssetDatabasePreventExecution.kCodeReload, PreventExecutionSeverity.PreventExecution_ManagedException, kPreventExecutionDuringCodeReloadHowToFixMsg)]
             set;
         }
 
+        [PreventExecutionInState(AssetDatabasePreventExecution.kCodeReload, PreventExecutionSeverity.PreventExecution_ManagedException, kPreventExecutionDuringCodeReloadHowToFixMsg)]
         public extern static int DesiredWorkerCount
         {
             [FreeFunction("AssetDatabase::GetDesiredWorkerCount")]
+            [PreventExecutionInState(AssetDatabasePreventExecution.kCodeReload, PreventExecutionSeverity.PreventExecution_ManagedException, kPreventExecutionDuringCodeReloadHowToFixMsg)]
             get;
+
             [FreeFunction("AssetDatabase::SetDesiredWorkerCount")]
+            [PreventExecutionInState(AssetDatabasePreventExecution.kCodeReload, PreventExecutionSeverity.PreventExecution_ManagedException, kPreventExecutionDuringCodeReloadHowToFixMsg)]
             set;
         }
 
         [FreeFunction("AssetDatabase::ForceToDesiredWorkerCount")]
+        [PreventExecutionInState(AssetDatabasePreventExecution.kCodeReload, PreventExecutionSeverity.PreventExecution_ManagedException, kPreventExecutionDuringCodeReloadHowToFixMsg)]
         public extern static void ForceToDesiredWorkerCount();
 
         [NativeHeader("Modules/AssetDatabase/Editor/Public/AssetDatabaseTypes.h")]
@@ -1186,6 +1372,7 @@ namespace UnityEditor
         [StructLayout(LayoutKind.Sequential)]
         internal struct WorkerStats
         {
+            public int resettingWorkerCount;
             public int desiredWorkerCount;
             public int idleWorkerCount;
             public int importingWorkerCount;
@@ -1194,6 +1381,7 @@ namespace UnityEditor
             public int suspendedWorkerCount;
         }
 
+        [PreventExecutionInState(AssetDatabasePreventExecution.kCodeReload, PreventExecutionSeverity.PreventExecution_ManagedException, kPreventExecutionDuringCodeReloadHowToFixMsg)]
         internal extern static WorkerStats GetWorkerStats();
 
         // Binding only created for testing
@@ -1202,6 +1390,7 @@ namespace UnityEditor
             return DeleteAllNonPrimaryArtifacts_Importer(importers, deleteUnusedContentFiles);
         }
 
+        [PreventExecutionInState(AssetDatabasePreventExecution.kCodeReload, PreventExecutionSeverity.PreventExecution_ManagedException, kPreventExecutionDuringCodeReloadHowToFixMsg)]
         private extern static int DeleteAllNonPrimaryArtifacts_Importer(Type[] importers, bool deleteUnusedContentFiles);
 
         // Binding only created for testing
@@ -1210,24 +1399,37 @@ namespace UnityEditor
             return DeleteAllNonPrimaryArtifacts_ImportAddress(artifactKeys, deleteUnusedContentFiles);
         }
 
+        [PreventExecutionInState(AssetDatabasePreventExecution.kCodeReload, PreventExecutionSeverity.PreventExecution_ManagedException, kPreventExecutionDuringCodeReloadHowToFixMsg)]
         private extern static int DeleteAllNonPrimaryArtifacts_ImportAddress(ReadOnlySpan<ArtifactKey> artifactKeys, bool deleteUnusedContentFiles);
 
         // Binding only created for testing
         [FreeFunction("AssetDatabase::DeleteUnusedContentFiles")]
+        [PreventExecutionInState(AssetDatabasePreventExecution.kCodeReload, PreventExecutionSeverity.PreventExecution_ManagedException, kPreventExecutionDuringCodeReloadHowToFixMsg)]
         internal extern static void TestOnlyDeleteUnusedContentFiles();
 
         internal enum ImportWorkerModeFlags
         {
-            kNoFlags = 0,
-            kProfile = 1 << 0
+            kNoFlags                        = 0,
+            kProfile                        = 1 << 0,
+            kSafeMode                       = 1 << 1,
+            // TODO: The subsequent four flags should be synched diagnostic switches
+            kSafeModeLogging                = 1 << 2,
+            kLogChainedImportStacktrace     = 1 << 3,
+            kLogForwardAllWorkerEditorLogs  = 1 << 4,
+            kLogImportRegistry              = 1 << 5,
         };
 
         // Import Worker Mode binding is just for testing
         [FreeFunction("AssetDatabase::SetImportWorkerModeFlags")]
+        [PreventExecutionInState(AssetDatabasePreventExecution.kCodeReload, PreventExecutionSeverity.PreventExecution_ManagedException, kPreventExecutionDuringCodeReloadHowToFixMsg)]
         internal extern static void SetImportWorkerModeFlags(ImportWorkerModeFlags flags);
+
         [FreeFunction("AssetDatabase::ClearImportWorkerModeFlags")]
+        [PreventExecutionInState(AssetDatabasePreventExecution.kCodeReload, PreventExecutionSeverity.PreventExecution_ManagedException, kPreventExecutionDuringCodeReloadHowToFixMsg)]
         internal extern static void ClearImportWorkerModeFlags(ImportWorkerModeFlags flags);
+
         [FreeFunction("AssetDatabase::GetImportWorkerModeFlags")]
+        [PreventExecutionInState(AssetDatabasePreventExecution.kCodeReload, PreventExecutionSeverity.PreventExecution_ManagedException, kPreventExecutionDuringCodeReloadHowToFixMsg)]
         internal extern static ImportWorkerModeFlags GetImportWorkerModeFlags();
     }
 }

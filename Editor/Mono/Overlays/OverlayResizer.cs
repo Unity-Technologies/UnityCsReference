@@ -221,6 +221,7 @@ namespace UnityEditor.Overlays
             overlay.floatingPositionChanged += OnOverlayPositionChanged;
             overlay.collapsedChanged += OnOverlayCollaspedChanged;
             overlay.dockingCompleted += OnOverlayDockingCompleted;
+            overlay.displayedChanged += OnOverlayDisplayChanged;
             overlay.rootVisualElement.RegisterCallback<AttachToPanelEvent>(OnAttachedToPanel);
             overlay.rootVisualElement.RegisterCallback<DetachFromPanelEvent>(OnDetachedFromPanel);
             overlay.rootVisualElement.RegisterCallback<GeometryChangedEvent>(OnOverlayGeometryChanged);
@@ -231,6 +232,20 @@ namespace UnityEditor.Overlays
         void OnOverlayLayoutChanged(Layout layout)
         {
             UpdateResizerVisibility();
+        }
+
+        void OnOverlayDisplayChanged(bool displayed)
+        {
+            if (displayed)
+                m_Overlay.rootVisualElement.RegisterCallback<GeometryChangedEvent>(UpdateSizeOnNextGeometryEvent);
+            else
+                m_Overlay.rootVisualElement.UnregisterCallback<GeometryChangedEvent>(UpdateSizeOnNextGeometryEvent);
+        }
+
+        void UpdateSizeOnNextGeometryEvent(GeometryChangedEvent _)
+        {
+            m_Overlay.rootVisualElement.UnregisterCallback<GeometryChangedEvent>(UpdateSizeOnNextGeometryEvent);
+            TryConstrainResizableOverlaySize();
         }
 
         void OnOverlayContainerChanged(OverlayContainer container)

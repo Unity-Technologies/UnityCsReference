@@ -4,7 +4,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using Unity.ProjectAuditor.Editor.Core;
 using Unity.ProjectAuditor.Editor.Utils;
 using UnityEditor;
@@ -217,20 +216,20 @@ namespace Unity.ProjectAuditor.Editor.Modules
                 var size = Profiler.GetRuntimeMemorySizeLong(controller);
 
                 issues.Add(context.CreateInsight(k_AnimatorControllerLayout.Category, controller.name)
-                    .WithCustomProperties(new object[(int)AnimatorControllerProperty.Num]
-                    {
+                    .WithCustomProperties(
+                    [
                         controller.layers.Length,
                         controller.parameters.Length,
                         controller.animationClips.Length,
                         size
-                    })
+                    ])
                     .WithLocation(assetPath)
                 );
 
                 progress?.Advance();
             }
 
-            if (issues.Any())
+            if (issues.Count > 0)
                 context.Params.OnIncomingIssues(issues);
 
             progress?.Clear();
@@ -260,8 +259,8 @@ namespace Unity.ProjectAuditor.Editor.Modules
                 var size = Profiler.GetRuntimeMemorySizeLong(clip);
 
                 issues.Add(context.CreateInsight(k_AnimationClipLayout.Category, clip.name)
-                    .WithCustomProperties(new object[(int)AnimationClipProperty.Num]
-                    {
+                    .WithCustomProperties(
+                    [
                         clip.empty,
                         clip.events.Length,
                         Formatting.FormatFramerate(clip.frameRate),
@@ -275,14 +274,14 @@ namespace Unity.ProjectAuditor.Editor.Modules
                         clip.humanMotion,
                         clip.legacy,
                         size
-                    })
+                    ])
                     .WithLocation(assetPath)
                 );
 
                 progress?.Advance();
             }
 
-            if (issues.Any())
+            if (issues.Count > 0)
                 context.Params.OnIncomingIssues(issues);
 
             progress?.Clear();
@@ -312,8 +311,8 @@ namespace Unity.ProjectAuditor.Editor.Modules
                 var size = Profiler.GetRuntimeMemorySizeLong(avatar);
 
                 issues.Add(context.CreateInsight(k_AvatarLayout.Category, avatar.name)
-                    .WithCustomProperties(new object[(int)AvatarProperty.Num]
-                    {
+                    .WithCustomProperties(
+                    [
                         avatar.isValid,
                         avatar.isHuman,
                         avatar.humanDescription.human.Length,
@@ -327,14 +326,14 @@ namespace Unity.ProjectAuditor.Editor.Modules
                         avatar.humanDescription.feetSpacing,
                         avatar.humanDescription.hasTranslationDoF,
                         size
-                    })
+                    ])
                     .WithLocation(assetPath)
                 );
 
                 progress?.Advance();
             }
 
-            if (issues.Any())
+            if (issues.Count > 0)
                 context.Params.OnIncomingIssues(issues);
 
             progress?.Clear();
@@ -364,18 +363,18 @@ namespace Unity.ProjectAuditor.Editor.Modules
                 var size = Profiler.GetRuntimeMemorySizeLong(mask);
 
                 issues.Add(context.CreateInsight(k_AvatarMaskLayout.Category, mask.name)
-                    .WithCustomProperties(new object[(int)AvatarMaskProperty.Num]
-                    {
+                    .WithCustomProperties(
+                    [
                         mask.transformCount,
                         size
-                    })
+                    ])
                     .WithLocation(assetPath)
                 );
 
                 progress?.Advance();
             }
 
-            if (issues.Any())
+            if (issues.Count > 0)
                 context.Params.OnIncomingIssues(issues);
 
             progress?.Clear();

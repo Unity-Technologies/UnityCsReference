@@ -42,7 +42,7 @@ namespace Unity.GraphToolkit.Editor
         /// <returns>True if a field should be displayed in the node options section of the inspector. False otherwise.</returns>
         public static bool NodeOptionsFilter(FieldInfo f)
         {
-            return SerializedFieldsInspector.CanBeInspected(f) && f.CustomAttributes.Any(a => a.AttributeType == typeof(NodeOptionAttribute));
+            return SerializedFieldsInspector.CanBeInspected(f) && f.CustomAttributes.HasAny(a => a.AttributeType == typeof(NodeOptionAttribute));
         }
 
         /// <summary>
@@ -504,6 +504,9 @@ namespace Unity.GraphToolkit.Editor
             if (panel == null)
                 return;
 
+            if (m_UpdateObserver == null)
+                return;
+
             using (var modelStateObservation = m_UpdateObserver.ObserveState(ModelInspectorViewModel.GraphModelState))
             using (var inspectorStateObservation = m_UpdateObserver.ObserveState(ModelInspectorViewModel.ModelInspectorState))
             {
@@ -515,7 +518,7 @@ namespace Unity.GraphToolkit.Editor
                 }
                 else
                 {
-                    if (ModelInspectorViewModel.ModelInspectorState.InspectedModels.Any() && modelStateObservation.UpdateType == UpdateType.Partial)
+                    if (ModelInspectorViewModel.ModelInspectorState.InspectedModels.HasAny() && modelStateObservation.UpdateType == UpdateType.Partial)
                     {
                         var changeset = ModelInspectorViewModel.GraphModelState.GetAggregatedChangeset(modelStateObservation.LastObservedVersion);
 

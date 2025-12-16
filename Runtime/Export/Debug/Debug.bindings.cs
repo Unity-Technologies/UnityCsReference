@@ -172,6 +172,7 @@ namespace UnityEngine
             LogCompilerError(message, fileName, lineNumber, columnNumber);
         }
 
+        [VisibleToOtherModules("UnityEditor.BurstModule")]
         internal static void LogWarning(string message, string fileName, int lineNumber, int columnNumber)
         {
             LogCompilerWarning(message, fileName, lineNumber, columnNumber);
@@ -206,9 +207,11 @@ namespace UnityEngine
         // A variant of Debug.Log that logs an error message to the console.
         public static void LogException(Exception exception, Object context) { unityLogger.LogException(exception, context); }
 
+        [VisibleToOtherModules("UnityEditor.BurstModule")]
         [ThreadAndSerializationSafe]
         internal static extern void LogPlayerBuildError(string message, string file, int line, int column);
 
+        [VisibleToOtherModules("UnityEditor.BurstModule")]
         // A variant of Debug.Log that logs a warning message to the console.
         public static void LogWarning(object message) { unityLogger.Log(LogType.Warning, message); }
 
@@ -317,7 +320,8 @@ namespace UnityEngine
             return s_DefaultLogger.logEnabled;
         }
 
-        internal static extern void LogSticky(int identifier, LogType logType, LogOption logOptions, string message, Object context = null);
+        internal static extern void LogSticky(EntityId identifier, LogType logType, LogOption logOptions, string message, Object context = null);
+
         [VisibleToOtherModules("UnityEditor.GraphToolkitModule")]
         internal static extern void RemoveLogEntriesByIdentifier(int identifier);
 

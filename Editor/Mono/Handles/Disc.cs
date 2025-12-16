@@ -103,7 +103,7 @@ namespace UnityEditorInternal
                             // don't make any distinction between world snap and incremental. In cases where the tool
                             // supports grid snapping for translation or scale _and_ rotation, we need to explicitly
                             // ignore the gridSnapActive check that is implicit in incrementSnapEnabled.
-                            if(EditorSnapSettings.snapEnabled)
+                            if(EditorSnapSettings.angleSnapEnabled)
                                 s_RotationDist =  Snapping.Snap(s_RotationDist, snap);
                             rotation = Quaternion.AngleAxis(s_RotationDist * -1, s_StartAxis) * s_StartRotation;
                         }
@@ -152,7 +152,7 @@ namespace UnityEditorInternal
                         Handles.DrawSolidArc(position, axis, from, d, size);
 
                         // Draw snap markers
-                        if (EditorSnapSettings.snapEnabled && snap > 0)
+                        if (EditorSnapSettings.angleSnapEnabled && snap > 0)
                         {
                             DrawRotationUnitSnapMarkers(position, axis, size, k_RotationUnitSnapMarkerSize, snap, @from);
                             DrawRotationUnitSnapMarkers(position, axis, size, k_RotationUnitSnapMajorMarkerSize, k_RotationUnitSnapMajorMarkerStep, @from);

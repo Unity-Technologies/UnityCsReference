@@ -317,7 +317,7 @@ namespace UnityEngine.TextCore.Text
 
                 if (character.elementType == TextElementType.Character)
                 {
-                    if (character.textAsset.instanceID != m_CurrentFontAsset.instanceID)
+                    if (character.textAsset.entityId != m_CurrentFontAsset.entityId)
                     {
                         isUsingFallbackOrAlternativeTypeface = true;
                         m_CurrentFontAsset = character.textAsset as FontAsset;
@@ -435,7 +435,7 @@ namespace UnityEngine.TextCore.Text
                     continue;
                 }
 
-                if (isUsingFallbackOrAlternativeTypeface && m_CurrentFontAsset.instanceID != generationSettings.fontAsset.instanceID)
+                if (isUsingFallbackOrAlternativeTypeface && m_CurrentFontAsset.entityId != generationSettings.fontAsset.entityId)
                 {
                     // Create Fallback material instance matching current material preset if necessary
                     if (textSettings.matchMaterialPreset)
@@ -560,7 +560,7 @@ namespace UnityEngine.TextCore.Text
                 return character;
             }
 
-            bool fontAssetEquals = canWriteOnAsset ? fontAsset.instanceID == generationSettings.fontAsset.instanceID : fontAsset == generationSettings.fontAsset;
+            bool fontAssetEquals = canWriteOnAsset ? fontAsset.entityId == generationSettings.fontAsset.entityId : fontAsset == generationSettings.fontAsset;
             // Search for the character in the primary font asset if not the current font asset
             if (!fontAssetEquals)
             {
@@ -1129,7 +1129,7 @@ namespace UnityEngine.TextCore.Text
 
                 if (character.elementType == TextElementType.Character)
                 {
-                    bool textAssetEquals = canWriteOnAsset ? character.textAsset.instanceID == m_CurrentFontAsset.instanceID : character.textAsset == m_CurrentFontAsset;
+                    bool textAssetEquals = canWriteOnAsset ? character.textAsset.entityId == m_CurrentFontAsset.entityId : character.textAsset == m_CurrentFontAsset;
                     if (!textAssetEquals)
                     {
                         isUsingFallbackOrAlternativeTypeface = true;
@@ -1239,7 +1239,7 @@ namespace UnityEngine.TextCore.Text
                     continue;
                 }
 
-                if (isUsingFallbackOrAlternativeTypeface && m_CurrentFontAsset.instanceID != generationSettings.fontAsset.instanceID)
+                if (isUsingFallbackOrAlternativeTypeface && m_CurrentFontAsset.entityId != generationSettings.fontAsset.entityId)
                 {
                     // Create Fallback material instance matching current material preset if necessary
                     if (canWriteOnAsset)
@@ -1429,10 +1429,16 @@ namespace UnityEngine.TextCore.Text
                 if (m_Underline.fontAsset.GetHashCode() != m_CurrentFontAsset.GetHashCode())
                 {
                     // Determine which material to use based on settings
-                    m_Underline.material = generationSettings.textSettings.matchMaterialPreset &&
-                        m_CurrentMaterial.GetHashCode() != m_Underline.fontAsset.material.GetHashCode()
-                            ? MaterialManager.GetFallbackMaterial(m_CurrentMaterial, m_Underline.fontAsset.material)
-                            : m_Underline.fontAsset.material;
+                    if (generationSettings.textSettings.matchMaterialPreset && m_CurrentMaterial != null && m_CurrentMaterial.GetHashCode() != m_Underline.fontAsset.material.GetHashCode())
+                    {
+                        m_Underline.material = MaterialManager.GetFallbackMaterial(m_CurrentMaterial, m_Underline.fontAsset.material);
+                        if (m_Underline.material == null)
+                            return false;
+                    }
+                    else
+                    {
+                        m_Underline.material = m_Underline.fontAsset.material;
+                    }
 
                     // Add material reference and reset reference count
                     m_Underline.materialIndex = MaterialReference.AddMaterialReference(

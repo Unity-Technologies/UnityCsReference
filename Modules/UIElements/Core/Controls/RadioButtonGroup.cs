@@ -298,7 +298,8 @@ namespace UnityEngine.UIElements
             }
             else
             {
-                foreach (var radioButton in radioButtons)
+                // We don't want to set the value of a radio button that was removed the hierarchy
+                foreach (var radioButton in m_RegisteredRadioButtons)
                 {
                     if (notify)
                         radioButton.value = false;

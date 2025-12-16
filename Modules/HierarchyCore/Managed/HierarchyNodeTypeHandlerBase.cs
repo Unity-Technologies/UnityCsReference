@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -18,7 +19,7 @@ namespace Unity.Hierarchy
     /// </summary>
     [NativeHeader("Modules/HierarchyCore/Public/HierarchyNodeTypeHandlerBase.h")]
     [NativeHeader("Modules/HierarchyCore/HierarchyNodeTypeHandlerBaseBindings.h")]
-    [RequiredByNativeCode(GenerateProxy = true), StructLayout(LayoutKind.Sequential)]
+    [RequiredByNativeCode, StructLayout(LayoutKind.Sequential)]
     public abstract partial class HierarchyNodeTypeHandlerBase : IDisposable
     {
         internal static class BindingsMarshaller
@@ -181,6 +182,14 @@ namespace Unity.Hierarchy
         {
         }
 
+        /// <summary>
+        /// Called after the HierarchyViewModel finishes being updated.
+        /// </summary>
+        /// <param name="viewModel">The hierarchy view model.</param>
+        protected virtual void ViewModelPostUpdate(HierarchyViewModel viewModel)
+        {
+        }
+
         [VisibleToOtherModules("UnityEngine.HierarchyModule")]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static HierarchyNodeTypeHandlerBase FromIntPtr(IntPtr handlePtr) => handlePtr != IntPtr.Zero ? (HierarchyNodeTypeHandlerBase)GCHandle.FromIntPtr(handlePtr).Target : null;
@@ -269,19 +278,24 @@ namespace Unity.Hierarchy
 
         [RequiredByNativeCode]
         static void InvokeSearchEnd(IntPtr handlePtr) => FromIntPtr(handlePtr).SearchEnd();
+
+        [RequiredByNativeCode]
+        static void InvokeViewModelPostUpdate(IntPtr handlePtr, IntPtr viewModelPtr) => FromIntPtr(handlePtr).ViewModelPostUpdate(HierarchyViewModel.FromIntPtr(viewModelPtr));
         #endregion
 
-        #region Obsolete public APIs to remove in 2024
+        #region Marked as obsolete warning in 6.0
         /// <summary>
         /// Constructs a new <see cref="HierarchyNodeTypeHandlerBase"/>.
         /// </summary>
-        [Obsolete("The constructor with a hierarchy parameter is obsolete and is no longer used. Remove the hierarchy parameter from your constructor.")]
+        [Obsolete("The constructor with a hierarchy parameter is obsolete and is no longer used. Remove the hierarchy parameter from your constructor.", false)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         protected HierarchyNodeTypeHandlerBase(Hierarchy hierarchy) : this() { }
 
         /// <summary>
         /// Disposes this hierarchy node type handler to free up resources.
         /// </summary>
-        [Obsolete("The IDisposable interface is obsolete and no longer has any effect. Instances of handlers are owned and disposed by the hierarchy so they do not need to be disposed by user code.")]
+        [Obsolete("The IDisposable interface is obsolete and no longer has any effect. Instances of handlers are owned and disposed by the hierarchy so they do not need to be disposed by user code.", false)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public void Dispose() { }
 
         /// <summary>
@@ -289,6 +303,7 @@ namespace Unity.Hierarchy
         /// </summary>
         /// <returns><see langword="true"/> if changes are pending, <see langword="false"/> otherwise.</returns>
         [Obsolete("ChangesPending is obsolete, it is replaced by adding commands into the hierarchy node type handler's CommandList.", false)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         [FreeFunction("HierarchyNodeTypeHandlerBaseBindings::ChangesPending", HasExplicitThis = true, IsThreadSafe = true)]
         protected extern virtual bool ChangesPending();
 
@@ -298,6 +313,7 @@ namespace Unity.Hierarchy
         /// <param name="cmdList">A hierarchy command list that can modify the hierarchy.</param>
         /// <returns><see langword="true"/> if more invocations are needed to complete integrating changes, and <see langword="false"/> if the handler is done integrating changes.</returns>
         [Obsolete("IntegrateChanges is obsolete, it is replaced by adding commands into the hierarchy node type handler's CommandList.", false)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         [FreeFunction("HierarchyNodeTypeHandlerBaseBindings::IntegrateChanges", HasExplicitThis = true, IsThreadSafe = true)]
         protected extern virtual bool IntegrateChanges(HierarchyCommandList cmdList);
         #endregion

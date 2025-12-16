@@ -31,7 +31,7 @@ namespace Unity.GraphToolkit.Editor
 
         static bool IsGraphReferencingGraphAsset(GraphModel graphModel, GUID graphGuid)
         {
-            return graphModel?.NodeModels != null && graphModel.NodeModels.OfType<SubgraphNodeModel>().Any(n => n.SubgraphReference.AssetGuid == graphGuid);
+            return graphModel?.NodeModels != null && graphModel.NodeModels.OfType<SubgraphNodeModel>().HasAny(n => n.SubgraphReference.AssetGuid == graphGuid);
         }
 
         /// <inheritdoc />
@@ -70,8 +70,13 @@ namespace Unity.GraphToolkit.Editor
                         if (graphModel.NodeModels[i] is not SubgraphNodeModel subgraphNode || subgraphNode.IsReferencingLocalSubgraph || subgraphNode.SubgraphReference.AssetGuid != subgraphGuid)
                             continue;
 
-                        // Local subgraph assets are hidden from the users, there should not be external modifications.
+                        // Local subgraph assets are part of the main graph, there should not be external modifications.
                         if (subgraphNode.IsReferencingLocalSubgraph)
+                            continue;
+
+                        // If the subgraph model is not dirty, it did not change. No need to update the subgraph node.
+                        var subgraphObject = subgraphNode.GetSubgraphModel()?.GraphObject;
+                        if (subgraphObject != null && !subgraphObject.Dirty)
                             continue;
 
                         subGraphNodeModels.Add(subgraphNode);

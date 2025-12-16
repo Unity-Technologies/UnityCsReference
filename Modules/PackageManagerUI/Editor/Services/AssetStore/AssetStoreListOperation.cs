@@ -89,7 +89,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             }
 
             m_Result = new AssetStorePurchases(m_OriginalQueryArgs);
-            if (m_OriginalQueryArgs.status is PageFilters.Status.Downloaded or PageFilters.Status.Imported or PageFilters.Status.UpdateAvailable && !m_AdjustedQueryArgs.productIds.Any())
+            if (m_OriginalQueryArgs.status is PageFilters.Status.Downloaded or PageFilters.Status.Imported or PageFilters.Status.UpdateAvailable && m_AdjustedQueryArgs.productIds.Count == 0)
             {
                 m_Result.total = 0;
                 onOperationSuccess?.Invoke(this);

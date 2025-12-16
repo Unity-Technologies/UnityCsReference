@@ -10,6 +10,7 @@ using UnityEngine;
 
 namespace UnityEditor.PackageManager.UI.Internal
 {
+    // The internal modifier is used (instead of private) to give our test project access to these properties/methods
     internal class EditorGameServiceExtension : IWindowCreatedHandler, IPackageSelectionChangedHandler
     {
         public interface ICloudProjectSettings
@@ -24,24 +25,24 @@ namespace UnityEditor.PackageManager.UI.Internal
             public string projectId => UnityEditor.CloudProjectSettings.projectId;
         }
 
-        public const string defaultServiceGroupingName = "Others";
-        const string k_GroupIdField = "groupId";
-        const string k_GameService = "gameService";
-        const string k_ConfigurePath = "configurePath";
-        const string k_UseCasesUrl = "useCasesUrl";
-        const string k_GenericDashboardUrl = "genericDashboardUrl";
-        const string k_ProjectDashboardUrl = "projectDashboardUrl";
-        const string k_ProjectDashboardUrlType = "projectDashboardUrlType";
-        const string k_OrganizationKeyAndProjectGuid = "OrganizationKeyAndProjectGuid";
-        const string k_OrganizationKey = "OrganizationKey";
-        const string k_ProjectGuid = "ProjectGuid";
-        internal const string k_ServicesConfigPath = "Resources/services.json";
-        internal const int k_ServicesPriority = 200;
-        internal const string k_ServicesExtensionPageName = "services";
+        private const string k_DefaultServiceGroupingName = "Others";
+        private const string k_GroupIdField = "groupId";
+        private const string k_GameService = "gameService";
+        private const string k_ConfigurePath = "configurePath";
+        private const string k_UseCasesUrl = "useCasesUrl";
+        private const string k_GenericDashboardUrl = "genericDashboardUrl";
+        private const string k_ProjectDashboardUrl = "projectDashboardUrl";
+        private const string k_ProjectDashboardUrlType = "projectDashboardUrlType";
+        private const string k_OrganizationKeyAndProjectGuid = "OrganizationKeyAndProjectGuid";
+        private const string k_OrganizationKey = "OrganizationKey";
+        private const string k_ProjectGuid = "ProjectGuid";
+        private const string k_ServicesConfigPath = "Resources/services.json";
+        private const int k_ServicesPriority = 200;
+        public const string k_ServicesExtensionPageName = "services";
 
         internal static Dictionary<string, int> groupIndexes = new Dictionary<string, int>();
-        internal static Dictionary<string, string> groupNames = new Dictionary<string, string>();
-        static Dictionary<string, string> s_GroupMap = new Dictionary<string, string>();
+        private static Dictionary<string, string> s_GroupNames = new Dictionary<string, string>();
+        private static Dictionary<string, string> s_GroupMap = new Dictionary<string, string>();
         internal static ICloudProjectSettings cloudProjectSettings = new CloudProjectSettings();
 
         internal static bool FilterServicesPackage(IPackage package)
@@ -75,12 +76,12 @@ namespace UnityEditor.PackageManager.UI.Internal
         internal static string GetDynamicServiceGroupId(Dictionary<string, object> packageGameServiceField)
         {
             var key = (string)packageGameServiceField[k_GroupIdField];
-            if (!groupNames.ContainsKey(key))
+            if (!s_GroupNames.ContainsKey(key))
             {
-                return defaultServiceGroupingName;
+                return k_DefaultServiceGroupingName;
             }
 
-            return groupNames[key];
+            return s_GroupNames[key];
         }
 
         internal static Dictionary<string, object> GetLatestEditorGameServiceField(IPackage package)
@@ -104,7 +105,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             if (version == null)
                 return null;
             var upmCache = ServicesContainer.instance.Resolve<IUpmCache>();
-            var packageInfo = upmCache.GetBestMatchPackageInfo(version.name, version.isInstalled, version.versionString);
+            var packageInfo = upmCache.GetBestMatchPackageInfo(version.name, 0, version.isInstalled, version.versionString);
             return GetEditorGameServiceField(packageInfo);
         }
 
@@ -158,7 +159,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                         foreach (var serviceGrouping in configuration.serviceGroupings)
                         {
                             groupIndexes[serviceGrouping.name] = serviceGrouping.index;
-                            groupNames[serviceGrouping.id] = serviceGrouping.name;
+                            s_GroupNames[serviceGrouping.id] = serviceGrouping.name;
                             foreach (var package in serviceGrouping.packages)
                             {
                                 s_GroupMap[package] = serviceGrouping.name;
@@ -179,10 +180,10 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         internal void SetDefaultGroupsAsLargestIndex()
         {
-            if (!groupIndexes.ContainsKey(defaultServiceGroupingName))
+            if (!groupIndexes.ContainsKey(k_DefaultServiceGroupingName))
             {
                 var largestIndex = groupIndexes.Values.Max();
-                groupIndexes[defaultServiceGroupingName] = largestIndex + 1;
+                groupIndexes[k_DefaultServiceGroupingName] = largestIndex + 1;
             }
         }
 

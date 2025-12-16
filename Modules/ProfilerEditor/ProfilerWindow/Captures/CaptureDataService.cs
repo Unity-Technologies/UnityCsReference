@@ -130,10 +130,15 @@ namespace Unity.Profiling.Editor.UI
         public event Action LoadedCapturesChanged;
         public event Action AllCapturesChanged;
 
+        public void LoadedCapturesHaveChanged()
+        {
+            LoadedCapturesChanged?.Invoke();
+        }
+
         public void Load(bool keepExisting, string filePath)
         {
             m_ProfilerWindow.LoadProfilingData(keepExisting, filePath, true);
-            LoadedCapturesChanged?.Invoke();
+            LoadedCapturesHaveChanged();
         }
 
         public bool ValidateName(string fileName)
@@ -170,18 +175,16 @@ namespace Unity.Profiling.Editor.UI
 
         public bool CanRename(string sourceFilePath, string targetFileName)
         {
-            bool isRaw = sourceFilePath.EndsWith(k_FileExtensionRaw);
+            var isRaw = sourceFilePath.EndsWith(k_FileExtensionRaw);
             var targetFilePath = Path.Combine(
                 Path.GetDirectoryName(sourceFilePath), targetFileName + (isRaw ? k_FileExtensionRaw : k_FileExtensionData));
-            if (File.Exists(targetFilePath))
-                return false;
 
-            return true;
+            return !File.Exists(targetFilePath);
         }
 
         public void Rename(string sourceFilePath, string targetFileName)
         {
-            bool isRaw = sourceFilePath.EndsWith(k_FileExtensionRaw);
+            var isRaw = sourceFilePath.EndsWith(k_FileExtensionRaw);
             var targetFilePath = Path.Combine(
                 Path.GetDirectoryName(sourceFilePath), targetFileName + (isRaw ? k_FileExtensionRaw : k_FileExtensionData));
             if (File.Exists(targetFilePath))
@@ -192,6 +195,8 @@ namespace Unity.Profiling.Editor.UI
 
             ScreenshotsManager.CaptureRenamed(sourceFilePath, targetFilePath);
             File.Move(sourceFilePath, targetFilePath);
+            m_ProfilerWindow.CaptureRenamed(sourceFilePath, targetFilePath);
+
             var bottleneckSource = Path.ChangeExtension(sourceFilePath, BottlenecksChartViewModel.k_HighlightFileExtension);
             if (File.Exists(bottleneckSource))
                 File.Move(bottleneckSource, Path.ChangeExtension(targetFilePath, BottlenecksChartViewModel.k_HighlightFileExtension));
@@ -285,9 +290,9 @@ namespace Unity.Profiling.Editor.UI
         static CaptureFileListModel BuildCapturesInfo(CancellationToken token, DirectoryInfo capturesDirectory, IReadOnlyList<CaptureFileModel> captureInfos)
         {
             var capturesMap = new Dictionary<string, CaptureFileModel>(captureInfos.Count);
-            foreach (var captureFilemodel in captureInfos)
+            foreach (var captureFileModel in captureInfos)
             {
-                capturesMap[captureFilemodel.Name] = captureFilemodel;
+                capturesMap[captureFileModel.Name] = captureFileModel;
             }
 
             var allCaptures = new List<CaptureFileModel>();
@@ -295,14 +300,10 @@ namespace Unity.Profiling.Editor.UI
             {
                 if (token.IsCancellationRequested)
                     return null;
-                if (!capturesMap.TryGetValue(captureFile, out var CapturesFile))
-                {
-                    var builder = new CaptureFileModelBuilder(captureFile);
-                    CapturesFile = builder.Build();
-                }
+                if (!capturesMap.TryGetValue(captureFile, out var capturesFile))
+                    capturesFile = new CaptureFileModel(captureFile);
 
-                if (CapturesFile != null)
-                    allCaptures.Add(CapturesFile);
+                allCaptures.Add(capturesFile);
             }
 
             if (token.IsCancellationRequested)

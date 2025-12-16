@@ -56,8 +56,10 @@ namespace UnityEngine.Experimental.Rendering
             get { return s_Instance; }
         }
 
+#pragma warning disable RS0030 // This [RuntimeInitializeOnLoadMethod] is in the CoreModule and has existed for a very long time.  It also doesn't have much in the way of dependencies since it's an extern.  Not worth the effort to remove this one.
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
         [StaticAccessor("ScriptableRuntimeReflectionSystem", StaticAccessorType.DoubleColon)]
         static extern void ScriptingDirtyReflectionSystemInstance();
+#pragma warning restore RS0030
     }
 }

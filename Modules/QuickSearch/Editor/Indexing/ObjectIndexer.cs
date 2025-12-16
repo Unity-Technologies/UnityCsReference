@@ -9,7 +9,6 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using Unity.Profiling;
-using UnityEditor;
 using UnityEditor.Search.Providers;
 using UnityEngine;
 using Object = UnityEngine.Object;
@@ -49,7 +48,7 @@ namespace UnityEditor.Search
     {
         static readonly ProfilerMarker k_IndexWordMarker = new($"{nameof(ObjectIndexer)}.{nameof(IndexWord)}");
         static readonly ProfilerMarker k_IndexObjectMarker = new($"{nameof(ObjectIndexer)}.{nameof(IndexObject)}");
-        static readonly ProfilerMarker k_IndexPropertiesMarker = new($"{nameof(ObjectIndexer)}.{nameof(IndexVisibleProperties)}");
+        static readonly ProfilerMarker k_IndexPropertiesMarker = new($"{nameof(ObjectIndexer)}.{nameof(IndexProperties)}");
         static readonly ProfilerMarker k_IndexPropertyMarker = new($"{nameof(ObjectIndexer)}.{nameof(IndexProperty)}");
         static readonly ProfilerMarker k_IndexSerializedPropertyMarker = new($"{nameof(ObjectIndexer)}.IndexSerializedProperty");
         static readonly ProfilerMarker k_IndexPropertyComponentsMarker = new($"{nameof(ObjectIndexer)}.IndexPropertyComponents");
@@ -69,6 +68,7 @@ namespace UnityEditor.Search
 
         List<string> m_FlagsPool = new List<string>();
         internal SearchDatabase.Settings settings { get; private set; }
+        internal bool indexHiddenProperties { get; set; } = true;
 
         private HashSet<string> m_IgnoredProperties;
 
@@ -79,7 +79,12 @@ namespace UnityEditor.Search
                 if (m_IgnoredProperties == null)
                 {
                     m_IgnoredProperties = new HashSet<string>(SearchSettings.ignoredProperties.Split(new char[] { ';', '\n' },
-                                            StringSplitOptions.RemoveEmptyEntries).Select(t => t.ToLowerInvariant()));
+                                            StringSplitOptions.RemoveEmptyEntries).Select(t =>
+                    {
+                        if (t.StartsWith("m_"))
+                            t = t.Substring(2);
+                        return t.ToLowerInvariant();
+                    }));
                 }
                 return m_IgnoredProperties;
             }
@@ -144,7 +149,7 @@ namespace UnityEditor.Search
 
         static bool ShouldIgnorePattern(in string pattern, in string path)
         {
-            var filename = Path.GetFileName(path);
+            var filename = Utils.GetFileName(path);
             return filename.StartsWith(pattern, StringComparison.Ordinal) || filename.EndsWith(pattern, StringComparison.Ordinal);
         }
 
@@ -224,7 +229,7 @@ namespace UnityEditor.Search
         public void IndexWordComponents(int documentIndex, in string word)
         {
             int scoreModifier = 0;
-            foreach (var c in GetEntryComponents(word, documentIndex))
+            foreach (var c in SearchUtils.SplitEntryComponents(word, SearchUtils.entrySeparators))
                 IndexWord(documentIndex, c, scoreModifier: scoreModifier++);
         }
 
@@ -240,7 +245,8 @@ namespace UnityEditor.Search
             int scoreModifier = 0;
             double number = 0;
             name = name.ToLowerInvariant();
-            foreach (var c in GetEntryComponents(value, documentIndex))
+            value = value.ToLowerInvariant();
+            foreach (var c in SearchUtils.SplitEntryComponents(value, SearchUtils.entrySeparators))
             {
                 var score = settings.baseScore + scoreModifier++;
                 if (Utils.TryParse(c, out number))
@@ -252,7 +258,7 @@ namespace UnityEditor.Search
                     AddProperty(name, c, score, documentIndex, saveKeyword: false);
                 }
             }
-            AddProperty(name, value.ToLowerInvariant(), settings.baseScore - 5, documentIndex, saveKeyword: false);
+            AddProperty(name, value, settings.baseScore - 5, documentIndex, saveKeyword: false);
         }
 
         /// <summary>
@@ -333,12 +339,17 @@ namespace UnityEditor.Search
         /// <param name="saveKeyword">Define if we store this key in the keyword registry of the index. See <see cref="SearchIndexer.GetKeywords"/>.</param>
         public void IndexProperty(int documentIndex, string name, string value, bool saveKeyword)
         {
+            IndexProperty(documentIndex, name, value, saveKeyword, settings.baseScore);
+        }
+
+        internal void IndexProperty(int documentIndex, string name, string value, bool saveKeyword, int score)
+        {
             using var _ = k_IndexPropertyMarker.Auto();
             if (string.IsNullOrEmpty(value))
                 return;
             name = name.ToLowerInvariant();
             var valueLower = value.ToLowerInvariant();
-            AddProperty(name, valueLower, settings.baseScore, documentIndex, saveKeyword: saveKeyword);
+            AddProperty(name, valueLower, score, documentIndex, saveKeyword: saveKeyword);
         }
 
         [Obsolete("IndexProperty with variations is no longer supported. Variations are handled automatically internally. Please use IndexProperty(int documentIndex, string name, string value, bool saveKeyword)")]
@@ -377,8 +388,7 @@ namespace UnityEditor.Search
         /// <remarks>This overload automatically adds a keyword with TPropertyOwner information.</remarks>
         public void IndexProperty<TProperty, TPropertyOwner>(int documentIndex, string propertyName, string value, bool saveKeyword)
         {
-            IndexProperty(documentIndex, propertyName, value, saveKeyword);
-            MapProperty(documentIndex, propertyName, propertyName, propertyName, typeof(TProperty).AssemblyQualifiedName, typeof(TPropertyOwner).AssemblyQualifiedName, removeNestedKeys: true);
+            IndexProperty<TProperty, TPropertyOwner>(documentIndex, propertyName, value, saveKeyword, propertyName, propertyName);
         }
 
         [Obsolete("IndexProperty with variations is no longer supported. Variations are handled automatically internally. Please use IndexProperty(int documentIndex, string name, string value, bool saveKeyword)")]
@@ -387,10 +397,14 @@ namespace UnityEditor.Search
             IndexProperty<TProperty, TPropertyOwner>(documentIndex, name, value, saveKeyword);
         }
 
-        internal void IndexProperty<TProperty, TPropertyOwner>(int documentIndex, string name, string value, bool saveKeyword, string keywordLabel, string keywordHelp)
+        internal void IndexProperty<TProperty, TPropertyOwner>(int documentIndex, string propertyName, string value, bool saveKeyword, string keywordLabel, string keywordHelp)
         {
-            IndexProperty(documentIndex, name, value, saveKeyword);
-            MapProperty(documentIndex, name, keywordLabel, keywordHelp, typeof(TProperty).AssemblyQualifiedName, typeof(TPropertyOwner).AssemblyQualifiedName, removeNestedKeys: true);
+            if (string.IsNullOrEmpty(value))
+                return;
+            propertyName = propertyName.ToLowerInvariant();
+            var valueLower = value.ToLowerInvariant();
+            AddProperty(propertyName, valueLower, settings.baseScore, documentIndex, saveKeyword: saveKeyword);
+            MapProperty(documentIndex, propertyName, keywordLabel, keywordHelp, typeof(TProperty).AssemblyQualifiedName, typeof(TPropertyOwner).AssemblyQualifiedName, removeNestedKeys: true);
         }
 
         [Obsolete("IndexProperty with variations is no longer supported. Variations are handled automatically internally. Please use IndexProperty(int documentIndex, string name, string value, bool saveKeyword, string keywordLabel, string keywordHelp)")]
@@ -407,8 +421,13 @@ namespace UnityEditor.Search
         /// <param name="documentIndex">Document where the indexed value was found.</param>
         public void IndexNumber(int documentIndex, string name, double number)
         {
+            IndexNumber(documentIndex, name, number, settings.baseScore);
+        }
+
+        internal void IndexNumber(int documentIndex, string name, double number, int score)
+        {
             name = name.ToLowerInvariant();
-            AddNumber(name, number, settings.baseScore, documentIndex);
+            AddNumber(name, number, score, documentIndex);
         }
 
         internal static FilePattern GetFilePattern(string pattern)
@@ -459,35 +478,51 @@ namespace UnityEditor.Search
             {
                 var p = so.GetIterator();
                 const int maxDepth = 1;
-                IndexVisibleProperties(documentIndex, p, recursive, maxDepth);
-                IndexNonVisibleProperties(documentIndex, so, maxDepth);
+                IndexProperties(documentIndex, p, recursive, maxDepth);
             }
         }
 
         private bool ShouldIndexChildren(SerializedProperty p, bool recursive)
         {
-            // Degenerative built-in types to skip.
-            if (p.propertyType == SerializedPropertyType.Generic)
-            {
-                switch (p.type)
-                {
-                    case "SerializedProperties":
-                    case "VFXPropertySheetSerializedBase":
-                    case "ComputeShaderCompilationContext":
-                        return false;
-                }
-            }
-
             if (p.depth > 2 && !recursive)
                 return false;
 
             if ((p.isArray || p.isFixedBuffer) && !recursive)
                 return false;
 
-            if (p.propertyType == SerializedPropertyType.Vector2 ||
-                p.propertyType == SerializedPropertyType.Vector3 ||
-                p.propertyType == SerializedPropertyType.Vector4)
-                return false;
+            switch (p.propertyType)
+            {
+                case SerializedPropertyType.Generic:
+                    switch (p.type)
+                    {
+                        case "SerializedProperties":
+                        case "VFXPropertySheetSerializedBase":
+                        case "ComputeShaderCompilationContext":
+                        case "vector":
+                            return false;
+                    }
+                    break;
+                case SerializedPropertyType.Vector2:
+                case SerializedPropertyType.Vector3:
+                case SerializedPropertyType.Vector4:
+                case SerializedPropertyType.Rect:
+                case SerializedPropertyType.ArraySize:
+                case SerializedPropertyType.Character:
+                case SerializedPropertyType.AnimationCurve:
+                case SerializedPropertyType.Bounds:
+                case SerializedPropertyType.Gradient:
+                case SerializedPropertyType.Quaternion:
+                case SerializedPropertyType.ExposedReference:
+                case SerializedPropertyType.FixedBufferSize:
+                case SerializedPropertyType.Vector2Int:
+                case SerializedPropertyType.Vector3Int:
+                case SerializedPropertyType.RectInt:
+                case SerializedPropertyType.BoundsInt:
+                case SerializedPropertyType.ManagedReference:
+                case SerializedPropertyType.Hash128:
+                case SerializedPropertyType.RenderingLayerMask:
+                    return false;
+            }
 
             return p.hasVisibleChildren;
         }
@@ -499,9 +534,18 @@ namespace UnityEditor.Search
 
         static Func<SerializedProperty, bool> s_IndexAllPropertiesFunc = p => true;
 
-        internal void IndexVisibleProperties(int documentIndex, in SerializedProperty p, bool recursive, int maxDepth)
+        internal void IndexProperties(int documentIndex, in SerializedProperty p, bool recursive, int maxDepth)
         {
-            IndexVisibleProperties(documentIndex, p, recursive, maxDepth, s_IndexAllPropertiesFunc);
+            IndexProperties(documentIndex, p, recursive, maxDepth, s_IndexAllPropertiesFunc);
+        }
+
+        internal bool IsIndexableProperty(SerializedProperty prop, out string fieldName)
+        {
+            fieldName = "";
+            if (!IsIndexableProperty(prop.propertyType) || prop.propertyPath[prop.propertyPath.Length - 1] == ']')
+                return false;
+            fieldName = GetFieldName(prop.displayName);
+            return !ignoredProperties.Contains(fieldName) && !ignoredProperties.Contains(prop.type);
         }
 
         internal static bool IsIndexableProperty(in SerializedPropertyType type)
@@ -528,57 +572,38 @@ namespace UnityEditor.Search
             }
         }
 
-        internal void IndexVisibleProperties(int documentIndex, in SerializedProperty p, bool recursive, int maxDepth, Func<SerializedProperty, bool> shouldContinueIterating)
+        internal void IndexProperties(int documentIndex, in SerializedProperty p, bool recursive, int maxDepth, Func<SerializedProperty, bool> shouldContinueIterating)
         {
             using var _ = k_IndexPropertiesMarker.Auto();
             string componentPrefix = null;
             if (p.serializedObject?.targetObject is Component c)
                 componentPrefix = c.GetType().Name + ".";
-            var next = p.NextVisible(true);
+            var next = indexHiddenProperties ? p.Next(true) : p.NextVisible(true);
             while (next)
             {
                 IndexPropertyIfIndexable(documentIndex, componentPrefix, p, maxDepth, PropertyWithPrefixIndexing.All);
-                next = shouldContinueIterating(p) && p.NextVisible(ShouldIndexChildren(p, recursive));
-            }
-        }
-
-        internal void IndexNonVisibleProperties(int documentIndex, in SerializedObject so, int maxDepth)
-        {
-            if (so.targetObject is not Component c)
-                return;
-            if (c is Transform)
-                return;
-
-            var propertyPrefix = c.GetType().Name + ".";
-            var sp = so.FindProperty("m_Enabled");
-            if (sp is { isValid: true })
-            {
-                IndexPropertyIfIndexable(documentIndex, propertyPrefix, sp, maxDepth, PropertyWithPrefixIndexing.All);
+                var shouldIndexChildren = ShouldIndexChildren(p, recursive);
+                next = shouldContinueIterating(p) && (indexHiddenProperties ? p.Next(shouldIndexChildren) : p.NextVisible(shouldIndexChildren));
             }
         }
 
         internal void IndexPropertyIfIndexable(int documentIndex, in string propertyPrefix, in SerializedProperty p, int maxDepth, PropertyWithPrefixIndexing indexingOptions = PropertyWithPrefixIndexing.NoPrefix)
         {
-            var fieldName = GetFieldName(p.displayName);
             var indexWithPrefix = indexingOptions.HasAny(PropertyWithPrefixIndexing.WithPrefix) && !string.IsNullOrEmpty(propertyPrefix);
-            if (IsIndexableProperty(p.propertyType) && p.propertyPath[p.propertyPath.Length - 1] != ']')
+            if (IsIndexableProperty(p, out var fieldName))
             {
                 if (indexingOptions.HasAny(PropertyWithPrefixIndexing.NoPrefix))
-                    IndexProperty(documentIndex, fieldName, p, maxDepth, indexWithPrefix ? SearchPropositionGenerationOptions.HideInQueryBuilderMode : SearchPropositionGenerationOptions.None);
+                    IndexProperty(documentIndex, "", fieldName, p, maxDepth, indexWithPrefix ? SearchPropositionGenerationOptions.HideInQueryBuilderMode : SearchPropositionGenerationOptions.None);
+
                 if (indexWithPrefix)
-                    IndexProperty(documentIndex, GetFieldName(propertyPrefix) + fieldName, p, maxDepth, SearchPropositionGenerationOptions.None);
+                    IndexProperty(documentIndex, GetFieldName(propertyPrefix), fieldName, p, maxDepth, SearchPropositionGenerationOptions.None);
             }
         }
 
-        internal void IndexProperty(in int documentIndex, in string fieldName, in SerializedProperty p, int maxDepth, SearchPropositionGenerationOptions propositionGenerationOptions)
+        internal void IndexProperty(in int documentIndex, in string propertyPrefix, string fieldName, in SerializedProperty p, int maxDepth, SearchPropositionGenerationOptions propositionGenerationOptions)
         {
             using var _ = k_IndexSerializedPropertyMarker.Auto();
-            if (ignoredProperties.Contains(fieldName))
-                return;
-
-            if (ignoredProperties.Contains(p.type))
-                return;
-
+            fieldName = string.IsNullOrEmpty(propertyPrefix) ? fieldName : propertyPrefix + fieldName;
             if (p.depth <= 1 && p.isArray && p.propertyType != SerializedPropertyType.String)
             {
                 IndexNumber(documentIndex, fieldName, p.arraySize);
@@ -617,8 +642,8 @@ namespace UnityEditor.Search
                     LogProperty(documentIndex, fieldName, p, propositionGenerationOptions, p.floatValue);
                     break;
                 case SerializedPropertyType.String:
-                    if (IndexPropertyStringComponents(documentIndex, fieldName, p.stringValue))
-                        LogProperty(documentIndex, fieldName, p, propositionGenerationOptions, p.stringValue);
+                    IndexPropertyStringComponents(documentIndex, fieldName, p.stringValue);
+                    LogProperty(documentIndex, fieldName, p, propositionGenerationOptions, p.stringValue);
                     break;
                 case SerializedPropertyType.Enum:
                     IndexEnum(documentIndex, fieldName, p, propositionGenerationOptions);
@@ -651,6 +676,10 @@ namespace UnityEditor.Search
                     IndexProperty(documentIndex, fieldName, p.hash128Value.ToString(), saveKeyword: true);
                     LogProperty(documentIndex, fieldName, p, propositionGenerationOptions, p.hash128Value);
                     break;
+                case SerializedPropertyType.GUID:
+                    IndexProperty(documentIndex, fieldName, p.guidValue.ToString(), saveKeyword: true);
+                    LogProperty(documentIndex, fieldName, p, propositionGenerationOptions, p.guidValue);
+                    break;
                 case SerializedPropertyType.EntityId:
                     IndexProperty(documentIndex, fieldName, p.entityIdValue.ToString(), saveKeyword: true);
                     LogProperty(documentIndex, fieldName, p, propositionGenerationOptions, p.entityIdValue);
@@ -678,16 +707,28 @@ namespace UnityEditor.Search
             LogProperty(documentIndex, fieldName, p, propositionGenerationOptions, flagValue);
         }
 
-        bool IndexPropertyStringComponents(in int documentIndex, in string fieldName, in string sv)
+        void IndexPropertyStringComponents(in int documentIndex, string fieldName, string sv)
         {
             using var _ = k_IndexPropertyStringComponentsMarker.Auto();
             if (string.IsNullOrEmpty(sv) || sv.Length > 64)
-                return false;
-            if (sv.Length >= minWordIndexationLength && sv.Length < 32)
-                IndexPropertyComponents(documentIndex, fieldName, sv);
+                return;
+                
+            sv = sv.ToLowerInvariant();
+            fieldName = fieldName.ToLowerInvariant();
+            float f = 0;
+            if (Utils.TryParse(sv, out f ))
+            {
+                AddNumber(fieldName, f, settings.baseScore, documentIndex);
+            }
+            else if (Utils.TryParseRange(sv, out var range))
+            {
+                AddNumber(fieldName, range.min, settings.baseScore, documentIndex);
+                AddNumber(fieldName, range.max, settings.baseScore, documentIndex);
+            }
             else
-                IndexProperty(documentIndex, fieldName, sv, saveKeyword: false);
-            return true;
+            {
+                AddProperty(fieldName, sv, documentIndex, saveKeyword: false);
+            }
         }
 
         void LogProperty(int documentIndex, in string fieldName, in SerializedProperty p, SearchPropositionGenerationOptions propositionGenerationOptions = SearchPropositionGenerationOptions.None, object value = null)
@@ -700,6 +741,8 @@ namespace UnityEditor.Search
 
         internal void AddReference(int documentIndex, string assetPath, bool saveKeyword = false)
         {
+            // Called when using AssetDatabase.GetDependencies from document.
+
             using var _ = k_AddReferenceMarker.Auto();
             if (string.IsNullOrEmpty(assetPath))
                 return;
@@ -709,12 +752,11 @@ namespace UnityEditor.Search
             var gid = GlobalObjectId.GetGlobalObjectIdSlow((EntityId)assetInstanceID);
             if (gid.identifierType != 0)
                 IndexProperty(documentIndex, "ref", gid.ToString(), saveKeyword);
-            if (settings.options.properties)
-                IndexPropertyStringComponents(documentIndex, "ref", Path.GetFileNameWithoutExtension(assetPath));
         }
 
         internal void AddReference(int documentIndex, string propertyName, Object objRef, in string label = null, in Type ownerPropertyType = null)
         {
+            // Called when indexing a property reference of document
             using var _ = k_AddObjectReferenceMarker.Auto();
             if (!objRef)
             {
@@ -723,11 +765,10 @@ namespace UnityEditor.Search
                 return;
             }
 
-            var assetPath = SearchUtils.GetObjectPath(objRef, false);
+            var assetPath = SearchUtils.GetObjectPath(objRef);
             if (string.IsNullOrEmpty(assetPath))
                 return;
 
-            propertyName = propertyName.ToLowerInvariant();
             IndexProperty(documentIndex, propertyName, assetPath, saveKeyword: false);
 
             var gid = GlobalObjectId.GetGlobalObjectIdSlow(objRef);
@@ -749,12 +790,14 @@ namespace UnityEditor.Search
             }
 
             if (settings.options.dependencies)
-                IndexProperty(documentIndex, "ref", assetPath, saveKeyword: false);
-            if (settings.options.properties)
             {
-                IndexPropertyStringComponents(documentIndex, propertyName, Path.GetFileNameWithoutExtension(Utils.ReplaceInvalidCharsFromPath(objRef.name ?? assetPath, '_')));
-                if (label != null && ownerPropertyType != null)
-                    MapProperty(documentIndex, propertyName, label, null, objRef.GetType().AssemblyQualifiedName, ownerPropertyType.AssemblyQualifiedName);
+                IndexProperty(documentIndex, "ref", assetPath, saveKeyword: false);
+            }
+            
+            
+            if (settings.options.properties && label != null && ownerPropertyType != null)
+            {
+                 MapProperty(documentIndex, propertyName, label, null, objRef.GetType().AssemblyQualifiedName, ownerPropertyType.AssemblyQualifiedName);
             }
         }
 

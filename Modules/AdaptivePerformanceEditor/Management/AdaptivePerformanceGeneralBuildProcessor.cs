@@ -27,28 +27,12 @@ namespace UnityEditor.AdaptivePerformance.Editor
 
         public void OnPreprocessBuild(BuildReport report)
         {
-            var activeProfile = BuildProfile.GetActiveBuildProfile();
-            AdaptivePerformanceGeneralSettings settings = null;
-
-            if (activeProfile != null && activeProfile.platformBuildProfile?.adaptivePerformanceEnabled ==  true)
-            {
-                settings = activeProfile.GetComponent<AdaptivePerformanceGeneralSettings>();
-            }
-
-            if (settings == null)
-            {
-                AdaptivePerformanceGeneralSettingsPerBuildTarget buildTargetSettings = null;
-                EditorBuildSettings.TryGetConfigObject(AdaptivePerformanceGeneralSettings.k_SettingsKey,
-                    out buildTargetSettings);
-                if (buildTargetSettings == null || buildTargetSettings.EnableAdaptivePerformance == false)
-                    return;
-
-                settings = buildTargetSettings.SettingsForBuildTarget(report.summary.platformGroup);
-            }
+            var settings = EditorUtilities.GetSettingsOrBuildProfilesSettings(report.summary.platformGroup);
 
             if (settings == null)
                 return;
 
+            var activeProfile = BuildProfile.GetActiveBuildProfile();
             bool enabled = EditorUtilities.CheckEnableFrameTimingState(activeProfile);
             if (!enabled)
             {

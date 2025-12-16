@@ -17,12 +17,12 @@ namespace UnityEditor.Search
     readonly struct PrefabPropertyIndexKey
     {
         public readonly int documentIndex;
-        public readonly int instanceId;
+        public readonly EntityId entityId;
 
-        public PrefabPropertyIndexKey(int documentIndex, int instanceId)
+        public PrefabPropertyIndexKey(int documentIndex, EntityId entityId)
         {
             this.documentIndex = documentIndex;
-            this.instanceId = instanceId;
+            this.entityId = entityId;
         }
     }
 
@@ -37,7 +37,7 @@ namespace UnityEditor.Search
         static readonly ProfilerMarker k_IndexPrefabPropertiesMarker = new($"{nameof(IndexerExtensions)}.{nameof(IndexPrefabProperties)}");
 
         static ConcurrentDictionary<ObjectIndexer, HashSet<PrefabPropertyIndexKey>> s_PrefabIndexCaches = new();
-        static ConcurrentDictionary<ObjectIndexer, Dictionary<int, PrefabPropertyIndexData>> s_PrefabInstanceRootCaches = new();
+        static ConcurrentDictionary<ObjectIndexer, Dictionary<EntityId, PrefabPropertyIndexData>> s_PrefabInstanceRootCaches = new();
 
         [CustomObjectIndexer(typeof(GameObject), version = 2)]
         internal static void IndexPrefabTypes(CustomObjectIndexerTarget context, ObjectIndexer indexer)
@@ -52,7 +52,7 @@ namespace UnityEditor.Search
             using var _ = k_IndexPrefabPropertiesMarker.Auto();
 
             var prefabIndexCache = s_PrefabIndexCaches.GetOrAdd(indexer, _ => new HashSet<PrefabPropertyIndexKey>());
-            var key = new PrefabPropertyIndexKey(documentIndex, prefab.GetInstanceID());
+            var key = new PrefabPropertyIndexKey(documentIndex, prefab.GetEntityId());
             if (prefabIndexCache.Contains(key))
                 return; // Already indexed
 
@@ -76,8 +76,8 @@ namespace UnityEditor.Search
             }
 
             var instanceRoot = PrefabUtility.GetPrefabInstanceHandle(prefab);
-            var instanceRootId = instanceRoot != null ? instanceRoot.GetInstanceID() : 0;
-            var indexerDictionary = s_PrefabInstanceRootCaches.GetOrAdd(indexer, _ => new Dictionary<int, PrefabPropertyIndexData>());
+            var instanceRootId = instanceRoot != null ? instanceRoot.GetEntityId() : EntityId.None;
+            var indexerDictionary = s_PrefabInstanceRootCaches.GetOrAdd(indexer, _ => new Dictionary<EntityId, PrefabPropertyIndexData>());
 
             if (instanceRoot != null && indexerDictionary.TryGetValue(instanceRootId, out var data))
             {
@@ -232,7 +232,7 @@ namespace UnityEditor.Search
                         {
                             // Loop over all properties in the DefaultPlatformSettings
                             var parentPath = platformSettings.propertyPath;
-                            indexer.IndexVisibleProperties(context.documentIndex, platformSettings, recursive: false, 2, p => p.propertyPath.StartsWith(parentPath));
+                            indexer.IndexProperties(context.documentIndex, platformSettings, recursive: false, 2, p => p.propertyPath.StartsWith(parentPath));
                             break;
                         }
                     }
@@ -256,7 +256,7 @@ namespace UnityEditor.Search
                 if (s_IgnorePropertyNameRx.IsMatch(label))
                     continue;
 
-                var name = label.ToLowerInvariant();
+                var name = label;
                 if (name.Length > 0 && name[0] == '_')
                     name = name.Substring(1);
                 switch (shader.GetPropertyType(i))

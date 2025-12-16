@@ -983,7 +983,7 @@ namespace UnityEngine.XR
         internal static extern bool TryGetHapticCapabilities(UInt64 deviceId, out HapticCapabilities capabilities);
         internal static extern void StopHaptics(UInt64 deviceId);
 
-        internal static extern bool TryGetFeatureUsages(UInt64 deviceId, [NotNull] List<InputFeatureUsage> featureUsages);
+        internal static extern bool TryGetFeatureUsages(UInt64 deviceId, [NotNull][Out] List<InputFeatureUsage> featureUsages);
 
         internal static extern bool TryGetFeatureValue_bool(UInt64 deviceId, string usage, out bool value);
         internal static extern bool TryGetFeatureValue_UInt32(UInt64 deviceId, string usage, out uint value);

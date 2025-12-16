@@ -18,6 +18,7 @@ namespace UnityEngine
     [NativeClass("AABB")]
     [RequiredByNativeCode(Optional = true, GenerateProxy = true)]
     [StructLayout(LayoutKind.Sequential)]
+    [Serializable]
     public partial struct Bounds : IEquatable<Bounds>, IFormattable
     {
         private Vector3 m_Center;
@@ -26,10 +27,26 @@ namespace UnityEngine
 
         // Creates new Bounds with a given /center/ and total /size/. Bound ::ref::extents will be half the given size.
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
+        public Bounds(Vector3 center, Vector3 size)
+        {
+            m_Center.x = center.x;
+            m_Center.y = center.y;
+            m_Center.z = center.z;
+            m_Extents.x = size.x * 0.5F;
+            m_Extents.y = size.y * 0.5F;
+            m_Extents.z = size.z * 0.5F;
+        }
+
+        // Creates new Bounds with a given /center/ and total /size/. Bound ::ref::extents will be half the given size.
+        [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
         public Bounds(in Vector3 center, in Vector3 size)
         {
-            m_Center = center;
-            m_Extents = size * 0.5F;
+            m_Center.x = center.x;
+            m_Center.y = center.y;
+            m_Center.z = center.z;
+            m_Extents.x = size.x * 0.5F;
+            m_Extents.y = size.y * 0.5F;
+            m_Extents.z = size.z * 0.5F;
         }
 
         // used to allow Bounds to be used as keys in hash tables
@@ -41,13 +58,16 @@ namespace UnityEngine
         public override readonly bool Equals(object other)
         {
             if (other is Bounds bounds)
-                return Equals(bounds);
+                return Equals(in bounds);
 
             return false;
         }
 
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
-        public readonly bool Equals(Bounds other) => m_Center.Equals(other.m_Center) && m_Extents.Equals(other.m_Extents);
+        public readonly bool Equals(Bounds other) => m_Center.Equals(in other.m_Center) && m_Extents.Equals(in other.m_Extents);
+
+        [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
+        public readonly bool Equals(in Bounds other) => m_Center.Equals(in other.m_Center) && m_Extents.Equals(in other.m_Extents);
 
         // The center of the bounding box.
         public Vector3 center
@@ -59,8 +79,8 @@ namespace UnityEngine
         // The total size of the box. This is always twice as large as the ::ref::extents.
         public Vector3 size
         {
-            [MethodImpl(MethodImplOptionsEx.AggressiveInlining)] readonly get => m_Extents * 2.0F;
-            [MethodImpl(MethodImplOptionsEx.AggressiveInlining)] set => m_Extents = value * 0.5F;
+            [MethodImpl(MethodImplOptionsEx.AggressiveInlining)] readonly get => new Vector3() { x = m_Extents.x * 2.0F, y = m_Extents.y * 2.0F, z = m_Extents.z * 2.0F };
+            [MethodImpl(MethodImplOptionsEx.AggressiveInlining)] set { m_Extents.x = value.x * 0.5F; m_Extents.y = value.y * 0.5F; m_Extents.z = value.z * 0.5F; }
         }
 
         // The extents of the box. This is always half of the ::ref::size.
@@ -73,79 +93,131 @@ namespace UnityEngine
         // The minimal point of the box. This is always equal to ''center-extents''.
         public Vector3 min
         {
-            [MethodImpl(MethodImplOptionsEx.AggressiveInlining)] readonly get => center - extents;
-            [MethodImpl(MethodImplOptionsEx.AggressiveInlining)] set => SetMinMax(value, max);
+            [MethodImpl(MethodImplOptionsEx.AggressiveInlining)] readonly get => new Vector3() { x = m_Center.x - m_Extents.x, y = m_Center.y - m_Extents.y, z = m_Center.z - m_Extents.z };
+            [MethodImpl(MethodImplOptionsEx.AggressiveInlining)] set => SetMinMax(in value, max);
         }
 
         // The maximal point of the box. This is always equal to ''center+extents''.
         public Vector3 max
         {
-            [MethodImpl(MethodImplOptionsEx.AggressiveInlining)] readonly get => center + extents;
-            [MethodImpl(MethodImplOptionsEx.AggressiveInlining)] set => SetMinMax(min, value);
+            [MethodImpl(MethodImplOptionsEx.AggressiveInlining)] readonly get => new Vector3() { x = m_Center.x + m_Extents.x, y = m_Center.y + m_Extents.y, z = m_Center.z + m_Extents.z };
+            [MethodImpl(MethodImplOptionsEx.AggressiveInlining)] set => SetMinMax(min, in value);
         }
 
-        //*undoc*
+        /// <undoc/>
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
-        public static bool operator==(in Bounds lhs, in Bounds rhs) =>
+        public static bool operator==(Bounds lhs, Bounds rhs) =>
             // Returns false in the presence of NaN values.
             (lhs.m_Center == rhs.m_Center && lhs.m_Extents == rhs.m_Extents);
 
-        //*undoc*
+        /// <undoc/>
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
-        public static bool operator!=(in Bounds lhs, in Bounds rhs) =>
+        public static bool operator!=(Bounds lhs, Bounds rhs) =>
             // Returns true in the presence of NaN values.
             !(lhs == rhs);
 
+
         // Sets the bounds to the /min/ and /max/ value of the box.
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
-        public void SetMinMax(Vector3 min, Vector3 max) => SetMinMax(in min, in max);
+        public void SetMinMax(Vector3 min, Vector3 max)
+        {
+            m_Extents.x = (max.x - min.x) * 0.5F;
+            m_Extents.y = (max.y - min.y) * 0.5F;
+            m_Extents.z = (max.z - min.z) * 0.5F;
+            m_Center.x = min.x + m_Extents.x;
+            m_Center.y = min.y + m_Extents.y;
+            m_Center.z = min.z + m_Extents.z;
+        }
 
         // Sets the bounds to the /min/ and /max/ value of the box.
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
         public void SetMinMax(in Vector3 min, in Vector3 max)
         {
-            m_Extents = (max - min) * 0.5F;
-            m_Center = min + extents;
+            m_Extents.x = (max.x - min.x) * 0.5F;
+            m_Extents.y = (max.y - min.y) * 0.5F;
+            m_Extents.z = (max.z - min.z) * 0.5F;
+            m_Center.x = min.x + m_Extents.x;
+            m_Center.y = min.y + m_Extents.y;
+            m_Center.z = min.z + m_Extents.z;
         }
 
         // Grows the Bounds to include the /point/.
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
-        public void Encapsulate(Vector3 point) => Encapsulate(in point);
+        public void Encapsulate(Vector3 point)
+        {
+            Vector3 mmin = Vector3.Min(min, in point);
+            Vector3 mmax = Vector3.Max(max, in point);
+            SetMinMax(in mmin, in mmax);
+        }
 
         // Grows the Bounds to include the /point/.
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
-        public void Encapsulate(in Vector3 point) => SetMinMax(Vector3.Min(min, in point), Vector3.Max(max, in point));
+        public void Encapsulate(in Vector3 point)
+        {
+            Vector3 mmin = Vector3.Min(min, in point);
+            Vector3 mmax = Vector3.Max(max, in point);
+            SetMinMax(in mmin, in mmax);
+        }
 
         // Grows the Bounds to include the /Bounds/.
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
-        public void Encapsulate(Bounds bounds) => Encapsulate(in bounds);
+        public void Encapsulate(Bounds bounds)
+        {
+            Vector3 boundsMin = bounds.min;
+            Vector3 boundsMax = bounds.max;
+            Encapsulate(in boundsMin);
+            Encapsulate(in boundsMax);
+        }
 
         // Grows the Bounds to include the /Bounds/.
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
         public void Encapsulate(in Bounds bounds)
         {
-            Encapsulate(bounds.min);
-            Encapsulate(bounds.max);
+            Vector3 boundsMin = bounds.min;
+            Vector3 boundsMax = bounds.max;
+            Encapsulate(in boundsMin);
+            Encapsulate(in boundsMax);
         }
 
         // Expand the bounds by increasing its /size/ by /amount/ along each side.
         public void Expand(float amount)
         {
             amount *= 0.5f;
-            m_Extents += new Vector3(amount, amount, amount);
+            m_Extents.x += amount;
+            m_Extents.y += amount;
+            m_Extents.z += amount;
         }
 
         // Expand the bounds by increasing its /size/ by /amount/ along each side.
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
-        public void Expand(Vector3 amount) => Expand(in amount);
+        public void Expand(Vector3 amount)
+        {
+            m_Extents.x += amount.x * 0.5f;
+            m_Extents.y += amount.y * 0.5f;
+            m_Extents.z += amount.z * 0.5f;
+        }
 
         // Expand the bounds by increasing its /size/ by /amount/ along each side.
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
-        public void Expand(in Vector3 amount) => m_Extents += amount * 0.5f;
+        public void Expand(in Vector3 amount)
+        {
+            m_Extents.x += amount.x * 0.5f;
+            m_Extents.y += amount.y * 0.5f;
+            m_Extents.z += amount.z * 0.5f;
+        }
 
         // Does another bounding box intersect with this bounding box?
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
-        public readonly bool Intersects(Bounds bounds) => Intersects(in bounds);
+        public readonly bool Intersects(Bounds bounds)
+        {
+            Vector3 thisMin = min;
+            Vector3 thisMax = max;
+            Vector3 otherMin = bounds.min;
+            Vector3 otherMax = bounds.max;
+            return (thisMin.x <= otherMax.x) && (thisMax.x >= otherMin.x) &&
+                   (thisMin.y <= otherMax.y) && (thisMax.y >= otherMin.y) &&
+                   (thisMin.z <= otherMax.z) && (thisMax.z >= otherMin.z);
+        }
 
         // Does another bounding box intersect with this bounding box?
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
@@ -161,12 +233,12 @@ namespace UnityEngine
         }
 
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
-        public readonly bool IntersectRay(Ray ray) => IntersectRay(in ray);
+        public readonly bool IntersectRay(Ray ray) => IntersectRayAABB(in ray, in this, out float _);
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
         public readonly bool IntersectRay(in Ray ray) => IntersectRayAABB(in ray, in this, out float _);
 
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
-        public readonly bool IntersectRay(Ray ray, out float distance) => IntersectRay(in ray, out distance);
+        public readonly bool IntersectRay(Ray ray, out float distance) => IntersectRayAABB(in ray, in this, out distance);
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
         public readonly bool IntersectRay(in Ray ray, out float distance) => IntersectRayAABB(in ray, in this, out distance);
 

@@ -106,7 +106,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             var pathsFailedToRemove = new List<string>();
             m_AssetDatabase.DeleteAssets(assetAndFoldersToRemove, pathsFailedToRemove);
 
-            if (pathsFailedToRemove.Any())
+            if (pathsFailedToRemove.Count > 0)
             {
                 var errorMessage = L10n.Tr("[Package Manager Window] Failed to remove the following asset(s) and/or folder(s):");
                 foreach (var path in pathsFailedToRemove)
@@ -145,13 +145,13 @@ namespace UnityEditor.PackageManager.UI.Internal
                     assetsToRemove.AddRange(importedPackage);
             }
 
-            if (assetsToRemove.Any())
+            if (assetsToRemove.Count > 0)
                 RemoveAssetsAndCleanUpEmptyFolders(assetsToRemove);
         }
 
-        private void OnRemoveSelectionDone(IEnumerable<Asset> selections)
+        private void OnRemoveSelectionDone(IReadOnlyCollection<Asset> selections)
         {
-            if (selections.Any())
+            if (selections.Count > 0)
                 RemoveAssetsAndCleanUpEmptyFolders(selections);
         }
     }

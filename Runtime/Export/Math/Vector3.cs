@@ -19,6 +19,7 @@ namespace UnityEngine
     [RequiredByNativeCode(Optional = true, GenerateProxy = true)]
     [StructLayout(LayoutKind.Sequential)]
     [Unity.IL2CPP.CompilerServices.Il2CppEagerStaticClassConstruction]
+    [Serializable]
     public partial struct Vector3 : IEquatable<Vector3>, IFormattable
     {
         // *Undocumented*
@@ -35,35 +36,67 @@ namespace UnityEngine
 
         // Linearly interpolates between two vectors.
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
-        public static Vector3 Lerp(Vector3 a, Vector3 b, float t) => Lerp(in a, in b, t);
+        public static Vector3 Lerp(Vector3 a, Vector3 b, float t)
+        {
+            t = Mathf.Clamp01(t);
+
+            Vector3 v;
+            v.x = a.x + (b.x - a.x) * t;
+            v.y = a.y + (b.y - a.y) * t;
+            v.z = a.z + (b.z - a.z) * t;
+            return v;
+        }
 
         // Linearly interpolates between two vectors.
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
         public static Vector3 Lerp(in Vector3 a, in Vector3 b, float t)
         {
             t = Mathf.Clamp01(t);
-            return new Vector3(
-                a.x + (b.x - a.x) * t,
-                a.y + (b.y - a.y) * t,
-                a.z + (b.z - a.z) * t
-            );
+
+            Vector3 v;
+            v.x = a.x + (b.x - a.x) * t;
+            v.y = a.y + (b.y - a.y) * t;
+            v.z = a.z + (b.z - a.z) * t;
+            return v;
         }
 
         // Linearly interpolates between two vectors without clamping the interpolant
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
-        public static Vector3 LerpUnclamped(Vector3 a, Vector3 b, float t) => LerpUnclamped(in a, in b, t);
+        public static Vector3 LerpUnclamped(Vector3 a, Vector3 b, float t) => new Vector3() {
+            x = a.x + (b.x - a.x) * t,
+            y = a.y + (b.y - a.y) * t,
+            z = a.z + (b.z - a.z) * t
+        };
 
         // Linearly interpolates between two vectors without clamping the interpolant
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
-        public static Vector3 LerpUnclamped(in Vector3 a, in Vector3 b, float t) => new Vector3(
-                a.x + (b.x - a.x) * t,
-                a.y + (b.y - a.y) * t,
-                a.z + (b.z - a.z) * t
-            );
+        public static Vector3 LerpUnclamped(in Vector3 a, in Vector3 b, float t) => new Vector3() {
+            x = a.x + (b.x - a.x) * t,
+            y = a.y + (b.y - a.y) * t,
+            z = a.z + (b.z - a.z) * t
+        };
 
         // Moves a point /current/ in a straight line towards a /target/ point.
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
-        public static Vector3 MoveTowards(Vector3 current, Vector3 target, float maxDistanceDelta) => MoveTowards(in current, in target, maxDistanceDelta);
+        public static Vector3 MoveTowards(Vector3 current, Vector3 target, float maxDistanceDelta)
+        {
+            // avoid vector ops because current scripting backends are terrible at inlining
+            float toVector_x = target.x - current.x;
+            float toVector_y = target.y - current.y;
+            float toVector_z = target.z - current.z;
+
+            float sqdist = toVector_x * toVector_x + toVector_y * toVector_y + toVector_z * toVector_z;
+
+            if (sqdist == 0 || (maxDistanceDelta >= 0 && sqdist <= maxDistanceDelta * maxDistanceDelta))
+                return target;
+            var dist = (float)Math.Sqrt(sqdist);
+
+            Vector3 v;
+            v.x = current.x + toVector_x / dist * maxDistanceDelta;
+            v.y = current.y + toVector_y / dist * maxDistanceDelta;
+            v.z = current.z + toVector_z / dist * maxDistanceDelta;
+            return v;
+        }
 
         // Moves a point /current/ in a straight line towards a /target/ point.
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
@@ -80,14 +113,20 @@ namespace UnityEngine
                 return target;
             var dist = (float)Math.Sqrt(sqdist);
 
-            return new Vector3(current.x + toVector_x / dist * maxDistanceDelta,
-                current.y + toVector_y / dist * maxDistanceDelta,
-                current.z + toVector_z / dist * maxDistanceDelta);
+            Vector3 v;
+            v.x = current.x + toVector_x / dist * maxDistanceDelta;
+            v.y = current.y + toVector_y / dist * maxDistanceDelta;
+            v.z = current.z + toVector_z / dist * maxDistanceDelta;
+            return v;
         }
 
         [uei.ExcludeFromDocs]
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
-        public static Vector3 SmoothDamp(Vector3 current, Vector3 target, ref Vector3 currentVelocity, float smoothTime, float maxSpeed) => SmoothDamp(in current, in target, ref currentVelocity, smoothTime, maxSpeed);
+        public static Vector3 SmoothDamp(Vector3 current, Vector3 target, ref Vector3 currentVelocity, float smoothTime, float maxSpeed)
+        {
+            float deltaTime = Time.deltaTime;
+            return SmoothDamp(in current, in target, ref currentVelocity, smoothTime, maxSpeed, deltaTime);
+        }
 
         [uei.ExcludeFromDocs]
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
@@ -99,7 +138,12 @@ namespace UnityEngine
 
         [uei.ExcludeFromDocs]
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
-        public static Vector3 SmoothDamp(Vector3 current, Vector3 target, ref Vector3 currentVelocity, float smoothTime) => SmoothDamp(in current, in target, ref currentVelocity, smoothTime);
+        public static Vector3 SmoothDamp(Vector3 current, Vector3 target, ref Vector3 currentVelocity, float smoothTime)
+        {
+            float deltaTime = Time.deltaTime;
+            float maxSpeed = Mathf.Infinity;
+            return SmoothDamp(in current, in target, ref currentVelocity, smoothTime, maxSpeed, deltaTime);
+        }
 
         [uei.ExcludeFromDocs]
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
@@ -111,7 +155,77 @@ namespace UnityEngine
         }
 
         // Gradually changes a vector towards a desired goal over time.
-        public static Vector3 SmoothDamp(Vector3 current, Vector3 target, ref Vector3 currentVelocity, float smoothTime, [uei.DefaultValue("Mathf.Infinity")]  float maxSpeed, [uei.DefaultValue("Time.deltaTime")]  float deltaTime) => SmoothDamp(in current, in target, ref currentVelocity, smoothTime, maxSpeed, deltaTime);
+        public static Vector3 SmoothDamp(Vector3 current, Vector3 target, ref Vector3 currentVelocity, float smoothTime, [uei.DefaultValue("Mathf.Infinity")]  float maxSpeed, [uei.DefaultValue("Time.deltaTime")]  float deltaTime)
+        {
+            float output_x = 0f;
+            float output_y = 0f;
+            float output_z = 0f;
+
+            // Based on Game Programming Gems 4 Chapter 1.10
+            smoothTime = Mathf.Max(0.0001F, smoothTime);
+            float omega = 2F / smoothTime;
+
+            float x = omega * deltaTime;
+            float exp = 1F / (1F + x + 0.48F * x * x + 0.235F * x * x * x);
+
+            float change_x = current.x - target.x;
+            float change_y = current.y - target.y;
+            float change_z = current.z - target.z;
+
+            // Clamp maximum speed
+            float maxChange = maxSpeed * smoothTime;
+
+            float maxChangeSq = maxChange * maxChange;
+            float sqrmag = change_x * change_x + change_y * change_y + change_z * change_z;
+            if (sqrmag > maxChangeSq)
+            {
+                var mag = (float)Math.Sqrt(sqrmag);
+                change_x = change_x / mag * maxChange;
+                change_y = change_y / mag * maxChange;
+                change_z = change_z / mag * maxChange;
+            }
+
+            float target_x = current.x - change_x;
+            float target_y = current.y - change_y;
+            float target_z = current.z - change_z;
+
+            float temp_x = (currentVelocity.x + omega * change_x) * deltaTime;
+            float temp_y = (currentVelocity.y + omega * change_y) * deltaTime;
+            float temp_z = (currentVelocity.z + omega * change_z) * deltaTime;
+
+            currentVelocity.x = (currentVelocity.x - omega * temp_x) * exp;
+            currentVelocity.y = (currentVelocity.y - omega * temp_y) * exp;
+            currentVelocity.z = (currentVelocity.z - omega * temp_z) * exp;
+
+            output_x = target_x + (change_x + temp_x) * exp;
+            output_y = target_y + (change_y + temp_y) * exp;
+            output_z = target_z + (change_z + temp_z) * exp;
+
+            // Prevent overshooting
+            float origMinusCurrent_x = target.x - current.x;
+            float origMinusCurrent_y = target.y - current.y;
+            float origMinusCurrent_z = target.z - current.z;
+            float outMinusOrig_x = output_x - target.x;
+            float outMinusOrig_y = output_y - target.y;
+            float outMinusOrig_z = output_z - target.z;
+
+            if (origMinusCurrent_x * outMinusOrig_x + origMinusCurrent_y * outMinusOrig_y + origMinusCurrent_z * outMinusOrig_z > 0)
+            {
+                output_x = target.x;
+                output_y = target.y;
+                output_z = target.z;
+
+                currentVelocity.x = (output_x - target.x) / deltaTime;
+                currentVelocity.y = (output_y - target.y) / deltaTime;
+                currentVelocity.z = (output_z - target.z) / deltaTime;
+            }
+
+            Vector3 v;
+            v.x = output_x;
+            v.y = output_y;
+            v.z = output_z;
+            return v;
+        }
 
         // Gradually changes a vector towards a desired goal over time.
         public static Vector3 SmoothDamp(in Vector3 current, in Vector3 target, ref Vector3 currentVelocity, float smoothTime, [uei.DefaultValue("Mathf.Infinity")]  float maxSpeed, [uei.DefaultValue("Time.deltaTime")]  float deltaTime)
@@ -179,7 +293,11 @@ namespace UnityEngine
                 currentVelocity.z = (output_z - target.z) / deltaTime;
             }
 
-            return new Vector3(output_x, output_y, output_z);
+            Vector3 v;
+            v.x = output_x;
+            v.y = output_y;
+            v.z = output_z;
+            return v;
         }
 
         // Access the x, y, z components using [0], [1], [2] respectively.
@@ -225,15 +343,15 @@ namespace UnityEngine
 
         // Multiplies two vectors component-wise.
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
-        public static Vector3 Scale(Vector3 a, Vector3 b) => Scale(in a, in b);
+        public static Vector3 Scale(Vector3 a, Vector3 b) => new Vector3() { x = a.x * b.x, y = a.y * b.y, z = a.z * b.z };
 
         // Multiplies two vectors component-wise.
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
-        public static Vector3 Scale(in Vector3 a, in Vector3 b) => new Vector3(a.x * b.x, a.y * b.y, a.z * b.z);
+        public static Vector3 Scale(in Vector3 a, in Vector3 b) => new Vector3() { x = a.x * b.x, y = a.y * b.y, z = a.z * b.z };
 
         // Multiplies every component of this vector by the same component of /scale/.
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
-        public void Scale(Vector3 scale) => Scale(in scale);
+        public void Scale(Vector3 scale) { x *= scale.x; y *= scale.y; z *= scale.z; }
 
         // Multiplies every component of this vector by the same component of /scale/.
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
@@ -241,14 +359,19 @@ namespace UnityEngine
 
         // Cross Product of two vectors.
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
-        public static Vector3 Cross(Vector3 lhs, Vector3 rhs) => Cross(in lhs, in rhs);
+        public static Vector3 Cross(Vector3 lhs, Vector3 rhs) => new Vector3() {
+            x = lhs.y * rhs.z - lhs.z * rhs.y,
+            y = lhs.z * rhs.x - lhs.x * rhs.z,
+            z = lhs.x * rhs.y - lhs.y * rhs.x
+        };
 
         // Cross Product of two vectors.
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
-        public static Vector3 Cross(in Vector3 lhs, in Vector3 rhs) => new Vector3(
-                lhs.y * rhs.z - lhs.z * rhs.y,
-                lhs.z * rhs.x - lhs.x * rhs.z,
-                lhs.x * rhs.y - lhs.y * rhs.x);
+        public static Vector3 Cross(in Vector3 lhs, in Vector3 rhs) => new Vector3() {
+            x = lhs.y * rhs.z - lhs.z * rhs.y,
+            y = lhs.z * rhs.x - lhs.x * rhs.z,
+            z = lhs.x * rhs.y - lhs.y * rhs.x
+        };
 
         // used to allow Vector3s to be used as keys in hash tables
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
@@ -259,51 +382,75 @@ namespace UnityEngine
         public override readonly bool Equals(object other)
         {
             if (other is Vector3 v)
-                return Equals(v);
+                return Equals(in v);
             return false;
         }
 
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
         public readonly bool Equals(Vector3 other) => x == other.x && y == other.y && z == other.z;
 
+        [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
+        public readonly bool Equals(in Vector3 other) => x == other.x && y == other.y && z == other.z;
+
         // Reflects a vector off the plane defined by a normal.
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
-        public static Vector3 Reflect(Vector3 inDirection, Vector3 inNormal) => Reflect(in inDirection, in inNormal);
+        public static Vector3 Reflect(Vector3 inDirection, Vector3 inNormal)
+        {
+            float factor = -2F * Dot(in inNormal, in inDirection);
+
+            Vector3 v;
+            v.x = factor * inNormal.x + inDirection.x;
+            v.y = factor * inNormal.y + inDirection.y;
+            v.z = factor * inNormal.z + inDirection.z;
+            return v;
+        }
 
         // Reflects a vector off the plane defined by a normal.
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
         public static Vector3 Reflect(in Vector3 inDirection, in Vector3 inNormal)
         {
             float factor = -2F * Dot(in inNormal, in inDirection);
-            return new Vector3(factor * inNormal.x + inDirection.x,
-                factor * inNormal.y + inDirection.y,
-                factor * inNormal.z + inDirection.z);
+
+            Vector3 v;
+            v.x = factor * inNormal.x + inDirection.x;
+            v.y = factor * inNormal.y + inDirection.y;
+            v.z = factor * inNormal.z + inDirection.z;
+            return v;
         }
 
         // *undoc* --- we have normalized property now
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
-        public static Vector3 Normalize(Vector3 value) => Normalize(in value);
+        public static Vector3 Normalize(Vector3 value)
+        {
+            float mag = value.magnitude;
+            return mag > kEpsilon ? new Vector3() { x = value.x / mag, y = value.y / mag, z = value.z / mag } : zeroVector;
+        }
 
         // *undoc* --- we have normalized property now
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
         public static Vector3 Normalize(in Vector3 value)
         {
-            float mag = Magnitude(in value);
-            if (mag > kEpsilon)
-                return value / mag;
-            else
-                return zero;
+            float mag = value.magnitude;
+            return mag > kEpsilon ? new Vector3() { x = value.x / mag, y = value.y / mag, z = value.z / mag } : zeroVector;
         }
 
         // Makes this vector have a ::ref::magnitude of 1.
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
         public void Normalize()
         {
-            float mag = Magnitude(in this);
+            float mag = magnitude;
             if (mag > kEpsilon)
-                this = this / mag;
+            {
+                x /= mag;
+                y /= mag;
+                z /= mag;
+            }
             else
-                this = zero;
+            {
+                x = 0f;
+                y = 0f;
+                z = 0f;
+            }
         }
 
         // Returns this vector with a ::ref::magnitude of 1 (RO).
@@ -315,7 +462,7 @@ namespace UnityEngine
 
         // Dot Product of two vectors.
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
-        public static float Dot(Vector3 lhs, Vector3 rhs) => Dot(in lhs, in rhs);
+        public static float Dot(Vector3 lhs, Vector3 rhs) => lhs.x * rhs.x + lhs.y * rhs.y + lhs.z * rhs.z;
 
         // Dot Product of two vectors.
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
@@ -323,7 +470,21 @@ namespace UnityEngine
 
         // Projects a vector onto another vector.
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
-        public static Vector3 Project(Vector3 vector, Vector3 onNormal) => Project(in vector, in onNormal);
+        public static Vector3 Project(Vector3 vector, Vector3 onNormal)
+        {
+            float sqrMag = Dot(in onNormal, in onNormal);
+            if (sqrMag < Mathf.Epsilon)
+                return zero;
+            else
+            {
+                float dotInvSqrMag = Dot(in vector, in onNormal) / sqrMag;
+                Vector3 v;
+                v.x = onNormal.x * dotInvSqrMag;
+                v.y = onNormal.y * dotInvSqrMag;
+                v.z = onNormal.z * dotInvSqrMag;
+                return v;
+            }
+        }
 
         // Projects a vector onto another vector.
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
@@ -334,16 +495,32 @@ namespace UnityEngine
                 return zero;
             else
             {
-                var dot = Dot(in vector, in onNormal);
-                return new Vector3(onNormal.x * dot / sqrMag,
-                    onNormal.y * dot / sqrMag,
-                    onNormal.z * dot / sqrMag);
+                float dotInvSqrMag = Dot(in vector, in onNormal) / sqrMag;
+                Vector3 v;
+                v.x = onNormal.x * dotInvSqrMag;
+                v.y = onNormal.y * dotInvSqrMag;
+                v.z = onNormal.z * dotInvSqrMag;
+                return v;
             }
         }
 
         // Projects a vector onto a plane defined by a normal orthogonal to the plane.
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
-        public static Vector3 ProjectOnPlane(Vector3 vector, Vector3 planeNormal) => ProjectOnPlane(in vector, in planeNormal);
+        public static Vector3 ProjectOnPlane(Vector3 vector, Vector3 planeNormal)
+        {
+            float sqrMag = Dot(in planeNormal, in planeNormal);
+            if (sqrMag < Mathf.Epsilon)
+                return vector;
+            else
+            {
+                float dotInvSqrMag = Dot(in vector, in planeNormal) / sqrMag;
+                Vector3 v;
+                v.x = vector.x - planeNormal.x * dotInvSqrMag;
+                v.y = vector.y - planeNormal.y * dotInvSqrMag;
+                v.z = vector.z - planeNormal.z * dotInvSqrMag;
+                return v;
+            }
+        }
 
         // Projects a vector onto a plane defined by a normal orthogonal to the plane.
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
@@ -354,16 +531,27 @@ namespace UnityEngine
                 return vector;
             else
             {
-                var dot = Dot(in vector, in planeNormal);
-                return new Vector3(vector.x - planeNormal.x * dot / sqrMag,
-                    vector.y - planeNormal.y * dot / sqrMag,
-                    vector.z - planeNormal.z * dot / sqrMag);
+                float dotInvSqrMag = Dot(in vector, in planeNormal) / sqrMag;
+                Vector3 v;
+                v.x = vector.x - planeNormal.x * dotInvSqrMag;
+                v.y = vector.y - planeNormal.y * dotInvSqrMag;
+                v.z = vector.z - planeNormal.z * dotInvSqrMag;
+                return v;
             }
         }
 
         // Returns the angle in degrees between /from/ and /to/. This is always the smallest
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
-        public static float Angle(Vector3 from, Vector3 to) => Angle(in from, in to);
+        public static float Angle(Vector3 from, Vector3 to)
+        {
+            // sqrt(a) * sqrt(b) = sqrt(a * b) -- valid for real numbers
+            float denominator = (float)Math.Sqrt(from.sqrMagnitude * to.sqrMagnitude);
+            if (denominator < kEpsilonNormalSqrt)
+                return 0F;
+
+            float dot = Mathf.Clamp(Dot(in from, in to) / denominator, -1F, 1F);
+            return ((float)Math.Acos(dot)) * Mathf.Rad2Deg;
+        }
 
         // Returns the angle in degrees between /from/ and /to/. This is always the smallest
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
@@ -382,7 +570,16 @@ namespace UnityEngine
         // If you imagine the from and to vectors as lines on a piece of paper, both originating from the same point, then the /axis/ vector would point up out of the paper.
         // The measured angle between the two vectors would be positive in a clockwise direction and negative in an anti-clockwise direction.
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
-        public static float SignedAngle(Vector3 from, Vector3 to, Vector3 axis) => SignedAngle(in from, in to, in axis);
+        public static float SignedAngle(Vector3 from, Vector3 to, Vector3 axis)
+        {
+            float unsignedAngle = Angle(in from, in to);
+
+            float cross_x = from.y * to.z - from.z * to.y;
+            float cross_y = from.z * to.x - from.x * to.z;
+            float cross_z = from.x * to.y - from.y * to.x;
+            float sign = Mathf.Sign(axis.x * cross_x + axis.y * cross_y + axis.z * cross_z);
+            return unsignedAngle * sign;
+        }
 
         // The smaller of the two possible angles between the two vectors is returned, therefore the result will never be greater than 180 degrees or smaller than -180 degrees.
         // If you imagine the from and to vectors as lines on a piece of paper, both originating from the same point, then the /axis/ vector would point up out of the paper.
@@ -401,7 +598,13 @@ namespace UnityEngine
 
         // Returns the distance between /a/ and /b/.
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
-        public static float Distance(Vector3 a, Vector3 b) => Distance(in a, in b);
+        public static float Distance(Vector3 a, Vector3 b)
+        {
+            float diff_x = a.x - b.x;
+            float diff_y = a.y - b.y;
+            float diff_z = a.z - b.z;
+            return (float)Math.Sqrt(diff_x * diff_x + diff_y * diff_y + diff_z * diff_z);
+        }
 
         // Returns the distance between /a/ and /b/.
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
@@ -415,7 +618,26 @@ namespace UnityEngine
 
         // Returns a copy of /vector/ with its magnitude clamped to /maxLength/.
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
-        public static Vector3 ClampMagnitude(Vector3 vector, float maxLength) => ClampMagnitude(in vector, maxLength);
+        public static Vector3 ClampMagnitude(Vector3 vector, float maxLength)
+        {
+            float sqrmag = vector.sqrMagnitude;
+            if (sqrmag > maxLength * maxLength)
+            {
+                float mag = (float)Math.Sqrt(sqrmag);
+                //these intermediate variables force the intermediate result to be
+                //of float precision. without this, the intermediate result can be of higher
+                //precision, which changes behavior.
+                float normalized_x = vector.x / mag;
+                float normalized_y = vector.y / mag;
+                float normalized_z = vector.z / mag;
+                Vector3 v;
+                v.x = normalized_x * maxLength;
+                v.y = normalized_y * maxLength;
+                v.z = normalized_z * maxLength;
+                return v;
+            }
+            return vector;
+        }
 
         // Returns a copy of /vector/ with its magnitude clamped to /maxLength/.
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
@@ -431,9 +653,11 @@ namespace UnityEngine
                 float normalized_x = vector.x / mag;
                 float normalized_y = vector.y / mag;
                 float normalized_z = vector.z / mag;
-                return new Vector3(normalized_x * maxLength,
-                    normalized_y * maxLength,
-                    normalized_z * maxLength);
+                Vector3 v;
+                v.x = normalized_x * maxLength;
+                v.y = normalized_y * maxLength;
+                v.z = normalized_z * maxLength;
+                return v;
             }
             return vector;
         }
@@ -470,19 +694,19 @@ namespace UnityEngine
 
         // Returns a vector that is made from the smallest components of two vectors.
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
-        public static Vector3 Min(Vector3 lhs, Vector3 rhs) => new Vector3(Mathf.Min(lhs.x, rhs.x), Mathf.Min(lhs.y, rhs.y), Mathf.Min(lhs.z, rhs.z));
+        public static Vector3 Min(Vector3 lhs, Vector3 rhs) => new Vector3() { x = Mathf.Min(lhs.x, rhs.x), y = Mathf.Min(lhs.y, rhs.y), z = Mathf.Min(lhs.z, rhs.z) };
 
         // Returns a vector that is made from the smallest components of two vectors.
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
-        public static Vector3 Min(in Vector3 lhs, in Vector3 rhs) => new Vector3(Mathf.Min(lhs.x, rhs.x), Mathf.Min(lhs.y, rhs.y), Mathf.Min(lhs.z, rhs.z));
+        public static Vector3 Min(in Vector3 lhs, in Vector3 rhs) => new Vector3() { x = Mathf.Min(lhs.x, rhs.x), y = Mathf.Min(lhs.y, rhs.y), z = Mathf.Min(lhs.z, rhs.z) };
 
         // Returns a vector that is made from the largest components of two vectors.
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
-        public static Vector3 Max(Vector3 lhs, Vector3 rhs) => new Vector3(Mathf.Max(lhs.x, rhs.x), Mathf.Max(lhs.y, rhs.y), Mathf.Max(lhs.z, rhs.z));
+        public static Vector3 Max(Vector3 lhs, Vector3 rhs) => new Vector3() { x = Mathf.Max(lhs.x, rhs.x), y = Mathf.Max(lhs.y, rhs.y), z = Mathf.Max(lhs.z, rhs.z) };
 
         // Returns a vector that is made from the largest components of two vectors.
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
-        public static Vector3 Max(in Vector3 lhs, in Vector3 rhs) => new Vector3(Mathf.Max(lhs.x, rhs.x), Mathf.Max(lhs.y, rhs.y), Mathf.Max(lhs.z, rhs.z));
+        public static Vector3 Max(in Vector3 lhs, in Vector3 rhs) => new Vector3() { x = Mathf.Max(lhs.x, rhs.x), y = Mathf.Max(lhs.y, rhs.y), z = Mathf.Max(lhs.z, rhs.z) };
 
         static readonly Vector3 zeroVector = new Vector3(0F, 0F, 0F);
         static readonly Vector3 oneVector = new Vector3(1F, 1F, 1F);
@@ -555,26 +779,26 @@ namespace UnityEngine
 
         // Adds two vectors.
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
-        public static Vector3 operator+(in Vector3 a, in Vector3 b) => new Vector3(a.x + b.x, a.y + b.y, a.z + b.z);
+        public static Vector3 operator+(Vector3 a, Vector3 b) => new Vector3() { x = a.x + b.x, y = a.y + b.y, z = a.z + b.z };
         // Subtracts one vector from another.
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
-        public static Vector3 operator-(in Vector3 a, in Vector3 b) => new Vector3(a.x - b.x, a.y - b.y, a.z - b.z);
+        public static Vector3 operator-(Vector3 a, Vector3 b) => new Vector3() { x = a.x - b.x, y = a.y - b.y, z = a.z - b.z };
         // Negates a vector.
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
-        public static Vector3 operator-(in Vector3 a) => new Vector3(-a.x, -a.y, -a.z);
+        public static Vector3 operator-(Vector3 a) => new Vector3() { x = -a.x, y = -a.y, z = -a.z };
         // Multiplies a vector by a number.
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
-        public static Vector3 operator*(in Vector3 a, float d) => new Vector3(a.x * d, a.y * d, a.z * d);
+        public static Vector3 operator*(Vector3 a, float d) => new Vector3() { x = a.x * d, y = a.y * d, z = a.z * d };
         // Multiplies a vector by a number.
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
-        public static Vector3 operator*(float d, in Vector3 a) => new Vector3(a.x * d, a.y * d, a.z * d);
+        public static Vector3 operator*(float d, Vector3 a) => new Vector3() { x = a.x * d, y = a.y * d, z = a.z * d };
         // Divides a vector by a number.
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
-        public static Vector3 operator/(in Vector3 a, float d) => new Vector3(a.x / d, a.y / d, a.z / d);
+        public static Vector3 operator/(Vector3 a, float d) => new Vector3() { x = a.x / d, y = a.y / d, z = a.z / d };
 
         // Returns true if the vectors are equal.
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
-        public static bool operator==(in Vector3 lhs, in Vector3 rhs)
+        public static bool operator==(Vector3 lhs, Vector3 rhs)
         {
             // Returns false in the presence of NaN values.
             float diff_x = lhs.x - rhs.x;
@@ -586,9 +810,10 @@ namespace UnityEngine
 
         // Returns true if vectors are different.
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
-        public static bool operator!=(in Vector3 lhs, in Vector3 rhs) =>
+        public static bool operator!=(Vector3 lhs, Vector3 rhs) =>
             // Returns true in the presence of NaN values.
             !(lhs == rhs);
+
 
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
         public override readonly string ToString() => ToString(null, null);

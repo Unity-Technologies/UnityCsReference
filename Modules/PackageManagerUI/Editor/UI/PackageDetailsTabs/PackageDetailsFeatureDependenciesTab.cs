@@ -149,7 +149,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             if (version == null)
             {
                 var dependencies = m_FeatureVersion?.dependencies;
-                if (dependencies?.Any() != true)
+                if (dependencies == null || dependencies.Length == 0)
                     return;
 
                 if (string.IsNullOrEmpty(selectedDependencyPackageName) || !dependencies.Any(d => d.name == selectedDependencyPackageName))

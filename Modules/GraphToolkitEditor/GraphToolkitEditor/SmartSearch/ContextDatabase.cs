@@ -44,7 +44,7 @@ namespace Unity.GraphToolkit.Editor
             foreach (var type in types)
             {
                 var attributes = type.GetCustomAttributes<LibraryItemAttribute>().ToList();
-                if (!attributes.Any())
+                if (!attributes.HasAny())
                     continue;
 
                 if (!typeof(BlockNodeModel).IsAssignableFrom(type))
@@ -67,7 +67,8 @@ namespace Unity.GraphToolkit.Editor
                         data => data.CreateBlock(type, contextTypeToCreate: m_ContextType))
                     {
                         CategoryPath = categoryPath,
-                        StyleName = attribute.StyleName
+                        StyleName = attribute.StyleName,
+                        IconPath = attribute.IconPath
                     };
                     m_Items.Add(node);
 

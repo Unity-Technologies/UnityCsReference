@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.IO;
 using System.Xml.Serialization;
 using UnityEditorInternal;
@@ -58,10 +59,16 @@ namespace UnityEditor
             MarkSourcePositionsDirty();
         }
 
-        private void SelectProbe(int i)
+        internal void SelectProbe(int i)
         {
             if (!m_Selection.Contains(i))
                 m_Selection.Add(i);
+        }
+
+        internal void DeselectProbe(int i)
+        {
+            if (m_Selection.Contains(i))
+                m_Selection.Remove(i);
         }
 
         public void SelectAllProbes()
@@ -510,6 +517,9 @@ namespace UnityEditor
 
         /// How many points are selected in the array.
         public int SelectedCount { get { return m_Selection.Count; } }
+
+        /// Selected indexes
+        public List<int> SelectedPoints { get { return m_Selection; } }
     }
 
     class LightProbeGroupOverlay : TransientSceneViewOverlay
@@ -532,7 +542,7 @@ namespace UnityEditor
             public static readonly GUIContent editModeInfoBox = EditorGUIUtility.TrTextContentWithIcon("Use the <b>Edit Light Probe Group Tool</b> in the <b>Scene Tools Overlay</b> to edit Light Probe positions.", MessageType.Info);
             // This is a property due to [UUM-78837](https://jira.unity3d.com/browse/UUM-78837)
             // Create GUIStyle lazily on request rather than on static class initialization where the EditorStyles.helpBox may not be initialized yet.
-            public static GUIStyle editModeInfoBoxStyle 
+            public static GUIStyle editModeInfoBoxStyle
             {
                 get
                 {
@@ -641,7 +651,7 @@ namespace UnityEditor
     }
 
     [EditorTool("Light Probe Group", typeof(LightProbeGroup))]
-    class LightProbeGroupTool : EditorTool, IDrawSelectedHandles
+    internal class LightProbeGroupTool : EditorTool, IDrawSelectedHandles
     {
         LightProbeGroup m_LightProbeGroup;
         LightProbeGroupEditor m_Editor;
@@ -707,6 +717,28 @@ namespace UnityEditor
         public override bool IsAvailable() => !SupportedRenderingFeatures.active.overridesLightProbeSystem;
 
         public override GUIContent toolbarIcon => LightProbeGroupOverlay.Styles.toolIcon;
+
+        /// Currently selected points. Each int is an index for LightProbeGroup.probePositions
+        public ReadOnlyCollection<int> GetSelected() => m_Editor.SelectedPoints.AsReadOnly();
+
+        /// Triggers the Tetrahedra to be recalculated
+        public void MarkProbePositionsDirty() => m_Editor.MarkSourcePositionsDirty();
+
+        /// Select a specific Light Probe by index.
+        public void SelectLightProbe(int lightProbeIndex)
+        {
+            if (lightProbeIndex > m_Editor.Count)
+                return;
+            m_Editor.SelectProbe(lightProbeIndex);
+        }
+
+        /// Unselect a specific Light Probe by index.
+        public void UnselectLightProbe(int lightProbeIndex)
+        {
+            if (lightProbeIndex > m_Editor.Count)
+                return;
+            m_Editor.DeselectProbe(lightProbeIndex);
+        }
     }
 
     [CustomEditor(typeof(LightProbeGroup))]

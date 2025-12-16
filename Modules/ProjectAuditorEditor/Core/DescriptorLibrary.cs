@@ -66,14 +66,15 @@ namespace Unity.ProjectAuditor.Editor.Core
         public void OnAfterDeserialize()
         {
             // update dictionary from list
-
-            // TODO: _Hypothetically_, if we're here after loading an old report from JSON, and if we're in a newer
-            // version of the tool with updated descriptors, we might want to keep those descriptors in the library
-            // rather than overwrite them with the ones that were saved alongside the issues. Right now it's such an
-            // edge case that it doesn't really seem worth spending time on.
             if (m_SerializedDescriptors != null)
             {
-                s_Descriptors = m_SerializedDescriptors.ToDictionary(m => new DescriptorId(m.Id).AsInt(), m => m);
+                if (s_Descriptors == null)
+                    s_Descriptors = new Dictionary<int, Descriptor>();
+
+                var deserializedDescriptors = m_SerializedDescriptors.ToDictionary(m => new DescriptorId(m.Id).AsInt(), m => m);
+                foreach (var deserializedDescriptor in deserializedDescriptors)
+                    s_Descriptors.TryAdd(deserializedDescriptor.Key, deserializedDescriptor.Value); // Only add items that don't exist, otherwise we lose all the non-serialized data, eg Fixer
+
                 m_SerializedDescriptors = null;
             }
         }

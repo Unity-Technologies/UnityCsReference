@@ -12,15 +12,6 @@ class PlayModeUserSettings : ScriptableSingleton<PlayModeUserSettings>
 {
     internal const string k_FilePath = "UserSettings/PlayModeUserSettings.asset";
 
-    class SaveAssetsProcessor : AssetModificationProcessor
-    {
-        static string[] OnWillSaveAssets(string[] paths)
-        {
-            instance.SaveIfDirty();
-            return paths;
-        }
-    }
-
     [SerializeField] private PlayModeScenario m_LastActiveConfiguration;
 
     public PlayModeScenario LastActiveConfiguration
@@ -28,14 +19,11 @@ class PlayModeUserSettings : ScriptableSingleton<PlayModeUserSettings>
         get => m_LastActiveConfiguration;
         set
         {
-            m_LastActiveConfiguration = value;
-            EditorUtility.SetDirty(this);
+            if (m_LastActiveConfiguration != value)
+            {
+                m_LastActiveConfiguration = value;
+                Save(true);
+            }
         }
-    }
-
-    internal void SaveIfDirty()
-    {
-        if (EditorUtility.IsDirty(this))
-            Save(true);
     }
 }

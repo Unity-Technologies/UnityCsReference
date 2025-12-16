@@ -3,10 +3,12 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using UnityEngine.Bindings;
 
 namespace UnityEditor.Scripting.ScriptCompilation
 {
     // Keep in sync with EditorScriptCompilationOptions in native
+    [VisibleToOtherModules("UnityEditor.BurstModule")]
     [Flags]
     enum EditorScriptCompilationOptions
     {
@@ -24,5 +26,6 @@ namespace UnityEditor.Scripting.ScriptCompilation
         BuildingExtractTypeDB = 1 << 12,
         BuildingSkipCompile = 1 << 13,
         BuildingCleanCompilation = 1 << 14,
+        BuildingWithoutOptimization = 1 << 15,
     }
 }

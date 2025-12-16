@@ -7,11 +7,14 @@ using System;
 using UnityEditor.Compilation;
 using System.Collections.Generic;
 using System.Linq;
+using UnityEditor.Scripting.ScriptCompilation.MsBuild;
 using UnityEngine;
 using CompilerMessageType = UnityEditor.Scripting.Compilers.CompilerMessageType;
+using UnityEngine.Bindings;
 
 namespace UnityEditor.Scripting.ScriptCompilation
 {
+    [VisibleToOtherModules("UnityEditor.BurstModule")]
     static class EditorCompilationInterface
     {
         static EditorCompilation editorCompilation;
@@ -216,6 +219,10 @@ namespace UnityEditor.Scripting.ScriptCompilation
         [RequiredByNativeCode]
         public static void IsCompiling(out bool isCompiling)
         {
+            if (MsBuildCompilationInterface.IsEnabled())
+            {
+                isCompiling = MsBuildCompilationInterface.Instance.IsCompiling();
+            }
             isCompiling = Instance.IsCompiling();
         }
 

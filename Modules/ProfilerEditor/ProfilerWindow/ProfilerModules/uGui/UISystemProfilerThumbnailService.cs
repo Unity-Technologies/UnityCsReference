@@ -25,7 +25,9 @@ namespace UnityEditor
 
         private Texture2D Generate(int frameIndex, int renderDataIndex, int renderDataCount, bool overdraw)
         {
+#pragma warning disable CS0618
             return m_Disposed ? null : ProfilerProperty.UISystemProfilerRender(frameIndex, renderDataIndex, renderDataCount, overdraw);
+#pragma warning restore CS0618
         }
 
         public Texture2D GetThumbnail(int frameIndex, int renderDataIndex, int infoRenderDataCount, bool overdraw)

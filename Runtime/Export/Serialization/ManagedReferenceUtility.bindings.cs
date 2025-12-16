@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Runtime.CompilerServices;
 using UnityEngine.Bindings;
 using UnityObject = UnityEngine.Object;
 using RefId = System.Int64;
@@ -57,5 +58,6 @@ namespace UnityEngine.Serialization
         {
             return GetManagedReferenceIdsForObjectInternal(obj);
         }
+
     };
 }

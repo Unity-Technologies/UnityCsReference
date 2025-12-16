@@ -42,8 +42,8 @@ namespace UnityEditor
             public static GUIStyle preLabel = "preLabel";
             public static GUIContent smallZoom = EditorGUIUtility.IconContent("PreTextureMipMapLow");
             public static GUIContent largeZoom = EditorGUIUtility.IconContent("PreTextureMipMapHigh");
-            public static GUIContent alphaIcon = EditorGUIUtility.IconContent("PreTextureAlpha");
-            public static GUIContent RGBIcon = EditorGUIUtility.IconContent("PreTextureRGB");
+            public static GUIContent alphaIcon = EditorGUIUtility.TrIconContent("PreTextureAlpha", "Displaying RGB channels. Click to show alpha channel.");
+            public static GUIContent RGBIcon = EditorGUIUtility.TrIconContent("PreTextureRGB", "Displaying alpha channel. Click to show RGB channels.");
         }
 
         public void OnDisable()
@@ -102,7 +102,7 @@ namespace UnityEditor
 
             if (showMode)
             {
-                GUIContent[] kPreviewIcons = { Styles.RGBIcon, Styles.alphaIcon };
+                GUIContent[] kPreviewIcons = { Styles.alphaIcon, Styles.RGBIcon };
                 int index = (int)m_PreviewType;
                 if (GUILayout.Button(kPreviewIcons[index], Styles.preButton))
                     m_PreviewType = (PreviewType)(++index % kPreviewIcons.Length);

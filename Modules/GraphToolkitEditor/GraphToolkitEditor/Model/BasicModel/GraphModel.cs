@@ -284,11 +284,11 @@ namespace Unity.GraphToolkit.Editor
         public virtual bool IsStateMachineGraph => false;
 
         /// <summary>
-        /// Whether the node bypass feature is enabled or not.
+        /// Whether the delete and reconnect feature is enabled or not.
         /// </summary>
-        /// <remarks>The node bypass feature allows to replace a node that is connected to an upstream
+        /// <remarks>The delete and reconnect feature allows to replace a node that is connected to an upstream
         /// and downstream node by a wire connecting directly the upstream and downstream nodes.</remarks>
-        public virtual bool AllowNodeBypass => false;
+        public virtual bool AllowDeleteAndReconnect => false;
 
         /// <summary>
         /// Whether it is allowed to create <see cref="VariableDeclarationModelBase"/>s that have an <see cref="VariableScope.Exposed"/> scope.
@@ -561,9 +561,21 @@ namespace Unity.GraphToolkit.Editor
             m_LocalSubgraphs.Add(localSubgraph);
             localSubgraph.ParentGraph = this;
             localSubgraph.Name = graphName;
+            graphTemplate?.InitLocalSubgraphsPreOnEnable(localSubgraph);
             localSubgraph.OnEnable();
             graphTemplate?.InitBasicGraph(localSubgraph);
             return localSubgraph;
+        }
+
+        internal virtual GraphModel DuplicateLocalSubGraph(GraphModel sourceGraphModel, string name)
+        {
+            var newSubgraph = CreateLocalSubgraph(
+                sourceGraphModel.GetType(),
+                name);
+
+            newSubgraph?.CloneGraph(sourceGraphModel, true);
+
+            return newSubgraph;
         }
 
         internal GraphModel AddLocalSubgraph(GraphModel localSubgraph)
@@ -826,7 +838,7 @@ namespace Unity.GraphToolkit.Editor
             if (oldPort != null)
             {
                 CurrentGraphChangeDescription.AddChangedModel(oldPort, ChangeHint.GraphTopology);
-                if (oldPort.PortType == PortType.MissingPort && !oldPort.GetConnectedWires().Any())
+                if (oldPort.PortType == PortType.MissingPort && !oldPort.GetConnectedWires().HasAny())
                     oldPort.NodeModel?.RemoveUnusedMissingPort(oldPort);
             }
 
@@ -1531,10 +1543,10 @@ namespace Unity.GraphToolkit.Editor
             m_PortWireIndex?.WireRemoved(wireModel);
 
             // Remove missing port with no connections.
-            if (wireModel.ToPort?.PortType == PortType.MissingPort && (!wireModel.ToPort?.GetConnectedWires().Any() ?? false))
+            if (wireModel.ToPort?.PortType == PortType.MissingPort && (!wireModel.ToPort?.GetConnectedWires().HasAny() ?? false))
                 wireModel.ToPort?.NodeModel?.RemoveUnusedMissingPort(wireModel.ToPort);
 
-            if (wireModel.FromPort?.PortType == PortType.MissingPort && (!wireModel.FromPort?.GetConnectedWires().Any() ?? false))
+            if (wireModel.FromPort?.PortType == PortType.MissingPort && (!wireModel.FromPort?.GetConnectedWires().HasAny() ?? false))
                 wireModel.FromPort?.NodeModel?.RemoveUnusedMissingPort(wireModel.FromPort);
         }
 
@@ -2006,9 +2018,9 @@ namespace Unity.GraphToolkit.Editor
 
             if (inputPortModel != null && outputPortModel != null)
             {
-                if (inputPortModel.Capacity == PortCapacity.Single && inputPortModel.GetConnectedWires().Any())
+                if (inputPortModel.Capacity == PortCapacity.Single && inputPortModel.GetConnectedWires().HasAny())
                     return null;
-                if (outputPortModel.Capacity == PortCapacity.Single && outputPortModel.GetConnectedWires().Any())
+                if (outputPortModel.Capacity == PortCapacity.Single && outputPortModel.GetConnectedWires().HasAny())
                     return null;
 
                 if (reuseExistingWire)
@@ -4136,7 +4148,7 @@ namespace Unity.GraphToolkit.Editor
             var nodeMapping = new Dictionary<AbstractNodeModel, AbstractNodeModel>();
             var variableMapping = new Dictionary<VariableDeclarationModelBase, VariableDeclarationModelBase>();
 
-            if (sourceGraphModel.VariableDeclarations.Any())
+            if (sourceGraphModel.VariableDeclarations.HasAny())
             {
                 var variableDeclarationModels = sourceGraphModel.VariableDeclarations;
                 for (var i = 0; i < variableDeclarationModels.Count; i++)
@@ -4234,7 +4246,7 @@ namespace Unity.GraphToolkit.Editor
                     if (metadata != null)
                         remainingNullModelIndexes.Add((metadata.Category, i));
                 }
-                else if (node is ContextNodeModel contextNodeModel && contextNodeModel.GetGraphElementModels().Any(ge => ge == null))
+                else if (node is ContextNodeModel contextNodeModel && contextNodeModel.GetGraphElementModels().HasAny(ge => ge == null))
                 {
                     contextWithNullBlocks.Add(contextNodeModel);
                 }
@@ -4942,7 +4954,7 @@ namespace Unity.GraphToolkit.Editor
         {
             if (graphModel.GraphObject == GraphObject && allowLocalReference)
             {
-                return new GraphReference(graphModel.Guid, default, GraphReference.InstanceIDNone);
+                return new GraphReference(graphModel.Guid, default, EntityId.None);
             }
 
             return new GraphReference(graphModel);

@@ -18,6 +18,7 @@ namespace Unity.ProjectAuditor.Editor.InstructionAnalyzers
         internal const string PAC2003 = nameof(PAC2003);
         internal const string PAC2004 = nameof(PAC2004);
         internal const string PAC2005 = nameof(PAC2005);
+        internal const string PAC2006 = nameof(PAC2006);
 
         static readonly Descriptor k_ObjectAllocationDescriptor = new Descriptor
             (
@@ -70,6 +71,19 @@ namespace Unity.ProjectAuditor.Editor.InstructionAnalyzers
             MessageFormat = "Parameters array '{0} {1}' allocation"
         };
 
+        static readonly Descriptor k_StringFormatArrayAllocationDescriptor = new Descriptor
+            (
+            PAC2006,
+            "Array Allocation",
+            Areas.Memory,
+            "An array is allocated in managed memory. There is a call to string.Format (or an interpolated string) in this method that is using more than 3 format parameters. That may be causing this issue, because it requires an array allocation.",
+            "Try to avoid allocating arrays in frequently-updated code."
+            )
+        {
+            MessageFormat = "'{0}' array allocation",
+            DefaultSeverity = Severity.Minor
+        };
+
         static readonly int k_ParamArrayAtributeHashCode = "System.ParamArrayAttribute".GetHashCode();
 
         readonly OpCode[] m_OpCodes =
@@ -88,6 +102,7 @@ namespace Unity.ProjectAuditor.Editor.InstructionAnalyzers
             registerDescriptor(k_ClosureAllocationDescriptor);
             registerDescriptor(k_ArrayAllocationDescriptor);
             registerDescriptor(k_ParamArrayAllocationDescriptor);
+            registerDescriptor(k_StringFormatArrayAllocationDescriptor);
         }
 
         public override ReportItemBuilder Analyze(InstructionAnalysisContext context)
@@ -139,6 +154,24 @@ namespace Unity.ProjectAuditor.Editor.InstructionAnalyzers
             {
                 var typeReference = (TypeReference)context.Instruction.Operand;
 
+                // Search for a future call, and see if it is string.Format with an object[] for its second parameter. We can provide a more specific message to the user in this case.
+                var next = context.Instruction.Next;
+                while (next != null)
+                {
+                    if (next.OpCode == OpCodes.Call)
+                    {
+                        var callee = (MethodReference)next.Operand;
+                        if (callee.Name == "Format" && callee.DeclaringType.FullName == "System.String")
+                        {
+                            if (callee.HasParameters && callee.Parameters.Count == 2 && callee.Parameters[1].ParameterType.FullName == "System.Object[]") // Check if the second parameter is the parameter array
+                                return context.CreateIssue(IssueCategory.Code, k_StringFormatArrayAllocationDescriptor.Id, typeReference.Name);
+                        }
+                    }
+
+                    next = next.Next;
+                }
+
+                // Object[] allocation
                 return context.CreateIssue(IssueCategory.Code, k_ArrayAllocationDescriptor.Id, typeReference.Name);
             }
         }

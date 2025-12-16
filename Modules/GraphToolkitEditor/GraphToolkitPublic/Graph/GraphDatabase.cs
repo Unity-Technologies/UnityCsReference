@@ -24,7 +24,7 @@ namespace Unity.GraphToolkit.Editor
     /// <see cref="CreateGraph{T}"/> to generate an asset file, and <see cref="LoadGraph{T}"/> to retrieve an existing one.
     /// <br/>
     /// <br/>
-    /// Use <see cref="SaveGraphIfDirty"/> to persist graph data changes, and <see cref="LoadGraphForImporter{T}"/> to load a clean instance during import.
+    /// Use <see cref="SaveGraph"/> to persist graph data changes, and <see cref="LoadGraphForImporter{T}"/> to load a clean instance during import.
     /// </remarks>
     public static partial class GraphDatabase
     {
@@ -70,11 +70,18 @@ namespace Unity.GraphToolkit.Editor
             graphObject.AttachToAssetFile(assetPath, true);
             graphObject.DestroyObjects();
 
+            if (!File.Exists(graphObject.FilePath))
+            {
+                return null;
+            }
+
             return LoadGraph<T>(assetPath);
         }
 
         static void CheckFilePathAndGraphType<T>(string assetPath) where T : Graph
         {
+            GraphObjectFactory.CheckFilePath(assetPath);
+
             var fileExtension = Path.GetExtension(assetPath);
 
             if (string.IsNullOrEmpty(fileExtension) || fileExtension.Length < 2)
@@ -87,13 +94,13 @@ namespace Unity.GraphToolkit.Editor
             if (typeByExtension == null)
             {
                 throw new ArgumentException(
-                    $"assetPath {assetPath} has an unknown extension. You need to register the extension with a GraphAttribute");
+                    $"The assetPath {assetPath} has an unknown extension. You need to register the extension with a GraphAttribute");
             }
 
             if (!typeof(T).IsAssignableFrom(typeByExtension))
             {
                 throw new ArgumentException(
-                    $"assetPath {assetPath} extension does not match type {typeof(T).FullName}. Make sure the extension is registered to the graph type {typeByExtension.FullName}");
+                    $"The assetPath {assetPath} extension does not match type {typeof(T).FullName}. Make sure the extension is registered to the graph type {typeByExtension.FullName}");
             }
         }
 
@@ -128,7 +135,7 @@ namespace Unity.GraphToolkit.Editor
         /// It prevents data loss by ensuring the asset on disk reflects the in-memory graph state.
         /// This method is similar to <see cref="UnityEditor.AssetDatabase.SaveAssetIfDirty(UnityEngine.Object)"/> and only performs a save if the graph is marked dirty.
         /// </remarks>
-        public static void SaveGraphIfDirty(Graph graph)
+        public static void SaveGraph(Graph graph)
         {
             graph.CheckImplementation();
             graph?.m_Implementation.GraphObject?.Save();

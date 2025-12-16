@@ -8,6 +8,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
+using Unity.Collections.LowLevel.Unsafe;
 using UnityEditor.Audio;
 using UnityEditor.Compilation;
 using UnityEditor.ProjectWindowCallback;
@@ -201,14 +202,14 @@ namespace UnityEditor
         internal class DoCreateAssetWithContent : AssetCreationEndAction
         {
             public string filecontent;
-            public Action<int> onComplete;
+            public Action<EntityId> onComplete;
             public override void Action(EntityId entityId, string pathName, string resourceFile)
             {
                 Object o = ProjectWindowUtil.CreateScriptAssetWithContent(pathName, filecontent);
                 ProjectWindowUtil.ShowCreatedAsset(o);
 
                 // Call the completion callback
-                onComplete?.Invoke(o.GetInstanceID());
+                onComplete?.Invoke(o.GetEntityId());
             }
         }
 
@@ -230,10 +231,10 @@ namespace UnityEditor
                 // Check if the output group should be initialized (instanceID is stored in the resource file) TODO: rename 'resourceFile' to 'userData' so it's more obvious that it can be used by all EndNameEditActions
                 if (!string.IsNullOrEmpty(resourceFile))
                 {
-                    int outputInstanceID;
-                    if (System.Int32.TryParse(resourceFile, out outputInstanceID))
+                    if (System.Int32.TryParse(resourceFile, out var outputEntityIdRaw))
                     {
-                        var outputGroup = InternalEditorUtility.GetObjectFromEntityId(outputInstanceID) as AudioMixerGroupController;
+                        Debug.Assert(UnsafeUtility.SizeOf<EntityId>() == sizeof(int), "EntityId size has changed, please update the code to use ulong instead of int below");
+                        var outputGroup = InternalEditorUtility.GetObjectFromEntityId(EntityId.From((int)outputEntityIdRaw)) as AudioMixerGroupController;
                         if (outputGroup != null)
                             controller.outputAudioMixerGroup = outputGroup;
                     }
@@ -494,7 +495,7 @@ namespace UnityEditor
             if (createdVariants.Count > 0)
             {
                 Selection.objects = createdVariants.ToArray();
-                FrameObjectInProjectWindow(createdVariants.Last().GetInstanceID());
+                FrameObjectInProjectWindow(createdVariants.Last().GetEntityId());
             }
 
             return createdVariants.ToArray();
@@ -508,7 +509,15 @@ namespace UnityEditor
                 return string.Format("{0}/{1} Variant.prefab", folder, gameObject.name);
         }
 
+        [Obsolete("CreateAssetWithContent(string, string, Texture2D, Action<int>) is obsolete. Use CreateAssetWithTextContent(string, string, Texture2D, Action<EntityId>) instead.", false)]
         public static void CreateAssetWithContent(string filename, string content, Texture2D icon = null, Action<int> onRenameComplete = null)
+        {
+            var action = ScriptableObject.CreateInstance<DoCreateAssetWithContent>();
+            action.filecontent = content;
+            action.onComplete = onRenameComplete != null ? (id) => onRenameComplete(id) : null; // Wrap to obsolete int version
+            StartNameEditingIfProjectWindowExists(EntityId.None, action, filename, icon, null);
+        }
+        public static void CreateAssetWithTextContent(string filename, string content, Texture2D icon = null, Action<EntityId> onRenameComplete = null)
         {
             var action = ScriptableObject.CreateInstance<DoCreateAssetWithContent>();
             action.filecontent = content;
@@ -554,7 +563,7 @@ namespace UnityEditor
             // Show it
             Selection.activeObject = o;
             if (o)
-                FrameObjectInProjectWindow(o.GetInstanceID());
+                FrameObjectInProjectWindow(o.GetEntityId());
         }
 
         [RequiredByNativeCode]
@@ -781,42 +790,41 @@ namespace UnityEditor
             }
         }
 
-        // InstanceIDs larger than this is considered a favorite by the projectwindows
-        internal static int k_FavoritesStartInstanceID = 1000000000;
+
         internal static string k_DraggingFavoriteGenericData = "DraggingFavorite";
         internal static string k_IsFolderGenericData = "IsFolder";
 
-        internal static bool IsFavoritesItem(EntityId instanceID)
+        internal static bool IsFavoritesItem(EntityId entityId)
         {
-            return instanceID >= k_FavoritesStartInstanceID && instanceID != ProjectBrowser.kPackagesFolderInstanceId;
+            return ProjectBrowser.GetItemType(entityId) == ProjectBrowser.ItemType.SavedFilter;
         }
 
-        internal static void StartDrag(EntityId draggedInstanceID, List<EntityId> selectedInstanceIDs)
+        internal static void StartDrag(EntityId draggedEntityId, List<EntityId> selectedInstanceIDs)
         {
-            if (draggedInstanceID == ProjectBrowser.kPackagesFolderInstanceId)
+            if (draggedEntityId == ProjectBrowser.kPackagesFolderInstanceId)
                 return;
 
             DragAndDrop.PrepareStartDrag();
 
             string title = "";
-            if (IsFavoritesItem(draggedInstanceID))
+            if (IsFavoritesItem(draggedEntityId))
             {
-                DragAndDrop.SetGenericData(k_DraggingFavoriteGenericData, draggedInstanceID);
+                DragAndDrop.SetGenericData(k_DraggingFavoriteGenericData, draggedEntityId);
             }
             else
             {
                 // Normal assets dragging
-                bool isFolder = IsFolder(draggedInstanceID);
-                DragAndDrop.objectReferences = GetDragAndDropObjects(draggedInstanceID, selectedInstanceIDs);
+                bool isFolder = IsFolder(draggedEntityId);
+                DragAndDrop.objectReferences = GetDragAndDropObjects(draggedEntityId, selectedInstanceIDs);
                 DragAndDrop.SetGenericData(k_IsFolderGenericData, isFolder ? "isFolder" : "");
-                string[] paths = GetDragAndDropPaths(draggedInstanceID, selectedInstanceIDs);
+                string[] paths = GetDragAndDropPaths(draggedEntityId, selectedInstanceIDs);
                 if (paths.Length > 0)
                     DragAndDrop.paths = paths;
 
                 if (DragAndDrop.objectReferences.Length > 1)
                     title = "<Multiple>";
                 else
-                    title = ObjectNames.GetDragAndDropTitle(InternalEditorUtility.GetObjectFromEntityId(draggedInstanceID));
+                    title = ObjectNames.GetDragAndDropTitle(InternalEditorUtility.GetObjectFromEntityId(draggedEntityId));
             }
 
             DragAndDrop.StartDrag(title);

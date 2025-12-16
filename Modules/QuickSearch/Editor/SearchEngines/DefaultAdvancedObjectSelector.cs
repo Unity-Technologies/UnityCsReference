@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Linq;
 using UnityEditor.Search.Providers;
 using UnityEditor.SearchService;
+using UnityEngine;
 
 namespace UnityEditor.Search
 {
@@ -52,21 +53,6 @@ namespace UnityEditor.Search
                 yield return SearchService.GetProvider(BuiltInSceneObjectsProvider.type);
         }
 
-        static string BuildInitialQuery(in ObjectSelectorSearchContext selectContext)
-        {
-            var query = string.Empty;
-            var types = selectContext.requiredTypes.ToArray();
-            var typeNames = selectContext.requiredTypeNames.ToArray();
-            for (int i = 0; i < types.Length; ++i)
-            {
-                var name = types[i]?.Name ?? typeNames[i];
-                if (query.Length != 0)
-                    query += ' ';
-                query += $"t:{name}";
-            }
-            return query;
-        }
-
         static void SelectObject(in AdvancedObjectSelectorParameters parameters)
         {
             var selectContext = parameters.context;
@@ -74,15 +60,16 @@ namespace UnityEditor.Search
             if (Utils.IsRunningTests())
                 searchFlags |= SearchFlags.Dockable;
 
-            var searchQuery = BuildInitialQuery(selectContext) ?? "";
+            var requiredTypes = selectContext.requiredTypes.ToArray();
+            var searchQuery = SearchUtils.BuildUnionTypeQuery(requiredTypes) ?? "";
             var selectHandler = parameters.selectorClosedHandler;
             var trackingHandler = parameters.trackingHandler;
 
-            var viewState = SearchViewState.CreatePickerState(null,
+            var viewState = SearchViewState.CreatePickerState("",
                 SearchService.CreateContext(GetObjectSelectorProviders(selectContext), searchQuery, searchFlags), selectHandler, trackingHandler,
-                selectContext.requiredTypeNames.First(), selectContext.requiredTypes.First());
+                requiredTypes);
             if (parameters.context.currentObject)
-                viewState.selectedIds = new int[] { parameters.context.currentObject.GetEntityId()};
+                viewState.selectedIds = new EntityId[] { parameters.context.currentObject.GetEntityId()};
             viewState.context.runtimeContext = new RuntimeSearchContext() {
                 searchEngineContext = selectContext,
                 pickerType = SearchPickerType.AdvancedSearchPicker };

@@ -9,6 +9,7 @@ using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Xml.Linq;
 using Microsoft.Win32;
+using UnityEngine.Bindings;
 
 namespace UnityEditor.Scripting.Compilers
 {
@@ -26,6 +27,7 @@ namespace UnityEditor.Scripting.Compilers
         }
     }
 
+    [VisibleToOtherModules("UnityEditor.BurstModule")]
     internal class UWPSDK
     {
         public readonly Version Version;
@@ -52,6 +54,7 @@ namespace UnityEditor.Scripting.Compilers
         }
     }
 
+    [VisibleToOtherModules("UnityEditor.BurstModule")]
     internal static class UWPReferences
     {
         private sealed class UWPExtension

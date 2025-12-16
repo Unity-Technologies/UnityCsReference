@@ -6,7 +6,6 @@ using System;
 using System.ComponentModel;
 using UnityEditor.Toolbars;
 using UnityEngine;
-using UnityEngine.Bindings;
 using UnityEngine.UIElements;
 
 namespace UnityEditor.Overlays
@@ -26,7 +25,7 @@ namespace UnityEditor.Overlays
     {
         const string k_UxmlPath = "UXML/Overlays/overlay.uxml";
         public static readonly string ussClassName = "unity-overlay";
-        const string k_Highlight = "overlay-box-highlight";
+        internal const string k_Highlight = "overlay-box-highlight";
         const string k_Floating = "overlay--floating";
         internal const string k_HeaderTitle = "overlay-header__title";
         internal const string k_HeaderIcon = "overlay-header__icon";
@@ -80,7 +79,7 @@ namespace UnityEditor.Overlays
         internal bool m_DisableContentModification = false;
 
         // Connections
-        public EditorWindow containerWindow => canvas.containerWindow;
+        public EditorWindow containerWindow => canvas?.containerWindow;
         internal OverlayCanvas canvas
         {
             get => m_Canvas;
@@ -264,7 +263,6 @@ namespace UnityEditor.Overlays
 
         internal bool userControlledVisibility => !(this is IControlVisibility || this is ITransientOverlay);
 
-        [VisibleToOtherModules("UnityEditor.GraphToolkitModule")]
         internal OverlayContainer container
         {
             get => m_Container;
@@ -575,16 +573,6 @@ namespace UnityEditor.Overlays
             return 0;
         }
 
-        internal VisualElement GetSimpleHeader()
-        {
-            var header = new VisualElement();
-            var title = new Label(displayName);
-            title.name = k_HeaderTitle;
-            header.Add(title);
-
-            return header;
-        }
-
         // Rebuild the Overlay contents, taking into account the container and layout. If the container does not support
         // the requested layout, the overlay will be collapsed (the collapsed property will not be modified, and the
         // next time RebuildContent is invoked this method will try again to build the requested layout and un-collapse
@@ -752,7 +740,7 @@ namespace UnityEditor.Overlays
 
             var position = canvas.EnsureOverlapsWindow(new Rect(floatingPosition, m_Size)).position;
             UpdateSnapping(position);
-            
+
             if (m_ModalPopup != null)
                 ApplyPopupSize();
         }
@@ -893,7 +881,9 @@ namespace UnityEditor.Overlays
 
         void ApplyPopupSize()
         {
-            ApplySize(m_ModalPopup.Q(className: k_BoxBackground), true, sizeOverridden);
+            var element = m_ModalPopup.Q(className: k_BoxBackground);
+            ApplySize(element, true, sizeOverridden);
+            element.style.minHeight = new StyleLength(StyleKeyword.Auto);
         }
 
         void ClosePopup()

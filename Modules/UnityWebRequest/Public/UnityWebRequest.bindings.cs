@@ -648,6 +648,10 @@ namespace UnityEngine.Networking
                     throw new InvalidOperationException(UnityWebRequest.GetWebErrorString(ret));
             }
         }
+
+        // accept certificate for addresses which starts from url, required for running tests
+        internal extern static void AcceptCertificateForUrl(string url);
+
         internal static class BindingsMarshaller
         {
             public static IntPtr ConvertToNative(UnityWebRequest unityWebRequest) => unityWebRequest.m_Ptr;

@@ -9,7 +9,7 @@ using System.Reflection;
 using System.Runtime.CompilerServices;
 using UnityEngine;
 
-[assembly: InternalsVisibleTo("Assembly-CSharp-Editor-testable")]
+[assembly: InternalsVisibleTo("Unity.Modules.ShaderCompilationEditor.ShaderKeywordFilter.Tests.Editor")]
 
 namespace UnityEditor.ShaderKeywordFilter
 {

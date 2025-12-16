@@ -27,7 +27,7 @@ namespace UnityEditor.Search
                 m_Results.AddRange(items);
             }
 
-            internal override void Start()
+            public override void Start()
             {
                 base.Start();
                 stopEvent.Reset();
@@ -63,7 +63,7 @@ namespace UnityEditor.Search
         {
             var concurrentList = new ConcurrentBag<SearchItem>();
             var yieldSignal = new EventWaitHandle(false, EventResetMode.AutoReset);
-            var cancelToken = c.search.sessions.cancelToken;
+            var cancelToken = c.search.session.cancelToken;
 
             var task = Task.Run(() =>
             {
@@ -269,7 +269,8 @@ namespace UnityEditor.Search
                 Dispatcher.Enqueue(() =>
                 {
                     var enumerable = callback();
-                    enumerableHandler.Reset(enumerable);
+                    var updateMechanism = new EditorApplicationUpdateMechanism<T>(SearchService.k_MaxFetchTime);
+                    enumerableHandler.Reset(enumerable != null ? new SearchEnumerator<T>(enumerable) : null, updateMechanism);
                     enumerableHandler.Start();
                 });
 

@@ -7,10 +7,12 @@ using UnityEditor;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine.Serialization;
+using UnityEngine.Bindings;
 
 namespace UnityEditor
 {
     /// *undocumented*
+    [VisibleToOtherModules("UnityEditor.BurstModule")]
     [System.Serializable]
     internal class SplitterState : ISerializationCallbackReceiver
     {
@@ -208,14 +210,14 @@ namespace UnityEditor
             }
         }
 
-        public void RelativeToRealSizes(float totalSpace)
+        public void RelativeToRealSizes(float totalSpace,float scale)
         {
             int k;
             float spaceToShare = totalSpace;
 
             for (k = 0; k < relativeSizes.Length; k++)
             {
-                realSizes[k] = GUIUtility.RoundToPixelGrid(relativeSizes[k] * totalSpace);
+                realSizes[k] = GUIUtility.RoundToPixelGrid(relativeSizes[k] * totalSpace, scale);
 
                 if (realSizes[k] < minSizes[k])
                     realSizes[k] = minSizes[k];
@@ -380,6 +382,7 @@ namespace UnityEditor
         }
     }
 
+    [VisibleToOtherModules("UnityEditor.BurstModule")]
     class SplitterGUILayout
     {
         static int splitterHash = "Splitter".GetHashCode();
@@ -400,7 +403,7 @@ namespace UnityEditor
                     float alignedWidth = GUIUtility.RoundToPixelGrid(width);
                     if (alignedWidth != state.lastTotalSize)
                     {
-                        state.RelativeToRealSizes(alignedWidth);
+                        state.RelativeToRealSizes(alignedWidth, GUIUtility.pixelsPerPoint);
                         state.lastTotalSize = alignedWidth;
 
                         // maintain constraints while resizing
@@ -452,7 +455,7 @@ namespace UnityEditor
                     float alignedHeight = GUIUtility.RoundToPixelGrid(height);
                     if (alignedHeight != state.lastTotalSize)
                     {
-                        state.RelativeToRealSizes(alignedHeight);
+                        state.RelativeToRealSizes(alignedHeight, GUIUtility.pixelsPerPoint);
                         state.lastTotalSize = alignedHeight;
 
                         // maintain constraints while resizing

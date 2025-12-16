@@ -23,4 +23,14 @@ internal class UDMRefResolver
     // Note: The definition for IUDMReferenceResolver will live inside
     // Runtime/Serialize/TransferFunctions
     // When that work happens, we can enable this
+    [NativeMethod("UDMRefResolver_Bindings::GetObjectFromReference", IsThreadSafe = true, HasExplicitThis = true)]
+    extern internal UnityEngine.Object GetObjectFromReference(Reference reference);
+
+    [NativeMethod("UDMRefResolver_Bindings::GetInstanceIDFromReference", IsThreadSafe = true, HasExplicitThis = true)]
+    extern internal EntityId GetInstanceIDFromReference(Reference reference);
+
+    internal static class BindingsMarshaller
+    {
+        internal static IntPtr ConvertToUnmanaged(UDMRefResolver resolver) => resolver.m_Ptr;
+    }
 };

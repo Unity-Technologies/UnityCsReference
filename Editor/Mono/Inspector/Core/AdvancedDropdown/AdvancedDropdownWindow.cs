@@ -8,7 +8,9 @@ using System.Linq;
 using UnityEditor.Callbacks;
 using UnityEngine;
 using Event = UnityEngine.Event;
+using System.Runtime.CompilerServices;
 
+[assembly: InternalsVisibleTo("Unity.InternalAPIEngineBridge.RenderPipelines.Core.Editor")]
 namespace UnityEditor.IMGUI.Controls
 {
     internal class AdvancedDropdownWindow : EditorWindow

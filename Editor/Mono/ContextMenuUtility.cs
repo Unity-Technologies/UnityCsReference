@@ -139,8 +139,21 @@ namespace UnityEditor.Actions
 
             AddMenuItemWithContext(menu, null, "GameObject/Move To View", "Move to View");
             AddMenuItemWithContext(menu, null, "GameObject/Align With View", "Align with View");
-            AddAction(menu, "Move to Grid Position", Shortcuts.PushToGrid, hasSelectedGO);
-
+            
+            AddAction(menu, "Move to Closest Grid Point", Shortcuts.PushToGrid, hasSelectedGO);
+            AddAction(menu, "Align to Grid Rotation", Shortcuts.AlignToGrid, hasSelectedGO);
+          
+            menu.AppendSeparator();
+            AddAction(menu, "Grid/Move to Active Object Position", Shortcuts.MoveGridToActiveObject, hasSelectedGO);
+            AddAction(menu, "Grid/Align to Active Object Rotation", Shortcuts.AlignGridToActiveObject, hasSelectedGO);
+            AddAction(menu, "Grid/Move to Handle Position", Shortcuts.MoveGridToHandle, hasSelectedGO);
+            AddAction(menu, "Grid/Align to Handle Rotation", Shortcuts.AlignGridToHandle, hasSelectedGO);
+            
+            menu.AppendSeparator("Grid/");
+            var gridSettings = GridSettings.instance;
+            AddAction(menu, "Grid/Reset to World", Shortcuts.ResetToWorld, !gridSettings.currentGridIsWorld);
+            AddAction(menu, "Grid/Apply Last Custom Values", Shortcuts.ApplyLastCustomValues, gridSettings.currentGridIsWorld && !gridSettings.customGridIsWorld);
+            
             menu.AppendSeparator();
 
             AddAction(menu,

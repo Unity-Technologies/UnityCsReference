@@ -54,20 +54,20 @@ namespace UnityEditor.PackageManager.UI.Internal
         }
 
         [SerializeField]
-        private int m_UserModificationsInstanceId;
+        private EntityId m_UserModificationsEntityId;
         [NonSerialized]
         private RegistryInfoDraftData m_UserModifications;
 
         [SerializeField]
-        private int m_OriginalInstanceId;
+        private EntityId m_OriginalEntityId;
         [NonSerialized]
         private RegistryInfoOriginalData m_Original;
         public RegistryInfoOriginalData original => string.IsNullOrEmpty(m_Original?.id) ? null : m_Original;
 
         public void OnBeforeSerialize()
         {
-            m_UserModificationsInstanceId = m_UserModifications.GetInstanceID();
-            m_OriginalInstanceId = m_Original.GetInstanceID();
+            m_UserModificationsEntityId = m_UserModifications.GetEntityId();
+            m_OriginalEntityId = m_Original.GetEntityId();
         }
 
         // do nothing
@@ -81,11 +81,11 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public void OnEnable()
         {
-            m_UserModifications = ScriptableObject.FindObjectFromInstanceID(m_UserModificationsInstanceId) as RegistryInfoDraftData ??
+            m_UserModifications = ScriptableObject.FindObjectFromInstanceID(m_UserModificationsEntityId) as RegistryInfoDraftData ??
                 ScriptableObject.CreateInstance<RegistryInfoDraftData>();
             m_UserModifications.hideFlags = HideFlags.DontSave;
 
-            m_Original = ScriptableObject.FindObjectFromInstanceID(m_OriginalInstanceId) as RegistryInfoOriginalData ??
+            m_Original = ScriptableObject.FindObjectFromInstanceID(m_OriginalEntityId) as RegistryInfoOriginalData ??
                 ScriptableObject.CreateInstance<RegistryInfoOriginalData>();
             m_Original.hideFlags = HideFlags.DontSave;
         }
@@ -112,7 +112,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         {
             if (registryInfo != null)
             {
-                m_Original = ScriptableObject.FindObjectFromInstanceID(m_OriginalInstanceId) as RegistryInfoOriginalData ??
+                m_Original = ScriptableObject.FindObjectFromInstanceID(m_OriginalEntityId) as RegistryInfoOriginalData ??
                     ScriptableObject.CreateInstance<RegistryInfoOriginalData>();
                 m_Original.hideFlags = HideFlags.DontSave;
                 m_Original.SetRegistryInfo(registryInfo);

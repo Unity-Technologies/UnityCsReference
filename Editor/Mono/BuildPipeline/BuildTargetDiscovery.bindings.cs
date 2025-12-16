@@ -12,13 +12,14 @@ using UnityEngine.Bindings;
 using UnityEngine.Scripting;
 using GraphicsDeviceType = UnityEngine.Rendering.GraphicsDeviceType;
 using UnityEditor.Modules;
+using UnityEngine;
 
 namespace UnityEditor
 {
     [StaticAccessor("BuildTargetDiscovery::GetInstance()", StaticAccessorType.Dot)]
     [NativeHeader("Editor/Src/BuildPipeline/BuildTargetDiscovery.h")]
     [RequiredByNativeCode]
-    [VisibleToOtherModules("UnityEditor.BuildProfileModule")]
+    [VisibleToOtherModules("UnityEditor.BuildProfileModule", "UnityEditor.BurstModule")]
     internal static class BuildTargetDiscovery
     {
         [Flags]
@@ -576,7 +577,7 @@ namespace UnityEditor
                new("25a09d2ed10c42f789b61d99b4d9bf83"),
                new PlatformInfo
                {
-                    displayName = "Nintendo Switch 2",
+                    displayName = "Nintendo Switch™ 2",
                     instructions = L10n.Tr("This platform is not available to download from the Unity website, contact the platform holder directly to learn more."),
                     description =  L10n.Tr("Benefit from Unity’s support for developing games and applications on this platform"),
                     buildTarget = BuildTarget.Switch2,
@@ -597,36 +598,6 @@ namespace UnityEditor
                     iconName = "BuildSettings.WebGL",
                     settingsDocsLink = $"https://docs.unity3d.com/{Help.GetShortReleaseVersion()}/Documentation/Manual/web-setting-configurations.html",
                     flags = PlatformAttributes.IsWindowsBuildTarget | PlatformAttributes.IsWindowsArm64BuildTarget | PlatformAttributes.IsLinuxBuildTarget | PlatformAttributes.IsMacBuildTarget
-                }
-            },
-            {
-               new("d80a96315208455a9ba318d697981cfc"),
-               new PlatformInfo
-               {
-                    displayName = "Facebook Instant Games",
-                    downloadLinkName = "WebGL",
-                    description = L10n.Tr(
-                        "Build for Facebook Instant Games to take advantage of the extensive user base and social features within the Facebook and Messenger app. " +
-                        "This platform offers default settings for both mobile and desktop builds, along with optimization tools and a streamlined publishing process."
-                    ),
-                    subtitle = "From <b>Meta</b>",
-                    buildTarget = BuildTarget.WebGL,
-                    iconName = "BuildSettings.Facebook",
-                    settingsDocsLink = $"https://docs.unity3d.com/{Help.GetShortReleaseVersion()}/Documentation/Manual/web-setting-configurations.html",
-                    internalPackages = new PlatformPackageList
-                    {
-                        requiredPackages = new[]
-                        {
-                            new PlatformPackageInfo(L10n.Tr("Facebook Instant Games SDK"), "com.unity.meta-instant-games-sdk",
-                                L10n.Tr("This package provides C# bindings to the Facebook Instant Games SDK, making it easy to integrate Facebook Instant Games with your Unity project. Since the Facebook Instant Games SDK is originally a JavaScript SDK, this package is compatible only with web builds.")),
-                        },
-                        recommendedPackages = new[]
-                        {
-                            new PlatformPackageInfo(L10n.Tr("Web Stripping Tool"), "com.unity.web.stripping-tool", L10n.Tr("A package for optimizing the code size of Unity Web builds.")),
-                        }
-                    },
-                    flags = PlatformAttributes.IsWindowsBuildTarget | PlatformAttributes.IsWindowsArm64BuildTarget | PlatformAttributes.IsLinuxBuildTarget | PlatformAttributes.IsMacBuildTarget | PlatformAttributes.IsVisibleInPlatformBrowserOnly | PlatformAttributes.IsDerivedBuildTarget,
-                    buildProfilePlatformBannerBgColorHex = "#FFFFFF"
                 }
             },
             {
@@ -724,17 +695,17 @@ namespace UnityEditor
                 new("1e09bd9b55c8d45e9a11b4727bf18e88"),
                 new PlatformInfo
                 {
-                    displayName = "Android Render Service",
+                    displayName = "Unity Render Service for Android™",
                     buildTarget = BuildTarget.Android,
                     iconName = "BuildSettings.Android",
                     internalPackages = new PlatformPackageList
                     {
                         requiredPackages = new[]
                         {
-                            new PlatformPackageInfo(L10n.Tr("Unity Render Service Support"), "com.unity.android.render-service", L10n.Tr("Enables you to build a Unity Render Service on Android and integrate into Android Applications. Contact your sales representative to get access."))
+                            new PlatformPackageInfo(L10n.Tr("Unity Render Service for Android™ Support"), "com.unity.android.render-service", L10n.Tr("Enables building the Unity Render Service for Android™. Contact your sales representative for access."))
                         }
                     },
-                    flags = PlatformAttributes.IsWindowsBuildTarget | PlatformAttributes.IsWindowsArm64BuildTarget | PlatformAttributes.IsLinuxBuildTarget | PlatformAttributes.IsMacBuildTarget | PlatformAttributes.IsDerivedBuildTarget
+                    flags = PlatformAttributes.IsWindowsBuildTarget | PlatformAttributes.IsWindowsArm64BuildTarget | PlatformAttributes.IsLinuxBuildTarget | PlatformAttributes.IsMacBuildTarget | PlatformAttributes.IsDerivedBuildTarget | PlatformAttributes.IsHidden | PlatformAttributes.IsVisibleInPlatformBrowserOnly
                 }
             },
             {
@@ -827,15 +798,42 @@ namespace UnityEditor
         {
             new PlatformGroup
             {
-                groupName = L10n.Tr("Consoles"),
+                groupName = L10n.Tr("Mobile"),
                 platforms = new GUID []
                 {
-                    new("5d4f9b64eeb74b18a2de0de6f0c36931"), // PS4
-                    new("e30a9c34166844499a56eaa4ed115c44"), // PS5
+                    new("b9b35072a6f44c2e863f17467ea3dc13"), // Android
+                    new("ad48d16a66894befa4d8181998c3cb09"), // iOS
+                }
+            },
+             new PlatformGroup
+            {
+                groupName = L10n.Tr("Desktop"),
+                platforms = new GUID []
+                {
+                    new("4e3c793746204150860bf175a9a41a05"), // Windows
+                    new("0d2129357eac403d8b359c2dcbf82502"), // MacOS
+                    new("cb423bfea44b4d658edb8bc5d91a3024"), // Linux
+                }
+            },
+            new PlatformGroup
+            {
+                groupName = L10n.Tr("Web"),
+                platforms = new GUID []
+                {
+                    new("84a3bb9e7420477f885e98145999eb20"), // Web
+                }
+            },
+            new PlatformGroup
+            {
+                groupName = L10n.Tr("Console"),
+                platforms = new GUID []
+                {
                     new("c9f186cd3d594a1496bca1860359f842"), // Xbox X|S
                     new("a6f1094111614cba85f0508bf9778843"), // Xbox One
                     new("08d61a9cdfb840119d9bea5588e2f338"), // Switch
                     new("25a09d2ed10c42f789b61d99b4d9bf83"), // Switch 2
+                    new("5d4f9b64eeb74b18a2de0de6f0c36931"), // PS4
+                    new("e30a9c34166844499a56eaa4ed115c44"), // PS5
                 }
             },
             new PlatformGroup
@@ -850,29 +848,15 @@ namespace UnityEditor
             },
             new PlatformGroup
             {
-                groupName = L10n.Tr("Web"),
+                groupName = L10n.Tr("Development Platforms"),
                 platforms = new GUID []
                 {
-                    new("d80a96315208455a9ba318d697981cfc"), // Facebook Instant Games
-                }
-            },
-            new PlatformGroup
-            {
-                groupName = L10n.Tr("Technology Platforms"),
-                platforms = new GUID []
-                {
-                    new("4e3c793746204150860bf175a9a41a05"), // Windows
-                    new("0d2129357eac403d8b359c2dcbf82502"), // MacOS
-                    new("cb423bfea44b4d658edb8bc5d91a3024"), // Linux
-                    new("b9b35072a6f44c2e863f17467ea3dc13"), // Android
-                    new("ad48d16a66894befa4d8181998c3cb09"), // iOS
-                    new("84a3bb9e7420477f885e98145999eb20"), // Web
-                    new("32e92b6f4db44fadb869cafb8184d021"), // UWP
-                    new("1e09bd9b55c8d45e9a11b4727bf18e88"), // Android Render Service
-                    new("81e4f4c492fd4311bbf5b0b88a28c737"), // tvOS
-                    new("f188349a68c441ec9e3eb4c6f59abd41"), // LinuxHeadlessSimulation
                     new("f1d7bec2fd7f42f481c66ef512f47845"), // EmbeddedLinux
+                    new("f188349a68c441ec9e3eb4c6f59abd41"), // LinuxHeadlessSimulation
                     new("99ef95e1e9b048fa9628d7eed27a8646"), // QNX
+                    // new("1e09bd9b55c8d45e9a11b4727bf18e88"), // Android Render Service will come here, but is hidden until entitlements are available.
+                    new("32e92b6f4db44fadb869cafb8184d021"), // UWP
+                    new("81e4f4c492fd4311bbf5b0b88a28c737"), // tvOS
                     new("f8c7649c24f344129a97cf9854e2d582"), // Kepler
                 }
             },
@@ -936,13 +920,13 @@ namespace UnityEditor
             {
                 foreach (var platform in allPlatforms)
                 {
-                    if(platform.Value.subtarget == StandaloneBuildSubtarget.Server)
+                    if (platform.Value.subtarget == StandaloneBuildSubtarget.Server)
                     {
-                        if((buildTarget == BuildTarget.StandaloneWindows || buildTarget == BuildTarget.StandaloneWindows64) && platform.Value.HasFlag(PlatformAttributes.IsWindowsServerBuildTarget))
+                        if ((buildTarget == BuildTarget.StandaloneWindows || buildTarget == BuildTarget.StandaloneWindows64) && platform.Value.HasFlag(PlatformAttributes.IsWindowsServerBuildTarget))
                             result = platform.Key;
-                        else if(buildTarget == BuildTarget.StandaloneLinux64 && platform.Value.HasFlag(PlatformAttributes.IsLinuxServerBuildTarget))
+                        else if (buildTarget == BuildTarget.StandaloneLinux64 && platform.Value.HasFlag(PlatformAttributes.IsLinuxServerBuildTarget))
                             result = platform.Key;
-                        else if(buildTarget == BuildTarget.StandaloneOSX && platform.Value.HasFlag(PlatformAttributes.IsMacServerBuildTarget))
+                        else if (buildTarget == BuildTarget.StandaloneOSX && platform.Value.HasFlag(PlatformAttributes.IsMacServerBuildTarget))
                             result = platform.Key;
                     }
                 }
@@ -982,7 +966,7 @@ namespace UnityEditor
 
         public static (BuildTarget, StandaloneBuildSubtarget) GetBuildTargetAndSubtargetFromGUID(GUID guid)
         {
-            if(allPlatforms.TryGetValue(guid,out PlatformInfo platformInfo))
+            if (allPlatforms.TryGetValue(guid, out PlatformInfo platformInfo))
                 return (platformInfo.buildTarget, platformInfo.subtarget);
 
             return (BuildTarget.NoTarget, StandaloneBuildSubtarget.Default);

@@ -6,19 +6,76 @@ using System;
 
 namespace UnityEditor
 {
+    /// <summary>
+    /// Build options for Content Directory builds. Multiple options can be combined together.
+    /// </summary>
+    /// <seealso cref="BuildPipeline.BuildContentDirectory"/>
     [Flags]
-    // UCBP-Backport - temporary internal
-    internal enum BuildContentOptions
+    /*UCBP-PUBLIC*/ internal enum BuildContentOptions
     {
+        /// <summary>
+        /// Perform the specified build without any special settings or extra tasks.
+        /// </summary>
         None = 0,
+
+        /// <summary>
+        /// Build content using archive files (.archive) for storage.
+        /// </summary>
+        /// <remarks>
+        /// When this flag is set, the build system will package content into archive files with the ".archive" extension,
+        /// which can improve loading performance and reduce file system overhead.
+        /// 
+        /// This flag is unnecessary if compression is enabled using the <see cref="BuildContentDirectoryParameters.compression"/> field.
+        /// </remarks>
         UseArchive = 1 << 0,
-        GranularBuild = 1 << 1,
-        UdmBuild = 1 << 2,
+
+        /// <summary>
+        /// Do not include type tree information in the serialized data.
+        /// </summary>
+        /// <remarks>
+        /// Disabling type trees reduces build size and build time, but removes the ability to load content built with different
+        /// versions of scripts or Unity. Only use this option if you are certain the runtime environment will match the build
+        /// environment exactly.
+        /// </remarks>
+        /// <seealso cref="BuildAssetBundleOptions.DisableWriteTypeTree"/>
         DisableWriteTypeTree = 1 << 3,
+
+        /// <summary>
+        /// Clear all cached build results, resulting in a full rebuild of content.
+        /// </summary>        
+        /// <seealso cref="BuildOptions.CleanBuildCachee"/>
+        /// <seealso cref="BuildAssetBundleOptions.ForceRebuildAssetBundle"/>
         CleanBuildCache = 1 << 5,
+
+        /// <summary>
+        /// Do not allow the build to succeed if any errors are reported during it.
+        /// </summary>
+        /// <remarks>
+        /// Without this flag, non-fatal errors - such as a failure to compile a shader for a particular platform - will not
+        /// cause the build to fail, but may result in incorrect behaviour at runtime.
+        ///
+        /// This flag is equivalent to <see cref="BuildOptions.StrictMode"/>.
+        /// </remarks>
         FailBuildWhenErrorsLogged = 1 << 9,
-        DryRunBuild = 1 << 10,
+
+        /// <summary>
+        /// Include the Unity version information in the serialized build data.
+        /// </summary>
+        /// <remarks>
+        /// When enabled, the build will include metadata about the Unity version used to create it, which can be useful for
+        /// debugging and version tracking purposes.  However including the Unity version in the build data means that all your build output
+        /// is certain to have new output if you upgrade and rebuild, even for a minor version upgrade.
+        /// </remarks>
         SerializeUnityVersion = 1 << 15,
+
+        /// <summary>
+        /// Generates more information in the BuildReport.
+        /// </summary>
+        /// <remarks>
+        /// The <see cref="Build.Reporting.BuildReport"/> file produced by the build will contain more details (such as <see cref="Build.Reporting.PackedAssets"/>), at
+        /// the cost of a somewhat longer build times and a larger build report file size.
+        /// </remarks>
+        /// <seealso cref="BuildOptions.DetailedBuildReport"/>
         DetailedBuildReport = 1 << 29
     }
 }

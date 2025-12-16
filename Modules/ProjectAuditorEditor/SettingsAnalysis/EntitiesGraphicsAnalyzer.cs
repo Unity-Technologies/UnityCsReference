@@ -25,6 +25,7 @@ namespace Unity.ProjectAuditor.Editor.SettingsAnalysis
             Fixer = (issue, analysisParams) =>
             {
                 PlayerSettingsUtil.SetStaticBatchingEnabled(analysisParams.Platform, false);
+                return true;
             }
         };
 
@@ -38,6 +39,7 @@ namespace Unity.ProjectAuditor.Editor.SettingsAnalysis
             Fixer = (issue, analysisParams) =>
             {
                 PlayerSettingsUtil.SetStaticBatchingEnabled(analysisParams.Platform, false);
+                return true;
             }
         };
 

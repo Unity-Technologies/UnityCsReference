@@ -53,5 +53,20 @@ namespace Unity.UIToolkit.Editor
             labelElement.AddToClassList(labelUssClassName);
             visualInput.AddToClassList(inputUssClassName);
         }
+
+        protected override ScaleField CreateValueField()
+        {
+            return new ScaleField();
+        }
+
+        protected override StyleScale CreateStyleValue(Scale v)
+        {
+            return v;
+        }
+
+        internal override bool EqualsCurrentValue(StyleScale v)
+        {
+            return value == v;
+        }
     }
 }

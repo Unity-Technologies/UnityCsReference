@@ -135,6 +135,12 @@ namespace UnityEngine.TextCore.Text
         /// </summary>
         public void UpdateLookupTables()
         {
+            if (m_SpriteAtlasTexture == null)
+            {
+                Debug.LogWarning("Invalid Sprite Atlas Texture assigned to sprite asset [" + this.name + "]. Cannot update lookup tables.");
+                return;
+            }
+
             width = m_SpriteAtlasTexture.width;
             height = m_SpriteAtlasTexture.height;
             //Debug.Log("Updating [" + this.name + "] Lookup tables.");
@@ -284,7 +290,7 @@ namespace UnityEngine.TextCore.Text
             HashSet<int> searchedSpriteAssets = new HashSet<int>();
 
             // Get instance ID of sprite asset and add to list.
-            int id = spriteAsset.GetInstanceID();
+            int id = spriteAsset.GetEntityId().GetHashCode();
             searchedSpriteAssets.Add(id);
 
             // Search potential fallback sprite assets if includeFallbacks is true.
@@ -314,7 +320,7 @@ namespace UnityEngine.TextCore.Text
                 SpriteAsset temp = spriteAssets[i];
                 if (temp == null) continue;
 
-                int id = temp.GetInstanceID();
+                int id = temp.GetEntityId().GetHashCode();
 
                 // Skip sprite asset if it has already been searched.
                 if (searchedSpriteAssets.Add(id) == false)

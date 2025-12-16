@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System;
 using System.IO;
 using UnityEditor;
 using UnityEngine;
@@ -14,16 +13,6 @@ namespace Unity.GraphToolkit.Editor
         static bool AssetAtPathHasGraphObject(string path)
         {
             return GraphObjectFactory.KnowsExtension(Path.GetExtension(path)) || AssetDatabase.LoadAssetAtPath<GraphObject>(path) != null;
-        }
-
-        static string[] OnWillSaveAssets(string[] paths)
-        {
-            var graphWindows = Resources.FindObjectsOfTypeAll<GraphViewEditorWindow>();
-            foreach (var graphViewEditorWindow in graphWindows)
-            {
-                graphViewEditorWindow.SaveOverlayPositions();
-            }
-            return paths;
         }
 
         static AssetDeleteResult OnWillDeleteAsset(string assetPath, RemoveAssetOptions options)

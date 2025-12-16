@@ -3,9 +3,9 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System.Collections.Generic;
-using System.Linq;
 using Unity.GraphToolkit.CSO;
 using UnityEngine;
+using UnityEngine.Pool;
 using UnityEngine.UIElements;
 
 namespace Unity.GraphToolkit.Editor
@@ -42,8 +42,13 @@ namespace Unity.GraphToolkit.Editor
                 return;
 
             AutoPlacementStateComponent.Changeset changeset;
-            List<GraphElementModel> models;
-            List<AutoPlacementStateComponent.Changeset.ModelToReposition> elementsToReposition;
+
+            using var disposeModels = ListPool<GraphElementModel>.Get(out var models);
+            using var disposeElementsToReposition =
+                ListPool<AutoPlacementStateComponent.Changeset.ModelToReposition>.Get(out var elementsToReposition);
+
+            models.Clear();
+            elementsToReposition.Clear();
 
             // Only peek first to see if we need to wait before processing the placement.
             // Auto placement relies on UI layout to compute node positions, so we need to
@@ -59,14 +64,21 @@ namespace Unity.GraphToolkit.Editor
                 {
                     changeset = m_AutoPlacementState.GetAggregatedChangeset(observation.LastObservedVersion);
 
-                    models = changeset.ModelsToAutoAlign.Select(graphModel.GetModel).Where(m => m != null).ToList();
-                    elementsToReposition = changeset.ModelsToRepositionAtCreation.ToList();
+                    foreach (var modelHash in changeset.ModelsToAutoAlign)
+                    {
+                        var model = graphModel.GetModel(modelHash);
+                        if (model != null)
+                            models.Add(model);
+                    }
+                    foreach (var modelToReposition in changeset.ModelsToRepositionAtCreation)
+                        elementsToReposition.Add(modelToReposition);
                 }
                 else
                 {
                     changeset = null;
-                    models = graphModel.NodeModels.ToList<GraphElementModel>();
-                    elementsToReposition = new List<AutoPlacementStateComponent.Changeset.ModelToReposition>();
+
+                    foreach (var model in graphModel.NodeModels)
+                        models.Add(model);
                 }
 
                 // If any view is missing, then it will be created and layed out during this frame. So, wait until all relevant views are available.

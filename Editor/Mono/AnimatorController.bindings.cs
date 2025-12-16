@@ -4,13 +4,10 @@
 
 using System;
 using UnityEngine;
-using UnityEngine.Playables;
 using UnityEngine.Animations;
 using UnityEngine.Bindings;
-using UnityEngine.Scripting;
+using UnityEngine.Playables;
 using UnityEngineInternal;
-using UnityEditor;
-using System.Runtime.InteropServices;
 
 namespace UnityEditor.Animations
 {
@@ -26,30 +23,26 @@ namespace UnityEditor.Animations
         }
 
         [FreeFunction("AnimatorControllerBindings::Internal_Create")]
-        extern private static void Internal_Create([Writable] AnimatorController self);
+        private static extern void Internal_Create([Writable] AnimatorController self);
 
-        extern public AnimatorControllerLayer[] layers
+        public extern AnimatorControllerLayer[] layers
         {
             [FreeFunction(Name = "AnimatorControllerBindings::GetLayers", HasExplicitThis = true)]
-            [return: UnityMarshalAs(NativeType.ScriptingObjectPtr)]
             get;
-            [FreeFunction(Name = "AnimatorControllerBindings::SetLayers", HasExplicitThis = true, ThrowsException = true)]
-            [param: UnityMarshalAs(NativeType.ScriptingObjectPtr)]
+            [FreeFunction(Name = "AnimatorControllerBindings::SetLayers", HasExplicitThis = true)]
             set;
         }
 
-        extern public AnimatorControllerParameter[] parameters
+        public extern AnimatorControllerParameter[] parameters
         {
             [FreeFunction(Name = "AnimatorControllerBindings::GetParameters", HasExplicitThis = true)]
-            [return: UnityMarshalAs(NativeType.ScriptingObjectPtr)]
             get;
-            [FreeFunction(Name = "AnimatorControllerBindings::SetParameters", HasExplicitThis = true, ThrowsException = true)]
-            [param: UnityMarshalAs(NativeType.ScriptingObjectPtr)]
+            [FreeFunction(Name = "AnimatorControllerBindings::SetParameters", HasExplicitThis = true)]
             set;
         }
 
         [FreeFunction(Name = "AnimatorControllerBindings::GetEffectiveAnimatorController")]
-        extern internal static AnimatorController GetEffectiveAnimatorController(Animator animator);
+        internal static extern AnimatorController GetEffectiveAnimatorController(Animator animator);
 
 
         internal static AnimatorControllerPlayable FindAnimatorControllerPlayable(Animator animator, AnimatorController controller)

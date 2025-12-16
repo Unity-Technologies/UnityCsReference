@@ -16,6 +16,8 @@ using UnityEditor;
 using Unity.PlayMode.Editor;
 using UnityEngine.Multiplayer.Internal;
 using System.Text;
+using UnityEditor.PackageManager;
+using UnityEditor.Multiplayer.Internal;
 
 namespace Unity.Multiplayer.PlayMode.Editor
 {
@@ -41,13 +43,10 @@ namespace Unity.Multiplayer.PlayMode.Editor
         [SerializeField] private bool m_EnableEditors = true;
         [SerializeField] private MainEditorInstanceDescription m_MainEditorInstance = new();
 
-        [Tooltip("Initial Editor Instances when entering playmode. Editor Instances will only have limited authoring capabilities.")]
         [SerializeField] private List<VirtualEditorInstanceDescription> m_EditorInstances = new();
 
-        [Tooltip("Local Instances are builds that will run on the same machine as the editor.")]
         [SerializeField] private List<LocalInstanceDescription> m_LocalInstances = new();
 
-        [Tooltip("Remote Instances are builds that will get deployed to UGS and will run there.")]
         [SerializeField] private List<RemoteInstanceDescription> m_RemoteInstances = new();
 
         private Scenario m_Scenario;
@@ -58,7 +57,10 @@ namespace Unity.Multiplayer.PlayMode.Editor
         internal MainEditorInstanceDescription EditorInstance => m_MainEditorInstance;
         internal ReadOnlyCollection<VirtualEditorInstanceDescription> VirtualEditorInstances => m_EditorInstances.AsReadOnly();
         internal ReadOnlyCollection<LocalInstanceDescription> LocalInstances => m_LocalInstances.AsReadOnly();
-        internal ReadOnlyCollection<RemoteInstanceDescription> RemoteInstances => m_RemoteInstances.AsReadOnly();
+        internal ReadOnlyCollection<RemoteInstanceDescription> RemoteInstances
+            => EditorMultiplayerManager.enablePlayModeRemoteDeployment
+                ? m_RemoteInstances.AsReadOnly()
+                : new ReadOnlyCollection<RemoteInstanceDescription>(Array.Empty<RemoteInstanceDescription>());
 
         internal override bool SupportsPauseAndStep => true;
 
@@ -99,7 +101,7 @@ namespace Unity.Multiplayer.PlayMode.Editor
             }
 
             instances.AddRange(m_LocalInstances);
-            instances.AddRange(m_RemoteInstances);
+            instances.AddRange(RemoteInstances);
             return instances;
         }
 
@@ -296,11 +298,10 @@ namespace Unity.Multiplayer.PlayMode.Editor
                 CreateAndLoadScenario();
         }
 
-
         internal override void ExecuteStart()
         {
             if (!EditorSceneManager.SaveCurrentModifiedScenesIfUserWantsTo())
-                throw new TaskCanceledException();
+                return;
 
             // Quick Sanity check.
             if (m_Scenario == null)
@@ -312,6 +313,7 @@ namespace Unity.Multiplayer.PlayMode.Editor
         private async Task StartScenarioAsync()
         {
             m_CancellationTokenSource = new CancellationTokenSource();
+
             // Check instance(s) setup before starting the scenario
             await RunPreStartChecksAsync(m_CancellationTokenSource.Token);
 
@@ -452,7 +454,10 @@ namespace Unity.Multiplayer.PlayMode.Editor
                 takenNames.Add(instance.Name);
             }
 
-            // Check if local mobile device instances have a device selected that is unique
+            // Iterate through all local instances.
+            // - Check if local mobile device instances have a device selected that is unique.
+            // - Track any Local Sim instances that we have for verification later.
+            bool hasLocalSimInstances = false;
             List<LocalInstanceDescription> localMobileDevices = new List<LocalInstanceDescription>();
             foreach (var instance in allInstances)
             {
@@ -462,6 +467,10 @@ namespace Unity.Multiplayer.PlayMode.Editor
                     {
                         if (InternalUtilities.IsAndroidBuildTarget(localInstance.BuildProfile))
                             localMobileDevices.Add(localInstance);
+
+                        if (localInstance.ServerSettings.DeployMode != ServerSettings.ServerDeployMode.Local
+                            && LocalDeploymentUtility.IsLocalDeploymentAvailable())
+                            hasLocalSimInstances = true;
                     }
                 }
             }
@@ -500,23 +509,30 @@ namespace Unity.Multiplayer.PlayMode.Editor
             if (!localBuildTargetsCanRunOnPlatform)
                 reasonForInvalidConfiguration += "\nLocal instance(s) buildtarget cannot run on current platform.";
 
-            // Check if we have the correct packages installed for running a remote server.
-            if (!PackagesForRemoteDeployInstalled(out var missingPacks) && m_RemoteInstances.Count > 0)
+
+            var remoteInstances = RemoteInstances;
+            // Check if we have the correct packages installed for running a remote server or Local Sim Instances
+            var missingRequiredMultiplayPackages = false;
+            var requirePacks = hasLocalSimInstances || remoteInstances.Count > 0;
+            if (requirePacks && !PackagesForRemoteDeployInstalled(out var missingPacks))
+            {
                 reasonForInvalidConfiguration += "\nPackages are missing:\n" + string.Join("\n", missingPacks);
+                missingRequiredMultiplayPackages = true;
+            }
 
             // Check if remote build targets are supported to be build.
-            var remoteBuildTargetsCorrect = m_RemoteInstances.Count == 0 || IsConditionMetForAll(instance =>
+            var remoteBuildTargetsCorrect = remoteInstances.Count == 0 || IsConditionMetForAll(instance =>
                 instance != null && instance.BuildProfile != null &&
                 InternalUtilities.IsBuildProfileSupported(instance.BuildProfile) &&
                 !InternalUtilities.IsAndroidBuildTarget(instance.BuildProfile),
-                m_RemoteInstances);
+                remoteInstances);
             if (!remoteBuildTargetsCorrect)
                 reasonForInvalidConfiguration += "\nRemote instance(s) have incorrect build target.";
 
             // Check if remote instances have incorrect multiplayer role
-            var remoteInstancesHaveServerRole = m_RemoteInstances.Count == 0 || IsConditionMetForAll(instance =>
+            var remoteInstancesHaveServerRole = remoteInstances.Count == 0 || IsConditionMetForAll(instance =>
                 instance != null && LocalDeploymentUtility.IsServerProfileOrRole(instance.BuildProfile),
-                m_RemoteInstances);
+                remoteInstances);
 
             if (!remoteInstancesHaveServerRole)
                 reasonForInvalidConfiguration += "\nRemote instance(s) must have Server Role or a Server Build Profile.";
@@ -529,7 +545,7 @@ namespace Unity.Multiplayer.PlayMode.Editor
             reasonForInvalidConfiguration = reasonForInvalidConfiguration.Trim('\n');
             return localBuildTargetsAreSupported && remoteBuildTargetsCorrect && localBuildTargetsCanRunOnPlatform &&
                    configHasMoreServerInstances && localMobileDevicesSelected && !containsTakenName &&
-                   !containsTakenDeviceID && remoteInstancesHaveServerRole;
+                   !containsTakenDeviceID && remoteInstancesHaveServerRole && !missingRequiredMultiplayPackages;
         }
 
         bool ConfigurationHasMaxOneServer()
@@ -555,6 +571,37 @@ namespace Unity.Multiplayer.PlayMode.Editor
 
             missingPacks.AddRange(k_RequiredPackagesForRemoteInstances);
             return false;
+        }
+
+        internal static async Task LoadPackagesAsync()
+        {
+            // Grab required packages as an array of strings
+            var packages = k_RequiredPackagesForRemoteInstances;
+            string[] packagesArray = new string[packages.Count];
+            packages.CopyTo(packagesArray, 0);
+
+            // Perform package install
+            var request = Client.AddAndRemove(packagesArray);
+            while (!request.IsCompleted)
+            {
+                // Await and don't block the current thread
+                await Task.Delay(100);
+                await Task.Yield();
+            }
+
+            if (request.Error != null)
+                Debug.LogError($"Failed to install packages: {request.Error.message}");
+        }
+
+        internal static void PreventScriptableObjectUnload(ScriptableObject obj)
+        {
+            // The editor can perform some cleaning of all objects and assets during Play Mode transitions.
+            // Only persistent objects (the ones attached to an asset file) and those marked with DontSaveInEditor survive this cleaning.
+            // We also want to avoid setting the DontUnloadUnusedAsset flag, since that would prevent proper cleanup of
+            // ScenarioObjects when their owning Scenario is disposed.
+            const HideFlags k_HideFlags = HideFlags.DontSaveInEditor;
+
+            obj.hideFlags |= k_HideFlags;
         }
     }
 }

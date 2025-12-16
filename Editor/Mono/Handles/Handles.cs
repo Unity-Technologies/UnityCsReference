@@ -16,6 +16,7 @@ namespace UnityEditor
     {
         public int          gridID;
         public Vector3      pivot;
+        public Quaternion   rotation;
         public Color        color;
         public Vector2      size;
     }
@@ -565,13 +566,13 @@ namespace UnityEditor
         public static Vector3 FreeMoveHandle(Vector3 position, Quaternion rotation, float size, Vector3 snap, CapFunction capFunction)
         {
             int id = GUIUtility.GetControlID(s_FreeMoveHandleHash, FocusType.Passive);
-            return UnityEditorInternal.FreeMove.Do(id, position, rotation, size, snap, capFunction);
+            return UnityEditorInternal.FreeMove.Do(id, position, size, snap, capFunction);
         }
 
         [Obsolete("Rotation parameter is obsolete. (UnityUpgradable) -> !2")]
         public static Vector3 FreeMoveHandle(int controlID, Vector3 position, Quaternion rotation, float size, Vector3 snap, CapFunction capFunction)
         {
-            return UnityEditorInternal.FreeMove.Do(controlID, position, rotation, size, snap, capFunction);
+            return UnityEditorInternal.FreeMove.Do(controlID, position, size, snap, capFunction);
         }
 
         public static Vector3 FreeMoveHandle(Vector3 position, float size, Vector3 snap, CapFunction capFunction)
@@ -1056,10 +1057,31 @@ namespace UnityEditor
                 foreach (var t in transforms)
                 {
                     if (t != null)
-                        t.position = Snapping.Snap(t.position, Vector3.Scale(GridSettings.size, new SnapAxisFilter(axis)));
+                    {
+                        var gridSettings = GridSettings.instance;
+                        var pos = Quaternion.Inverse(gridSettings.rotation) * (t.position - gridSettings.position);
+                        pos = Snapping.Snap(pos, Vector3.Scale(gridSettings.gridSize, new SnapAxisFilter(axis)));
+                        t.position = gridSettings.rotation * pos + gridSettings.position;
+                    }
                 }
             }
         }
+        
+        internal static void AlignToGrid(Transform[] transforms)
+        {
+            if (transforms != null && transforms.Length > 0)
+            {
+                foreach (var t in transforms)
+                {
+                    if (t != null)
+                    {
+                        var gridSettings = GridSettings.instance;
+                        t.rotation = gridSettings.rotation;
+                    }
+                }
+            }
+        }
+
 
         // Snap all positions to the grid
         public static void SnapToGrid(Vector3[] positions, SnapAxis axis = SnapAxis.All)
@@ -1068,9 +1090,41 @@ namespace UnityEditor
             {
                 for(int i = 0; i<positions.Length; i++)
                 {
-                    positions[i] = Snapping.Snap(positions[i], Vector3.Scale(GridSettings.size, new SnapAxisFilter(axis)));
+                    var gridSettings = GridSettings.instance;
+                    var pos = Quaternion.Inverse(gridSettings.rotation) * (positions[i] - gridSettings.position);
+                    pos = Snapping.Snap(pos, Vector3.Scale(gridSettings.gridSize, new SnapAxisFilter(axis)));
+                    positions[i] = gridSettings.rotation * pos + gridSettings.position;
                 }
             }
+        }
+        
+        // Snaps val to grid based on constraintDirection
+        internal static Vector3 SnapToGrid(Vector3 val, Vector3 constraintDirection, bool invertAxisFilter)
+        {
+            var initialVal = val;
+            var preSnapVal = val;
+
+            var gridSettings = GridSettings.instance;
+            if (Tools.pivotRotation == PivotRotation.Grid)
+            {
+                val = Quaternion.Inverse(gridSettings.rotation) * (val - gridSettings.position); 
+                constraintDirection = Quaternion.Inverse(gridSettings.rotation) * constraintDirection;
+                
+                preSnapVal = val;
+            }
+
+            SnapAxis snapAxis;
+            if (invertAxisFilter)
+                snapAxis = (SnapAxis)~new SnapAxisFilter(constraintDirection);
+            else
+                snapAxis = (SnapAxis)new SnapAxisFilter(constraintDirection);
+           
+            val = Snapping.Snap(val, gridSettings.gridSize, snapAxis);
+            
+            if (Tools.pivotRotation == PivotRotation.Grid)
+                val = initialVal + gridSettings.rotation * (val - preSnapVal);
+
+            return val;
         }
 
         // The camera used for deciding where 3D handles end up
@@ -1459,7 +1513,7 @@ namespace UnityEditor
         {
             if(Event.current.type != EventType.Repaint)
                 return;
-            Internal_DrawOutline(parentNodeColor, childNodeColor, 0, parentRenderers, childRenderers, OutlineDrawMode.SelectionOutline, fillOpacity, fillOpacity);
+            Internal_DrawOutline(parentNodeColor, childNodeColor, EntityId.None, parentRenderers, childRenderers, OutlineDrawMode.SelectionOutline, fillOpacity, fillOpacity);
             Internal_FinishDrawingCamera(Camera.current, true);
         }
 
@@ -1522,10 +1576,10 @@ namespace UnityEditor
             var childOutlineAlpha = childNodeColor.a;
             parentNodeColor.a = outlineAlpha;
             childNodeColor.a = outlineAlpha;
-            Internal_DrawOutline(parentNodeColor, childNodeColor, 0, parentRenderers, childRenderers, outlineMode, parentOutlineAlpha, childOutlineAlpha);
+            Internal_DrawOutline(parentNodeColor, childNodeColor, EntityId.None, parentRenderers, childRenderers, outlineMode, parentOutlineAlpha, childOutlineAlpha);
         }
 
-        internal static void DrawSubmeshOutline(Color parentNodeColor, Color childNodeColor, float outlineAlpha, int submeshOutlineMaterialId)
+        internal static void DrawSubmeshOutline(Color parentNodeColor, Color childNodeColor, float outlineAlpha, EntityId submeshOutlineMaterialId)
         {
             EntityId[] parentRenderers, childRenderers;
             HandleUtility.FilterEntityIds(Selection.gameObjects, out parentRenderers, out childRenderers, out _);
@@ -1727,7 +1781,10 @@ namespace UnityEditor
         {
             if (division < 1)
                 throw new ArgumentOutOfRangeException("division", "Must be greater than zero");
-            return Internal_MakeBezierPoints(startPosition, endPosition, startTangent, endTangent, division);
+            var points = new Vector3[division];
+            Internal_MakeBezierPoints(points.AsSpan(), startPosition, endPosition, startTangent, endTangent);
+
+            return points;
         }
 
         public static void DrawTexture3DSDF(Texture texture,

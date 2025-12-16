@@ -237,7 +237,10 @@ namespace UnityEditor
                 position = FitRectToScreen(m_PixelRect, m_PixelRect.center, true, this);
 
             if (rootView)
-                rootView.position = new Rect(0, 0, GUIUtility.RoundToPixelGrid(m_PixelRect.width), GUIUtility.RoundToPixelGrid(m_PixelRect.height));
+            {
+                float scale = GetBackingScale();
+                rootView.position = new Rect(0, 0, GUIUtility.RoundToPixelGrid(m_PixelRect.width, scale), GUIUtility.RoundToPixelGrid(m_PixelRect.height, scale));
+            }
         }
 
         public void OnEnable()

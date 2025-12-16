@@ -30,45 +30,7 @@ namespace UnityEditor.Build.Reporting
     ///
     ///Note: For large builds the PackedAsset objects can grow very large, and consume a significant amount of memory.  When using this data it is recommended to do a single pass through the data to populate smaller data structures or to export it to another format, as required by external tools.</remarks>
     ///<example>
-    ///  <code><![CDATA[
-    ///using UnityEngine;
-    ///using UnityEditor;
-    ///using UnityEditor.Build.Reporting;
-    ///using System.Text;
-    ///
-    ///public class BuildReportPackedAssetsExample
-    ///{
-    ///    [MenuItem("Example/Show PackedAssets from Latest Build")]
-    ///    static void ShowPackedAssets()
-    ///    {
-    ///        var buildReport = BuildReport.GetLatestReport();
-    ///
-    ///        if (buildReport == null)
-    ///        {
-    ///            Debug.Log("Please run a Player or AssetBundle build, then try again");
-    ///            return;
-    ///        }
-    ///
-    ///        var sb = new StringBuilder();
-    ///        var packedAssets = buildReport.packedAssets;
-    ///
-    ///        sb.AppendLine("Packed Assets:");
-    ///        foreach (var packedAsset in buildReport.packedAssets)
-    ///        {
-    ///            var packedAssetInfoArray = packedAsset.contents;
-    ///            sb.AppendLine($"  {packedAsset.shortPath} Item count: {packedAssetInfoArray.Length}");
-    ///        }
-    ///
-    ///        //Example output:
-    ///
-    ///        //Packed Assets:
-    ///        //  globalgamemanagers.assets Item count: 11
-    ///        //  resources.assets Item count: 2
-    ///        // etc.
-    ///        Debug.Log(sb.ToString());
-    ///    }
-    ///}
-    ///]]></code>
+    ///<code source="../Tests/BuildReporting/Assets/Editor/ReferenceExamples/PackedAssets.cs"/>
     ///</example>
     ///<seealso cref="Build.Reporting.PackedAssetInfo" />
     [NativeType(Header = "Modules/BuildReportingEditor/Public/PackedAssets.h")]

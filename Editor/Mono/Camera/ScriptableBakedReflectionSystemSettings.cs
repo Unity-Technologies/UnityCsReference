@@ -50,6 +50,13 @@ namespace UnityEditor.Experimental.Rendering
             }
         }
 
+        // Swap the current system implementation without disposing either of them.
+        internal static void SwapSystem(in IScriptableBakedReflectionSystem inSystem, out IScriptableBakedReflectionSystem outSystem)
+        {
+            outSystem = s_Instance.implementation;
+            s_Instance.implementation = inSystem;
+        }
+
         static ScriptableBakedReflectionSystemWrapper s_Instance = null;
 
         [UsedImplicitly, RequiredByNativeCode]

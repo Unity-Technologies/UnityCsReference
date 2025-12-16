@@ -97,15 +97,15 @@ namespace UnityEditor
             CompressCubemapTexture(texture, format, TextureCompressionQuality.Normal);
         }
 
-        private static System.Collections.Generic.Dictionary<int, Texture> s_ActiveIconPathLUT = new System.Collections.Generic.Dictionary<int, Texture>();
+        private static System.Collections.Generic.Dictionary<EntityId, Texture> s_ActiveIconPathLUT = new System.Collections.Generic.Dictionary<EntityId, Texture>();
         internal static Texture GetIconInActiveState(Texture icon)
         {
             if (icon == null)
                 return null;
 
             Texture selectedIcon;
-            var iconInstanceId = icon.GetInstanceID();
-            if (!s_ActiveIconPathLUT.TryGetValue(iconInstanceId, out selectedIcon))
+            var iconEntityId = icon.GetEntityId();
+            if (!s_ActiveIconPathLUT.TryGetValue(iconEntityId, out selectedIcon))
             {
                 const string iconText = " icon";
                 const string onText = " on";
@@ -120,7 +120,7 @@ namespace UnityEditor
                     selectedIconPath = path.Replace(".png", onText + ".png");
 
                 selectedIcon = EditorResources.Load<Texture>(selectedIconPath, false);
-                s_ActiveIconPathLUT[iconInstanceId] = selectedIcon;
+                s_ActiveIconPathLUT[iconEntityId] = selectedIcon;
             }
 
             return selectedIcon;
@@ -478,7 +478,7 @@ namespace UnityEditor
         }
 
 
-        //This method is only valid during onGUI callbacks, prefer DisplayCustomMenuWithSeparatorsWithScreenSpacePosition that work al the time. 
+        //This method is only valid during onGUI callbacks, prefer DisplayCustomMenuWithSeparatorsWithScreenSpacePosition that work al the time.
         internal static void DisplayCustomMenuWithSeparators(Rect position, string[] options, bool[] enabled, bool[] separator, int[] selected, SelectMenuItemFunction callback, object userData, bool showHotkey, bool allowDisplayNames, bool shouldDiscardMenuOnSecondClick = false)
         {
             Vector2 temp = GUIUtility.GUIToScreenPoint(new Vector2(position.x, position.y));

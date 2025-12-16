@@ -31,15 +31,15 @@ namespace UnityEditor.PackageManager.UI.Internal
         private const string k_DownloadInfoUri = "/-/api/legacy-package-download-info";
         private const string k_TermsCheckUri = "/-/api/terms/check";
 
-        internal const int k_MaxRetries = 3;
-        internal const int k_ClientErrorResponseCode = 400;
-        internal const int k_ServerErrorResponseCode = 500;
+        private const int k_MaxRetries = 3;
+        private const int k_ClientErrorResponseCode = 400;
+        private const int k_ServerErrorResponseCode = 500;
 
-        public static readonly string k_ErrorMessage = L10n.Tr("Something went wrong. Please try again later.");
+        private static readonly string k_ErrorMessage = L10n.Tr("Something went wrong. Please try again later.");
 
         private const int k_GeneralServerError = 599;
         private const int k_GeneralClientError = 499;
-        internal static readonly Dictionary<int, string> k_KnownErrors = new Dictionary<int, string>
+        private static readonly Dictionary<int, string> k_KnownErrors = new Dictionary<int, string>
         {
             [400] = "Bad Request",
             [401] = "Unauthorized",

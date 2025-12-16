@@ -13,11 +13,40 @@ using UnityEditor.UIElements;
 using System;
 using System.Reflection;
 using System.IO;
+using System.ComponentModel;
 
 namespace UnityEditor
 {
     sealed partial class MainToolbarWindow : EditorWindow, ISupportsOverlaysCustomMode
     {
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        internal sealed class TestScope
+        {
+            MainToolbarWindow m_Instance;
+
+            public TestScope(MainToolbarWindow instance)
+            {
+                m_Instance = instance;
+            }
+
+            public void PopulateFullMenu(AbstractGenericMenu menu)
+            {
+                m_Instance.PopulateFullMenu(menu);
+            }
+
+            public void PopulateMenuWithOverlays(AbstractGenericMenu menu, bool includeUtilityFunctions)
+            {
+                m_Instance.PopulateMenuWithOverlays(menu, includeUtilityFunctions);
+            }
+
+            public void UpdateClutchInput(Event evt)
+            {
+                m_Instance.m_EditModeState.UpdateClutchInput(evt);
+            }
+
+            public bool editModeActive => m_Instance.m_EditModeState.active;
+        }
+
         sealed class EditMode
         {
             public bool active => m_CurrentState != MainToolbarEditMode.Inactive;
@@ -74,7 +103,12 @@ namespace UnityEditor
         const string k_MainToolbarUSSClassName = "unity-editor-main-toolbar";
         const string k_MainToolbarEditModeClassName = k_MainToolbarUSSClassName + "--edit-mode";
         const string k_MainToolbarTempEditModeClassName = k_MainToolbarUSSClassName + "--temp-edit-mode";
-        static readonly string k_EditModeName = L10n.Tr("Edit Mode");
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        internal static readonly string editModeName = L10n.Tr("Edit Mode");
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        internal static readonly string showAllName = L10n.Tr("Show All");
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        internal static readonly string hideAllName = L10n.Tr("Hide All");
 
         internal static MainToolbarWindow instance;
 
@@ -93,6 +127,10 @@ namespace UnityEditor
             foreach (var def in MainToolbar.GetAllElementDefinitions())
             {
                 var path = Path.GetDirectoryName(def.attr.path);
+                // UUM-116278: On Windows leaving the '\\' will result in a new empty menu later in
+                // the menu creation as dropdown.AddItem uses '/' as a submenu separator.
+                path = path.Replace(Path.DirectorySeparatorChar, '/');
+
                 while (!string.IsNullOrEmpty(path))
                 {
                     uniquePaths.Add(path);
@@ -129,7 +167,7 @@ namespace UnityEditor
 
             m_EditModeState = new EditMode(this);
             EditorApplication.modifierKeysChanged += OnModifierKeyChanged;
-            
+
             if (OverlayCanvasesData.instance.GetCanvasData(this, out var data))
             {
                 overlayCanvas.ApplySaveData(data.m_SaveData.ToArray(), data.m_DynamicPanelContainerData.ToArray());
@@ -195,15 +233,9 @@ namespace UnityEditor
             editModeActive = !editModeActive;
         }
 
-        static HashSet<Overlay> s_UnityOnlyOverlays = new();
-        internal void ShowMenu(Rect dropdownRect)
+        void PopulateMenuWithOverlays(AbstractGenericMenu dropdown, bool includeUtilityFunctions = true)
         {
-            var dropdown = rootVisualElement.panel.CreateMenu();
-
             var overlays = new List<(Overlay overlay, MainToolbarElementAttribute attrib)>();
-
-            dropdown.AddItem(k_EditModeName, editModeActive, ToggleEditMode);
-            dropdown.AddSeparator("");
 
             s_UnityOnlyOverlays.Clear();
             foreach (var overlay in overlayCanvas.overlays)
@@ -226,12 +258,12 @@ namespace UnityEditor
                 var result = a.attrib.menuPriority.CompareTo(b.attrib.menuPriority);
                 if (result != 0)
                     return result;
-                
+
                 // Then alphabetically by path
                 result = String.Compare(a.attrib.path, b.attrib.path, StringComparison.OrdinalIgnoreCase);
                 if (result != 0)
                     return result;
-                
+
                 // Then by dock position and index
                 return ((int)a.attrib.defaultDockPosition * 100 + a.attrib.defaultDockIndex)
                     .CompareTo((int)b.attrib.defaultDockPosition * 100 + b.attrib.defaultDockIndex);
@@ -242,7 +274,7 @@ namespace UnityEditor
             {
                 if (s_UnityOnlyOverlays.Contains(prevOverlay) && !s_UnityOnlyOverlays.Contains(pair.overlay))
                     dropdown.AddSeparator("");
-                
+
                 if (pair.attrib.path != Toolbar.deprecatedElementsId || Toolbar.instance.deprecatedElements.Count > 0)
                 {
                     dropdown.AddItem(pair.attrib.path, pair.overlay.displayed, () =>
@@ -253,17 +285,36 @@ namespace UnityEditor
                 prevOverlay = pair.overlay;
             }
 
-            // Add Show/Hide All to each unique category
-            foreach (var path in m_UniqueMenuCategories)
+            if (includeUtilityFunctions)
             {
-                dropdown.AddSeparator($"{path}/");
-                dropdown.AddItem($"{path}/Show All", false, () => MainToolbar.ShowAll(path));
-                dropdown.AddItem($"{path}/Hide All", false, () => MainToolbar.HideAll(path));
+                // Add Show/Hide All to each unique category
+                foreach (var path in m_UniqueMenuCategories)
+                {
+                    dropdown.AddSeparator($"{path}/");
+                    dropdown.AddItem($"{path}/{showAllName}", false, () => MainToolbar.ShowAll(path));
+                    dropdown.AddItem($"{path}/{hideAllName}", false, () => MainToolbar.HideAll(path));
+                }
             }
+        }
+
+        void PopulateFullMenu(AbstractGenericMenu dropdown)
+        {
+            dropdown.AddItem(editModeName, editModeActive, ToggleEditMode);
+            dropdown.AddSeparator("");
+
+            PopulateMenuWithOverlays(dropdown);
 
             dropdown.AddSeparator("");
 
             OverlayPresetManager.GenerateMenu(dropdown, "Presets/", this, false, CheckIfCanvasChangedSinceLastPreset, new UnityOnlyToolbarPreset());
+        }
+
+        static HashSet<Overlay> s_UnityOnlyOverlays = new();
+        internal void ShowMenu(Rect dropdownRect)
+        {
+            var dropdown = rootVisualElement.panel.CreateMenu();
+
+            PopulateFullMenu(dropdown);
 
             dropdown.DropDown(dropdownRect, rootVisualElement, DropdownMenuSizeMode.Auto);
         }

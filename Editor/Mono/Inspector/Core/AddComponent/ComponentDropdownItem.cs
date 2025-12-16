@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using Unity.Collections.LowLevel.Unsafe;
 using UnityEditor.IMGUI.Controls;
 using UnityEngine;
 
@@ -68,8 +69,9 @@ namespace UnityEditor.AddComponent
 
             if (command.StartsWith("SCRIPT"))
             {
+                Debug.Assert(UnsafeUtility.SizeOf<EntityId>()==sizeof(int), "int.Parse needs to become long.Parse if EntityId is not an int");
                 var scriptId = int.Parse(command.Substring(6));
-                var obj = EditorUtility.EntityIdToObject(scriptId);
+                var obj = EditorUtility.EntityIdToObject(EntityId.From(scriptId));
                 var icon = AssetPreview.GetMiniThumbnail(obj);
                 base.name = name;
                 base.icon = icon;

@@ -414,6 +414,14 @@ namespace UnityEngine
             }
         }
 
+        public void LogExceptionsAndForget()
+        {
+            SetContinuation(() =>
+            {
+                GetAwaiter().GetResult();
+            });
+        }
+
         // legacy coroutine interop
 
         bool IEnumerator.MoveNext()

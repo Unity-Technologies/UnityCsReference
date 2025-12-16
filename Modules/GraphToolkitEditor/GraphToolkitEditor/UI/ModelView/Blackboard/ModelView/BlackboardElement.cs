@@ -81,11 +81,11 @@ namespace Unity.GraphToolkit.Editor
         {
             if (IsSelected())
             {
-                this.SetCheckedPseudoState();
+                this.SetCheckedPseudoState(true);
             }
             else
             {
-                this.ClearCheckedPseudoState();
+                this.SetCheckedPseudoState(false);
             }
         }
 

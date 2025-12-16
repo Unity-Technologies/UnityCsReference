@@ -92,7 +92,7 @@ namespace UnityEditor
                 {
                     foreach (var diagnosticSwitch in m_Switches.SelectMany(group => group.switches))
                         diagnosticSwitch.persistentValue = diagnosticSwitch.defaultValue;
-                    DiagnosticSwitchesConsoleMessage.Instance.Update();
+                    DiagnosticSwitchesConsoleMessage.instance.Update();
                 }
             }
         }
@@ -163,7 +163,7 @@ namespace UnityEditor
                 if (GUI.Button(resetButtonRect, "Reset", EditorStyles.miniButton))
                 {
                     diagnosticSwitch.persistentValue = diagnosticSwitch.defaultValue;
-                    DiagnosticSwitchesConsoleMessage.Instance.Update();
+                    DiagnosticSwitchesConsoleMessage.instance.Update();
                 }
             }
             else
@@ -258,7 +258,7 @@ namespace UnityEditor
             }
 
             if (EditorGUI.EndChangeCheck())
-                DiagnosticSwitchesConsoleMessage.Instance.Update();
+                DiagnosticSwitchesConsoleMessage.instance.Update();
         }
 
         [SettingsProvider]

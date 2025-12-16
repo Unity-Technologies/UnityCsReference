@@ -356,12 +356,51 @@ namespace UnityEditor.Build.Profile
         [VisibleToOtherModules("UnityEditor.BuildProfileModule")]
         internal static bool IsClassicPlatformProfile(BuildProfile profile)
         {
+            if (profile is null)
+            {
+                return false;
+            }
+
             if (instance.m_PlatformIdToClassicPlatformProfile.TryGetValue(profile.platformGuid, out var classicProfile))
             {
                 return classicProfile == profile;
             }
 
             return false;
+        }
+
+        [VisibleToOtherModules("UnityEditor.BuildProfileModule")]
+        internal static bool IsModuleInstalled(BuildProfile profile)
+        {
+            if (profile is null)
+            {
+                return false;
+            }
+
+            var buildTarget = profile.GetIBuildTarget();
+            return buildTarget != null;
+        }
+
+        [VisibleToOtherModules("UnityEditor.BuildProfileModule")]
+        internal static bool IsBuildAutomationSupported(BuildProfile profile)
+        {
+            if (profile is null)
+            {
+                return false;
+            }
+
+            if (!IsModuleInstalled(profile))
+            {
+                return false;
+            }
+
+            var buildTarget = profile.GetIBuildTarget();
+            if (!buildTarget.TryGetProperties<IBuildPlatformProperties>(out var buildPlatformProperties))
+            {
+                return false;
+            }
+
+            return buildPlatformProperties.SupportBuildAutomation;
         }
 
         /// <summary>
@@ -853,15 +892,15 @@ namespace UnityEditor.Build.Profile
         }
 
         [RequiredByNativeCode]
-        static bool HasActiveProfileWithPlayerSettings(out EntityId instanceID)
+        static bool HasActiveProfileWithPlayerSettings(out EntityId entityId)
         {
             if (activeProfile?.playerSettings != null)
             {
-                instanceID = activeProfile.GetInstanceID();
+                entityId = activeProfile.GetEntityId();
                 return true;
             }
 
-            instanceID = EntityId.None;
+            entityId = EntityId.None;
             return false;
         }
 

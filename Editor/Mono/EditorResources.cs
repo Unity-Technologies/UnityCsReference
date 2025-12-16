@@ -244,7 +244,7 @@ namespace UnityEditor.Experimental
             foreach (var path in paths)
             {
                 hash += path.GetHashCode().ToString("X2");
-                var fi = new FileInfo(path);
+                var fi = new FileInfo(FileUtil.PathToAbsolutePath(path));
                 if (fi.Exists)
                     hash += fi.Length.ToString("X2");
             }

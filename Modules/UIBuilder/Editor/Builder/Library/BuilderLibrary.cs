@@ -70,7 +70,7 @@ namespace Unity.UI.Builder
 
         internal ToolbarSearchField searchField => m_SearchField;
 
-        int defaultVisualElementType => EditorPrefs.GetInt(BuilderConstants.LibraryDefaultVisualElementType, (int)DefaultVisualElementType.Styled);
+        int defaultVisualElementType => EditorPrefs.GetInt(BuilderConstants.LibraryDefaultVisualElementType, (int)DefaultVisualElementType.NoStyles);
 
         public BuilderLibrary(
             BuilderPaneWindow paneWindow, BuilderViewport viewport,

@@ -7,6 +7,7 @@ using UnityEditor;
 using UnityEngine;
 using UnityEngine.Bindings;
 using UnityEngine.Internal;
+using System.Runtime.InteropServices;
 using UnityObject = UnityEngine.Object;
 
 namespace UnityEditorInternal
@@ -50,7 +51,7 @@ namespace UnityEditorInternal
         //Append new Components to the GameObject
         public static extern bool PasteComponentAsNew([NotNull] GameObject go);
 
-        internal static extern bool CollectConnectedComponents([NotNull] GameObject targetGameObject, Component[] components, bool copy, [NotNull] List<Component> outCollectedComponents, out string outErrorMessage);
+        internal static extern bool CollectConnectedComponents([NotNull] GameObject targetGameObject, Component[] components, bool copy, [NotNull][Out] List<Component> outCollectedComponents, out string outErrorMessage);
 
         internal static bool MoveComponentToGameObject(Component component, GameObject targetGameObject)
         {
@@ -76,11 +77,11 @@ namespace UnityEditorInternal
         [FreeFunction("MoveComponents")]
         internal static extern bool MoveComponentsRelativeToComponents(Component[] components, Component[] targetComponents, bool aboveTarget, [DefaultValue("false")] bool validateOnly);
 
-        internal static extern bool CopyComponentToGameObject([NotNull] Component component, [NotNull] GameObject targetGameObject, bool validateOnly, [NotNull] List<Component> outNewComponents);
-        internal static extern bool CopyComponentToGameObjects([NotNull] Component component, GameObject[] targetGameObjects, bool validateOnly, [NotNull] List<Component> outNewComponents);
-        internal static extern bool CopyComponentRelativeToComponent([NotNull] Component component, [NotNull] Component targetComponent, bool aboveTarget, bool validateOnly, [NotNull] List<Component> outNewComponents);
-        internal static extern bool CopyComponentRelativeToComponents([NotNull] Component component, Component[] targetComponents, bool aboveTarget, bool validateOnly, [NotNull] List<Component> outNewComponents);
-        internal static extern bool CopyComponentsRelativeToComponents(Component[] components, Component[] targetComponents, bool aboveTarget, bool validateOnly, List<Component> outNewComponents);
+        internal static extern bool CopyComponentToGameObject([NotNull] Component component, [NotNull] GameObject targetGameObject, bool validateOnly, [NotNull][Out] List<Component> outNewComponents);
+        internal static extern bool CopyComponentToGameObjects([NotNull] Component component, GameObject[] targetGameObjects, bool validateOnly, [NotNull][Out] List<Component> outNewComponents);
+        internal static extern bool CopyComponentRelativeToComponent([NotNull] Component component, [NotNull] Component targetComponent, bool aboveTarget, bool validateOnly, [NotNull][Out] List<Component> outNewComponents);
+        internal static extern bool CopyComponentRelativeToComponents([NotNull] Component component, Component[] targetComponents, bool aboveTarget, bool validateOnly, [NotNull][Out] List<Component> outNewComponents);
+        internal static extern bool CopyComponentsRelativeToComponents(Component[] components, Component[] targetComponents, bool aboveTarget, bool validateOnly, [NotNull][Out] List<Component> outNewComponents);
 
         [FreeFunction]
         internal static extern bool WarnCanAddScriptComponent([NotNull] GameObject gameObject, [NotNull] MonoScript script);

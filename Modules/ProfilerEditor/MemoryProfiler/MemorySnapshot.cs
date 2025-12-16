@@ -164,7 +164,7 @@ namespace UnityEditor.Profiling.Memory.Experimental
             {
                 var nativeObject = snapshot.nativeObjects[i];
                 writer.WriteEntry(EntryType.NativeObjects_Name, nativeObject.name);
-                writer.WriteEntry(EntryType.NativeObjects_InstanceId, nativeObject.instanceId);
+                writer.WriteEntry(EntryType.NativeObjects_EntityId, nativeObject.instanceId);
                 writer.WriteEntry(EntryType.NativeObjects_Size, (ulong)nativeObject.size);
                 writer.WriteEntry(EntryType.NativeObjects_NativeTypeArrayIndex, nativeObject.nativeTypeArrayIndex);
                 writer.WriteEntry(EntryType.NativeObjects_HideFlags, (UInt32)nativeObject.hideFlags);

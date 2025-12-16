@@ -9,6 +9,7 @@ using System.Collections;
 using System.Collections.Generic;
 
 using UnityEngine;
+using UnityEngine.Serialization;
 using Unity.EntitiesLike;
 using Unity.Profiling;
 
@@ -22,6 +23,7 @@ internal sealed class SerializeContext
     {
         internal object Obj;
         internal EntityId EntityId;
+        internal UnityEngine.Object HostObj;
         internal UdmObjectId UdmObjectId;
         internal bool IsStrippedObject;
 
@@ -79,8 +81,7 @@ internal sealed class SerializeContext
         if (obj is UnityEngine.Object unityObj)
         {
             unityObj.GetInstanceIdFast(out var instanceID); // GetInstanceIdFast() can be called on any thread
-
-                return new Reference();
+            return new Reference { UdmObjectId = instanceID.GetRawData() };
         }
 
         var reference = GetOrCreateReferenceForObject(obj);
@@ -116,6 +117,7 @@ internal sealed class SerializeContext
         var entry = new SerializeItemInfo
         {
             Obj = obj,
+            HostObj = this.HostObj,
             UdmObjectId = objectId,
             IsStrippedObject = isStrippedObject,
         };
@@ -136,6 +138,7 @@ internal sealed class SerializeContext
         var entry = new SerializeItemInfo
         {
             Obj = obj,
+            HostObj = obj,
             UdmObjectId = objectId,
             IsStrippedObject = isStrippedObject,
             EntityId = instanceId
@@ -181,6 +184,7 @@ internal sealed class SerializeContext
         {
             // Serialize
             var obj = entry.Obj;
+            HostObj = entry.HostObj;
             if (obj != null)
             {
                 Rtti rtti;
@@ -247,22 +251,41 @@ internal sealed class SerializeContext
     private Reference GetOrCreateReferenceForObject(object obj)
     {
         Reference reference;
-        bool found;
-        try
-        {
-            found = ReferenceRegistry.TryGetReference(obj, out reference);
-        }
-        catch (Exception e)
-        {
-            // Catch exceptions thrown during hashing
-            EngineHelper.LogWarning($"Unable to create reference for object: {e.ToString()}");
-            return Reference.Default;
-        }
+
+        // Check the UDM registry
+        bool found = ReferenceRegistry.TryGetReference(obj, out reference);
 
         if (!found)
         {
-            // There is no entry in the registry, so we need to create a new reference
-            UdmObjectId objId = ObjectIDGenerator.NextUDMObjectID();
+            // There is no entry in the UDM registry
+            UdmObjectId objId;
+
+            if (HostObj != null)
+            {
+                // Check the hosts registry
+                found = ReferenceRegistry.TryGetReference(HostObj, out reference);
+                EngineHelper.AssertIsTrue(found);
+
+                var refId = ManagedReferenceUtility.GetManagedReferenceIdForObject(HostObj, obj);
+                if (refId == ManagedReferenceUtility.RefIdUnknown)
+                {
+                    // There is no entry in the hosts registry either, so we need to create a new reference
+                    objId = ObjectIDGenerator.NextUDMObjectID();
+                    refId = (long)(reference.UdmObjectId.Id ^ objId.Id) & 0x7FFFFFFFFFFFFFFF;
+                    ManagedReferenceUtility.SetManagedReferenceIdForObject(HostObj, obj, refId);
+                }
+                else
+                {
+                    // XOR the RefId with the hosts ObjectId to prevent collisions between hosts
+                    objId = reference.UdmObjectId.Id ^ (ulong)refId;
+                }
+            }
+            else
+            {
+                // We need to create a new reference
+                objId = ObjectIDGenerator.NextUDMObjectID();
+            }
+
             reference = new Reference
             {
                 DocumentId = default,
@@ -277,6 +300,7 @@ internal sealed class SerializeContext
 
     internal readonly DocumentModel Document;
     internal EntityManager EntityManager;
+    private UnityEngine.Object HostObj;
     internal readonly SerializeInstructionFlags Options;
 
     internal bool SerializeEcsData;

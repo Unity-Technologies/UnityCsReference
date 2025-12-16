@@ -232,12 +232,18 @@ namespace UnityEditor
     class GridAndSnapToolBar : ToolbarOverlay
     {
         const string k_Id = "unity-grid-and-snap-toolbar";
+        const string k_GridAndSnapUSSClass = "grid-and-snap-toolbar";
 
         public GridAndSnapToolBar() : base(
-            "Tools/Snap Size",
-            "SceneView/Grids",
+            "SceneView/GridVisibility",
+            "SceneView/Separator",
             "Tools/Snap Settings",
-            "SceneView/Snap Increment") {}
+            "SceneView/Separator",
+            "Tools/Angle Snap Settings",
+            "Tools/Scale Snap Settings")
+        {
+            rootVisualElement.AddToClassList(k_GridAndSnapUSSClass);
+        }
     }
 }
 // namespace

@@ -419,18 +419,18 @@ namespace Unity.ProjectAuditor.Editor.Modules
                         continue;
 
                     issues.Add(context.CreateInsight(k_ComputeShaderVariantLayout.Category, computeShaderName)
-                        .WithCustomProperties(new object[(int)ComputeShaderVariantProperty.Num]
-                        {
+                        .WithCustomProperties(
+                        [
                             shaderVariantData.CompilerPlatform,
                             shaderVariantData.GraphicsTier,
                             shaderVariantData.KernelName,
                             shaderVariantData.KernelThreadCount,
                             CombineKeywords(shaderVariantData.Keywords),
                             CombineKeywords(shaderVariantData.PlatformKeywords)
-                        }));
+                        ]));
                 }
             }
-            if (issues.Any())
+            if (issues.Count > 0)
                 analysisParams.OnIncomingIssues(issues);
         }
 
@@ -458,11 +458,11 @@ namespace Unity.ProjectAuditor.Editor.Modules
                 if (message.EndsWith("\n"))
                     message = message.Substring(0, message.Length - 2);
                 yield return context.CreateInsight(IssueCategory.ShaderCompilerMessage, message)
-                    .WithCustomProperties(new object[(int)ShaderMessageProperty.Num]
-                    {
+                    .WithCustomProperties(
+                    [
                         shaderName,
                         shaderMessage.platform
-                    })
+                    ])
                     .WithLocation(context.AssetPath, shaderMessage.line)
                     .WithSeverity(shaderMessage.severity == ShaderCompilerMessageSeverity.Error
                         ? Severity.Error
@@ -503,8 +503,8 @@ namespace Unity.ProjectAuditor.Editor.Modules
                 var texturePropertyCount = ShaderUtilProxy.GetTexturePropertyCount(context.Shader);
 
                 yield return context.CreateInsight(IssueCategory.Shader, shaderName)
-                    .WithCustomProperties(new object[(int)ShaderProperty.Num]
-                    {
+                    .WithCustomProperties(
+                    [
                         assetSize,
                         ShaderUtilProxy.GetVariantCount(context.Shader),
                         variantCountPerCompilerPlatform == -1 ? k_NotAvailable : variantCountPerCompilerPlatform.ToString(),
@@ -516,7 +516,7 @@ namespace Unity.ProjectAuditor.Editor.Modules
                         hasInstancing,
                         isSrpBatcherCompatible,
                         isAlwaysIncluded
-                    })
+                    ])
                     .WithLocation(context.AssetPath)
                     .WithSeverity(severity);
             }
@@ -535,8 +535,8 @@ namespace Unity.ProjectAuditor.Editor.Modules
 
                     yield return context.CreateInsight(IssueCategory.ShaderVariant, context.Shader.name)
                         .WithLocation(context.AssetPath)
-                        .WithCustomProperties(new object[(int)ShaderVariantProperty.Num]
-                        {
+                        .WithCustomProperties(
+                        [
                             k_NoRuntimeData,
                             shaderVariantData.CompilerPlatform,
                             shaderVariantData.GraphicsTier,
@@ -546,7 +546,7 @@ namespace Unity.ProjectAuditor.Editor.Modules
                             CombineKeywords(shaderVariantData.Keywords),
                             CombineKeywords(shaderVariantData.PlatformKeywords),
                             CombineKeywords(shaderVariantData.Requirements.Select(r => r.ToString()).ToArray())
-                        });
+                        ]);
                 }
             }
         }

@@ -11,7 +11,6 @@ using JetBrains.Annotations;
 using Unity.GraphToolsAuthoringFramework.InternalEditorBridge;
 using Unity.GraphToolkit.ItemLibrary.Editor;
 using UnityEditor;
-using UnityEngine;
 
 namespace Unity.GraphToolkit.Editor
 {
@@ -59,7 +58,7 @@ namespace Unity.GraphToolkit.Editor
             foreach (var type in types)
             {
                 var attributes = type.GetCustomAttributes<LibraryItemAttribute>().ToList();
-                if (!attributes.Any())
+                if (!attributes.HasAny())
                     continue;
 
                 //Blocks and Nodes share LibraryItemAttribute but blocks shouldn't be added to nodes lists.
@@ -91,7 +90,8 @@ namespace Unity.GraphToolkit.Editor
                     {
                         CategoryPath = categoryPath,
                         Help = nodeHelpAttribute?.HelpText,
-                        StyleName = attribute.StyleName
+                        StyleName = attribute.StyleName,
+                        IconPath = attribute.IconPath
                     };
 
                     Items.Add(node);
@@ -312,7 +312,7 @@ namespace Unity.GraphToolkit.Editor
         public virtual GraphElementItemDatabase AddSubgraphs()
         {
             var subgraphModels = GetSubgraphs();
-            if (subgraphModels == null || !subgraphModels.Any())
+            if (subgraphModels == null || !subgraphModels.HasAny())
                 return this;
 
             foreach (var graphModel in subgraphModels)

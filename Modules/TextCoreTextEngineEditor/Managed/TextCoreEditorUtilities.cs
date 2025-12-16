@@ -166,7 +166,7 @@ namespace UnityEditor.TextCore.Text
                 string materialPath = AssetDatabase.GUIDToAssetPath(materialAssetGUIDs[i]);
                 Material targetMaterial = AssetDatabase.LoadAssetAtPath<Material>(materialPath);
 
-                if (targetMaterial.HasProperty(TextShaderUtilities.ID_MainTex) && targetMaterial.GetTexture(TextShaderUtilities.ID_MainTex) != null && mat.GetTexture(TextShaderUtilities.ID_MainTex) != null && targetMaterial.GetTexture(TextShaderUtilities.ID_MainTex).GetInstanceID() == mat.GetTexture(TextShaderUtilities.ID_MainTex).GetInstanceID())
+                if (targetMaterial.HasProperty(TextShaderUtilities.ID_MainTex) && targetMaterial.GetTexture(TextShaderUtilities.ID_MainTex) != null && mat.GetTexture(TextShaderUtilities.ID_MainTex) != null && targetMaterial.GetTexture(TextShaderUtilities.ID_MainTex).GetEntityId() == mat.GetTexture(TextShaderUtilities.ID_MainTex).GetEntityId())
                 {
                     if (!refs.Contains(targetMaterial))
                         refs.Add(targetMaterial);

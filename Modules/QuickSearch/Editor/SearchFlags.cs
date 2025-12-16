@@ -25,11 +25,13 @@ namespace UnityEditor.Search
         /// <summary>
         /// Fetch items will be sorted by the search service.
         /// </summary>
+        [Obsolete("Sorted is obsolete. Please sort the items with your own sorting mechanism.", false)]
         Sorted = 1 << 1,
 
         /// <summary>
         /// Send the first items asynchronously
         /// </summary>
+        [Obsolete("FirstBatchAsync is obsolete. All results are now obtained asynchronously.", false)]
         FirstBatchAsync = 1 << 2,
 
         /// <summary>
@@ -65,8 +67,8 @@ namespace UnityEditor.Search
         /// <summary>
         /// Default Search Flag
         /// </summary>
-        Default = Sorted,
-        
+        Default = 1 << 1,
+
         /// <summary>
         /// All SearchProviders are available in the Window.
         /// </summary>

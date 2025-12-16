@@ -25,10 +25,10 @@ namespace UnityEngine.LowLevelPhysics2D
         [NativeMethod(Name = "PhysicsBody::WriteDefinition")] extern internal static void PhysicsBody_WriteDefinition(PhysicsBody body, PhysicsBodyDefinition definition, bool onlyExtendedProperties);
         [NativeMethod(Name = "PhysicsBody::ReadDefinition")] extern internal static PhysicsBodyDefinition PhysicsBody_ReadDefinition(PhysicsBody body);
         [NativeMethod(Name = "PhysicsBody::GetWorld", IsThreadSafe = true)] extern internal static PhysicsWorld PhysicsBody_GetWorld(PhysicsBody body);
-        [NativeMethod(Name = "PhysicsBody::GetBodyType", IsThreadSafe = true)] extern internal static RigidbodyType2D PhysicsBody_GetBodyType(PhysicsBody body);
-        [NativeMethod(Name = "PhysicsBody::SetBodyType")] extern internal static void PhysicsBody_SetBodyType(PhysicsBody body, RigidbodyType2D type);
-        [NativeMethod(Name = "PhysicsBody::SetMotionConstraints")] extern internal static void PhysicsBody_SetMotionConstraints(PhysicsBody body, RigidbodyConstraints2D constraints);
-        [NativeMethod(Name = "PhysicsBody::GetMotionConstraints", IsThreadSafe = true)] extern internal static RigidbodyConstraints2D PhysicsBody_GetMotionConstraints(PhysicsBody body);
+        [NativeMethod(Name = "PhysicsBody::GetBodyType", IsThreadSafe = true)] extern internal static PhysicsBody.BodyType PhysicsBody_GetBodyType(PhysicsBody body);
+        [NativeMethod(Name = "PhysicsBody::SetBodyType")] extern internal static void PhysicsBody_SetBodyType(PhysicsBody body, PhysicsBody.BodyType type);
+        [NativeMethod(Name = "PhysicsBody::SetBodyConstraints")] extern internal static void PhysicsBody_SetBodyConstraints(PhysicsBody body, PhysicsBody.BodyConstraints constraints);
+        [NativeMethod(Name = "PhysicsBody::GetBodyConstraints", IsThreadSafe = true)] extern internal static PhysicsBody.BodyConstraints PhysicsBody_GetBodyConstraints(PhysicsBody body);
         [NativeMethod(Name = "PhysicsBody::GetPosition", IsThreadSafe = true)] extern internal static Vector2 PhysicsBody_GetPosition(PhysicsBody body);
         [NativeMethod(Name = "PhysicsBody::SetPosition", IsThreadSafe = true)] extern internal static void PhysicsBody_SetPosition(PhysicsBody body, Vector2 position);
         [NativeMethod(Name = "PhysicsBody::GetRotation", IsThreadSafe = true)] extern internal static PhysicsRotate PhysicsBody_GetRotation(PhysicsBody body);
@@ -77,6 +77,8 @@ namespace UnityEngine.LowLevelPhysics2D
         [NativeMethod(Name = "PhysicsBody::ApplyLinearImpulse", IsThreadSafe = true)] extern internal static void PhysicsBody_ApplyLinearImpulse(PhysicsBody body, Vector2 impulse, Vector2 point, bool wake);
         [NativeMethod(Name = "PhysicsBody::ApplyLinearImpulseToCenter", IsThreadSafe = true)] extern internal static void PhysicsBody_ApplyLinearImpulseToCenter(PhysicsBody body, Vector2 impulse, bool wake);
         [NativeMethod(Name = "PhysicsBody::ApplyAngularImpulse", IsThreadSafe = true)] extern internal static void PhysicsBody_ApplyAngularImpulse(PhysicsBody body, float impulse, bool wake);
+        [NativeMethod(Name = "PhysicsBody::ClearForces", IsThreadSafe = true)] extern internal static void PhysicsBody_ClearForces(PhysicsBody body);
+        [NativeMethod(Name = "PhysicsBody::WakeTouching", IsThreadSafe = true)] extern internal static void PhysicsBody_WakeTouching(PhysicsBody body);
         [NativeMethod(Name = "PhysicsBody::SetContactEvents", IsThreadSafe = true)] extern internal static void PhysicsBody_SetContactEvents(PhysicsBody body, bool flag);
         [NativeMethod(Name = "PhysicsBody::SetHitEvents", IsThreadSafe = true)] extern internal static void PhysicsBody_SetHitEvents(PhysicsBody body, bool flag);
         [NativeMethod(Name = "PhysicsBody::GetShapeCount", IsThreadSafe = true)] extern internal static int PhysicsBody_GetShapeCount(PhysicsBody body);
@@ -89,8 +91,8 @@ namespace UnityEngine.LowLevelPhysics2D
         [NativeMethod(Name = "PhysicsBody::SetOwner", IsThreadSafe = true)] extern internal static int PhysicsBody_SetOwner(PhysicsBody body, Object ownerObject);
         [NativeMethod(Name = "PhysicsBody::GetOwner", IsThreadSafe = true)] extern internal static Object PhysicsBody_GetOwner(PhysicsBody body);
         [NativeMethod(Name = "PhysicsBody::IsOwned", IsThreadSafe = true)] extern internal static bool PhysicsBody_IsOwned(PhysicsBody body);
-        [NativeMethod(Name = "PhysicsBody::SetCallbackTarget", IsThreadSafe = true)] extern internal static void PhysicsBody_SetCallbackTarget(PhysicsBody body, MonoBehaviour callbackTarget);
-        [NativeMethod(Name = "PhysicsBody::GetCallbackTarget", IsThreadSafe = true)] extern internal static MonoBehaviour PhysicsBody_GetCallbackTarget(PhysicsBody body);
+        [NativeMethod(Name = "PhysicsBody::SetCallbackTarget", IsThreadSafe = true)] extern internal static void PhysicsBody_SetCallbackTarget(PhysicsBody body, System.Object callbackTarget);
+        [NativeMethod(Name = "PhysicsBody::GetCallbackTarget", IsThreadSafe = true)] extern internal static System.Object PhysicsBody_GetCallbackTarget(PhysicsBody body);
         [NativeMethod(Name = "PhysicsBody::SetUserData", IsThreadSafe = true)] extern internal static void PhysicsBody_SetUserData(PhysicsBody body, PhysicsUserData physicsUserData);
         [NativeMethod(Name = "PhysicsBody::GetUserData", IsThreadSafe = true)] extern internal static PhysicsUserData PhysicsBody_GetUserData(PhysicsBody body);
         [NativeMethod(Name = "PhysicsBody::SetTransformObject", IsThreadSafe = true)] extern internal static void PhysicsBody_SetTransformObject(PhysicsBody body, Transform transform);

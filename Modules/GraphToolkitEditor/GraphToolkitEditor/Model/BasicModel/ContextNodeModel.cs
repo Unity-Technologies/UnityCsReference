@@ -4,7 +4,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using Unity.GraphToolkit.Editor.ContextualMenuItems;
 using UnityEditor;
 using UnityEngine;
@@ -40,6 +39,9 @@ namespace Unity.GraphToolkit.Editor
         /// <inheritdoc />
         public override string Subtitle => m_Subtitle;
 
+        /// <inheritdoc />
+        public override Color DefaultColor => Color.darkGreen;
+
         /// <summary>
         /// Whether the blocks in the context have etches.
         /// </summary>
@@ -57,11 +59,20 @@ namespace Unity.GraphToolkit.Editor
         public ContextNodeModel()
         {
             SetCapability(Editor.Capabilities.Collapsible, false);
-            SetCapability(Editor.Capabilities.Colorable, false);
         }
 
         /// <inheritdoc />
-        public override IEnumerable<GraphElementModel> DependentModels => base.DependentModels.Concat(m_Blocks);
+        public override IEnumerable<GraphElementModel> DependentModels
+        {
+            get
+            {
+                foreach (var model in base.DependentModels)
+                    yield return model;
+
+                foreach (var block in m_Blocks)
+                    yield return block;
+            }
+        }
 
         /// <summary>
         /// Inserts a block in the context.
@@ -192,8 +203,11 @@ namespace Unity.GraphToolkit.Editor
         /// <inheritdoc />
         public void RemoveContainerElements(IReadOnlyCollection<GraphElementModel> elementModels)
         {
-            foreach (var blockNodeModel in elementModels.OfType<BlockNodeModel>())
+            foreach (var model in elementModels)
             {
+                if (model is not BlockNodeModel blockNodeModel)
+                    continue;
+
                 if (GraphModel?.TryGetModelFromGuid(blockNodeModel.Guid, out _) ?? false)
                 {
                     GraphModel.CurrentGraphChangeDescription.AddDeletedModel(blockNodeModel);
@@ -207,7 +221,7 @@ namespace Unity.GraphToolkit.Editor
                 blockNodeModel.ContextNodeModel = null;
             }
 
-            if (!m_BlockPlaceholders.Any())
+            if (!m_BlockPlaceholders.HasAny())
                 SetCapability(Editor.Capabilities.Copiable, true);
             GraphModel?.CurrentGraphChangeDescription.AddChangedModel(this, ChangeHint.GraphTopology);
         }
@@ -225,7 +239,7 @@ namespace Unity.GraphToolkit.Editor
                 }
             }
 
-            if (m_BlockPlaceholders.Any())
+            if (m_BlockPlaceholders.HasAny())
                 SetCapability(Editor.Capabilities.Copiable, false);
         }
 
@@ -309,8 +323,7 @@ namespace Unity.GraphToolkit.Editor
                     m_BlockGuids = new List<Hash128>();
 
                 m_BlockGuids.Clear();
-
-                m_Blocks = m_Blocks.Where(t => t != null).ToList();
+                m_Blocks.RemoveAll(t => t == null);
 
                 for (int i = 0; i < m_Blocks.Count; ++i)
                 {

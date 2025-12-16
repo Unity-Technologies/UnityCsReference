@@ -95,9 +95,22 @@ namespace UnityEngine.UIElements
             set => m_SerializedDataOverride = value;
         }
 
-        internal override VisualElement Instantiate(CreationContext cc)
+        internal override VisualElement Instantiate(CreationContext cc, VisualElementAssetReferenceTable.DocumentNode parentAuthoringNode)
         {
-            var tc = (TemplateContainer)base.Instantiate(cc);
+            // We dont pass in parentAuthoringNode here because we want to add a Document reference instead.
+            var tc = (TemplateContainer)base.Instantiate(cc, null);
+
+            if (hasAuthoringId && parentAuthoringNode != null)
+            {
+                parentAuthoringNode = parentAuthoringNode.AddDocument(id, tc);
+            }
+            else
+            {
+                // If we have no authoring Id then we stop capturing further paths.
+                // We dont want to support partial paths like we do with overrides.
+                parentAuthoringNode = null;
+            }
+
             if (tc.templateSource == null)
             {
                 // If the template is defined with the path attribute instead of src it may not be resolved at import time
@@ -134,7 +147,7 @@ namespace UnityEngine.UIElements
             var newCC = new CreationContext(cc.slotInsertionPoints, traitsOverrideRanges, serializedDataOverrideRanges,
                 null, null, veaIdsPath, null, this);
 
-            tc.templateSource.CloneTree(tc, newCC);
+            tc.templateSource.CloneTree(tc, newCC, parentAuthoringNode);
 
             return tc;
         }
@@ -220,6 +233,11 @@ namespace UnityEngine.UIElements
                     return;
                 }
             }
+        }
+
+        public VisualTreeAsset ResolveTemplate()
+        {
+            return visualTreeAsset?.ResolveTemplate(templateAlias);
         }
 
         private protected override void OnVisualTreeAssetChanged(VisualTreeAsset previousVta, VisualTreeAsset newVta)

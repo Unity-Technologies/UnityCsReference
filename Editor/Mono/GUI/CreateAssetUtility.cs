@@ -17,7 +17,7 @@ namespace UnityEditor
         [SerializeField]
         AssetCreationEndAction m_EndAction;
         [SerializeField]
-        int m_InstanceID;
+        EntityId m_EntityId;
         [SerializeField]
         string m_Path = "";
         [SerializeField]
@@ -28,15 +28,15 @@ namespace UnityEditor
         public void Clear()
         {
             m_EndAction = null;
-            m_InstanceID = 0;
+            m_EntityId = EntityId.None;
             m_Path = "";
             m_Icon = null;
             m_ResourceFile = "";
         }
 
-        public int instanceID
+        public EntityId entityId
         {
-            get { return m_InstanceID; }
+            get { return m_EntityId; }
         }
 
         public Texture2D icon
@@ -72,8 +72,8 @@ namespace UnityEditor
 
             // Ensure valid folder to place the asset in
             string folder = Path.GetDirectoryName(filePath);
-            int instanceID = AssetDatabase.GetMainAssetEntityId(folder);
-            return instanceID != 0;
+            EntityId entityId = AssetDatabase.GetMainAssetEntityId(folder);
+            return entityId != EntityId.None;
         }
 
         // Selection changes when calling BeginNewAsset if it succeeds
@@ -101,7 +101,7 @@ namespace UnityEditor
                 return false;
             }
 
-            m_InstanceID = entityId;
+            m_EntityId = entityId;
             m_Path = uniquePath;
             m_Icon = icon;
             m_EndAction = newAssetEndAction;
@@ -122,7 +122,7 @@ namespace UnityEditor
             if ((!String.IsNullOrEmpty(extension)) && (!path.EndsWith(extension, System.StringComparison.OrdinalIgnoreCase)))
                 path = path + extension;
             AssetCreationEndAction endAction = m_EndAction;
-            EntityId entityId = m_InstanceID;
+            EntityId entityId = m_EntityId;
             string resourceFile = m_ResourceFile;
             Clear(); // Ensure clear if anything goes bad in EndNameEditAction and gui is exited.
 
@@ -134,7 +134,7 @@ namespace UnityEditor
             string path = folder + "/" + name;
             if ((!String.IsNullOrEmpty(extension)) && (!path.EndsWith(extension, System.StringComparison.OrdinalIgnoreCase)))
                 path = path + extension;
-            ProjectWindowUtil.EndNameEditAction(m_EndAction, m_InstanceID, path, m_ResourceFile, false);
+            ProjectWindowUtil.EndNameEditAction(m_EndAction, m_EntityId, path, m_ResourceFile, false);
         }
 
         public bool IsCreatingNewAsset()

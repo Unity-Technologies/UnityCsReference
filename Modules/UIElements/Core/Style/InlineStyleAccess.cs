@@ -49,26 +49,6 @@ namespace UnityEngine.UIElements
             return StyleKeyword.Null;
         }
 
-        public StyleBackground GetStyleBackground(StylePropertyId id)
-        {
-            var inline = new StyleValue();
-            if (TryGetStyleValue(id, ref inline))
-            {
-                var texture = inline.resource.IsAllocated ? inline.resource.Target as Texture2D : null;
-                if (texture != null)
-                    return new StyleBackground(texture, inline.keyword);
-
-                var sprite = inline.resource.IsAllocated ? inline.resource.Target as Sprite : null;
-                if (sprite != null)
-                    return new StyleBackground(sprite, inline.keyword);
-
-                var vectorImage = inline.resource.IsAllocated ? inline.resource.Target as VectorImage : null;
-                if (vectorImage != null)
-                    return new StyleBackground(vectorImage, inline.keyword);
-            }
-            return StyleKeyword.Null;
-        }
-
         public StyleBackgroundPosition GetStyleBackgroundPosition(StylePropertyId id)
         {
             var inline = new StyleValue();
@@ -85,28 +65,6 @@ namespace UnityEngine.UIElements
             return StyleKeyword.Null;
         }
 
-        public StyleFont GetStyleFont(StylePropertyId id)
-        {
-            var inline = new StyleValue();
-            if (TryGetStyleValue(id, ref inline))
-            {
-                var font = inline.resource.IsAllocated ? inline.resource.Target as Font : null;
-                return new StyleFont(font, inline.keyword);
-            }
-            return StyleKeyword.Null;
-        }
-
-        public StyleFontDefinition GetStyleFontDefinition(StylePropertyId id)
-        {
-            var inline = new StyleValue();
-            if (TryGetStyleValue(id, ref inline))
-            {
-                var font = inline.resource.IsAllocated ? inline.resource.Target as object : null;
-                return new StyleFontDefinition(font, inline.keyword);
-            }
-            return StyleKeyword.Null;
-        }
-
         // public StyleTextAutoSize GetStyleTextAutoSize(StylePropertyId id)
         // {
         //     var inline = new StyleValue();
@@ -117,18 +75,6 @@ namespace UnityEngine.UIElements
         //     }
         //     return StyleKeyword.Null;
         // }
-
-        public StyleMaterialDefinition GetStyleMaterialDefinition(StylePropertyId id)
-        {
-            var inline = new StyleValue();
-            if (TryGetStyleValue(id, ref inline))
-            {
-                var materialDef = inline.resource.IsAllocated ? inline.resource.Target as object : null;
-                if (materialDef != null)
-                    return new StyleMaterialDefinition(materialDef, inline.keyword);
-            }
-            return StyleKeyword.Null;
-        }
 
         public StyleRatio GetStyleRatio(StylePropertyId id)
         {
@@ -205,9 +151,6 @@ namespace UnityEngine.UIElements
         private bool m_HasInlineBackgroundSize;
         public StyleBackgroundSize m_InlineBackgroundSize;
 
-        private bool m_HasInlineFilter;
-        public StyleList<FilterFunction> m_InlineFilter;
-
         private InlineRule m_InlineRule;
         public InlineRule inlineRule => m_InlineRule;
 
@@ -221,21 +164,6 @@ namespace UnityEngine.UIElements
         public InlineStyleAccess(VisualElement ve)
         {
             this.ve = ve;
-        }
-
-        ~InlineStyleAccess()
-        {
-            StyleValue inlineValue = new StyleValue();
-            if (TryGetStyleValue(StylePropertyId.BackgroundImage, ref inlineValue))
-            {
-                if (inlineValue.resource.IsAllocated)
-                    inlineValue.resource.Free();
-            }
-            if (TryGetStyleValue(StylePropertyId.UnityFont, ref inlineValue))
-            {
-                if (inlineValue.resource.IsAllocated)
-                    inlineValue.resource.Free();
-            }
         }
 
         public void SetInlineRule(StyleSheet sheet, StyleRule rule)
@@ -286,8 +214,6 @@ namespace UnityEngine.UIElements
                     return m_HasInlineScale;
                 case StylePropertyId.BackgroundSize:
                     return m_HasInlineBackgroundSize;
-                case StylePropertyId.Filter:
-                    return m_HasInlineFilter;
                 default:
                     return false;
             }
@@ -358,12 +284,7 @@ namespace UnityEngine.UIElements
             {
                 computedStyle.ApplyStyleBackgroundSize(ve.style.backgroundSize.value);
             }
-
-            if (m_HasInlineFilter)
-            {
-                computedStyle.ApplyStyleFilter(ve.style.filter.value);
             }
-        }
 
         StyleCursor IStyle.cursor
         {
@@ -419,9 +340,6 @@ namespace UnityEngine.UIElements
             }
         }
 
-
-
-
         StyleBackgroundSize IStyle.backgroundSize
         {
             get
@@ -434,24 +352,6 @@ namespace UnityEngine.UIElements
             set
             {
                 if (SetInlineBackgroundSize(value))
-                {
-                    ve.IncrementVersion(VersionChangeType.Styles | VersionChangeType.Repaint);
-                }
-            }
-        }
-
-        StyleList<FilterFunction> IStyle.filter
-        {
-            get
-            {
-                var inlineFilter = new StyleList<FilterFunction>();
-                if (TryGetInlineFilter(ref inlineFilter))
-                    return inlineFilter;
-                return StyleKeyword.Null;
-            }
-            set
-            {
-                if (SetInlineFilter(value))
                 {
                     ve.IncrementVersion(VersionChangeType.Styles | VersionChangeType.Repaint);
                 }
@@ -765,147 +665,6 @@ namespace UnityEngine.UIElements
             return true;
         }
 
-        private bool SetStyleValue(StylePropertyId id, StyleBackground inlineValue)
-        {
-            var sv = new StyleValue();
-            if (TryGetStyleValue(id, ref sv))
-            {
-                var vectorImage = sv.resource.IsAllocated ? sv.resource.Target as VectorImage : null;
-                var sprite = sv.resource.IsAllocated ? sv.resource.Target as Sprite : null;
-                var texture = sv.resource.IsAllocated ? sv.resource.Target as Texture2D : null;
-                var renderTexture = sv.resource.IsAllocated ? sv.resource.Target as RenderTexture : null;
-                if ((vectorImage == inlineValue.value.vectorImage &&
-                     texture == inlineValue.value.texture &&
-                     sprite == inlineValue.value.sprite &&
-                     renderTexture == inlineValue.value.renderTexture) && sv.keyword == inlineValue.keyword)
-                    return false;
-
-                if (sv.resource.IsAllocated)
-                    sv.resource.Free();
-            }
-            else if (inlineValue.keyword == StyleKeyword.Null)
-            {
-                return false;
-            }
-
-            sv.id = id;
-            sv.keyword = inlineValue.keyword;
-            if (inlineValue.value.vectorImage != null)
-                sv.resource = GCHandle.Alloc(inlineValue.value.vectorImage);
-            else if (inlineValue.value.sprite != null)
-                sv.resource = GCHandle.Alloc(inlineValue.value.sprite);
-            else if (inlineValue.value.texture != null)
-                sv.resource = GCHandle.Alloc(inlineValue.value.texture);
-            else if (inlineValue.value.renderTexture != null)
-                sv.resource = GCHandle.Alloc(inlineValue.value.renderTexture);
-            else
-                sv.resource = new GCHandle();
-
-            SetStyleValue(sv);
-
-            if (inlineValue.keyword == StyleKeyword.Null)
-                return RemoveInlineStyle(id);
-
-            ApplyStyleValue(sv);
-            return true;
-        }
-
-        private bool SetStyleValue(StylePropertyId id, StyleFontDefinition inlineValue)
-        {
-            var sv = new StyleValue();
-            if (TryGetStyleValue(id, ref sv))
-            {
-                var font = sv.resource.IsAllocated ? sv.resource.Target as Font : null;
-                var fontAsset = sv.resource.IsAllocated ? sv.resource.Target as FontAsset : null;
-                if ((font == inlineValue.value.font && fontAsset == inlineValue.value.fontAsset) && sv.keyword == inlineValue.keyword)
-                    return false;
-
-                if (sv.resource.IsAllocated)
-                    sv.resource.Free();
-            }
-            else if (inlineValue.keyword == StyleKeyword.Null)
-            {
-                return false;
-            }
-
-            sv.id = id;
-            sv.keyword = inlineValue.keyword;
-            if (inlineValue.value.font != null)
-                sv.resource = GCHandle.Alloc(inlineValue.value.font);
-            else if (inlineValue.value.fontAsset != null)
-                sv.resource = GCHandle.Alloc(inlineValue.value.fontAsset);
-            else
-                sv.resource = new GCHandle();
-
-            SetStyleValue(sv);
-
-            if (inlineValue.keyword == StyleKeyword.Null)
-                return RemoveInlineStyle(id);
-
-            ApplyStyleValue(sv);
-            return true;
-        }
-
-        private bool SetStyleValue(StylePropertyId id, StyleFont inlineValue)
-        {
-            var sv = new StyleValue();
-            if (TryGetStyleValue(id, ref sv))
-            {
-                var font = sv.resource.IsAllocated ? sv.resource.Target as Font : null;
-                if (font == inlineValue.value && sv.keyword == inlineValue.keyword)
-                    return false;
-
-                if (sv.resource.IsAllocated)
-                    sv.resource.Free();
-            }
-            else if (inlineValue.keyword == StyleKeyword.Null)
-            {
-                return false;
-            }
-
-            sv.id = id;
-            sv.keyword = inlineValue.keyword;
-            sv.resource = inlineValue.value != null ? GCHandle.Alloc(inlineValue.value) : new GCHandle();
-
-            SetStyleValue(sv);
-
-            if (inlineValue.keyword == StyleKeyword.Null)
-                return RemoveInlineStyle(id);
-
-            ApplyStyleValue(sv);
-            return true;
-        }
-
-        private bool SetStyleValue(StylePropertyId id, StyleMaterialDefinition inlineValue)
-        {
-            var sv = new StyleValue();
-            if (TryGetStyleValue(id, ref sv))
-            {
-                var material = sv.resource.IsAllocated ? sv.resource.Target as Material : null;
-                if (material == inlineValue.value && sv.keyword == inlineValue.keyword)
-                    return false;
-
-                if (sv.resource.IsAllocated)
-                    sv.resource.Free();
-            }
-            else if (inlineValue.keyword == StyleKeyword.Null)
-            {
-                return false;
-            }
-
-            sv.id = id;
-            sv.keyword = inlineValue.keyword;
-            sv.resource = inlineValue.value != null ? GCHandle.Alloc(inlineValue.value) : new GCHandle();
-
-            SetStyleValue(sv);
-
-            if (inlineValue.keyword == StyleKeyword.Null)
-                return RemoveInlineStyle(id);
-
-            ApplyStyleValue(sv);
-            return true;
-        }
-
         private bool SetStyleValue<T>(StylePropertyId id, StyleList<T> inlineValue)
         {
             var sv = new StyleValueManaged();
@@ -1049,11 +808,11 @@ namespace UnityEngine.UIElements
 
         private void ApplyStyleTextShadow(StyleTextShadow textShadow)
         {
-            ComputedTransitionUtils.UpdateComputedTransitions(ref ve.computedStyle);
+            ComputedTransitionUtils.UpdateComputedTransitions(ref ve.computedStyle, out var computedTransitions);
 
             bool startedTransition = false;
-            if (ve.computedStyle.hasTransition && ve.styleInitialized &&
-                ve.computedStyle.GetTransitionProperty(StylePropertyId.TextShadow, out var t))
+            if (computedTransitions.Length > 0 && ve.styleInitialized &&
+                computedTransitions.GetTransitionProperty(StylePropertyId.TextShadow, out var t))
             {
                 startedTransition = ComputedStyle.StartAnimationInlineTextShadow(ve, ref ve.computedStyle,
                     textShadow, t.durationMs, t.delayMs, t.easingCurve);
@@ -1133,11 +892,11 @@ namespace UnityEngine.UIElements
 
         private void ApplyStyleTransformOrigin(StyleTransformOrigin transformOrigin)
         {
-            ComputedTransitionUtils.UpdateComputedTransitions(ref ve.computedStyle);
+            ComputedTransitionUtils.UpdateComputedTransitions(ref ve.computedStyle, out var computedTransitions);
 
             bool startedTransition = false;
-            if (ve.computedStyle.hasTransition && ve.styleInitialized &&
-                ve.computedStyle.GetTransitionProperty(StylePropertyId.TransformOrigin, out var t))
+            if (computedTransitions.Length > 0 && ve.styleInitialized &&
+                computedTransitions.GetTransitionProperty(StylePropertyId.TransformOrigin, out var t))
             {
                 startedTransition = ComputedStyle.StartAnimationInlineTransformOrigin(ve, ref ve.computedStyle,
                     transformOrigin, t.durationMs, t.delayMs, t.easingCurve);
@@ -1184,11 +943,11 @@ namespace UnityEngine.UIElements
 
         private void ApplyStyleTranslate(StyleTranslate translate)
         {
-            ComputedTransitionUtils.UpdateComputedTransitions(ref ve.computedStyle);
+            ComputedTransitionUtils.UpdateComputedTransitions(ref ve.computedStyle, out var computedTransitions);
 
             bool startedTransition = false;
-            if (ve.computedStyle.hasTransition && ve.styleInitialized &&
-                ve.computedStyle.GetTransitionProperty(StylePropertyId.Translate, out var t))
+            if (computedTransitions.Length > 0 && ve.styleInitialized &&
+                computedTransitions.GetTransitionProperty(StylePropertyId.Translate, out var t))
             {
                 startedTransition = ComputedStyle.StartAnimationInlineTranslate(ve, ref ve.computedStyle,
                     translate, t.durationMs, t.delayMs, t.easingCurve);
@@ -1234,11 +993,11 @@ namespace UnityEngine.UIElements
 
         private void ApplyStyleScale(StyleScale scale)
         {
-            ComputedTransitionUtils.UpdateComputedTransitions(ref ve.computedStyle);
+            ComputedTransitionUtils.UpdateComputedTransitions(ref ve.computedStyle, out var computedTransitions);
 
             bool startedTransition = false;
-            if (ve.computedStyle.hasTransition && ve.styleInitialized &&
-                ve.computedStyle.GetTransitionProperty(StylePropertyId.Scale, out var t))
+            if (computedTransitions.Length > 0 && ve.styleInitialized &&
+                computedTransitions.GetTransitionProperty(StylePropertyId.Scale, out var t))
             {
                 startedTransition = ComputedStyle.StartAnimationInlineScale(ve, ref ve.computedStyle,
                     scale, t.durationMs, t.delayMs, t.easingCurve);
@@ -1285,13 +1044,11 @@ namespace UnityEngine.UIElements
 
         private void ApplyStyleRotate(StyleRotate rotate)
         {
-            var parent = ve.hierarchy.parent;
-            ref var parentStyle = ref parent?.computedStyle != null ? ref parent.computedStyle : ref InitialStyle.Get();
-            ComputedTransitionUtils.UpdateComputedTransitions(ref ve.computedStyle);
+            ComputedTransitionUtils.UpdateComputedTransitions(ref ve.computedStyle, out var computedTransitions);
 
             bool startedTransition = false;
-            if (ve.computedStyle.hasTransition && ve.styleInitialized &&
-                ve.computedStyle.GetTransitionProperty(StylePropertyId.Rotate, out var t))
+            if (computedTransitions.Length > 0 && ve.styleInitialized &&
+                computedTransitions.GetTransitionProperty(StylePropertyId.Rotate, out var t))
             {
                 startedTransition = ComputedStyle.StartAnimationInlineRotate(ve, ref ve.computedStyle,
                     rotate, t.durationMs, t.delayMs, t.easingCurve);
@@ -1337,11 +1094,11 @@ namespace UnityEngine.UIElements
 
         private void ApplyStyleBackgroundSize(StyleBackgroundSize backgroundSize)
         {
-            ComputedTransitionUtils.UpdateComputedTransitions(ref ve.computedStyle);
+            ComputedTransitionUtils.UpdateComputedTransitions(ref ve.computedStyle, out var computedTransitions);
 
             bool startedTransition = false;
-            if (ve.computedStyle.hasTransition && ve.styleInitialized &&
-                ve.computedStyle.GetTransitionProperty(StylePropertyId.BackgroundSize, out var t))
+            if (computedTransitions.Length > 0 && ve.styleInitialized &&
+                computedTransitions.GetTransitionProperty(StylePropertyId.BackgroundSize, out var t))
             {
                 startedTransition = ComputedStyle.StartAnimationInlineBackgroundSize(ve, ref ve.computedStyle,
                     backgroundSize, t.durationMs, t.delayMs, t.easingCurve);
@@ -1349,61 +1106,12 @@ namespace UnityEngine.UIElements
             else
             {
                 // In case there were older animations running, cancel them.
-                ve.styleAnimation.CancelAnimation(StylePropertyId.TransformOrigin);
+                ve.styleAnimation.CancelAnimation(StylePropertyId.BackgroundSize);
             }
 
             if (!startedTransition)
             {
                 ve.computedStyle.ApplyStyleBackgroundSize(backgroundSize.value);
-            }
-        }
-
-        private bool SetInlineFilter(StyleList<FilterFunction> inlineValue)
-        {
-            var styleFilter = new StyleList<FilterFunction>();
-            if (TryGetInlineFilter(ref styleFilter))
-            {
-                if (styleFilter.value == inlineValue.value && styleFilter.keyword == inlineValue.keyword)
-                    return false;
-            }
-            else if (inlineValue.keyword == StyleKeyword.Null)
-            {
-                return false;
-            }
-
-            if (inlineValue.keyword == StyleKeyword.Null)
-            {
-                m_HasInlineBackgroundSize = false;
-                return RemoveInlineStyle(StylePropertyId.Filter);
-            }
-
-            m_InlineFilter = inlineValue;
-            m_HasInlineFilter = true;
-            ApplyStyleFilter(inlineValue);
-
-            return true;
-        }
-
-        private void ApplyStyleFilter(StyleList<FilterFunction> filter)
-        {
-            ComputedTransitionUtils.UpdateComputedTransitions(ref ve.computedStyle);
-
-            bool startedTransition = false;
-            if (ve.computedStyle.hasTransition && ve.styleInitialized &&
-                ve.computedStyle.GetTransitionProperty(StylePropertyId.BackgroundSize, out var t))
-            {
-                startedTransition = ComputedStyle.StartAnimationInlineFilter(ve, ref ve.computedStyle,
-                    filter, t.durationMs, t.delayMs, t.easingCurve);
-            }
-            else
-            {
-                // In case there were older animations running, cancel them.
-                ve.styleAnimation.CancelAnimation(StylePropertyId.TransformOrigin);
-            }
-
-            if (!startedTransition)
-            {
-                ve.computedStyle.ApplyStyleFilter(filter.value);
             }
         }
 
@@ -1415,10 +1123,10 @@ namespace UnityEngine.UIElements
 
             if (StylePropertyUtil.IsAnimatable(value.id))
             {
-                ComputedTransitionUtils.UpdateComputedTransitions(ref ve.computedStyle);
+                ComputedTransitionUtils.UpdateComputedTransitions(ref ve.computedStyle, out var computedTransitions);
 
-                if (ve.computedStyle.hasTransition && ve.styleInitialized &&
-                    ve.computedStyle.GetTransitionProperty(value.id, out var t))
+                if (computedTransitions.Length > 0 && ve.styleInitialized &&
+                    computedTransitions.GetTransitionProperty(value.id, out var t))
                 {
                     startedTransition = ComputedStyle.StartAnimationInline(ve, value.id, ref ve.computedStyle,
                         value, t.durationMs, t.delayMs, t.easingCurve);
@@ -1438,10 +1146,31 @@ namespace UnityEngine.UIElements
 
         private void ApplyStyleValue(StyleValueManaged value)
         {
-            // No need to check for transitions because all StyleValueManaged cannot be animated
             var parent = ve.hierarchy.parent;
             ref var parentStyle = ref parent?.computedStyle != null ? ref parent.computedStyle : ref InitialStyle.Get();
-            ve.computedStyle.ApplyStyleValueManaged(value, ref parentStyle);
+            bool startedTransition = false;
+
+            if (StylePropertyUtil.IsAnimatable(value.id))
+            {
+                ComputedTransitionUtils.UpdateComputedTransitions(ref ve.computedStyle, out var computedTransitions);
+
+                if (computedTransitions.Length > 0 && ve.styleInitialized &&
+                    computedTransitions.GetTransitionProperty(value.id, out var t))
+                {
+                    startedTransition = ComputedStyle.StartAnimationInlineManaged(ve, value.id, ref ve.computedStyle,
+                        value, t.durationMs, t.delayMs, t.easingCurve);
+                }
+                else
+                {
+                    // In case there were older animations running, cancel them.
+                    ve.styleAnimation.CancelAnimation(value.id);
+                }
+            }
+
+            if (!startedTransition)
+            {
+                ve.computedStyle.ApplyStyleValueManaged(value, ref parentStyle);
+            }
         }
 
         //return true if another style was applied when removing the inlineStyle, false if notthing was applied
@@ -1469,10 +1198,10 @@ namespace UnityEngine.UIElements
 
             if (StylePropertyUtil.IsAnimatable(id))
             {
-                ComputedTransitionUtils.UpdateComputedTransitions(ref ve.computedStyle);
+                ComputedTransitionUtils.UpdateComputedTransitions(ref ve.computedStyle, out var computedTransitions);
 
-                if (ve.computedStyle.hasTransition && ve.styleInitialized &&
-                    ve.computedStyle.GetTransitionProperty(id, out var t))
+                if (computedTransitions.Length > 0 && ve.styleInitialized &&
+                    computedTransitions.GetTransitionProperty(id, out var t))
                 {
                     startedTransition = ComputedStyle.StartAnimation(ve, id, ref ve.computedStyle, ref newStyle, t.durationMs, t.delayMs, t.easingCurve);
                 }
@@ -1564,16 +1293,6 @@ namespace UnityEngine.UIElements
             if (m_HasInlineBackgroundSize)
             {
                 value = m_InlineBackgroundSize;
-                return true;
-            }
-            return false;
-        }
-
-        public bool TryGetInlineFilter(ref StyleList<FilterFunction> value)
-        {
-            if (m_HasInlineFilter)
-            {
-                value = m_InlineFilter;
                 return true;
             }
             return false;

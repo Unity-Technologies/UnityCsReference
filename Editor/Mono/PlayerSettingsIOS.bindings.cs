@@ -48,6 +48,12 @@ namespace UnityEditor
         SimulatorSDK = 989
     }
 
+    public enum XcodeProjectType
+    {
+        ObjectiveC = 0,
+        Swift = 1,
+    }
+
     // Target iOS device
     public enum iOSTargetDevice
     {
@@ -282,6 +288,9 @@ namespace UnityEditor
     // Player Settings is where you define various parameters for the final game that you will build in Unity. Some of these values are used in the Resolution Dialog that launches when you open a standalone game.
     public partial class PlayerSettings : UnityEngine.Object
     {
+        // This one is shared between iOS-like platforms, so put in in PlayerSettings
+        public static extern XcodeProjectType xcodeProjectType { get; set; }
+
         // iOS specific player settings
         [NativeHeader("Runtime/Misc/PlayerSettings.h")]
         [NativeHeader("Editor/Src/EditorUserBuildSettings.h")]

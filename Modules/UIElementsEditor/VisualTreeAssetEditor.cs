@@ -137,7 +137,7 @@ namespace UnityEditor.UIElements
                 panel.Render();
 
                 panel.Dispose();
-                UIElementsUtility.RemoveCachedPanel(m_VTA.GetInstanceID());
+                UIElementsUtility.RemoveCachedPanel(m_VTA.GetEntityId());
             }
             finally
             {

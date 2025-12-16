@@ -104,7 +104,7 @@ namespace UnityEditor
             var children = new List<TreeViewItem<EntityId>>();
             for (int i = 0; i < group.children.Length; ++i)
             {
-                int uniqueNodeID = GetUniqueNodeID(group.children[i]);
+                EntityId uniqueNodeID = GetUniqueNodeID(group.children[i]);
                 var node = new AudioMixerTreeViewNode(uniqueNodeID, depth, parent, group.children[i].name, group.children[i]);
                 node.parent = parent;
                 children.Add(node);
@@ -114,9 +114,9 @@ namespace UnityEditor
             parent.children = children;
         }
 
-        static public int GetUniqueNodeID(AudioMixerGroupController group)
+        static public EntityId GetUniqueNodeID(AudioMixerGroupController group)
         {
-            return group.GetInstanceID(); // alternative: group.groupID.GetHashCode();
+            return group.GetEntityId(); // alternative: group.groupID.GetHashCode();
         }
 
         public override void FetchData()
@@ -134,7 +134,7 @@ namespace UnityEditor
                 return;
             }
 
-            int uniqueNodeID = GetUniqueNodeID(m_Controller.masterGroup);
+            EntityId uniqueNodeID = GetUniqueNodeID(m_Controller.masterGroup);
             m_RootItem = new AudioMixerTreeViewNode(uniqueNodeID, 0, null, m_Controller.masterGroup.name, m_Controller.masterGroup);
             AddNodesRecursively(m_Controller.masterGroup, m_RootItem, 1);
             m_NeedRefreshRows = true;
@@ -248,11 +248,11 @@ namespace UnityEditor
             if (userAccepted)
             {
                 string name = string.IsNullOrEmpty(GetRenameOverlay().name) ? GetRenameOverlay().originalName : GetRenameOverlay().name;
-                int instanceID = GetRenameOverlay().userData;
-                var audioNode = m_TreeView.FindItem(instanceID) as AudioMixerTreeViewNode;
+                EntityId entityId = GetRenameOverlay().userData;
+                var audioNode = m_TreeView.FindItem(entityId) as AudioMixerTreeViewNode;
                 if (audioNode != null)
                 {
-                    ObjectNames.SetNameSmartWithInstanceID(instanceID, name);
+                    ObjectNames.SetNameSmartWithEntityId(entityId, name);
                     foreach (var effect in audioNode.group.effects)
                         effect.ClearCachedDisplayName();
                     m_TreeView.ReloadData();
@@ -361,7 +361,7 @@ namespace UnityEditor
             AudioMixerGroupPopupContext context = (AudioMixerGroupPopupContext)obj;
             if (context.groups != null && context.groups.Length > 0)
             {
-                var item = m_AudioGroupTree.FindItem(context.groups[0].GetInstanceID()) as AudioMixerTreeViewNode;
+                var item = m_AudioGroupTree.FindItem(context.groups[0].GetEntityId()) as AudioMixerTreeViewNode;
                 if (item != null)
                 {
                     var parent = item.parent as AudioMixerTreeViewNode;
@@ -656,14 +656,13 @@ namespace UnityEditor
 
         static string GetUniqueAudioMixerName(AudioMixerController controller)
         {
-            return "AudioMixer_" + controller.GetInstanceID();
+            return "AudioMixer_" + controller.GetEntityId();
         }
 
         void SaveExpandedState()
         {
             Debug.Assert(sizeof(int)==UnsafeUtility.SizeOf<EntityId>(), "EntityId is not the same size as int, update this code to use ulong");
-            var expandedIDsRaw = Array.ConvertAll(m_AudioGroupTreeState.expandedIDs.ToArray(), input => (int) input);
-            SessionState.SetIntArray(GetUniqueAudioMixerName(m_Controller), expandedIDsRaw);
+            SessionState.SetIntArray(GetUniqueAudioMixerName(m_Controller), m_AudioGroupTreeState.expandedIDs.ToArray().AsIntArray());
         }
 
         void LoadExpandedState()

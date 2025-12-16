@@ -14,6 +14,7 @@ using System.Text;
 using Unity.Profiling;
 using UnityEngine.Scripting;
 using Debug = UnityEngine.Debug;
+using UnityEngine.Bindings;
 
 namespace UnityEditor
 {
@@ -100,10 +101,13 @@ namespace UnityEditor
         private static readonly ProfilerMarker _profilerMarkerSortTypes = new ProfilerMarker("SortTypesTopologically");
 
         [RequiredByNativeCode]
-        private static void ProcessInitializeOnLoadAttributes(Type[] types)
+        private static void ProcessInitializeOnLoadAttributes(ReadOnlySpan<IntPtr> typeHandles)
         {
-            if (types.Length == 0)
+            if (typeHandles.Length == 0)
                 return;
+
+            var types = SystemReflectionMarshalling.UnmarshalSystemTypes(typeHandles);
+
             bool reportTimes = (bool)Debug.GetDiagnosticSwitch("EnableDomainReloadTimings").value;
 
             IEnumerable<Type> sortedTypes;

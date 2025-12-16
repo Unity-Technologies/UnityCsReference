@@ -18,6 +18,11 @@ internal sealed class PureEntityFactory
 
     internal void AddObjectsToBatch(PureEntityRtti rtti, UdmObjectId[] objectIds)
     {
+        pureEntities.pureEntityObjectIds = objectIds;
+        var length = objectIds.Length;
+        pureEntities.pureEntityInstanceIds = new EntityId[length];
+        for (int i = 0; i < length; ++i)
+            pureEntities.pureEntityInstanceIds[i] = EntityId.AllocateNextLowestEntityId();
 }
 
     internal PureEntitySet FlushBatch()

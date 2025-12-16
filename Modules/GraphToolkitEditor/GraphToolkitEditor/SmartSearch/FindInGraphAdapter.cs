@@ -4,9 +4,7 @@
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using Unity.GraphToolkit.ItemLibrary.Editor;
-using UnityEngine;
 
 namespace Unity.GraphToolkit.Editor
 {
@@ -43,12 +41,11 @@ namespace Unity.GraphToolkit.Editor
         /// <inheritdoc />
         public override void OnSelectionChanged(IEnumerable<ItemLibraryItem> items)
         {
-            var selectedItems = items.ToList();
-
-            if (selectedItems.Count > 0 && selectedItems[0] is FindItem fsi)
+            var it = items.GetEnumerator();
+            if (it.MoveNext() && it.Current is FindItem fsi)
                 m_OnHighlightDelegate(fsi);
 
-            base.OnSelectionChanged(selectedItems);
+            base.OnSelectionChanged(items);
         }
     }
 }

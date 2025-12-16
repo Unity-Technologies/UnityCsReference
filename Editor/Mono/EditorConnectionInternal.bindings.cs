@@ -80,14 +80,14 @@ namespace UnityEditor
         [NativeConditional("ENABLE_PLAYERCONNECTION && UNITY_EDITOR")]
         [StaticAccessor("EditorConnectionManaged::Get()", StaticAccessorType.Dot)]
         [NativeName("Unregister")]
-        private extern static void UnregisterInternal(UnityEditor.GUID messageId);
+        private extern static void UnregisterInternal(UnityEngine.GUID messageId);
 
         public static void RegisterInternal(string messageId) { RegisterInternal(new GUID(messageId)); }
 
         [NativeConditional("ENABLE_PLAYERCONNECTION && UNITY_EDITOR")]
         [StaticAccessor("EditorConnectionManaged::Get()", StaticAccessorType.Dot)]
         [NativeName("Register")]
-        private extern static void RegisterInternal(UnityEditor.GUID messageId);
+        private extern static void RegisterInternal(UnityEngine.GUID messageId);
 
 
         [NativeConditional("ENABLE_PLAYERCONNECTION && UNITY_EDITOR")]

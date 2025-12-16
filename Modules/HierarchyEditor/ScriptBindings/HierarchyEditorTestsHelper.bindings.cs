@@ -38,7 +38,7 @@ namespace Unity.Hierarchy.Editor
 
         internal static string GetSearchableWindowQuery(SearchableEditorWindow window) => window.m_SearchFilter;
 
-        internal static string[] GetNames(this Hierarchy hierarchy, HierarchyNode[] nodes)
+        internal static string[] GetNodeNames(Hierarchy hierarchy, HierarchyNode[] nodes)
         {
             if (nodes.Length == 0)
                 return Array.Empty<string>();
@@ -52,13 +52,6 @@ namespace Unity.Hierarchy.Editor
                     names[i] = hierarchy.GetName(nodes[i]);
             }
             return names;
-        }
-
-
-        internal static string[] GetNodeNamesWithAllFlags(this HierarchyViewModel model, Hierarchy hierarchy, HierarchyNodeFlags flags)
-        {
-            var nodes = model.GetNodesWithAllFlags(flags);
-            return hierarchy.GetNames(nodes);
         }
     }
 }

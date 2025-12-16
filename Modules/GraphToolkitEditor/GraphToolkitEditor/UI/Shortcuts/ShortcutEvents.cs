@@ -161,6 +161,18 @@ namespace Unity.GraphToolkit.Editor
     }
 
     /// <summary>
+    /// An event sent by the Delete and Reconnect shortcut.
+    /// </summary>
+    [ToolShortcutEvent(null, id, keyCode, modifiers)]
+    [UnityRestricted]
+    internal class ShortcutDeleteAndReconnectEvent : ShortcutEventBase<ShortcutDeleteAndReconnectEvent>
+    {
+        public const string id = "Delete and Reconnect";
+        const KeyCode keyCode = KeyCode.Delete;
+        const ShortcutModifiers modifiers = ShortcutModifiers.Shift;
+    }
+
+    /// <summary>
     /// An event sent by the Paste Without Wires shortcut.
     /// </summary>
     /// <remarks>The same shortcut is used for "Paste as New"</remarks>
@@ -220,6 +232,30 @@ namespace Unity.GraphToolkit.Editor
     {
         public const string id = "Extract Contents to Placemat";
         const KeyCode k_KeyCode = KeyCode.U;
+        const ShortcutModifiers k_Modifiers = ShortcutModifiers.Action | ShortcutModifiers.Shift;
+    }
+
+    /// <summary>
+    /// An event sent by the Save shortcut.
+    /// </summary>
+    [ToolShortcutEvent(null, id, k_KeyCode, k_Modifiers)]
+    [UnityRestricted]
+    internal class ShortcutFileSaveEvent : ShortcutEventBase<ShortcutFileSaveEvent>
+    {
+        public const string id = "Save";
+        const KeyCode k_KeyCode = KeyCode.S;
+        const ShortcutModifiers k_Modifiers = ShortcutModifiers.Action;
+    }
+
+    /// <summary>
+    /// An event sent by the Save As... shortcut.
+    /// </summary>
+    [ToolShortcutEvent(null, id, k_KeyCode, k_Modifiers)]
+    [UnityRestricted]
+    internal class ShortcutSaveAsEvent : ShortcutEventBase<ShortcutSaveAsEvent>
+    {
+        public const string id = "Save As...";
+        const KeyCode k_KeyCode = KeyCode.S;
         const ShortcutModifiers k_Modifiers = ShortcutModifiers.Action | ShortcutModifiers.Shift;
     }
 }

@@ -1186,6 +1186,20 @@ namespace UnityEngine.UIElements
             value = default;
             return false;
         }
+        internal static int ArgumentCountForMaterialPropertyValueType(MaterialPropertyValueType type)
+        {
+            switch (type)
+            {
+                case MaterialPropertyValueType.Color:
+                case MaterialPropertyValueType.Float:
+                case MaterialPropertyValueType.Texture:
+                    return 1;
+                case MaterialPropertyValueType.Vector:
+                    return 4;
+                default:
+                    throw new ArgumentOutOfRangeException();
+            }
+        }
 
         /// <summary>
         /// Sets a <see cref="MaterialDefinition"/> as the current value.
@@ -1194,7 +1208,52 @@ namespace UnityEngine.UIElements
         /// <param name="value">The value to store.</param>
         public void SetMaterialDefinition(StyleSheet styleSheet, MaterialDefinition value)
         {
-            SetAssetReference(styleSheet, value.material);
+            int totalSize = 1; // Material reference
+            if (value.propertyValues != null)
+            {
+                foreach (var prop in value.propertyValues)
+                    totalSize += ArgumentCountForMaterialPropertyValueType(prop.type) + 3; // Func + ArgCount + Name
+            }
+
+            SetSize(ref m_Values, totalSize);
+
+            styleSheet.WriteAssetReference(ref values[0], value.material);
+
+            if (value.propertyValues == null)
+                return; // We're done here
+
+            int i = 1;
+            foreach (var prop in value.propertyValues)
+            {
+                styleSheet.WriteFunction(ref values[i++], StyleValueFunction.MaterialProperty);
+                styleSheet.WriteFloat(ref values[i++], ArgumentCountForMaterialPropertyValueType(prop.type) + 1);
+                styleSheet.WriteString(ref values[i++], prop.name);
+
+                switch (prop.type)
+                {
+                    case MaterialPropertyValueType.Color:
+                        var color = value.GetColor(prop.name);
+                        styleSheet.WriteColor(ref values[i++], color);
+                        break;
+                    case MaterialPropertyValueType.Float:
+                        var floatVal = value.GetFloat(prop.name);
+                        styleSheet.WriteFloat(ref values[i++], floatVal);
+                        break;
+                    case MaterialPropertyValueType.Vector:
+                        var vector = value.GetVector(prop.name);
+                        styleSheet.WriteFloat(ref values[i++], vector.x);
+                        styleSheet.WriteFloat(ref values[i++], vector.y);
+                        styleSheet.WriteFloat(ref values[i++], vector.z);
+                        styleSheet.WriteFloat(ref values[i++], vector.w);
+                        break;
+                    case MaterialPropertyValueType.Texture:
+                        var tex = value.GetTexture(prop.name);
+                        styleSheet.WriteAssetReference(ref values[i++], tex);
+                        break;
+                    default:
+                        throw new ArgumentOutOfRangeException();
+                }
+            }
         }
 
         /// <summary>
@@ -1205,14 +1264,109 @@ namespace UnityEngine.UIElements
         /// <returns><see langword="true"/> if the value could be read; <see langword="false"/> otherwise.</returns>
         public bool TryGetMaterialDefinition(StyleSheet styleSheet, out MaterialDefinition value)
         {
-            if (TryGetAssetReference(styleSheet, out var objectValue) && objectValue is Material material)
+            value = default;
+
+            if (handleCount < 1)
+                return false;
+
+            if (!styleSheet.TryReadAssetReference(values[0], out var matObj))
             {
-                value = MaterialDefinition.FromMaterial(material);
-                return !value.IsEmpty();
+                if (!styleSheet.TryReadResourcePath(values[0], out var resourcePath))
+                    return false;
+                else
+                    matObj = resourcePath.LoadResource<Material>(1.0f);
             }
 
-            value = default;
-            return false;
+            // Read material properties
+            var propertyValues = new List<MaterialPropertyValue>();
+            for (int i = 1; i < values.Length;)
+            {
+                var fnType = (StyleValueFunction)values[i++].valueIndex;
+                if (fnType != StyleValueFunction.MaterialProperty)
+                    break;
+
+                if (!styleSheet.TryReadFloat(values[i++], out var ac))
+                    return false;
+
+                int argCount = (int)ac;
+
+                if (!styleSheet.TryReadString(values[i++], out string propertyName))
+                    return false;
+
+                var valueType = values[i].valueType;
+                if (valueType == StyleValueType.Float)
+                {
+                    int vecDim = argCount - 1; // -1 to account for the property name
+                    var vec = Vector4.zero;
+                    int vecIndex = 0;
+                    while (vecIndex < vecDim)
+                    {
+                        if (!styleSheet.TryReadFloat(values[i++], out var f))
+                            return false;
+                        vec[vecIndex++] = f;
+                    }
+
+                    var type = (vecDim > 1) ? MaterialPropertyValueType.Vector : MaterialPropertyValueType.Float;
+
+                    propertyValues.Add(new MaterialPropertyValue()
+                    {
+                        name = propertyName,
+                        type = type,
+                        packedValue = vec
+                    });
+                }
+                else if (valueType == StyleValueType.Color || valueType == StyleValueType.Enum)
+                {
+                    if (!styleSheet.TryReadColor(values[i++], out var c))
+                        return false;
+                    propertyValues.Add(new MaterialPropertyValue()
+                    {
+                        name = propertyName,
+                        type = MaterialPropertyValueType.Color,
+                        packedValue = new Vector4(c.r, c.g, c.b, c.a)
+                    });
+                }
+                else if (valueType == StyleValueType.AssetReference || valueType == StyleValueType.ResourcePath || valueType == StyleValueType.MissingAssetReference)
+                {
+                    Object tex = null;
+                    if (valueType != StyleValueType.MissingAssetReference)
+                    {
+                        if (values[i].valueType == StyleValueType.AssetReference)
+                        {
+                            if (!styleSheet.TryReadAssetReference(values[i++], out tex))
+                                return false;
+                        }
+                        else if (values[i].valueType == StyleValueType.ResourcePath)
+                        {
+                            if (!styleSheet.TryReadResourcePath(values[i++], out var resourcePath))
+                                return false;
+                            tex = resourcePath.LoadResource<Texture>(1.0f);
+                        }
+                    }
+                    else
+                        ++i;
+
+                    propertyValues.Add(new MaterialPropertyValue()
+                    {
+                        name = propertyName,
+                        type = MaterialPropertyValueType.Texture,
+                        textureValue = tex as Texture
+                    });
+                }
+                else
+                {
+                    Debug.LogError($"Unexpected value type {valueType} in material property argument");
+                    return false;
+                }
+            }
+
+            value = new MaterialDefinition()
+            {
+                material = matObj as Material,
+                propertyValues = propertyValues
+            };
+
+            return true;
         }
 
         /// <summary>

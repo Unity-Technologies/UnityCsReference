@@ -7,8 +7,8 @@ using UnityEngine.UIElements;
 
 namespace Unity.UIToolkit.Editor
 {
-    internal class StyleFoldoutField<THeaderInputElement> : OverrideFoldout
-        where THeaderInputElement : VisualElement, new()
+    internal abstract class StyleFoldoutField<THeaderInputElement> : OverrideFoldout
+        where THeaderInputElement : VisualElement
     {
         static readonly string k_UssPath = "UIToolkitAuthoring/Inspector/Controls/StyleFoldoutField.uss";
 
@@ -23,15 +23,27 @@ namespace Unity.UIToolkit.Editor
 
         public StyleFoldoutField() : this(null) { }
 
-        public StyleFoldoutField(string text) : base(text)
+        public StyleFoldoutField(string text)
         {
             styleSheets.Add(EditorGUIUtility.Load(k_UssPath) as StyleSheet);
             AddToClassList(FoldoutFieldPropertyName);
 
-            m_HeaderInputField = new THeaderInputElement();
+            m_HeaderInputField = CreateHeaderInputElement();
             header.Add(m_HeaderInputField);
+
+            toggle.toggleOnLabelClick = true;
+            toggle.visualInput.Add(m_HeaderInputField);
+            toggle.AddToClassList(TextField.alignedFieldUssClassName);
+
+            if (!string.IsNullOrEmpty(text))
+            {
+                m_Toggle.label = text;
+                var checkmarkIndex = m_Toggle.visualInput.IndexOf(m_Toggle.m_CheckMark);
+                m_Toggle.visualInput.Insert(checkmarkIndex + 1, m_Toggle.labelElement);
+            }
         }
 
+        protected abstract THeaderInputElement CreateHeaderInputElement();
 
         /// <summary>
         /// Override this method in inheritors to update the header field with the values from the child fields.

@@ -14,7 +14,7 @@ namespace UnityEditor
      NativeHeader("Runtime/Graphics/RenderTexture.h"),
      NativeHeader("Editor/Src/Windowing/GUIView.bindings.h"),
      NativeHeader("Editor/Src/Windowing/ContainerWindow.bindings.h")]
-    [UnityEngine.Bindings.VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.GraphToolkitModule")]
+    [UnityEngine.Bindings.VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.GraphToolkitModule", "UnityEditor.BurstModule")]
     internal partial class GUIView
     {
         [VisibleToOtherModules("UnityEditor.GraphToolkitModule")]

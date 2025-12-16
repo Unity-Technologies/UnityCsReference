@@ -48,6 +48,10 @@ namespace UnityEngine.TextCore.Text
                 }
             }
 
+            // Cannot read or create a material on a worker thread.
+            if (!isMainThread)
+                return null;
+
             // Create new material from the source material and copy properties if using distance field shaders.
             if (sourceMaterial.HasProperty(TextShaderUtilities.ID_GradientScale) && targetMaterial.HasProperty(TextShaderUtilities.ID_GradientScale))
             {

@@ -146,7 +146,7 @@ namespace UnityEngine.UIElements
             [SerializeField] string m_Path;
             [SerializeField] string m_TypeFullName;
             [SerializeField] LazyLoadReference<Object> m_AssetReference;
-            [SerializeField] int m_InstanceID;
+            [SerializeField] EntityId m_EntityId;
 
             Type m_CachedType;
             public Type type => m_CachedType ??= Type.GetType(m_TypeFullName);
@@ -158,10 +158,10 @@ namespace UnityEngine.UIElements
                 {
                     if (m_AssetReference.isSet)
                     {
-                        return m_AssetReference.asset == null && m_InstanceID != 0 ? CreateMissingReferenceObject(m_InstanceID) : m_AssetReference.asset;
+                        return m_AssetReference.asset == null && m_EntityId != EntityId.None ? CreateMissingReferenceObject(m_EntityId) : m_AssetReference.asset;
                     }
 
-                    return m_InstanceID != 0 ? CreateMissingReferenceObject(m_InstanceID) : null;
+                    return m_EntityId != EntityId.None ? CreateMissingReferenceObject(m_EntityId) : null;
                 }
             }
 
@@ -171,7 +171,7 @@ namespace UnityEngine.UIElements
                 m_TypeFullName = type.AssemblyQualifiedName;
                 m_CachedType = type;
                 m_AssetReference = asset;
-                m_InstanceID = asset is Object ? asset.GetInstanceID() : 0;
+                m_EntityId = asset is Object ? asset.GetEntityId() : EntityId.None;
             }
         }
 
@@ -464,7 +464,30 @@ namespace UnityEngine.UIElements
             try
             {
                 var cc = new CreationContext(s_TemporarySlotInsertionPoints, null, null, null, null, s_VeaIdsPath, null, null);
-                CloneTree(target, cc);
+                CloneTree(target, cc, null);
+            }
+            finally
+            {
+                s_TemporarySlotInsertionPoints.Clear();
+                s_VeaIdsPath.Clear();
+            }
+
+            return target;
+        }
+
+        /// <summary>
+        /// Build a tree of VisualElements from the asset and fills a <see cref="VisualElementAssetReferenceTable"/>.
+        /// </summary>
+        /// <param name="referenceTable">A table that can be used to resolve references.</param>
+        /// <returns>The root of the tree of VisualElements that was just cloned.</returns>
+        internal TemplateContainer Instantiate(out VisualElementAssetReferenceTable referenceTable)
+        {
+            TemplateContainer target = new TemplateContainer(name, this);
+            referenceTable = VisualElementAssetReferenceTable.Create(target);
+            try
+            {
+                var cc = new CreationContext(s_TemporarySlotInsertionPoints, null, null, null, null, s_VeaIdsPath, null, null);
+                CloneTree(target, cc, referenceTable.root);
             }
             finally
             {
@@ -517,6 +540,13 @@ namespace UnityEngine.UIElements
             CloneTree(target, out _, out _);
         }
 
+        /// <summary>
+        /// Builds a tree of VisualElements from the asset and fills a <see cref="VisualElementAssetReferenceTable"/>.
+        /// </summary>
+        /// <param name="target"></param>
+        /// <param name="referenceTable">A table that can be used to resolve references</param>
+        internal void CloneTree(VisualElement target, out VisualElementAssetReferenceTable referenceTable) => CloneTree(target, out _, out _, out referenceTable);
+
         public void CloneTree(VisualElement target, out int firstElementIndex, out int elementAddedCount)
         {
             if (target == null)
@@ -526,7 +556,7 @@ namespace UnityEngine.UIElements
             try
             {
                 var cc = new CreationContext(s_TemporarySlotInsertionPoints, null, null, null, null, s_VeaIdsPath, null, null);
-                CloneTree(target, cc);
+                CloneTree(target, cc, null);
             }
             finally
             {
@@ -536,7 +566,28 @@ namespace UnityEngine.UIElements
             }
         }
 
-        internal void CloneTree(VisualElement target, CreationContext cc)
+        internal void CloneTree(VisualElement target, out int firstElementIndex, out int elementAddedCount, out VisualElementAssetReferenceTable referenceTable)
+        {
+            if (target == null)
+                throw new ArgumentNullException(nameof(target));
+
+            referenceTable = VisualElementAssetReferenceTable.Create(target);
+
+            firstElementIndex = target.childCount;
+            try
+            {
+                var cc = new CreationContext(s_TemporarySlotInsertionPoints, null, null, null, null, s_VeaIdsPath, null, null);
+                CloneTree(target, cc, referenceTable.root);
+            }
+            finally
+            {
+                elementAddedCount = target.childCount - firstElementIndex;
+                s_TemporarySlotInsertionPoints.Clear();
+                s_VeaIdsPath.Clear();
+            }
+        }
+
+        internal void CloneTree(VisualElement target, CreationContext cc, VisualElementAssetReferenceTable.DocumentNode parentAuthoringNode)
         {
             if (target == null)
                 throw new ArgumentNullException(nameof(target));
@@ -564,7 +615,7 @@ namespace UnityEngine.UIElements
                 var newCc = new CreationContext(cc.slotInsertionPoints, cc.attributeOverrides, cc.serializedDataOverrides,
                     this, target, cc.veaIdsPath, null, cc.templateAsset);
 
-                var childElement = CloneSetupRecursively(child, newCc);
+                var childElement = CloneSetupRecursively(child, newCc, parentAuthoringNode);
 
                 if (isTemplate)
                 {
@@ -580,12 +631,12 @@ namespace UnityEngine.UIElements
             }
         }
 
-        private VisualElement CloneSetupRecursively(VisualElementAsset asset, CreationContext context)
+        private VisualElement CloneSetupRecursively(VisualElementAsset asset, CreationContext context, VisualElementAssetReferenceTable.DocumentNode parentAuthoringNode)
         {
             if (asset.skipClone)
                 return null;
 
-            var ve = Create(asset, context);
+            var ve = Create(asset, context, parentAuthoringNode);
 
             if (ve == null)
                 return null;
@@ -645,7 +696,7 @@ namespace UnityEngine.UIElements
                     isTemplate = true;
                 }
 
-                var childVe = CloneSetupRecursively(childVea, context);
+                var childVe = CloneSetupRecursively(childVea, context, parentAuthoringNode);
 
                 if (isTemplate)
                 {
@@ -726,6 +777,16 @@ namespace UnityEngine.UIElements
                     usingEntry.asset.FindElementsByName(visualElementName, results);
                 }
             }
+        }
+
+        UxmlAsset FindElementById(long id)
+        {
+            foreach (var element in DepthFirstTraversal())
+            {
+                if (element.id == id)
+                    return element;
+            }
+            return null;
         }
 
         void FindElementsByName(string visualElementName, List<VisualElementAsset> results)
@@ -880,7 +941,7 @@ namespace UnityEngine.UIElements
 
         #pragma warning disable CS0618 // Type or member is obsolete
         [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
-        internal static VisualElement Create(VisualElementAsset asset, CreationContext ctx)
+        internal static VisualElement Create(VisualElementAsset asset, CreationContext ctx, VisualElementAssetReferenceTable.DocumentNode parentAuthoringNode = null)
         {
             VisualElement CreateError()
             {
@@ -890,7 +951,7 @@ namespace UnityEngine.UIElements
 
             // The type is known by UxmlSerializedData system use that instead to create the element.
             if (asset.serializedData != null)
-                return asset.Instantiate(ctx);
+                return asset.Instantiate(ctx, parentAuthoringNode);
 
             if (!VisualElementFactoryRegistry.TryGetValue(asset.fullTypeName, out var factoryList))
             {
@@ -1017,7 +1078,7 @@ namespace UnityEngine.UIElements
             return DepthFirstTraversal(m_VisualTree);
         }
 
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
         internal IEnumerable<T> DepthFirstTraversalOfType<T>()
         {
             var elements = DepthFirstTraversal();
@@ -1129,7 +1190,24 @@ namespace UnityEngine.UIElements
             for (var i = 0; i < list.Count; ++i)
             {
                 var child = list[i];
+                if (child is VisualElementAsset vea)
+                {
+                    vea.id = GenerateNewId(vea);
+                    UpdateUxmlObjectAssetsParentId(vea);
+                }
+
                 actualParent.Add(child);
+            }
+        }
+
+        static void UpdateUxmlObjectAssetsParentId(VisualElementAsset visualElementAsset)
+        {
+            using var _ = ListPool<UxmlObjectAsset>.Get(out var uxmlObjectAssets);
+            visualElementAsset.GetChildrenUxmlObjectAssets(uxmlObjectAssets);
+
+            foreach (var uxmlObjectAsset in uxmlObjectAssets)
+            {
+                uxmlObjectAsset.parentId = visualElementAsset.id;
             }
         }
 

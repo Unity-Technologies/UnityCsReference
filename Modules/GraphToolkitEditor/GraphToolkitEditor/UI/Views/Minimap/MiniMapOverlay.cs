@@ -20,9 +20,9 @@ namespace Unity.GraphToolkit.Editor
     {
         public const string idValue = "gtf-minimap";
 
-        MiniMapView m_MiniMapView;
+        MiniMapView MiniMapView => OverlayWrapper?.RootView as MiniMapView;
 
-        public override RootView RootView => m_MiniMapView;
+        public override RootView RootView => MiniMapView;
 
         public MiniMapOverlay()
         {
@@ -34,23 +34,32 @@ namespace Unity.GraphToolkit.Editor
         public override VisualElement CreatePanelContent()
         {
             var window = containerWindow as GraphViewEditorWindow;
-            if (window != null && window.GraphView != null)
+            if (window != null )
             {
-                if (m_MiniMapView != null)
-                    window.UnregisterView(m_MiniMapView);
-
-                m_MiniMapView?.Dispose();
-                m_MiniMapView = window.CreateAndSetupMiniMapView();
-                if (m_MiniMapView != null)
+                if (OverlayWrapper != null)
                 {
-                    return m_MiniMapView;
+                    window.UnregisterView(MiniMapView);
+                    OverlayWrapper.DisposeRoot();
+                }
+
+                OverlayWrapper = window.CreateAndSetupMiniMapView();
+                if (window.GraphView != null)
+                {
+                    if (MiniMapView != null)
+                    {
+                        return OverlayWrapper;
+                    }
                 }
             }
 
             var placeholder = new VisualElement();
+            if (OverlayWrapper != null)
+                OverlayWrapper.RootView = placeholder;
+
             placeholder.AddToClassList(MiniMapView.ussClassName);
             placeholder.AddPackageStylesheet("MiniMapView.uss");
-            return placeholder;
+
+            return OverlayWrapper ?? placeholder;
         }
 
         /// <inheritdoc />
@@ -58,15 +67,14 @@ namespace Unity.GraphToolkit.Editor
         {
             base.OnWillBeDestroyed();
 
-            if (m_MiniMapView != null)
+            if (OverlayWrapper != null)
             {
                 var window = containerWindow as GraphViewEditorWindow;
                 if (window != null)
-                    window.UnregisterView(m_MiniMapView);
+                    window.UnregisterView(MiniMapView);
 
-                m_MiniMapView.Dispose();
-
-                m_MiniMapView = null;
+                OverlayWrapper.DisposeRoot();
+                OverlayWrapper = null;
             }
         }
     }

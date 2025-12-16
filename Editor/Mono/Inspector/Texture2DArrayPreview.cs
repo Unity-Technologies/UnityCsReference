@@ -4,16 +4,20 @@
 
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Experimental.Rendering;
 
 namespace UnityEditor
 {
     internal class Texture2DArrayPreview
     {
-        static readonly int s_ShaderColorMask = Shader.PropertyToID("_ColorMaskBits");
+        static readonly int s_ShaderColorMask = Shader.PropertyToID("_ColorMask");
         static readonly int s_ShaderSliceIndex = Shader.PropertyToID("_SliceIndex");
         static readonly int s_ShaderMip = Shader.PropertyToID("_Mip");
         static readonly int s_ShaderToSrgb = Shader.PropertyToID("_ToSRGB");
+        static readonly int s_ShaderToLinear = Shader.PropertyToID("_ToLinear");
         static readonly int s_ShaderIsNormalMap = Shader.PropertyToID("_IsNormalMap");
+        static readonly int s_ShaderIsAlphaOnly = Shader.PropertyToID("_IsAlphaOnly");
+        static readonly int s_ShaderGrayscale = Shader.PropertyToID("_Grayscale");
 
         // Preview settings
         Material m_Material;
@@ -35,20 +39,6 @@ namespace UnityEditor
             return Mathf.Min(mipLevel, TextureUtil.GetMipmapCount(texture));
         }
 
-        public void SetShaderColorMask(TextureInspector.PreviewMode mode)
-        {
-            var mask = 15;
-            switch (mode)
-            {
-                case TextureInspector.PreviewMode.RGB: mask = 7; break;
-                case TextureInspector.PreviewMode.R: mask = 1; break;
-                case TextureInspector.PreviewMode.G: mask = 2; break;
-                case TextureInspector.PreviewMode.B: mask = 4; break;
-                case TextureInspector.PreviewMode.A: mask = 8; break;
-            }
-            m_Material.SetFloat(s_ShaderColorMask, (float)mask);
-        }
-
         public void OnPreviewSettings(Texture target)
         {
             Texture2DArray texture2DArray = target as Texture2DArray;
@@ -67,7 +57,7 @@ namespace UnityEditor
             }
         }
 
-        public void OnPreviewGUI(Texture t, Rect r, GUIStyle background, float exposure, TextureInspector.PreviewMode previewMode, float mipLevel)
+        public void OnPreviewGUI(Texture t, Rect r, GUIStyle background, float exposure, TextureInspector.PreviewMode previewMode, float mipLevel, bool useGrayscalePreview)
         {
             if (t == null)
                 return;
@@ -83,11 +73,16 @@ namespace UnityEditor
 
             int effectiveSlice = GetEffectiveSlice(t);
 
-            m_Material.SetFloat(s_ShaderSliceIndex, (float)effectiveSlice);
-            m_Material.SetFloat(s_ShaderToSrgb, QualitySettings.activeColorSpace == ColorSpace.Linear ? 1.0f : 0.0f);
-            m_Material.SetFloat(s_ShaderIsNormalMap, TextureInspector.IsNormalMap(t) ? 1.0f : 0.0f);
+            bool isNormalMap = TextureInspector.IsNormalMap(t);
+            bool displayAlphaOnly = previewMode == TextureInspector.PreviewMode.A || GraphicsFormatUtility.IsAlphaOnlyFormat(t.graphicsFormat);
+            bool enableToSrgb = !isNormalMap && !displayAlphaOnly && QualitySettings.activeColorSpace == ColorSpace.Linear;
 
-            SetShaderColorMask(previewMode);
+            m_Material.SetFloat(s_ShaderSliceIndex, (float)effectiveSlice);
+            m_Material.SetFloat(s_ShaderToSrgb, enableToSrgb ? 1.0f : 0.0f);
+            m_Material.SetFloat(s_ShaderToLinear, 0.0f);
+            m_Material.SetFloat(s_ShaderIsNormalMap, isNormalMap ? 1.0f : 0.0f);
+            m_Material.SetFloat(s_ShaderIsAlphaOnly, displayAlphaOnly ? 1.0f : 0.0f);
+            m_Material.SetFloat(s_ShaderGrayscale, useGrayscalePreview ? 1.0f : 0.0f);
 
             int texWidth = Mathf.Max(t.width, 1);
             int texHeight = Mathf.Max(t.height, 1);
@@ -100,7 +95,7 @@ namespace UnityEditor
             FilterMode oldFilter = t.filterMode;
             TextureUtil.SetFilterModeNoDirty(t, FilterMode.Point);
 
-            EditorGUI.DrawPreviewTexture(wantedRect, t, m_Material, ScaleMode.StretchToFill, 0, effectiveMipLevel, UnityEngine.Rendering.ColorWriteMask.All, exposure);
+            EditorGUI.DrawPreviewTexture(wantedRect, t, m_Material, ScaleMode.StretchToFill, 0, effectiveMipLevel, TextureInspector.GetColorWriteMaskForPreviewMode(previewMode), exposure);
 
             TextureUtil.SetFilterModeNoDirty(t, oldFilter);
 
@@ -161,12 +156,19 @@ namespace UnityEditor
             var previewUtility = new PreviewRenderUtility();
             previewUtility.BeginStaticPreview(new Rect(0, 0, width, height));
 
+            bool isNormalMap = TextureInspector.IsNormalMap(texture);
+            bool isAlphaOnly = GraphicsFormatUtility.IsAlphaOnlyFormat(texture.format);
+            bool enableToLinear = (isNormalMap || isAlphaOnly) && QualitySettings.activeColorSpace == ColorSpace.Linear;
+
             InitPreviewMaterialIfNeeded();
             m_Material.mainTexture = texture;
-            m_Material.SetFloat(s_ShaderColorMask, 15.0f);
+            m_Material.SetVector(s_ShaderColorMask, Vector4.one);
             m_Material.SetFloat(s_ShaderMip, 0);
             m_Material.SetFloat(s_ShaderToSrgb, 0.0f);
-            m_Material.SetFloat(s_ShaderIsNormalMap, TextureInspector.IsNormalMap(texture) ? 1.0f : 0.0f);
+            m_Material.SetFloat(s_ShaderToLinear, enableToLinear ? 1.0f : 0.0f);
+            m_Material.SetFloat(s_ShaderIsNormalMap, isNormalMap ? 1.0f : 0.0f);
+            m_Material.SetFloat(s_ShaderIsAlphaOnly, isAlphaOnly ? 1.0f : 0.0f);
+            m_Material.SetFloat(s_ShaderGrayscale, 0.0f);
 
             int sliceDistance = previewUtility.renderTexture.width / 12;
             var elementCount = Mathf.Min(texture.depth, 6);

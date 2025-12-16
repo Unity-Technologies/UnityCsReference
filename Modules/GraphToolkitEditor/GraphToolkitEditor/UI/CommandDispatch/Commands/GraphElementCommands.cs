@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System;
 using System.Collections.Generic;
 using System.Linq;
 using JetBrains.Annotations;
@@ -218,7 +217,7 @@ namespace Unity.GraphToolkit.Editor
         [UsedImplicitly]
         public static void DefaultCommandHandler(UndoStateComponent undoState, GraphModelStateComponent graphModelState, AlignNodesCommand command)
         {
-            if (command.Nodes.Any())
+            if (command.Nodes.HasAny())
             {
                 using (var undoStateUpdater = undoState.UpdateScope)
                 {

@@ -21,7 +21,7 @@ namespace UnityEditor
                                     || EditorWindow.focusedWindow is SceneHierarchyWindow;
 
         }
-        
+
 
         private static ShortcutContext s_ShortcutContext;
 
@@ -588,10 +588,9 @@ namespace UnityEditor
 
             instance.m_SelectedScenes.Clear();
 
-            var hierarchyWindow = SceneHierarchyWindow.lastInteractedHierarchyWindow;
-            if (shouldHide && hierarchyWindow)
+            if (shouldHide)
             {
-                hierarchyWindow.GetSelectedScenes(instance.m_SelectedScenes);
+                IHierarchyWindow.GetSelectedScenes(instance.m_SelectedScenes);
 
                 foreach (var scene in instance.m_SelectedScenes)
                 {
@@ -630,10 +629,9 @@ namespace UnityEditor
 
             instance.m_SelectedScenes.Clear();
 
-            var hierarchyWindow = SceneHierarchyWindow.lastInteractedHierarchyWindow;
-            if (shouldHide && hierarchyWindow)
+            if (shouldHide)
             {
-                hierarchyWindow.GetSelectedScenes(instance.m_SelectedScenes);
+                IHierarchyWindow.GetSelectedScenes(instance.m_SelectedScenes);
 
                 foreach (var scene in instance.m_SelectedScenes)
                 {
@@ -683,10 +681,9 @@ namespace UnityEditor
 
             instance.m_SelectedScenes.Clear();
 
-            var hierarchyWindow = SceneHierarchyWindow.lastInteractedHierarchyWindow;
-            if (shouldDisablePicking && hierarchyWindow)
+            if (shouldDisablePicking)
             {
-                hierarchyWindow.GetSelectedScenes(instance.m_SelectedScenes);
+                IHierarchyWindow.GetSelectedScenes(instance.m_SelectedScenes);
 
                 foreach (var scene in instance.m_SelectedScenes)
                 {
@@ -709,7 +706,9 @@ namespace UnityEditor
                     instance.EnablePicking(scene);
             }
 
-            if (hierarchyWindow)
+            instance.PickableContentChanged();
+
+            if (!HierarchyPreferences.UseNewHierarchy)
                 EditorApplication.RepaintHierarchyWindow();
         }
 
@@ -743,14 +742,10 @@ namespace UnityEditor
                 }
 
                 m_SelectedScenes.Clear();
-                var hierarchyWindow = SceneHierarchyWindow.lastInteractedHierarchyWindow;
-                if (hierarchyWindow)
+                IHierarchyWindow.GetSelectedScenes(m_SelectedScenes);
+                foreach (var scene in m_SelectedScenes)
                 {
-                    hierarchyWindow.GetSelectedScenes(m_SelectedScenes);
-                    foreach (var scene in m_SelectedScenes)
-                    {
-                        Show(scene);
-                    }
+                    Show(scene);
                 }
             }
             else
@@ -780,14 +775,10 @@ namespace UnityEditor
                 }
 
                 m_SelectedScenes.Clear();
-                var hierarchyWindow = SceneHierarchyWindow.lastInteractedHierarchyWindow;
-                if (hierarchyWindow)
+                IHierarchyWindow.GetSelectedScenes(m_SelectedScenes);
+                foreach (var scene in m_SelectedScenes)
                 {
-                    hierarchyWindow.GetSelectedScenes(m_SelectedScenes);
-                    foreach (var scene in m_SelectedScenes)
-                    {
-                        Show(scene);
-                    }
+                    Show(scene);
                 }
             }
             else

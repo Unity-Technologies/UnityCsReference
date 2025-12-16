@@ -23,8 +23,10 @@ namespace UnityEditor.Search
         public static Texture2D logInfo = EditorGUIUtility.LoadIcon("UIPackageResources/Images/console.infoicon.png");
         public static Texture2D logWarning = EditorGUIUtility.LoadIcon("UIPackageResources/Images/cconsole.warnicon.png");
         public static Texture2D logError = EditorGUIUtility.LoadIcon("UIPackageResources/Images/console.erroricon.png");
-        public static Texture2D packageInstalled = EditorGUIUtility.LoadIcon($"{iconFolder}/package_installed.png");
-        public static Texture2D packageUpdate = EditorGUIUtility.LoadIcon($"{iconFolder}/package_update.png");
+        public static string theme = EditorGUIUtility.isProSkin ? "Dark" : "Light";
+        public static string packageManagerIcons = $"PackageManager/{theme}";
+        public static Texture2D packageInstalled = EditorGUIUtility.LoadIcon($"{packageManagerIcons}/InProject@2x");
+        public static Texture2D packageUpdate = EditorGUIUtility.LoadIcon($"{packageManagerIcons}/Package@2x");
         public static Texture2D dependencies = EditorGUIUtility.LoadIcon("UnityEditor.FindDependencies");
         public static Texture2D toggles = EditorGUIUtility.LoadIcon("MoreOptions");
     }

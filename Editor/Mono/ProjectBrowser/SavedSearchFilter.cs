@@ -26,7 +26,7 @@ namespace UnityEditor
         [DataMember]
         public float m_PreviewSize = -1f; // if -1f then preview size is not applied when set
         [DataMember]
-        public EntityId m_ID;
+        public int m_ID;
         [DataMember]
         public SearchFilter m_Filter;
 
@@ -48,51 +48,61 @@ namespace UnityEditor
         List<SavedFilter> m_SavedFilters;
 
         // Callback when saved filters have changed
-        System.Action m_SavedFiltersChanged;
+        Action m_SavedFiltersChanged;
         // Callback when saved filters have been initialized
-        System.Action m_SavedFiltersInitialized;
+        Action m_SavedFiltersInitialized;
+
+        // Can be used to enable/disable hierarchical grouping of filters
         bool m_AllowHierarchy = false;
+
+        // SavedSearchFilters are saved to disk in the Preferences folder. This means this data is reused between Unity versions.
+        // For backwards compatibility back to Unity 3.5 (2012-ish) we keep the 1 billion id offset so the m_ID can be used in InstanceID space
+        // for versions before switching to EntityIds. We based this assumption on the fact that InstanceID values for assets never
+        // reach that high (1 billion assets).
+        const int k_IdStartOffset = 1000000000;
 
         // --------------------
         // Static interface
 
-        // returns is instanceID given to the SavedFilter
+        // Returns a filterId that can be used to reference the saved filter
         public static int AddSavedFilter(string displayName, SearchFilter filter, float previewSize)
         {
-            int instanceID = instance.Add(displayName, filter, previewSize, GetRootInstanceID(), true); // using 0 adds filter after the root
-            return instanceID;
+            int filterId = instance.Add(displayName, filter, previewSize, GetRootFilterId(), true); // using 0 adds filter after the root
+            return filterId;
         }
 
-        public static EntityId AddSavedFilterAfterInstanceID(string displayName, SearchFilter filter, float previewSize, EntityId insertAfterID, bool addAsChild)
+        // Returns a filterId that can be used to reference the saved filter
+        public static int AddSavedFilterAfterFilterId(string displayName, SearchFilter filter, float previewSize, int insertAfterID, bool addAsChild)
         {
-            EntityId instanceID = instance.Add(displayName, filter, previewSize, insertAfterID, addAsChild);
-            return instanceID;
+            int filterId = instance.Add(displayName, filter, previewSize, insertAfterID, addAsChild);
+            return filterId;
         }
 
-        public static void RemoveSavedFilter(int instanceID)
+        public static void RemoveSavedFilter(int filterId)
         {
-            instance.Remove(instanceID);
+            instance.Remove(filterId);
         }
 
-        public static bool IsSavedFilter(EntityId instanceID)
+        public static bool IsSavedFilter(int filterId)
         {
-            return instance.IndexOf(instanceID) >= 0;
+            return instance.IndexOf(filterId) >= 0;
         }
 
-        public static int GetRootInstanceID()
+        public static int GetRootFilterId()
         {
             return instance.GetRoot();
         }
 
-        public static SearchFilter GetFilter(int instanceID)
+        public static SearchFilter GetFilter(int filterId)
         {
-            SavedFilter sf = instance.Find(instanceID);
+            SavedFilter sf = instance.Find(filterId);
             if (sf != null && sf.m_Filter != null)
                 return ObjectCopier.DeepClone(sf.m_Filter);
             return null;
         }
 
-        public static int GetFilterInstanceID(string name, string searchFieldString)
+        // Only used for testing
+        internal static int GetFilterIdFromNameAndSearchString(string name, string searchFieldString)
         {
             if (instance.m_SavedFilters != null && instance.m_SavedFilters.Count > 0)
             {
@@ -108,44 +118,46 @@ namespace UnityEditor
             return 0;
         }
 
-        public static float GetPreviewSize(int instanceID)
+        public static float GetPreviewSize(int filterId)
         {
-            SavedFilter sf = instance.Find(instanceID);
+            SavedFilter sf = instance.Find(filterId);
             if (sf != null)
                 return sf.m_PreviewSize;
+
+            Debug.LogError("Could not find preview size for id: " + filterId);
             return -1f;
         }
 
-        public static string GetName(int instanceID)
+        public static string GetName(int filterId)
         {
-            SavedFilter filter = instance.Find(instanceID);
+            SavedFilter filter = instance.Find(filterId);
             if (filter != null)
                 return filter.m_Name;
 
-            Debug.LogError("Could not find saved filter " + instanceID + " " + instance);
+            Debug.LogError("Could not find saved filter name for id: " + filterId);
             return "";
         }
 
-        public static void SetName(EntityId instanceID, string name)
+        public static void SetName(int filterId, string name)
         {
-            SavedFilter filter = instance.Find(instanceID);
+            SavedFilter filter = instance.Find(filterId);
             if (filter != null)
             {
                 filter.m_Name = name;
                 instance.Changed();
             }
             else
-                Debug.LogError("Could not set name of saved filter " + instanceID + " " + instance);
+                Debug.LogError("Could not set name of saved filter " + filterId);
         }
 
-        public static void UpdateExistingSavedFilter(int instanceID, SearchFilter filter, float previewSize)
+        public static void UpdateExistingSavedFilter(int filterId, SearchFilter filter, float previewSize)
         {
-            instance.UpdateFilter(instanceID, filter, previewSize);
+            instance.UpdateFilter(filterId, filter, previewSize);
         }
 
-        public static TreeViewItem<EntityId> ConvertToTreeView()
+        public static TreeViewItem<EntityId> ConvertToTreeView(Func<int, EntityId> filterIdToEntityIdRemapper)
         {
-            return instance.BuildTreeView();
+            return instance.BuildTreeView(filterIdToEntityIdRemapper);
         }
 
         public static void RefreshSavedFilters()
@@ -170,14 +182,14 @@ namespace UnityEditor
             instance.m_SavedFiltersInitialized -= callback;
         }
 
-        public static void MoveSavedFilter(int instanceID, int parentInstanceID, int targetInstanceID, bool after)
+        public static void MoveSavedFilter(int filterId, int parentFilterId, int targetFilterId, bool after)
         {
-            instance.Move(instanceID, parentInstanceID, targetInstanceID, after);
+            instance.Move(filterId, parentFilterId, targetFilterId, after);
         }
 
-        public static bool CanMoveSavedFilter(int instanceID, int parentInstanceID, int targetInstanceID, bool after)
+        public static bool CanMoveSavedFilter(int filterId, int parentFilterId, int targetFilterId, bool after)
         {
-            return instance.IsValidMove(instanceID, parentInstanceID, targetInstanceID, after);
+            return instance.IsValidMove(filterId, parentFilterId, targetFilterId, after);
         }
 
         public static bool AllowsHierarchy()
@@ -188,11 +200,11 @@ namespace UnityEditor
         // ------------
         // Impl
 
-        bool IsValidMove(int instanceID, int parentInstanceID, int targetInstanceID, bool after)
+        bool IsValidMove(int filterId, int parentFilterId, int targetFilterId, bool after)
         {
-            int index = IndexOf(instanceID);
-            int parentIndex = IndexOf(parentInstanceID);
-            int targetIndex = IndexOf(targetInstanceID);
+            int index = IndexOf(filterId);
+            int parentIndex = IndexOf(parentFilterId);
+            int targetIndex = IndexOf(targetFilterId);
 
             if (index < 0 || parentIndex < 0 || targetIndex < 0)
             {
@@ -200,7 +212,7 @@ namespace UnityEditor
                 return false;
             }
 
-            if (instanceID == targetInstanceID)
+            if (filterId == targetFilterId)
             {
                 //Debug.LogError ("Cannot move to same position");
                 return false;
@@ -225,14 +237,14 @@ namespace UnityEditor
             return true;
         }
 
-        void Move(int instanceID, int parentInstanceID, int targetInstanceID, bool after)
+        void Move(int filterId, int parentFilterId, int targetFilterId, bool after)
         {
-            if (!IsValidMove(instanceID, parentInstanceID, targetInstanceID, after))
+            if (!IsValidMove(filterId, parentFilterId, targetFilterId, after))
                 return;
 
-            int index = IndexOf(instanceID);
-            int parentIndex = IndexOf(parentInstanceID);
-            int targetIndex = IndexOf(targetInstanceID);
+            int index = IndexOf(filterId);
+            int parentIndex = IndexOf(parentFilterId);
+            int targetIndex = IndexOf(targetFilterId);
 
             SavedFilter filter = m_SavedFilters[index];
             SavedFilter parent = m_SavedFilters[parentIndex];
@@ -243,7 +255,7 @@ namespace UnityEditor
                 depthChange = (parent.m_Depth + 1) - filter.m_Depth;
 
             // Remove range from list (there could be children that is also moved)
-            List<SavedFilter> moveList = GetSavedFilterAndChildren(instanceID);
+            List<SavedFilter> moveList = GetSavedFilterAndChildren(filterId);
             m_SavedFilters.RemoveRange(index, moveList.Count);
 
             // Update depth
@@ -251,7 +263,7 @@ namespace UnityEditor
                 s.m_Depth += depthChange;
 
             // Insert after target
-            targetIndex = IndexOf(targetInstanceID);
+            targetIndex = IndexOf(targetFilterId);
             if (targetIndex != -1)
             {
                 if (after)
@@ -261,9 +273,9 @@ namespace UnityEditor
             Changed();
         }
 
-        void UpdateFilter(int instanceID, SearchFilter filter, float previewSize)
+        void UpdateFilter(int filterId, SearchFilter filter, float previewSize)
         {
-            SavedFilter savedFilter = Find(instanceID);
+            SavedFilter savedFilter = Find(filterId);
             if (savedFilter != null)
             {
                 SearchFilter copiedFilter = null;
@@ -278,35 +290,31 @@ namespace UnityEditor
             }
             else
             {
-                Debug.LogError("Could not find saved filter " + instanceID + " " + instance);
+                Debug.LogError("Could not find saved filter " + filterId);
             }
         }
 
         int GetNextAvailableID()
         {
-            List<int> allIDs = new List<int>();
-            foreach (SavedFilter sf in m_SavedFilters)
-                if (sf.m_ID >= ProjectWindowUtil.k_FavoritesStartInstanceID)
-                    allIDs.Add(sf.m_ID);
-            allIDs.Sort();
-
-            // Now try find
-            int result = ProjectWindowUtil.k_FavoritesStartInstanceID;
-            int i = 0;
-            while (i < 1000)
+            HashSet<int> usedIds = new HashSet<int>(m_SavedFilters.Count);
+            foreach (var sf in m_SavedFilters)
             {
-                if (allIDs.BinarySearch(result) < 0)
-                    return result;
-
-                result++;
-                i++;
+                if (sf.m_ID >= k_IdStartOffset)
+                    usedIds.Add(sf.m_ID);
             }
 
-            Debug.LogError("Could not assign valid ID to saved filter " + DebugUtils.ListToString(allIDs) + " " + result);
-            return ProjectWindowUtil.k_FavoritesStartInstanceID + 1000;
+            const int k_MaxIds = 1000;
+            for (int id = k_IdStartOffset; id < k_IdStartOffset + k_MaxIds; id++)
+            {
+                if (!usedIds.Contains(id))
+                    return id;
+            }
+
+            Debug.LogError("Could not find an available filterId. Current filter count: " + usedIds.Count);
+            return k_IdStartOffset + k_MaxIds;
         }
 
-        EntityId Add(string displayName, SearchFilter filter, float previewSize, EntityId insertAfterInstanceID, bool addAsChild)
+        int Add(string displayName, SearchFilter filter, float previewSize, int insertAfterUniqueId, bool addAsChild)
         {
             SearchFilter filterCopy = null;
             if (filter != null)
@@ -321,9 +329,9 @@ namespace UnityEditor
             }
 
             int afterIndex = 0; // add after root index
-            if (insertAfterInstanceID != EntityId.None)
+            if (insertAfterUniqueId != 0)
             {
-                afterIndex = IndexOf(insertAfterInstanceID);
+                afterIndex = IndexOf(insertAfterUniqueId);
                 if (afterIndex == -1)
                 {
                     Debug.LogError("Invalid insert position");
@@ -345,17 +353,14 @@ namespace UnityEditor
                 m_SavedFilters.Insert(afterIndex + 1, savedFilter); // insert after wanted index
             }
 
-            // Select new Saved filter
-            //Selection.activeInstanceID = savedFilter.m_ID;
-
             Changed();
             return savedFilter.m_ID;
         }
 
-        List<SavedFilter> GetSavedFilterAndChildren(EntityId instanceID)
+        List<SavedFilter> GetSavedFilterAndChildren(int filterId)
         {
             List<SavedFilter> result = new List<SavedFilter>();
-            int index = IndexOf(instanceID);
+            int index = IndexOf(filterId);
             if (index >= 0)
             {
                 result.Add(m_SavedFilters[index]);
@@ -371,12 +376,12 @@ namespace UnityEditor
             return result;
         }
 
-        void Remove(EntityId instanceID)
+        void Remove(int filterId)
         {
-            int index = IndexOf(instanceID);
+            int index = IndexOf(filterId);
             if (index >= 1)
             {
-                List<SavedFilter> deleteList = GetSavedFilterAndChildren(instanceID);
+                List<SavedFilter> deleteList = GetSavedFilterAndChildren(filterId);
                 if (deleteList.Count > 0)
                 {
                     m_SavedFilters.RemoveRange(index, deleteList.Count);
@@ -385,18 +390,18 @@ namespace UnityEditor
             }
         }
 
-        int IndexOf(EntityId instanceID)
+        int IndexOf(int filterId)
         {
             for (int i = 0; i < m_SavedFilters.Count; ++i)
-                if (m_SavedFilters[i].m_ID == instanceID)
+                if (m_SavedFilters[i].m_ID == filterId)
                     return i;
 
             return -1;
         }
 
-        SavedFilter Find(EntityId instanceID)
+        SavedFilter Find(int filterId)
         {
-            int index = IndexOf(instanceID);
+            int index = IndexOf(filterId);
             if (index >= 0)
                 return m_SavedFilters[index];
             return null;
@@ -419,11 +424,11 @@ namespace UnityEditor
             m_SavedFilters[0].m_Name = "Favorites";
             m_SavedFilters[0].m_Filter = filter;
             m_SavedFilters[0].m_Depth = 0;
-            m_SavedFilters[0].m_ID = ProjectWindowUtil.k_FavoritesStartInstanceID;
+            m_SavedFilters[0].m_ID = k_IdStartOffset;
 
             // At init check if all have valid ids (for patching up ids old saved filters)
             for (int i = 0; i < m_SavedFilters.Count; ++i)
-                if (m_SavedFilters[i].m_ID < ProjectWindowUtil.k_FavoritesStartInstanceID)
+                if (m_SavedFilters[i].m_ID < k_IdStartOffset)
                     m_SavedFilters[i].m_ID = GetNextAvailableID();
 
             // Ensure depth is valid
@@ -445,7 +450,7 @@ namespace UnityEditor
         }
 
         // Utility function for building a tree view from saved filter state. Returns root of tree
-        TreeViewItem<EntityId> BuildTreeView()
+        TreeViewItem<EntityId> BuildTreeView(Func<int, EntityId> filterIdToEntityIdRemapper)
         {
             Init();
 
@@ -462,10 +467,10 @@ namespace UnityEditor
             for (int i = 0; i < m_SavedFilters.Count; ++i)
             {
                 SavedFilter savedFilter = m_SavedFilters[i];
-                int instanceID = savedFilter.m_ID;
+                EntityId entityId = filterIdToEntityIdRemapper(savedFilter.m_ID);
                 int depth = savedFilter.m_Depth;
                 bool isFolder = savedFilter.m_Filter.GetState() == SearchFilter.State.FolderBrowsing;
-                var item = new SearchFilterTreeItem(instanceID, depth, null, savedFilter.m_Name, isFolder);
+                var item = new SearchFilterTreeItem(entityId, depth, null, savedFilter.m_Name, isFolder);
                 if (i == 0)
                     root = item;
                 else
@@ -495,9 +500,9 @@ namespace UnityEditor
             string text = "Saved Filters ";
             for (int i = 0; i < m_SavedFilters.Count; ++i)
             {
-                int instanceID = m_SavedFilters[i].m_ID;
+                int filterId = m_SavedFilters[i].m_ID;
                 SavedFilter s = m_SavedFilters[i];
-                text += string.Format(": {0} ({1})({2})({3}) ", s.m_Name, instanceID, s.m_Depth, s.m_PreviewSize);
+                text += string.Format(": {0} ({1})({2})({3}) ", s.m_Name, filterId, s.m_Depth, s.m_PreviewSize);
             }
             return text;
         }

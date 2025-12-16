@@ -96,24 +96,68 @@ namespace Unity.Multiplayer.PlayMode.Editor
         private VisualElement CreateAdvancedConfigurationField(SerializedProperty instanceProperty)
         {
             var advancedConfigProp = instanceProperty.FindPropertyRelative("advancedConfiguration");
-            var advancedConfigField = new PropertyField(advancedConfigProp);
-            advancedConfigField.Bind(instanceProperty.serializedObject);
+            var container = new Foldout();
+            container.AddToClassList("unity-base-field__aligned");
+            container.text = "Advanced Configuration";
 
-            return advancedConfigField;
-        }
+            var streamLogsProp = advancedConfigProp.FindPropertyRelative("m_StreamLogsToMainEditor");
+            var streamLogsField = new PropertyField(streamLogsProp);
+            streamLogsField.Bind(instanceProperty.serializedObject);
+            container.Add(streamLogsField);
 
-        private VisualElement CreateServerSettingsField(SerializedProperty instanceProperty, TextField roleField)
-        {
-            var container = new VisualElement();
-            var buildProfileProperty = instanceProperty.FindPropertyRelative("m_BuildProfile");
-            container.TrackPropertyValue(buildProfileProperty, _ => RefreshSettings(container, instanceProperty, buildProfileProperty));
-            roleField.RegisterValueChangedCallback( _ => RefreshSettings(container, instanceProperty, buildProfileProperty));
-            RefreshSettings(container, instanceProperty, buildProfileProperty);
+            var logsColorProp = advancedConfigProp.FindPropertyRelative("m_LogsColor");
+            var logsColorField = new PropertyField(logsColorProp);
+            logsColorField.Bind(instanceProperty.serializedObject);
+            container.Add(logsColorField);
+
+            // Add Arguments based on current deploy mode
+            var argumentsContainer = new VisualElement();
+            var serverSettingsProp = instanceProperty.FindPropertyRelative("m_ServerSettings");
+            var deployModeProp = serverSettingsProp.FindPropertyRelative("DeployMode");
+
+            UpdateArgumentsBasedOnDeployMode(argumentsContainer, advancedConfigProp, deployModeProp, instanceProperty);
+
+            argumentsContainer.TrackPropertyValue(deployModeProp, _ => {
+                argumentsContainer.Clear();
+                UpdateArgumentsBasedOnDeployMode(argumentsContainer, advancedConfigProp, deployModeProp, instanceProperty);
+            });
+
+            container.Add(argumentsContainer);
 
             return container;
         }
 
-        private static void RefreshSettings(VisualElement container, SerializedProperty instanceProperty, SerializedProperty buildProfileProperty)
+        private void UpdateArgumentsBasedOnDeployMode(VisualElement container, SerializedProperty advancedConfigProp, SerializedProperty deployModeProp, SerializedProperty instanceProperty)
+        {
+            var deployMode = (ServerSettings.ServerDeployMode)deployModeProp.enumValueIndex;
+            var argumentsProp = deployMode switch
+            {
+                ServerSettings.ServerDeployMode.Local => advancedConfigProp.FindPropertyRelative("m_LocalArguments"),
+                ServerSettings.ServerDeployMode.Simulated => advancedConfigProp.FindPropertyRelative("m_SimulatedArguments"),
+                _ => advancedConfigProp.FindPropertyRelative("m_LocalArguments")
+            };
+
+            if (argumentsProp == null) return;
+            var argumentsField = new PropertyField(argumentsProp) { label = "Arguments" };
+            argumentsField.Bind(instanceProperty.serializedObject);
+            container.Add(argumentsField);
+        }
+
+        private VisualElement CreateServerSettingsField(SerializedProperty instanceProperty, TextField roleField)
+        {
+            if (!LocalDeploymentUtility.IsLocalDeploymentAvailable())
+                return null;
+
+            var container = new VisualElement();
+            var buildProfileProperty = instanceProperty.FindPropertyRelative("m_BuildProfile");
+            container.TrackPropertyValue(buildProfileProperty, _ => RefreshServerSettings(container, instanceProperty, buildProfileProperty));
+            roleField.RegisterValueChangedCallback( _ => RefreshServerSettings(container, instanceProperty, buildProfileProperty));
+            RefreshServerSettings(container, instanceProperty, buildProfileProperty);
+
+            return container;
+        }
+
+        private static void RefreshServerSettings(VisualElement container, SerializedProperty instanceProperty, SerializedProperty buildProfileProperty)
         {
             container.Clear();
 
@@ -128,7 +172,7 @@ namespace Unity.Multiplayer.PlayMode.Editor
                 : new StyleEnum<DisplayStyle>(DisplayStyle.None);
 
             if (buildProfile != null)
-                serverSettingsField.TrackSerializedObjectValue(new SerializedObject(buildProfile), _ => RefreshSettings(container, instanceProperty, buildProfileProperty));
+                serverSettingsField.TrackSerializedObjectValue(new SerializedObject(buildProfile), _ => RefreshServerSettings(container, instanceProperty, buildProfileProperty));
         }
 
         private VisualElement CreateBuildProfileField(SerializedProperty instanceProperty, out TextField roleFieldOut)
@@ -312,8 +356,9 @@ namespace Unity.Multiplayer.PlayMode.Editor
 
         void SetRoleDisplay(TextField field, BuildProfile profile)
         {
-            field.style.display = profile == null ? new StyleEnum<DisplayStyle>(DisplayStyle.None) : new StyleEnum<DisplayStyle>(DisplayStyle.Flex);
-            if (profile == null)
+            var shouldShowRole = EditorMultiplayerManager.enableMultiplayerRoles && profile != null;
+            field.style.display = shouldShowRole ? new StyleEnum<DisplayStyle>(DisplayStyle.Flex) : new StyleEnum<DisplayStyle>(DisplayStyle.None);
+            if (profile == null || !EditorMultiplayerManager.enableMultiplayerRoles)
                 return;
 
             field.value = MultiplayerRolesSettings.instance.GetMultiplayerRoleForBuildProfile(profile).ToString();

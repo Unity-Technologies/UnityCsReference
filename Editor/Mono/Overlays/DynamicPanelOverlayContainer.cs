@@ -6,7 +6,6 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using Unity.Collections;
-using UnityEditorInternal.VersionControl;
 using UnityEngine;
 using UnityEngine.UIElements;
 
@@ -20,7 +19,7 @@ namespace UnityEditor.Overlays
         // Enough width to show all overlay actions. This is validated in a test for future proofing of style changes and additional actions.
         public const float minWidth = 56;
 
-        public const float maxPercentWidth = 50;
+        public const float maxPercentWidth = 40;
 
         [Serializable]
         public new class UxmlSerializedData : OverlayContainer.UxmlSerializedData
@@ -64,6 +63,7 @@ namespace UnityEditor.Overlays
         const string k_AdditionalClassNameToolbar = "overlay-layout--toolbar-vertical";
         const string k_BorderClassName = "overlay-dynamic-panel-container__border";
         public const string k_WidthDraggerClassName = "overlay-dynamic-panel-container__width-dragger"; // Used in tests.
+        public const string k_DraggerMarkerClassName = k_ClassName + "__dragger-marker";
 
         readonly List<ChunkData> m_Chunks = new List<ChunkData>();
         readonly Dictionary<Overlay, Action<bool>> m_OverlayToDisplayCallback = new Dictionary<Overlay, Action<bool>>();
@@ -71,6 +71,7 @@ namespace UnityEditor.Overlays
         readonly DraggerElement m_WidthDragger;
         readonly OverlayActions m_OverlayActions;
         readonly ScrollView m_ScrollView;
+        readonly VisualElement m_DraggerSpace;
         readonly OverlayDropZoneBase m_ToolbarDropzone;
 
         bool m_AlignRight;
@@ -164,7 +165,7 @@ namespace UnityEditor.Overlays
             m_OverlayActions.stateChanged += OnOverlayStateChangeRequested;
             Add(m_OverlayActions);
 
-            m_ScrollView = new ScrollView();
+            m_ScrollView = new ToolbarScrollView();
             m_ScrollView.horizontalScrollerVisibility = ScrollerVisibility.Hidden;
             m_ScrollView.verticalScrollerVisibility = ScrollerVisibility.Hidden;
             m_ScrollView.mode = ScrollViewMode.Vertical;
@@ -174,6 +175,9 @@ namespace UnityEditor.Overlays
             m_Section.overlayInserted += OnOverlayInserted;
             m_Section.overlayRemoved += OnOverlayRemoved;
             m_ScrollView.Add(m_Section);
+
+            m_ScrollView.Add(m_DraggerSpace = new VisualElement() { name = "DraggerSpace"});
+            m_DraggerSpace.StretchToParentSize();
 
             // Create width dragger
             m_WidthDragger = new DraggerElement(DragDirection.Horizontal);
@@ -259,6 +263,7 @@ namespace UnityEditor.Overlays
                 owner.AddToClassList(k_AdditionalClassNameToolbar);
                 owner.SetChunksEnabled(false);
                 owner.m_Section.hierarchy.Add(owner.m_ToolbarDropzone);
+                owner.m_ScrollView.verticalScrollerVisibility = ScrollerVisibility.Auto;
             }
 
             public override void Stop()
@@ -267,6 +272,7 @@ namespace UnityEditor.Overlays
                 owner.RemoveFromClassList(k_StateUssName);
                 owner.SetChunksEnabled(true);
                 owner.m_ToolbarDropzone.RemoveFromHierarchy();
+                owner.m_ScrollView.verticalScrollerVisibility = ScrollerVisibility.Hidden;
             }
 
             public override Layout GetSupportedLayout()
@@ -352,6 +358,8 @@ namespace UnityEditor.Overlays
         {
             public Overlay overlay { get; private set; }
 
+            readonly VisualElement m_DraggerSpace;
+            readonly VisualElement m_DraggerMarker;
             public DraggerElement dragger { get; private set; }
 
             public bool draggerEnabled
@@ -363,11 +371,29 @@ namespace UnityEditor.Overlays
             public event Action<Overlay> sizeChangeBegun;
             public event Action<(Overlay overlay, float total, float delta)> sizeChanged;
 
-            public ChunkData(OverlayCanvas.DynamicPanelBehavior behavior)
+            public ChunkData(OverlayCanvas.DynamicPanelBehavior behavior, VisualElement draggerSpace)
             {
+                m_DraggerSpace = draggerSpace;
+                m_DraggerMarker = new VisualElement();
+                m_DraggerMarker.AddToClassList(k_DraggerMarkerClassName);
+                m_DraggerMarker.style.width = new Length(100, LengthUnit.Percent);
+                m_DraggerMarker.style.height = 0;
+
                 dragger = new DraggerElement(DragDirection.Vertical);
+                dragger.style.position = Position.Absolute;
                 dragger.translated += OnDraggerTranslated;
                 dragger.translationBegun += OnDraggerTranslationBegun;
+
+                m_DraggerMarker.RegisterCallback<GeometryChangedEvent>((evt) =>
+                {
+                    if (m_DraggerMarker.parent != null && dragger.parent != null)
+                    {
+                        var worldPos = m_DraggerMarker.parent.LocalToWorld(evt.newRect.position);
+                        dragger.style.translate = dragger.parent.WorldToLocal(worldPos);
+                        dragger.style.width = evt.newRect.width;
+                        dragger.style.height = evt.newRect.height;
+                    }
+                });
             }
 
             public void Dispose()
@@ -400,12 +426,14 @@ namespace UnityEditor.Overlays
                 this.overlay = overlay;
 
                 dragger.RemoveFromHierarchy();
+                m_DraggerMarker.RemoveFromHierarchy();
                 if (this.overlay != null)
                 {
                     // Add after overlay
                     var parent = overlay.rootVisualElement.parent;
                     var index = parent.IndexOf(overlay.rootVisualElement);
-                    parent.Insert(index + 1, dragger);
+                    parent.Insert(index + 1, m_DraggerMarker);
+                    m_DraggerSpace.Add(dragger);
                 }
 
                 return true;
@@ -448,7 +476,7 @@ namespace UnityEditor.Overlays
             {
                 while (m_Chunks.Count < count)
                 {
-                    var chunk = new ChunkData(canvas.dynamicPanelBehavior);
+                    var chunk = new ChunkData(canvas.dynamicPanelBehavior, m_DraggerSpace);
                     chunk.draggerEnabled = m_ChunksEnabled;
                     chunk.sizeChangeBegun += HeightDraggerTranslationStart;
                     chunk.sizeChanged += HeightDraggerTranslationUpdate;
@@ -493,17 +521,47 @@ namespace UnityEditor.Overlays
                 UpdateChunkHeights();
         }
 
-        float m_OriginalOverlayHeight;
+        float GetMinChunkHeight(ChunkData chunk)
+        {
+            return minChunkHeight;
+        }
+
+        float m_TranslationLastFrameTotal;
+        float m_TranslationAvailableSpaceAbove;
+        float m_TranslationAvailableSpaceBelow;
+
         void HeightDraggerTranslationStart(Overlay overlay)
         {
-            m_OriginalOverlayHeight = m_Section.GetData(overlay).currentHeight;
+            m_TranslationLastFrameTotal = 0;
+            m_TranslationAvailableSpaceAbove = m_TranslationAvailableSpaceBelow = 0;
+
+            if (TryGetChunk(overlay, out var index))
+            {
+                for (int i = index; i >= 0; --i)
+                {
+                    var chunk = m_Chunks[i];
+                    var currentHeight = chunk.overlay.rootVisualElement.rect.height;
+                    var minHeight = GetMinChunkHeight(chunk);
+                    m_TranslationAvailableSpaceAbove += currentHeight - minHeight;
+                }
+
+                for (int i = index + 1; i < m_Chunks.Count; ++i)
+                {
+                    var chunk = m_Chunks[i];
+                    var currentHeight = chunk.overlay.rootVisualElement.rect.height;
+                    var minHeight = GetMinChunkHeight(chunk);
+                    m_TranslationAvailableSpaceBelow += currentHeight - minHeight;
+                }
+            }
         }
 
         void HeightDraggerTranslationUpdate((Overlay overlay, float total, float delta) args)
         {
-            var total = m_OriginalOverlayHeight + args.total;
+            var total = Mathf.Clamp(args.total, -m_TranslationAvailableSpaceAbove, m_TranslationAvailableSpaceBelow);
             if (TryGetChunk(args.overlay, out int chunkIndex))
-                RequestChunkHeightChange(chunkIndex, args.delta);
+                RequestChunkHeightChange(chunkIndex, total - m_TranslationLastFrameTotal);
+
+            m_TranslationLastFrameTotal = total;
         }
 
         void RequestChunkHeightChange(int chunkIndex, float delta)

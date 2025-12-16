@@ -19,6 +19,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Threading;
+using System.Runtime.InteropServices;
 
 using Mono.Cecil;
 using System.Text;
@@ -80,7 +81,7 @@ namespace UnityEditorInternal.APIUpdating
         // These methods are used to persist the list of assemblies to be updated in the native side in order to preserve this list across domain reloads.
         static extern void ResetListOfAssembliesToBeUpdateInNativeSide();
         static extern void AddAssemblyToBeUpdatedInNativeSide(string assemblyName, string assemblyPath, string[] assemblyUpdateConfigSources);
-        static extern bool GetAndRemoveAssemblyToBeUpdatedFromNative(out string outAssemblyName, out string outAssemblyPath, List<string> outUpdateConfigSources);
+        static extern bool GetAndRemoveAssemblyToBeUpdatedFromNative(out string outAssemblyName, out string outAssemblyPath, [Out] List<string> outUpdateConfigSources);
 
         [RequiredByNativeCode]
         internal static void UpdateAssemblies()
@@ -651,7 +652,7 @@ namespace UnityEditorInternal.APIUpdating
 
         private static string[] AssemblyDependenciesFrom(string assemblyPath)
         {
-            using (var a = AssemblyDefinition.ReadAssembly(assemblyPath, new ReaderParameters { ReadSymbols = false }))
+            using (var a = AssemblyDefinition.ReadAssembly(FileUtil.PathToAbsolutePath(assemblyPath), new ReaderParameters { ReadSymbols = false }))
             {
                 return a.MainModule.AssemblyReferences.Select(assemblyReference => assemblyReference.Name).ToArray();
             }
@@ -688,15 +689,17 @@ namespace UnityEditorInternal.APIUpdating
             {
                 if (File.Exists(assemblyDependencyGraphFilePath))
                 {
-                    using (var stream = File.OpenRead(assemblyDependencyGraphFilePath))
-                    {
-                        return AssemblyDependencyGraph.LoadFrom(stream);
-                    }
+                    using var stream = File.OpenRead(assemblyDependencyGraphFilePath);
+                    return AssemblyDependencyGraph.LoadFrom(stream);
                 }
             }
             catch (IOException e)
             {
-                APIUpdaterLogger.WriteToFile(string.Format(L10n.Tr("Failed to read assembly dependency graph ({0}). Exception: {1}")), assemblyDependencyGraphFilePath, e);
+                APIUpdaterLogger.WriteToFile(L10n.Tr($"Failed to read assembly dependency graph ({assemblyDependencyGraphFilePath}). Exception: {e}"));
+            }
+            catch (InvalidDataException ide)
+            {
+                APIUpdaterLogger.WriteToFile(L10n.Tr($"Failed to read assembly dependency graph ({assemblyDependencyGraphFilePath}). Message: {ide.Message}"));
             }
 
             return new AssemblyDependencyGraph();

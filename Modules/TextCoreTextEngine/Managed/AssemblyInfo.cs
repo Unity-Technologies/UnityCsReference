@@ -28,6 +28,7 @@ using System.Runtime.CompilerServices;
 [assembly: InternalsVisibleTo("UnityEngine.UIElementsModule")]
 [assembly: InternalsVisibleTo("UnityEngine.ImguiModule")]
 [assembly: InternalsVisibleTo("UnityEngine.UI.Tests")]
+[assembly: InternalsVisibleTo("EditorGUI.Tests.Playmode")]
 [assembly: InternalsVisibleTo("UnityEngine.UIElements.Tests.Controls")]
 [assembly: InternalsVisibleTo("UnityEngine.UIElements.Tests.Utils")]
 [assembly: InternalsVisibleTo("Assembly-CSharp-testable")]

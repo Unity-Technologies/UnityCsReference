@@ -6,12 +6,11 @@ using System;
 using System.Diagnostics;
 using Unity.Properties;
 using UnityEditor;
-using UnityEngine;
 using UnityEngine.UIElements;
 
 namespace Unity.UIToolkit.Editor
 {
-    class BorderBoxModel : VisualElement
+    sealed class BorderBoxModel : VisualElement
     {
         static readonly string UssPathNoExt = "UIToolkitAuthoring/Inspector/Controls/StyleSectionsBoxModel";
         static readonly string StyleFieldUssPathNoExt = "UIToolkitAuthoring/Inspector/Controls/StyleField";
@@ -145,7 +144,8 @@ namespace Unity.UIToolkit.Editor
 
             m_BorderWidthBox = new BoxModelField<StyleLength, BoxModelEditableLabel>(BoxType.BorderWidth, true, m_ContentBox,
                 m_TopBorderWidthFieldContainer, m_BottomBorderWidthFieldContainer,
-                m_LeftBorderWidthFieldContainer, m_RightBorderWidthFieldContainer);
+                m_LeftBorderWidthFieldContainer, m_RightBorderWidthFieldContainer,
+                () => new BoxModelEditableLabel());
             m_BorderWidthBox.AddToClassList(BoxModelClassName);
             m_BorderWidthBox.AddToClassList(ContainerBorderWidthClassName);
             m_BorderWidthBox.AddToClassList(InspectorCompositeStyleRowElementClassName);
@@ -157,7 +157,8 @@ namespace Unity.UIToolkit.Editor
 
             m_BorderRadiusBox = new BoxModelField<StyleLength, BoxModelEditableLabel>(BoxType.BorderRadius, true, new VisualElement(),
                 m_TopBorderRadiusFieldContainer, m_BottomBorderRadiusFieldContainer,
-                m_LeftBorderRadiusFieldContainer, m_RightBorderRadiusFieldContainer);
+                m_LeftBorderRadiusFieldContainer, m_RightBorderRadiusFieldContainer,
+                () => new BoxModelEditableLabel());
             m_BorderRadiusBox.AddToClassList(BoxModelClassName);
             m_BorderRadiusBox.AddToClassList(ContainerBorderRadiusClassName);
             m_BorderRadiusBox.AddToClassList(InspectorCompositeStyleRowElementClassName);
@@ -176,7 +177,8 @@ namespace Unity.UIToolkit.Editor
 
             m_ColorBox = new BoxModelField<StyleColor, StyleColorField>(BoxType.BorderColor, true, m_BorderWidthBox,
                 m_TopColorFieldContainer, m_BottomColorFieldContainer,
-                m_LeftColorFieldContainer, m_RightColorFieldContainer);
+                m_LeftColorFieldContainer, m_RightColorFieldContainer,
+                () => new StyleColorField());
 
             m_ColorBox.fields.ForEach(f =>
             {
@@ -214,7 +216,7 @@ namespace Unity.UIToolkit.Editor
         }
     }
 
-    internal class BorderBoxModelField : OverrideRow
+    internal sealed class BorderBoxModelField : OverrideRow, INotifyCompositeStylePropertyChanged<StyleFloat>, INotifyCompositeStylePropertyChanged<StyleLength>, INotifyCompositeStylePropertyChanged<StyleColor>
     {
         [UnityEngine.Internal.ExcludeFromDocs, Serializable]
         public new class UxmlSerializedData : OverrideRow.UxmlSerializedData
@@ -228,7 +230,22 @@ namespace Unity.UIToolkit.Editor
             public override object CreateInstance() => new BorderBoxModelField();
         }
 
-        private BorderBoxModel m_BorderField;
+        public static readonly BindingId borderTopWidthProperty = nameof(borderTopWidth);
+        public static readonly BindingId borderRightWidthProperty = nameof(borderRightWidth);
+        public static readonly BindingId borderBottomWidthProperty = nameof(borderBottomWidth);
+        public static readonly BindingId borderLeftWidthProperty = nameof(borderLeftWidth);
+
+        public static readonly BindingId borderTopRightRadiusProperty = nameof(borderTopRightRadius);
+        public static readonly BindingId borderTopLeftRadiusProperty = nameof(borderTopLeftRadius);
+        public static readonly BindingId borderBottomRightRadiusProperty = nameof(borderBottomRightRadius);
+        public static readonly BindingId borderBottomLeftRadiusProperty = nameof(borderBottomLeftRadius);
+
+        public static readonly BindingId borderTopColorProperty = nameof(borderTopColor);
+        public static readonly BindingId borderRightColorProperty = nameof(borderRightColor);
+        public static readonly BindingId borderBottomColorProperty = nameof(borderBottomColor);
+        public static readonly BindingId borderLeftColorProperty = nameof(borderLeftColor);
+
+        private readonly BorderBoxModel m_BorderField;
 
         internal BorderBoxModel borderField => m_BorderField;
 
@@ -256,12 +273,12 @@ namespace Unity.UIToolkit.Editor
                 if (m_BorderTopWidth == value)
                     return;
 
+                var previousValue = m_BorderTopWidth;
                 m_BorderTopWidth = value;
                 borderField.borderWidthBox.topField.SetValueWithoutNotify(value.value);
 
                 Refresh();
-
-                NotifyPropertyChanged(nameof(borderTopWidth));
+                NotifyStylePropertyChanged(borderTopWidthProperty, previousValue, m_BorderTopWidth);
             }
         }
 
@@ -274,12 +291,12 @@ namespace Unity.UIToolkit.Editor
                 if (m_BorderRightWidth == value)
                     return;
 
+                var previousValue = m_BorderRightWidth;
                 m_BorderRightWidth = value;
                 borderField.borderWidthBox.rightField.SetValueWithoutNotify(value.value);
 
                 Refresh();
-
-                NotifyPropertyChanged(nameof(borderRightWidth));
+                NotifyStylePropertyChanged(borderRightWidthProperty, previousValue, m_BorderRightWidth);
             }
         }
 
@@ -292,12 +309,12 @@ namespace Unity.UIToolkit.Editor
                 if (m_BorderBottomWidth == value)
                     return;
 
+                var previousValue = m_BorderBottomWidth;
                 m_BorderBottomWidth = value;
                 borderField.borderWidthBox.bottomField.SetValueWithoutNotify(value.value);
 
                 Refresh();
-
-                NotifyPropertyChanged(nameof(borderBottomWidth));
+                NotifyStylePropertyChanged(borderBottomWidthProperty, previousValue, m_BorderBottomWidth);
             }
         }
 
@@ -310,12 +327,12 @@ namespace Unity.UIToolkit.Editor
                 if (m_BorderLeftWidth == value)
                     return;
 
+                var previousValue = m_BorderLeftWidth;
                 m_BorderLeftWidth = value;
                 borderField.borderWidthBox.leftField.SetValueWithoutNotify(value.value);
 
                 Refresh();
-
-                NotifyPropertyChanged(nameof(borderLeftWidth));
+                NotifyStylePropertyChanged(borderLeftWidthProperty, previousValue, m_BorderLeftWidth);
             }
         }
 
@@ -328,12 +345,12 @@ namespace Unity.UIToolkit.Editor
                 if (m_BorderTopRightRadius == value)
                     return;
 
+                var previousValue = m_BorderTopRightRadius;
                 m_BorderTopRightRadius = value;
                 borderField.borderRadiusBox.rightField.SetValueWithoutNotify(value);
 
                 Refresh();
-
-                NotifyPropertyChanged(nameof(borderTopRightRadius));
+                NotifyStylePropertyChanged(borderTopRightRadiusProperty, previousValue, m_BorderTopRightRadius);
             }
         }
 
@@ -346,12 +363,12 @@ namespace Unity.UIToolkit.Editor
                 if (m_BorderTopLeftRadius == value)
                     return;
 
+                var previousValue = m_BorderTopLeftRadius;
                 m_BorderTopLeftRadius = value;
                 borderField.borderRadiusBox.topField.SetValueWithoutNotify(value);
 
                 Refresh();
-
-                NotifyPropertyChanged(nameof(borderTopLeftRadius));
+                NotifyStylePropertyChanged(borderTopLeftRadiusProperty, previousValue, m_BorderTopLeftRadius);
             }
         }
 
@@ -364,12 +381,12 @@ namespace Unity.UIToolkit.Editor
                 if (m_BorderBottomRightRadius == value)
                     return;
 
+                var previousValue = m_BorderBottomRightRadius;
                 m_BorderBottomRightRadius = value;
                 borderField.borderRadiusBox.bottomField.SetValueWithoutNotify(value);
 
                 Refresh();
-
-                NotifyPropertyChanged(nameof(borderBottomRightRadius));
+                NotifyStylePropertyChanged(borderBottomRightRadiusProperty, previousValue, m_BorderBottomRightRadius);
             }
         }
 
@@ -382,12 +399,12 @@ namespace Unity.UIToolkit.Editor
                 if (m_BorderBottomLeftRadius == value)
                     return;
 
+                var previousValue = m_BorderBottomLeftRadius;
                 m_BorderBottomLeftRadius = value;
                 borderField.borderRadiusBox.leftField.SetValueWithoutNotify(value);
 
                 Refresh();
-
-                NotifyPropertyChanged(nameof(borderBottomLeftRadius));
+                NotifyStylePropertyChanged(borderBottomLeftRadiusProperty, previousValue, m_BorderBottomLeftRadius);
             }
         }
 
@@ -401,12 +418,12 @@ namespace Unity.UIToolkit.Editor
                 if (m_BorderTopColor == value)
                     return;
 
+                var previousValue = m_BorderTopColor;
                 m_BorderTopColor = value;
                 borderField.colorBox.topField.SetValueWithoutNotify(value);
 
                 Refresh();
-
-                NotifyPropertyChanged(nameof(borderTopColor));
+                NotifyStylePropertyChanged(borderTopColorProperty, previousValue, m_BorderTopColor);
             }
         }
 
@@ -419,12 +436,12 @@ namespace Unity.UIToolkit.Editor
                 if (m_BorderRightColor == value)
                     return;
 
+                var previousValue = m_BorderRightColor;
                 m_BorderRightColor = value;
                 borderField.colorBox.rightField.SetValueWithoutNotify(value);
 
                 Refresh();
-
-                NotifyPropertyChanged(nameof(borderRightColor));
+                NotifyStylePropertyChanged(borderRightColorProperty, previousValue, m_BorderRightColor);
             }
         }
 
@@ -437,12 +454,12 @@ namespace Unity.UIToolkit.Editor
                 if (m_BorderBottomColor == value)
                     return;
 
+                var previousValue = m_BorderBottomColor;
                 m_BorderBottomColor = value;
                 borderField.colorBox.bottomField.SetValueWithoutNotify(value);
 
                 Refresh();
-
-                NotifyPropertyChanged(nameof(borderBottomColor));
+                NotifyStylePropertyChanged(borderBottomColorProperty, previousValue, m_BorderBottomColor);
             }
         }
 
@@ -455,12 +472,12 @@ namespace Unity.UIToolkit.Editor
                 if (m_BorderLeftColor == value)
                     return;
 
+                var previousValue = m_BorderLeftColor;
                 m_BorderLeftColor = value;
                 borderField.colorBox.leftField.SetValueWithoutNotify(value);
 
                 Refresh();
-
-                NotifyPropertyChanged(nameof(borderLeftColor));
+                NotifyStylePropertyChanged(borderLeftColorProperty, previousValue, m_BorderLeftColor);
             }
         }
 
@@ -491,6 +508,165 @@ namespace Unity.UIToolkit.Editor
         {
             // Only need to update the color box as it contains the unit title for the other two boxes.
             borderField.colorBox.UpdateUnitFromFields();
+        }
+
+        public void SetValue(BindingId id, StyleFloat v, bool notify)
+        {
+            if (id == borderTopWidthProperty)
+            {
+                if (notify)
+                    borderTopWidth = v;
+                else
+                {
+                    m_BorderTopWidth = v;
+                    borderField.borderWidthBox.topField.SetValueWithoutNotify(v.value);
+                }
+            }
+            else if (id == borderRightWidthProperty)
+            {
+                if (notify)
+                    borderRightWidth = v;
+                else
+                {
+                    m_BorderRightWidth = v;
+                    borderField.borderWidthBox.rightField.SetValueWithoutNotify(v.value);
+                }
+            }
+            else if (id == borderBottomWidthProperty)
+            {
+                if (notify)
+                    borderBottomWidth = v;
+                else
+                {
+                    m_BorderBottomWidth = v;
+                    borderField.borderWidthBox.bottomField.SetValueWithoutNotify(v.value);
+                }
+            }
+            else if (id == borderLeftWidthProperty)
+            {
+                if (notify)
+                    borderLeftWidth = v;
+                else
+                {
+                    m_BorderLeftWidth = v;
+                    borderField.borderWidthBox.leftField.SetValueWithoutNotify(v.value);
+                }
+            }
+
+            if (!notify)
+                Refresh();
+        }
+
+        public void NotifyStylePropertyChanged(BindingId id, StyleFloat previousValue, StyleFloat newValue)
+        {
+            this.NotifyStylePropertyChanged(this, id, previousValue, newValue);
+            NotifyPropertyChanged(id);
+        }
+
+        public void SetValue(BindingId id, StyleLength v, bool notify)
+        {
+            if (id == borderTopRightRadiusProperty)
+            {
+                if (notify)
+                    borderTopRightRadius = v;
+                else
+                {
+                    m_BorderTopRightRadius = v;
+                    borderField.borderRadiusBox.rightField.SetValueWithoutNotify(v);
+                }
+            }
+            else if (id == borderTopLeftRadiusProperty)
+            {
+                if (notify)
+                    borderTopLeftRadius = v;
+                else
+                {
+                    m_BorderTopLeftRadius = v;
+                    borderField.borderRadiusBox.topField.SetValueWithoutNotify(v);
+                }
+            }
+            else if (id == borderBottomRightRadiusProperty)
+            {
+                if (notify)
+                    borderBottomRightRadius = v;
+                else
+                {
+                    m_BorderBottomRightRadius = v;
+                    borderField.borderRadiusBox.bottomField.SetValueWithoutNotify(v);
+                }
+            }
+            else if (id == borderBottomLeftRadiusProperty)
+            {
+                if (notify)
+                    borderBottomLeftRadius = v;
+                else
+                {
+                    m_BorderBottomLeftRadius = v;
+                    borderField.borderRadiusBox.leftField.SetValueWithoutNotify(v);
+                }
+            }
+
+            if (!notify)
+                Refresh();
+        }
+
+        public void NotifyStylePropertyChanged(BindingId id, StyleLength previousValue, StyleLength newValue)
+        {
+            this.NotifyStylePropertyChanged(this, id, previousValue, newValue);
+            NotifyPropertyChanged(id);
+        }
+
+        public void SetValue(BindingId id, StyleColor v, bool notify)
+        {
+            if (id == borderTopColorProperty)
+            {
+                if (notify)
+                    borderTopColor = v;
+                else
+                {
+                    m_BorderTopColor = v;
+                    borderField.colorBox.topField.SetValueWithoutNotify(v);
+                }
+            }
+            else if (id == borderRightColorProperty)
+            {
+                if (notify)
+                    borderRightColor = v;
+                else
+                {
+                    m_BorderRightColor = v;
+                    borderField.colorBox.rightField.SetValueWithoutNotify(v);
+                }
+            }
+            else if (id == borderBottomColorProperty)
+            {
+                if (notify)
+                    borderBottomColor = v;
+                else
+                {
+                    m_BorderBottomColor = v;
+                    borderField.colorBox.bottomField.SetValueWithoutNotify(v);
+                }
+            }
+            else if (id == borderLeftColorProperty)
+            {
+                if (notify)
+                    borderLeftColor = v;
+                else
+                {
+                    m_BorderLeftColor = v;
+                    borderField.colorBox.leftField.SetValueWithoutNotify(v);
+                }
+            }
+
+            if (!notify)
+                Refresh();
+        }
+
+        public void NotifyStylePropertyChanged(BindingId id, StyleColor previousValue, StyleColor newValue)
+        {
+            this.NotifyStylePropertyChanged(this, id, previousValue, newValue);
+            NotifyPropertyChanged(id);
         }
     }
 }

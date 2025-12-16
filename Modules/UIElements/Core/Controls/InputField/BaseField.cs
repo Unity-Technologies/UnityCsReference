@@ -358,7 +358,8 @@ namespace UnityEngine.UIElements
             this.visualInput = visualInput;
         }
 
-        internal virtual bool EqualsCurrentValue(TValueType value) => EqualityComparer<TValueType>.Default.Equals(m_Value, value);
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
+        internal virtual bool EqualsCurrentValue(TValueType v) => EqualityComparer<TValueType>.Default.Equals(m_Value, v);
 
         private void OnAttachToPanel(AttachToPanelEvent e)
         {

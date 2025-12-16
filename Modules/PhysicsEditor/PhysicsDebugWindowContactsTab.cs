@@ -102,8 +102,8 @@ namespace UnityEditor
             public EntityId thisColliderId;
             public EntityId otherColliderId;
 
-            public Collider thisCollider => thisColliderId == 0 ? null : UnityEngine.Object.FindObjectFromInstanceID(thisColliderId) as Collider;
-            public Collider otherCollider => otherColliderId == 0 ? null : UnityEngine.Object.FindObjectFromInstanceID(otherColliderId) as Collider;
+            public Collider thisCollider => thisColliderId == EntityId.None ? null : UnityEngine.Object.FindObjectFromInstanceID(thisColliderId) as Collider;
+            public Collider otherCollider => otherColliderId == EntityId.None ? null : UnityEngine.Object.FindObjectFromInstanceID(otherColliderId) as Collider;
 
             public VisContactPoint(Vector3 point, Vector3 normal, float separation, float impulse, EntityId col0, EntityId col1)
             {
@@ -163,7 +163,7 @@ namespace UnityEditor
             }
         }
 
-        // This whole mess is here because we have no access to DynamicArrays in the Core module
+        // This whole mess is here because we have no access to Vectors in the Core module
         // and the NativeArray safety doesn't allow array resizing when running a single thread job
         private struct ContactArrayWrapper
         {
@@ -324,7 +324,7 @@ namespace UnityEditor
 
         private void DrawSingleCollision(VisContactPoint contactPoint, Color impulseColor, bool useRandomColor)
         {
-            var primaryColor = useRandomColor ? GetHashedColor(contactPoint.thisColliderId) : PhysicsVisualizationSettings.contactColor;
+            var primaryColor = useRandomColor ? GetHashedColor(contactPoint.thisColliderId.GetHashCode()) : PhysicsVisualizationSettings.contactColor;
             var inverseColor = useRandomColor ? GetInverseColor(primaryColor) : PhysicsVisualizationSettings.contactSeparationColor;
 
             var colliderScale1 = GetColliderScale(contactPoint.thisCollider);

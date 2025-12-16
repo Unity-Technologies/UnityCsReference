@@ -6,6 +6,7 @@ using UnityEngine.Bindings;
 using UnityEngine.Scripting;
 using System;
 using System.Collections.Generic;
+using System.Runtime.InteropServices;
 
 namespace UnityEngine
 {
@@ -25,7 +26,7 @@ namespace UnityEngine
             => textureUnloaded?.Invoke(source);
 
         [FreeFunction(Name = "CustomRenderTextureManagerScripting::GetAllCustomRenderTextures", HasExplicitThis = false)]
-        public extern static void GetAllCustomRenderTextures(List<CustomRenderTexture> currentCustomRenderTextures);
+        public extern static void GetAllCustomRenderTextures([Out] List<CustomRenderTexture> currentCustomRenderTextures);
 
         public static event Action<CustomRenderTexture, int> updateTriggered;
 

@@ -332,29 +332,17 @@ namespace UnityEditor.UIElements
 
     internal class LongAttributeConverter : UxmlAttributeConverter<long>
     {
-        public override long FromString(string value)
-        {
-            long.TryParse(value, out var result);
-            return result;
-        }
+        public override long FromString(string value) => UxmlUtility.ParseLong(value);
     }
 
     internal class UnsignedIntAttributeConverter : UxmlAttributeConverter<uint>
     {
-        public override uint FromString(string value)
-        {
-            uint.TryParse(value, out var result);
-            return result;
-        }
+        public override uint FromString(string value) => UxmlUtility.ParseUint(value);
     }
 
     internal class UnsignedLongAttributeConverter : UxmlAttributeConverter<ulong>
     {
-        public override ulong FromString(string value)
-        {
-            ulong.TryParse(value, out var result);
-            return result;
-        }
+        public override ulong FromString(string value) => UxmlUtility.ParseULong(value);
     }
 
     internal class FloatAttributeConverter : UxmlAttributeConverter<float>
@@ -437,6 +425,11 @@ namespace UnityEditor.UIElements
     internal class Hash128AttributeConverter : UxmlAttributeConverter<Hash128>
     {
         public override Hash128 FromString(string value) => Hash128.Parse(value);
+    }
+
+    internal class GUIDAttributeConverter : UxmlAttributeConverter<GUID>
+    {
+        public override GUID FromString(string value) => new GUID(value);
     }
 
     internal class TypeAttributeConverter : UxmlAttributeConverter<Type>
@@ -624,7 +617,7 @@ namespace UnityEditor.UIElements
             var asset = cc.visualTreeAsset.GetAsset(value, typeof(T));
 
             // This lets us handle assets that are "Missing (Type)" in the inspector.
-            if (asset?.GetInstanceID() == null)
+            if (asset?.GetEntityId() == null)
             {
                 // When dealing with asset overriddes the asset may not be in the direct visualTreeAsset so we fallback to Asset Database. (UUM-91641)
                 var relativePath = AssetDatabase.GetAssetPath(cc.visualTreeAsset);
@@ -1472,17 +1465,17 @@ namespace UnityEditor.UIElements
 
             if (parts[2].Equals("0px", StringComparison.OrdinalIgnoreCase) || parts[2].Equals("0") || Length.ParseString(parts[2]) != default)
             {
-                var offsetX = Length.ParseString(parts[0]).value;
-                var offsetY = Length.ParseString(parts[1]).value;
+                var offsetX = Length.ParseString(parts[0]).pixelValue;
+                var offsetY = Length.ParseString(parts[1]).pixelValue;
                 textShadow.offset = new Vector2(offsetX, offsetY);
-                textShadow.blurRadius = Length.ParseString(parts[2]).value;
+                textShadow.blurRadius = Length.ParseString(parts[2]).pixelValue;
                 indexForColorPart = 3;
             }
             else
             {
-                var offset = Length.ParseString(parts[0]).value;
+                var offset = Length.ParseString(parts[0]).pixelValue;
                 textShadow.offset = new Vector2(offset, offset);
-                textShadow.blurRadius = Length.ParseString(parts[1]).value;
+                textShadow.blurRadius = Length.ParseString(parts[1]).pixelValue;
                 indexForColorPart = 2;
             }
 
@@ -1722,7 +1715,7 @@ namespace UnityEditor.UIElements
                 return "none";
 
             // Check for uniform scale
-            if (Mathf.Approximately(value.x.value, value.y.value))
+            if (Length.Approximately(value.x, value.y))
             {
                 return value.x.ToString();
             }

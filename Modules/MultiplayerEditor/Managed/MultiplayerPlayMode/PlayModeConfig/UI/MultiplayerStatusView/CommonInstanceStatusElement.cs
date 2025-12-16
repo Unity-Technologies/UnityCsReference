@@ -165,7 +165,9 @@ internal class CommonInstanceStatusElement : VisualElement
                         this);
                 }
             }
-            roleLabel.text = editorInstanceDescription.RoleMask.ToString();
+            roleLabel.style.display = EditorMultiplayerManager.enableMultiplayerRoles ? DisplayStyle.Flex : DisplayStyle.None;
+            if (EditorMultiplayerManager.enableMultiplayerRoles)
+                roleLabel.text = editorInstanceDescription.RoleMask.ToString();
         }
 
         if (instance is LocalInstanceDescription localInstanceDescription)

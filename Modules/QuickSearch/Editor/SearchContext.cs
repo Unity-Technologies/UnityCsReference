@@ -138,9 +138,11 @@ namespace UnityEditor.Search
         // Fields only used for serialization
         [SerializeField] private string[] providerIds;
         [SerializeField] private List<SearchProvider> m_SerializedProviders;
-        [SerializeField] private int m_SerializedSearchViewInstanceID;
+        [SerializeField] private EntityId m_SerializedSearchViewInstanceID;
         [SerializeField] private string m_SerializedFilterType;
         [SerializeField] private bool m_UseExplicitProvidersAsNormalProviders;
+
+        internal bool disposed => m_Disposed;
 
         /// <summary>
         /// Progress handle to set the search current progress.
@@ -305,12 +307,12 @@ namespace UnityEditor.Search
         /// <summary>
         /// Indicates that the search results should be filter for this type.
         /// </summary>
-        internal Type filterType { get; set; }
+        internal Type filterType { get; set; } // TODO: We should remove this member and assumed that if we are in Picker mode the initial query performs the filtering.
 
         /// <summary>
-        /// An instance of MultiProviderAsyncSearchSession holding all the async search sessions associated with this search context.
+        /// An instance of a SearchSession associated with this search context.
         /// </summary>
-        internal MultiProviderAsyncSearchSession sessions { get; } = new MultiProviderAsyncSearchSession();
+        internal SearchSession session { get; } = new();
 
         /// <summary>
         /// The user data field can be used to store private data when running a custom query.
@@ -320,7 +322,7 @@ namespace UnityEditor.Search
         /// <summary>
         /// Indicates if an asynchronous search is currently in progress for this context.
         /// </summary>
-        public bool searchInProgress => sessions.searchInProgress;
+        public bool searchInProgress => session.searchInProgress;
 
         /// <summary>
         /// Return the search result selection if any.
@@ -353,12 +355,12 @@ namespace UnityEditor.Search
             {
                 CheckDisposed();
                 lock (this)
-                    sessions.asyncItemReceived += value;
+                    session.asyncItemReceived += value;
             }
             remove
             {
                 lock (this)
-                    sessions.asyncItemReceived -= value;
+                    session.asyncItemReceived -= value;
             }
         }
 
@@ -371,12 +373,12 @@ namespace UnityEditor.Search
             {
                 CheckDisposed();
                 lock (this)
-                    sessions.sessionStarted += value;
+                    session.sessionStarted += value;
             }
             remove
             {
                 lock (this)
-                    sessions.sessionStarted -= value;
+                    session.sessionStarted -= value;
             }
         }
 
@@ -389,12 +391,12 @@ namespace UnityEditor.Search
             {
                 CheckDisposed();
                 lock (this)
-                    sessions.sessionEnded += value;
+                    session.sessionEnded += value;
             }
             remove
             {
                 lock (this)
-                    sessions.sessionEnded -= value;
+                    session.sessionEnded -= value;
             }
         }
 
@@ -611,8 +613,7 @@ namespace UnityEditor.Search
 
         private void EndSession()
         {
-            sessions.StopAllAsyncSearchSessions();
-            sessions.Clear();
+            session.Stop();
 
             foreach (var p in m_Providers)
                 p.OnDisable();
@@ -728,17 +729,17 @@ namespace UnityEditor.Search
         internal bool Tick(bool forceTick = false)
         {
             CheckDisposed();
-            
+
             if (!forceTick && !options.HasAny(SearchFlags.Synchronous))
                 return true;
-            sessions.Tick();
+            session.UpdateMechanism.Update();
             return Dispatcher.ProcessOne();
         }
 
         void ISerializationCallbackReceiver.OnBeforeSerialize()
         {
             var ids = new List<string>();
-            m_SerializedSearchViewInstanceID = (searchView as SearchWindow)?.GetInstanceID() ?? 0;
+            m_SerializedSearchViewInstanceID = (searchView as SearchWindow)?.GetEntityId() ?? EntityId.None;
             m_SerializedFilterType = filterType?.AssemblyQualifiedName;
             m_SerializedProviders = new List<SearchProvider>();
             foreach (var p in m_Providers)
@@ -756,7 +757,7 @@ namespace UnityEditor.Search
 
         void ISerializationCallbackReceiver.OnAfterDeserialize()
         {
-            if (m_SerializedSearchViewInstanceID != 0)
+            if (m_SerializedSearchViewInstanceID != EntityId.None)
                 searchView = UnityEngine.Object.FindObjectFromInstanceID(m_SerializedSearchViewInstanceID) as ISearchView;
 
             m_Providers = FilterProviders(providerIds.Select(id => SearchService.GetProvider(id)).Concat(m_SerializedProviders));

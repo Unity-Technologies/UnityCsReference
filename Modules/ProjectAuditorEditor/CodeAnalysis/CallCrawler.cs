@@ -2,12 +2,8 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System;
 using System.Collections.Generic;
 using Mono.Cecil;
-using Unity.ProjectAuditor.Editor.Core;
-using Unity.ProjectAuditor.Editor.Utils;
-using UnityEngine.Profiling;
 
 namespace Unity.ProjectAuditor.Editor.CodeAnalysis
 {
@@ -52,30 +48,27 @@ namespace Unity.ProjectAuditor.Editor.CodeAnalysis
 
     class CallCrawler
     {
-        const int k_MaxDepth = 10;
+        internal const int k_MaxDepth = 10;
 
         // key: callee name, value: lists of all callers
         readonly Dictionary<string, List<CallInfo>> m_BucketedCalls =
-            new Dictionary<string, List<CallInfo>>();
+            new Dictionary<string, List<CallInfo>>(512);
 
-        public void Add(CallInfo callInfo)
+        public void Add(MethodReference callee, MethodReference caller, Location location, bool isPerfCriticalContext)
         {
-            var key = callInfo.Callee.FastFullName();
-            List<CallInfo> calls;
-            if (!m_BucketedCalls.TryGetValue(key, out calls))
+            var key = callee.FastFullName();
+            if (!m_BucketedCalls.TryGetValue(key, out var calls))
             {
                 calls = new List<CallInfo>();
                 m_BucketedCalls.Add(key, calls);
             }
-            calls.Add(callInfo);
+            calls.Add(new CallInfo(callee, caller, location, isPerfCriticalContext));
         }
 
         public void BuildCallHierarchies(List<ReportItem> issues, IProgress progress = null)
         {
             if (issues.Count > 0)
             {
-                Profiler.BeginSample("CallCrawler.BuildCallHierarchies");
-
                 if (progress != null)
                     progress.Start("Analyzing Method calls", string.Empty, issues.Count);
 
@@ -94,8 +87,6 @@ namespace Unity.ProjectAuditor.Editor.CodeAnalysis
                 }
                 if (progress != null)
                     progress.Clear();
-
-                Profiler.EndSample();
             }
         }
 
@@ -106,8 +97,7 @@ namespace Unity.ProjectAuditor.Editor.CodeAnalysis
                 return;
 
             // let's find all callers with matching callee
-            List<CallInfo> callPairs;
-            if (m_BucketedCalls.TryGetValue(callee.MethodFullName, out callPairs))
+            if (m_BucketedCalls.TryGetValue(callee.MethodFullName, out var callPairs))
             {
                 var childrenCount = callPairs.Count;
                 var children = new DependencyNode[childrenCount];

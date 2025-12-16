@@ -8,6 +8,13 @@ namespace UnityEngine.Audio
 {
     partial struct ProcessorInstance
     {
+        partial struct CreationParameters
+        {
+            /// <undoc/>
+            [Obsolete("processorUpdateSetting has been deprecated. Use realtimeUpdateSetting instead.", true)]
+            public UpdateSetting processorUpdateSetting { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
+        }
+
         /// <undoc/>
         [Obsolete("IProcessor has been deprecated. Use IRealtime instead. (UnityUpgradable) -> ProcessorInstance/IRealtime", true)]
         public interface IProcessor

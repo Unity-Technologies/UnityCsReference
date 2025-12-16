@@ -461,6 +461,8 @@ namespace UnityEngine
         public bool Backspace()
         {
             RestoreCursorState();
+            int prevCursorIndex = cursorIndex;
+            int prevSelectIndex = selectIndex;
 
             if (hasSelection)
             {
@@ -479,8 +481,8 @@ namespace UnityEngine
                     count = textHandle.textInfo.textElementInfo[cursorIndex - 1].stringLength;
 
                 text = text.Remove(stringCursorIndex - count, count);
-                cursorIndex = textHandle.useAdvancedText ? Math.Max(0, cursorIndex - count) : startIndex;
-                selectIndex = textHandle.useAdvancedText ? Math.Max(0, selectIndex - count) : startIndex;
+                cursorIndex = textHandle.useAdvancedText ? Math.Max(0, prevCursorIndex - count) : startIndex;
+                selectIndex = textHandle.useAdvancedText ? Math.Max(0, prevSelectIndex - count) : startIndex;
                 m_TextSelectingUtility.ClearCursorPos();
                 return true;
             }

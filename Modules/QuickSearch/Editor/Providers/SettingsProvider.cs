@@ -77,7 +77,7 @@ namespace UnityEditor.Search.Providers
                 filterId = "set:",
                 showDetailsOptions = ShowDetailsOptions.ListView,
                 fetchItems = (context, items, provider) => FetchItems(context, provider),
-                fetchLabel = (item, context) => item.label ?? (item.label = Utils.GetNameFromPath(item.id)),
+                fetchLabel = (item, context) => item.label ?? (item.label = Utils.GetFileName(item.id)),
                 fetchThumbnail = (item, context) => Icons.settings,
                 fetchPropositions = (context, options) => FetchPropositions(context, options)
             };

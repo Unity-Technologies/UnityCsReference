@@ -32,6 +32,8 @@ namespace UnityEditor
         // Store all registered native classes (including managers) here.
         // This is a step in the refactor of native code stripping. RuntimeClassRegistry should only be carrying this information to post process scripts rather than doing so much.
         protected Dictionary<int, string> allNativeClasses = new Dictionary<int, string>();
+        internal List<MethodDescription> m_MethodsToPreserve = new List<MethodDescription>();
+        internal List<string> m_UserAssemblies = new List<string>();
 
         public List<string> GetScenesForClass(int ID)
         {
@@ -295,8 +297,6 @@ namespace UnityEditor
             public string methodName;
         }
 
-        internal List<MethodDescription> m_MethodsToPreserve = new List<MethodDescription>();
-
         //invoked by native code
         [RequiredByNativeCode]
         public void AddMethodToPreserve(string assembly, string ns, string klassName, string methodName)
@@ -324,8 +324,6 @@ namespace UnityEditor
         {
             return m_MethodsToPreserve;
         }
-
-        internal List<string> m_UserAssemblies = new List<string>();
 
         //invoked by native code
         [RequiredByNativeCode]

@@ -562,7 +562,7 @@ namespace UnityEngine
             if (textHandle.useAdvancedText)
             {
                 int cursorTempIndex = cursorIndex;
-                textHandle.SelectToPreviousParagraph(ref cursorTempIndex);
+                textHandle.SelectToStartOfParagraph(ref cursorTempIndex);
                 cursorIndex = selectIndex = cursorTempIndex;
                 return;
             }
@@ -586,7 +586,7 @@ namespace UnityEngine
             if (textHandle.useAdvancedText)
             {
                 int cursorTempIndex = cursorIndex;
-                textHandle.SelectToNextParagraph(ref cursorTempIndex);
+                textHandle.SelectToEndOfParagraph(ref cursorTempIndex);
                 cursorIndex = selectIndex = cursorTempIndex;
                 return;
             }

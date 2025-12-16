@@ -16,7 +16,7 @@ namespace UnityEditor.UIElements
 
         public static Panel FindOrCreate(ScriptableObject ownerObject)
         {
-            var id = ownerObject.GetInstanceID();
+            var id = ownerObject.GetEntityId();
             Panel panel;
             if (UIElementsUtility.TryGetPanel(id, out panel))
                 return panel;

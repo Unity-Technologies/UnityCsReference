@@ -26,6 +26,7 @@ namespace Unity.ProjectAuditor.Editor.SettingsAnalysis
             Fixer = (issue, analysisParams) =>
             {
                 EditorSettings.enterPlayModeOptionsEnabled = true;
+                return true;
             }
         };
 
@@ -41,6 +42,7 @@ namespace Unity.ProjectAuditor.Editor.SettingsAnalysis
             Fixer = (issue, analysisParams) =>
             {
                 EditorSettings.enterPlayModeOptions |= EnterPlayModeOptions.DisableDomainReload;
+                return true;
             }
         };
 

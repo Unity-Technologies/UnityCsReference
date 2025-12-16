@@ -82,6 +82,11 @@ namespace Unity.UIToolkit.Editor
             UpdateValidation();
         }
 
+        internal override bool EqualsCurrentValue(StyleLength v)
+        {
+            return value == v;
+        }
+
         public override void UpdateValidation()
         {
             valueField.SetValidation(GetValidation());
@@ -90,6 +95,16 @@ namespace Unity.UIToolkit.Editor
         protected override bool Validate(Length previousValue, Length newValue)
         {
             return valueField.Validate(previousValue, newValue);
+        }
+
+        protected override LengthField CreateValueField()
+        {
+            return new LengthField();
+        }
+
+        protected override StyleLength CreateStyleValue(Length v)
+        {
+            return v;
         }
 
         private static void PropagateEvents(PropertyChangedEvent evt, StyleLengthField field)

@@ -132,7 +132,7 @@ namespace UnityEditor.Experimental.GraphView
                 var currentWindowType = GetType();
                 while (it.MoveNext())
                 {
-                    var dockArea = guiViews.FirstOrDefault(v => v.GetInstanceID() == it.Current.Key) as DockArea;
+                    var dockArea = guiViews.FirstOrDefault(v => v.GetEntityId() == it.Current.Key) as DockArea;
                     if (dockArea == null)
                         continue;
 
@@ -152,7 +152,7 @@ namespace UnityEditor.Experimental.GraphView
             {
                 while (it.MoveNext())
                 {
-                    var dockArea = guiViews.FirstOrDefault(v => v.GetInstanceID() == it.Current.Key) as DockArea;
+                    var dockArea = guiViews.FirstOrDefault(v => v.GetEntityId() == it.Current.Key) as DockArea;
                     if (dockArea == null)
                         continue;
 

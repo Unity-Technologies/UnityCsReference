@@ -56,7 +56,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public override bool IsValid(IPackageVersion version)
         {
-            return version?.package?.product?.images?.Any() ?? false;
+            return version?.package?.product?.images?.Count > 0;
         }
 
         protected override void RefreshContent(IPackageVersion version)

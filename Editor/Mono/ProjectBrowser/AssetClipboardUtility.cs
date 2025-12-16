@@ -323,12 +323,12 @@ namespace UnityEditor
             return performedAction != PerformedAction.None;
         }
 
-        internal static bool HasCutAsset(int instanceID)
+        internal static bool HasCutAsset(EntityId entityId)
         {
             if (performedAction == PerformedAction.Cut)
             {
-                Object obj = EditorUtility.EntityIdToObject(instanceID);
-                ObjectIdentifier.GetObjectIdentifierFromEntityId(instanceID, out var identifier);
+                Object obj = EditorUtility.EntityIdToObject(entityId);
+                ObjectIdentifier.GetObjectIdentifierFromEntityId(entityId, out var identifier);
                 return obj != null && assetClipboard.Contains(identifier);
             }
 

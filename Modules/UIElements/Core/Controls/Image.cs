@@ -318,7 +318,14 @@ namespace UnityEngine.UIElements
             if (source == null)
                 return;
 
-            var alignedRect = GUIUtility.AlignRectToDevice(contentRect);
+            // As the border/padding in the resolved style are now rouded by the layout engine, we should never have a content rect that is not aligned to the pixel grid.
+            // Adding assert to verify this(Jan 2025), they could be removed in the future.
+            var alignedRect = contentRect;
+            Debug.Assert(Mathf.Abs(alignedRect.x - this.RoundToPanelPixelSize(alignedRect.x)) < 0.01);
+            Debug.Assert(Mathf.Abs(alignedRect.y - this.RoundToPanelPixelSize(alignedRect.y)) < 0.01);
+            Debug.Assert(Mathf.Abs(alignedRect.width - this.RoundToPanelPixelSize(alignedRect.width)) < 0.01);
+            Debug.Assert(Mathf.Abs(alignedRect.height - this.RoundToPanelPixelSize(alignedRect.height)) < 0.01);
+
             var playModeTintColor = mgc.visualElement?.playModeTintColor ?? Color.white;
 
             var rectParams = new UIR.MeshGenerator.RectangleParams();

@@ -3,7 +3,6 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using UnityEngine.Scripting;
 using UnityEngine.TextCore.Text;
@@ -98,12 +97,6 @@ namespace UnityEngine
                 Internal_Destroy(m_Ptr);
                 m_Ptr = IntPtr.Zero;
             }
-        }
-
-        static internal void CleanupRoots()
-        {
-            // See GUI.CleanupRoots
-            s_None = null;
         }
 
         //Called during Deserialization from cpp
@@ -408,13 +401,16 @@ namespace UnityEngine
         public static GUIStyle none => s_None ?? (s_None = new GUIStyle());
         static GUIStyle s_None;
 
+        // This is to be used only internally in tests. It will affect all of IMGUI.
+        internal static bool? useAdvancedText = null;
+
         // Get the pixel position of a given string index.
         public Vector2 GetCursorPixelPosition(Rect position, GUIContent content, int cursorStringIndex)
         {
             Rect drawRect = position;
             drawRect.width = fixedWidth == 0f ? drawRect.width : fixedWidth;
             drawRect.height = fixedHeight == 0f ? drawRect.height : fixedHeight;
-            var handle = IMGUITextHandle.GetTextHandle(this, padding.Remove(drawRect), content.textWithWhitespace, Color.white);
+            var handle = IMGUITextHandle.GetTextHandle(this, padding.Remove(drawRect), IMGUITextHandle.IsAdvancedTextEnabled() ? content.text : content.textWithWhitespace, Color.white, false);
             var cursorPos = handle.GetCursorPositionFromStringIndexUsingLineHeight(cursorStringIndex);
             cursorPos = new Vector2(Mathf.Max(0.0f, cursorPos.x), cursorPos.y);
             var rectOffset = Internal_GetTextRectOffset(drawRect, content, new Vector2(handle.preferredSize.x, handle.preferredSize.y > 0 ? handle.preferredSize.y : lineHeight));
@@ -430,13 +426,15 @@ namespace UnityEngine
         // Get the cursor position (indexing into contents.text) when the user clicked at cursorPixelPosition
         public int GetCursorStringIndex(Rect position, GUIContent content, Vector2 cursorPixelPosition)
         {
-            return IMGUITextHandle.GetTextHandle(this, position, content.textWithWhitespace, Color.white).GetCursorIndexFromPosition(cursorPixelPosition);
+            var handle = IMGUITextHandle.GetTextHandle(this, position, IMGUITextHandle.IsAdvancedTextEnabled() ? content.text : content.textWithWhitespace, Color.white, false);
+            handle.AddToPermanentCacheAndGenerateMesh();
+            return handle.GetCursorIndexFromPosition(cursorPixelPosition);
         }
 
         // Returns number of characters that can fit within width, returns -1 if fails due to missing font
         internal int GetNumCharactersThatFitWithinWidth(string text, float width)
         {
-            return IMGUITextHandle.GetTextHandle(this, new Rect(0, 0, width, 1), text, Color.white).GetNumCharactersThatFitWithinWidth(width);
+            return IMGUITextHandle.GetTextHandle(this, new Rect(0, 0, width, 1), text, Color.white, false).GetNumCharactersThatFitWithinWidth(width);
         }
 
         // Calculate the size of a some content if it is rendered with this style.
@@ -495,29 +493,7 @@ namespace UnityEngine
         [RequiredByNativeCode]
         internal static void GetMeshInfo(GUIStyle style, Color color, string content, Rect rect, ref MeshInfoBindings[] meshInfos, ref Vector2 dimensions, ref int generationId)
         {
-            bool isCached = false;
-            var textHandle = IMGUITextHandle.GetTextHandle(style, rect, content, color, ref isCached);
-            generationId = TextHandle.settings.GetHashCode();
-            var invScale = 1/GUIUtility.pixelsPerPoint;
-            // If not already cached on the native side, we must send the meshInfo
-            if (!isCached)
-            {
-                var textInfo = textHandle.textInfo;
-                meshInfos = new MeshInfoBindings[textInfo.materialCount];
-                for (int i = 0; i < textInfo.materialCount; i++)
-                {
-                    meshInfos[i].vertexData = new TextCoreVertex[textInfo.meshInfo[i].vertexCount];
-                    meshInfos[i].vertexCount = textInfo.meshInfo[i].vertexCount;
-                    meshInfos[i].material = textInfo.meshInfo[i].material;
-                    Array.Copy(textInfo.meshInfo[i].vertexData, meshInfos[i].vertexData, textInfo.meshInfo[i].vertexCount);
-
-                    for (int j = 0; j < meshInfos[i].vertexData.Length; j++)
-                    {
-                        meshInfos[i].vertexData[j].position *= invScale;
-                    }
-                }
-            }
-            dimensions = textHandle.preferredSize;
+            IMGUITextHandle.GetMeshInfo(style, color, content, rect, ref meshInfos, ref dimensions, ref generationId);
         }
 
         [RequiredByNativeCode]

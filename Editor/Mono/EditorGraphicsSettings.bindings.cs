@@ -8,6 +8,7 @@ using UnityEditor.Build;
 using UnityEditor.Inspector.GraphicsSettingsInspectors;
 using UnityEditor.Rendering.Settings;
 using UnityEditor.Shaders;
+using UnityEngine;
 using UnityEngine.Bindings;
 using UnityEngine.Rendering;
 using UnityEngine.Scripting;
@@ -51,7 +52,7 @@ namespace UnityEditor.Rendering
         [NativeName("UnregisterRenderPipelineSettings")] static extern bool Internal_TryUnregisterRenderPipeline(string renderpipelineName);
         [NativeName("GetSettingsForRenderPipeline")] static extern Object Internal_GetSettingsForRenderPipeline(string renderpipelineName);
 
-        [NativeName("GetSettingsInstanceIDForRenderPipeline")] internal static extern int Internal_GetSettingsInstanceIDForRenderPipeline(string renderpipelineName);
+        [NativeName("GetSettingsEntityIdForRenderPipeline")] internal static extern EntityId Internal_GetSettingsEntityIdForRenderPipeline(string renderpipelineName);
 
         private static void CheckRenderPipelineType(Type renderPipelineType)
         {
@@ -87,7 +88,7 @@ namespace UnityEditor.Rendering
             }
 
             //Removing a globalSeetings and adding back another one from the same type will cause issue in the Notifier persistency cache
-            Notifier.RecomputeDictionary();  
+            Notifier.RecomputeDictionary();
 
             GraphicsSettingsInspectorUtility.ReloadGraphicsSettingsEditorIfNeeded();
         }

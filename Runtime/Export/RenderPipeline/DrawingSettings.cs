@@ -28,9 +28,9 @@ namespace UnityEngine.Rendering
 #pragma warning disable 414
         EntityId m_OverrideShaderID;
         int m_OverrideShaderPassIndex;
-        EntityId m_OverrideMaterialInstanceId;
+        EntityId m_OverrideMaterialEntityId;
         int m_OverrideMaterialPassIndex;
-        EntityId m_fallbackMaterialInstanceId;
+        EntityId m_fallbackMaterialEntityId;
         int m_MainLightIndex;
         int m_UseSrpBatcher; // only needed to match native struct
         int m_LodCrossFadeStencilMask;
@@ -42,11 +42,11 @@ namespace UnityEngine.Rendering
             m_PerObjectData = PerObjectData.None;
             m_Flags = DrawRendererFlags.EnableInstancing;
 
-            m_OverrideShaderID = 0;
+            m_OverrideShaderID = EntityId.None;
             m_OverrideShaderPassIndex = 0;
-            m_OverrideMaterialInstanceId = 0;
+            m_OverrideMaterialEntityId = EntityId.None;
             m_OverrideMaterialPassIndex = 0;
-            m_fallbackMaterialInstanceId = 0;
+            m_fallbackMaterialEntityId = EntityId.None;
             m_MainLightIndex = -1;
 
             fixed(int* p = shaderPassNames)
@@ -100,14 +100,14 @@ namespace UnityEngine.Rendering
 
         public Material overrideMaterial
         {
-            get { return m_OverrideMaterialInstanceId != 0 ? Object.FindObjectFromInstanceID(m_OverrideMaterialInstanceId) as Material : null; }
-            set { m_OverrideMaterialInstanceId = value?.GetInstanceID() ?? 0; }
+            get { return m_OverrideMaterialEntityId != EntityId.None ? Object.FindObjectFromInstanceID(m_OverrideMaterialEntityId) as Material : null; }
+            set { m_OverrideMaterialEntityId = value?.GetEntityId() ?? EntityId.None; }
         }
 
         public Shader overrideShader
         {
-            get { return m_OverrideShaderID != 0 ? Object.FindObjectFromInstanceID(m_OverrideShaderID) as Shader : null; }
-            set { m_OverrideShaderID = value?.GetInstanceID() ?? 0; }
+            get { return m_OverrideShaderID != EntityId.None ? Object.FindObjectFromInstanceID(m_OverrideShaderID) as Shader : null; }
+            set { m_OverrideShaderID = value?.GetEntityId() ?? EntityId.None; }
         }
 
         public int overrideMaterialPassIndex
@@ -124,8 +124,8 @@ namespace UnityEngine.Rendering
 
         public Material fallbackMaterial
         {
-            get { return m_fallbackMaterialInstanceId != 0 ? Object.FindObjectFromInstanceID(m_fallbackMaterialInstanceId) as Material : null; }
-            set { m_fallbackMaterialInstanceId = value?.GetInstanceID() ?? 0; }
+            get { return m_fallbackMaterialEntityId != EntityId.None ? Object.FindObjectFromInstanceID(m_fallbackMaterialEntityId) as Material : null; }
+            set { m_fallbackMaterialEntityId = value?.GetEntityId() ?? EntityId.None; }
         }
 
         public int mainLightIndex
@@ -173,9 +173,9 @@ namespace UnityEngine.Rendering
             return m_SortingSettings.Equals(other.m_SortingSettings)
                 && m_PerObjectData == other.m_PerObjectData
                 && m_Flags == other.m_Flags
-                && m_OverrideMaterialInstanceId == other.m_OverrideMaterialInstanceId
+                && m_OverrideMaterialEntityId == other.m_OverrideMaterialEntityId
                 && m_OverrideMaterialPassIndex == other.m_OverrideMaterialPassIndex
-                && m_fallbackMaterialInstanceId == other.m_fallbackMaterialInstanceId
+                && m_fallbackMaterialEntityId == other.m_fallbackMaterialEntityId
                 && m_UseSrpBatcher == other.m_UseSrpBatcher
                 && m_LodCrossFadeStencilMask == other.m_LodCrossFadeStencilMask;
         }
@@ -193,9 +193,9 @@ namespace UnityEngine.Rendering
                 var hashCode = m_SortingSettings.GetHashCode();
                 hashCode = (hashCode * 397) ^ (int)m_PerObjectData;
                 hashCode = (hashCode * 397) ^ (int)m_Flags;
-                hashCode = (hashCode * 397) ^ m_OverrideMaterialInstanceId;
+                hashCode = (hashCode * 397) ^ m_OverrideMaterialEntityId.GetHashCode();
                 hashCode = (hashCode * 397) ^ m_OverrideMaterialPassIndex;
-                hashCode = (hashCode * 397) ^ m_fallbackMaterialInstanceId;
+                hashCode = (hashCode * 397) ^ m_fallbackMaterialEntityId.GetHashCode();
                 hashCode = (hashCode * 397) ^ m_UseSrpBatcher;
                 hashCode = (hashCode * 397) ^ m_LodCrossFadeStencilMask;
                 return hashCode;

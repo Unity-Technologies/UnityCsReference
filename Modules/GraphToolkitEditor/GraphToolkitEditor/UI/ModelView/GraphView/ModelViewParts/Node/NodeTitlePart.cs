@@ -6,6 +6,7 @@
 
 using System;
 using System.Collections.Generic;
+using UnityEditor;
 using UnityEngine;
 using UnityEngine.Assertions;
 using UnityEngine.UIElements;
@@ -100,7 +101,7 @@ namespace Unity.GraphToolkit.Editor
         }
 
         protected VisualElement m_Root;
-        protected VisualElement m_Icon;
+        protected Image m_Icon;
         protected VisualElement m_ColorLine;
         protected VisualElement m_NodeToolbarButtonsContainer;
         protected Label m_SubTitle;
@@ -115,7 +116,7 @@ namespace Unity.GraphToolkit.Editor
         /// <summary>
         /// The icon on the node.
         /// </summary>
-        public VisualElement Icon => m_Icon;
+        public Image Icon => m_Icon;
 
         /// <inheritdoc />
         public override VisualElement Root => m_Root;
@@ -244,6 +245,7 @@ namespace Unity.GraphToolkit.Editor
 
         List<string> m_PreviousIconClasses = new List<string>();
         string m_PreviousIconString = null;
+        string m_PreviousIconPath;
 
         /// <inheritdoc />
         public override void UpdateUIFromModel(UpdateFromModelVisitor visitor)
@@ -255,30 +257,51 @@ namespace Unity.GraphToolkit.Editor
                 return;
 
             string iconTypeString = nodeModel.IconTypeString;
-            if (m_Icon != null && (m_PreviousIconClasses.Count == 0 || m_PreviousIconString != iconTypeString))
+            string iconPath = nodeModel.IconPath;
+
+            if (m_Icon != null && (m_PreviousIconClasses.Count == 0 || m_PreviousIconString != iconTypeString || m_PreviousIconPath != iconPath))
             {
                 foreach (var iconClass in m_PreviousIconClasses)
                 {
                     m_Icon.RemoveFromClassList(iconClass);
                 }
                 m_PreviousIconClasses.Clear();
-                if (!string.IsNullOrEmpty(nodeModel.IconTypeString))
+
+                // If an icon path is specified, it takes precedence over the icon type string.
+                if (!string.IsNullOrEmpty(iconPath))
+                {
+                    var iconTexture = EditorGUIUtility.IconContent(nodeModel.IconPath).image as Texture2D;
+                    if (iconTexture == null)
+                    {
+                        Debug.LogWarning($"Could not load icon at path '{nodeModel.IconPath}' for node {nodeModel.Title}");
+                        m_Icon.image = null;
+                    }
+                    else
+                    {
+                        m_Icon.image = iconTexture;
+                    }
+                }
+
+                if (m_Icon.image == null && !string.IsNullOrEmpty(nodeModel.IconTypeString))
                 {
                     m_PreviousIconClasses.Add(ussClassName.WithUssElement(GraphElementHelper.iconName).WithUssModifier(iconTypeString));
                     m_PreviousIconClasses.Add(m_ParentClassName.WithUssElement(GraphElementHelper.iconName).WithUssModifier(iconTypeString));
                     m_PreviousIconClasses.Add(GraphElementHelper.iconUssClassName.WithUssModifier(iconTypeString));
                 }
-                else if ((m_Options & Options.HasIcon) == 0)
+
+                if ((m_Options & Options.HasIcon) == 0)
                 {
                     m_PreviousIconClasses.Add(ussClassName.WithUssElement(GraphElementHelper.iconName).WithUssModifier(noIconModifier));
                     m_PreviousIconClasses.Add(m_ParentClassName.WithUssElement(GraphElementHelper.iconName).WithUssModifier(noIconModifier));
                 }
+
                 foreach (var iconClass in m_PreviousIconClasses)
                 {
                     m_Icon.AddToClassList(iconClass);
                 }
 
                 m_PreviousIconString = iconTypeString;
+                m_PreviousIconPath = iconPath;
             }
 
             var hasProgressNode = nodeModel as IHasProgress;

@@ -6,6 +6,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using Unity.Collections.LowLevel.Unsafe;
 using Unity.Scripting.LifecycleManagement;
 using UnityEditorInternal;
 using UnityEngine;
@@ -121,9 +122,9 @@ namespace UnityEditor
             return Drop(DragAndDropWindowTarget.inspector, targets, perform);
         }
 
-        internal static DragAndDropVisualMode DropOnHierarchyWindow(int dropTargetInstanceID, HierarchyDropFlags dropMode, Transform parentForDraggedObjects, bool perform)
+        internal static DragAndDropVisualMode DropOnHierarchyWindow(EntityId dropTargetEntityId, HierarchyDropFlags dropMode, Transform parentForDraggedObjects, bool perform)
         {
-            return Drop(DragAndDropWindowTarget.hierarchy, dropTargetInstanceID, dropMode, parentForDraggedObjects, perform);
+            return Drop(DragAndDropWindowTarget.hierarchy, dropTargetEntityId, dropMode, parentForDraggedObjects, perform);
         }
 
         internal static DragAndDropVisualMode Drop(int dropDstId, params object[] args)
@@ -140,7 +141,11 @@ namespace UnityEditor
             {
                 var dropHandler = handlers[i];
                 if (dropHandler.Method.GetParameters()[0].ParameterType == typeof(int) && args[0] is EntityId e)
-                    args[0] = (int)e;
+                {
+                    Debug.LogWarning("Using int based drop handlers is deprecated. Please use EntityId based ones instead.");
+                    Debug.Assert(sizeof(int)==UnsafeUtility.SizeOf<EntityId>(), "EntityId is not the same size as int, update this code to use ulong");
+                    args[0] = e.GetRawData();
+                }
                 if (dropHandler.Method.GetParameters()[0].ParameterType == typeof(EntityId) && args[0] is int number)
                     args[0] = EntityId.From(number);
                 dropResult = (DragAndDropVisualMode)dropHandler.DynamicInvoke(args);
@@ -160,7 +165,7 @@ namespace UnityEditor
             if (search.Find(dragUponInstanceId, null))
                 return InternalEditorUtility.ProjectWindowDragV2(search, perform);
 
-            if (dragUponInstanceId != 0)
+            if (dragUponInstanceId != EntityId.None)
             {
                 var path = AssetDatabase.GetAssetPath(dragUponInstanceId);
                 if (string.IsNullOrEmpty(path))

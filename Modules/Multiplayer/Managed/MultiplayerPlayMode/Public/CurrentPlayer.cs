@@ -86,7 +86,10 @@ namespace Unity.Multiplayer.PlayMode
             }
         }
 
+
+#pragma warning disable RS0030 // This [RuntimeInitializeOnLoadMethod] usage be addressed by https://jira.unity3d.com/browse/UUM-128407
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+#pragma warning restore RS0030
         static void ReloadLatestTagsOnEnterPlaymode()
         {
             s_CurrentPlayerApi = null;

@@ -103,25 +103,29 @@ namespace UnityEngine.SceneManagement
         /// Implicit conversion from <see cref="SceneHandle"/> to <see langword="int"/>.
         /// </summary>
         /// <param name="handle">The SceneHandle</param>
+        [Obsolete("Implicit conversion from SceneHandle to int is deprecated. Use SceneHandle.GetRawData() instead")]
         public static implicit operator int(SceneHandle handle) => handle.m_Value;
 
         /// <summary>
         /// Implicit conversion from <see langword="int"/> to <see cref="SceneHandle"/>.
         /// </summary>
         /// <param name="handle"></param>
-        public static implicit operator SceneHandle(int handle) => From(handle);
+        [Obsolete("Implicit conversion from int to SceneHandle is deprecated. Use SceneHandle.FromRawData(ulong) instead")]
+        public static implicit operator SceneHandle(int handle) => FromRawData((ulong)handle);
 
         /// <summary>
         /// Implicit conversion from <see cref="SceneHandle"/> to <see langword="uint"/>.
         /// </summary>
         /// <param name="handle">The SceneHandle</param>
+        [Obsolete("Implicit conversion from SceneHandle to uint is deprecated. Use SceneHandle.GetRawData() instead")]
         public static implicit operator uint(SceneHandle handle) => (uint)(int)handle.m_Value;
 
         /// <summary>
         /// Implicit conversion from <see langword="uint"/> to <see cref="SceneHandle"/>.
         /// </summary>
         /// <param name="handle"></param>
-        public static implicit operator SceneHandle(uint handle) => From((int)handle);
+        [Obsolete("Implicit conversion from uint to SceneHandle is deprecated. Use SceneHandle.FromRawData(ulong) instead")]
+        public static implicit operator SceneHandle(uint handle) => FromRawData(handle);
 
         public override int GetHashCode() => m_Value.GetHashCode();
 
@@ -129,6 +133,9 @@ namespace UnityEngine.SceneManagement
         public string ToString(string format) => m_Value.ToString(format);
 
         internal EntityId ToEntityId() => m_Value;
+
+        public ulong GetRawData() => m_Value.GetRawData();
+        public static SceneHandle FromRawData(ulong rawdata) => new() { m_Value = EntityId.From(rawdata) };
     }
 
     internal static class SceneHandleExtensions

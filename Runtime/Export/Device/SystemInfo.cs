@@ -77,6 +77,8 @@ namespace UnityEngine.Device
 
         public static bool supportsVariableRateShading => ShimManager.systemInfoShim.supportsVariableRateShading;
 
+        public static int maxTiledPixelStorageSize => ShimManager.systemInfoShim.maxTiledPixelStorageSize;
+
         public static bool hasTiledGPU => ShimManager.systemInfoShim.hasTiledGPU;
 
         public static bool hasHiddenSurfaceRemovalOnGPU => ShimManager.systemInfoShim.hasHiddenSurfaceRemovalOnGPU;
@@ -240,6 +242,8 @@ namespace UnityEngine.Device
 
         public static bool supportsDepthFetchInRenderPass => ShimManager.systemInfoShim.supportsDepthFetchInRenderPass;
 
+        public static bool supportsDynamicResolution => ShimManager.systemInfoShim.supportsDynamicResolution;
+
         [System.Obsolete("Use overload with a GraphicsFormatUsage parameter instead", false)]
         public static bool IsFormatSupported(GraphicsFormat format, FormatUsage usage)
         {
@@ -279,5 +283,9 @@ namespace UnityEngine.Device
             return ShimManager.systemInfoShim.SupportsRandomWriteOnRenderTextureFormat(format);
         }
 
+        public static int GetTiledRenderTargetStorageSize(GraphicsFormat format, int sampleCount)
+        {
+            return ShimManager.systemInfoShim.GetTiledRenderTargetStorageSize(format, sampleCount);
+        }
     }
 }

@@ -24,6 +24,8 @@ internal struct SchemaId : IEquatable<SchemaId>
     internal string ToHex() => hash.ToHex();
 
     internal static SchemaId FromHex(string hex) => new SchemaId(Hash.FromHex(hex));
+
+    public override string ToString() => hash.ToHex();
 }
 
 #nullable restore

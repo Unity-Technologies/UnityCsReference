@@ -4,87 +4,91 @@ using udm_const_vector_ptr = System.IntPtr;
 
 namespace Unity.DataModel
 {
-[StructLayout(LayoutKind.Sequential)]
-internal unsafe struct ConstVector
-{
-    internal ConstVector(ConstAccessor accessor)
+    [StructLayout(LayoutKind.Sequential)]
+    internal unsafe struct ConstVector
     {
-        Field = default;
-        ElementSchema = default;
-
-        Schema schema = accessor.GetSchema();
-        if (schema.IsValid() && schema.GetFlags().HasFlag(SchemaFlags.IsVector))
+        internal ConstVector(ConstAccessor accessor)
         {
-            Field = accessor.Data;
-            ElementSchema = schema.GetVectorElementSchema();
-        }
-    }
+            Field = default;
+            ElementSchema = default;
 
-    internal bool IsValid()
-    {
-        unsafe
-        {
-            return Field != IntPtr.Zero && ElementSchema.IsValid();
-        }
-    }
-
-    internal Schema GetElementSchema()
-    {
-        return ElementSchema;
-    }
-
-    internal ulong GetLength()
-    {
-        ThrowIfInvalid();
-        return GetLengthInternalUnsafe();
-    }
-
-    private ulong GetLengthInternalUnsafe()
-    {
-        return ((VectorField*)Field)->Size;
-    }
-
-    internal byte* GetDataPtr()
-    {
-        ThrowIfInvalid();
-        return GetDataPtrInternalUnsafe();
-    }
-
-    private byte* GetDataPtrInternalUnsafe()
-    {
-        return (byte*)Field + ((VectorField*)Field)->Location;
-    }
-
-    internal ConstAccessor ElementAt(ulong index)
-    {
-        ThrowIfInvalid();
-        ulong length = GetLengthInternalUnsafe();
-
-        if (index >= length)
-            throw new IndexOutOfRangeException($"Index {index} is out of range. Vector size {length}");
-
-        
-        fixed (ConstVector* vectorAccessorPtr = &this)
-        {
-            var ptr = GetDataPtrInternalUnsafe() + ElementSchema.GetSize() * index;
-
-            return new ConstAccessor
+            Schema schema = accessor.GetSchema();
+            if (schema.IsValid() && schema.GetFlags().HasFlag(SchemaFlags.IsVector))
             {
-                Schema = ElementSchema,
-                Data = (IntPtr)ptr
-            };
+                Field = accessor.Data;
+                ElementSchema = schema.GetVectorElementSchema();
+                References = accessor.References;
+            }
         }
-    }
 
-    internal void ThrowIfInvalid()
-    {
-        if (!IsValid())
-            throw new InvalidOperationException("Trying to use an invalid Vector");
-    }
+        internal bool IsValid()
+        {
+            unsafe
+            {
+                return Field != IntPtr.Zero && ElementSchema.IsValid();
+            }
+        }
 
-    internal Schema ElementSchema;
-    // Pointers to blittable types are not considered blittable by the bindings generator
-    // internal VectorField* Field;
-    internal IntPtr Field;
-}
+        internal Schema GetElementSchema()
+        {
+            return ElementSchema;
+        }
+
+        internal ulong GetLength()
+        {
+            ThrowIfInvalid();
+            return GetLengthInternalUnsafe();
+        }
+
+        private ulong GetLengthInternalUnsafe()
+        {
+            return ((VectorField*)Field)->Size;
+        }
+
+        internal byte* GetDataPtr()
+        {
+            ThrowIfInvalid();
+            return GetDataPtrInternalUnsafe();
+        }
+
+        private byte* GetDataPtrInternalUnsafe()
+        {
+            return (byte*)Field + ((VectorField*)Field)->Location;
+        }
+
+        internal ConstAccessor ElementAt(ulong index)
+        {
+            ThrowIfInvalid();
+            ulong length = GetLengthInternalUnsafe();
+
+            if (index >= length)
+                throw new IndexOutOfRangeException($"Index {index} is out of range. Vector size {length}");
+
+
+            fixed (ConstVector* vectorAccessorPtr = &this)
+            {
+                var ptr = GetDataPtrInternalUnsafe() + ElementSchema.GetSize() * index;
+
+                return new ConstAccessor
+                {
+                    Schema = ElementSchema,
+                    Data = (IntPtr)ptr,
+                    References = References
+                };
+            }
+        }
+
+        internal void ThrowIfInvalid()
+        {
+            if (!IsValid())
+                throw new InvalidOperationException("Trying to use an invalid Vector");
+        }
+
+        internal Schema ElementSchema;
+        // Pointers to blittable types are not considered blittable by the bindings generator
+        // internal VectorField* Field;
+        // internal Reference* References;
+        internal IntPtr Field;
+        internal IntPtr References;
+    }
 }

@@ -125,7 +125,7 @@ namespace Unity.Multiplayer.PlayMode.Editor
             // Listen to play mode state changes, needed for Instance Call-to-Action buttons.
             ScenarioManagerProvider.instance.StateChanged += (state) =>
             {
-                UpdateButtonActiveState();
+                UpdateUI();
             };
         }
 
@@ -188,9 +188,12 @@ namespace Unity.Multiplayer.PlayMode.Editor
             UpdateButtonActiveState();
 
             // Disable Dropdown if scenario is running
-            bool enabledDropdown = ScenarioRunner.instance.ActiveScenario == null ||
-                                   ScenarioRunner.instance.ActiveScenario.StatusData.OverallStatus.State != ExecutionState.Running;
-            m_DropDown.SetEnabled(enabledDropdown && !isInstanceRunning);
+            if (ScenarioRunner.instance.ActiveScenario != null)
+            {
+                var scenarioState = ScenarioRunner.instance.ActiveScenario.StatusData.OverallStatus.State;
+                var enabledDropdown = scenarioState is not (ExecutionState.Running or ExecutionState.Active);
+                m_DropDown.SetEnabled(enabledDropdown && !isInstanceRunning);
+            }
 
             // Update Running Mode Icon if it has not changed.
             if (m_DropdownRunModeImage != null)

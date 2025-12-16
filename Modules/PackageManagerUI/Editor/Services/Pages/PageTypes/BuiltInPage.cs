@@ -23,8 +23,8 @@ namespace UnityEditor.PackageManager.UI.Internal
         // Using UpmSearchOffline here will cause scoped registry packages to disappear when user refreshes the built in page.
         public override RefreshOptions refreshOptions => RefreshOptions.UpmListOffline | RefreshOptions.UpmSearch;
 
-        public override IEnumerable<PageFilters.Status> supportedStatusFilters => Enumerable.Empty<PageFilters.Status>();
-        public override IEnumerable<PageSortOption> supportedSortOptions => k_SupportedSortOptions;
+        public override IReadOnlyCollection<PageFilters.Status> supportedStatusFilters => Array.Empty<PageFilters.Status>();
+        public override IReadOnlyCollection<PageSortOption> supportedSortOptions => k_SupportedSortOptions;
 
         public BuiltInPage(IPackageDatabase packageDatabase) : base(packageDatabase) {}
 

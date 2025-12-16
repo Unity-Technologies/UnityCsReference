@@ -20,7 +20,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         [SerializeField]
         private UIError[] m_Errors;
-        public override IEnumerable<UIError> errors => m_Errors;
+        public override IReadOnlyCollection<UIError> errors => m_Errors;
 
         public override AuthorInfo author => null;
 

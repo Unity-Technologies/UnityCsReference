@@ -36,6 +36,11 @@ namespace Unity.GraphToolkit.Editor
         string DisplayName { get; }
 
         /// <summary>
+        /// The text displayed when hovering over the node option's display name.
+        /// </summary>
+        string Tooltip { get; }
+
+        /// <summary>
         /// Tries to retrieve the value of the node option using the specified type.
         /// </summary>
         /// <typeparam name="T">The expected type of the value.</typeparam>

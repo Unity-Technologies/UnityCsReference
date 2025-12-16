@@ -30,12 +30,10 @@ namespace Unity.Profiling.Editor.UI
             if (MakeSortedSessionsListIds(m_AllCaptures, out var sortedSessionIds, out var sessionsMap))
             {
                 // Make session name based on the sorted order
-                uint generatedSessionId = 1;
                 foreach (var sessionId in sortedSessionIds)
                 {
                     var sessionName = $"{sessionId}".Insert(6, "-").Insert(4, "-");
                     sessionNames[sessionId] = sessionName;
-                    generatedSessionId++;
                 }
             }
 
@@ -51,42 +49,42 @@ namespace Unity.Profiling.Editor.UI
         /// <summary>
         /// A utility function that makes a sorted list of Captures sessions and dictionary of sorted list of Captures inside each session
         /// </summary>
-        /// <param name="Captures">List of all Captures to process</param>
-        /// <param name="sortedSessionIds">Returned list of sorted sessions</param>
-        /// <param name="sessionsMap">Returned dictionary of lists for each session id</param>
+        /// <param name="captures">List of all Captures to process</param>
+        /// <param name="outSortedSessionIds">Returned list of sorted sessions</param>
+        /// <param name="outSessionsMap">Returned dictionary of lists for each session id</param>
         /// <returns>True if successful</returns>
-        static bool MakeSortedSessionsListIds(in IReadOnlyList<CaptureFileModel> Captures, out List<uint> sortedSessionIds, out Dictionary<uint, List<CaptureFileModel>> sessionsMap)
+        static bool MakeSortedSessionsListIds(in IReadOnlyList<CaptureFileModel> captures, out List<uint> outSortedSessionIds, out Dictionary<uint, List<CaptureFileModel>> outSessionsMap)
         {
-            if (Captures.Count <= 0)
+            if (captures.Count <= 0)
             {
-                sortedSessionIds = null;
-                sessionsMap = null;
+                outSortedSessionIds = null;
+                outSessionsMap = null;
                 return false;
             }
 
             // Pre-sort Captures
-            var sortedCaptures = new List<CaptureFileModel>(Captures);
+            var sortedCaptures = new List<CaptureFileModel>(captures);
             sortedCaptures.Sort((l, r) => l.Timestamp.CompareTo(r.Timestamp));
 
             // Group Captures by sessionId
-            var _sessionsMap = new Dictionary<uint, List<CaptureFileModel>>();
-            var _sortedSessionIds = new List<uint>();
-            foreach (var catpureFileModel in sortedCaptures)
+            var sessionsMap = new Dictionary<uint, List<CaptureFileModel>>();
+            var sortedSessionIds = new List<uint>();
+            foreach (var captureFileModel in sortedCaptures)
             {
-                if (!_sessionsMap.ContainsKey(catpureFileModel.SessionId))
+                if (!sessionsMap.ContainsKey(captureFileModel.DateUsedAsGroupingId))
                 {
-                    _sessionsMap.Add(catpureFileModel.SessionId, new List<CaptureFileModel>());
-                    _sortedSessionIds.Add(catpureFileModel.SessionId);
+                    sessionsMap.Add(captureFileModel.DateUsedAsGroupingId, new List<CaptureFileModel>());
+                    sortedSessionIds.Add(captureFileModel.DateUsedAsGroupingId);
                 }
 
-                _sessionsMap[catpureFileModel.SessionId].Add(catpureFileModel);
+                sessionsMap[captureFileModel.DateUsedAsGroupingId].Add(captureFileModel);
             }
 
             // Sort sessionId list so that generated names order is the same as visual order in UI
-            _sortedSessionIds.Sort((l, r) => _sessionsMap[l][0].Timestamp.CompareTo(_sessionsMap[r][0].Timestamp));
+            sortedSessionIds.Sort((l, r) => sessionsMap[l][0].Timestamp.CompareTo(sessionsMap[r][0].Timestamp));
 
-            sessionsMap = _sessionsMap;
-            sortedSessionIds = _sortedSessionIds;
+            outSessionsMap = sessionsMap;
+            outSortedSessionIds = sortedSessionIds;
             return true;
         }
     }

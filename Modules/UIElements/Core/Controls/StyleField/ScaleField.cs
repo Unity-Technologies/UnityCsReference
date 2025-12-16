@@ -52,9 +52,7 @@ namespace UnityEngine.UIElements
             {
                 if (e.newValue != value.value)
                 {
-                    var newVal = value;
-                    newVal.value = e.newValue;
-                    value = newVal;
+                    value = new Scale(e.newValue);
                 }
             });
 

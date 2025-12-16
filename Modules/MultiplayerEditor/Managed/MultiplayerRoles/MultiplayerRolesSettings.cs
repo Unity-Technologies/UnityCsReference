@@ -15,15 +15,6 @@ namespace UnityEditor.Multiplayer.Internal
     [FilePath("ProjectSettings/Packages/com.unity.dedicated-server/MultiplayerRolesSettings.asset", FilePathAttribute.Location.ProjectFolder)]
     internal class MultiplayerRolesSettings : ScriptableSingleton<MultiplayerRolesSettings>
     {
-        private class SaveAssetsProcessor : AssetModificationProcessor
-        {
-            static string[] OnWillSaveAssets(string[] paths)
-            {
-                MultiplayerRolesSettings.instance.SaveIfDirty();
-                return paths;
-            }
-        }
-
         static private MultiplayerRoleFlags GetDefaultMultiplayerRoleForBuildProfile(BuildProfile profile)
             => InternalUtilities.IsServerProfile(profile) ? MultiplayerRoleFlags.Server : MultiplayerRoleFlags.Client;
 
@@ -37,13 +28,7 @@ namespace UnityEditor.Multiplayer.Internal
         private SerializedDictionary<BuildProfile, MultiplayerRoleData> m_MultiplayerRoleForBuildProfile = new(new InstanceIdComparer<BuildProfile>());
         private class InstanceIdComparer<T> : Comparer<T> where T : UnityEngine.Object
         {
-            public override int Compare(T x, T y) => x.GetInstanceID().CompareTo(y.GetInstanceID());
-        }
-
-        internal void SaveIfDirty()
-        {
-            if (EditorUtility.IsDirty(this))
-                Save(true);
+            public override int Compare(T x, T y) => x.GetEntityId().CompareTo(y.GetEntityId());
         }
 
         private static MultiplayerRoleData GetMultiplayerRoleDataInAsset(string assetPath)
@@ -84,6 +69,8 @@ namespace UnityEditor.Multiplayer.Internal
             }
 
             instance.m_MultiplayerRoleForBuildProfile[profile] = data;
+            instance.Save(true);
+
             return data;
         }
 
@@ -136,7 +123,7 @@ namespace UnityEditor.Multiplayer.Internal
             else
                 m_MultiplayerRoleForClassicProfile[key] = mask;
 
-            EditorUtility.SetDirty(this);
+            Save(true);
         }
     }
 }

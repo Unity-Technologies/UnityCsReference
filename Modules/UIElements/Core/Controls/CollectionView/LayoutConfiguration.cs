@@ -105,7 +105,7 @@ namespace UnityEngine.UIElements.HierarchyV2
         void BindCell(VisualElement element, int index)
         {
             var i = 0;
-            element.style.width = header.worldBoundingBox.width;
+            element.style.width = header.columnContainer.layoutSize.x;
             foreach (var column in m_MultiColumnHeader.columns.visibleList)
             {
                 if (!m_MultiColumnHeader.columnDataMap.TryGetValue(column, out var columnData))
@@ -205,8 +205,16 @@ namespace UnityEngine.UIElements.HierarchyV2
                 return;
             }
 
-            m_View.Query<VisualElement>(className: MultiColumnController.rowContainerUssClassName)
-                .ForEach((element) => element[index].style.width = width);
+            foreach (var displayItem in m_View.m_DisplayedList)
+            {
+                // We need to make sure that the item's width is updated as well.
+                displayItem.element.style.width = header.columnContainer.layoutSize.x;
+                // Update the cell's width
+                displayItem.element[index].style.width = width;
+            }
+
+            // Update the scroller's sizes
+            m_View.UpdateScrollingRangeAfterLayout();
         }
 
         void OnColumnAdded(Column column, int index)

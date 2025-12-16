@@ -255,11 +255,11 @@ namespace Unity.GraphToolkit.Editor
         {
             if (selected)
             {
-                this.SetCheckedPseudoState();
+                this.SetCheckedPseudoState(true);
             }
             else
             {
-                this.ClearCheckedPseudoState();
+                this.SetCheckedPseudoState(false);
             }
 
             if (Border != null)

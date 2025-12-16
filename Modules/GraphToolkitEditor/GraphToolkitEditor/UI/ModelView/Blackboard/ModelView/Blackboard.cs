@@ -587,7 +587,7 @@ namespace Unity.GraphToolkit.Editor
                 {
                     int index = (int)s_GetIndexFromPositionMethod.Invoke(s_VirtualizationControllerProperty.GetValue(m_TreeView), new object[] {m_TreeView.Q<ScrollView>().contentContainer.WorldToLocal(evt.mousePosition)});
                     var model = m_TreeView.GetItemDataForIndex<IGroupItemModel>(index);
-                    if (model != null && model.ParentGroup is GroupModel && !BlackboardView.GetSelection().OfType<IGroupItemModel>().Any(t => t.GetSection() != model.GetSection() || t.ParentGroup is not GroupModel))
+                    if (model != null && model.ParentGroup is GroupModel && !BlackboardView.GetSelection().OfType<IGroupItemModel>().HasAny(t => t.GetSection() != model.GetSection() || t.ParentGroup is not GroupModel))
                     {
                         groupModel = model;
                     }

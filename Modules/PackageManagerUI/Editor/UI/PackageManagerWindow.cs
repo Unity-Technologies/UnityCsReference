@@ -45,11 +45,11 @@ namespace UnityEditor.PackageManager.UI
     [EditorWindowTitle(title = "Package Manager", icon = "Package Manager")]
     internal class PackageManagerWindow : EditorWindow
     {
-        internal static PackageManagerWindow instance { get; private set; }
+        public static PackageManagerWindow instance { get; private set; }
 
         private PackageManagerWindowRoot m_Root;
 
-        internal const string k_UpmUrl = "com.unity3d.kharma:upmpackage/";
+        public const string k_UpmUrl = "com.unity3d.kharma:upmpackage/";
 
         void OnEnable()
         {
@@ -156,7 +156,7 @@ namespace UnityEditor.PackageManager.UI
         }
 
         [UsedByNativeCode]
-        internal static void OpenURL(string url)
+        public static void OpenURL(string url)
         {
             if (string.IsNullOrEmpty(url))
                 return;
@@ -191,7 +191,7 @@ namespace UnityEditor.PackageManager.UI
         }
 
         [UsedByNativeCode]
-        internal static void OpenCreatePackageDropdown()
+        public static void OpenCreatePackageDropdown()
         {
             ShowWindow();
             instance.Focus();
@@ -199,7 +199,7 @@ namespace UnityEditor.PackageManager.UI
         }
 
         [UsedByNativeCode]
-        internal static void OpenAndSelectPackage(string packageToSelect, string pageId = null)
+        public static void OpenAndSelectPackage(string packageToSelect, string pageId = null)
         {
             var isWindowAlreadyVisible = Resources.FindObjectsOfTypeAll<PackageManagerWindow>()?.FirstOrDefault() != null;
 
@@ -218,7 +218,7 @@ namespace UnityEditor.PackageManager.UI
         }
 
         [UsedByNativeCode]
-        internal static void OpenExportPackageWindow(string packageName)
+        public static void OpenExportPackageWindow(string packageName)
         {
             var packageDatabase = ServicesContainer.instance.Resolve<IPackageDatabase>();
             var modalManager = ServicesContainer.instance.Resolve<IModalManager>();
@@ -238,7 +238,7 @@ namespace UnityEditor.PackageManager.UI
             modalManager.ShowExportModal(version);
         }
 
-        internal static void OpenAndSelectPage(string pageId, string searchText = null)
+        public static void OpenAndSelectPage(string pageId, string searchText = null)
         {
             var isWindowAlreadyVisible = Resources.FindObjectsOfTypeAll<PackageManagerWindow>()?.FirstOrDefault() != null;
 
@@ -248,7 +248,7 @@ namespace UnityEditor.PackageManager.UI
         }
 
         [UsedByNativeCode("PackageManagerUI_OnPackageManagerResolve")]
-        internal static void OnPackageManagerResolve()
+        public static void OnPackageManagerResolve()
         {
             ServicesContainer.instance.Resolve<IInProjectPackagesMonitor>().OnPackageManagerResolve();
         }
@@ -261,7 +261,7 @@ namespace UnityEditor.PackageManager.UI
         }
 
         [UsedByNativeCode]
-        internal static void OnEditorFinishLoadingProject()
+        public static void OnEditorFinishLoadingProject()
         {
             ServicesContainer.instance.Resolve<IInProjectPackagesMonitor>().OnEditorFinishLoadingProject();
         }

@@ -142,7 +142,7 @@ namespace UnityEditor.Profiling.Memory.Experimental
         internal NativeObjectEntries(MemorySnapshotFileReader reader, bool hasGcHandleIndex)
         {
             objectName = new ArrayEntries<string>(reader, EntryType.NativeObjects_Name, ConversionFunctions.ToString);
-            instanceId = new ArrayEntries<int>(reader, EntryType.NativeObjects_InstanceId, ConversionFunctions.ToInt32);
+            instanceId = new ArrayEntries<int>(reader, EntryType.NativeObjects_EntityId, ConversionFunctions.ToInt32);
             size = new ArrayEntries<ulong>(reader, EntryType.NativeObjects_Size, ConversionFunctions.ToUInt64);
             nativeTypeArrayIndex = new ArrayEntries<int>(reader, EntryType.NativeObjects_NativeTypeArrayIndex, ConversionFunctions.ToInt32);
             hideFlags = new ArrayEntries<HideFlags>(reader, EntryType.NativeObjects_HideFlags, ConversionFunctions.ToHideFlags);

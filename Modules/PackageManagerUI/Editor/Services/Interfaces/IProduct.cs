@@ -18,7 +18,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         string latestReleaseNotes { get; }
 
         IReadOnlyCollection<string> labels { get; }
-        IEnumerable<PackageImage> images { get; }
+        IReadOnlyCollection<PackageImage> images { get; }
 
         DateTime? firstPublishedDate { get; }
         DateTime? purchasedTime { get; }

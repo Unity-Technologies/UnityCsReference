@@ -89,9 +89,7 @@ namespace UnityEditorInternal
                                 worldPosition = s_ConstraintOrigin + s_ConstraintDirection.normalized * dist;
                             }
                             else if (EditorSnapSettings.gridSnapActive)
-                            {
-                                worldPosition = Snapping.Snap(worldPosition, GridSettings.size, (SnapAxis) new SnapAxisFilter(s_ConstraintDirection));
-                            }
+                                worldPosition = Handles.SnapToGrid(worldPosition, s_ConstraintDirection, false);
 
                             position = s_StartInverseHandleMatrix.MultiplyPoint(worldPosition);
 
@@ -106,7 +104,7 @@ namespace UnityEditorInternal
                             dist = Handles.SnapValue(dist, snap);
                             worldPosition = Handles.matrix.MultiplyPoint(s_StartPosition) + s_ConstraintDirection * dist;
                             if (EditorSnapSettings.gridSnapActive)
-                                worldPosition = Snapping.Snap(worldPosition, GridSettings.size, (SnapAxis) new SnapAxisFilter(s_ConstraintDirection));
+                                worldPosition = Handles.SnapToGrid(worldPosition, s_ConstraintDirection, false);
                             position = Handles.inverseMatrix.MultiplyPoint(worldPosition);
                         }
 

@@ -215,20 +215,19 @@ namespace UnityEditor.Profiling
         public extern string GetMarkerName(int markerId);
 
         [NativeMethod(IsThreadSafe = true, ThrowsException = true)]
-        [return: UnityMarshalAs(NativeType.ScriptingObjectPtr)]
         public extern MarkerMetadataInfo[] GetMarkerMetadataInfo(int markerId);
 
         [NativeMethod(IsThreadSafe = true)]
         public extern int GetMarkerId(string markerName);
 
         [NativeMethod(IsThreadSafe = true, ThrowsException = true)]
-        public extern void GetMarkers(List<MarkerInfo> markerInfoList);
+        public extern void GetMarkers([Out,UnityEngine.Bindings.NotNull] List<MarkerInfo> markerInfoList);
 
         [NativeMethod(IsThreadSafe = true, ThrowsException = true)]
         public extern ProfilerCategoryInfo GetCategoryInfo(UInt16 id);
 
         [NativeMethod(IsThreadSafe = true, ThrowsException = true)]
-        public extern void GetAllCategories(List<ProfilerCategoryInfo> categoryInfoList);
+        public extern void GetAllCategories([Out,UnityEngine.Bindings.NotNull] List<ProfilerCategoryInfo> categoryInfoList);
 
         [NativeMethod(Name = "profiling::FrameDataView::GetBuiltinMarkerCategoryColor", IsFreeFunction = true, IsThreadSafe = true, ThrowsException = true)]
         internal static extern UnityEngine.Color32 GetMarkerCategoryColor(ushort category);
@@ -301,6 +300,22 @@ namespace UnityEditor.Profiling
                 return ret[ret.Length-1];
             }
         }
+
+        internal T? GetProfilingSessionMetaDataLatest<T>(ProfilingSessionMetaDataEntry entry) where T : unmanaged
+        {
+            var metaDataCount = GetSessionMetaDataCount(ProfilerDriver.profilerInternalSessionMetaDataGuid, (int)entry);
+            if (metaDataCount <= 0)
+                return null;
+
+            using (var ret = GetSessionMetaData<T>(ProfilerDriver.profilerInternalSessionMetaDataGuid, (int)entry, metaDataCount -1))
+            {
+                if (ret.Length > 0)
+                    return ret[ret.Length-1];
+            }
+
+            return null;
+        }
+
         internal string GetProfilingSessionMetaDataString(ProfilingSessionMetaDataEntry entry)
         {
             using (var ret = GetSessionMetaData<byte>(ProfilerDriver.profilerInternalSessionMetaDataGuid, (int)entry))
@@ -311,6 +326,28 @@ namespace UnityEditor.Profiling
                     return System.Text.Encoding.UTF8.GetString((byte*)ret.GetUnsafePtr(), ret.Length);
                 }
             }
+        }
+
+        internal string GetProfilingSessionMetaDataStringLatest(ProfilingSessionMetaDataEntry entry)
+        {
+            // NB: If an empty string ("") was written as metadata, it will be added to
+            // the metadata count, but the length of the returned NativeArray will be zero.
+            var metaDataCount = GetSessionMetaDataCount(ProfilerDriver.profilerInternalSessionMetaDataGuid, (int)entry);
+            if (metaDataCount <= 0)
+                return null;
+
+            using (var ret = GetSessionMetaData<byte>(ProfilerDriver.profilerInternalSessionMetaDataGuid, (int)entry, metaDataCount -1))
+            {
+                if (ret.Length > 0)
+                {
+                    unsafe
+                    {
+                        return System.Text.Encoding.UTF8.GetString((byte*)ret.GetUnsafePtr(), ret.Length);
+                    }
+                }
+            }
+
+            return null;
         }
 
         [StructLayout(LayoutKind.Sequential)]
@@ -400,10 +437,12 @@ namespace UnityEditor.Profiling
             [NativeName("rootId")]
             readonly ulong m_RootId;
             [NativeName("instanceId")]
-            readonly EntityId m_InstanceId;
+            readonly EntityId m_EntityId;
 
             public ulong relatedAllocationRootId => m_RootId;
-            public int relatedInstanceId => m_InstanceId;
+            public EntityId relatedEntityId => m_EntityId;
+            [Obsolete("relatedInstanceId is obsolete. Use relatedEntityId instead.", false)]
+            public int relatedInstanceId => m_EntityId;
         }
 
         [NativeMethod(IsThreadSafe = true)]

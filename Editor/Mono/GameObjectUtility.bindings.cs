@@ -167,6 +167,11 @@ namespace UnityEditor
 
         public static GameObject[] DuplicateGameObjects(GameObject[] gameObjects)
         {
+            return DuplicateGameObjects(gameObjects, true);
+        }
+
+        public static GameObject[] DuplicateGameObjects(GameObject[] gameObjects, bool recordUndo)
+        {
             if (gameObjects == null)
                 throw new System.ArgumentNullException("gameObjects array is null");
 
@@ -182,10 +187,15 @@ namespace UnityEditor
                     throw new System.ArgumentException("Duplicating Assets is unsupported by this function. Use AssetDatabase.CopyAsset to duplicate Assets.");
             }
 
-            return DuplicateGameObjects_Internal(gameObjects);
+            return DuplicateGameObjects_Internal(gameObjects, recordUndo);
         }
 
         public static GameObject DuplicateGameObject(GameObject gameObject)
+        {
+            return DuplicateGameObject(gameObject, true);
+        }
+
+        public static GameObject DuplicateGameObject(GameObject gameObject, bool recordUndo)
         {
             if (gameObject == null)
                 throw new System.ArgumentNullException("gameObject is null");
@@ -193,7 +203,7 @@ namespace UnityEditor
             if (EditorUtility.IsPersistent(gameObject))
                 throw new System.ArgumentException("Duplicating Assets is unsupported by this function. Use AssetDatabase.CopyAsset to duplicate Assets.");
 
-            var gameObjects = DuplicateGameObjects_Internal(new[] { gameObject });
+            var gameObjects = DuplicateGameObjects_Internal(new[] { gameObject }, recordUndo);
 
             if (gameObjects.Length != 0)
                 return gameObjects[0];
@@ -202,6 +212,6 @@ namespace UnityEditor
         }
 
         [NativeMethod("DuplicateGameObjects", IsFreeFunction = true)]
-        extern private static GameObject[] DuplicateGameObjects_Internal(GameObject[] gameObjects);
+        extern private static GameObject[] DuplicateGameObjects_Internal(GameObject[] gameObjects, bool recordUndo);
     }
 }

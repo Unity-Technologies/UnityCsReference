@@ -33,6 +33,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_PageRefreshHandler = container.Resolve<IPageRefreshHandler>();
         }
 
+        // The internal modifier is used (instead of private) to give our test project access to these properties/methods
         internal IEnumerable<PackageItem> packageItems => packageGroups.SelectMany(group => group.packageItems);
         internal IEnumerable<PackageGroup> packageGroups => m_ItemsList.Children().OfType<PackageGroup>();
 
@@ -417,6 +418,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             }
         }
 
+        // The internal modifier is used (instead of private) to give our test project access to these properties/methods
         internal bool SelectNext(bool reverseOrder)
         {
             var nextElement = FindNextVisibleSelectableItem(reverseOrder);

@@ -232,7 +232,7 @@ namespace Unity.GraphToolkit.Editor
                 graphUpdater.MarkUpdated(changeScope.ChangeDescription);
             }
 
-            if (createdElements.Any())
+            if (createdElements.HasAny())
             {
                 var selectionHelper = new GlobalSelectionCommandHelper(selectionState);
                 using (var selectionUpdaters = selectionHelper.UpdateScopes)
@@ -284,7 +284,7 @@ namespace Unity.GraphToolkit.Editor
         [UsedImplicitly]
         public static void DefaultCommandHandler(UndoStateComponent undoState, GraphModelStateComponent graphModelState, ChangeVariableDeclarationCommand command)
         {
-            if (!command.Models.Any())
+            if (!command.Models.HasAny())
                 return;
 
             using (var undoStateUpdater = undoState.UpdateScope)

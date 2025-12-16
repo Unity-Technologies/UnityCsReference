@@ -215,7 +215,7 @@ namespace UnityEngine.UIElements
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool IsVectorImageBackground(VisualElement ve)
         {
-            return ve.computedStyle.backgroundImage.vectorImage != null;
+            return Background.From(ve.computedStyle.backgroundImage).vectorImage != null;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

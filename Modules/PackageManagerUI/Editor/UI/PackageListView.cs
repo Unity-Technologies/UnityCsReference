@@ -214,7 +214,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public void OnListUpdate(ListUpdateArgs args)
         {
-            var rebuildCalled = UpdateItemsSource(args.page.visualStates.ToList(), args.added.Any() || args.removed.Any());
+            var rebuildCalled = UpdateItemsSource(args.page.visualStates.ToList(), args.added.Count > 0 || args.removed.Count > 0);
             if (!rebuildCalled)
             {
                 foreach (var package in args.updated)

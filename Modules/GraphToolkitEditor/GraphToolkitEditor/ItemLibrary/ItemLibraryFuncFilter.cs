@@ -4,7 +4,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using Unity.GraphToolkit.Editor;
 
 namespace Unity.GraphToolkit.ItemLibrary.Editor
@@ -45,7 +44,12 @@ namespace Unity.GraphToolkit.ItemLibrary.Editor
         /// <inheritdoc />
         public override bool Match(ItemLibraryItem item)
         {
-            return m_FilterFunctions.All(f => f(item));
+            foreach (var f in m_FilterFunctions)
+            {
+                if (!f(item))
+                    return false;
+            }
+            return true;
         }
     }
 }

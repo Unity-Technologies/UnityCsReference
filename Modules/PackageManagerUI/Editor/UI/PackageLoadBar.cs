@@ -9,7 +9,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 {
     internal class PackageLoadBar : VisualElement
     {
-        internal const int k_FixedHeight = 30;
+        public const int k_FixedHeight = 30;
 
         [Serializable]
         public new class UxmlSerializedData : VisualElement.UxmlSerializedData
@@ -158,6 +158,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             OnInternetReachabilityChange(m_Application.isInternetReachable);
         }
 
+        // The internal modifier is used (instead of private) to give our test project access to these properties/methods
         internal void Set(long total, long current)
         {
             Reset();
@@ -169,7 +170,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             UpdateLoadBarMessage();
         }
 
-        internal void Reset()
+        private void Reset()
         {
             m_ShowLoadMoreButton = true;
         }

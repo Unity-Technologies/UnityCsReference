@@ -92,6 +92,10 @@ namespace UnityEngine
             get { return Internal_GetStoredColorSpace() == TextureColorSpace.sRGB; }
         }
 
+        extern private protected AtomicSafetyHandle GetSafetyHandle();
+        [NativeMethod("GetSafetyHandleForSlice")] extern private protected AtomicSafetyHandle GetSafetyHandleForSliceImpl(int mipLevel, int face, int element);
+        [NativeMethod("GetWritableImageData")] extern private protected IntPtr GetWritableImageDataImpl(int element, int mipLevel, int depthSlice);
+
         extern public Hash128 imageContentsHash { get; set; }
 
         extern public static ulong totalTextureMemory
@@ -276,11 +280,16 @@ namespace UnityEngine
         [FreeFunction(Name = "Texture2DScripting::SetPixelData", HasExplicitThis = true, ThrowsException = true)]
         extern private bool SetPixelDataImpl(IntPtr data, int mipLevel, int elementSize, int dataArraySize, int sourceDataStartIndex = 0);
 
-        extern private IntPtr GetWritableImageData(int frame);
-        extern private ulong GetImageDataSize();
+        extern private ulong GetDataSize();
 
-        extern private static AtomicSafetyHandle GetSafetyHandle(Texture2D tex);
-        extern private AtomicSafetyHandle GetSafetyHandleForSlice(int mipLevel);
+        private AtomicSafetyHandle GetSafetyHandleForSlice(int mipLevel)
+        {
+            return GetSafetyHandleForSliceImpl(mipLevel, 0, 0);
+        }
+        private IntPtr GetWritableImageData(int mipLevel = 0)
+        {
+            return GetWritableImageDataImpl(0, mipLevel, 0);
+        }
 
         [FreeFunction("Texture2DScripting::GenerateAtlas")]
         extern private static void GenerateAtlasImpl(Vector2[] sizes, int padding, int atlasSize, [Out] Rect[] rect);
@@ -470,8 +479,14 @@ namespace UnityEngine
         [FreeFunction(Name = "CubemapScripting::CopyPixels", HasExplicitThis = true, ThrowsException = true)]
         extern private void CopyPixels_Region(Texture src, int srcElement, int srcMip, int srcX, int srcY, int srcWidth, int srcHeight, int dstFace, int dstMip, int dstX, int dstY);
 
-        extern private AtomicSafetyHandle GetSafetyHandleForSlice(int mipLevel, int face);
-        extern private IntPtr GetWritableImageData(int frame);
+        private AtomicSafetyHandle GetSafetyHandleForSlice(int mipLevel, int face)
+        {
+            return GetSafetyHandleForSliceImpl(mipLevel, face, 0);
+        }
+        private IntPtr GetWritableImageData(int element = 0, int mipLevel = 0)
+        {
+            return GetWritableImageDataImpl(element, mipLevel, 0);
+        }
 
         extern internal bool isPreProcessed { get; }
 
@@ -594,8 +609,14 @@ namespace UnityEngine
         [FreeFunction(Name = "Texture3DScripting::CopyPixels", HasExplicitThis = true, ThrowsException = true)]
         extern private void CopyPixels_Region(Texture src, int srcElement, int srcMip, int srcX, int srcY, int srcWidth, int srcHeight, int dstElement, int dstMip, int dstX, int dstY);
 
-        extern private AtomicSafetyHandle GetSafetyHandleForSlice(int mipLevel);
-        extern private IntPtr GetImageData();
+        private AtomicSafetyHandle GetSafetyHandleForSlice(int mipLevel)
+        {
+            return GetSafetyHandleForSliceImpl(mipLevel, 0, 0);
+        }
+        private IntPtr GetWritableImageData(int depthSlice = 0, int mipLevel = 0)
+        {
+            return GetWritableImageDataImpl(0, mipLevel, depthSlice);
+        }
     }
 
     [NativeHeader("Runtime/Graphics/Texture2DArray.h")]
@@ -681,8 +702,14 @@ namespace UnityEngine
         [FreeFunction(Name = "Texture2DArrayScripting::CopyPixels", HasExplicitThis = true, ThrowsException = true)]
         extern private void CopyPixels_Region(Texture src, int srcElement, int srcMip, int srcX, int srcY, int srcWidth, int srcHeight, int dstElement, int dstMip, int dstX, int dstY);
 
-        extern private AtomicSafetyHandle GetSafetyHandleForSlice(int mipLevel, int element);
-        extern private IntPtr GetImageData();
+        private AtomicSafetyHandle GetSafetyHandleForSlice(int mipLevel, int element)
+        {
+            return GetSafetyHandleForSliceImpl(mipLevel, 0, element);
+        }
+        private IntPtr GetWritableImageData(int element = 0, int mipLevel = 0)
+        {
+            return GetWritableImageDataImpl(element, mipLevel, 0);
+        }
     }
 
     [NativeHeader("Runtime/Graphics/CubemapArrayTexture.h")]
@@ -754,8 +781,14 @@ namespace UnityEngine
         [FreeFunction(Name = "CubemapArrayScripting::CopyPixels", HasExplicitThis = true, ThrowsException = true)]
         extern private void CopyPixels_Region(Texture src, int srcElement, int srcMip, int srcX, int srcY, int srcWidth, int srcHeight, int dstElement, int dstMip, int dstX, int dstY);
 
-        extern private AtomicSafetyHandle GetSafetyHandleForSlice(int mipLevel, int face, int element);
-        extern private IntPtr GetImageData();
+        private AtomicSafetyHandle GetSafetyHandleForSlice(int mipLevel, int face, int element)
+        {
+            return GetSafetyHandleForSliceImpl(mipLevel, face, element);
+        }
+        private IntPtr GetWritableImageData(int element = 0, int mipLevel = 0)
+        {
+            return GetWritableImageDataImpl(element, mipLevel, 0);
+        }
     }
 
     [NativeHeader("Runtime/Graphics/SparseTexture.h")]
@@ -821,19 +854,11 @@ namespace UnityEngine
             // graphicsFormat: a color format (R8G8B8A8_SRGB, ...)      depthStencilFormat: None                                        <- color-only RT.
             set
             {
-                if (value == RenderTextureFormat.Depth || value == RenderTextureFormat.Shadowmap)
-                {
-                    if (depthStencilFormat == GraphicsFormat.None)
-                    {
-                        WarnAboutFallbackTo16BitsDepth(value);
-                        depthStencilFormat = GraphicsFormat.D16_UNorm;
-                    }
-                    if (value == RenderTextureFormat.Shadowmap)
-                    {
-                        SetShadowSamplingMode(ShadowSamplingMode.CompareDepths);
-                    }
-                }
-                graphicsFormat = GraphicsFormatUtility.GetGraphicsFormat(value, sRGB);
+                var shadowSamplingMode = RenderTexture.GetShadowSamplingModeForFormat(value);
+                SetShadowSamplingMode(shadowSamplingMode);
+                GraphicsFormat requestedFormat = GraphicsFormatUtility.GetGraphicsFormat(value, sRGB);
+                graphicsFormat = SystemInfo.GetCompatibleFormat(requestedFormat, GraphicsFormatUsage.Render);
+                depthStencilFormat = RenderTexture.GetDepthStencilFormatLegacy(depth, value);
             }
         }
 

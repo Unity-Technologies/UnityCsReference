@@ -11,7 +11,6 @@ using UnityEditor.ProjectWindowCallback;
 using UnityEngine;
 using UnityEditorInternal;
 using UnityEditor.Experimental;
-using AssetReference = UnityEditorInternal.InternalEditorUtility.AssetReference;
 
 
 namespace UnityEditor
@@ -63,60 +62,16 @@ namespace UnityEditor
             m_rootInstanceID = rootInstanceID;
         }
 
-        public override List<EntityId> GetNewSelection(TreeViewItem<EntityId> clickedItem, TreeViewSelectState<EntityId> selectState)
+        static string CreateDisplayName(EntityId entityId)
         {
-            var assetTreeClickedItem = clickedItem as IAssetTreeViewItem;
-            var clickedEntry = new AssetReference() { entityId = clickedItem.id };
-            if (clickedItem.id == 0 && assetTreeClickedItem != null)
-                clickedEntry.guid = assetTreeClickedItem.Guid;
-
-            // Get ids from items
-            var visibleRows = GetRows();
-            var allIDs = new List<EntityId>(visibleRows.Count);
-            var allGuids = new List<string>(visibleRows.Count);
-
-            for (int i = 0; i < visibleRows.Count; ++i)
-            {
-                EntityId instanceID = visibleRows[i].id;
-                string guid = null;
-                if (instanceID == 0)
-                {
-                    var assetTreeViewItem = visibleRows[i] as IAssetTreeViewItem;
-                    if (assetTreeViewItem != null)
-                        guid = assetTreeViewItem.Guid;
-                }
-
-                allGuids.Add(guid);
-                allIDs.Add(instanceID);
-            }
-
-            var selectedIDs = selectState.selectedIDs;
-            int lastClickedID = selectState.lastClickedID;
-            bool allowMultiselection = CanBeMultiSelected(clickedItem);
-
-            var result = InternalEditorUtility.GetNewSelection(ref clickedEntry, allIDs, allGuids, selectedIDs, lastClickedID, selectState.keepMultiSelection, selectState.useShiftAsActionKey, allowMultiselection);
-
-            clickedItem.id = clickedEntry.entityId;
-
-            for (int i = 0; i < allIDs.Count; ++i)
-            {
-                if (allGuids[i] != null && allIDs[i] != 0)
-                    visibleRows[i].id = allIDs[i];
-            }
-
-            return result;
-        }
-
-        static string CreateDisplayName(int instanceID)
-        {
-            return Path.GetFileNameWithoutExtension(AssetDatabase.GetAssetPath((EntityId)instanceID));
+            return Path.GetFileNameWithoutExtension(AssetDatabase.GetAssetPath(entityId));
         }
 
         private void BuildRoots()
         {
             m_Roots = new List<RootItem>();
 
-            if (m_rootInstanceID != 0)
+            if (m_rootInstanceID != EntityId.None)
             {
                 m_Roots.Add(new RootItem(m_rootInstanceID, null, null, true));
                 return;
@@ -133,7 +88,7 @@ namespace UnityEditor
             {
                 var displayName = !string.IsNullOrEmpty(package.displayName) ? package.displayName : package.name;
                 var packageFolderInstanceID = AssetDatabase.GetMainAssetOrInProgressProxyEntityId(package.assetPath);
-                if (packageFolderInstanceID == 0)
+                if (packageFolderInstanceID == EntityId.None)
                     continue;
 
                 m_Roots.Add(new RootItem(packageFolderInstanceID, displayName, package.assetPath));
@@ -181,7 +136,7 @@ namespace UnityEditor
                 var property = new HierarchyIterator(rootPath);
                 if (!root.skipValidation && !property.Find(rootInstanceID, null))
                 {
-                    if (rootInstanceID == 0)
+                    if (rootInstanceID == EntityId.None)
                         Debug.LogError("Root Asset with path " + rootPath + " not valid!!");
                     continue;
                 }
@@ -402,22 +357,22 @@ namespace UnityEditor
             return ((TreeViewStateWithAssetUtility)m_TreeView.state).createAssetUtility;
         }
 
-        public int GetInsertAfterItemIDForNewItem(string newName, TreeViewItem<EntityId> parentItem, bool isCreatingNewFolder, bool foldersFirst)
+        public EntityId GetInsertAfterItemIDForNewItem(string newName, TreeViewItem<EntityId> parentItem, bool isCreatingNewFolder, bool foldersFirst)
         {
             if (!parentItem.hasChildren)
                 return parentItem.id;
 
             // Find pos under parent
-            int insertAfterID = parentItem.id;
+            EntityId insertAfterID = parentItem.id;
             for (int idx = 0; idx < parentItem.children.Count; ++idx)
             {
-                int instanceID = parentItem.children[idx].id;
+                EntityId entityId = parentItem.children[idx].id;
                 bool isFolder = parentItem.children[idx] is FolderTreeItem;
 
                 // Skip folders when inserting a normal asset if folders is sorted first
                 if (foldersFirst && isFolder && !isCreatingNewFolder)
                 {
-                    insertAfterID = instanceID;
+                    insertAfterID = entityId;
                     continue;
                 }
 
@@ -428,13 +383,13 @@ namespace UnityEditor
                 }
 
                 // Use same name compare as when we sort in the backend: See AssetDatabase.cpp: SortChildren
-                string propertyPath = AssetDatabase.GetAssetPath((EntityId)instanceID);
+                string propertyPath = AssetDatabase.GetAssetPath(entityId);
                 if (EditorUtility.NaturalCompare(Path.GetFileNameWithoutExtension(propertyPath), newName) > 0)
                 {
                     break;
                 }
 
-                insertAfterID = instanceID;
+                insertAfterID = entityId;
             }
             return insertAfterID;
         }
@@ -470,7 +425,7 @@ namespace UnityEditor
                 m_FakeItem.icon = icon;
 
                 // Find pos under parent
-                int insertAfterID = GetInsertAfterItemIDForNewItem(name, parentItem, isCreatingNewFolder, foldersFirst);
+                EntityId insertAfterID = GetInsertAfterItemIDForNewItem(name, parentItem, isCreatingNewFolder, foldersFirst);
 
                 // Find pos in expanded rows and insert
                 int index = TreeViewController<EntityId>.GetIndexOfID(visibleRows, insertAfterID);

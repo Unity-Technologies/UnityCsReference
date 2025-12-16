@@ -517,7 +517,6 @@ namespace UnityEngine.UIElements
         /// <param name="heightMode">Height restrictions.</param>
         /// <param name="fontsize">Optional parameter that override the fontSize that would be applied on the visualElement.</param>
         /// <returns>The horizontal and vertical size needed to display the text string.</returns>
-        [VisibleToOtherModules("UnityEditor.GraphToolkitModule")]
         public Vector2 MeasureTextSize(string textToMeasure, float width, MeasureMode widthMode, float height, MeasureMode heightMode, float? fontsize = null)
         {
             return TextUtilities.MeasureVisualElementTextSize(this, textToMeasure, width, widthMode, height, heightMode, fontsize);
@@ -571,7 +570,7 @@ namespace UnityEngine.UIElements
             set => ((INotifyValueChanged<string>) this).value = value;
         }
 
-        static internal bool AnySizeAutoOrNone(ComputedStyle computedStyle)
+        static internal bool AnySizeAutoOrNone(ref ComputedStyle computedStyle)
         {
             return computedStyle.height.IsAuto() || computedStyle.height.IsNone() || computedStyle.width.IsAuto() || computedStyle.width.IsNone();
         }
@@ -585,7 +584,7 @@ namespace UnityEngine.UIElements
                 m_Text = newValue;
 
                 //No need to dirty the layout if the element's size is not affected by the text change
-                if (AnySizeAutoOrNone(computedStyle))
+                if (AnySizeAutoOrNone(ref computedStyle))
                     IncrementVersion(VersionChangeType.Layout | VersionChangeType.Repaint);
                 else
                     IncrementVersion(VersionChangeType.Repaint);

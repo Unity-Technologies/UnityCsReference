@@ -66,12 +66,12 @@ namespace UnityEditor
     [CanEditMultipleObjects]
     internal class TextureInspector : Editor
     {
-        class Styles
+        static class Styles
         {
-            public GUIContent smallZoom, largeZoom;
-            public GUIStyle toolbarButton, previewSlider, previewSliderThumb, previewLabel, mipLevelLabel;
+            public static readonly GUIContent smallZoom, largeZoom;
+            public static readonly GUIStyle toolbarButton, previewSlider, previewSliderThumb, previewLabel, mipLevelLabel;
 
-            public readonly GUIContent[] previewButtonContents =
+            public static readonly GUIContent[] previewChannelIcons =
             {
                 EditorGUIUtility.TrIconContent("PreTexRGB"),
                 EditorGUIUtility.TrIconContent("PreTexR"),
@@ -79,13 +79,15 @@ namespace UnityEditor
                 EditorGUIUtility.TrIconContent("PreTexB"),
                 EditorGUIUtility.TrIconContent("PreTexA")
             };
+            public static readonly GUIContent previewColorIcon = EditorGUIUtility.TrIconContent("Color", "Displaying grayscale. Click to switch to color.");
+            public static readonly GUIContent previewGrayscaleIcon = EditorGUIUtility.TrIconContent("Grayscale", "Displaying color. Click to switch to grayscale.");
 
-            public readonly GUIContent wrapModeLabel = EditorGUIUtility.TrTextContent("Wrap Mode");
-            public readonly GUIContent wrapU = EditorGUIUtility.TrTextContent("U axis");
-            public readonly GUIContent wrapV = EditorGUIUtility.TrTextContent("V axis");
-            public readonly GUIContent wrapW = EditorGUIUtility.TrTextContent("W axis");
+            public static readonly GUIContent wrapModeLabel = EditorGUIUtility.TrTextContent("Wrap Mode");
+            public static readonly GUIContent wrapU = EditorGUIUtility.TrTextContent("U axis");
+            public static readonly GUIContent wrapV = EditorGUIUtility.TrTextContent("V axis");
+            public static readonly GUIContent wrapW = EditorGUIUtility.TrTextContent("W axis");
 
-            public readonly GUIContent[] wrapModeContents =
+            public static readonly GUIContent[] wrapModeContents =
             {
                 EditorGUIUtility.TrTextContent("Repeat"),
                 EditorGUIUtility.TrTextContent("Clamp"),
@@ -93,7 +95,7 @@ namespace UnityEditor
                 EditorGUIUtility.TrTextContent("Mirror Once"),
                 EditorGUIUtility.TrTextContent("Per-axis")
             };
-            public readonly int[] wrapModeValues =
+            public static readonly int[] wrapModeValues =
             {
                 (int)TextureWrapMode.Repeat,
                 (int)TextureWrapMode.Clamp,
@@ -102,7 +104,7 @@ namespace UnityEditor
                 -1
             };
 
-            public Styles()
+            static Styles()
             {
                 smallZoom = EditorGUIUtility.IconContent("PreTextureMipMapLow");
                 largeZoom = EditorGUIUtility.IconContent("PreTextureMipMapHigh");
@@ -117,7 +119,6 @@ namespace UnityEditor
                 mipLevelLabel.padding.top = 5;
             }
         }
-        static Styles s_Styles;
 
         internal enum PreviewMode
         {
@@ -132,6 +133,12 @@ namespace UnityEditor
         public bool showAlpha
         {
             get { return m_PreviewMode == PreviewMode.A; }
+        }
+
+        internal bool m_UseGrayscalePreview = true;
+        bool useGrayscalePreviewEffectiveValue
+        {
+            get { return (m_PreviewMode != PreviewMode.RGB) && (m_UseGrayscalePreview || showAlpha); }
         }
 
         // Plain Texture
@@ -453,9 +460,6 @@ namespace UnityEditor
         // Note: W wrapping mode is only shown when isVolumeTexture is true.
         internal static void WrapModePopup(SerializedProperty wrapU, SerializedProperty wrapV, SerializedProperty wrapW, bool isVolumeTexture, ref bool showPerAxisWrapModes, bool enforcePerAxis)
         {
-            if (s_Styles == null)
-                s_Styles = new Styles();
-
             // In texture importer settings, serialized properties for things like wrap modes can contain -1;
             // that seems to indicate "use defaults, user has not changed them to anything" but not totally sure.
             // Show them as Repeat wrap modes in the popups.
@@ -491,13 +495,13 @@ namespace UnityEditor
             // main wrap mode popup
             if (enforcePerAxis)
             {
-                EditorGUILayout.LabelField(s_Styles.wrapModeLabel);
+                EditorGUILayout.LabelField(Styles.wrapModeLabel);
             }
             else
             {
                 EditorGUI.BeginChangeCheck();
                 EditorGUI.showMixedValue = !showPerAxisWrapModes && (wrapU.hasMultipleDifferentValues || wrapV.hasMultipleDifferentValues || (isVolumeTexture && wrapW.hasMultipleDifferentValues));
-                value = EditorGUILayout.IntPopup(s_Styles.wrapModeLabel, value, s_Styles.wrapModeContents, s_Styles.wrapModeValues);
+                value = EditorGUILayout.IntPopup(Styles.wrapModeLabel, value, Styles.wrapModeContents, Styles.wrapModeValues);
                 if (EditorGUI.EndChangeCheck() && value != -1)
                 {
                     // assign the same wrap mode to all axes, and hide per-axis popups
@@ -514,11 +518,11 @@ namespace UnityEditor
             {
                 showPerAxisWrapModes = true;
                 EditorGUI.indentLevel++;
-                WrapModeAxisPopup(s_Styles.wrapU, wrapU);
-                WrapModeAxisPopup(s_Styles.wrapV, wrapV);
+                WrapModeAxisPopup(Styles.wrapU, wrapU);
+                WrapModeAxisPopup(Styles.wrapV, wrapV);
                 if (isVolumeTexture)
                 {
-                    WrapModeAxisPopup(s_Styles.wrapW, wrapW);
+                    WrapModeAxisPopup(Styles.wrapW, wrapW);
                 }
                 EditorGUI.indentLevel--;
             }
@@ -604,6 +608,24 @@ namespace UnityEditor
             return GraphicsFormatUtility.IsHDRFormat(t.graphicsFormat) || TextureUtil.IsRGBMUsageMode(usageMode) || TextureUtil.IsDoubleLDRUsageMode(usageMode);
         }
 
+        internal static ColorWriteMask GetColorWriteMaskForPreviewMode(PreviewMode previewMode)
+        {
+            ColorWriteMask colorWriteMask = ColorWriteMask.All;
+            switch (previewMode)
+            {
+                case PreviewMode.R:
+                    colorWriteMask = ColorWriteMask.Red | ColorWriteMask.Alpha;
+                    break;
+                case PreviewMode.G:
+                    colorWriteMask = ColorWriteMask.Green | ColorWriteMask.Alpha;
+                    break;
+                case PreviewMode.B:
+                    colorWriteMask = ColorWriteMask.Blue | ColorWriteMask.Alpha;
+                    break;
+            }
+            return colorWriteMask;
+        }
+
         public override void OnPreviewSettings()
         {
             // TextureInspector code is reused for RenderTexture and Cubemap inspectors.
@@ -661,9 +683,6 @@ namespace UnityEditor
             if (IsTexture2DArray() && !SystemInfo.supports2DArrayTextures)
                 return;
 
-            if (s_Styles == null)
-                s_Styles = new Styles();
-
             List<PreviewMode> previewCandidates = new List<PreviewMode>(5);
             previewCandidates.Add(PreviewMode.RGB);
             previewCandidates.Add(PreviewMode.R);
@@ -689,25 +708,38 @@ namespace UnityEditor
                     selectedIndex = 0;
 
                 if (previewCandidates.Contains(PreviewMode.RGB))
-                    m_PreviewMode = GUILayout.Toggle(m_PreviewMode == PreviewMode.RGB, s_Styles.previewButtonContents[0], s_Styles.toolbarButton)
+                    m_PreviewMode = GUILayout.Toggle(m_PreviewMode == PreviewMode.RGB, Styles.previewChannelIcons[0], Styles.toolbarButton)
                         ? PreviewMode.RGB
                         : m_PreviewMode;
                 if (previewCandidates.Contains(PreviewMode.R))
-                    m_PreviewMode = GUILayout.Toggle(m_PreviewMode == PreviewMode.R, s_Styles.previewButtonContents[1], s_Styles.toolbarButton)
+                    m_PreviewMode = GUILayout.Toggle(m_PreviewMode == PreviewMode.R, Styles.previewChannelIcons[1], Styles.toolbarButton)
                         ? PreviewMode.R
                         : m_PreviewMode;
                 if (previewCandidates.Contains(PreviewMode.G))
-                    m_PreviewMode = GUILayout.Toggle(m_PreviewMode == PreviewMode.G, s_Styles.previewButtonContents[2], s_Styles.toolbarButton)
+                    m_PreviewMode = GUILayout.Toggle(m_PreviewMode == PreviewMode.G, Styles.previewChannelIcons[2], Styles.toolbarButton)
                         ? PreviewMode.G
                         : m_PreviewMode;
                 if (previewCandidates.Contains(PreviewMode.B))
-                    m_PreviewMode = GUILayout.Toggle(m_PreviewMode == PreviewMode.B, s_Styles.previewButtonContents[3], s_Styles.toolbarButton)
+                    m_PreviewMode = GUILayout.Toggle(m_PreviewMode == PreviewMode.B, Styles.previewChannelIcons[3], Styles.toolbarButton)
                         ? PreviewMode.B
                         : m_PreviewMode;
                 if (previewCandidates.Contains(PreviewMode.A))
-                    m_PreviewMode = GUILayout.Toggle(m_PreviewMode == PreviewMode.A, s_Styles.previewButtonContents[4], s_Styles.toolbarButton)
+                    m_PreviewMode = GUILayout.Toggle(m_PreviewMode == PreviewMode.A, Styles.previewChannelIcons[4], Styles.toolbarButton)
                         ? PreviewMode.A
                         : m_PreviewMode;
+            }
+
+            if (!alphaOnly && tex != null && !IsNormalMap(tex))
+            {
+                bool disableButton = m_PreviewMode == PreviewMode.RGB || m_PreviewMode == PreviewMode.A; // Grayscale mode can only be used if previewing individual color channels. Alpha channel is always displayed in grayscale.
+                using (new EditorGUI.DisabledScope(disableButton))
+                {
+                    GUIContent buttonToDisplay = useGrayscalePreviewEffectiveValue ? Styles.previewColorIcon : Styles.previewGrayscaleIcon;
+                    bool useColorDisplay = GUILayout.Toggle(!useGrayscalePreviewEffectiveValue, buttonToDisplay, Styles.toolbarButton); // Flip value around because grayscale is the default behavior.
+
+                    if (!disableButton) // Can only apply the obtained value if we know it came from the user.
+                        m_UseGrayscalePreview = !useColorDisplay;
+                }
             }
 
             if (IsTexture2DArray())
@@ -718,7 +750,7 @@ namespace UnityEditor
             if (mipCount > 1)
             {
                 int mipmapLimit = GetMipmapLimit(target as Texture);
-                GUILayout.Box(s_Styles.smallZoom, s_Styles.previewLabel);
+                GUILayout.Box(Styles.smallZoom, Styles.previewLabel);
                 GUI.changed = false;
 
                 int leftValue = mipCount - mipmapLimit - 1;
@@ -727,7 +759,7 @@ namespace UnityEditor
                     // Left value can change depending on the mipmap limit. Cap slider value appropriately.
                     m_MipLevel = leftValue;
                 }
-                m_MipLevel = Mathf.Round(GUILayout.HorizontalSlider(m_MipLevel, leftValue, 0, s_Styles.previewSlider, s_Styles.previewSliderThumb, GUILayout.MaxWidth(64)));
+                m_MipLevel = Mathf.Round(GUILayout.HorizontalSlider(m_MipLevel, leftValue, 0, Styles.previewSlider, Styles.previewSliderThumb, GUILayout.MaxWidth(64)));
 
                 //For now, we don't have mipmaps smaller than the tile size when using VT.
                 if (EditorGUI.UseVTMaterial(tex))
@@ -736,15 +768,13 @@ namespace UnityEditor
                     m_MipLevel = Mathf.Min(m_MipLevel, Mathf.Max(mipCount - numMipsOfTile, 0));
                 }
 
-                GUILayout.Box(s_Styles.largeZoom, s_Styles.previewLabel);
+                GUILayout.Box(Styles.largeZoom, Styles.previewLabel);
             }
         }
 
         public void OnExposureSlider()
         {
-            if (s_Styles == null)
-                s_Styles = new Styles();
-            m_ExposureSliderValue = EditorGUIInternal.ExposureSlider(m_ExposureSliderValue, ref m_ExposureSliderMax, s_Styles.previewSlider);
+            m_ExposureSliderValue = EditorGUIInternal.ExposureSlider(m_ExposureSliderValue, ref m_ExposureSliderMax, Styles.previewSlider);
         }
 
         public override bool HasPreviewGUI()
@@ -807,7 +837,7 @@ namespace UnityEditor
 
             if (IsTexture2DArray())
             {
-                m_Texture2DArrayPreview.OnPreviewGUI(t, r, background, GetExposureValueForTexture(t), m_PreviewMode, m_MipLevel);
+                m_Texture2DArrayPreview.OnPreviewGUI(t, r, background, GetExposureValueForTexture(t), m_PreviewMode, m_MipLevel, useGrayscalePreviewEffectiveValue);
                 return;
             }
 
@@ -815,6 +845,7 @@ namespace UnityEditor
             // guard against that.
             int texWidth = Mathf.Max(t.width, 1);
             int texHeight = Mathf.Max(t.height, 1);
+            float aspectRatio = (float)texWidth / texHeight;
 
             float mipLevel = GetMipLevelForRendering();
             float zoomLevel = Mathf.Min(Mathf.Min(r.width / texWidth, r.height / texHeight), 1);
@@ -823,33 +854,26 @@ namespace UnityEditor
             FilterMode oldFilter = t.filterMode;
             TextureUtil.SetFilterModeNoDirty(t, FilterMode.Point);
             Texture2D t2d = t as Texture2D;
-            ColorWriteMask colorWriteMask = ColorWriteMask.All;
-
-            switch (m_PreviewMode)
-            {
-                case PreviewMode.R:
-                    colorWriteMask = ColorWriteMask.Red | ColorWriteMask.Alpha;
-                    break;
-                case PreviewMode.G:
-                    colorWriteMask = ColorWriteMask.Green | ColorWriteMask.Alpha;
-                    break;
-                case PreviewMode.B:
-                    colorWriteMask = ColorWriteMask.Blue | ColorWriteMask.Alpha;
-                    break;
-            }
 
             if (m_PreviewMode == PreviewMode.A)
             {
-                EditorGUI.DrawTextureAlpha(wantedRect, t, ScaleMode.StretchToFill, 0, mipLevel);
+                EditorGUI.DrawTextureAlpha(wantedRect, t, ScaleMode.StretchToFill, aspectRatio, mipLevel);
             }
             else
             {
+                Material mat;
                 if (t2d != null && t2d.alphaIsTransparency)
-                    EditorGUI.DrawTextureTransparent(wantedRect, t, ScaleMode.StretchToFill, 0, mipLevel,
-                        colorWriteMask, GetExposureValueForTexture(t));
+                {
+                    EditorGUI.DrawTransparencyCheckerTexture(wantedRect, ScaleMode.StretchToFill, aspectRatio);
+                    mat = EditorGUI.UseVTMaterial(t) ? EditorGUI.transparentVTMaterial : EditorGUI.transparentMaterial;
+                }
                 else
-                    EditorGUI.DrawPreviewTexture(wantedRect, t, null, ScaleMode.StretchToFill, 0, mipLevel,
-                        colorWriteMask, GetExposureValueForTexture(t));
+                {
+                    mat = EditorGUI.GetMaterialForSpecialTexture(t, EditorGUI.UseVTMaterial(t) ? EditorGUI.colorVTMaterial : EditorGUI.colorMaterial);
+                }
+
+                mat.SetInt("_Grayscale", useGrayscalePreviewEffectiveValue ? 1 : 0);
+                EditorGUI.DrawPreviewTexture(wantedRect, t, mat, ScaleMode.StretchToFill, aspectRatio, mipLevel, GetColorWriteMaskForPreviewMode(m_PreviewMode), GetExposureValueForTexture(t));
             }
 
             // TODO: Less hacky way to prevent sprite rects to not appear in smaller previews like icons.
@@ -900,10 +924,10 @@ namespace UnityEditor
                 GUIContent mipLevelTextContent = new GUIContent((cpuMipLevel != mipLevel)
                         ? string.Format("Mip {0}\nMip {1} on GPU (Texture Limit)", cpuMipLevel, mipLevel)
                         : string.Format("Mip {0}", mipLevel));
-                Vector2 size = s_Styles.mipLevelLabel.CalcSize(mipLevelTextContent);
+                Vector2 size = Styles.mipLevelLabel.CalcSize(mipLevelTextContent);
                 if (size.x <= r.width)
                 {
-                    EditorGUI.DropShadowLabel(new Rect(r.x, r.y, r.width, size.y), mipLevelTextContent, s_Styles.mipLevelLabel);
+                    EditorGUI.DropShadowLabel(new Rect(r.x, r.y, r.width, size.y), mipLevelTextContent, Styles.mipLevelLabel);
                 }
             }
         }

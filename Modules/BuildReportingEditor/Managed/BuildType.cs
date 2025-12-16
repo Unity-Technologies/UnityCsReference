@@ -14,6 +14,8 @@ namespace UnityEditor.Build.Reporting
         ///<summary>Indicates a Player build.</summary>
         Player = 1,
         ///<summary>Indicates an Asset Bundle build.</summary>
-        AssetBundle = 2
+        AssetBundle = 2,
+
+		// UCBP-Backport CBD-1597: Add ContentDirectory = 3
     }
 }

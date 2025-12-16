@@ -668,10 +668,10 @@ namespace UnityEditor.Modules
                     foreach (var file in result.generatedPlugins.ToNPaths())
                         file.Copy($"{args.PluginOutputFolder}/{file.FileName}");
                 }
-                if (result.generatedSymbols?.Length > 0)
+                if (result.generatedDebugFiles?.Length > 0)
                 {
                     wroteSymbols = true;
-                    foreach (var file in result.generatedSymbols.ToNPaths())
+                    foreach (var file in result.generatedDebugFiles.ToNPaths())
                         file.Copy($"{args.SymbolOutputFolder}/{file.FileName}");
                 }
             }

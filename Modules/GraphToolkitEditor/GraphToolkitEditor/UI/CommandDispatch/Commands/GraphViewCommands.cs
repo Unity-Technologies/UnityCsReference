@@ -2,13 +2,11 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System;
 using System.Collections.Generic;
 using System.Linq;
 using JetBrains.Annotations;
 using Unity.GraphToolkit.CSO;
 using UnityEngine;
-using Object = UnityEngine.Object;
 
 namespace Unity.GraphToolkit.Editor
 {
@@ -255,7 +253,7 @@ namespace Unity.GraphToolkit.Editor
         [UsedImplicitly]
         public static void DefaultCommandHandler(UndoStateComponent undoState, GraphModelStateComponent graphModelState, SelectionStateComponent selectionState, DeleteElementsCommand command)
         {
-            if (!command.Models.Any())
+            if (!command.Models.HasAny())
                 return;
 
             using (var undoStateUpdater = undoState.UpdateScope)
@@ -271,7 +269,7 @@ namespace Unity.GraphToolkit.Editor
                 var deletedModels = changeScope.ChangeDescription.DeletedModels;
 
                 var selectedModels = deletedModels.Where(selectionState.IsSelected).ToList();
-                if (selectedModels.Any())
+                if (selectedModels.HasAny())
                 {
                     selectionUpdater.SelectElements(selectedModels, false);
                 }

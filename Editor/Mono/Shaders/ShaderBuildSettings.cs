@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Scripting;
 
@@ -186,6 +187,32 @@ namespace UnityEditor.Shaders
         public KeywordDeclarationOverride[] GetKeywordDeclarationOverridesCopy()
         {
             return (KeywordDeclarationOverride[])keywordDeclarationOverrides.Clone();
+        }
+
+        [SerializeField] private string[] defines;
+        [SerializeField] private uint numInternalDefines;
+
+        internal string[] GetDefinesCopy()
+        {
+            return (string[])defines.Clone();
+        }
+
+        internal uint GetNumInternalDefines()
+        {
+            return numInternalDefines;
+        }
+
+        internal void AddInternalDefine(string define)
+        {
+            int numDefines = 1;
+            if (defines != null)
+                numDefines += defines.Length;
+            var defineList = new List<string>(numDefines);
+            defineList.Add(define); // keep internal defines at the start of the array
+            if (defines != null && defines.Length > 0)
+                defineList.AddRange(defines);
+            defines = defineList.ToArray();
+            numInternalDefines++;
         }
     }
 }

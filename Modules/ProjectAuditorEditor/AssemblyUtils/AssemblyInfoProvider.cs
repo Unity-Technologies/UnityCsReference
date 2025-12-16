@@ -9,6 +9,7 @@ using System.Linq;
 using Unity.ProjectAuditor.Editor.Utils;
 using UnityEngine;
 using UnityEditor.PackageManager;
+using UnityEditorInternal;
 
 namespace Unity.ProjectAuditor.Editor.AssemblyUtils
 {
@@ -42,6 +43,17 @@ namespace Unity.ProjectAuditor.Editor.AssemblyUtils
     {
         const string k_VirtualPackagesRoot = "Packages";
 
+        [Serializable]
+        private class AsmdefData
+        {
+#pragma warning disable 0649
+            public string name;
+            public string[] optionalUnityReferences;
+            public string[] includePlatforms;
+            public string[] excludePlatforms;
+#pragma warning restore 0649
+        }
+
         internal static IEnumerable<string> GetPrecompiledAssemblyPaths(PrecompiledAssemblyTypes flags)
         {
             var assemblyPaths = new List<string>();
@@ -57,78 +69,130 @@ namespace Unity.ProjectAuditor.Editor.AssemblyUtils
                 yield return dir;
         }
 
-        internal static bool IsUserAssembly(string assemblyName)
+        internal static bool FilterAssembly(string assemblyName, bool allowPackages, bool allowUnityCode, bool allowUserCode)
         {
-            return GetPrecompiledAssemblyPaths(PrecompiledAssemblyTypes.UserAssembly).FirstOrDefault(a => a.Contains(assemblyName)) != null;
+            var info = GetAssemblyInfoFromAssemblyName(assemblyName, null, false);
+
+            if (!allowUserCode)
+            {
+                if (info.Name == AssemblyInfo.DefaultAssemblyName)
+                    return true;
+                if (info.Name == AssemblyInfo.DefaultEditorAssemblyName)
+                    return true;
+            }
+
+            if (info.PackageResolvedPath != null)
+            {
+                if (!allowPackages)
+                    return true;
+
+                if (info.IsUnityOwned)
+                {
+                    if (allowUnityCode)
+                        return false;
+                }
+                else if (allowUserCode)
+                {
+                    return false;
+                }
+
+                return true;
+            }
+
+            return false;
         }
 
-        internal static bool IsUnityEngineAssembly(string assemblyName)
+        internal static AssemblyInfo GetAssemblyInfoFromAssemblyPath(string assemblyPath, bool? editorAssembly)
         {
-            return GetPrecompiledAssemblyPaths(PrecompiledAssemblyTypes.UnityEngine).FirstOrDefault(a => a.Contains(assemblyName)) != null;
-        }
-
-        internal static bool IsReadOnlyAssembly(string assemblyName)
-        {
-            var info = GetAssemblyInfoFromAssemblyName(assemblyName);
-            return info.IsPackageReadOnly;
-        }
-
-        internal static bool IsPackageAssembly(string assemblyName)
-        {
-            var info = GetAssemblyInfoFromAssemblyName(assemblyName);
-            return info.PackageResolvedPath != null ? true : false;
-        }
-
-        internal static AssemblyInfo GetAssemblyInfoFromAssemblyPath(string assemblyPath)
-        {
-            var info = GetAssemblyInfoFromAssemblyName(Path.GetFileNameWithoutExtension(assemblyPath));
+            var info = GetAssemblyInfoFromAssemblyName(Path.GetFileNameWithoutExtension(assemblyPath), editorAssembly);
             info.Path = assemblyPath;
             return info;
         }
 
-        static AssemblyInfo GetAssemblyInfoFromAssemblyName(string assemblyName)
+        internal static AssemblyInfo GetAssemblyInfoFromAssemblyName(string assemblyName, bool? editorAssembly, bool reportErrors = true)
         {
             // by default let's assume it's not a package
             var assemblyInfo = new AssemblyInfo
             {
                 Name = assemblyName,
                 RelativePath = "Assets",
-                IsPackageReadOnly = false
+                IsReadOnly = false,
+                IsEditorAssembly = editorAssembly
             };
 
-            if (assemblyInfo.Name.Equals(AssemblyInfo.DefaultAssemblyName))
+            if (assemblyInfo.Name.Equals(AssemblyInfo.DefaultAssemblyName) || assemblyInfo.Name.Equals(AssemblyInfo.DefaultEditorAssemblyName))
             {
-                assemblyInfo.AsmDefPath = "Built-in";
+                assemblyInfo.AsmDefPath = "Default";
                 return assemblyInfo;
             }
 
             var asmDefPath = UnityEditor.Compilation.CompilationPipeline.GetAssemblyDefinitionFilePathFromAssemblyName(assemblyInfo.Name);
             if (asmDefPath != null)
             {
+                try
+                {
+                    string fileContent = File.ReadAllText(asmDefPath);
+                    var data = JsonUtility.FromJson<AsmdefData>(fileContent);
+
+                    if (data.optionalUnityReferences != null)
+                    {
+                        if (data.optionalUnityReferences.Contains("TestAssemblies"))
+                            assemblyInfo.IsTestAssembly = true;
+
+                        if (editorAssembly == null)
+                        {
+                            bool targetsEditorPlatform = (data.includePlatforms == null || data.includePlatforms.Length == 0) || (data.includePlatforms != null && data.includePlatforms.Contains("Editor"));
+                            bool excludesEditorPlatform = data.excludePlatforms != null && data.excludePlatforms.Contains("Editor");
+                            assemblyInfo.IsEditorAssembly = targetsEditorPlatform && !excludesEditorPlatform;
+                        }
+                    }
+                }
+                catch (Exception)
+                {
+                }
+
                 assemblyInfo.AsmDefPath = asmDefPath;
                 var folders = PathUtils.Split(asmDefPath);
                 if (folders.Length > 2 && folders[0].Equals(k_VirtualPackagesRoot))
                 {
                     assemblyInfo.RelativePath = PathUtils.Combine(folders[0], folders[1]);
 
-                    var info =  UnityEditor.PackageManager.PackageInfo.FindForAssetPath(asmDefPath);
+                    var info = PackageInfo.FindForAssetPath(asmDefPath);
                     if (info != null)
                     {
-                        assemblyInfo.IsPackageReadOnly = info.source != PackageSource.Embedded && info.source != PackageSource.Local;
+                        assemblyInfo.IsReadOnly = info.source != PackageSource.Embedded && info.source != PackageSource.Local;
                         assemblyInfo.PackageResolvedPath = PathUtils.ReplaceSeparators(info.resolvedPath);
                     }
                 }
-                else
-                {
-                    // non-package user-defined assembly
-                    return assemblyInfo;
-                }
+
+                if (assemblyInfo.PackageResolvedPath != null)
+                    assemblyInfo.IsUnityOwned = assemblyInfo.PackageResolvedPath.Contains("com.unity.", StringComparison.Ordinal) || asmDefPath.Contains("com.unity.", StringComparison.Ordinal);
             }
             else
             {
-                // this might happen when loading a report from a different project
-                Debug.LogWarningFormat("Assembly Definition cannot be found for " + assemblyInfo.Name);
+                // this might happen when loading a report from a different project, or when looking for asmdefs for Unity's internal assemblies
+                if (reportErrors && assemblyInfo.Name != AssemblyInfo.DefaultEditorAssemblyName)
+                    Debug.LogWarningFormat("Assembly Definition cannot be found for " + assemblyInfo.Name);
             }
+
+            return assemblyInfo;
+        }
+
+        internal static AssemblyInfo GetAssemblyInfoFromUnityAssemblyPath(string assemblyPath, bool editorAssembly)
+        {
+            var assemblyInfo = new AssemblyInfo
+            {
+                Name = Path.GetFileNameWithoutExtension(assemblyPath),
+                IsReadOnly = true,
+                IsEditorAssembly = editorAssembly,
+                IsUnityInternalAssembly = true,
+                IsUnityOwned = true
+            };
+
+            assemblyInfo.Path = assemblyPath;
+
+            string exePath = UnityEditor.EditorApplication.applicationPath;
+            assemblyInfo.RelativePath = Path.GetRelativePath(Path.GetDirectoryName(exePath), assemblyInfo.Path);
 
             return assemblyInfo;
         }

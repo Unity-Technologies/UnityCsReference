@@ -60,9 +60,7 @@ namespace UnityEngine.UIElements
             {
                 if (e.newValue != value.angle)
                 {
-                    var newVal = value;
-                    newVal.angle = e.newValue;
-                    value = newVal;
+                    value = new Rotate(e.newValue, value.axis);
                 }
             });
 
@@ -70,9 +68,7 @@ namespace UnityEngine.UIElements
             {
                 if (e.newValue != value.axis)
                 {
-                    var newVal = value;
-                    newVal.axis = e.newValue;
-                    value = newVal;
+                    value = new Rotate(value.angle, e.newValue);
                 }
             });
 

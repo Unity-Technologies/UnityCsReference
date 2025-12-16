@@ -7,7 +7,6 @@ using System.Collections.Generic;
 using System.Linq;
 using Unity.ProjectAuditor.Editor.Core;
 using UnityEngine;
-using UnityEngine.Profiling;
 
 namespace Unity.ProjectAuditor.Editor.UI.Framework
 {
@@ -17,11 +16,6 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
         class NullFilter : IIssueFilter
         {
             public bool Match(ReportItem issue)
-            {
-                return true;
-            }
-
-            public bool PackageFilterMatch(ReportItem issue)
             {
                 return true;
             }
@@ -39,7 +33,6 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
 
         // user interactions
         public Action<int> OnActiveViewChanged { get; set; }
-        public Action<bool> OnMajorOrCriticalIssuesVisibilityChanged { get; set; }
         public Action<bool> OnIgnoredIssuesVisibilityChanged { get; set; }
 
         // events that trigger future operations
@@ -70,12 +63,8 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
 
         public void AddIssues(IReadOnlyCollection<ReportItem> issues)
         {
-            Profiler.BeginSample("ViewManager.AddIssues");
             foreach (var view in m_Views)
-            {
                 view.AddIssues(issues);
-            }
-            Profiler.EndSample();
         }
 
         public void Clear()
@@ -92,7 +81,6 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
             if (filter == null)
                 filter = new NullFilter();
 
-            Profiler.BeginSample("ViewManager.Create");
             var views = new List<AnalysisView>();
             foreach (var category in m_Categories)
             {
@@ -121,7 +109,6 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
             }
 
             m_Views = views.ToArray();
-            Profiler.EndSample();
         }
 
         public void ClearView(IssueCategory category)

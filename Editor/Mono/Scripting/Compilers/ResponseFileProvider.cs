@@ -30,11 +30,6 @@ namespace UnityEditor.Scripting.Compilers
 
         public List<string> Get(string folderToLookForResponseFilesIn)
         {
-            if (!string.IsNullOrEmpty(folderToLookForResponseFilesIn) && !Path.IsPathRooted(folderToLookForResponseFilesIn))
-            {
-                folderToLookForResponseFilesIn = AssetPath.Combine(ProjectPath, folderToLookForResponseFilesIn);
-            }
-
             var result = new List<string>();
 
             var folderResponseFile = GetCompilerSpecific(folderToLookForResponseFilesIn);
@@ -58,7 +53,7 @@ namespace UnityEditor.Scripting.Compilers
             }
 
             //We only look for the specific response file in the folder.
-            var responseFilePath = AssetPath.Combine(path, ResponseFileName);
+            var responseFilePath = FileUtil.PathToAbsolutePath(AssetPath.Combine(path, ResponseFileName));
 
             if (File.Exists(responseFilePath))
             {

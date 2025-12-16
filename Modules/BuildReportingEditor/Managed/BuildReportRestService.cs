@@ -215,8 +215,13 @@ namespace UnityEditor
                 return;
 
             m_cts.Cancel();
-            m_listener.Abort();
-            m_listenerThread.Join();
+
+            // Due to the new error checking, this can fail a test because m_listener is sometimes null here.
+            if (m_listener != null)
+                m_listener.Abort();
+            if (m_listenerThread != null)
+                m_listenerThread.Join();
+
             m_cts.Dispose();
         }
     }

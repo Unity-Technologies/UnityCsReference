@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
@@ -34,7 +35,6 @@ namespace UnityEngine.UIElements
         Root      = 1 << 7,     // set on the root visual element
     }
 
-    //keep in sync with VisualNodeFlags.h
     [Flags]
     internal enum VisualElementFlags
     {
@@ -195,7 +195,7 @@ namespace UnityEngine.UIElements
     [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
     internal class ObjectListPool<T>
     {
-        static ObjectPool<List<T>> pool = new ObjectPool<List<T>>(() => new List<T>(),20);
+        static ObjectPool<List<T>> pool = new ObjectPool<List<T>>(() => new List<T>(), 20);
 
         public static List<T> Get()
         {
@@ -260,7 +260,6 @@ namespace UnityEngine.UIElements
             }
 
             #pragma warning disable 649
-
             [SerializeField, HideInInspector] string name;
             [SerializeReference, HideInInspector, UxmlObjectReference("Bindings")] List<Binding.UxmlSerializedData> bindings;
             [SerializeField] string tooltip;
@@ -299,6 +298,8 @@ namespace UnityEngine.UIElements
             [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags dataSourceTypeString_UxmlAttributeFlags;
             [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags bindings_UxmlAttributeFlags;
             #pragma warning restore 649
+
+            internal string nameValue => name;
 
             [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
             internal bool HasBindingInternal(string property)
@@ -386,7 +387,7 @@ namespace UnityEngine.UIElements
                 if (renderData == null)
                     return;
 
-                if (value && (renderData.pendingRepaint|| renderData.pendingHierarchicalRepaint))
+                if (value && (renderData.pendingRepaint || renderData.pendingHierarchicalRepaint))
                     IncrementVersion(VersionChangeType.Repaint);
             }
         }
@@ -454,6 +455,7 @@ namespace UnityEngine.UIElements
 
         // Used for view data persistence (ie. scroll position or tree view expanded states)
         private string m_ViewDataKey;
+
         /// <summary>
         /// Used for view data persistence, such as tree expanded states, scroll position, or zoom level.
         /// </summary>
@@ -634,6 +636,7 @@ namespace UnityEngine.UIElements
         }
 
         private RenderHints m_RenderHints;
+
         /// <summary>
         /// Requested render hints and change flags. Note that the renderer can ignore them: reading them does not
         /// guarantee that they are effective.
@@ -641,7 +644,6 @@ namespace UnityEngine.UIElements
         internal RenderHints renderHints
         {
             get { return m_RenderHints; }
-            [VisibleToOtherModules("UnityEditor.GraphToolkitModule")]
             set
             {
                 // Filter out the dirty flags
@@ -677,33 +679,35 @@ namespace UnityEngine.UIElements
         // TODO: Do some validation to make sure all effects actually have a material
         internal bool useRenderTexture
         {
-            get {
-                var r = layout;
-                if (r.width <= 0 || r.height <= 0 || float.IsNaN(r.width) || float.IsNaN(r.height))
+            get
+            {
+                if (!hasSize)
                     return false;
+
+                if ((renderHints & RenderHints.DynamicPostProcessing) != 0)
+                    return true;
 
                 var filter = resolvedStyle.filter as List<FilterFunction>;
                 if (filter == null)
                     throw new ArgumentException("resolvedStyle.filter is not a List<FilterFunction>");
 
-                bool hasValidFilterFunction = false;
-                foreach (var ff in filter)
+                for (int i = 0; i < filter.Count; i++)
                 {
-                    var def = ff.GetDefinition();
+                    var def = filter[i].GetDefinition();
                     if (def == null)
                         continue;
 
-                    foreach (var pass in def.passes)
+                    var passes = def.passes;
+                    for (int j = 0; j < passes.Length; ++j)
                     {
-                        if (pass.material != null)
+                        if (passes[j].material != null)
                         {
-                            hasValidFilterFunction = true;
-                            break;
+                            return true;
                         }
                     }
                 }
 
-                return hasValidFilterFunction || (renderHints & RenderHints.DynamicPostProcessing) != 0;
+                return false;
             }
         }
 
@@ -838,15 +842,15 @@ namespace UnityEngine.UIElements
         {
             get
             {
-                var result = m_Layout;
-                if (!layoutNode.IsUndefined && !isLayoutManual)
+                if (isLayoutManual)
+                    return m_Layout;
+
+                if (!layoutNode.IsUndefined)
                 {
-                    result.x = layoutNode.LayoutX;
-                    result.y = layoutNode.LayoutY;
-                    result.width = layoutNode.LayoutWidth;
-                    result.height = layoutNode.LayoutHeight;
+                    return layoutNode.GetLayoutRect();
                 }
-                return result;
+
+                return new(float.NaN, float.NaN, float.NaN, float.NaN);
             }
 
             internal set
@@ -875,13 +879,39 @@ namespace UnityEngine.UIElements
                 styleAccess.marginTop = 0.0f;
                 styleAccess.left = value.x;
                 styleAccess.top = value.y;
-                styleAccess.right = float.NaN;
-                styleAccess.bottom = float.NaN;
+                styleAccess.right =  StyleKeyword.Auto;
+                styleAccess.bottom = StyleKeyword.Auto;
                 styleAccess.width = value.width;
                 styleAccess.height = value.height;
 
                 if (changeType != 0)
                     IncrementVersion(changeType);
+            }
+        }
+
+        internal bool hasSize
+        {
+            get
+            {
+                if (m_LayoutNode.IsUndefined)
+                    return false;
+
+                var lyt = m_LayoutNode.Layout;
+
+                unsafe
+                {
+                    var w = lyt.Dimensions[0];
+
+                    if (float.IsNaN(w) || w <= 0)
+                        return false;
+
+                    var h = lyt.Dimensions[1];
+
+                    if (float.IsNaN(h) || h <= 0)
+                        return false;
+                }
+
+                return true;
             }
         }
 
@@ -949,6 +979,7 @@ namespace UnityEngine.UIElements
             get => (m_Flags & VisualElementFlags.BoundingBoxDirty) == VisualElementFlags.BoundingBoxDirty;
             set => m_Flags = value ? m_Flags | VisualElementFlags.BoundingBoxDirty : m_Flags & ~VisualElementFlags.BoundingBoxDirty;
         }
+
         private Rect m_BoundingBox;
 
         internal bool isWorldBoundingBoxDirty
@@ -1228,12 +1259,39 @@ namespace UnityEngine.UIElements
         internal Rect rect
         {
             [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+            [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
             get
             {
-                var l = layout;
-                return new Rect(0.0f, 0.0f, l.width, l.height);
+                var l = layoutSize;
+                return new Rect(0.0f, 0.0f, l.x, l.y);
             }
         }
+
+        internal Vector2 layoutSize
+        {
+            [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
+            get
+            {
+                if (isLayoutManual)
+                    return m_Layout.size;
+
+                return layoutNode.GetLayoutSize();
+            }
+        }
+
+
+        internal Vector2 layoutPosition
+        {
+            [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
+            get
+            {
+                if (isLayoutManual)
+                    return m_Layout.min;
+
+                return layoutNode.GetLayoutPosition();
+            }
+        }
+
 
         internal bool isWorldSpaceRootUIDocument
         {
@@ -1325,7 +1383,7 @@ namespace UnityEngine.UIElements
                 else
                 {
                     GetPivotedMatrixWithLayout(out var mat);
-                    MultiplyMatrix34(ref hierarchy.parent.worldTransformRef,  ref mat, out m_WorldTransformCache);
+                    MultiplyMatrix34(ref hierarchy.parent.worldTransformRef, ref mat, out m_WorldTransformCache);
                 }
             }
             else
@@ -1366,8 +1424,8 @@ namespace UnityEngine.UIElements
             }
         }
 
-       internal void EnsureWorldTransformAndClipUpToDate()
-       {
+        internal void EnsureWorldTransformAndClipUpToDate()
+        {
             if (renderData == null)
                 return;
 
@@ -1376,7 +1434,7 @@ namespace UnityEngine.UIElements
 
             renderData.UpdateClippingRect();
             renderData.flags &= ~RenderDataFlags.IsClippingRectDirty;
-       }
+        }
 
         // get the AA aligned bound
         internal static Rect ComputeAAAlignedBound(Rect position, Matrix4x4 mat)
@@ -1412,7 +1470,7 @@ namespace UnityEngine.UIElements
 
         private PseudoStates m_PseudoStates;
 
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.GraphToolkitModule", "UnityEditor.UIToolkitAuthoringModule")]
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
         internal PseudoStates pseudoStates
         {
             get { return m_PseudoStates; }
@@ -1674,8 +1732,6 @@ namespace UnityEngine.UIElements
             get => typeData.typeName;
         }
 
-        // TODO: Make sure we do not use new native layout before we fix android 32bit (arm v7) failing test.
-        // VisualNode m_VisualNode;
         LayoutNode m_LayoutNode;
 
         // Set and pass in values to be used for layout
@@ -1687,12 +1743,10 @@ namespace UnityEngine.UIElements
             }
         }
 
-        internal ComputedStyle m_Style = InitialStyle.Acquire();
-
         internal ref ComputedStyle computedStyle
         {
             [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
-            get => ref m_Style;
+            get => ref layoutNode.ComputedStyle;
         }
 
         [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
@@ -1747,12 +1801,6 @@ namespace UnityEngine.UIElements
         {
             m_Children = s_EmptyList;
             controlid = ++s_NextId;
-			// TODO: Make sure we do not use new native layout before we fix android 32bit (arm v7) failing test.
-            // m_VisualNode = VisualManager.SharedManager.CreateNode();
-            // m_LayoutNode = LayoutManager.SharedManager.CreateNode();
-
-            // m_VisualNode.SetOwner(this);
-            // m_VisualNode.SetLayout(m_LayoutNode);
 
             hierarchy = new Hierarchy(this);
 
@@ -1763,6 +1811,7 @@ namespace UnityEngine.UIElements
             focusable = false;
 
             name = string.Empty;
+
             layoutNode = LayoutManager.SharedManager.CreateNode();
 
             renderHints = RenderHints.None;
@@ -1787,7 +1836,6 @@ namespace UnityEngine.UIElements
         {
             try
             {
-                // VisualManager.SharedManager.DestroyNodeThreaded(ref m_VisualNode);
                 LayoutManager.SharedManager.EnqueueNodeForRecycling(ref m_LayoutNode);
 
 				s_FinalizerCount++;
@@ -2565,9 +2613,10 @@ namespace UnityEngine.UIElements
             }
         }
 
-        void FinalizeLayout()
+        void FinalizeLayout(VersionChangeType changes)
         {
-            layoutNode.CopyFromComputedStyle(computedStyle);
+            if ((changes & VersionChangeType.Layout) != 0)
+                layoutNode.MarkDirty();
         }
 
         internal void SetInlineRule(StyleSheet sheet, StyleRule rule)
@@ -2588,14 +2637,15 @@ namespace UnityEngine.UIElements
             if (!StyleCache.TryGetValue(rulesHash, out var baseComputedStyle))
                 baseComputedStyle = InitialStyle.Get();
 
-            m_Style.CopyFrom(ref baseComputedStyle);
+            computedStyle.CopyFrom(ref baseComputedStyle);
 
             SetInlineRule(sheet, rule);
-            FinalizeLayout();
 
             var changes = ComputedStyle.CompareChanges(ref oldStyle, ref computedStyle);
             oldStyle.Release();
 
+            // Since we called ComputedStyle.CopyFrom, we need to sync the data pointer even if there are no changes.
+            FinalizeLayout(changes);
             IncrementVersion(changes);
         }
 
@@ -2603,21 +2653,23 @@ namespace UnityEngine.UIElements
         {
             // When a parent class list change all children get their styles recomputed.
             // A lot of time the children won't change and the same style will get computed so we can early exit in that case.
-            if (m_Style.matchingRulesHash == newStyle.matchingRulesHash)
+            if (computedStyle.matchingRulesHash == newStyle.matchingRulesHash)
                 return;
 
-            var changes = ComputedStyle.CompareChanges(ref m_Style, ref newStyle);
+            var changes = ComputedStyle.CompareChanges(ref computedStyle, ref newStyle);
+            if (changes == 0)
+                return;
 
             // Here we do a "smart" copy of the style instead of just acquiring them to prevent additional GC alloc.
             // If this element has no inline styles it will release the current style data group and acquire the new one.
             // However, when there a inline styles the style data group that is inline will have a ref count of 1
             // so instead of releasing it and acquiring a new one we just copy the data to save on GC alloc.
-            m_Style.CopyFrom(ref newStyle);
+            computedStyle.CopyFrom(ref newStyle);
 
-            FinalizeLayout();
+            FinalizeLayout(changes);
 
             if (elementPanel?.GetTopElementUnderPointer(PointerId.mousePointerId) == this)
-                elementPanel.cursorManager.SetCursor(m_Style.cursor);
+                elementPanel.cursorManager.SetCursor(computedStyle.cursor);
 
             IncrementVersion(changes);
         }

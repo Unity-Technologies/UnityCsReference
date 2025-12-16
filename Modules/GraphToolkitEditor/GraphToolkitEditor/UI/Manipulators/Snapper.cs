@@ -12,7 +12,7 @@ namespace Unity.GraphToolkit.Editor
     class Snapper
     {
         List<SnapStrategy> m_SnappingStrategies = new List<SnapStrategy>();
-        public bool IsActive => m_SnappingStrategies.Any(s => s.Enabled);
+        public bool IsActive => m_SnappingStrategies.HasAny(s => s.Enabled);
 
         public Snapper()
         {

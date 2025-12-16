@@ -1327,7 +1327,7 @@ namespace UnityEditor
                         if (!editorWin || !editorWin.m_Parent || !editorWin.m_Parent.window)
                         {
                             Console.WriteLine($"[LAYOUT] Removed un-parented EditorWindow while reading window layout" +
-                                              $" window #{i}, type={o.GetType()} instanceID={o.GetInstanceID()}");
+                                              $" window #{i}, type={o.GetType()} entityId={o.GetEntityId()}");
                             UnityObject.DestroyImmediate(editorWin, true);
                             continue;
                         }
@@ -1553,7 +1553,7 @@ namespace UnityEditor
                 string output = "";
                 foreach (EditorWindow killme in oldWindows)
                 {
-                    output += $"{killme.GetType().Name} {killme.name} {killme.titleContent.text} [{killme.GetInstanceID()}]\r\n";
+                    output += $"{killme.GetType().Name} {killme.name} {killme.titleContent.text} [{killme.GetEntityId()}]\r\n";
                     UnityObject.DestroyImmediate(killme, true);
                 }
             }
@@ -1619,10 +1619,42 @@ namespace UnityEditor
                 InternalEditorUtility.SaveToSerializedFileAndForget(all.Where(o => o).ToArray(), path, true);
         }
 
+        static string CanCreateLayout(string name)
+        {
+            return SavePromptUtility.GetSaveError("Layout", name);
+        }
+
         // ReSharper disable once MemberCanBePrivate.Global - used by SaveLayoutTests.cs
         internal static void SaveGUI()
         {
-            UnityEditor.SaveWindowLayout.ShowWindow();
+            PromptWindow.Show(L10n.Tr("Create Layout"),
+                L10n.Tr("Create a layout"),
+                L10n.Tr("Enter the name of the layout you want to create"),
+                L10n.Tr("Layout Name"),
+                lastLoadedLayoutName,
+                L10n.Tr("Create"),
+                MainToolbarWindow.instance,
+                CanCreateLayout,
+                (name) =>
+                {
+                    if (!Directory.Exists(layoutsModePreferencesPath))
+                        Directory.CreateDirectory(layoutsModePreferencesPath);
+
+                    string path = Path.Combine(layoutsModePreferencesPath, name + ".wlt");
+                    if (File.Exists(path))
+                    {
+                        if (!EditorUtility.DisplayDialog("Overwrite layout?",
+                            "Do you want to overwrite '" + name + "' layout?",
+                            "Overwrite", "Cancel"))
+                            return;
+                    }
+
+                    lastLoadedLayoutName = name;
+                    SaveWindowLayout(path);
+                    ReloadWindowLayoutMenu();
+                    EditorUtility.Internal_UpdateAllMenus();
+                    ShortcutIntegration.instance.RebuildShortcuts();
+                });
         }
 
         public static void LoadFromFile()
@@ -1693,114 +1725,6 @@ namespace UnityEditor
             ReloadWindowLayoutMenu();
             EditorUtility.Internal_UpdateAllMenus();
             ShortcutIntegration.instance.RebuildShortcuts();
-        }
-    }
-
-    [EditorWindowTitle(title = "Save Layout")]
-    internal class SaveWindowLayout : EditorWindow
-    {
-        bool m_DidFocus;
-        const int k_Width = 200;
-        const int k_Height = 48;
-        const int k_HelpBoxHeight = 40;
-        const int k_MaxLayoutNameLength = 128;
-
-        static readonly string k_InvalidChars = EditorUtility.GetInvalidFilenameChars();
-        static readonly string s_InvalidCharsFormatString = L10n.Tr("Invalid characters: {0}");
-        string m_CurrentInvalidChars = "";
-        string m_LayoutName = WindowLayout.lastLoadedLayoutName;
-
-        internal static SaveWindowLayout ShowWindow()
-        {
-            SaveWindowLayout w = GetWindowDontShow<SaveWindowLayout>();
-            w.minSize = w.maxSize = new Vector2(k_Width, k_Height);
-            w.m_Pos = new Rect(0, 0,k_Width, k_Height);
-            w.ShowAuxWindow();
-            return w;
-        }
-
-        void UpdateCurrentInvalidChars()
-        {
-            m_CurrentInvalidChars = new string(m_LayoutName.Intersect(k_InvalidChars).Distinct().ToArray());
-        }
-
-        void OnEnable()
-        {
-            titleContent = GetLocalizedTitleContent();
-        }
-
-        void OnGUI()
-        {
-            GUILayout.Space(5);
-            Event evt = Event.current;
-            bool hitEnter = evt.type == EventType.KeyDown && (evt.keyCode == KeyCode.Return || evt.keyCode == KeyCode.KeypadEnter);
-            bool hitEscape = evt.type == EventType.KeyDown && (evt.keyCode == KeyCode.Escape);
-            if (hitEscape)
-            {
-                Close();
-                GUIUtility.ExitGUI();
-            }
-            GUI.SetNextControlName("m_PreferencesName");
-            EditorGUI.BeginChangeCheck();
-            m_LayoutName = EditorGUILayout.TextField(m_LayoutName);
-            if (EditorGUI.EndChangeCheck())
-            {
-                if (m_LayoutName.Length > k_MaxLayoutNameLength)
-                {
-                    m_LayoutName = m_LayoutName.Substring(0, k_MaxLayoutNameLength);
-                }
-                m_LayoutName = m_LayoutName.TrimEnd();
-                UpdateCurrentInvalidChars();
-            }
-
-            if (!m_DidFocus)
-            {
-                m_DidFocus = true;
-                EditorGUI.FocusTextInControl("m_PreferencesName");
-            }
-
-            if (m_CurrentInvalidChars.Length != 0)
-            {
-                EditorGUILayout.HelpBox(string.Format(s_InvalidCharsFormatString, m_CurrentInvalidChars), MessageType.Warning);
-                minSize = new Vector2(k_Width, k_Height + k_HelpBoxHeight);
-            }
-            else
-            {
-                minSize = new Vector2(k_Width, k_Height);
-            }
-
-            bool canSaveLayout = m_LayoutName.Length > 0 && m_CurrentInvalidChars.Length == 0;
-            EditorGUI.BeginDisabled(!canSaveLayout);
-
-            if (GUILayout.Button("Save") || hitEnter && canSaveLayout)
-            {
-                Close();
-
-                if (!Directory.Exists(WindowLayout.layoutsModePreferencesPath))
-                    Directory.CreateDirectory(WindowLayout.layoutsModePreferencesPath);
-
-                string path = Path.Combine(WindowLayout.layoutsModePreferencesPath, m_LayoutName + ".wlt");
-                if (File.Exists(path))
-                {
-                    if (!EditorUtility.DisplayDialog("Overwrite layout?",
-                        "Do you want to overwrite '" + m_LayoutName + "' layout?",
-                        "Overwrite", "Cancel"))
-                        GUIUtility.ExitGUI();
-                }
-
-                WindowLayout.lastLoadedLayoutName = m_LayoutName;
-                WindowLayout.SaveWindowLayout(path);
-                WindowLayout.ReloadWindowLayoutMenu();
-                EditorUtility.Internal_UpdateAllMenus();
-                ShortcutIntegration.instance.RebuildShortcuts();
-                GUIUtility.ExitGUI();
-            }
-            else
-            {
-                m_DidFocus = false;
-            }
-
-            EditorGUI.EndDisabled();
         }
     }
 

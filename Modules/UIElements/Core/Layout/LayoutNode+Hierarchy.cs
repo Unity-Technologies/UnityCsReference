@@ -5,7 +5,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using Unity.Collections;
+using UnityEngine.UIElements.Unmanaged;
 using UnityEngine.Assertions;
 
 namespace UnityEngine.UIElements.Layout;
@@ -35,7 +35,7 @@ partial struct LayoutNode
     /// <summary>
     /// Returns the underlying layout list of children.
     /// </summary>
-    LayoutList<LayoutHandle> Children => m_Access.GetNodeData(m_Handle).Children;
+    LayoutList<UnmanagedDataHandle> Children => m_Access.GetNodeData(m_Handle).Children;
 
     /// <summary>
     /// Return the child count for this node.
@@ -105,7 +105,7 @@ partial struct LayoutNode
         ref var data = ref m_Access.GetNodeData(m_Handle);
 
         if (!data.Children.IsCreated)
-            data.Children = new LayoutList<LayoutHandle>(k_DefaultChildCapacity);
+            data.Children = new LayoutList<UnmanagedDataHandle>(k_DefaultChildCapacity);
 
         data.Children.Insert(index, child.Handle);
         child.Parent = this;
@@ -131,7 +131,7 @@ partial struct LayoutNode
         ref var childData = ref m_Access.GetNodeData(childHandle);
 
         var isOwned = childData.Parent.Equals(m_Handle);
-        childData.Parent = LayoutHandle.Undefined;
+        childData.Parent = UnmanagedDataHandle.Undefined;
         data.Children.RemoveAt(index);
 
         if (isOwned)
@@ -166,9 +166,9 @@ partial struct LayoutNode
     public struct Enumerator : IEnumerator<LayoutNode>
     {
         readonly LayoutDataAccess m_Access;
-        LayoutList<LayoutHandle>.Enumerator m_Enumerator;
+        LayoutList<UnmanagedDataHandle>.Enumerator m_Enumerator;
 
-        public Enumerator(LayoutDataAccess access, LayoutList<LayoutHandle> children)
+        public Enumerator(LayoutDataAccess access, LayoutList<UnmanagedDataHandle> children)
         {
             m_Access = access;
             m_Enumerator = children.GetEnumerator();

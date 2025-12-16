@@ -250,6 +250,8 @@ namespace UnityEngine.UIElements
 
         internal int Count => m_MenuItems.Count;
 
+        internal bool repaintPanelBeforeDisplay { get; set; }
+
         /// <summary>
         /// Determines whether the menu allows duplicate names.
         /// </summary>

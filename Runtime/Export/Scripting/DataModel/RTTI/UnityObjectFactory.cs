@@ -32,6 +32,7 @@ internal struct SchemaObjectCount
 
 internal struct ConstructedUnityObjectSet
 {
+    internal NativeTypeSchemaCount[] nativeTypeSchemaCounts;
     internal SchemaObjectCount[] schemaObjectCounts;
     internal UnityObjectRtti[] allRtti;
     internal EntityId[] allInstanceIds;
@@ -242,6 +243,7 @@ internal sealed class UnityObjectFactory
 
         return new ConstructedUnityObjectSet
         {
+            nativeTypeSchemaCounts = nativeTypeSchemaCounts,
             schemaObjectCounts = schemaObjectCounts,
             allRtti = allRtti,
             allInstanceIds = allInstanceIds,

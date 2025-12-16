@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using Unity.GraphToolsAuthoringFramework.InternalEditorBridge;
 using UnityEditor;
 using UnityEditorInternal;
 using UnityEngine;
@@ -158,9 +159,21 @@ namespace Unity.GraphToolkit.Editor
                     path = AssetDatabase.GenerateUniqueAssetPath(path);
                 }
 
+                var invalidPathChars = EditorBridge.GetInvalidFilenameChars();
                 var directory = Path.GetDirectoryName(path);
-                if (!string.IsNullOrEmpty(directory))
+                if (!string.IsNullOrEmpty(directory) && !Directory.Exists(directory))
+                {
+                    var directories = directory.Split(Path.DirectorySeparatorChar);
+                    for (var i = 0; i < directories.Length; i++)
+                    {
+                        if (directories[i].IndexOfAny(invalidPathChars) != -1)
+                        {
+                            throw new ArgumentException(
+                                $"The assetPath {path} contains invalid characters. Invalid characters are {new string(invalidPathChars)} . Remove those characters from the assetPath");
+                        }
+                    }
                     Directory.CreateDirectory(directory);
+                }
 
                 if (File.Exists(path))
                     AssetDatabase.DeleteAsset(path);
@@ -262,7 +275,7 @@ namespace Unity.GraphToolkit.Editor
         }
 
         /// <summary>
-        /// Saves the asset to the file.
+        /// Saves the asset to the file if dirty.
         /// </summary>
         /// <seealso cref="OnBeforeSavingGraphObject"/>
         /// <seealso cref="OnGraphObjectSaved"/>
@@ -270,6 +283,10 @@ namespace Unity.GraphToolkit.Editor
         {
             if (!OnBeforeSavingGraphObject())
                 return;
+
+            if (Dirty == false)
+                return;
+
             // AssetFileGuid != default if and only if asset has an ADB asset file and is not just in memory.
             if (AssetFileGuid != default)
             {
@@ -538,7 +555,7 @@ namespace Unity.GraphToolkit.Editor
             m_GraphModel = null;
         }
 
-        void UpdateFileSystemInfos(bool withHash = true)
+        void UpdateFileSystemInfos()
         {
             var filePath = FilePath;
 

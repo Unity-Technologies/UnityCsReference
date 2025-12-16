@@ -5,14 +5,15 @@
 using System.Collections.Generic;
 using System;
 
-
 using System.Runtime.CompilerServices;
 using Unity.EntitiesLike;
 using UnityEngine;
+using UnityEngine.Serialization;
+using RefId = System.Int64;
 
 namespace Unity.DataModel;
 
-internal sealed class ConstructedObjectSets
+sealed class ConstructedObjectSets
 {
     internal ConstructedPureManagedObjectSet pureManagedObjects;
     internal ConstructedImmutablePureManagedObjectSet immutablePureManagedObjects;
@@ -21,7 +22,7 @@ internal sealed class ConstructedObjectSets
     internal ConstructedSimpleNativeTypeObjectSet simpleNativeTypeObjects;
 }
 
-internal static class DocumentInstanceFactory
+static class DocumentInstanceFactory
 {
     internal static Dictionary<Schema, UdmObjectId[]> GetObjectsBySchema(DocumentModel documentModel)
     {
@@ -71,7 +72,7 @@ internal static class DocumentInstanceFactory
         return nativeObjectIds;
     }
 
-    private static Dictionary<Schema, UdmObjectId[]> GroupObjectModelsBySchema(IReadOnlyCollection<ConstObjectModel> objectModels)
+    internal static Dictionary<Schema, UdmObjectId[]> GroupObjectModelsBySchema(IReadOnlyCollection<ConstObjectModel> objectModels)
     {
         var objectModelsBySchema = new Dictionary<Schema, List<UdmObjectId>>();
 
@@ -89,7 +90,7 @@ internal static class DocumentInstanceFactory
 
         Dictionary<Schema, UdmObjectId[]> r = new(objectModelsBySchema.Count);
         foreach (var kvp in objectModelsBySchema)
-            r[kvp.Key] = kvp.Value.ToArray();
+            r[kvp.Key] = [.. kvp.Value];
 
         return r;
     }
@@ -111,7 +112,32 @@ internal static class DocumentInstanceFactory
     {
         ConstructedObjectSets constructedObjectSets = new();
 
-        PureManagedObjectFactory pureManagedObjectFactory = new();
+        Dictionary<UdmObjectId, (UnityEngine.Object, RefId, object)> existingManagedObjects = new();
+
+        bool hasExistingObjects = loadMode == LoadMode.Merge && existingObjects.Count > 0;
+        if (hasExistingObjects)
+        {
+            foreach (var existingObject in existingObjects)
+            {
+                var instanceId = instanceIDs[existingObject];
+                var hostObj = Resources.EntityIdToObject(instanceId);
+
+                var rtti = RttiResolver.GetRTTI(hostObj);
+                if (rtti is UnityHybridObjectRtti hybridRtti)
+                {
+                    var managedReferenceIds = ManagedReferenceUtility.GetManagedReferenceIds(hostObj);
+                    foreach (var managedReferenceId in managedReferenceIds)
+                    {
+                        UdmObjectId managedObjectId = existingObject.Id ^ (ulong)managedReferenceId;
+                        var obj = ManagedReferenceUtility.GetManagedReference(hostObj, managedReferenceId);
+                        existingManagedObjects.Add(managedObjectId, (hostObj, managedReferenceId, obj));
+                    }
+                }
+            }
+        }
+
+        PureManagedObjectFactory pureManagedObjectFactory = new(existingManagedObjects, loadMode);
+
         ImmutablePureManagedObjectFactory immutablePureManagedObjectFactory = new();
         UnityObjectFactory unityObjectFactory = new(instanceIDs, existingObjects, entityManager, loadMode, registerObjects);
         PureEntityFactory pureEntityFactory = new();
@@ -123,6 +149,21 @@ internal static class DocumentInstanceFactory
             var objectIds = schemaEntry.Value;
 
             var rtti = RttiResolver.GetRTTI(schema);
+            if (hasExistingObjects && rtti.RttiGroup != RttiGroup.UnityObject)
+            {
+                foreach (var objectId in objectIds)
+                {
+                    if (existingManagedObjects.TryGetValue(objectId, out var entry))
+                    {
+                        var (hostObj, managedReferenceId, obj) = entry;
+                        if (obj.GetType() != rtti.GetType())
+                        {
+                            existingManagedObjects.Remove(objectId);
+                        }
+                    }
+                }
+            }
+
             switch (rtti.RttiGroup)
             {
                 case RttiGroup.PureManaged:
@@ -240,6 +281,58 @@ internal static class DocumentInstanceFactory
         ImmutablePureManagedObjectSerializer.DeserializeObjects(context, constructedObjectSets.immutablePureManagedObjects);
 
         PureManagedObjectSerializer.DeserializeObjects(context, constructedObjectSets.pureManagedObjects);
+
+        // Set managed references in the hosts registry
+        var reference = new Reference();
+        reference.DocumentId = default;
+
+        var allObjectsIndex = 0;
+
+        for (int i = 0; i < constructedObjectSets.unityObjects.schemaObjectCounts.Length; i++)
+        {
+            var rtti = constructedObjectSets.unityObjects.allRtti[i];
+            var schemaObjectCount = constructedObjectSets.unityObjects.schemaObjectCounts[i];
+
+            if (rtti is UnityHybridObjectRtti hybridRtti)
+            {
+                unsafe
+                {
+                    var objectModel = new ConstObjectModel() {
+                        ObjectId = default,
+                        Accessor = new ConstAccessor()
+                        {
+                            Schema = rtti.Schema,
+                            Data = default,
+                            References = (IntPtr)context.DocumentModel.GetReferences()
+                        }
+                    };
+
+                    for (int j = 0; j < schemaObjectCount.ObjectCount; j++)
+                    {
+                        var hostObj = constructedObjectSets.unityObjects.allInstances[allObjectsIndex];
+                        objectModel.ObjectId = constructedObjectSets.unityObjects.allObjectIds[allObjectsIndex];
+                        objectModel.Accessor.Data = constructedObjectSets.unityObjects.allObjectPtrs[allObjectsIndex];
+
+                        var referencedObjectModels = SerializeHelper.GetReferencedObjects(context.DocumentModel, objectModel, SerializeHelper.IsNotUnityObject);
+                        foreach (var referencedObjectModel in referencedObjectModels)
+                        {
+                            reference.UdmObjectId = referencedObjectModel.ObjectId;
+                            bool found = context.InstanceRegistry.TryGetInstance(reference, out var obj);
+                            EngineHelper.AssertIsTrue(found);
+
+                            var refId = (objectModel.ObjectId.Id ^ reference.UdmObjectId.Id) & 0x7FFFFFFFFFFFFFFF;
+                            ManagedReferenceUtility.SetManagedReferenceIdForObject(hostObj, obj, (long)refId);
+                        }
+
+                        allObjectsIndex++;
+                    }
+                }
+            }
+            else
+            {
+                allObjectsIndex += schemaObjectCount.ObjectCount;
+            }
+        }
 
         UnityObjectSerializer.DeserializeObjects(context, constructedObjectSets.unityObjects);
 

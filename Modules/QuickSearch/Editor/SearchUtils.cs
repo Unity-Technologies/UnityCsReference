@@ -116,7 +116,6 @@ namespace UnityEditor.Search
                 });
             return string.Join(" ", tokens);
         }
-
         /// <summary>
         /// Split an entry according to a specified list of separators.
         /// </summary>
@@ -125,15 +124,13 @@ namespace UnityEditor.Search
         /// <returns>Returns list of tokens in lowercase</returns>
         public static IEnumerable<string> SplitEntryComponents(string entry, char[] entrySeparators)
         {
-            var nameTokens = entry.Split(entrySeparators).Distinct();
-            var scc = nameTokens.SelectMany(s => SplitCamelCase(s)).Where(s => s.Length > 0);
-            var fcc = scc.Aggregate("", (current, s) => current + s[0]);
-            return new[] { fcc }.Concat(scc.Where(s => s.Length > 1))
-                .Where(s => s.Length > 1)
-                .Select(s => s.ToLowerInvariant())
-                .Distinct();
+            return SplitEntryComponents(entry, entrySeparators, 1);
         }
 
+        internal static IEnumerable<string> SplitEntryComponents(string entry, char[] entrySeparators, int minTokenLength)
+        {
+            return SplitEntryComponents(entry, entrySeparators, minTokenLength, splitPath: false, splitCamelCase: true, splitFuzzy: true);
+        }
 
         /// <summary>
         /// Split a file entry according to a list of separators and find all the variations on the entry name.
@@ -148,19 +145,51 @@ namespace UnityEditor.Search
 
         public static IEnumerable<string> SplitFileEntryComponents(string path, in char[] entrySeparators, int minTokenLength)
         {
-            path = Utils.ReplaceInvalidCharsFromPath(path, '_');
-            var name = Path.GetFileNameWithoutExtension(path);
-            var nameTokens = name.Split(entrySeparators).Distinct().ToArray();
-            var scc = nameTokens.SelectMany(s => SplitCamelCase(s)).Where(s => s.Length > 0).ToArray();
-            var fcc = scc.Aggregate("", (current, s) => current + s[0]);
-            return new[] { Path.GetExtension(path).Replace(".", "") }
-                .Concat(scc)
-                .Concat(FindShiftLeftVariations(fcc))
-                .Concat(nameTokens)
-                .Concat(path.Split(entrySeparators).Reverse())
-                .Where(s => s.Length >= minTokenLength)
-                .Select(s => s.ToLowerInvariant())
-                .Distinct();
+            return SplitEntryComponents(path, entrySeparators, minTokenLength, splitPath:true, splitCamelCase:true, splitFuzzy:true);
+        }
+
+        static readonly HashSet<string> k_EntryComponents = new();
+        internal static IEnumerable<string> SplitEntryComponents(string strValue, char[] entrySeparators, int minTokenLength, bool splitPath, bool splitCamelCase, bool splitFuzzy)
+        {
+            k_EntryComponents.Clear();
+            var strValueLowered = strValue.ToLowerInvariant();
+            if (splitPath)
+            {
+                // Split dir, filename, ext
+                Utils.SplitPath(strValueLowered, out var dir, out var fileNameWithoutExtension, out var extension);
+                if (fileNameWithoutExtension != strValueLowered)
+                {
+                    var entries = strValueLowered.Split(entrySeparators);
+                    k_EntryComponents.UnionWith(entries);
+                    k_EntryComponents.Add(extension);
+                    strValueLowered = fileNameWithoutExtension;
+                    var startFileName = strValue.Length - fileNameWithoutExtension.Length - extension.Length - (extension.Length > 0 ? 1 : 0);
+                    strValue = strValue.Substring(startFileName, fileNameWithoutExtension.Length);
+                }
+            }
+
+            IEnumerable<string> nameTokensLowered = strValueLowered.Split(entrySeparators);
+            k_EntryComponents.UnionWith(nameTokensLowered);
+
+            if (splitCamelCase)
+            {
+                var camelCaseSplitTokens = strValue.Split(entrySeparators).SelectMany(s => UnityEditor.Search.SearchUtils.SplitCamelCase(s)).Where(s => s.Length > 0).Select(s => s.ToLowerInvariant());
+                k_EntryComponents.UnionWith(camelCaseSplitTokens);
+                nameTokensLowered = camelCaseSplitTokens;
+            }
+
+            if (splitFuzzy)
+            {
+                var fcc = nameTokensLowered.Aggregate(string.Empty, (current, s) => current + s[0]);
+                var shiftVariations = SearchUtils.FindShiftLeftVariations(fcc);
+                k_EntryComponents.UnionWith(shiftVariations);
+            }
+
+            foreach (var token in k_EntryComponents)
+            {
+                if (token.Length >= minTokenLength)
+                    yield return token;
+            }
         }
 
         /// <summary>
@@ -185,7 +214,7 @@ namespace UnityEditor.Search
             return GetObjectPath(obj, false);
         }
 
-        internal static string GetObjectPath(UnityEngine.Object obj, bool pathAsGlobalObjectId)
+        internal static string GetObjectPath(UnityEngine.Object obj, bool subAssetUseGlobalObjectId)
         {
             if (!obj)
                 return string.Empty;
@@ -194,7 +223,7 @@ namespace UnityEditor.Search
             var assetPath = AssetDatabase.GetAssetPath(obj);
             if (!string.IsNullOrEmpty(assetPath))
             {
-                if (pathAsGlobalObjectId || Utils.IsBuiltInResource(assetPath))
+                if ((subAssetUseGlobalObjectId && !AssetDatabase.IsMainAsset(obj)) || Utils.IsBuiltInResource(assetPath))
                     return GlobalObjectId.GetGlobalObjectIdSlow(obj).ToString();
                 return assetPath;
             }
@@ -207,7 +236,7 @@ namespace UnityEditor.Search
         {
             var fileIdHint = Utils.GetFileIDHint(obj);
             if (fileIdHint == 0)
-                fileIdHint = (ulong)obj.GetInstanceID();
+                fileIdHint = (ulong)obj.GetEntityId().GetRawData();
             return fileIdHint * 1181783497276652981UL + assetHash;
         }
 
@@ -1399,10 +1428,10 @@ namespace UnityEditor.Search
 
         internal static string CreateFindObjectReferenceQuery(UnityEngine.Object obj)
         {
-            var objPath = GetObjectPath(obj, pathAsGlobalObjectId: false);
+            var objPath = GetObjectPath(obj);
             if (string.IsNullOrEmpty(objPath))
                 return null;
-            var query = $"ref:\"{objPath}\"";
+            var query = $"ref:{EscapeLiteralString(objPath)}";
             return query;
         }
 
@@ -1414,7 +1443,7 @@ namespace UnityEditor.Search
                 return false;
             }
             path = Utils.CleanPath(path);
-            var fileName = Path.GetFileName(path);
+            var fileName = Utils.GetFileName(path);
 
             // On Mac Path.GetInvalidFileNameChars() doesn't include <,> but these characters are invalid for ADB.
             if (fileName.IndexOfAny(Utils.k_AdbInvalidCharacters) >= 0)
@@ -1525,10 +1554,11 @@ namespace UnityEditor.Search
                         if (value == null)
                             return "none";
 
-                        var path = GetObjectPath(value as UnityEngine.Object, pathAsGlobalObjectId:false);
-                        return $"\"{path}\"";
+                        var path = GetObjectPath(value as UnityEngine.Object, subAssetUseGlobalObjectId: true);
+                        return EscapeLiteralString(path);
                     }
                 case SerializedPropertyType.String:
+                    // Always escape the string value so any of our TypeParser will parse it back as a string.
                     return $"\"{value}\"";
                 default:
                     // TODO Number: When returning a numerical values used in a query, ensure the value uses an explicit formatter.
@@ -1943,6 +1973,23 @@ namespace UnityEditor.Search
                 tokens[tokenCount++] = start < source.Length ? source.Substring(start) : "";
             }
             return tokenCount;
+        }
+        
+        internal static string BuildUnionTypeQuery(Type[] types)
+        {
+            var query = types.Length > 1 ? "(" : string.Empty;
+            for (int i = 0; i < types.Length; ++i)
+            {
+                query += $"t:{types[i].Name.ToLowerInvariant()}";
+                if (i + 1 < types.Length)
+                    query += " or ";
+            }
+
+            if (types.Length > 1)
+            {
+                query += ")";
+            }
+            return query;
         }
     }
 }

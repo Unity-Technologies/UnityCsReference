@@ -15,7 +15,6 @@ namespace Unity.ProjectAuditor.Editor.UI
 
 To view Roslyn Analyzer diagnostics, make sure Roslyn Analyzer DLLs use the <b>RoslynAnalyzer</b> label.";
         const string k_RoslynDisabled = "The UseRoslynAnalyzers option is disabled. To enable Roslyn diagnostics reporting, make sure the corresponding option is enabled in Preferences > Analysis > " + ProjectAuditor.DisplayName + ".";
-        const string k_NotAvailable = "This view is not available when 'CompilationMode' is set to 'CompilationMode.Editor'.";
 
         bool m_ShowInfo;
         bool m_ShowWarn;
@@ -54,12 +53,6 @@ To view Roslyn Analyzer diagnostics, make sure Roslyn Analyzer DLLs use the <b>R
         {
             EditorGUILayout.LabelField(k_Info, SharedStyles.TextArea);
 
-            if (m_ViewManager.Report.SessionInfo.CompilationMode == CompilationMode.Editor)
-            {
-                EditorGUILayout.BeginHorizontal();
-                EditorGUILayout.HelpBox(k_NotAvailable, MessageType.Warning);
-                EditorGUILayout.EndHorizontal();
-            }
             if (!m_ViewManager.Report.SessionInfo.UseRoslynAnalyzers)
             {
                 EditorGUILayout.BeginHorizontal();

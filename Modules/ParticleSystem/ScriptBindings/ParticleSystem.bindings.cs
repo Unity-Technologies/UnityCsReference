@@ -99,7 +99,7 @@ namespace UnityEngine
 
         // Set/get particles
         [FreeFunction(Name = "ParticleSystemScriptBindings::SetParticles", HasExplicitThis = true, ThrowsException = true)]
-        extern public void SetParticles([Out] Particle[] particles, int size, int offset);
+        extern public void SetParticles([In, Out] Particle[] particles, int size, int offset);
         public void SetParticles([Out] Particle[] particles, int size) { SetParticles(particles, size, 0); }
         public void SetParticles([Out] Particle[] particles) { SetParticles(particles, -1); }
 
@@ -301,7 +301,7 @@ namespace UnityEngine
         extern internal static int GetTriggerParticles([NotNull] ParticleSystem ps, int type, [NotNull] List<ParticleSystem.Particle> particles);
 
         [FreeFunction(Name = "ParticleSystemScriptBindings::GetTriggerParticlesWithData")]
-        extern internal static int GetTriggerParticlesWithData([NotNull] ParticleSystem ps, int type, [NotNull] List<ParticleSystem.Particle> particles, ref ParticleSystem.ColliderData colliderData);
+        extern internal static int GetTriggerParticlesWithData([NotNull] ParticleSystem ps, int type, [NotNull] List<ParticleSystem.Particle> particles, out ParticleSystem.ColliderData colliderData);
 
         [FreeFunction(Name = "ParticleSystemScriptBindings::SetTriggerParticles")]
         extern internal static void SetTriggerParticles([NotNull] ParticleSystem ps, int type, [NotNull] List<ParticleSystem.Particle> particles, int offset, int count);
@@ -337,7 +337,7 @@ namespace UnityEngine
                 throw new InvalidOperationException("Querying the collider data for the Outside event is not supported, because when a particle is outside the collision volume, it is always outside every collider.");
 
             colliderData = new ParticleSystem.ColliderData();
-            return ParticleSystemExtensionsImpl.GetTriggerParticlesWithData(ps, (int)type, particles, ref colliderData);
+            return ParticleSystemExtensionsImpl.GetTriggerParticlesWithData(ps, (int)type, particles, out colliderData);
         }
 
         public static void SetTriggerParticles(this ParticleSystem ps, ParticleSystemTriggerEventType type, List<ParticleSystem.Particle> particles, int offset, int count)

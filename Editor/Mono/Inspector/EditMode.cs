@@ -4,6 +4,7 @@
 
 using System;
 using System.ComponentModel;
+using Unity.Collections.LowLevel.Unsafe;
 using UnityEditor;
 using UnityEditor.EditorTools;
 using UnityEngine;
@@ -16,7 +17,7 @@ namespace UnityEditorInternal
     [InitializeOnLoad]
     public class EditMode
     {
-        internal const int k_OwnerIdNone = 0;
+        internal static readonly EntityId k_OwnerIdNone = EntityId.None;
 
         private static class Styles
         {
@@ -29,7 +30,8 @@ namespace UnityEditorInternal
 
         static EditMode()
         {
-            ownerID = SessionState.GetInt(kOwnerStringKey, ownerID);
+            Debug.Assert(UnsafeUtility.SizeOf<EntityId>() == sizeof(int), "EntityId size has changed, please update below code to ulong");
+            ownerID = EntityId.From(SessionState.GetInt(kOwnerStringKey, (int)ownerID.GetRawData()));
             s_EditMode = (SceneViewEditMode)SessionState.GetInt(kEditModeStringKey, (int)s_EditMode);
             Selection.selectionChanged += OnSelectionChange;
             ToolManager.activeToolChanging += OnActiveToolWillChange;
@@ -50,7 +52,7 @@ namespace UnityEditorInternal
         internal static event Action<IToolModeOwner> editModeEnded;
         internal static event Action<IToolModeOwner, SceneViewEditMode> editModeStarted;
 
-        private static int s_OwnerID;
+        private static EntityId s_OwnerID;
         private static SceneViewEditMode s_EditMode;
 
         public enum SceneViewEditMode
@@ -83,16 +85,19 @@ namespace UnityEditorInternal
 
         internal static bool IsOwner(IToolModeOwner owner)
         {
-            return owner.GetInstanceID() == s_OwnerID;
+            return owner.GetEntityId() == s_OwnerID;
         }
 
-        internal static int ownerID
+        internal static EntityId ownerID
         {
             get { return s_OwnerID; }
             set
             {
                 s_OwnerID = value;
-                SessionState.SetInt(kOwnerStringKey, s_OwnerID);
+                Debug.Assert(UnsafeUtility.SizeOf<EntityId>() == sizeof(int), "EntityId size has changed, please update below code to ulong");
+                SessionState.SetInt(kOwnerStringKey, (int)s_OwnerID.GetRawData());
+                Debug.Assert(UnsafeUtility.SizeOf<EntityId>() == sizeof(int), "EntityId size has changed, please update below code to ulong");
+                SessionState.SetInt(kOwnerStringKey, (int)s_OwnerID.GetRawData());
             }
         }
 
@@ -201,7 +206,7 @@ namespace UnityEditorInternal
 
         private static void DoInspectorToolbar(SceneViewEditMode[] modes, GUIContent[] guiContents, Func<Bounds> getBoundsOfTargets, IToolModeOwner owner)
         {
-            int callerID = owner.GetInstanceID();
+            EntityId callerID = owner.GetEntityId();
 
             int selectedIndex = ArrayUtility.IndexOf(modes, editMode);
             if (ownerID != callerID)
@@ -277,7 +282,7 @@ namespace UnityEditorInternal
                     editModeEnded(oldOwner);
             }
 
-            ownerID = mode != SceneViewEditMode.None ? owner.GetInstanceID() : k_OwnerIdNone;
+            ownerID = mode != SceneViewEditMode.None ? owner.GetEntityId() : k_OwnerIdNone;
 
             if (editMode != SceneViewEditMode.None)
             {

@@ -425,7 +425,7 @@ namespace UnityEngine.UIElements
 
         ValueAnimation<Vector2> ITransitionAnimations.Size(Vector2 to, int durationMs)
         {
-            return experimental.animation.Start((e) => e.layout.size,
+            return experimental.animation.Start((e) => e.layoutSize,
                 to, durationMs,
                 (e, c) =>
                 {

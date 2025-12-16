@@ -17,7 +17,7 @@ namespace UnityEngine.UIElements
         /// </summary>
         public MaterialDefinition value
         {
-            get { return m_Value; }
+            get { return m_Keyword == StyleKeyword.Undefined ? m_Value : default; }
             set
             {
                 m_Value = value;
@@ -40,11 +40,6 @@ namespace UnityEngine.UIElements
         public StyleMaterialDefinition(MaterialDefinition m)
             : this(m, StyleKeyword.Undefined)
         { }
-
-        internal StyleMaterialDefinition(object obj, StyleKeyword keyword)
-        :    this(MaterialDefinition.FromObject(obj), keyword)
-        {
-        }
 
         /// <summary>
         /// Creates from either a <see cref="Material"/> or a <see cref="StyleKeyword"/>.

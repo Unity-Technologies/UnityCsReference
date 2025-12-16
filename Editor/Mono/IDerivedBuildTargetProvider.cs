@@ -4,6 +4,7 @@
 
 using System.Collections.Generic;
 using UnityEditor.Modules;
+using UnityEngine;
 
 namespace UnityEditor
 {

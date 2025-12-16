@@ -9,7 +9,7 @@ namespace UnityEditor.PackageManager.UI.Internal
     internal class PackageItem : VisualElement, ISelectableItem
     {
         // Note that the height here is only the height of the main item (i.e, version list is not expanded)
-        internal const int k_MainItemHeight = 25;
+        public const int k_MainItemHeight = 25;
         private const string k_SelectedClassName = "selected";
 
         private string m_CurrentStateClass;
@@ -24,7 +24,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         // and only call BuildMainItem again when there's a layout change
         private bool? m_IsFeatureLayout = null;
 
-        internal PackageGroup packageGroup { get; set; }
+        public PackageGroup packageGroup { get; set; }
 
         private readonly IPageManager m_PageManager;
         private readonly IPackageDatabase m_PackageDatabase;
@@ -149,10 +149,16 @@ namespace UnityEditor.PackageManager.UI.Internal
             if (RefreshSpinner())
                 return;
 
-            if (RefreshLockIcons())
-                return;
+            var state = package?.state ?? PackageState.None;
+            var isHighPriorityState =
+                state == PackageState.Error ||
+                state == PackageState.Warning ||
+                state == PackageState.Restricted;
 
-            RefreshRightStateIcons();
+            // The lock and state icon occupy the same space. Showing the lock icon hides the package state.
+            // We prioritize displaying error, warning, or restricted state icons over the lock icon since it's more important information.
+            if (isHighPriorityState || !RefreshLockIcons())
+                RefreshRightStateIcons();
         }
 
         // Returns true if package is in progress and spinner is visible

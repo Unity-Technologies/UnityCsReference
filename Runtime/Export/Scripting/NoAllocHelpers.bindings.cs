@@ -96,6 +96,30 @@ namespace UnityEngine
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void ResizeListContents(object list, Type elementType, int newSize)
+        {
+            var listPrivateFieldAccess = UnsafeUtility.As<ListPrivateFieldAccess<byte>>(list);
+            ref byte[] array = ref listPrivateFieldAccess._items;
+            int capacity = array.Length;
+            int previousCount = listPrivateFieldAccess._size;
+
+            // If there is less capacity than is required, create a new array of the required count.
+            if (capacity < newSize)
+            {
+                array = UnsafeUtility.As<byte[]>(Array.CreateInstance(elementType, newSize));
+            }
+            else if (previousCount > newSize)
+            {
+                // Otherwise it means that there is enough capacity. Then, if the previous count
+                // is greater than the current count, it means that elements in between them must be cleared.
+                Array.Clear(array as Array, newSize, previousCount - newSize); // Forcing the call to pass array as Array type. If an overload is introduced in the future, we want to avoid it as the element type is unknown
+            }
+
+            listPrivateFieldAccess._size = newSize;
+            listPrivateFieldAccess._version++;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void ResetListSize<T>(List<T> list, int size)
         {
             if (list.Capacity < size) throw new ArgumentException($"Resetting to {size} which is bigger than capacity {list.Capacity} is not allowed!");

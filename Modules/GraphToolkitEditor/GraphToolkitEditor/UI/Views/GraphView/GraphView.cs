@@ -106,6 +106,7 @@ namespace Unity.GraphToolkit.Editor
         float m_ReferenceScale = ContentZoomer.DefaultReferenceScale;
 
         float m_Zoom = 1.0f;
+        Vector2 m_Pan;
 
         readonly VisualElement m_GraphViewContainer;
         readonly VisualElement m_MarkersParent;
@@ -130,6 +131,9 @@ namespace Unity.GraphToolkit.Editor
 
         protected bool m_SelectionDraggerWasActive;
 
+        // The action used by the shortcut to delete and reconnect nodes.
+        protected DeleteAndReconnectAction m_DeleteAndReconnectAction = new();
+
         StateObserver m_GraphViewGraphLoadedObserver;
         StateObserver m_GraphModelGraphLoadedAssetObserver;
         StateObserver m_SelectionGraphLoadedObserver;
@@ -145,6 +149,7 @@ namespace Unity.GraphToolkit.Editor
         GraphProcessingErrorObserver m_GraphProcessingErrorObserver;
         SpacePartitioningObserver m_SpacePartitioningObserver;
         GraphViewCullingObserver m_CullingObserver;
+
 
         /// <summary>
         /// The display mode.
@@ -176,6 +181,11 @@ namespace Unity.GraphToolkit.Editor
         /// The current zoom level of the <see cref="GraphView"/>
         /// </summary>
         public float Zoom => m_Zoom;
+
+        /// <summary>
+        /// The current translation of the <see cref="GraphView"/>.
+        /// </summary>
+        public Vector2 Pan => m_Pan;
 
         /// <summary>
         /// Whether a wire is currently being dragged in the graph.
@@ -300,11 +310,19 @@ namespace Unity.GraphToolkit.Editor
         public void RegisterElementZoomLevelClass(VisualElement element, GraphViewZoomMode zoomLevel, string ussClass)
         {
             m_ElementsPerZoom[(int)zoomLevel].Add(element, ussClass);
+            if (m_ZoomMode >= zoomLevel && m_ZoomMode != GraphViewZoomMode.Unknown)
+            {
+                element.AddToClassList(ussClass);
+            }
         }
 
         public void UnregisterElementZoomLevelClass(VisualElement element, GraphViewZoomMode zoomLevel)
         {
-            m_ElementsPerZoom[(int)zoomLevel].Remove(element);
+            if (m_ElementsPerZoom[(int)zoomLevel].TryGetValue(element, out var ussClass))
+            {
+                m_ElementsPerZoom[(int)zoomLevel].Remove(element);
+                element.RemoveFromClassList(ussClass);
+            }
         }
 
         /// <summary>
@@ -343,8 +361,6 @@ namespace Unity.GraphToolkit.Editor
 
             AddToClassList(ussClassName);
             EnableInClassList(nonInteractiveUssClassName, DisplayMode == GraphViewDisplayMode.NonInteractive);
-
-            this.SetRenderHintsClipWithScissors();
 
             m_GraphViewContainer = new VisualElement() { name = "graph-view-container" };
             m_GraphViewContainer.pickingMode = PickingMode.Ignore;
@@ -434,6 +450,8 @@ namespace Unity.GraphToolkit.Editor
                 RegisterCallback<ShortcutDisconnectWiresEvent>(OnShortcutDisconnectWiresEvent);
                 RegisterCallback<ShortcutToggleNodeCollapseEvent>(OnShortcutToggleNodeCollapseEvent);
                 RegisterCallback<ShortcutExtractContentsToPlacematEvent>(OnShortcutExtractContentsToPlacematEvent);
+                RegisterCallback<ShortcutDeleteAndReconnectEvent>(OnShortcutDeleteAndReconnect);
+
                 RegisterCallback<KeyDownEvent>(OnRenameKeyDown);
             }
             else
@@ -525,6 +543,17 @@ namespace Unity.GraphToolkit.Editor
             }
 
             ClearSpacePartitioning();
+
+            if (GraphViewModel?.SpacePartitioningState != null)
+            {
+                //This is needed because, when the current GraphModel is changed to null, the GraphView registers all its elements for culling removal. But space partition is not updated if GraphModel == null.
+                //if you then reopen the same graph, the space partition will still have all models as needing removal, therefore nothing will be culled.
+                // This is shown when running NodeCullingTests.NodeAreCulledWithWidthBasedOnLongTitleHasBeenSetup(??, ReloadKind.LoadingGraph) that fails without this line because the node is not culled when it should.
+                using (var spUpdater = GraphViewModel.SpacePartitioningState.UpdateScope)
+                {
+                    spUpdater.ForceCompleteUpdate();
+                }
+            }
         }
 
         static ProfilerMarker s_UpdateViewTransformMarker = new ProfilerMarker("UpdateAllElementsLevelOfDetail");
@@ -556,6 +585,9 @@ namespace Unity.GraphToolkit.Editor
 
             pan.x = this.RoundToPanelPixelSize(pan.x);
             pan.y = this.RoundToPanelPixelSize(pan.y);
+
+            m_Zoom = zoom.x;
+            m_Pan = pan;
 
             ContentViewContainer.style.translate = new StyleTranslate(new Translate(pan.x, pan.y));
 
@@ -605,8 +637,6 @@ namespace Unity.GraphToolkit.Editor
 
         void UpdateAllElementsLevelOfDetail(float zoomLevel, GraphViewZoomMode newZoomMode, GraphViewZoomMode oldZoomMode)
         {
-            m_Zoom = zoomLevel;
-
             if (GraphModel != null)
             {
                 using var cullingUpdater = GraphViewModel?.GraphViewCullingState?.UpdateScope;
@@ -980,14 +1010,7 @@ namespace Unity.GraphToolkit.Editor
         void AppendDeveloperBuildMenuActions(ContextualMenuPopulateEvent evt, List<GraphElementModel> selection)
         {
             evt.menu.AppendSeparator();
-            evt.menu.AppendAction("Overlays/Save Positions", _ =>
-                (Window as GraphViewEditorWindow)?.SaveOverlayPositions());
-            evt.menu.AppendAction("Overlays/Set to Saved Positions", _ =>
-                (Window as GraphViewEditorWindow)?.RestoreOverlayPositions());
-            evt.menu.AppendAction("Overlays/Set to Default Positions", _ =>
-                (Window as GraphViewEditorWindow)?.ResetOverlayPositions());
-            evt.menu.AppendAction("Overlays/Clear Saved Positions", _ =>
-                (Window as GraphViewEditorWindow)?.HardResetOverlayPositions());
+
             evt.menu.AppendAction("Refresh All UI", _ =>
             {
                 using (var updater = GraphViewModel.GraphViewState.UpdateScope)
@@ -1047,7 +1070,6 @@ namespace Unity.GraphToolkit.Editor
             menuActionMap.Add(ContextualMenuHelpers.addNodeItem.Name, () => AppendAddNodeItemMenuItem(evt));
             menuActionMap.Add(ContextualMenuHelpers.createStickyNoteItem.Name, () => AppendCreateStickyNoteMenuItem(evt));
             menuActionMap.Add(ContextualMenuHelpers.createEmptyLocalSubgraphItem.Name, () => AppendCreateEmptyLocalSubgraph(evt));
-            menuActionMap.Add(ContextualMenuHelpers.showOverlayMenuItem.Name, () => AppendShowOverlayMenuMenuItem(evt));
 
             // Nodes menu items:
             menuActionMap.Add(ContextualMenuHelpers.deleteAndReconnectItem.Name, () => AppendDeleteAndReconnectMenuItem(evt, selection));
@@ -1098,6 +1120,79 @@ namespace Unity.GraphToolkit.Editor
             menuActionMap.Add(ContextualMenuHelpers.smartResizeItem.Name, () => AppendSmartResizeMenuItem(evt, selection));
             menuActionMap.Add(ContextualMenuHelpers.reorderPlacematItem.Name, () => AppendReorderPlacematMenuItems(evt, selection));
             menuActionMap.Add(ContextualMenuHelpers.selectAllPlacematContentsItem.Name, () => AppendSelectAllPlacematContentsMenuItem(evt, selection));
+
+            // Portal nodes menu items:
+            menuActionMap.Add(ContextualMenuHelpers.createOppositePortalItem.Name, () => AppendCreateOppositePortalMenuItem(evt, selection));
+            menuActionMap.Add(ContextualMenuHelpers.revertToWireItem.Name, () => AppendRevertWiresMenuItem(evt, selection, false));
+            menuActionMap.Add(ContextualMenuHelpers.revertAllToWiresItem.Name, () => AppendRevertWiresMenuItem(evt, selection, true));
+        }
+
+        void AppendCreateOppositePortalMenuItem(ContextualMenuPopulateEvent evt, List<GraphElementModel> selection)
+        {
+            if (!GraphModel.AllowPortalCreation)
+                return;
+
+            var portals = new List<WirePortalModel>();
+            var enable = true;
+            foreach (var elementModel in selection)
+            {
+                // If the element is not a portal, we don't append this menu item.
+                if (elementModel is not WirePortalModel portal)
+                    return;
+
+                // If one of the selected portals cannot create its opposite portal, we disable the menu item.
+                if (!portal.CanCreateOppositePortal())
+                    enable = false;
+
+                portals.Add(portal);
+            }
+
+            evt.menu.AppendAction(L10n.Tr("Create Opposite Portal"),
+                _ =>
+                {
+                    Dispatch(new CreateOppositePortalCommand(portals));
+                }, enable ? DropdownMenuAction.Status.Normal : DropdownMenuAction.Status.Disabled);
+        }
+
+        void AppendRevertWiresMenuItem(ContextualMenuPopulateEvent evt, List<GraphElementModel> selection, bool revertAll)
+        {
+            if (!GraphModel.AllowPortalCreation)
+                return;
+
+            var portals = new List<WirePortalModel>();
+            var enable = true;
+            foreach (var elementModel in selection)
+            {
+                // If the element is not a portal, we don't append this menu item.
+                if (elementModel is not WirePortalModel portal)
+                    return;
+
+                // If one of the selected portals cannot be reverted, we disable the menu item.
+                if (!portal.CanRevertToWire())
+                {
+                    enable = false;
+                    break;
+                }
+
+                portals.Add(portal);
+            }
+
+            if (revertAll)
+            {
+                evt.menu.AppendAction(L10n.Tr("Revert All to Wires"),
+                    _ =>
+                    {
+                        Dispatch(new RevertAllPortalsToWireCommand(portals));
+                    }, enable ? DropdownMenuAction.Status.Normal : DropdownMenuAction.Status.Disabled);
+            }
+            else
+            {
+                evt.menu.AppendAction(L10n.Tr("Revert to Wire"),
+                    _ =>
+                    {
+                        Dispatch(new RevertPortalsToWireCommand(portals));
+                    }, enable ? DropdownMenuAction.Status.Normal : DropdownMenuAction.Status.Disabled);
+            }
         }
 
         protected void AppendInsertBlockItemMenuItem(ContextualMenuPopulateEvent evt, List<GraphElementModel> selection, bool insertAbove, string itemName = "")
@@ -1196,6 +1291,7 @@ namespace Unity.GraphToolkit.Editor
         {
             var selectedVisibleGraphElements = new List<GraphElement>();
             var allBlocks = true;
+            var allPortals = true;
             foreach (var elementModel in selection)
             {
                 // If a graph element is not on the graph (eg: block nodes) or the graph element is a placemat, don't append this menu item.
@@ -1208,6 +1304,9 @@ namespace Unity.GraphToolkit.Editor
                 if (elementModel.NeedsContainer() || elementModel is BlockNodeModel)
                     continue;
 
+                if (elementModel is not WirePortalModel)
+                    allPortals = false;
+
                 allBlocks = false;
 
                 var view = elementModel.GetView<GraphElement>(this);
@@ -1215,8 +1314,8 @@ namespace Unity.GraphToolkit.Editor
                     selectedVisibleGraphElements.Add(view);
             }
 
-            // If all selected elements are block nodes, don't append this menu item.
-            if (selection.Count > 0 && allBlocks)
+            // If selected elements are all block or portal nodes, don't append this menu item.
+            if (selection.Count > 0 && (allBlocks || allPortals))
                 return;
 
             evt.menu.AppendMenuItemFromShortcutWithName<ShortcutCreatePlacematEvent>(GraphTool, selectedVisibleGraphElements.Count > 0 ? L10n.Tr("Create Placemat from Selection") : ShortcutCreatePlacematEvent.id, menuAction =>
@@ -1254,12 +1353,18 @@ namespace Unity.GraphToolkit.Editor
                     Dispatch(new ChangeElementColorCommand(pickedColor, colorables));
                 }
 
-                var defaultColor = new Color(0.5f, 0.5f, 0.5f);
+                var defaultColor = EditorGUIUtility.isProSkin ? new Color(0.22f, 0.22f, 0.22f) : new Color(0.7843f, 0.7843f, 0.7843f);
                 if (selection.Count == 1)
                 {
                     var firstColorable = (IHasElementColor)colorables[0];
                     if (firstColorable.ElementColor.HasUserColor)
+                    {
                         defaultColor = firstColorable.ElementColor.Color;
+                    }
+                    else if (!firstColorable.DefaultColor.Equals(default))
+                    {
+                        defaultColor = firstColorable.DefaultColor;
+                    }
                 }
 
                 EditorBridge.ShowColorPicker(ChangeNodesColor, defaultColor, showAlpha);
@@ -1373,19 +1478,6 @@ namespace Unity.GraphToolkit.Editor
             }
         }
 
-        void AppendShowOverlayMenuMenuItem(ContextualMenuPopulateEvent evt)
-        {
-            if (Window is not GraphViewEditorWindow graphViewEditorWindow)
-                return;
-
-            var binding = new ShortcutBinding(new KeyCombination(KeyCode.BackQuote));
-            evt.menu.AppendAction(L10n.Tr("Show Overlay Menu") + " " + binding.GetShortcutMenuString(), menuAction =>
-            {
-                Vector2 mousePosition = menuAction?.eventInfo?.mousePosition ?? Event.current.mousePosition;
-                graphViewEditorWindow.ShowOverlayMenuAtPosition(mousePosition);
-            });
-        }
-
         void AppendToggleCollapseMenuItem(ContextualMenuPopulateEvent evt, List<GraphElementModel> selection)
         {
             var nodes = new List<AbstractNodeModel>();
@@ -1409,54 +1501,15 @@ namespace Unity.GraphToolkit.Editor
 
         void AppendDeleteAndReconnectMenuItem(ContextualMenuPopulateEvent evt, List<GraphElementModel> selection)
         {
-            // TODO GTF-1920: Implement the expected Delete and Reconnect feature.
-            if (!GraphModel.AllowNodeBypass)
-                return;
+            bool canDeleteAndReconnect = m_DeleteAndReconnectAction.ValidateAction(GraphModel, GetSelection());
 
-            var nodes = new List<AbstractNodeModel>();
-            var ioConnectedNodes = new List<InputOutputPortsNodeModel>();
-
-            foreach (var elementModel in selection)
+            if (m_DeleteAndReconnectAction.HasNodes) //We display the "Delete and reconnect" menu item if there are nodes in the selection. If no node can be reconnected the command will be disabled.
             {
-                if (elementModel is not AbstractNodeModel node)
-                    continue;
-
-                nodes.Add(node);
-
-                if (node is not InputOutputPortsNodeModel ioNode || ioNode.GetConnectedWires().Count() == 0)
-                    continue;
-
-                var hasConnectedInput = false;
-                foreach (var input in ioNode.InputsByDisplayOrder)
+                evt.menu.AppendMenuItemFromShortcut<ShortcutDeleteAndReconnectEvent>( GraphTool, _ =>
                 {
-                    if (input.IsConnected())
-                    {
-                        hasConnectedInput = true;
-                        break;
-                    }
-                }
-
-                bool hasConnectedOutput = false;
-                foreach (var output in ioNode.OutputsByDisplayOrder)
-                {
-                    if (output.IsConnected())
-                    {
-                        hasConnectedOutput = true;
-                        break;
-                    }
-                }
-
-                if (hasConnectedInput && hasConnectedOutput)
-                {
-                    ioConnectedNodes.Add(ioNode);
-                }
+                    m_DeleteAndReconnectAction.ExecuteAction(this);
+                }, !canDeleteAndReconnect ? DropdownMenuAction.Status.Disabled : DropdownMenuAction.Status.Normal);
             }
-
-            evt.menu.AppendAction(L10n.Tr("Delete and reconnect"), _ =>
-            {
-                // TODO: The current Bypass feature implementation is Delete and reconnect. When the expected Bypass feature is implemented, this will need to be updated.
-                Dispatch(new BypassNodesCommand(ioConnectedNodes, nodes));
-            }, ioConnectedNodes.Count == 0 ? DropdownMenuAction.Status.Disabled : DropdownMenuAction.Status.Normal);
         }
 
         void AppendDisableNodeMenuItem(ContextualMenuPopulateEvent evt, List<GraphElementModel> selection)
@@ -2377,7 +2430,7 @@ namespace Unity.GraphToolkit.Editor
                 }
             }
 
-            graphElement.SetLevelOfDetail(resolvedStyle.scale.value.x, m_ZoomMode, GraphViewZoomMode.Unknown);
+            graphElement.SetLevelOfDetail(Zoom, ZoomMode, GraphViewZoomMode.Unknown);
 
             if (HasCullingOnZoom && CullingState == GraphViewCullingState.Enabled && IsZoomCullingSize(m_ZoomMode))
             {
@@ -2737,20 +2790,51 @@ namespace Unity.GraphToolkit.Editor
         {
             using var dispose = ListPool<GraphElement>.Get( out var selectedGraphElements);
 
+            var allBlocks = true;
+            var allPortals = true;
+
             foreach (var selection in GetSelection())
             {
-                if( selection is not WireModel)
+                if (selection is not WireModel)
                 {
+                    if (selection is not BlockNodeModel)
+                        allBlocks = false;
+
+                    if (selection is not WirePortalModel)
+                        allPortals = false;
+
                     var graphElement = selection.GetView<GraphElement>(this);
-                    if( graphElement != null && graphElement.visible)
+                    if (graphElement != null && graphElement.visible)
                         selectedGraphElements.Add(graphElement);
                 }
+            }
+
+            if (selectedGraphElements.Count > 0 && (allBlocks || allPortals))
+            {
+                // If only blocks or portals are selected, we don't allow the shortcut.
+                e.StopPropagation();
+                return;
             }
 
             if (selectedGraphElements.Count != 1 || selectedGraphElements[0].Model is not PlacematModel)
             {
                 CreatePlacematFromGraphElements(selectedGraphElements, GetLocalMousePositionOrCenter(e.MousePosition));
                 e.StopPropagation();
+            }
+        }
+
+        /// <summary>
+        /// Callback for the ShortcutDeleteAndReconnectEvent.
+        /// </summary>
+        /// <param name="evt">The event.</param>
+        protected void OnShortcutDeleteAndReconnect(ShortcutDeleteAndReconnectEvent evt)
+        {
+            bool canDeleteAndReconnect = m_DeleteAndReconnectAction.ValidateAction(GraphModel, GetSelection()) && m_DeleteAndReconnectAction.HasNodes;
+
+            if (canDeleteAndReconnect) //We display the "Delete and reconnect" menu item if there are nodes in the selection. If no node can be reconnected the command will be disabled.
+            {
+                m_DeleteAndReconnectAction.ExecuteAction(this);
+                evt.StopPropagation();
             }
         }
 
@@ -3103,7 +3187,7 @@ namespace Unity.GraphToolkit.Editor
                 if( selectionChangeset != null)
                     selectionAlreadyUpdatedModels.UnionWith(modelChangeSet.NewModels);
 
-                shouldUpdatePlacematContainer = newPlacemats.Any();
+                shouldUpdatePlacematContainer = newPlacemats.HasAny();
 
                 //Update new and deleted node containers
                 foreach (var modelGuid in modelChangeSet.NewModels.Concat(modelChangeSet.DeletedModels))
@@ -3489,7 +3573,7 @@ namespace Unity.GraphToolkit.Editor
                                 $"{currentGraphAssetPath}@{error.ParentModelGuid}@{assetGuid}@{graphModelGUID}@{sourceAssetPath}",
                                 error.ErrorType,
                                 LogOption.None,
-                                currentGraphAsset.GetInstanceID(),
+                                currentGraphAsset.GetEntityId(),
                                 windowId);
                         }
 
@@ -3696,14 +3780,23 @@ namespace Unity.GraphToolkit.Editor
                 Debug.LogError("Cannot save. Window is not a GraphViewEditorWindow.");
                 return;
             }
-            menu.AddItem(new GUIContent("Save All"), false, () =>
+
+            var saveAllGUI = new GUIContent("Save All");
+            if (GraphTool?.ToolState?.CurrentGraph != null
+                && GraphTool.ToolState.SubgraphStack.Count > 0)
             {
-                graphViewEditorWindow.SaveAll();
-            });
-            menu.AddItem(new GUIContent("Save As..."), false, () =>
-            {
-                graphViewEditorWindow.SaveAs();
-            });
+                menu.AddItem(saveAllGUI, false, () =>
+                    {
+                        graphViewEditorWindow.SaveAll();
+                    });
+            }
+            else
+                menu.AddDisabledItem(saveAllGUI);
+
+            menu.AddItem(new GUIContent(ShortcutEventBase<ShortcutSaveAsEvent>.GetMenuItemName(GraphTool)), false, () =>
+                {
+                    graphViewEditorWindow.SaveAs();
+                });
         }
 
         /// <summary>
@@ -4636,7 +4729,6 @@ namespace Unity.GraphToolkit.Editor
             ContextualMenuHelpers.createEmptyLocalSubgraphItem,
             ContextualMenuHelpers.pasteItem,
             ContextualMenuHelpers.selectAllItem,
-            ContextualMenuHelpers.showOverlayMenuItem,
         };
 
         internal class TestAccess
@@ -4666,6 +4758,8 @@ namespace Unity.GraphToolkit.Editor
             public void AppendConvertToConstantMenuItem(ContextualMenuPopulateEvent evt, List<GraphElementModel> selection) => m_GraphView.AppendConvertToConstantMenuItem(evt, selection);
             public void AppendConvertToPortalsMenuItem(ContextualMenuPopulateEvent evt, List<GraphElementModel> selection) => m_GraphView.AppendConvertToPortalsMenuItem(evt, selection);
             public void AppendInsertNodeMenuItem(ContextualMenuPopulateEvent evt, List<GraphElementModel> selection) => m_GraphView.AppendInsertNodeMenuItem(evt, selection);
+            public void AppendCreateOppositePortalMenuItem(ContextualMenuPopulateEvent evt, List<GraphElementModel> selection) => m_GraphView.AppendCreateOppositePortalMenuItem(evt, selection);
+            public void AppendRevertWiresMenuItem(ContextualMenuPopulateEvent evt, List<GraphElementModel> selection, bool revertAll) => m_GraphView.AppendRevertWiresMenuItem(evt, selection, revertAll);
         }
     }
 }

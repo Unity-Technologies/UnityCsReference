@@ -23,7 +23,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         bool InstallFromUrl(string url);
         bool InstallFromPath(string path, out string tempPackageId);
         void Uninstall(IPackage package);
-        void Uninstall(IEnumerable<IPackage> packages);
+        void Uninstall(IReadOnlyCollection<IPackage> packages);
 
         void InstallAndResetDependencies(IPackageVersion version, IEnumerable<IPackage> dependenciesToReset);
         void ResetDependencies(IPackageVersion version, IEnumerable<IPackage> dependenciesToReset);
@@ -44,7 +44,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         void Import(IPackage package);
         void RemoveImportedAssets(IPackage package);
-        void RemoveImportedAssets(IEnumerable<IPackage> packages);
+        void RemoveImportedAssets(IReadOnlyCollection<IPackage> packages);
     }
 
     internal class PackageOperationDispatcher : BaseService<IPackageOperationDispatcher>, IPackageOperationDispatcher
@@ -144,9 +144,9 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_UpmClient.RemoveByName(package.name);
         }
 
-        public void Uninstall(IEnumerable<IPackage> packages)
+        public void Uninstall(IReadOnlyCollection<IPackage> packages)
         {
-            if (packages == null || !packages.Any())
+            if (packages == null || packages.Count == 0)
                 return;
             m_UpmClient.RemoveByNames(packages.Select(p => p.name));
         }
@@ -272,9 +272,9 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_AssetStorePackageInstaller.Uninstall(package.product.id, true);
         }
 
-        public void RemoveImportedAssets(IEnumerable<IPackage> packages)
+        public void RemoveImportedAssets(IReadOnlyCollection<IPackage> packages)
         {
-            if (packages?.Any() != true)
+            if (packages == null || packages.Count == 0)
                 return;
 
             m_AssetStorePackageInstaller.Uninstall(packages.Select(p => p.product.id));

@@ -11,25 +11,27 @@ namespace UnityEditor.PackageManager.UI.Internal
 {
     internal abstract class PackageManagerFiltersWindow : EditorWindow
     {
+        // The internal modifier is used (instead of private) to give our test project access to these properties/methods
         internal const int k_MaxDisplayLabels = 5;
-        internal const int k_FoldOutHeight = 25;
-        internal const int k_ToggleHeight = 20;
-        internal const int k_Width = 196;
-        internal const int k_MaxHeight = 421;
+        protected const int k_FoldOutHeight = 25;
+        protected const int k_ToggleHeight = 20;
+        protected const int k_Width = 196;
+        protected const int k_MaxHeight = 421;
 
-        internal static readonly string k_FoldoutClass = "foldout";
-        internal static readonly string k_ToggleClass = "toggle";
+        protected static readonly string k_FoldoutClass = "foldout";
+        protected static readonly string k_ToggleClass = "toggle";
 
-        internal static readonly string k_StatusFoldOutName = "statusFoldOut";
-        internal static readonly string k_CategoriesFoldOutName = "categoriesFoldOut";
-        internal static readonly string k_LabelsFoldOutName = "labelsFoldOut";
-        internal static readonly string k_ShowAllButtonName = "showAll";
+        protected static readonly string k_StatusFoldOutName = "statusFoldOut";
+        protected static readonly string k_CategoriesFoldOutName = "categoriesFoldOut";
+        protected static readonly string k_LabelsFoldOutName = "labelsFoldOut";
+        protected static readonly string k_ShowAllButtonName = "showAll";
 
         private const long k_DelayTicks = TimeSpan.TicksPerSecond / 2;
 
         private static PackageManagerFiltersWindow s_Window;
         public static PackageManagerFiltersWindow instance => s_Window;
 
+        // The internal modifier is used (instead of private) to give our test project access to these properties/methods
         internal static long s_LastClosedTime;
 
         public Action<PageFilters> OnFiltersChanged = delegate {};

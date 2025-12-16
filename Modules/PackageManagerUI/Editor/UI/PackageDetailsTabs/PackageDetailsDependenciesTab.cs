@@ -129,7 +129,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             dependenciesVersions.Clear();
             dependenciesStatuses.Clear();
 
-            var hasDependencies = dependencies?.Any() ?? false;
+            var hasDependencies = dependencies?.Length > 0;
             UIUtils.SetElementDisplay(noDependencies, !hasDependencies);
             UIUtils.SetElementDisplay(dependenciesNames, hasDependencies);
             UIUtils.SetElementDisplay(dependenciesVersions, hasDependencies);

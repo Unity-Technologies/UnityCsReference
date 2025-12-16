@@ -353,15 +353,7 @@ namespace UnityEngine.UIElements
         public IList itemsSource
         {
             get => viewController?.itemsSource;
-            set
-            {
-                var previous = itemsSource;
-                GetOrCreateViewController().itemsSource = value;
-                if (previous != itemsSource)
-                {
-                    NotifyPropertyChanged(itemsSourceProperty);
-                }
-            }
+            set => GetOrCreateViewController().itemsSource = value; // Handles sending the NotifyPropertyChanged through the itemsSourceChanged event.
         }
 
         /// <summary>
@@ -872,8 +864,8 @@ namespace UnityEngine.UIElements
         internal static CustomStyleProperty<int> s_ItemHeightProperty = new CustomStyleProperty<int>("--unity-item-height");
 
         // View controller callbacks
-        Action<int, int> m_ItemIndexChangedCallback;
-        Action m_ItemsSourceChangedCallback;
+        readonly Action<int, int> m_ItemIndexChangedCallback;
+        readonly Action m_ItemsSourceChangedCallback;
 
         private IVisualElementScheduledItem m_RebuildScheduled;
         internal bool isRebuildScheduled => m_RebuildScheduled?.isActive == true;
@@ -1217,7 +1209,7 @@ namespace UnityEngine.UIElements
         void OnItemsSourceChanged()
         {
             itemsSourceChanged?.Invoke();
-            NotifyPropertyChanged(nameof(itemsSource));
+            NotifyPropertyChanged(itemsSourceProperty);
         }
 
         /// <summary>
@@ -1376,12 +1368,13 @@ namespace UnityEngine.UIElements
             if (!HasValidDataAndBindings())
                 return;
 
-            m_LastHeight = m_ScrollView.layout.height;
+            var size = m_ScrollView.layoutSize;
+            m_LastHeight = size.y;
 
-            if (panel== null || float.IsNaN(m_ScrollView.layout.height))
+            if (panel== null || float.IsNaN(size.y))
                 return;
 
-            Resize(m_ScrollView.layout.size);
+            Resize(size);
         }
 
         /// <summary>

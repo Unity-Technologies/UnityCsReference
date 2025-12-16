@@ -511,7 +511,7 @@ namespace UnityEngine.Rendering
         public unsafe void PrepareRendererListsAsync(List<RendererList> rendererLists)
         {
             Validate();
-            PrepareRendererListsAsync_Internal(rendererLists);
+            PrepareRendererListsAsync_Internal(NoAllocHelpers.CreateReadOnlySpan(rendererLists));
         }
 
         public RendererListStatus QueryRendererListStatus(RendererList rendererList)

@@ -143,10 +143,15 @@ namespace UnityEngine
             return (target & requiresComputeMask) != 0;
         }
 
-        static bool IsVertexIndexOrCopyOnly(Target target)
+        static bool IsCopyOnly(Target target)
         {
-            var mask = Target.Vertex | Target.Index | Target.CopySource | Target.CopyDestination;
+            var mask = Target.CopySource | Target.CopyDestination;
             return (target & mask) == target;
+        }
+
+        static bool HasVertexOrIndex(Target target)
+        {
+            return (target & (Target.Vertex | target & Target.Index)) != 0;
         }
 
         [FreeFunction("GraphicsBuffer_Bindings::InitBuffer")]
@@ -204,12 +209,23 @@ namespace UnityEngine
             {
                 throw new ArgumentException("Attempting to create an index buffer with an invalid stride: " + stride, "stride");
             }
-            else if (!IsVertexIndexOrCopyOnly(target) && stride % 4 != 0)
+            else if (!IsCopyOnly(target) && !HasVertexOrIndex(target) && stride % 4 != 0)
+			{
+                throw new ArgumentException("Stride must be a multiple of 4 unless the buffer is a vertex and/or index buffer", "stride");				
+			}
+			
+            var bufferSize = (long)count * stride;
+
+            // Compute-capable buffers need to be multiple of 4 bytes in size so round up
+            // This mirrors the behavior of Mesh Graphics Buffers with compute requirements
+            if (RequiresCompute(target) && HasVertexOrIndex(target))
             {
-                throw new ArgumentException("Stride must be a multiple of 4 unless the buffer is only used as a vertex buffer and/or index buffer ", "stride");
+                if (bufferSize % 4 != 0)
+                {
+                    throw new ArgumentException("Vertex and index buffers also used as compute buffers sizes must be a multiple of 4.");
+                }
             }
 
-            var bufferSize = (long)count * stride;
             var maxBufferSize = SystemInfo.maxGraphicsBufferSize;
             if (bufferSize > maxBufferSize)
             {

@@ -47,7 +47,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public override bool isFullyFetched => true;
 
-        public override IEnumerable<UIError> errors => Enumerable.Empty<UIError>();
+        public override IReadOnlyCollection<UIError> errors => Array.Empty<UIError>();
 
         public override bool isDirectDependency => true;
 
@@ -63,7 +63,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public override IReadOnlyCollection<PackageSizeInfo> sizes => m_SizeInfos;
 
-        public override IEnumerable<Asset> importedAssets => m_ImportedPackage;
+        public override IReadOnlyCollection<Asset> importedAssets => m_ImportedPackage;
 
         public AssetStorePackageVersion(AssetStoreProductInfo productInfo, long uploadId = 0, AssetStoreLocalInfo localInfo = null, AssetStoreImportedPackage importedPackage = null)
         {
@@ -102,7 +102,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 SemVersionParser.TryParse(simpleVersion.Trim(), out m_SupportedUnityVersion);
                 m_SupportedUnityVersionString = m_SupportedUnityVersion?.ToString();
             }
-            else if (productInfo?.supportedVersions?.Any() ?? false)
+            else if (productInfo?.supportedVersions?.Count > 0)
             {
                 foreach (var v in productInfo.supportedVersions)
                     if (SemVersionParser.TryParse(v, out var parsedSemVer))

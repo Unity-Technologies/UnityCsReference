@@ -17,9 +17,26 @@ namespace Unity.GraphToolkit.Editor
     [UnityRestricted]
     internal abstract class OverlayWithView : Overlay
     {
+        GTKOverlayWrapper m_OverlayWrapper;
+
         /// <summary>
         /// The <see cref="RootView"/> of the overlay.
         /// </summary>
         public abstract RootView RootView { get; }
+
+        protected GTKOverlayWrapper OverlayWrapper
+        {
+            get => m_OverlayWrapper;
+
+            set
+            {
+                if (m_OverlayWrapper != value)
+                {
+                    m_OverlayWrapper?.RemoveFromHierarchy();
+
+                    m_OverlayWrapper = value;
+                }
+            }
+        }
     }
 }

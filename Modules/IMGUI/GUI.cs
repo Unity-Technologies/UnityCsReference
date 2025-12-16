@@ -56,30 +56,6 @@ namespace UnityEngine
             newSkin.MakeCurrent();
         }
 
-        internal static void CleanupRoots()
-        {
-            // Remove references from roots, so GC can collect them.
-            // Required for Windows Store Apps when cleaning up everything on application quit.
-            //  Otherwise managed roots are being freed after Unity managers are destroyed, in this case when finalizers are invoked for GUI* objects
-            //  they're accessing non existent managers.
-            s_Skin = null;
-
-            // GUILayoutUtility.CleanupRoots indirectly invokes GUILayoutUtility ctor, which indirectly sets GUIStyle s_None, that's
-            // why we need to invoke GUILayoutUtility.CleanupRoots before GUIStyle.CleanupRoots
-            //    UnityEngine.DLL!UnityEngine.GUIStyle.Init()   Unknown
-            //    UnityEngine.DLL!UnityEngine.GUIStyle.GUIStyle() Line 172  C#
-            //> UnityEngine.DLL!UnityEngine.GUIStyle.none.get() Line 590    C#
-            //    UnityEngine.DLL!UnityEngine.GUILayoutGroup.GUILayoutGroup() Line 592  C#
-            //    UnityEngine.DLL!UnityEngine.GUILayoutUtility.LayoutCache.LayoutCache() Line 19    C#
-            //    UnityEngine.DLL!UnityEngine.GUILayoutUtility.GUILayoutUtility() Line 43   C#
-            //    [Native to Managed Transition]
-            //    UnityEngine.DLL!UnityEngine.GUILayoutUtility.CleanupRoots() Line 50   C#
-            GUIUtility.CleanupRoots();
-            GUILayoutUtility.CleanupRoots();
-            GUISkin.CleanupRoots();
-            GUIStyle.CleanupRoots();
-        }
-
         // MATRIX
         // The GUI transform matrix.
         public static Matrix4x4 matrix
@@ -1745,6 +1721,13 @@ namespace UnityEngine
             return topmost.ScrollTowards(position, maxDelta);
         }
 
+        [RequiredByNativeCode]
+        internal static bool ScrollTowardsFromNative(float positionX, float positionY, float positionWidth, float positionHeight, float maxDelta)
+        {
+            var position = new Rect(positionX, positionY, positionWidth, positionHeight);
+            return ScrollTowards(position, maxDelta);
+        }
+
         public delegate void WindowFunction(int id);
         public static Rect Window(int id, Rect clientRect, WindowFunction func, string text)
         {
@@ -1830,9 +1813,9 @@ namespace UnityEngine
         }
 
         [RequiredByNativeCode]
-        internal static void CallWindowDelegate(WindowFunction func, int id, int instanceID, GUISkin _skin, int forceRect, float width, float height, GUIStyle style)
+        internal static void CallWindowDelegate(WindowFunction func, int id, EntityId entityId, GUISkin _skin, int forceRect, float width, float height, GUIStyle style)
         {
-            GUILayoutUtility.SelectIDList(id, true);
+            GUILayoutUtility.SelectIDListWindow(id);
             GUISkin temp = skin;
             if (Event.current.type == EventType.Layout)
             {
@@ -1871,7 +1854,7 @@ namespace UnityEngine
         // Call at the beginning of a frame.
         // e event to process
         // windowInfo - the list of windows we're currently using.
-        internal static void BeginWindows(int skinMode, int editorWindowInstanceID)
+        internal static void BeginWindows(int skinMode, EntityId editorWindowInstanceID)
         {
             // Let's just remember where we came from
             GUILayoutGroup oldTopLevel = GUILayoutUtility.current.topLevel;

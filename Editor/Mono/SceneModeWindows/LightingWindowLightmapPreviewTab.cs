@@ -82,8 +82,8 @@ namespace UnityEditor
             if (isRealtimeLightmap)
             {
                 Hash128 inputSystemHash;
-                if ((renderer != null && Lightmapping.GetInputSystemHash(renderer.GetInstanceID(), out inputSystemHash))
-                    || (terrain != null && Lightmapping.GetInputSystemHash(terrain.GetInstanceID(), out inputSystemHash)))
+                if ((renderer != null && Lightmapping.GetInputSystemHash(renderer.GetEntityId(), out inputSystemHash))
+                    || (terrain != null && Lightmapping.GetInputSystemHash(terrain.GetEntityId(), out inputSystemHash)))
                 {
                     m_ActiveGameObjectTextureHash = inputSystemHash;
                 }
@@ -234,9 +234,9 @@ namespace UnityEditor
                     (rect.Contains(Event.current.mousePosition) && Event.current.clickCount == 2))
                 {
                     if (isRealtimeLightmap)
-                        LightmapPreviewWindow.CreateLightmapPreviewWindow(m_SelectedLightmapIndex, true, true, useInteractiveLightBakingData);
+                        LightmapPreviewWindow.CreateLightmapPreviewWindowIndexed(m_SelectedLightmapIndex, true, useInteractiveLightBakingData);
                     else
-                        LightmapPreviewWindow.CreateLightmapPreviewWindow(m_SelectedLightmapIndex, false, true, useInteractiveLightBakingData);
+                        LightmapPreviewWindow.CreateLightmapPreviewWindowIndexed(m_SelectedLightmapIndex, false, useInteractiveLightBakingData);
                 }
                 else if (rect.Contains(Event.current.mousePosition) && Event.current.clickCount == 1)
                 {

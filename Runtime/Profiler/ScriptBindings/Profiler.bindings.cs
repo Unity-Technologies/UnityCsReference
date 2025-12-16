@@ -36,7 +36,7 @@ namespace UnityEngine.Profiling
     [UsedByNativeCode]
     [MovedFrom("UnityEngine")]
     [NativeHeader("NativeKernel/Allocator/MemoryManager.h")]
-    [NativeHeader("Runtime/Profiler/MemoryProfiler.h")]
+    [NativeHeader("NativeKernel/Profiler/MemoryProfiler.h")]
     [NativeHeader("Runtime/Profiler/Profiler.h")]
     [NativeHeader("Runtime/Profiler/ScriptBindings/Profiler.bindings.h")]
     [NativeHeader("Runtime/ScriptingBackend/ScriptingApi.h")]

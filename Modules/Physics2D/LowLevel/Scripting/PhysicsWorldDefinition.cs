@@ -42,10 +42,13 @@ namespace UnityEngine.LowLevelPhysics2D
 
         /// <summary>
         /// Get/Set the simulation mode which controls when or if the simulation will be automatically simulated.
-        /// See <see cref="UnityEngine.SimulationMode2D"/> and <see cref="LowLevelPhysics2D.PhysicsWorld.Simulate(float)"/>.
-        /// See <see cref="LowLevelPhysics2D.PhysicsWorld.simulationMode"/>.
+        /// See <see cref="LowLevelPhysics2D.PhysicsWorld.SimulationType"/> and <see cref="LowLevelPhysics2D.PhysicsWorld.Simulate(float)"/>.
         /// </summary>
-        public SimulationMode2D simulationMode { readonly get => m_SimulationMode; set => m_SimulationMode = value; }
+        public PhysicsWorld.SimulationType simulateType { readonly get => m_SimulationType; set => m_SimulationType = value; }
+
+        /// <undoc/>
+        [Obsolete("PhysicsWorldDefinition.simulationMode has been deprecated. Please use PhysicsWorldDefinition.simulateType instead.", false)]
+        public SimulationMode2D simulationMode { readonly get => (SimulationMode2D)simulateType; set => simulateType = (PhysicsWorld.SimulationType)value; }
 
         /// <summary>
         /// Get/Set the simulation sub-steps to use during simulation.
@@ -79,7 +82,7 @@ namespace UnityEngine.LowLevelPhysics2D
         /// <summary>
         /// Controls if Transform tweening is used. Transform tweening is where bodies that have their <see cref="LowLevelPhysics2D.PhysicsBody.transformObject"/> set, write to the <see cref="UnityEngine.Transform"/> each frame
         /// depending on the specific body <see cref="LowLevelPhysics2D.PhysicsBody.TransformWriteMode"/> set.
-        /// Regardless of this setting, Transform tweening is never used if the <see cref="LowLevelPhysics2D.PhysicsWorld.simulationMode"/> is <see cref="UnityEngine.SimulationMode2D.Update"/> or <see cref="LowLevelPhysics2D.PhysicsWorld.transformWriteMode"/> is <see cref="LowLevelPhysics2D.PhysicsWorld.TransformWriteMode.Off"/>.
+        /// Regardless of this setting, Transform tweening is never used if the <see cref="LowLevelPhysics2D.PhysicsWorld.simulationType"/> set to <see cref="LowLevelPhysics2D.PhysicsWorld.SimulationType.Update"/> or <see cref="LowLevelPhysics2D.PhysicsWorld.transformWriteMode"/> is <see cref="LowLevelPhysics2D.PhysicsWorld.TransformWriteMode.Off"/>.
         /// See <see cref="LowLevelPhysics2D.PhysicsWorld.transformTweening"/>.
         /// </summary>
         public bool transformTweening { readonly get => m_TransformTweening; set => m_TransformTweening = value; }
@@ -245,7 +248,7 @@ namespace UnityEngine.LowLevelPhysics2D
         #region Internal
 
         [SerializeField] Vector2 m_Gravity;
-        [SerializeField] SimulationMode2D m_SimulationMode;
+        [FormerlySerializedAs("m_SimulationMode")][SerializeField] PhysicsWorld.SimulationType m_SimulationType;
         [SerializeField] [Min(1)] int m_SimulationSubSteps;
         [SerializeField] [Range(0, PhysicsConstants.MaxWorkers)] int m_SimulationWorkers;
         [SerializeField] PhysicsWorld.TransformWriteMode m_TransformWriteMode;

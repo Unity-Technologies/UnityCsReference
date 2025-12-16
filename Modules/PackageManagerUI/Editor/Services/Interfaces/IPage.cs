@@ -10,9 +10,9 @@ namespace UnityEditor.PackageManager.UI.Internal
     internal struct ListUpdateArgs
     {
         public IPage page;
-        public IEnumerable<IPackage> added;
-        public IEnumerable<IPackage> updated;
-        public IEnumerable<IPackage> removed;
+        public IReadOnlyCollection<IPackage> added;
+        public IReadOnlyCollection<IPackage> updated;
+        public IReadOnlyCollection<IPackage> removed;
         public bool reorder;
     }
 
@@ -50,8 +50,8 @@ namespace UnityEditor.PackageManager.UI.Internal
         PageFilters filters { get; }
         PageCapability capability { get; }
 
-        IEnumerable<PageFilters.Status> supportedStatusFilters { get; }
-        IEnumerable<PageSortOption> supportedSortOptions { get; }
+        IReadOnlyCollection<PageFilters.Status> supportedStatusFilters { get; }
+        IReadOnlyCollection<PageSortOption> supportedSortOptions { get; }
 
         RefreshOptions refreshOptions { get; }
 

@@ -177,7 +177,7 @@ namespace UnityEditor.SceneManagement
             if (newSelection != prefabContentsRoot)
             {
                 foreach (SceneHierarchyWindow shw in SceneHierarchyWindow.GetAllSceneHierarchyWindows())
-                    shw.FrameObject(newSelection.GetInstanceID(), false);
+                    shw.FrameObject(newSelection.GetEntityId(), false);
             }
         }
 
@@ -364,7 +364,7 @@ namespace UnityEditor.SceneManagement
                 foreach (var go in rootsLoadedFromFile)
                 {
                     if (go != rootGameObject)
-                    { 
+                    {
                         UnityEngine.Object.DestroyImmediate(go);
                     }
                 }
@@ -594,7 +594,7 @@ namespace UnityEditor.SceneManagement
             return Event.current.alt ? alternativePrefabMode : defaultPrefabMode;
         }
 
-        internal static GUIContent GetPrefabButtonContent(int instanceID)
+        internal static GUIContent GetPrefabButtonContent(EntityId entityId)
         {
             GUIContent result;
             var defaultPrefabMode = HierarchyPreferences.DefaultPrefabModeFromHierarchy;

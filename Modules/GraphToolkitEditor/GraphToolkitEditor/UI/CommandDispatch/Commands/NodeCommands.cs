@@ -2,12 +2,10 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System;
 using System.Collections.Generic;
 using System.Linq;
 using JetBrains.Annotations;
 using Unity.GraphToolkit.CSO;
-using UnityEngine;
 
 namespace Unity.GraphToolkit.Editor
 {
@@ -56,7 +54,7 @@ namespace Unity.GraphToolkit.Editor
         [UsedImplicitly]
         public static void DefaultCommandHandler(UndoStateComponent undoState, GraphModelStateComponent graphModelState, CollapseNodeCommand command)
         {
-            if (!command.Models.Any())
+            if (!command.Models.HasAny())
                 return;
 
             using (var undoStateUpdater = undoState.UpdateScope)
@@ -121,7 +119,7 @@ namespace Unity.GraphToolkit.Editor
         [UsedImplicitly]
         public static void DefaultCommandHandler(UndoStateComponent undoState, GraphModelStateComponent graphModelState, ShowNodePreviewCommand command)
         {
-            if (!command.Models.Any())
+            if (!command.Models.HasAny())
                 return;
 
             using (var undoStateUpdater = undoState.UpdateScope)
@@ -329,7 +327,7 @@ namespace Unity.GraphToolkit.Editor
         [UsedImplicitly]
         public static void DefaultCommandHandler(UndoStateComponent undoState, GraphModelStateComponent graphModelState, UpdateConstantsValueCommand command)
         {
-            if (command.Constants.Any())
+            if (command.Constants.HasAny())
             {
                 using (var undoStateUpdater = undoState.UpdateScope)
                 {
@@ -388,7 +386,7 @@ namespace Unity.GraphToolkit.Editor
         [UsedImplicitly]
         public static void DefaultCommandHandler(UndoStateComponent undoState, GraphModelStateComponent graphModelState, DisconnectWiresCommand command)
         {
-            if (!command.Models.Any())
+            if (!command.Models.HasAny())
                 return;
 
             using (var undoStateUpdater = undoState.UpdateScope)
@@ -448,7 +446,7 @@ namespace Unity.GraphToolkit.Editor
         [UsedImplicitly]
         public static void DefaultCommandHandler(UndoStateComponent undoState, GraphModelStateComponent graphModelState, DisconnectWiresOnPortCommand command)
         {
-            if (!command.Models.Any())
+            if (!command.Models.HasAny())
                 return;
 
             using (var undoStateUpdater = undoState.UpdateScope)
@@ -471,34 +469,33 @@ namespace Unity.GraphToolkit.Editor
     }
 
     /// <summary>
-    /// Command to bypass nodes using wires. Optionally deletes the nodes.
+    /// Command to delete the selection and try to reconnect the wires of the deleted nodes to the connected nodes.
     /// </summary>
     [UnityRestricted]
-    internal class BypassNodesCommand : ModelCommand<AbstractNodeModel>
+    internal class DeleteAndReconnectCommand : ModelCommand<GraphElementModel>
     {
         const string k_UndoStringSingular = "Delete Element";
         const string k_UndoStringPlural = "Delete Elements";
 
-        /// <summary>
-        /// The nodes to bypass.
-        /// </summary>
-        public readonly IReadOnlyList<InputOutputPortsNodeModel> NodesToBypass;
+        public readonly IReadOnlyList<(PortModel output, PortModel input)> WiresToReconnect;
+
+
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="BypassNodesCommand"/> class.
+        /// Initializes a new instance of the <see cref="DeleteAndReconnectCommand"/> class.
         /// </summary>
-        public BypassNodesCommand()
+        public DeleteAndReconnectCommand()
             : base(k_UndoStringSingular) { }
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="BypassNodesCommand"/> class.
+        /// Initializes a new instance of the <see cref="DeleteAndReconnectCommand"/> class.
         /// </summary>
-        /// <param name="nodesToBypass">The nodes to bypass.</param>
+        /// <param name="wiresToReconnect">The nodes to bypass.</param>
         /// <param name="elementsToRemove">The nodes to delete.</param>
-        public BypassNodesCommand(IReadOnlyList<InputOutputPortsNodeModel> nodesToBypass, IReadOnlyList<AbstractNodeModel> elementsToRemove)
+        public DeleteAndReconnectCommand(IReadOnlyList<(PortModel output, PortModel input)> wiresToReconnect, IReadOnlyList<GraphElementModel> elementsToRemove)
             : base(k_UndoStringSingular, k_UndoStringPlural, elementsToRemove)
         {
-            NodesToBypass = nodesToBypass;
+            WiresToReconnect = wiresToReconnect;
         }
 
         /// <summary>
@@ -509,7 +506,7 @@ namespace Unity.GraphToolkit.Editor
         /// <param name="selectionState">The selection state of the graph view.</param>
         /// <param name="command">The command.</param>
         [UsedImplicitly]
-        public static void DefaultCommandHandler(UndoStateComponent undoState, GraphModelStateComponent graphModelState, SelectionStateComponent selectionState, BypassNodesCommand command)
+        public static void DefaultCommandHandler(UndoStateComponent undoState, GraphModelStateComponent graphModelState, SelectionStateComponent selectionState, DeleteAndReconnectCommand command)
         {
             using (var undoStateUpdater = undoState.UpdateScope)
             {
@@ -523,34 +520,13 @@ namespace Unity.GraphToolkit.Editor
             using (var graphUpdater = graphModelState.UpdateScope)
             using (var changeScope = graphModel.ChangeDescriptionScope)
             {
-                foreach (var model in command.NodesToBypass)
+                graphModel.DeleteElements(command.Models);
+                for (int i = 0; i < command.WiresToReconnect.Count; ++i)
                 {
-                    var inputWireModel = new List<WireModel>();
-                    foreach (var portModel in model.InputsByDisplayOrder)
-                    {
-                        inputWireModel.AddRange(graphModel.GetWiresForPort(portModel));
-                    }
-
-                    if (!inputWireModel.Any())
-                        continue;
-
-                    var outputWireModels = new List<WireModel>();
-                    foreach (var portModel in model.OutputsByDisplayOrder)
-                    {
-                        outputWireModels.AddRange(graphModel.GetWiresForPort(portModel));
-                    }
-
-                    if (!outputWireModels.Any())
-                        continue;
-
-                    graphModel.DeleteWires(inputWireModel);
-                    graphModel.DeleteWires(outputWireModels);
-
-                    if (graphModel.IsCompatiblePort(inputWireModel[0].FromPort, outputWireModels[0].ToPort))
-                        graphModel.CreateWire(outputWireModels[0].ToPort, inputWireModel[0].FromPort);
+                    var newWire = graphModel.CreateWire(command.WiresToReconnect[i].input, command.WiresToReconnect[i].output);
+                    selectionUpdater.SelectElement(newWire, true);
                 }
 
-                graphModel.DeleteElements(command.Models);
                 graphUpdater.MarkUpdated(changeScope.ChangeDescription);
 
                 selectionUpdater.SelectElements(changeScope.ChangeDescription.DeletedModels, false);
@@ -598,7 +574,7 @@ namespace Unity.GraphToolkit.Editor
         [UsedImplicitly]
         public static void DefaultCommandHandler(UndoStateComponent undoState, GraphModelStateComponent graphModelState, ChangeNodeStateCommand command)
         {
-            if (!command.Models.Any(t => t.IsDisableable()))
+            if (!command.Models.HasAny(t => t.IsDisableable()))
                 return;
 
             using (var undoStateUpdater = undoState.UpdateScope)

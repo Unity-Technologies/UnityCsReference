@@ -282,7 +282,7 @@ namespace UnityEngine.UIElements.StyleSheets
             }
         }
 
-        private static void CompileBoxArea(StylePropertyReader reader, out float top, out float right, out float bottom, out float left)
+        private static void CompileBorderBoxArea(StylePropertyReader reader, out float top, out float right, out float bottom, out float left)
         {
             Length t;
             Length r;
@@ -291,10 +291,10 @@ namespace UnityEngine.UIElements.StyleSheets
 
             CompileBoxArea(reader, out t, out r, out b, out l);
 
-            top = t.value;
-            right = r.value;
-            bottom = b.value;
-            left = l.value;
+            top = t.pixelValue;
+            right = r.pixelValue;
+            bottom = b.pixelValue;
+            left = l.pixelValue;
         }
 
         private static void CompileBoxArea(StylePropertyReader reader, out Color top, out Color right, out Color bottom, out Color left)

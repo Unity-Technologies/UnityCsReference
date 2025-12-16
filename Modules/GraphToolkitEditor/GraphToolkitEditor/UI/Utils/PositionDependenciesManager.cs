@@ -230,7 +230,7 @@ namespace Unity.GraphToolkit.Editor
                 if (nodeModel is WirePortalModel wirePortalModel)
                     m_PortalDependenciesByNode.TryGetValue(wirePortalModel.Guid, out dependencies);
 
-                if ((dependencies == null || !dependencies.Any()) &&
+                if ((dependencies == null || !dependencies.HasAny()) &&
                     !m_DependenciesByNode.TryGetValue(nodeModel.Guid, out dependencies))
                     return;
 
@@ -412,7 +412,7 @@ namespace Unity.GraphToolkit.Editor
             if (anyWire && !follow)
                 return changedModels;
 
-            if (!topMostModels.Any())
+            if (!topMostModels.HasAny())
             {
                 foreach (var nodeModel in entryPoints.OfType<AbstractNodeModel>())
                 {

@@ -63,7 +63,7 @@ namespace Unity.UI.Builder
                 ListPool<BuilderTransition>.Release(builderTransitions);
             }
 
-            transitionsListView.Refresh(setData.GetOverrides(), setData.GetKeywords(), setData.GetBindings());
+            transitionsListView.Refresh(setData);
         }
 
         public void RefreshStyleField(TransitionsListView transitionsListView)
@@ -102,7 +102,7 @@ namespace Unity.UI.Builder
                 ListPool<BuilderTransition>.Release(builderTransitions);
             }
 
-            transitionsListView.Refresh(setData.GetOverrides(), setData.GetKeywords(), setData.GetBindings());
+            transitionsListView.Refresh(setData);
         }
 
         void ClearTransitionStyleFieldLists()
@@ -511,7 +511,7 @@ namespace Unity.UI.Builder
 
             NotifyStyleChanges(s_StyleChangeList, true);
             foldout.UpdateFromChildFields();
-            transitionsListView.Refresh(setData.GetOverrides() | changeType, setData.GetKeywords(), setData.GetBindings());
+            transitionsListView.Refresh(setData, changeType);
         }
 
         void OnTransitionAdded(TransitionAddedEvent evt, TransitionsListView listView)

@@ -102,6 +102,13 @@ namespace UnityEditorInternal
             public string baseName;
             [UnityEngine.SerializeField]
             public string baseModule;
+
+            [UnityEngine.SerializeField]
+            public string managedName;
+            [UnityEngine.SerializeField]
+            public string managedNamespace;
+            [UnityEngine.SerializeField]
+            public string managedAssembly;
         }
 
         [System.Serializable]

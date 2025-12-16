@@ -10,9 +10,11 @@ using System.IO;
 using System.Text;
 using System.Threading;
 using UnityEngine;
+using UnityEngine.Bindings;
 
 namespace UnityEditor.Utils
 {
+    [VisibleToOtherModules("UnityEditor.BurstModule")]
     internal class Program : IDisposable
     {
         private ProcessOutputStreamReader _stdout;

@@ -16,7 +16,7 @@ namespace UnityEditor
         private IntPtr guiState;
         private Vector2 screenManagerSize;
         private GUISkin skin;
-        private int instanceID;
+        private EntityId entityId;
         private GenericStack scrollViewStates;
 
         private static extern void Internal_SetupSavedGUIState(out IntPtr state, out Vector2 screenManagerSize);
@@ -32,7 +32,7 @@ namespace UnityEditor
             {
                 state.skin = GUI.skin;
                 state.layoutCache = GUILayoutUtility.current.State;
-                state.instanceID = GUIUtility.s_OriginalID;
+                state.entityId = GUIUtility.s_OriginalID;
                 if (GUI.scrollViewStates.Count != 0)
                 {
                     state.scrollViewStates = GUI.scrollViewStates;
@@ -50,7 +50,7 @@ namespace UnityEditor
             {
                 GUILayoutUtility.current.CopyState(layoutCache);
                 GUI.skin = skin;
-                GUIUtility.s_OriginalID = instanceID;
+                GUIUtility.s_OriginalID = entityId;
 
                 if (scrollViewStates != null)
                 {

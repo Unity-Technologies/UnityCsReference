@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
 using UnityEngine.UIElements;
 
 namespace UnityEditor.Build.Profile.Elements
@@ -13,7 +14,7 @@ namespace UnityEditor.Build.Profile.Elements
         protected readonly Label m_WelcomeBody;
 
 
-        internal BuildProfileWelcomeElement()
+        internal BuildProfileWelcomeElement(Action onAdd)
         {
             var uxml = EditorGUIUtility.LoadRequired(k_Uxml) as VisualTreeAsset;
             var stylesheet = EditorGUIUtility.LoadRequired(Util.k_StyleSheet) as StyleSheet;
@@ -23,7 +24,7 @@ namespace UnityEditor.Build.Profile.Elements
             m_WelcomeTitle = this.Q<Label>("welcome-title-label");
             m_WelcomeBody = this.Q<Label>("welcome-body-label");
             var addProfileButton = this.Q<Button>("add-profile-button");
-            addProfileButton.clicked += PlatformDiscoveryWindow.ShowWindow;
+            addProfileButton.clicked += onAdd;
             addProfileButton.text = TrText.addBuildProfile;
 
             m_WelcomeTitle.text = TrText.welcomeToBuildProfiles;

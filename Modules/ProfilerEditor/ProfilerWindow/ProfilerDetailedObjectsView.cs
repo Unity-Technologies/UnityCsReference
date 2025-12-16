@@ -203,7 +203,7 @@ namespace UnityEditorInternal.Profiling
 
                 var selectedInstanceId = m_ObjectsData[id].entityId;
                 // 0 is an invalid instance ID
-                if (selectedInstanceId == 0)
+                if (selectedInstanceId == EntityId.None)
                     return;
                 var obj = EditorUtility.EntityIdToObject(selectedInstanceId);
                 if (obj is Component)
@@ -443,7 +443,7 @@ namespace UnityEditorInternal.Profiling
 
                 // Do not set the instance ID if this data is not coming from this session.
                 // This field is only used for pinging the related object and instanceId does not carry over between editor sessions.
-                objData.entityId = (dataIsFromCurrentEditorSession && i < entityIds.Count) ? entityIds[i] : 0;
+                objData.entityId = (dataIsFromCurrentEditorSession && i < entityIds.Count) ? entityIds[i] : EntityId.None;
                 for (var j = 0; j < columnsCount; j++)
                 {
                     objData.columnStrings[j] = (i < objectsDatas[j].Count) ? objectsDatas[j][i] : string.Empty;

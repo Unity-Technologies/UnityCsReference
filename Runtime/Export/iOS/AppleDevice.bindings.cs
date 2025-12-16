@@ -31,7 +31,7 @@ namespace UnityEngine.Apple
         extern internal static string vendorIdentifier
         {
             [NativeConditional("PLATFORM_APPLE_NONDESKTOP")]
-            [FreeFunction("UnityVendorIdentifier")]
+            [FreeFunction("UnityDeviceUniqueIdentifier")]
             get;
         }
 

@@ -3,7 +3,6 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System.Collections.Generic;
-using System.Linq;
 
 namespace Unity.GraphToolkit.ItemLibrary.Editor
 {
@@ -27,6 +26,11 @@ namespace Unity.GraphToolkit.ItemLibrary.Editor
         /// Custom name used to generate USS styles when creating UI for this item.
         /// </summary>
         public virtual string StyleName { get; set; }
+
+        /// <summary>
+        /// Custom path for the item's icon. If set, it takes precedence over the style defined by <see cref="StyleName"/>.
+        /// </summary>
+        public virtual string IconPath { get; set; }
 
         /// <summary>
         /// Depth of this item in the hierarchy.
@@ -180,9 +184,19 @@ namespace Unity.GraphToolkit.ItemLibrary.Editor
 
             for (; i < pathParts.Length && potentialCategories.Count > 0; ++i)
             {
-                var foundCat = potentialCategories.FirstOrDefault(c => c.Name == pathParts[i]);
+                ICategoryView foundCat = null;
+                for (int j = 0; j < potentialCategories.Count; ++j)
+                {
+                    if (potentialCategories[j].Name == pathParts[i])
+                    {
+                        foundCat = potentialCategories[j];
+                        break;
+                    }
+                }
+
                 if (foundCat == null)
                     break;
+
                 parentCategory = foundCat;
                 potentialCategories = foundCat.SubCategories;
             }

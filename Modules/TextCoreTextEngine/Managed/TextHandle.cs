@@ -5,8 +5,10 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
 using Unity.Jobs.LowLevel.Unsafe;
 using UnityEngine.Bindings;
+using static UnityEngine.TextCore.RichTextTagParser;
 
 namespace UnityEngine.TextCore.Text
 {
@@ -94,7 +96,7 @@ namespace UnityEngine.TextCore.Text
             get => settingsArray [JobsUtility.ThreadIndex];
         }
 
-        [VisibleToOtherModules("UnityEngine.UIElementsModule")]
+        [VisibleToOtherModules("UnityEngine.IMGUIModule", "UnityEngine.UIElementsModule")]
         internal NativeTextGenerationSettings nativeSettings = NativeTextGenerationSettings.Default;
 
         // scaled pixel
@@ -176,7 +178,7 @@ namespace UnityEngine.TextCore.Text
         [VisibleToOtherModules("UnityEngine.UIElementsModule")]
         protected internal bool IsCachedPermanent => (m_TextHandleFlags & (TextHandleFlags.IsCachedPermanentTextCore | TextHandleFlags.IsCachedPermanentATG)) != 0;
 
-        [VisibleToOtherModules("UnityEngine.UIElementsModule")]
+        [VisibleToOtherModules("UnityEngine.IMGUIModule", "UnityEngine.UIElementsModule")]
         internal bool IsCachedPermanentATG {
             get
             {
@@ -372,7 +374,7 @@ namespace UnityEngine.TextCore.Text
         internal TextInfo UpdateWithHash(int hashCode)
         {
             m_ScreenRect = settings.screenRect;
-            m_LineHeightDefault = GetLineHeightDefault(settings);
+            m_LineHeightDefault = GetLineHeightDefault(settings.fontAsset, settings.fontSize);
             m_IsPlaceholder = settings.isPlaceholder;
             if (!IsDirty(hashCode))
                 return textInfo;
@@ -446,11 +448,11 @@ namespace UnityEngine.TextCore.Text
 
         // Warning: return the ligne height in real pixels, not in scaled pixels
         [VisibleToOtherModules("UnityEngine.IMGUIModule")]
-        internal static float GetLineHeightDefault(TextGenerationSettings settings)
+        internal static float GetLineHeightDefault(FontAsset fontAsset, int fontSize)
         {
-            if (settings != null && settings.fontAsset != null)
+            if (fontAsset != null)
             {
-                return settings.fontAsset.faceInfo.lineHeight / settings.fontAsset.faceInfo.pointSize * settings.fontSize;
+                return fontAsset.faceInfo.lineHeight / fontAsset.faceInfo.pointSize * fontSize;
             }
             return 0.0f;
         }
@@ -552,8 +554,7 @@ namespace UnityEngine.TextCore.Text
         {
             if (useAdvancedText)
             {
-                Debug.LogError("Cannot use FindIntersectingLink while using Advanced Text");
-                return 0;
+                return TextLib.FindIntersectingLink(position, textGenerationInfo);
             }
             position = PointsToPixels(position);
             return textInfo.FindIntersectingLink(position, m_ScreenRect, inverseYAxis);
@@ -561,14 +562,12 @@ namespace UnityEngine.TextCore.Text
 
         public int GetCorrespondingStringIndex(int index)
         {
-            // For Advanced Text we always use logicalIndex
-            return useAdvancedText ? index : textInfo.GetCorrespondingStringIndex(index);
+            return useAdvancedText ? TextSelectionService.GetValidPointIndex(textGenerationInfo, index) : textInfo.GetCorrespondingStringIndex(index);
         }
 
         public int GetCorrespondingCodePointIndex(int stringIndex)
         {
-            // For Advanced Text we always use logicalIndex
-            return useAdvancedText ? stringIndex : textInfo.GetCorrespondingCodePointIndex(stringIndex);
+            return useAdvancedText ? TextSelectionService.GetValidPointIndex(textGenerationInfo, stringIndex) : textInfo.GetCorrespondingCodePointIndex(stringIndex);
         }
 
         public LineInfo GetLineInfoFromCharacterIndex(int index)
@@ -828,6 +827,105 @@ namespace UnityEngine.TextCore.Text
                 throw new InvalidOperationException("Cannot use GetScaledCharacterMetrics while using Advanced Text");
             }
             return new GlyphMetricsForOverlay(ref textInfo.textElementInfo[i], GetPixelsPerPoint());
+        }
+
+        // int LinkID: The identifier for the link.
+        // TagType: Specifies the type of tag (either Hyperlink or Link).
+        // string Attribute: For Hyperlink, this is the 'href' attribute; for Link, it's the associated attribute.
+        [VisibleToOtherModules("UnityEngine.IMGUIModule", "UnityEngine.UIElementsModule")]
+        internal List<(int, TagType, string)> m_Links;//Not clearing links would result in a leak of strings and enum, but no class, so no consideration for clearing the list at the moment
+        internal protected List<(int, TagType, string)> Links => m_Links ??= new();
+        [VisibleToOtherModules("UnityEngine.IMGUIModule", "UnityEngine.UIElementsModule")]
+        internal Color atgHyperlinkColor = Color.blue;
+
+        [VisibleToOtherModules("UnityEngine.IMGUIModule", "UnityEngine.UIElementsModule")]
+        internal virtual UnityEngine.TextAsset GetICUAsset() { return null; }
+
+        [VisibleToOtherModules("UnityEngine.IMGUIModule", "UnityEngine.UIElementsModule")]
+        //This method uses the asset in the editor if avialable, or try to find any asset that would be included in the resource folder for builds
+        internal static UnityEngine.TextAsset GetICUAssetStaticFalback()
+        {
+            if (TextLib.GetICUAssetEditorDelegate != null)
+            {
+                //Editor will load the ICU library before the scene, so we need to check in the asset database as the asset may not be loaded yet.
+                var asset = TextLib.GetICUAssetEditorDelegate();
+                if (asset != null)
+                    return asset;
+            }
+            else
+            {
+                Debug.LogError("GetICUAssetEditorDelegate is null");
+            }
+            // Dont know about the panelSettings class existence here so we must filter by name
+            foreach (var t in Resources.FindObjectsOfTypeAll<UnityEngine.TextAsset>())
+            {
+                if (t.name == "icudt73l")
+                    return t;
+            }
+
+            return null;
+        }
+
+        static TextLib s_TextLib;
+
+        [VisibleToOtherModules("UnityEngine.IMGUIModule", "UnityEngine.UIElementsModule")]
+        internal protected TextLib textLib
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get
+            {
+                InitTextLib();
+                return s_TextLib;
+            }
+        }
+
+        [VisibleToOtherModules("UnityEngine.IMGUIModule", "UnityEngine.UIElementsModule")]
+        internal protected void InitTextLib()
+        {
+            s_TextLib ??= new TextLib(GetICUAsset().bytes);
+        }
+
+        [VisibleToOtherModules("UnityEngine.IMGUIModule", "UnityEngine.UIElementsModule")]
+        internal (TagType, string) ATGFindIntersectingLink(Vector2 point)
+        {
+            //This should probably be public, but it would require exposing TagType
+            Debug.Assert(useAdvancedText);
+            if (textGenerationInfo == IntPtr.Zero)
+            {
+                Debug.LogError("TextGenerationInfo pointer is null.");
+                return (TagType.Unknown, null);
+            }
+
+            int id = TextLib.FindIntersectingLink(point * GetPixelsPerPoint(), textGenerationInfo);
+
+            if (id == -1)
+                return (TagType.Unknown, null);
+
+            return (m_Links[id].Item2, m_Links[id].Item3);
+        }
+
+        [VisibleToOtherModules("UnityEngine.IMGUIModule", "UnityEngine.UIElementsModule")]
+        public void CacheTextGenerationInfo()
+        {
+            if (!useAdvancedText)
+            {
+                Debug.LogError("CacheTextGenerationInfo should only be called for ATG.");
+                return;
+            }
+
+            bool isCacheATG = m_TextHandleFlags.HasFlag(TextHandleFlags.IsCachedPermanentATG);
+            if (isCacheATG)
+                return;
+
+            // We need to recreate it with the good memory labels
+            if (textGenerationInfo != IntPtr.Zero)
+            {
+                TextGenerationInfo.Destroy(textGenerationInfo);
+                textGenerationInfo = IntPtr.Zero;
+            }
+
+            IsCachedPermanentATG = true;
+            textGenerationInfo = TextGenerationInfo.Create(IsCachedPermanent);
         }
     }
 }

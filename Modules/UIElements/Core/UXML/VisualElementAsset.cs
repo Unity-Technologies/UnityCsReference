@@ -105,7 +105,7 @@ namespace UnityEngine.UIElements
         }
 
         [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
-        internal virtual VisualElement Instantiate(CreationContext cc)
+        internal virtual VisualElement Instantiate(CreationContext cc, VisualElementAssetReferenceTable.DocumentNode parentAuthoringNode = null)
         {
             var ve = (VisualElement) serializedData.CreateInstance();
             serializedData.Deserialize(ve);
@@ -153,6 +153,9 @@ namespace UnityEngine.UIElements
                 for (var i = 0; i < classes.Length; i++)
                     ve.AddToClassList(classes[i]);
             }
+
+            if (hasAuthoringId && parentAuthoringNode != null)
+                parentAuthoringNode.AddElement(id, ve);
 
             return ve;
         }

@@ -195,14 +195,14 @@ namespace UnityEngine.Tilemaps
                 var oldTileId = oldTilesIds[i];
                 var newTileId = newTilesIds[i];
                 var position = positions[i];
-                if (oldTileId != 0)
+                if (oldTileId != EntityId.None)
                 {
-                    var tile = (TileBase) Resources.EntityIdToObject((int) oldTileId);
+                    var tile = (TileBase) Resources.EntityIdToObject( oldTileId);
                     tile.RefreshTile(position, this);
                 }
-                if (newTileId != 0)
+                if (newTileId != EntityId.None)
                 {
-                    var tile = (TileBase) Resources.EntityIdToObject((int) newTileId);
+                    var tile = (TileBase) Resources.EntityIdToObject(newTileId);
                     tile.RefreshTile(position, this);
                 }
             }
@@ -262,7 +262,7 @@ namespace UnityEngine.Tilemaps
             {
                 var tileId = tileIds[i];
                 var position = positions[i];
-                if (tileId != 0)
+                if (tileId != EntityId.None)
                 {
                     ref var tileData = ref UnsafeUtility.ArrayElementAsRef<TileData>(tileDataArray.GetUnsafePtr(), i);
                     tileData = TileData.Default;
@@ -317,7 +317,7 @@ namespace UnityEngine.Tilemaps
             for (int i = 0; i < count; i++)
             {
                 var tileId = tileIds[i];
-                if (tileId != 0)
+                if (tileId != EntityId.None)
                 {
                     for (int j = 0; j < usedTileCount; j++)
                     {

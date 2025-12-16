@@ -48,7 +48,7 @@ namespace UnityEditor
 
             bool IShortcutContext.active
             {
-                get { return !(TerrainInspector.s_activeTerrainInspector != 0 && TerrainInspector.s_activeTerrainInspector != terrainEditor.GetInstanceID()); }
+                get { return !(TerrainInspector.s_activeTerrainInspector != EntityId.None && TerrainInspector.s_activeTerrainInspector != terrainEditor.GetEntityId()); }
             }
 
             public void SelectPaintTool<T>() where T : TerrainPaintTool<T>
@@ -75,6 +75,38 @@ namespace UnityEditor
                 {
                     EditorGUILayout.HelpBox(warningMessage, MessageType.Warning);
                 }
+            }
+
+            internal static void TerrainTransformValidationGUI(Transform transform)
+            {
+                if (IsValidTransform(transform))
+                {
+                    return;
+                }
+
+                EditorGUILayout.HelpBox(
+                    $"This object or one of its parents contains modified scale or rotation values.\n" +
+                    $"This is unsupported and can cause unexpected behaviour with terrain.",
+                    MessageType.Warning);
+            }
+
+            // Check transform of a terrain and its parents for scale 1,1,1 and rotation 0,0,0
+            internal static bool IsValidTransform(Transform transform)
+            {
+                Transform currentTransform = transform;
+
+                // Traverse the hierarchy, checking parent transforms
+                while (currentTransform != null)
+                {
+                    if (currentTransform.localScale != Vector3.one ||
+                        currentTransform.localRotation != Quaternion.identity)
+                    {
+                        return false;
+                    }
+                    currentTransform = currentTransform.parent;
+                }
+
+                return true;
             }
 
             internal static float ScaledSliderWithRounding(GUIContent content, float valueInPercent, float minVal, float maxVal, float scale, float precision)
@@ -403,7 +435,7 @@ namespace UnityEditor
         // The instance ID of the active inspector.
         // It's defined as the last inspector that had one of its terrain tools selected.
         // If a terrain inspector is the only one when created, it also becomes active.
-        static internal int s_activeTerrainInspector = 0;
+        static internal EntityId s_activeTerrainInspector = EntityId.None;
         static internal TerrainInspector s_activeTerrainInspectorInstance = null;
 
         List<ReflectionProbeBlendInfo> m_BlendInfoList = new List<ReflectionProbeBlendInfo>();
@@ -984,7 +1016,7 @@ namespace UnityEditor
 
             // if onEnable is called but there is no active editor, that means we are in full screen mode
             bool fullScreenMode = true;
-            if (s_activeTerrainInspector == 0 || s_activeTerrainInspectorInstance == null)
+            if (s_activeTerrainInspector == EntityId.None || s_activeTerrainInspectorInstance == null)
             {
                 var inspectors = InspectorWindow.GetInspectors();
                 foreach (var inspector in inspectors)
@@ -995,7 +1027,7 @@ namespace UnityEditor
                         if (editor == this)
                         {
                             // Acquire active inspector ownership if there is no other inspector active.
-                            s_activeTerrainInspector = GetInstanceID();
+                            s_activeTerrainInspector = GetEntityId();
                             s_activeTerrainInspectorInstance = this;
                             fullScreenMode = false;
 
@@ -1007,7 +1039,7 @@ namespace UnityEditor
             // we want to set the active terrain inspector anyways for Overlays
             if (fullScreenMode)
             {
-                s_activeTerrainInspector = GetInstanceID();
+                s_activeTerrainInspector = GetEntityId();
                 s_activeTerrainInspectorInstance = this;
             }
 
@@ -1053,8 +1085,8 @@ namespace UnityEditor
             // Return active inspector ownership.
             if (s_activeTerrainInspectorInstance == this)
                 s_activeTerrainInspectorInstance = null;
-            if (s_activeTerrainInspector == GetInstanceID())
-                s_activeTerrainInspector = 0;
+            if (s_activeTerrainInspector == GetEntityId())
+                s_activeTerrainInspector = EntityId.None;
 
             if (s_LastActiveTerrain == this)
                 s_LastActiveTerrain = null;
@@ -1071,7 +1103,7 @@ namespace UnityEditor
             set
             {
                 m_SelectedCategory = value;
-                s_activeTerrainInspector = GetInstanceID();
+                s_activeTerrainInspector = GetEntityId();
                 ActivateTerrainRenderFlags();
             }
         }
@@ -1662,7 +1694,7 @@ namespace UnityEditor
         internal static event Action BrushStrengthChanged;
         public void ShowBrushes(int spacing, bool showBrushes, bool showBrushEditor, bool showBrushSize, bool showBrushStrength, int textureResolutionPerTile)
         {
-            EditorGUI.BeginDisabledGroup(s_activeTerrainInspector != GetInstanceID() || s_activeTerrainInspectorInstance != this);
+            EditorGUI.BeginDisabledGroup(s_activeTerrainInspector != GetEntityId() || s_activeTerrainInspectorInstance != this);
 
             GUILayout.Space(spacing);
             bool repaint = false;
@@ -2157,7 +2189,7 @@ namespace UnityEditor
                 GUILayout.EndVertical();
             }
 
-            EditorGUI.BeginDisabledGroup(s_activeTerrainInspector != GetInstanceID() || s_activeTerrainInspectorInstance != this);
+            EditorGUI.BeginDisabledGroup(s_activeTerrainInspector != GetEntityId() || s_activeTerrainInspectorInstance != this);
 
             int tool = (int)selectedCategory;
             // Show the master tool selector
@@ -2182,6 +2214,8 @@ namespace UnityEditor
 
             EditorGUI.EndDisabledGroup();
 
+            // Display a warning if scale is not 1, and if rotation is not 0.
+            TerrainInspectorUtility.TerrainTransformValidationGUI(m_Terrain.transform);
 
             switch ((TerrainTool)tool)
             {
@@ -2493,7 +2527,7 @@ namespace UnityEditor
             RaycastHit raycastHit = new RaycastHit();
 
             // If this is not the active terrain inspector, we shouldn't be affecting the SceneGUI
-            if (s_activeTerrainInspector != GetInstanceID() || s_activeTerrainInspectorInstance != this)
+            if (s_activeTerrainInspector != GetEntityId() || s_activeTerrainInspectorInstance != this)
                 return;
 
             if (selectedCategory == TerrainTool.Paint       ||

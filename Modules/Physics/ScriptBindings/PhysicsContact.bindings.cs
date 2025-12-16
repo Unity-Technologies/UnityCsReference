@@ -181,8 +181,8 @@ namespace UnityEngine
         public EntityId colliderEntityId => m_ColliderID;
         public EntityId otherColliderEntityId => m_OtherColliderID;
 
-        public Collider collider => m_ColliderID == 0 ? null : Physics.GetColliderByInstanceID(m_ColliderID) as Collider;
-        public Collider otherCollider => m_OtherColliderID == 0 ? null : Physics.GetColliderByInstanceID(m_OtherColliderID) as Collider;
+        public Collider collider => m_ColliderID == EntityId.None ? null : Physics.GetColliderByInstanceID(m_ColliderID) as Collider;
+        public Collider otherCollider => m_OtherColliderID == EntityId.None ? null : Physics.GetColliderByInstanceID(m_OtherColliderID) as Collider;
 
         public int contactCount => (int)m_NbPoints;
 

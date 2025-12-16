@@ -26,6 +26,8 @@ namespace Unity.GraphToolkit.Editor
         [SerializeField, HideInInspector]
         protected string m_Tooltip;
 
+        protected Color m_DefaultColor;
+
         SpawnFlags m_SpawnFlags = SpawnFlags.Default;
 
         [SerializeReference, HideInInspector]
@@ -47,6 +49,11 @@ namespace Unity.GraphToolkit.Editor
         /// </summary>
         public abstract string IconTypeString { get; set; }
 
+        /// <summary>
+        /// The path to the node icon, if any.
+        /// </summary>
+        public virtual string IconPath => GetType().GetAttribute<LibraryItemAttribute>()?.IconPath;
+
         /// <inheritdoc />
         public abstract ElementColor ElementColor { get; }
 
@@ -54,7 +61,17 @@ namespace Unity.GraphToolkit.Editor
         public abstract void SetColor(Color color);
 
         /// <inheritdoc />
-        public abstract Color DefaultColor { get; }
+        public virtual Color DefaultColor
+        {
+            get => m_DefaultColor;
+            set
+            {
+                if (m_DefaultColor == value)
+                    return;
+                m_DefaultColor = value;
+                GraphModel?.CurrentGraphChangeDescription.AddChangedModel(this, ChangeHint.Style);
+            }
+        }
 
         /// <inheritdoc />
         public abstract bool UseColorAlpha { get; }

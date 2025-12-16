@@ -32,7 +32,7 @@ namespace UnityEngine.UIElements
                 case StylePropertyId.BackgroundColor:
                     return computedStyle.backgroundColor;
                 case StylePropertyId.BackgroundImage:
-                    return computedStyle.backgroundImage;
+                    return Background.From(computedStyle.backgroundImage);
                 case StylePropertyId.BackgroundPositionX:
                     return computedStyle.backgroundPositionX;
                 case StylePropertyId.BackgroundPositionY:
@@ -1832,6 +1832,75 @@ namespace UnityEngine.UIElements
                 {
                     Debug.LogAssertion($"Cannot get longhand property names for property id {id}");
                     return null;
+                }
+            }
+        }
+
+        public static void PopulateLonghandPropertyIds(StylePropertyId shorthandId, List<StylePropertyId> longhandIds)
+        {
+            switch (shorthandId)
+            {
+                case StylePropertyId.All:
+                    return;
+                case StylePropertyId.BackgroundPosition:
+                    longhandIds.Add(StylePropertyId.BackgroundPositionX);
+                    longhandIds.Add(StylePropertyId.BackgroundPositionY);
+                    return;
+                case StylePropertyId.BorderColor:
+                    longhandIds.Add(StylePropertyId.BorderTopColor);
+                    longhandIds.Add(StylePropertyId.BorderRightColor);
+                    longhandIds.Add(StylePropertyId.BorderBottomColor);
+                    longhandIds.Add(StylePropertyId.BorderLeftColor);
+                    return;
+                case StylePropertyId.BorderRadius:
+                    longhandIds.Add(StylePropertyId.BorderTopLeftRadius);
+                    longhandIds.Add(StylePropertyId.BorderTopRightRadius);
+                    longhandIds.Add(StylePropertyId.BorderBottomRightRadius);
+                    longhandIds.Add(StylePropertyId.BorderBottomLeftRadius);
+                    return;
+                case StylePropertyId.BorderWidth:
+                    longhandIds.Add(StylePropertyId.BorderTopWidth);
+                    longhandIds.Add(StylePropertyId.BorderRightWidth);
+                    longhandIds.Add(StylePropertyId.BorderBottomWidth);
+                    longhandIds.Add(StylePropertyId.BorderLeftWidth);
+                    return;
+                case StylePropertyId.Flex:
+                    longhandIds.Add(StylePropertyId.FlexGrow);
+                    longhandIds.Add(StylePropertyId.FlexShrink);
+                    longhandIds.Add(StylePropertyId.FlexBasis);
+                    return;
+                case StylePropertyId.Margin:
+                    longhandIds.Add(StylePropertyId.MarginTop);
+                    longhandIds.Add(StylePropertyId.MarginRight);
+                    longhandIds.Add(StylePropertyId.MarginBottom);
+                    longhandIds.Add(StylePropertyId.MarginLeft);
+                    return;
+                case StylePropertyId.Padding:
+                    longhandIds.Add(StylePropertyId.PaddingTop);
+                    longhandIds.Add(StylePropertyId.PaddingRight);
+                    longhandIds.Add(StylePropertyId.PaddingBottom);
+                    longhandIds.Add(StylePropertyId.PaddingLeft);
+                    return;
+                case StylePropertyId.Transition:
+                    longhandIds.Add(StylePropertyId.TransitionDelay);
+                    longhandIds.Add(StylePropertyId.TransitionDuration);
+                    longhandIds.Add(StylePropertyId.TransitionProperty);
+                    longhandIds.Add(StylePropertyId.TransitionTimingFunction);
+                    return;
+                case StylePropertyId.UnityBackgroundScaleMode:
+                    longhandIds.Add(StylePropertyId.BackgroundPositionX);
+                    longhandIds.Add(StylePropertyId.BackgroundPositionY);
+                    longhandIds.Add(StylePropertyId.BackgroundRepeat);
+                    longhandIds.Add(StylePropertyId.BackgroundSize);
+                    return;
+                case StylePropertyId.UnityTextOutline:
+                    longhandIds.Add(StylePropertyId.UnityTextOutlineColor);
+                    longhandIds.Add(StylePropertyId.UnityTextOutlineWidth);
+                    return;
+                default:
+                {
+                    Debug.LogAssertion($"Cannot get longhand property ids for property id {shorthandId}");
+                    return;
                 }
             }
         }

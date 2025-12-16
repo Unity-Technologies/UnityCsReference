@@ -61,13 +61,13 @@ namespace Unity.Profiling.Editor.UI
                     || sessionId != other.SortedSessionIds[i]
                     || SessionNames[sessionId] != other.SessionNames[sessionId])
                     return false;
-                var CapturesInThisSession = SessionsMap[sessionId].GetEnumerator();
+                var capturesInThisSession = SessionsMap[sessionId].GetEnumerator();
                 var othersCapturesInThisSession = other.SessionsMap[sessionId].GetEnumerator();
-                while (CapturesInThisSession.MoveNext())
+                while (capturesInThisSession.MoveNext())
                 {
                     // Make sure the other session has the same Capture
                     if (!othersCapturesInThisSession.MoveNext()) return false;
-                    if (!CapturesInThisSession.Current.Equals(othersCapturesInThisSession.Current)) return false;
+                    if (!capturesInThisSession.Current.Equals(othersCapturesInThisSession.Current)) return false;
                 }
                 // Make sure the other session doesn't have more Captures
                 if (othersCapturesInThisSession.MoveNext()) return false;

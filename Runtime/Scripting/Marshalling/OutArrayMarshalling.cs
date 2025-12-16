@@ -163,7 +163,7 @@ namespace UnityEngine.Bindings
         public static unsafe void CreateAndCallbackPinned3(IntPtr arrayPointer, IntPtr createArrayCb, int size1, int size2, int size3, delegate* unmanaged[Cdecl]<byte*, IntPtr, void> callback, IntPtr arg)
         {
             ref Array arrayRef = ref UnsafeUtility.ClassAsRef<Array>((void*)arrayPointer);
-            arrayRef = ((delegate*<int, int, int, Array>)createArrayCb)(size1, size2, size2);
+            arrayRef = ((delegate*<int, int, int, Array>)createArrayCb)(size1, size2, size3);
 
             fixed (byte* arrayData = UnsafeUtility.As<byte[,,]>(arrayRef))
             {

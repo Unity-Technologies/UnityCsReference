@@ -51,18 +51,23 @@ internal static class ImmutablePureManagedObjectSerializer
     {
         foreach (var objectGroup in objects.objectGroups)
         {
-            var accessor = new ConstAccessor {
-                Schema = objectGroup.rtti.Schema,
-                Data = default,
-            };
-
-            for (int i = 0; i < objectGroup.objectPtrs.Length; i++)
+            unsafe
             {
-                accessor.Data = objectGroup.objectPtrs[i];
-                objectGroup.instances[i] = InstantiateFromModel(objectGroup.rtti, accessor, context);
+                var accessor = new ConstAccessor
+                {
+                    Schema = objectGroup.rtti.Schema,
+                    Data = default,
+                    References = (IntPtr)context.DocumentModel.GetReferences()
+                };
 
-                var reference = new Reference(objectGroup.objectIds[i]);
-                context.SetInstance(reference, objectGroup.instances[i]);
+                for (int i = 0; i < objectGroup.objectPtrs.Length; i++)
+                {
+                    accessor.Data = objectGroup.objectPtrs[i];
+                    objectGroup.instances[i] = InstantiateFromModel(objectGroup.rtti, accessor, context);
+
+                    var reference = new Reference(objectGroup.objectIds[i]);
+                    context.SetInstance(reference, objectGroup.instances[i]);
+                }
             }
         }
     }

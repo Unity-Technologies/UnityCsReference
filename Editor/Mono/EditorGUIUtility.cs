@@ -4,23 +4,24 @@
 
 using System;
 using System.Collections;
-using UnityEngine;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using UnityEditorInternal;
-using UnityEngine.Events;
-using UnityEngine.Internal;
-using UnityEngine.Scripting;
-using UnityEngineInternal;
-using UnityEditor.StyleSheets;
 using UnityEditor.Experimental;
 using UnityEditor.SceneManagement;
+using UnityEditor.StyleSheets;
+using UnityEditorInternal;
+using UnityEngine;
 using UnityEngine.Bindings;
+using UnityEngine.Events;
+using UnityEngine.Internal;
 using UnityEngine.Pool;
+using UnityEngine.Scripting;
 using UnityEngine.UIElements;
+using UnityEngineInternal;
 using UnityObject = UnityEngine.Object;
 
 namespace UnityEditor
@@ -222,7 +223,13 @@ namespace UnityEditor
 
         public static Rect PixelsToPoints(Rect rect)
         {
-            var cachedInvPixelsPerPoint = 1f / pixelsPerPoint;
+            return PixelsToPoints(rect, pixelsPerPoint);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static Rect PixelsToPoints(Rect rect, float pixelScale)
+        {
+            var cachedInvPixelsPerPoint = 1f / pixelScale; // 4 multiplication and a division is faster than 4 division.
             rect.x *= cachedInvPixelsPerPoint;
             rect.y *= cachedInvPixelsPerPoint;
             rect.width *= cachedInvPixelsPerPoint;
@@ -241,7 +248,12 @@ namespace UnityEditor
 
         public static Vector2 PixelsToPoints(Vector2 position)
         {
-            var cachedInvPixelsPerPoint = 1f / pixelsPerPoint;
+            return PixelsToPoints(position, pixelsPerPoint);
+        }
+
+        public static Vector2 PixelsToPoints(Vector2 position, float scaling)
+        {
+            var cachedInvPixelsPerPoint = 1f / scaling;
             position.x *= cachedInvPixelsPerPoint;
             position.y *= cachedInvPixelsPerPoint;
             return position;
@@ -966,12 +978,12 @@ namespace UnityEditor
         // Return a GUIContent object with the name and icon of an Object.
         public static GUIContent ObjectContent(UnityObject obj, Type type)
         {
-            return ObjectContent(obj, type, ReferenceEquals(obj, null) ? 0 : obj.GetInstanceID());
+            return ObjectContent(obj, type, ReferenceEquals(obj, null) ? EntityId.None : obj.GetEntityId());
         }
 
         internal static GUIContent ObjectContent(UnityObject obj, Type type, bool showNullIcon)
         {
-            return ObjectContent(obj, type, ReferenceEquals(obj, null) ? 0 : obj.GetInstanceID(), showNullIcon);
+            return ObjectContent(obj, type, ReferenceEquals(obj, null) ? EntityId.None : obj.GetEntityId(), showNullIcon);
         }
 
         internal static GUIContent ObjectContent(UnityObject obj, Type type, EntityId instanceID, bool showNullIcon = true)

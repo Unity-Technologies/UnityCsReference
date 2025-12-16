@@ -6,6 +6,7 @@ using System;
 using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
 using UnityEngine.Bindings;
+using UnityEngine.Loading;
 using RequiredByNativeCodeAttribute = UnityEngine.Scripting.RequiredByNativeCodeAttribute;
 
 namespace UnityEngine.SceneManagement
@@ -128,6 +129,41 @@ namespace UnityEngine.SceneManagement
 
             return SceneManagerAPI.ActiveAPI.UnloadSceneAsyncByNameOrIndex(sceneName, sceneBuildIndex, immediately, options, out outSuccess);
         }
+
+        /// <summary>
+        /// Asynchronously loads a Scene from built content using a LoadableScene reference.
+        /// </summary>
+        /// <remarks>
+        /// This overload of LoadSceneAsync enables loading scenes that have been built as part of a Content Directory. The scene
+        /// must be available through a registered content directory (via
+        /// <see cref="Loading.ContentLoadManager.RegisterContentDirectory"/>), or it must have been built into the player.
+        ///
+        /// This method works in both the Editor (when content directories are registered) and at runtime.
+        /// </remarks>
+        /// <param name="loadableScene">
+        /// The LoadableScene reference identifying which scene to load.
+        /// </param>
+        /// <param name="parameters">
+        /// Various parameters used during the loading operation, such as load mode.
+        /// </param>
+        /// <returns>
+        /// A ContentLoadSceneOperation that can be used to track the progress of the scene loading operation. Returns null if
+        /// scene loading is not allowed in the current context.
+        /// </returns>
+        /// <seealso cref="LoadableScene"/>
+        /// <seealso cref="Loading.ContentLoadManager"/>
+        /// <seealso cref="Loading.ContentLoadSceneOperation"/>
+        /*UCBP-PUBLIC*/ internal static ContentLoadSceneOperation LoadSceneAsync(LoadableScene loadableScene, LoadSceneParameters parameters = new LoadSceneParameters())
+        {
+            if (!s_AllowLoadScene)
+                return null;
+
+            return LoadSceneByLoadableAsync(loadableScene, parameters, false);
+        }
+
+        [StaticAccessor("SceneManagerBindings", StaticAccessorType.DoubleColon)]
+        [NativeThrows]
+        private static extern ContentLoadSceneOperation LoadSceneByLoadableAsync(LoadableScene loadableScene, LoadSceneParameters parameters, bool mustCompleteNextFrame);
 
         [StaticAccessor("SceneManagerBindings", StaticAccessorType.DoubleColon)]
         [NativeThrows]

@@ -48,17 +48,22 @@ internal static class UnityObjectSerializer
 
             if (rtti is UnityHybridObjectRtti hybridRtti)
             {
-                var constAccessor = new ConstAccessor() {
-                    Schema = rtti.Schema,
-                    Data = default,
-                };
-
-                for (int j = 0; j < schemaObjectCount.ObjectCount; j++)
+                unsafe
                 {
-                    constAccessor.Data = objects.allObjectPtrs[allObjectsIndex];
-                    UdmManagedSerialization.ReadFromAccessor(hybridRtti.TransferData, constAccessor, objects.allInstances[allObjectsIndex], context);
+                    var constAccessor = new ConstAccessor()
+                    {
+                        Schema = rtti.Schema,
+                        Data = default,
+                        References = (IntPtr)context.DocumentModel.GetReferences()
+                    };
 
-                    allObjectsIndex++;
+                    for (int j = 0; j < schemaObjectCount.ObjectCount; j++)
+                    {
+                        constAccessor.Data = objects.allObjectPtrs[allObjectsIndex];
+                        UdmManagedSerialization.ReadFromAccessor(hybridRtti.TransferData, constAccessor, objects.allInstances[allObjectsIndex], context);
+
+                        allObjectsIndex++;
+                    }
                 }
             }
             else

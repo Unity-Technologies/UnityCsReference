@@ -233,13 +233,13 @@ namespace UnityEngine
         [FreeFunction("Resources_Bindings::IsInstanceLoaded")]
         internal extern static bool IsObjectLoaded(EntityId entityId);
 
-        internal static bool IsInstanceLoaded(int instanceID)
+        internal static bool IsInstanceLoaded(EntityId entityId)
         {
-            return IsObjectLoaded(instanceID);
+            return IsObjectLoaded(entityId);
         }
 
         [FreeFunction("Resources_Bindings::InstanceIDToObjectList", IsThreadSafe = true)]
-        extern private static void EntityIdsToObjectList(IntPtr entityIds, int instanceCount, List<Object> objects);
+        extern private static void EntityIdsToObjectList(IntPtr entityIds, int instanceCount, [Out] List<Object> objects);
 
         public static unsafe void EntityIdsToObjectList(NativeArray<EntityId> entityIds, List<Object> objects)
         {

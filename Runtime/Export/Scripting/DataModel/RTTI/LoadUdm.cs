@@ -32,10 +32,6 @@ namespace Unity.DataModel
 
         internal static ConstructedObjectSets CreateAndMergeLiveObjectsFromDocumentInternal(DocumentModel documentModel, EntityManager entityManager, SerializeInstructionFlags serializeOptions, LoadMode loadMode, ReadOnlySpan<UdmReadData> objectsToMerge, bool preserveMissingInternalReferences, bool registerObjects)
         {
-            // Load external documents
-            List<UdmGuid> externalRefs = new List<UdmGuid>();
-            documentModel.GetExternalDocumentIDs(externalRefs);
-            var span = NoAllocHelpers.CreateSpan(externalRefs);
 
             var objectsBySchema = DocumentInstanceFactory.GetObjectsBySchema(documentModel);
 
@@ -52,11 +48,39 @@ namespace Unity.DataModel
                 if (!objectsToMerge.IsEmpty)
                 {
                     hasExistingObjects = true;
+                    var length = nativeObjectIds.Length - objectsToMerge.Length;
+                    EntityId[] nativeObjectInstanceIds = new EntityId[length];
+                    
+                    for(int i = 0; i < length; ++i)
+                        nativeObjectInstanceIds[i] = EntityId.AllocateNextLowestEntityId();
+
+                    foreach (var readData in objectsToMerge)
+                    {
+                        instanceIdDictionary[readData.objectId] = readData.instanceId;
+                        existingObjects.Add(readData.objectId);
+                    }
+
+                    int instanceIdIndex = 0;
+                    foreach (var objectId in nativeObjectIds)
+                    {
+                        if (!existingObjects.Contains(objectId))
+                        {
+                            instanceIdDictionary[objectId] = nativeObjectInstanceIds[instanceIdIndex];
+                            instanceIdIndex++;
+                        }
+                    }                    
                 }
             }
 
             if (!hasExistingObjects)
             {
+                EntityId[] nativeObjectInstanceIds = new EntityId[nativeObjectIds.Length];
+                    
+                for(int i = 0; i < nativeObjectIds.Length; ++i)
+                {
+                    nativeObjectInstanceIds[i] = EntityId.AllocateNextLowestEntityId();
+                    instanceIdDictionary[nativeObjectIds[i]] = nativeObjectInstanceIds[i];
+                }
             }
 
             // We are only allowed to register objects on the main thread

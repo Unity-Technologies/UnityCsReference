@@ -52,7 +52,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         string category { get; }
 
-        IEnumerable<UIError> errors { get; }
+        IReadOnlyCollection<UIError> errors { get; }
 
         bool hasEntitlements { get; }
 
@@ -72,7 +72,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         DependencyInfo[] resolvedDependencies { get; }
 
-        IEnumerable<Asset> importedAssets { get; }
+        IReadOnlyCollection<Asset> importedAssets { get; }
 
         bool HasTag(PackageTag tag);
 

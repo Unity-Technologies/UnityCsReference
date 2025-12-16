@@ -54,7 +54,7 @@ namespace UnityEngine
     // Access system information.
     [NativeHeader("Runtime/Misc/SystemInfo.h")]
     [NativeHeader("Runtime/Misc/SystemInfoAudio.h")]
-    [NativeHeader("Runtime/Misc/SystemInfoMemory.h")]
+    [NativeHeader("NativeKernel/Misc/SystemInfoMemory.h")]
     [NativeHeader("Runtime/Misc/SystemInfoRendering.h")]
     [NativeHeader("Runtime/Shaders/GraphicsCapsScriptBindings.h")]
     [NativeHeader("Runtime/Graphics/GraphicsFormatUtility.bindings.h")]
@@ -441,6 +441,16 @@ namespace UnityEngine
         public static bool supportsVariableRateShading
         {
             get { return SupportsVariableRateShading(); }
+        }
+
+        public static int maxTiledPixelStorageSize
+        {
+            get { return MaxTiledPixelStorageSize(); }
+        }
+
+        public static bool supportsDynamicResolution
+        {
+            get { return SupportsDynamicResolution(); }
         }
 
         // The enums are only marked as obsolete in the editor.
@@ -1093,6 +1103,9 @@ namespace UnityEngine
         [FreeFunction("ScriptingGraphicsCaps::GetRenderTextureSupportedMSAASampleCount")]
         extern public static int GetRenderTextureSupportedMSAASampleCount(RenderTextureDescriptor desc);
 
+        [FreeFunction("ScriptingGraphicsCaps::GetTiledRenderTargetStorageSize")]
+        extern public static int GetTiledRenderTargetStorageSize(GraphicsFormat format, int sampleCount);
+
         [FreeFunction("ScriptingGraphicsCaps::UsesLoadStoreActions")]
         static extern bool UsesLoadStoreActions();
 
@@ -1122,5 +1135,11 @@ namespace UnityEngine
 
         [FreeFunction("ScriptingGraphicsCaps::SupportsVariableRateShading")]
         static extern bool SupportsVariableRateShading();
+
+        [FreeFunction("ScriptingGraphicsCaps::MaxTiledPixelStorageSize")]
+        static extern int MaxTiledPixelStorageSize();
+
+        [FreeFunction("ScriptingGraphicsCaps::SupportsDynamicResolution")]
+        static extern bool SupportsDynamicResolution();
     }
 }

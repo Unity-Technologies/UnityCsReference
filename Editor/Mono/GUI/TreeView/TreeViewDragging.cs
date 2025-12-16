@@ -405,24 +405,24 @@ namespace UnityEditor.IMGUI.Controls
             DragCleanup(revertExpanded);
             DragAndDrop.AcceptDrag();
 
-            if (m_TreeView is TreeViewController<int> instanceIDTreeView) // todo: change to EntityId
+            if (m_TreeView is TreeViewController<EntityId> entityIdTreeView) // todo: change to EntityId
             {
                 List<UnityEngine.Object> objs = new List<UnityEngine.Object>(DragAndDrop.objectReferences); // TODO, what about when dragging non objects...
 
                 bool draggedItemsFromOwnTreeView = true;
-                if (objs.Count > 0 && objs[0] != null && TreeViewUtility<int>.FindItemInList(objs[0].GetInstanceID(), instanceIDTreeView.data.GetRows()) == null)
+                if (objs.Count > 0 && objs[0] != null && TreeViewUtility<EntityId>.FindItemInList(objs[0].GetEntityId(), entityIdTreeView.data.GetRows()) == null)
                     draggedItemsFromOwnTreeView = false;
 
-                int[] newSelection = new int[objs.Count];
+                EntityId[] newSelection = new EntityId[objs.Count];
                 for (int i = 0; i < objs.Count; ++i)
                 {
                     if (objs[i] == null)
                         continue;
 
-                    newSelection[i] = (objs[i].GetInstanceID());
+                    newSelection[i] = (objs[i].GetEntityId());
                 }
 
-                instanceIDTreeView.NotifyListenersThatDragEnded(newSelection, draggedItemsFromOwnTreeView);
+                entityIdTreeView.NotifyListenersThatDragEnded(newSelection, draggedItemsFromOwnTreeView);
                 if (objs.Count == 1)
                     undoActionName = "Drag and Drop " + objs[0].name;
             }

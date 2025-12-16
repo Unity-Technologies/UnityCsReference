@@ -28,6 +28,7 @@ namespace Unity.GraphToolkit.Editor
                 PortDirection m_Direction;
 
                 string m_DisplayName;
+                string m_Tooltip;
                 PortOrientation m_Orientation;
                 PortConnectorUI m_ConnectorUI;
                 List<Attribute> m_Attributes = new();
@@ -43,6 +44,7 @@ namespace Unity.GraphToolkit.Editor
                     m_Direction = PortDirection.None;
 
                     m_DisplayName = null;
+                    m_Tooltip = null;
                     m_PortType = null;
                     m_DefaultValue = null;
                     m_Orientation = PortOrientation.Horizontal;
@@ -72,6 +74,11 @@ namespace Unity.GraphToolkit.Editor
                 IInputPortBuilder IPortBuilder<IInputPortBuilder>.WithDisplayName(string displayName) => WithDisplayName(displayName);
                 ITypedInputPortBuilder IPortBuilder<ITypedInputPortBuilder>.WithDisplayName(string displayName) => WithDisplayName(displayName);
 
+                IOutputPortBuilder IPortBuilder<IOutputPortBuilder>.WithTooltip(string tooltip) => WithTooltip(tooltip);
+                ITypedOutputPortBuilder IPortBuilder<ITypedOutputPortBuilder>.WithTooltip(string tooltip) => WithTooltip(tooltip);
+                IInputPortBuilder IPortBuilder<IInputPortBuilder>.WithTooltip(string tooltip) => WithTooltip(tooltip);
+                ITypedInputPortBuilder IPortBuilder<ITypedInputPortBuilder>.WithTooltip(string tooltip) => WithTooltip(tooltip);
+
                 IOutputPortBuilder IPortBuilder<IOutputPortBuilder>.WithConnectorUI(PortConnectorUI connectorUI) => WithConnectorUI(connectorUI);
                 ITypedOutputPortBuilder IPortBuilder<ITypedOutputPortBuilder>.WithConnectorUI(PortConnectorUI connectorUI) => WithConnectorUI(connectorUI);
                 IInputPortBuilder IPortBuilder<IInputPortBuilder>.WithConnectorUI(PortConnectorUI connectorUI) => WithConnectorUI(connectorUI);
@@ -89,9 +96,20 @@ namespace Unity.GraphToolkit.Editor
 
                 ITypedInputPortBuilder ITypedInputPortBuilder.WithDefaultValue(object defaultValue) => WithDefaultValue(defaultValue);
 
+                IOutputPortBuilder IPortBuilder<IOutputPortBuilder>.AsVertical() => AsVertical();
+                ITypedOutputPortBuilder IPortBuilder<ITypedOutputPortBuilder>.AsVertical() => AsVertical();
+                IInputPortBuilder IPortBuilder<IInputPortBuilder>.AsVertical() => AsVertical();
+                ITypedInputPortBuilder IPortBuilder<ITypedInputPortBuilder>.AsVertical() => AsVertical();
+
                 public PortBuilder WithDisplayName(string displayName)
                 {
                     this.m_DisplayName = displayName;
+                    return this;
+                }
+
+                public PortBuilder WithTooltip(string tooltip)
+                {
+                    this.m_Tooltip = tooltip;
                     return this;
                 }
 
@@ -118,9 +136,9 @@ namespace Unity.GraphToolkit.Editor
                     return this;
                 }
 
-                public PortBuilder WithOrientation(PortOrientation orientation)
+                public PortBuilder AsVertical()
                 {
-                    m_Orientation = orientation;
+                    m_Orientation = PortOrientation.Vertical;
                     return this;
                 }
 
@@ -132,7 +150,7 @@ namespace Unity.GraphToolkit.Editor
 
                 public PortBuilder Delayed()
                 {
-                    if (!m_Attributes.Any(t => t is DelayedAttribute))
+                    if (!m_Attributes.HasAny(t => t is DelayedAttribute))
                         m_Attributes.Add(new DelayedAttribute());
                     return this;
                 }
@@ -149,6 +167,9 @@ namespace Unity.GraphToolkit.Editor
 
                     if (result is PortModelImp portModel)
                     {
+                        if (m_Tooltip != null)
+                            portModel.ToolTip = m_Tooltip;
+
                         portModel.ConnectorUI = m_ConnectorUI;
                     }
                     m_PortsDefinitionContext.ReleaseBuilder(this);
@@ -164,6 +185,9 @@ namespace Unity.GraphToolkit.Editor
                 IOutputPortBuilder<TData> IPortBuilder<IOutputPortBuilder<TData>>.WithDisplayName(string displayName) => WithDisplayName(displayName);
                 IInputPortBuilder<TData> IPortBuilder<IInputPortBuilder<TData>>.WithDisplayName(string displayName) => WithDisplayName(displayName);
 
+                IOutputPortBuilder<TData> IPortBuilder<IOutputPortBuilder<TData>>.WithTooltip(string tooltip) => WithTooltip(tooltip);
+                IInputPortBuilder<TData> IPortBuilder<IInputPortBuilder<TData>>.WithTooltip(string tooltip) => WithTooltip(tooltip);
+
                 IOutputPortBuilder<TData> IPortBuilder<IOutputPortBuilder<TData>>.WithConnectorUI(PortConnectorUI connectorUI) => WithConnectorUI(connectorUI);
                 IInputPortBuilder<TData> IPortBuilder<IInputPortBuilder<TData>>.WithConnectorUI(PortConnectorUI connectorUI) => WithConnectorUI(connectorUI);
 
@@ -171,15 +195,24 @@ namespace Unity.GraphToolkit.Editor
 
                 IInputPortBuilder<TData> IInputPortBuilder<TData>.WithDefaultValue(TData defaultValue) => WithDefaultValue(defaultValue);
 
+                IOutputPortBuilder<TData> IPortBuilder<IOutputPortBuilder<TData>>.AsVertical() => AsVertical();
+                IInputPortBuilder<TData> IPortBuilder<IInputPortBuilder<TData>>.AsVertical() => AsVertical();
+
                 PortBuilder<TData> WithDisplayName(string displayName)
                 {
                     parent.WithDisplayName(displayName);
                     return this;
                 }
 
-                PortBuilder<TData> WithOrientation(PortOrientation orientation)
+                PortBuilder<TData> WithTooltip(string tooltip)
                 {
-                    parent.WithOrientation(orientation);
+                    parent.WithTooltip(tooltip);
+                    return this;
+                }
+
+                PortBuilder<TData> AsVertical()
+                {
+                    parent.AsVertical();
                     return this;
                 }
 
@@ -352,7 +385,7 @@ namespace Unity.GraphToolkit.Editor
 
                 public IOptionBuilder Delayed()
                 {
-                    if (!m_Attributes.Any(t => t is DelayedAttribute))
+                    if (!m_Attributes.HasAny(t => t is DelayedAttribute))
                         m_Attributes.Add(new DelayedAttribute());
                     return this;
                 }

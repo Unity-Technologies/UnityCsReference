@@ -17,104 +17,7 @@ namespace UnityEditor.Build.Reporting
     ///
     ///For AssetBundle builds the BuildReport is available by calling <see cref="GetLatestReport" /> immediately after calling <see cref="BuildPipeline.BuildAssetBundles" />.</remarks>
     ///<example>
-    ///  <code><![CDATA[
-    ///using System.IO;
-    ///using System.Linq;
-    ///using System.Text;
-    ///using UnityEditor;
-    ///using UnityEditor.Build;
-    ///using UnityEditor.Build.Reporting;
-    ///using UnityEngine;
-    ///
-    ///public class BuildReportExample
-    ///{
-    ///    [MenuItem("Example/Build AssetBundle")]
-    ///    static public void BuildBundles()
-    ///    {
-    ///        string buildOutputDirectory = "BuildOutput";
-    ///        if (!Directory.Exists(buildOutputDirectory))
-    ///            Directory.CreateDirectory(buildOutputDirectory);
-    ///
-    ///        var bundleDefinitions = new AssetBundleBuild[]
-    ///        {
-    ///            new AssetBundleBuild()
-    ///            {
-    ///                assetBundleName = "MyBundle",
-    ///                assetNames = new string[] { "Assets/Scenes/SampleScene.unity" }
-    ///            }
-    ///        };
-    ///
-    ///        BuildPipeline.BuildAssetBundles(
-    ///            buildOutputDirectory,
-    ///            bundleDefinitions,
-    ///            BuildAssetBundleOptions.ForceRebuildAssetBundle,
-    ///            EditorUserBuildSettings.activeBuildTarget);
-    ///
-    ///        BuildReport report = BuildReport.GetLatestReport();
-    ///        if (report != null)
-    ///        {
-    ///            var sb = new StringBuilder();
-    ///            sb.AppendLine("Build result   : " + report.summary.result);
-    ///            sb.AppendLine("Build size     : " + report.summary.totalSize + " bytes");
-    ///            sb.AppendLine("Build time     : " + report.summary.totalTime);
-    ///            sb.AppendLine("Error summary  : " + report.SummarizeErrors());
-    ///            sb.Append(LogBuildReportSteps(report));
-    ///            sb.AppendLine(LogBuildMessages(report));
-    ///            Debug.Log(sb.ToString());
-    ///        }
-    ///        else
-    ///        {
-    ///            // Certain errors like invalid input can fail the build immediately, with no BuildReport written
-    ///            Debug.Log("AssetBundle build failed");
-    ///        }
-    ///    }
-    ///
-    ///    public static string LogBuildReportSteps(BuildReport buildReport)
-    ///    {
-    ///        var sb = new StringBuilder();
-    ///
-    ///        sb.AppendLine($"Build steps: {buildReport.steps.Length}");
-    ///        int maxWidth = buildReport.steps.Max(s => s.name.Length + s.depth) + 3;
-    ///        foreach (var step in buildReport.steps)
-    ///        {
-    ///            string rawStepOutput = new string('-', step.depth + 1) + ' ' + step.name;
-    ///            sb.AppendLine($"{rawStepOutput.PadRight(maxWidth)}: {step.duration:g}");
-    ///        }
-    ///        return sb.ToString();
-    ///    }
-    ///
-    ///    public static string LogBuildMessages(BuildReport buildReport)
-    ///    {
-    ///        var sb = new StringBuilder();
-    ///        foreach (var step in buildReport.steps)
-    ///        {
-    ///            foreach (var message in step.messages)
-    ///                // If desired, this logic could ignore any Info or Warning messages to focus on more serious messages
-    ///                sb.AppendLine($"[{message.type}] {message.content}");
-    ///        }
-    ///
-    ///        string messages = sb.ToString();
-    ///        if (messages.Length > 0)
-    ///            return "Messages logged during Build:\n" + messages;
-    ///        else
-    ///            return "";
-    ///    }
-    ///}
-    ///
-    /// // For the purpose of demonstration, this callback logs different types of errors and forces a build failure
-    ///[BuildCallbackVersion(1)]
-    ///class MyTroublesomeBuildCallback : IProcessSceneWithReport
-    ///{
-    ///    public int callbackOrder { get { return 0; } }
-    ///    public void OnProcessScene(UnityEngine.SceneManagement.Scene scene, BuildReport report)
-    ///    {
-    ///        Debug.Log("MyTroublesomeBuildCallback called for " + scene.name);
-    ///        Debug.LogError("Logging an error");
-    ///
-    ///        throw new BuildFailedException("Forcing the build to stop");
-    ///    }
-    ///}
-    ///]]></code>
+    ///<code source="../Tests/BuildReporting/Assets/Editor/ReferenceExamples/BuildReport.cs"/>
     ///</example>
     [NativeHeader("Runtime/Utilities/DateTime.h")]
     [NativeType(Header = "Modules/BuildReportingEditor/Public/BuildReport.h")]
@@ -132,6 +35,14 @@ namespace UnityEditor.Build.Reporting
         ///<remarks>The returned array is a copy and this method execution length scales linearly with number of files.</remarks>
         ///<returns>An array of all the files output by the build process.</returns>
         public extern BuildFile[] GetFiles();
+
+        /// <summary>
+        /// Retrieve the array of paths of root assets that were built in a ContentDirectory build.
+        /// </summary>
+        /// <remarks>For Player and AssetBundle builds this returns an empty array.
+        /// <see cref="BuildContentDirectoryParameters.rootAssetPaths" />
+        /// </remarks>
+        /*UCBP-PUBLIC*/ internal extern string[] GetRootAssetPaths();
 
         ///<summary>An array of all the <see cref="BuildStep" />s that took place during the build process.</summary>
         [NativeName("BuildSteps")]
@@ -173,7 +84,7 @@ namespace UnityEditor.Build.Reporting
         internal extern void RecordFilesMoved(string originalPathPrefix, string newPathPrefix);
 
         [NativeMethod("AddFile")]
-        internal extern void RecordFileAdded(string path, string role);
+        internal extern void RecordFileAdded(string path, string role, bool fileIsFromCache = false);
 
         [NativeMethod("AddFilesRecursive")]
         internal extern void RecordFilesAddedRecursive(string rootDir, string role);
@@ -250,7 +161,7 @@ namespace UnityEditor.Build.Reporting
             {
                 if (fileNameToExistingBuildFile.TryGetValue(path.FileName, out BuildFile buildFile))
                 {
-                    RecordFileAdded(path.ToString(), buildFile.role);
+                    RecordFileAdded(path.ToString(), buildFile.role, buildFile.isFromCache);
                 }
                 else
                 {

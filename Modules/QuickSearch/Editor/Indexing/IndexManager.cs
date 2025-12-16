@@ -19,7 +19,7 @@ namespace UnityEditor.Search
 
         public static void OpenWindow()
         {
-            OpenWindow(-1);
+            OpenWindow(EntityId.None);
         }
 
         [MenuItem("Window/Search/Index Management", priority = 200)]
@@ -28,9 +28,9 @@ namespace UnityEditor.Search
             SettingsService.OpenUserPreferences("Preferences/Search/Indexing");
         }
 
-        public static void OpenWindow(int instanceID)
+        public static void OpenWindow(EntityId entityId)
         {
-            s_SelectedAssetOnOpen = instanceID;
+            s_SelectedAssetOnOpen = entityId;
             var window = GetWindow<IndexManager>();
             window.m_WindowId = GUID.Generate().ToString();
             window.position = Utils.GetMainWindowCenteredPosition(new Vector2(760f, 500f));
@@ -87,7 +87,7 @@ namespace UnityEditor.Search
 
         private static string k_ProjectPath { get { return Application.dataPath.Substring(0, Application.dataPath.Length - "/Assets".Length); } }
 
-        private static int s_SelectedAssetOnOpen;
+        private static EntityId s_SelectedAssetOnOpen;
         private int m_PreviousSelectedIndex = -1;
         private int m_IndexToInsertPackagesOnToggle = -1;
         private List<SearchDatabase> m_AllSearchDatabases;
@@ -227,7 +227,7 @@ namespace UnityEditor.Search
                 m_IndexSettingsFilePaths.Add(searchDatabase.path);
                 m_IndexSettingsExists.Add(true);
 
-                if (searchDatabase.GetInstanceID() == s_SelectedAssetOnOpen)
+                if (searchDatabase.GetEntityId() == s_SelectedAssetOnOpen)
                     indexToSelect = m_IndexSettings.Count - 1;
             }
             if (indexToSelect == -1 && m_IndexSettings.Any())
@@ -436,7 +436,7 @@ namespace UnityEditor.Search
 
         private void OnIndexLoaded(SearchDatabase sb)
         {
-            if (selectedItemAsset != null && sb.GetInstanceID() == selectedItemAsset.GetInstanceID())
+            if (selectedItemAsset != null && sb.GetEntityId() == selectedItemAsset.GetEntityId())
                 UpdatePreviewCheckIfNeedDelay();
             m_ListViewIndexSettings.ListView.Rebuild();
         }

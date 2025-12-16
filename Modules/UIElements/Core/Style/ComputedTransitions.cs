@@ -19,19 +19,21 @@ namespace UnityEngine.UIElements
 
     internal static class ComputedTransitionUtils
     {
-        internal static void UpdateComputedTransitions(ref ComputedStyle computedStyle)
+        private static readonly ComputedTransitionProperty[] k_EmptyTransitions =
+            Array.Empty<ComputedTransitionProperty>();
+
+        internal static void UpdateComputedTransitions(ref ComputedStyle computedStyle, out ComputedTransitionProperty[] computedTransitions)
         {
-            if (computedStyle.computedTransitions == null)
-            {
-                computedStyle.computedTransitions = GetOrComputeTransitionPropertyData(ref computedStyle);
-            }
+            computedTransitions = computedStyle.transitionData.ReferenceEquals(InitialStyle.Get().transitionData)
+                ? k_EmptyTransitions
+                : GetOrComputeTransitionPropertyData(ref computedStyle);
         }
 
-        internal static bool HasTransitionProperty(ref this ComputedStyle computedStyle, StylePropertyId id)
+        internal static bool HasTransitionProperty(this ComputedTransitionProperty[] computedTransitions, StylePropertyId id)
         {
-            for (var i = computedStyle.computedTransitions.Length - 1; i >= 0; i--)
+            for (var i = computedTransitions.Length - 1; i >= 0; i--)
             {
-                var t = computedStyle.computedTransitions[i];
+                var t = computedTransitions[i];
                 if (t.id == id || StylePropertyUtil.IsMatchingShorthand(t.id, id))
                     return true;
             }
@@ -39,7 +41,7 @@ namespace UnityEngine.UIElements
             return false;
         }
 
-        internal static bool GetTransitionProperty(ref this ComputedStyle computedStyle, StylePropertyId id, out ComputedTransitionProperty result)
+        internal static bool GetTransitionProperty(this ComputedTransitionProperty[] computedTransitions, StylePropertyId id, out ComputedTransitionProperty result)
         {
             // See https://www.w3.org/TR/css-transitions-1/#matching-transition-property-value:
             // If a property is specified multiple times in the value of transition-property (either on its own, via a
@@ -47,9 +49,9 @@ namespace UnityEngine.UIElements
             // delay, and timing function at the index corresponding to the last item in the value of
             // transition-property that calls for animating that property.
 
-            for (var i = computedStyle.computedTransitions.Length - 1; i >= 0; i--)
+            for (var i = computedTransitions.Length - 1; i >= 0; i--)
             {
-                var t = computedStyle.computedTransitions[i];
+                var t = computedTransitions[i];
                 if (t.id == id || StylePropertyUtil.IsMatchingShorthand(t.id, id))
                 {
                     result = t;
@@ -91,9 +93,6 @@ namespace UnityEngine.UIElements
 
         internal static bool SameTransitionProperty(ref ComputedStyle x, ref ComputedStyle y)
         {
-            if (x.computedTransitions == y.computedTransitions && x.computedTransitions != null)
-                return true;
-
             return SameTransitionProperty(x.transitionProperty, y.transitionProperty) &&
                 SameTransitionProperty(x.transitionDuration, y.transitionDuration) &&
                 SameTransitionProperty(x.transitionDelay, y.transitionDelay);

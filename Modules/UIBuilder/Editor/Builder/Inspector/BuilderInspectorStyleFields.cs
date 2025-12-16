@@ -683,7 +683,7 @@ namespace Unity.UI.Builder
 
         void DispatchChangeEvent<TValueType>(BaseField<TValueType> field)
         {
-            var e = ChangeEvent<TValueType>.GetPooled(field.value, field.value);
+            using var e = ChangeEvent<TValueType>.GetPooled(field.value, field.value);
             e.elementTarget = field;
             field.SendEvent(e);
         }
@@ -1204,6 +1204,12 @@ namespace Unity.UI.Builder
                 return false; // To skip UpdateFieldStatus, not applicable here
             }
 
+            if (IsComputedStyleMaterial(val) && fieldElement is MaterialDefinitionStyleField materialsStyleField)
+            {
+                RefreshStyleField(materialsStyleField);
+                return false; // To skip UpdateFieldStatus, not applicable here
+            }
+
             if (IsComputedStyleCursor(val) && fieldElement is CursorStyleField)
             {
                 var uiField = fieldElement as CursorStyleField;
@@ -1515,6 +1521,38 @@ namespace Unity.UI.Builder
             {
                 DispatchChangeEvent(objectMaterialDefinitionField);
             }
+            else if (IsComputedStyleMaterial(val, styleName) && fieldElement is MaterialDefinitionStyleField materialDefinitionField)
+            {
+                DispatchChangeEvent(materialDefinitionField.Q<ObjectField>());
+            }
+            else if (IsComputedStyleBackgroundRepeat(val) && fieldElement is BackgroundRepeatStyleField backgroundRepeatStyleField)
+            {
+                DispatchChangeEvent(backgroundRepeatStyleField);
+            }
+            else if (IsComputedStyleBackgroundSize(val) && fieldElement is BackgroundSizeStyleField backgroundSizeStyleField)
+            {
+                DispatchChangeEvent(backgroundSizeStyleField);
+            }
+            else if (IsComputedStyleBackgroundPosition(val) && fieldElement is BackgroundPositionStyleField backgroundPositionStyleField)
+            {
+                DispatchChangeEvent(backgroundPositionStyleField);
+            }
+            else if (IsComputedStyleTransformOrigin(val) && fieldElement is TransformOriginStyleField transformOriginStyleField)
+            {
+                DispatchChangeEvent(transformOriginStyleField);
+            }
+            else if (IsComputedStyleTranslate(val) && fieldElement is TranslateStyleField translateStyleField)
+            {
+                DispatchChangeEvent(translateStyleField);
+            }
+            else if (IsComputedStyleScale(val) && fieldElement is ScaleStyleField scaleStyleField)
+            {
+                DispatchChangeEvent(scaleStyleField);
+            }
+            else if (IsComputedStyleRotate(val) && fieldElement is RotateStyleField rotateStyleField)
+            {
+                DispatchChangeEvent(rotateStyleField);
+            }
             else if (IsComputedStyleEnum(val, styleType))
             {
                 switch (fieldElement)
@@ -1524,6 +1562,15 @@ namespace Unity.UI.Builder
                         break;
                     case ToggleButtonGroup toggleButtonGroup:
                         DispatchChangeEvent(toggleButtonGroup);
+                        break;
+                    case TextAlignStrip textAlignStrip:
+                        DispatchChangeEvent(textAlignStrip);
+                        break;
+                    case FontStyleStrip fontStyleStrip:
+                        DispatchChangeEvent(fontStyleStrip);
+                        break;
+                    default:
+                        Debug.LogWarning($"Dispatching change event for unsupported enum type field {fieldElement.GetType()}");
                         break;
                 }
             }
@@ -3081,6 +3128,12 @@ namespace Unity.UI.Builder
         {
             return val is List<FilterFunction>;
         }
+
+        static public bool IsComputedStyleMaterial(object val)
+        {
+            return val is MaterialDefinition;
+        }
+
         static public bool IsComputedStyleCursor(object val)
         {
             return val is StyleCursor || val is UnityEngine.UIElements.Cursor;

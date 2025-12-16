@@ -51,7 +51,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         [SerializeField]
         protected List<PackageImage> m_Images;
-        public IEnumerable<PackageImage> images => m_Images;
+        public IReadOnlyCollection<PackageImage> images => m_Images;
 
         [SerializeField]
         protected long m_PurchasedTimeTicks;

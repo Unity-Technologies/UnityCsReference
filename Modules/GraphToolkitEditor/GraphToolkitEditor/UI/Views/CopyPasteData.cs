@@ -119,12 +119,12 @@ namespace Unity.GraphToolkit.Editor
         /// <summary>
         /// Whether there is any model to paste.
         /// </summary>
-        public bool IsEmpty() => (!m_Nodes.Any() && !m_Wires.Any() &&
-            !m_VariableDeclarations.Any() && !m_StickyNotes.Any() && !m_Placemats.Any() && !m_VariableGroupPaths.Any());
+        public bool IsEmpty() => (!m_Nodes.HasAny() && !m_Wires.HasAny() &&
+            !m_VariableDeclarations.HasAny() && !m_StickyNotes.HasAny() && !m_Placemats.HasAny() && !m_VariableGroupPaths.HasAny());
 
         internal bool HasVariableContent()
         {
-            return m_VariableDeclarations.Any() || m_VariableGroupPaths.Any();
+            return m_VariableDeclarations.HasAny() || m_VariableGroupPaths.HasAny();
         }
 
         public CopyPasteData(List<Constant> constants)
@@ -251,7 +251,7 @@ namespace Unity.GraphToolkit.Editor
             }
 
             var inGroupDeclarations = new List<VariableDeclaration>();
-            if (groups.Any())
+            if (groups.HasAny())
             {
                 var graphModel = groups.First().GraphModel;
 
@@ -471,7 +471,7 @@ namespace Unity.GraphToolkit.Editor
                 }
             }
 
-            if (copyPasteData.m_VariableDeclarations.Any())
+            if (copyPasteData.m_VariableDeclarations.HasAny())
             {
                 var variableDeclarationModels = copyPasteData.m_VariableDeclarations;
                 var duplicatedModels = new List<VariableDeclarationModelBase>();
@@ -515,7 +515,7 @@ namespace Unity.GraphToolkit.Editor
                 selectionStateUpdater?.SelectElements(duplicatedModels, true);
             }
 
-            if (copyPasteData.m_ImplicitVariableDeclarations.Any())
+            if (copyPasteData.m_ImplicitVariableDeclarations.HasAny())
             {
                 var variableDeclarationModels =
                     copyPasteData.m_ImplicitVariableDeclarations.ToList();
@@ -595,7 +595,7 @@ namespace Unity.GraphToolkit.Editor
                     // If the node can not have another portal with the same direction and declaration ( is a data input ) and there is already
                     // one portal node with the same direction and the same Declaration.
                     else if (!portalNodeModel.CanHaveAnotherPortalWithSameDirectionAndDeclaration() &&
-                             graphModel.NodeModels.Any(t => t is WirePortalModel tWirePortalModel &&
+                             graphModel.NodeModels.HasAny(t => t is WirePortalModel tWirePortalModel &&
                                  tWirePortalModel != pastedNode &&
                                  tWirePortalModel.DeclarationModel.Guid == portalNodeModel.DeclarationModel.Guid &&
                                  tWirePortalModel is ISingleOutputPortNodeModel == portalNodeModel is ISingleOutputPortNodeModel)
@@ -603,7 +603,7 @@ namespace Unity.GraphToolkit.Editor
                              // Or if there is in the pasted node, a node with the opposite direction that share the same declaration
                              ||
                              (
-                                 copyPasteData.m_Nodes.Any(t => t is WirePortalModel tWirePortalModel &&
+                                 copyPasteData.m_Nodes.HasAny(t => t is WirePortalModel tWirePortalModel &&
                                      tWirePortalModel.DeclarationModel.Guid == portalNodeModel.DeclarationModel.Guid &&
                                      tWirePortalModel is ISingleOutputPortNodeModel != portalNodeModel is ISingleOutputPortNodeModel)
                              )

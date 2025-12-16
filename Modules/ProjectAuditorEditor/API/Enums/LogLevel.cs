@@ -7,7 +7,7 @@ namespace Unity.ProjectAuditor.Editor
     /// <summary>
     /// Describes the message log level of a code issue
     /// </summary>
-    public enum LogLevel
+    public enum LogLevel : int
     {
         /// <summary>
         /// An error message

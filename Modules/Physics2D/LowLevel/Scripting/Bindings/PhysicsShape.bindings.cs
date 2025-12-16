@@ -37,10 +37,10 @@ namespace UnityEngine.LowLevelPhysics2D
         [NativeMethod(Name = "PhysicsShape::GetFriction", IsThreadSafe = true)] extern internal static float PhysicsShape_GetFriction(PhysicsShape shape);
         [NativeMethod(Name = "PhysicsShape::SetBounciness", IsThreadSafe = true)] extern internal static void PhysicsShape_SetBounciness(PhysicsShape shape, float bounciness);
         [NativeMethod(Name = "PhysicsShape::GetBounciness", IsThreadSafe = true)] extern internal static float PhysicsShape_GetBounciness(PhysicsShape shape);
-        [NativeMethod(Name = "PhysicsShape::SetFrictionCombine", IsThreadSafe = true)] extern internal static void PhysicsShape_SetFrictionCombine(PhysicsShape shape, PhysicsMaterialCombine2D frictionCombine);
-        [NativeMethod(Name = "PhysicsShape::GetFrictionCombine", IsThreadSafe = true)] extern internal static PhysicsMaterialCombine2D PhysicsShape_GetFrictionCombine(PhysicsShape shape);
-        [NativeMethod(Name = "PhysicsShape::SetBouncinessCombine", IsThreadSafe = true)] extern internal static void PhysicsShape_SetBouncinessCombine(PhysicsShape shape, PhysicsMaterialCombine2D bouncinessCombine);
-        [NativeMethod(Name = "PhysicsShape::GetBouncinessCombine", IsThreadSafe = true)] extern internal static PhysicsMaterialCombine2D PhysicsShape_GetBouncinessCombine(PhysicsShape shape);
+        [NativeMethod(Name = "PhysicsShape::SetFrictionMixing", IsThreadSafe = true)] extern internal static void PhysicsShape_SetFrictionMixing(PhysicsShape shape, PhysicsShape.SurfaceMaterial.MixingMode frictionMixing);
+        [NativeMethod(Name = "PhysicsShape::GetFrictionMixing", IsThreadSafe = true)] extern internal static PhysicsShape.SurfaceMaterial.MixingMode PhysicsShape_GetFrictionMixing(PhysicsShape shape);
+        [NativeMethod(Name = "PhysicsShape::SetBouncinessMixing", IsThreadSafe = true)] extern internal static void PhysicsShape_SetBouncinessMixing(PhysicsShape shape, PhysicsShape.SurfaceMaterial.MixingMode bouncinessMixing);
+        [NativeMethod(Name = "PhysicsShape::GetBouncinessMixing", IsThreadSafe = true)] extern internal static PhysicsShape.SurfaceMaterial.MixingMode PhysicsShape_GetBouncinessMixing(PhysicsShape shape);
         [NativeMethod(Name = "PhysicsShape::SetFrictionPriority", IsThreadSafe = true)] extern internal static void PhysicsShape_SetFrictionPriority(PhysicsShape shape, UInt16 frictionPriority);
         [NativeMethod(Name = "PhysicsShape::GetFrictionPriority", IsThreadSafe = true)] extern internal static UInt16 PhysicsShape_GetFrictionPriority(PhysicsShape shape);
         [NativeMethod(Name = "PhysicsShape::SetBouncinessPriority", IsThreadSafe = true)] extern internal static void PhysicsShape_SetBouncinessPriority(PhysicsShape shape, UInt16 bouncinessPriority);
@@ -57,6 +57,7 @@ namespace UnityEngine.LowLevelPhysics2D
         [NativeMethod(Name = "PhysicsShape::GetContactFilter", IsThreadSafe = true)] extern internal static PhysicsShape.ContactFilter PhysicsShape_GetContactFilter(PhysicsShape shape);
         [NativeMethod(Name = "PhysicsShape::SetMoverData", IsThreadSafe = true)] extern internal static void PhysicsShape_SetMoverData(PhysicsShape shape, PhysicsShape.MoverData moverData);
         [NativeMethod(Name = "PhysicsShape::GetMoverData", IsThreadSafe = true)] extern internal static PhysicsShape.MoverData PhysicsShape_GetMoverData(PhysicsShape shape);
+        [NativeMethod(Name = "PhysicsShape::ApplyWind", IsThreadSafe = true)] extern internal static void PhysicsShape_ApplyWind(PhysicsShape shape, Vector2 force, float drag, float lift, bool wake);
         [NativeMethod(Name = "PhysicsShape::SetTriggerEvents", IsThreadSafe = true)] extern internal static void PhysicsShape_SetTriggerEvents(PhysicsShape shape, bool enableContactEvents);
         [NativeMethod(Name = "PhysicsShape::GetTriggerEvents", IsThreadSafe = true)] extern internal static bool PhysicsShape_GetTriggerEvents(PhysicsShape shape);
         [NativeMethod(Name = "PhysicsShape::SetContactEvents", IsThreadSafe = true)] extern internal static void PhysicsShape_SetContactEvents(PhysicsShape shape, bool enableContactEvents);
@@ -92,8 +93,8 @@ namespace UnityEngine.LowLevelPhysics2D
         [NativeMethod(Name = "PhysicsShape::SetOwner", IsThreadSafe = true)] extern internal static int PhysicsShape_SetOwner(PhysicsShape shape, Object ownerObject);
         [NativeMethod(Name = "PhysicsShape::GetOwner", IsThreadSafe = true)] extern internal static Object PhysicsShape_GetOwner(PhysicsShape shape);
         [NativeMethod(Name = "PhysicsShape::IsOwned", IsThreadSafe = true)] extern internal static bool PhysicsShape_IsOwned(PhysicsShape shape);
-        [NativeMethod(Name = "PhysicsShape::SetCallbackTarget", IsThreadSafe = true)] extern internal static void PhysicsShape_SetCallbackTarget(PhysicsShape shape, MonoBehaviour callbackTarget);
-        [NativeMethod(Name = "PhysicsShape::GetCallbackTarget", IsThreadSafe = true)] extern internal static MonoBehaviour PhysicsShape_GetCallbackTarget(PhysicsShape shape);
+        [NativeMethod(Name = "PhysicsShape::SetCallbackTarget", IsThreadSafe = true)] extern internal static void PhysicsShape_SetCallbackTarget(PhysicsShape shape, System.Object callbackTarget);
+        [NativeMethod(Name = "PhysicsShape::GetCallbackTarget", IsThreadSafe = true)] extern internal static System.Object PhysicsShape_GetCallbackTarget(PhysicsShape shape);
         [NativeMethod(Name = "PhysicsShape::SetUserData", IsThreadSafe = true)] extern internal static void PhysicsShape_SetUserData(PhysicsShape shape, PhysicsUserData physicsUserData);
         [NativeMethod(Name = "PhysicsShape::GetUserData", IsThreadSafe = true)] extern internal static PhysicsUserData PhysicsShape_GetUserData(PhysicsShape shape);
 

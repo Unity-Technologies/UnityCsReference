@@ -133,6 +133,11 @@ namespace UnityEditor.UIElements.Bindings
             return p.hash128Value;
         }
 
+        public static GUID GetGUIDPropertyValue(SerializedProperty p)
+        {
+            return p.guidValue;
+        }
+
         public static EntityId GetEntityIdPropertyValue(SerializedProperty p)
         {
             return p.entityIdValue;
@@ -362,6 +367,11 @@ namespace UnityEditor.UIElements.Bindings
         public static void SetHash128PropertyValue(SerializedProperty p, Hash128 v)
         {
             p.hash128Value = v;
+        }
+
+        public static void SetGUIDPropertyValue(SerializedProperty p, GUID v)
+        {
+            p.guidValue = v;
         }
 
         public static void SetEntityIdPropertyValue(SerializedProperty p, EntityId v)

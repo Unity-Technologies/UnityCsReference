@@ -4,3 +4,4 @@
 
 using System.Runtime.CompilerServices;
 [assembly: InternalsVisibleTo("Unity.Core.Layout.Tests.Editor")]
+[assembly: InternalsVisibleTo("Unity.Modules.Input.Tests.Editor")]

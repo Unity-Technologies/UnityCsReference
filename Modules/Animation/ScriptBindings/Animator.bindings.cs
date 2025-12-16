@@ -3,14 +3,11 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
-using System.Collections;
 using System.Collections.Generic;
 using UnityEngine.Bindings;
-using UnityEngine.Scripting;
-using UnityEngine.Playables;
 using UnityEngine.Internal;
+using UnityEngine.Playables;
+using UnityEngine.Scripting;
 
 namespace UnityEngine
 {
@@ -138,7 +135,7 @@ namespace UnityEngine
         // Animation clip that is played
         public AnimationClip clip
         {
-            get {return m_ClipInstanceID != 0 ? InstanceIDToAnimationClipPPtr(m_ClipInstanceID) : null; }
+            get {return m_ClipEntityId != EntityId.None ? InstanceIDToAnimationClipPPtr(m_ClipEntityId) : null; }
         }
 
         // The weight of the animation clip
@@ -150,7 +147,7 @@ namespace UnityEngine
         [FreeFunction("AnimationBindings::InstanceIDToAnimationClipPPtr")]
         extern private static AnimationClip InstanceIDToAnimationClipPPtr(EntityId entityId);
 
-        private int m_ClipInstanceID;
+        private EntityId m_ClipEntityId;
         private float m_Weight;
     }
 
@@ -289,7 +286,6 @@ namespace UnityEngine
     // Interface to control the Mecanim animation system
     [NativeHeader("Modules/Animation/Animator.h")]
     [NativeHeader("Modules/Animation/ScriptBindings/Animator.bindings.h")]
-    [NativeHeader("Modules/Animation/ScriptBindings/AnimatorControllerParameter.bindings.h")]
     [UsedByNativeCode]
     public partial class Animator : Behaviour
     {
@@ -702,20 +698,19 @@ namespace UnityEngine
         // Is the specified AnimatorController layer in a transition
         extern public bool IsInTransition(int layerIndex);
 
-        extern public AnimatorControllerParameter[] parameters
+        public extern AnimatorControllerParameter[] parameters
         {
             [FreeFunction(Name = "AnimatorBindings::GetParameters", HasExplicitThis = true)]
-            [return: UnityMarshalAs(NativeType.ScriptingObjectPtr)]
             get;
         }
 
-        extern public int parameterCount
+        public extern int parameterCount
         {
             get;
         }
 
         [FreeFunction(Name = "AnimatorBindings::GetParameterInternal", HasExplicitThis = true)]
-        extern private AnimatorControllerParameter GetParameterInternal(int index);
+        private extern AnimatorControllerParameter GetParameterInternal(int index);
 
         public AnimatorControllerParameter GetParameter(int index)
         {

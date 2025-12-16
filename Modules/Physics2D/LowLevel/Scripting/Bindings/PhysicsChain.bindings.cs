@@ -20,10 +20,10 @@ namespace UnityEngine.LowLevelPhysics2D
         [NativeMethod(Name = "PhysicsChain::GetFriction", IsThreadSafe = true)] extern internal static float PhysicsChain_GetFriction(PhysicsChain chain);
         [NativeMethod(Name = "PhysicsChain::SetBounciness", IsThreadSafe = true)] extern internal static void PhysicsChain_SetBounciness(PhysicsChain chain, float bounciness);
         [NativeMethod(Name = "PhysicsChain::GetBounciness", IsThreadSafe = true)] extern internal static float PhysicsChain_GetBounciness(PhysicsChain chain);
-        [NativeMethod(Name = "PhysicsChain::SetFrictionCombine", IsThreadSafe = true)] extern internal static void PhysicsChain_SetFrictionCombine(PhysicsChain chain, PhysicsMaterialCombine2D frictionCombine);
-        [NativeMethod(Name = "PhysicsChain::GetFrictionCombine", IsThreadSafe = true)] extern internal static PhysicsMaterialCombine2D PhysicsChain_GetFrictionCombine(PhysicsChain chain);
-        [NativeMethod(Name = "PhysicsChain::SetBouncinessCombine", IsThreadSafe = true)] extern internal static void PhysicsChain_SetBouncinessCombine(PhysicsChain chain, PhysicsMaterialCombine2D bouncinessCombine);
-        [NativeMethod(Name = "PhysicsChain::GetBouncinessCombine", IsThreadSafe = true)] extern internal static PhysicsMaterialCombine2D PhysicsChain_GetBouncinessCombine(PhysicsChain chain);
+        [NativeMethod(Name = "PhysicsChain::SetFrictionMixing", IsThreadSafe = true)] extern internal static void PhysicsChain_SetFrictionMixing(PhysicsChain chain, PhysicsShape.SurfaceMaterial.MixingMode frictionMixing);
+        [NativeMethod(Name = "PhysicsChain::GetFrictionMixing", IsThreadSafe = true)] extern internal static PhysicsShape.SurfaceMaterial.MixingMode PhysicsChain_GetFrictionMixing(PhysicsChain chain);
+        [NativeMethod(Name = "PhysicsChain::SetBouncinessMixing", IsThreadSafe = true)] extern internal static void PhysicsChain_SetBouncinessMixing(PhysicsChain chain, PhysicsShape.SurfaceMaterial.MixingMode bouncinessMixing);
+        [NativeMethod(Name = "PhysicsChain::GetBouncinessMixing", IsThreadSafe = true)] extern internal static PhysicsShape.SurfaceMaterial.MixingMode PhysicsChain_GetBouncinessMixing(PhysicsChain chain);
         [NativeMethod(Name = "PhysicsChain::GetSegmentCount", IsThreadSafe = true)] extern internal static int PhysicsChain_GetSegmentCount(PhysicsChain chain);
         [NativeMethod(Name = "PhysicsChain::GetSegments", IsThreadSafe = true)] extern internal static PhysicsBuffer PhysicsChain_GetSegments(PhysicsChain chain, Allocator allocator);
         [NativeMethod(Name = "PhysicsChain::GetSegmentIndex", IsThreadSafe = true)] extern internal static int PhysicsChain_GetSegmentIndex(PhysicsChain chain, PhysicsShape chainSegmentShape);
@@ -34,8 +34,8 @@ namespace UnityEngine.LowLevelPhysics2D
         [NativeMethod(Name = "PhysicsChain::SetOwner", IsThreadSafe = true)] extern internal static int PhysicsChain_SetOwner(PhysicsChain chain, Object ownerObject);
         [NativeMethod(Name = "PhysicsChain::GetOwner", IsThreadSafe = true)] extern internal static Object PhysicsChain_GetOwner(PhysicsChain chain);
         [NativeMethod(Name = "PhysicsChain::IsOwned", IsThreadSafe = true)] extern internal static bool PhysicsChain_IsOwned(PhysicsChain chain);
-        [NativeMethod(Name = "PhysicsChain::SetCallbackTarget", IsThreadSafe = true)] extern internal static void PhysicsChain_SetCallbackTarget(PhysicsChain chain, MonoBehaviour callbackTarget);
-        [NativeMethod(Name = "PhysicsChain::GetCallbackTarget", IsThreadSafe = true)] extern internal static MonoBehaviour PhysicsChain_GetCallbackTarget(PhysicsChain chain);
+        [NativeMethod(Name = "PhysicsChain::SetCallbackTarget", IsThreadSafe = true)] extern internal static void PhysicsChain_SetCallbackTarget(PhysicsChain chain, System.Object callbackTarget);
+        [NativeMethod(Name = "PhysicsChain::GetCallbackTarget", IsThreadSafe = true)] extern internal static System.Object PhysicsChain_GetCallbackTarget(PhysicsChain chain);
         [NativeMethod(Name = "PhysicsChain::SetUserData", IsThreadSafe = true)] extern internal static void PhysicsChain_SetUserData(PhysicsChain chain, PhysicsUserData physicsUserData);
         [NativeMethod(Name = "PhysicsChain::GetUserData", IsThreadSafe = true)] extern internal static PhysicsUserData PhysicsChain_GetUserData(PhysicsChain chain);
     }

@@ -169,7 +169,7 @@ public sealed class HierarchyIterator : IHierarchyIterator
     // 4.0 interface (made internal for now)
     internal void SetSearchFilter(SearchFilter filter)
     {
-        SetSearchFilterImpl(SearchFilter.Split(filter.nameFilter), filter.classNames, filter.assetLabels, filter.assetBundleNames, new string[0], new string[0], filter.referencingInstanceIDs, filter.sceneHandles, filter.GlobToRegex(), filter.productIds, filter.anyWithAssetOrigin, filter.showAllHits, filter.importLogFlags, filter.filterByTypeIntersection);
+        SetSearchFilterImpl(SearchFilter.Split(filter.nameFilter), filter.classNames, filter.assetLabels, filter.assetBundleNames, new string[0], new string[0], filter.referencingEntityIds, filter.sceneHandles, filter.GlobToRegex(), filter.productIds, filter.anyWithAssetOrigin, filter.showAllHits, filter.importLogFlags, filter.filterByTypeIntersection);
     }
 
     internal void CopySearchFilterFrom(HierarchyIterator other)
@@ -180,7 +180,7 @@ public sealed class HierarchyIterator : IHierarchyIterator
     }
 
     [FreeFunction("HierarchyPropertyBindings::SetSearchFilterImpl", HasExplicitThis = true)]
-    extern void SetSearchFilterImpl(string[] nameFilters, string[] classNames, string[] assetLabels, string[] assetBundleNames, string[] versionControlStates, string[] softLockControlStates, int[] referencingInstanceIDs, SceneHandle[] sceneHandles, string[] regex, int[] productIds, bool anyWithAssetOrigin, bool showAllHits, ImportLogFlags importLogFlags, bool filterByTypeIntersection);
+    extern void SetSearchFilterImpl(string[] nameFilters, string[] classNames, string[] assetLabels, string[] assetBundleNames, string[] versionControlStates, string[] softLockControlStates, EntityId[] referencingEntityIds, SceneHandle[] sceneHandles, string[] regex, int[] productIds, bool anyWithAssetOrigin, bool showAllHits, ImportLogFlags importLogFlags, bool filterByTypeIntersection);
 
     [FreeFunction("HierarchyPropertyBindings::CopySearchFilterImpl", HasExplicitThis = true)]
     extern void CopySearchFilterImpl(HierarchyIterator other);

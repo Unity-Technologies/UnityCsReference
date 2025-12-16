@@ -24,6 +24,7 @@ namespace UnityEditor.Compilation
         [FreeFunction]
         internal static extern void EnableScriptDebugInfo();
 
+        [VisibleToOtherModules("UnityEditor.BurstModule")]
         [FreeFunction]
         internal static extern bool IsScriptDebugInfoEnabled();
     }

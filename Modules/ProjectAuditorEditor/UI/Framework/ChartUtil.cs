@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Collections.Generic;
 using UnityEditor;
 using UnityEngine;
 
@@ -38,9 +39,9 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
             fixedHeight = k_RowSize
         };
 
-        public static void DrawHorizontalStackedBar(Draw2D draw2D, float barHeight, string title, Element[] inValues,
+        public static void DrawHorizontalStackedBar(Draw2D draw2D, float barHeight, string title, List<Element> inValues,
             string labelFormat = "{0}", string numberFormat = "D", bool oneColumnLayout = false,
-            bool skipZeroValues = false, bool showTotal = false)
+            bool skipZeroValues = false, bool showTotal = false, string extraTotalInfo = null)
         {
             EditorGUILayout.BeginVertical();
 
@@ -51,13 +52,13 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
             }
 
             float totalValue = 0;
-            for (int i = 0; i < inValues.Length; ++i)
+            for (int i = 0; i < inValues.Count; ++i)
                 totalValue += inValues[i].Value;
 
             var rect = EditorGUILayout.GetControlRect(false, barHeight, GUILayout.ExpandWidth(true));
             int x = 0;
 
-            for (int i = 0; i < inValues.Length; ++i)
+            for (int i = 0; i < inValues.Count; ++i)
             {
                 var value = inValues[i].Value;
 
@@ -77,7 +78,7 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
                 {
                     using (new EditorGUILayout.VerticalScope(GUILayout.Width(200)))
                     {
-                        for (int i = 0; i < inValues.Length; ++i)
+                        for (int i = 0; i < inValues.Count; ++i)
                         {
                             if (skipZeroValues && inValues[i].Value == 0)
                                 continue;
@@ -93,8 +94,21 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
                     {
                         using (new EditorGUILayout.VerticalScope())
                         {
-                            var totalInfo = "Total: <b>" + totalValue.ToString(numberFormat) + "</b>";
-                            GUILayout.Label(totalInfo, SharedStyles.LabelRichText);
+                            using (new EditorGUILayout.HorizontalScope())
+                            {
+                                var totalInfo = $"Total: <b>{totalValue.ToString(numberFormat)}</b>";
+                                GUILayout.FlexibleSpace();
+                                GUILayout.Label(totalInfo, SharedStyles.LabelRichText);
+                            }
+                            if (extraTotalInfo != null)
+                            {
+                                using (new EditorGUILayout.HorizontalScope())
+                                {
+                                    var extraInfo = $"<i>{extraTotalInfo}</i>";
+                                    GUILayout.FlexibleSpace();
+                                    GUILayout.Label(extraInfo, SharedStyles.LabelRichTextGrey);
+                                }
+                            }
                         }
                     }
                 }
@@ -104,10 +118,10 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
 
             if (skipZeroValues)
             {
-                inValues = Array.FindAll(inValues, e => e.Value > 0);
+                inValues = inValues.FindAll(e => e.Value > 0);
             }
 
-            int firstColumnNum = (inValues.Length + 1) / 2;
+            int firstColumnNum = (inValues.Count + 1) / 2;
             using (new EditorGUILayout.HorizontalScope())
             {
                 using (new EditorGUILayout.VerticalScope())
@@ -125,7 +139,7 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
 
                 using (new EditorGUILayout.VerticalScope())
                 {
-                    for (int i = firstColumnNum; i < inValues.Length; ++i)
+                    for (int i = firstColumnNum; i < inValues.Count; ++i)
                     {
                         DrawLegendItem(draw2D, inValues[i].Label, inValues[i].Tooltip, inValues[i].Value, inValues[i].Color, labelFormat,
                             numberFormat, inValues[i].IconContent);

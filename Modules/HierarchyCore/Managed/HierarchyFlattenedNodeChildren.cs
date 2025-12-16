@@ -3,13 +3,17 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.ComponentModel;
 using System.Runtime.CompilerServices;
 
 namespace Unity.Hierarchy
 {
+    #region Marked as obsolete warning in 6.3
     /// <summary>
     /// Represents an enumerable over the children of an <see cref="HierarchyNode"/>.
     /// </summary>
+    [Obsolete("HierarchyFlattenedNodeChildren is obsolete. It has been replaced by HierarchyFlattenedChildrenEnumerable.", false)]
+    [EditorBrowsable(EditorBrowsableState.Never)]
     public readonly struct HierarchyFlattenedNodeChildren
     {
         readonly HierarchyFlattened m_HierarchyFlattened;
@@ -155,4 +159,5 @@ namespace Unity.Hierarchy
                 throw new InvalidOperationException("HierarchyFlattened was modified.");
         }
     }
+    #endregion
 }

@@ -56,7 +56,7 @@ namespace UnityEditor
 
         public string GetUniqueModuleName(Object o)
         {
-            return Concat("" + o.GetInstanceID(), m_ModuleName);
+            return Concat("" + o.GetEntityId(), m_ModuleName);
         }
 
         internal SerializedObject serializedObject

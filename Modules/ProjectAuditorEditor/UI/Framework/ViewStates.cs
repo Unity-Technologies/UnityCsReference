@@ -22,7 +22,6 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
         public bool dependencies = true;
 
         // diagnostic preferences
-        public bool onlyCriticalIssues;
         // TODO: we used to have mutedIssues as a global-state but now it's view-specific
         // does it make sense to go back to use this?
         //public bool mutedIssues;

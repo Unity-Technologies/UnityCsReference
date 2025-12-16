@@ -7,10 +7,12 @@ using System;
 using System.Collections.Generic;
 using DiscoveredTargetInfo = UnityEditor.BuildTargetDiscovery.DiscoveredTargetInfo;
 using TargetAttributes = UnityEditor.BuildTargetDiscovery.TargetAttributes;
+using UnityEngine.Bindings;
 
 namespace UnityEditor.Build
 {
     // All settings for a build platform.
+    [VisibleToOtherModules("UnityEditor.BurstModule")]
     internal class BuildPlatform : ICloneable
     {
         // short name used for texture settings, etc.
@@ -215,6 +217,7 @@ namespace UnityEditor.Build
         }
     }
 
+    [VisibleToOtherModules("UnityEditor.BurstModule")]
     internal class BuildPlatforms
     {
         static readonly BuildPlatforms s_Instance = new BuildPlatforms();

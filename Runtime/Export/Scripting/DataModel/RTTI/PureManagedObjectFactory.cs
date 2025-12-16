@@ -6,6 +6,10 @@ using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 
+using UnityEngine;
+using UnityEngine.Serialization;
+using RefId = System.Int64;
+
 namespace Unity.DataModel;
 
 internal sealed class ConstructedPureManagedObjectGroup
@@ -28,12 +32,19 @@ internal struct ConstructedPureManagedObjectSet
 
 internal sealed class PureManagedObjectFactory
 {
+    private readonly Dictionary<UdmObjectId, (UnityEngine.Object, RefId, object)> existingManagedObjects;
+    private readonly LoadMode loadMode;
     private ConstructedPureManagedObjectSet pureManagedObjects = new ConstructedPureManagedObjectSet();
 
-    internal static object[] Instantiate(PureManagedObjectRtti rtti, int count)
+    internal PureManagedObjectFactory(Dictionary<UdmObjectId, (UnityEngine.Object, RefId, object)> existingManagedObjects, LoadMode loadMode)
     {
-        var objects = new object[count];
-        for (int objectIndex = 0; objectIndex < objects.Length; objectIndex++)
+        this.loadMode = loadMode;
+        this.existingManagedObjects = existingManagedObjects;
+    }
+
+    internal static void Instantiate(PureManagedObjectRtti rtti, object[] objects, int count)
+    {
+        for (int objectIndex = 0; objectIndex < count; objectIndex++)
         {
             objects[objectIndex] = RuntimeHelpers.GetUninitializedObject(rtti.Type);
 
@@ -43,15 +54,50 @@ internal sealed class PureManagedObjectFactory
                 rtti.Constructor.Invoke(objects[objectIndex], null);
             }
         }
+    }
+
+    internal static object[] Instantiate(PureManagedObjectRtti rtti, int count)
+    {
+        var objects = new object[count];
+        Instantiate(rtti, objects, count);
         return objects;
     }
 
     internal void AddObjectsToBatch(PureManagedObjectRtti rtti, UdmObjectId[] objectIds)
     {
-        var objectGroup = new ConstructedPureManagedObjectGroup {
+        int firstExistingObjectIndex = objectIds.Length;
+
+        bool hasExistingObjects = loadMode == LoadMode.Merge && existingManagedObjects.Count > 0;
+        if (hasExistingObjects)
+        {
+            Array.Sort(objectIds, (id1, id2) =>
+            {
+                bool exists1 = existingManagedObjects.ContainsKey(id1);
+                bool exists2 = existingManagedObjects.ContainsKey(id2);
+                return exists1.CompareTo(exists2);
+            });
+
+            firstExistingObjectIndex = Array.FindIndex(objectIds, id => existingManagedObjects.ContainsKey(id));
+            if (firstExistingObjectIndex == -1)
+            {
+                firstExistingObjectIndex = objectIds.Length;
+            }
+        }
+
+        var instances = new object[objectIds.Length];
+        Instantiate(rtti, instances, firstExistingObjectIndex);
+
+        for (int i = firstExistingObjectIndex; i < objectIds.Length; i++)
+        {
+            var (hostObj, managedReferenceId, obj) = existingManagedObjects[objectIds[i]];
+            instances[i] = obj;
+        }
+
+        var objectGroup = new ConstructedPureManagedObjectGroup
+        {
             rtti = rtti,
             objectIds = objectIds,
-            instances = Instantiate(rtti, objectIds.Length),
+            instances = instances,
             objectPtrs = Array.Empty<IntPtr>()
         };
         pureManagedObjects.objectGroups.Add(objectGroup);

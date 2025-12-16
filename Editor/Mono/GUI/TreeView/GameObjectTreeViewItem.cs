@@ -20,7 +20,7 @@ namespace UnityEditor
         Texture2D m_OverlayIcon;
         Texture2D m_SelectedIcon;
 
-        public GameObjectTreeViewItem(int id, int depth, TreeViewItem<EntityId> parent, string displayName)
+        public GameObjectTreeViewItem(EntityId id, int depth, TreeViewItem<EntityId> parent, string displayName)
             : base(id, depth, parent, displayName)
         {
         }

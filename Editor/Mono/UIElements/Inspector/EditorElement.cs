@@ -322,7 +322,7 @@ namespace UnityEditor.UIElements
         {
             return editor == null ?
                     "Nothing Selected" :
-                    $"{editor.GetType().Name}_{editor.targets[0].GetType().Name}_{editor.targets[0].GetInstanceID()}";
+                    $"{editor.GetType().Name}_{editor.targets[0].GetType().Name}_{editor.targets[0].GetEntityId()}";
         }
 
         void UpdateInspectorVisibility()
@@ -454,7 +454,7 @@ namespace UnityEditor.UIElements
 
             m_WasVisible = inspectorWindow.WasEditorVisible(editors, m_EditorIndex, target);
 
-            GUIUtility.GetControlID(target.GetInstanceID(), FocusType.Passive);
+            GUIUtility.GetControlID(target.GetEntityId().GetHashCode(), FocusType.Passive);
             EditorGUIUtility.ResetGUIState();
             GUI.color = playModeTintColor;
 

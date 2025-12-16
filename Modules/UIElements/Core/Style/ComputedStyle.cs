@@ -5,7 +5,6 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine.Bindings;
-using UnityEngine.UIElements.Layout;
 using UnityEngine.UIElements.StyleSheets;
 
 namespace UnityEngine.UIElements
@@ -13,8 +12,8 @@ namespace UnityEngine.UIElements
     [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
     internal partial struct ComputedStyle
     {
+        public Dictionary<string, StylePropertyValue> customProperties => customData.Read().customProperties;
         public int customPropertiesCount => customProperties?.Count ?? 0;
-        public bool hasTransition => computedTransitions?.Length > 0;
 
         public static ComputedStyle Create()
         {
@@ -65,7 +64,7 @@ namespace UnityEngine.UIElements
         private void RemoveCustomStyleProperty(StylePropertyReader reader)
         {
             var name = reader.property.name;
-            if (customProperties == null || !customProperties.ContainsKey(name))
+            if (customProperties?.ContainsKey(name) != true)
                 return;
 
             customProperties.Remove(name);
@@ -74,10 +73,7 @@ namespace UnityEngine.UIElements
         private void ApplyCustomStyleProperty(StylePropertyReader reader)
         {
             dpiScaling = reader.dpiScaling;
-            if (customProperties == null)
-            {
-                customProperties = new Dictionary<string, StylePropertyValue>();
-            }
+            customData.Write().customProperties ??= new();
 
             var styleProperty = reader.property;
 
@@ -111,11 +107,6 @@ namespace UnityEngine.UIElements
         private void ApplyAllPropertyInitial()
         {
             CopyFrom(ref InitialStyle.Get());
-        }
-
-        private void ResetComputedTransitions()
-        {
-            computedTransitions = null;
         }
 
         public static bool StartAnimationInlineTextShadow(VisualElement element, ref ComputedStyle computedStyle, StyleTextShadow textShadow, int durationMs, int delayMs, Func<float, float> easingCurve)
@@ -185,7 +176,14 @@ namespace UnityEngine.UIElements
         public static bool StartAnimationInlineFilter(VisualElement element, ref ComputedStyle computedStyle, StyleList<FilterFunction> filter, int durationMs, int delayMs, Func<float, float> easingCurve)
         {
             var to = filter.keyword == StyleKeyword.Initial ? InitialStyle.filter : filter.value;
-            return element.styleAnimation.Start(StylePropertyId.Filter, computedStyle.visualData.Read().filter, to, durationMs, delayMs, easingCurve);
+            return element.styleAnimation.Start(StylePropertyId.Filter, computedStyle.rareData.Read().filter, to, durationMs, delayMs, easingCurve);
         }
+
+        public static bool StartAnimationInlineFilter(VisualElement element, ref ComputedStyle computedStyle, StyleMaterialDefinition matDef, int durationMs, int delayMs, Func<float, float> easingCurve)
+        {
+            var to = matDef.keyword == StyleKeyword.Initial ? InitialStyle.unityMaterial : matDef.value;
+            return element.styleAnimation.Start(StylePropertyId.Filter, computedStyle.inheritedData.Read().unityMaterial, to, durationMs, delayMs, easingCurve);
+        }
+
     }
 }

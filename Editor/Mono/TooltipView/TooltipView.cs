@@ -60,8 +60,6 @@ namespace UnityEditor
             m_VisualRoot.style.flexGrow = 1;
             visualTree.Add(m_VisualRoot);
 
-            // Use GUIUtility.processEvent because EditorApplication.update does not get called when showing a modal window. (case 1417820)
-            GUIUtility.processEvent += ProcessEvent;
         }
 
         protected override void OnDisable()
@@ -69,11 +67,13 @@ namespace UnityEditor
             s_CloseState = CloseState.Idle;
             base.OnDisable();
             s_guiView = null;
-            GUIUtility.processEvent -= ProcessEvent;
         }
 
         protected override void OldOnGUI()
         {
+            // Use event dispatching because EditorApplication.update does not get called when showing a modal window. (case 1417820)
+            Update();
+
             var evt = Event.current;
             if (evt == null || window == null) { return; }
 
@@ -273,12 +273,6 @@ namespace UnityEditor
             }
 
             s_CloseState = CloseState.CloseApproved;
-        }
-
-        bool ProcessEvent(int a, System.IntPtr b)
-        {
-            Update();
-            return false;
         }
 
         void Update()

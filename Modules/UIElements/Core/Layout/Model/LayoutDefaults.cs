@@ -6,30 +6,33 @@ namespace UnityEngine.UIElements.Layout;
 
 struct LayoutDefaults
 {
-    public static readonly FixedBuffer9<LayoutValue> EdgeValuesUnit = new FixedBuffer9<LayoutValue>
+    public static readonly FixedBuffer4<float> BorderValues = new()
     {
-        [0] = LayoutValue.Undefined(),
-        [1] = LayoutValue.Undefined(),
-        [2] = LayoutValue.Undefined(),
-        [3] = LayoutValue.Undefined(),
-        [4] = LayoutValue.Undefined(),
-        [5] = LayoutValue.Undefined(),
-        [6] = LayoutValue.Undefined(),
-        [7] = LayoutValue.Undefined(),
-        [8] = LayoutValue.Undefined(),
+        [0] = float.NaN,
+        [1] = float.NaN,
+        [2] = float.NaN,
+        [3] = float.NaN,
+    };
+
+    public static readonly FixedBuffer4<Length> EdgeValuesUnit = new()
+    {
+        [0] = Length.None(),
+        [1] = Length.None(),
+        [2] = Length.None(),
+        [3] = Length.None(),
     };
 
     public static readonly float[] DimensionValues = {float.NaN, float.NaN};
 
-    public static readonly FixedBuffer2<LayoutValue> DimensionValuesUnit = new FixedBuffer2<LayoutValue>
+    public static readonly FixedBuffer2<Length> DimensionValuesUnit = new()
     {
-        [0] = LayoutValue.Undefined(),
-        [1] = LayoutValue.Undefined()
+        [0] = Length.None(),
+        [1] = Length.None()
     };
 
-    public static readonly FixedBuffer2<LayoutValue> DimensionValuesAutoUnit = new FixedBuffer2<LayoutValue>
+    public static readonly FixedBuffer2<Length> DimensionValuesAutoUnit = new()
     {
-        [0] = LayoutValue.Auto(),
-        [1] = LayoutValue.Auto()
+        [0] = Length.Auto(),
+        [1] = Length.Auto()
     };
 }

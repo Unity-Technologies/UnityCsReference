@@ -43,7 +43,7 @@ namespace UnityEditor.Experimental.GraphView
             m_SelectedElementsArray = new string[m_SelectedElements.Count];
 
             if (m_SelectedElements.Count == 0)
-                return;       
+                return;
 
             m_SelectedElements.CopyTo(m_SelectedElementsArray);
         }
@@ -1238,6 +1238,14 @@ namespace UnityEditor.Experimental.GraphView
             if (scope != null)
             {
                 scope.RemoveElement(graphElement);
+            }
+
+            if (graphElement is Scope scopeElement)
+            {
+                foreach (var child in scopeElement.containedElements.ToList())
+                {
+                    child.SetContainingScope(null);
+                }
             }
 
             StackNode stack = graphElement.parent as StackNode;

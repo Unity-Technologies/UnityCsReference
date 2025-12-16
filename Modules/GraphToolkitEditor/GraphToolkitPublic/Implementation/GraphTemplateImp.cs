@@ -36,14 +36,13 @@ namespace Unity.GraphToolkit.Editor.Implementation
             m_GraphType = graphType;
         }
 
-        public override void InitBasicGraph(GraphModel graphModel)
+        internal override void InitLocalSubgraphsPreOnEnable(GraphModel graphModel)
         {
-            base.InitBasicGraph(graphModel);
-
-            // the GraphModel will first use the graphtype from its GraphObjectImp, we need to change it to the subgraph type.
-            if (graphModel is GraphModelImp graphModelImp && !m_GraphType.IsInstanceOfType(graphModelImp.Graph))
+            base.InitLocalSubgraphsPreOnEnable(graphModel);
+            var graphModelImp = graphModel as GraphModelImp;
+            if (graphModelImp != null)
             {
-                graphModelImp.RecreateGraph(m_GraphType);
+                graphModelImp.InstantiateGraph(m_GraphType);
             }
         }
     }

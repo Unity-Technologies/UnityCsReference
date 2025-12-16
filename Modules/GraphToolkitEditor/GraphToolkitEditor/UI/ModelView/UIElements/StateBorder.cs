@@ -91,7 +91,7 @@ namespace Unity.GraphToolkit.Editor
                 _ => 0f
             };
 
-            var snappedPoint = m_StateView.GetPositionFromAnchorAndOffset(anchorSide, offset, GraphView.resolvedStyle.scale.value.x);
+            var snappedPoint = m_StateView.GetPositionFromAnchorAndOffset(anchorSide, offset, GraphView.Zoom);
             snappedPoint = this.WorldToLocal(snappedPoint);
             return (snappedPoint, anchorSide, offset);
         }
@@ -172,7 +172,7 @@ namespace Unity.GraphToolkit.Editor
             if (point != null)
             {
                 SetConnectorPosition(point.Value);
-                ShowConnector(wireUI.IsSelected() || wireUI.GetHoverPseudoState());
+                ShowConnector(wireUI.IsSelected() || wireUI.hasHoverPseudoState);
             }
             else
             {

@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEditor.UIElements;
@@ -11,9 +10,7 @@ using UnityEditor.UIElements.StyleSheets;
 using UnityEngine.UIElements;
 using UnityEngine.UIElements.StyleSheets;
 using UnityEngine.Scripting;
-using UnityEngine;
 using UnityEngine.Bindings;
-using UXMLImporterImpl = UnityEditor.UIElements.UXMLImporterImpl;
 
 namespace UnityEditor
 {
@@ -23,8 +20,8 @@ namespace UnityEditor
     {
         static RetainedMode()
         {
-            UIElementsUtility.s_BeginContainerCallback = OnBeginContainer;
-            UIElementsUtility.s_EndContainerCallback = OnEndContainer;
+            UIElementsIMGUIUtility.s_BeginContainerCallback = OnBeginContainer;
+            UIElementsIMGUIUtility.s_EndContainerCallback = OnEndContainer;
 
             Panel.initEditorUpdaterFunc = EditorPanel.InitEditorUpdater;
             Panel.loadResourceFunc = StyleSheetResourceUtil.LoadResource;
@@ -47,13 +44,13 @@ namespace UnityEditor
         [RequiredByNativeCode]
         static void UpdateSchedulers()
         {
-            UIEventRegistration.UpdateSchedulers();
+            UIElementsUtility.UpdateSchedulers();
         }
 
         [RequiredByNativeCode]
         static void RequestRepaintForPanels()
         {
-            UIEventRegistration.RequestRepaintForPanels((obj) =>
+            UIElementsUtility.RequestRepaintForPanels((obj) =>
             {
                 var guiView = obj as GUIView;
                 if (guiView != null)

@@ -47,7 +47,7 @@ namespace UnityEditor.Search
             var newViewState = new SearchViewState();
             newViewState.Assign(query.GetViewState());
             newViewState.flags |= UnityEngine.Search.SearchViewFlags.DisableQueryHelpers;
-            m_ResultView = new SearchView(newViewState, GetInstanceID());
+            m_ResultView = new SearchView(newViewState, GetEntityId());
             m_ResultView.AddToClassList("result-view");
             m_HasPreview = true;
         }

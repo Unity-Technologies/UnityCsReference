@@ -20,7 +20,7 @@ namespace Unity.Multiplayer.PlayMode.Editor
         }
 
         public void Close() => m_BackingObject.Close();
-        public int GetInstanceID() => m_BackingObject.GetInstanceID();
+        public EntityId GetEntityId() => m_BackingObject.GetEntityId();
 
         public static void SetMppmCanCloseCallback(Func<bool> mppmCanCloseCallback)
         {
@@ -32,9 +32,9 @@ namespace Unity.Multiplayer.PlayMode.Editor
             set => m_BackingObject.title = value;
         }
 
-        public static ContainerWindowProxy FromInstanceID(int instanceId)
+        public static ContainerWindowProxy FromInstanceID(EntityId entityId)
         {
-            var obj = EditorUtility.EntityIdToObject(instanceId) as ContainerWindow;
+            var obj = EditorUtility.EntityIdToObject(entityId) as ContainerWindow;
             return obj == null ? null : new ContainerWindowProxy(obj);
         }
 

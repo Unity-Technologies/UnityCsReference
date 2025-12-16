@@ -13,10 +13,13 @@ namespace Unity.UI.Builder
     internal class BuilderPane : VisualElement
     {
         static readonly string s_UssClassName = "unity-builder-pane";
+        static readonly string s_UssHeaderClassName = s_UssClassName + "__header";
+        static readonly string s_UssHeaderHighlightedClassName = s_UssHeaderClassName + "--highlighted";
 
         Label m_Title;
         Label m_SubTitle;
         Label m_SubTitlePrefix;
+        VisualElement m_Header;
         VisualElement m_Container;
         VisualElement m_Toolbar;
         ToolbarMenu m_EllipsisMenu;
@@ -81,6 +84,7 @@ namespace Unity.UI.Builder
             m_Title = this.Q<Label>("title");
             m_SubTitle = this.Q<Label>("sub-title");
             m_SubTitlePrefix = this.Q<Label>("sub-title-prefix");
+            m_Header = this.Q("header");
             m_Container = this.Q("content-container");
             m_Toolbar = this.Q("toolbar");
 
@@ -90,6 +94,26 @@ namespace Unity.UI.Builder
 
             m_EllipsisMenu = this.Q<ToolbarMenu>("ellipsis-menu");
             m_EllipsisMenu.style.display = DisplayStyle.None;
+        }
+
+        [EventInterest(typeof(FocusInEvent), typeof(FocusOutEvent))]
+        protected override void HandleEventTrickleDown(EventBase evt)
+        {
+            if (evt is FocusInEvent)
+            {
+                m_Header.EnableInClassList(s_UssHeaderHighlightedClassName, true);
+            }
+            else if (evt is FocusOutEvent focusOutEvent)
+            {
+                var target = focusOutEvent.relatedTarget as VisualElement;
+                var targetPane = target?.GetFirstAncestorOfType<BuilderPane>();
+                if (targetPane == null || targetPane != this)
+                {
+                    m_Header.EnableInClassList(s_UssHeaderHighlightedClassName, false);
+                }
+            }
+
+            base.HandleEventTrickleDown(evt);
         }
 
         public void AppendActionToEllipsisMenu(string actionName,

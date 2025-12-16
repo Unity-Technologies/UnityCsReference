@@ -7,6 +7,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Reflection;
+using Unity.EntitiesLike;
 using UnityEngine;
 using UnityEngine.Bindings;
 using UnityEngine.Pool;
@@ -233,38 +234,6 @@ namespace UnityEditor.UIElements
             }
         }
 
-        internal bool TryGetValueOverrideFromBagAsObject(IUxmlAttributes bag, CreationContext cc, out object value)
-        {
-            if (!ValidateName() || !TryGetAttributeOverrideValueFromBagAsString(bag, cc, out var str, out _))
-            {
-                value = null;
-                return false;
-            }
-
-            if (UxmlAttributeConverter.TryConvertFromString(type, str, cc, out value))
-            {
-                return true;
-            }
-
-            return false;
-        }
-
-        internal virtual bool TryGetValueFromBagAsObject(IUxmlAttributes bag, CreationContext cc, out object value)
-        {
-            if (!TryGetValueFromBagAsString(bag, cc, out var str))
-            {
-                value = null;
-                return false;
-            }
-
-            if (UxmlAttributeConverter.TryConvertFromString(type, str, cc, out value))
-            {
-                return true;
-            }
-
-            return false;
-        }
-
         /// <summary>
         /// Copies the value from the VisualElement/UxmlObject to the UxmlSerializedData.
         /// </summary>
@@ -418,8 +387,8 @@ namespace UnityEditor.UIElements
             {
                 // Missing asset reference fields will throw an exception because we're trying to write an Object,
                 // so we have to leave the old value as is.
-                var instanceID = obj.GetInstanceID();
-                if (!obj && instanceID != 0)
+                var entityId = obj.GetEntityId();
+                if (!obj && entityId != EntityId.None)
                 {
                     return;
                 }
@@ -485,287 +454,74 @@ namespace UnityEditor.UIElements
             }
         }
 
-        public void UpdateBaseType()
-        {
-            if (!k_BaseTypes.TryGetValue(type, out var baseType))
-                baseType = "string";
-
-            typeNamespace = xmlSchemaNamespace;
-            #pragma warning disable CS0618 // Type or member is obsolete
-            ((UxmlAttributeDescription)this).type = baseType;
-            #pragma warning restore CS0618 // Type or member is obsolete
-        }
-
         public override string ToString() => $"{serializedField.DeclaringType.ReflectedType.Name}.{serializedField.Name} ({serializedField.FieldType})";
     }
 
     [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
     internal class UxmlSerializedUxmlObjectAttributeDescription : UxmlSerializedAttributeDescription
     {
-        internal static readonly string k_MultipleUxmlObjectsWarning = "Multiple UxmlObjects Found for UxmlObjectReference Field {0}. " +
+        internal const string k_MultipleUxmlObjectsWarning = "Multiple UxmlObjects found for UxmlObjectReference field {0}. " +
             "Only the first UxmlObject will be used in the current configuration. " +
             "If you intend to use multiple UxmlObjects, it is recommended to convert the field into a list.";
+        internal const string k_UxmlObjectWithNoFieldWarning = "UxmlObject {0} could not find a matching UxmlObjectReference field in {1}. This object will be ignored.";
+        internal const string k_UxmlObjectMismatchFieldHint = "A potential match was found. The field {0} can accept this UxmlObject, but it currently contains a root name. To be valid, the UxmlObject must be nested under an element named {1}.";
 
         public string rootName { get; set; }
-
-        internal override bool TryGetValueFromBagAsObject(IUxmlAttributes bag, CreationContext cc, out object value)
-        {
-            if (bag is UxmlAsset ua)
-            {
-                using var _ = ListPool<UxmlObjectAsset>.Get(out var uxmlObjectAssets);
-                ua.GetChildrenUxmlObjectAssets(uxmlObjectAssets);
-
-                // First we need to extract the element that contains the values for this field.
-                // Legacy fields, such as those found in MultiColumnListView and MultiColumnTreeView, do not have a root element.
-                // We expect the UXML to look like this:
-                // <visual-element>
-                //   <element-field-name>
-                //     <field-value/>
-                //     <field-value/>
-                //   </element-field-name>
-                // </visual-element>
-                // Legacy elements, such as MultiColumnListView do not have the field name and look like this:
-                // <visual-element>
-                //   <field-value/>
-                //   <field-value/>
-                // </visual-element>
-                if (!string.IsNullOrEmpty(rootName))
-                {
-                    foreach (var asset in uxmlObjectAssets)
-                    {
-                        if (!asset.isField || asset.fullTypeName != rootName)
-                        {
-                            continue;
-                        }
-
-                        asset.GetChildrenUxmlObjectAssets(uxmlObjectAssets);
-                        break;
-                    }
-                }
-
-                // Extract values.
-                Type objectType = type;
-                using (ListPool<(UxmlObjectAsset, UxmlSerializedDataDescription)>.Get(out var foundObjects))
-                {
-                    if (isList)
-                    {
-                        objectType = type.GetArrayOrListElementType();
-                    }
-
-                    foreach (var asset in uxmlObjectAssets)
-                    {
-                        if (asset.isNull)
-                        {
-                            foundObjects.Add(default);
-                        }
-                        else
-                        {
-                            var assetDescription = UxmlSerializedDataRegistry.GetDescription(asset.fullTypeName);
-                            if (assetDescription != null && objectType.IsAssignableFrom(assetDescription.serializedDataType))
-                            {
-                                foundObjects.Add((asset, assetDescription));
-                            }
-                        }
-                    }
-
-                    // Display a warning when uxml file contains more than one named UxmlObject of a type defined in a single instance attribute
-                    if (uxmlObjectAssets.Count > 1 && isUxmlObject && !isList)
-                    {
-                        var foundTypes = new HashSet<string>();
-                        foreach (var asset in uxmlObjectAssets)
-                        {
-                            if (foundTypes.Contains(asset.fullTypeName))
-                            {
-                                Debug.LogWarning(string.Format(k_MultipleUxmlObjectsWarning, asset.fullTypeName));
-                                break;
-                            }
-                            foundTypes.Add(asset.fullTypeName);
-                        }
-                    }
-
-                    IList list = null;
-                    if (foundObjects.Count > 0)
-                    {
-                        if (isList)
-                        {
-                            list = type.IsArray ? Array.CreateInstance(objectType, foundObjects.Count) : (IList)Activator.CreateInstance(type);
-                        }
-
-                        for (int i = 0; i < foundObjects.Count; ++i)
-                        {
-                            (var asset, var assetDescription) = foundObjects[i];
-                            var nestedData = asset != null ? UxmlSerializer.Serialize(assetDescription, asset, cc) : null;
-                            if (isList)
-                            {
-                                if (type.IsArray)
-                                    list[i] = nestedData;
-                                else
-                                    list.Add(nestedData);
-                            }
-                            else
-                            {
-                                value = nestedData;
-                                return true;
-                            }
-                        }
-                    }
-                    if (list != null)
-                    {
-                        value = list;
-                        return true;
-                    }
-                }
-            }
-
-            value = null;
-            return false;
-        }
     }
 
     [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
     internal static class UxmlSerializer
     {
-        /// <summary>
-        /// Extracts the attribute values from the bag and serializes them into the elements UxmlSerializedData.
-        /// </summary>
-        /// <param name="fullTypeName"></param>
-        /// <param name="bag"></param>
-        /// <param name="cc"></param>
-        /// <returns></returns>
-        public static UxmlSerializedData Serialize(string fullTypeName, IUxmlAttributes bag, CreationContext cc)
+        public static bool TryParseSerializedAttribute(string name, string value, UxmlSerializedData uxmlSerializedData, CreationContext cc)
         {
-            var desc = UxmlSerializedDataRegistry.GetDescription(fullTypeName);
-            if (desc == null)
-                return null;
-
-            return Serialize(desc, bag, cc);
+            var desc = UxmlSerializedDataRegistry.GetDescription(uxmlSerializedData.GetType().DeclaringType.FullName);
+            if (desc.FindAttributeWithUxmlName(name) is { } attributeDesc)
+                return TryParseSerializedAttribute(value, uxmlSerializedData, attributeDesc, cc);
+            return false;
         }
 
-        /// <summary>
-        /// Extracts the attribute values from the bag and serializes them into the elements UxmlSerializedData.
-        /// </summary>
-        /// <param name="description"></param>
-        /// <param name="bag"></param>
-        /// <param name="cc"></param>
-        /// <param name="serializeOverrides">When true values will be extracted from attributeOverrides instead of the bag.</param>
-        /// <returns></returns>
-        public static UxmlSerializedData Serialize(UxmlSerializedDataDescription description, IUxmlAttributes bag, CreationContext cc, bool serializeOverrides = false)
+        public static bool TryParseSerializedAttribute(string value, UxmlSerializedData uxmlSerializedData, UxmlSerializedAttributeDescription attributeDescription, CreationContext cc)
         {
-            var data = description.CreateSerializedData();
-            if (bag is UxmlAsset uxmlAsset)
-                data.uxmlAssetId = uxmlAsset.id;
+            if (!UxmlAttributeConverter.TryConvertFromString(attributeDescription.type, value, cc, out var parsedValue))
+                return false;
 
-            // Do we need to handle any legacy fields?
-            // Previously, we needed to use multiple fields to represent a composite, eg. x,y,z fields for a Vector3,
-            // we are now able to serialize composites but still need to support these legacy fields.
-            // If we find a legacy field then we mark it as handled so that we dont then serialize it again and replace the value.
-            var handledAttributes = HashSetPool<string>.Get();
-            if (data is IUxmlSerializedDataCustomAttributeHandler legacyHandler)
+            if (parsedValue is Type type)
             {
-                legacyHandler.SerializeCustomAttributes(bag, handledAttributes);
+                // Validate that type can be assigned
+                var typeRefAttribute = attributeDescription.serializedField.GetCustomAttribute<UxmlTypeReferenceAttribute>();
+                if (typeRefAttribute != null && typeRefAttribute.baseType != null && !typeRefAttribute.baseType.IsAssignableFrom(type))
+                {
+                    Debug.LogError($"Type: Invalid type \"{type}\". Type must derive from {typeRefAttribute.baseType.FullName}.");
+                    return false;
+                }
+
+                parsedValue = value;
             }
 
-            foreach (var attribute in description.serializedAttributes)
+            try
             {
-                if (handledAttributes.Contains(attribute.name))
-                {
-                    attribute.SetSerializedValueAttributeFlags(data, UxmlSerializedData.UxmlAttributeFlags.OverriddenInUxml);
-                    continue;
-                }
-
-                var handled = serializeOverrides ? attribute.TryGetValueOverrideFromBagAsObject(bag, cc, out var value) : attribute.TryGetValueFromBagAsObject(bag, cc, out value);
-                if (!handled)
-                {
-                    attribute.SetSerializedValueAttributeFlags(data, UxmlSerializedData.UxmlAttributeFlags.Ignore);
-                    continue;
-                }
-
-                if (value is Type type)
-                {
-                    // Validate that type can be assigned
-                    var typeRefAttribute = attribute.serializedField.GetCustomAttribute<UxmlTypeReferenceAttribute>();
-                    if (typeRefAttribute != null && typeRefAttribute.baseType != null && !typeRefAttribute.baseType.IsAssignableFrom(type))
-                    {
-                        Debug.LogError($"Type: Invalid type \"{type}\". Type must derive from {typeRefAttribute.baseType.FullName}.");
-                        continue;
-                    }
-
-                    // Type are serialized as string
-                    UxmlAttributeConverter.TryConvertToString<Type>(type, cc.visualTreeAsset, out var str);
-                    value = str;
-                }
-
-                try
-                {
-                    attribute.SetSerializedValue(data, value, UxmlSerializedData.UxmlAttributeFlags.OverriddenInUxml);
-                }
-                catch (Exception e)
-                {
-                    Debug.LogException(new Exception($"Could not set value for {attribute.serializedField.Name} with {value}", e), cc.visualTreeAsset);
-                }
+                attributeDescription.SetSerializedValue(uxmlSerializedData, parsedValue, UxmlSerializedData.UxmlAttributeFlags.OverriddenInUxml);
+            }
+            catch (Exception e)
+            {
+                Debug.LogException(new Exception($"Could not set value for {attributeDescription.serializedField.Name} with {parsedValue}", e), cc.visualTreeAsset);
             }
 
-            HashSetPool<string>.Release(handledAttributes);
-            return data;
+            return true;
         }
 
-        public static UxmlSerializedData SerializeObject(object target)
+        public static void CreateSerializedDataOverrides(VisualTreeAsset vta)
         {
-            var desc = UxmlSerializedDataRegistry.GetDescription(target.GetType().FullName);
-            if (desc == null)
-                return null;
-
-            var data = desc.CreateDefaultSerializedData();
-            return data;
-        }
-
-        public static void SyncVisualTreeAssetSerializedData(CreationContext cc, bool syncDefaultValues)
-        {
-            // Skip the Uxml root element
-            var vta = cc.visualTreeAsset;
-            foreach (var asset in vta.DepthFirstTraversal())
-            {
-                if (asset is TemplateAsset)
-                    continue;
-                if (asset is VisualElementAsset vea)
-                    SyncVisualTreeElementSerializedData(vea, cc, syncDefaultValues);
-            }
-
             foreach (var asset in vta.DepthFirstTraversalOfType<TemplateAsset>())
             {
                 var namesPath = new List<string>();
                 var idsList = new List<int>();
-
-                asset.serializedData = Serialize(asset.fullTypeName, asset, cc);
                 asset.serializedDataOverrides.Clear();
-                CreateSerializedDataOverride(asset, vta, asset, cc, namesPath, idsList);
+                CreateSerializedDataOverride(asset, vta, asset, new CreationContext(vta), namesPath, idsList);
             }
         }
 
-        public static void SyncVisualTreeElementSerializedData(VisualElementAsset vea, CreationContext cc, bool syncDefaultValues)
-        {
-            var desc = UxmlSerializedDataRegistry.GetDescription(vea.fullTypeName);
-            if (desc != null)
-            {
-                vea.serializedData = Serialize(desc, vea, cc);
-
-                if (desc.isEditorOnly)
-                    cc.visualTreeAsset.hasEditorElements = true;
-
-                if (syncDefaultValues)
-                    desc.SyncDefaultValues(vea.serializedData, false);
-            }
-        }
-
-        static string GetElementName(VisualElementAsset vea)
-        {
-            if (vea.serializedData == null)
-                return null;
-            var desc = UxmlSerializedDataRegistry.GetDescription(vea.fullTypeName);
-            return desc?.FindAttributeWithPropertyName(nameof(VisualElement.name))?.GetSerializedValue(vea.serializedData) as string;
-        }
-
-        private static void CreateSerializedDataOverride(TemplateAsset rootTemplate, VisualTreeAsset vta, TemplateAsset templateAsset, CreationContext cc, List<string> namesPath, List<int> idsList)
+        static void CreateSerializedDataOverride(TemplateAsset rootTemplate, VisualTreeAsset vta, TemplateAsset templateAsset, CreationContext cc, List<string> namesPath, List<int> idsList)
         {
             // If there's no attribute override no need to create additional serialized data.
             if (!templateAsset.hasAttributeOverride && cc.attributeOverrides == null)
@@ -796,15 +552,16 @@ namespace UnityEditor.UIElements
             // For each element with an override create a serialized data stored in the template asset
             foreach (var asset in templateVta.DepthFirstTraversal())
             {
-                if (asset is not VisualElementAsset vea)
+                if (asset is not VisualElementAsset vea ||
+                    vea.serializedData is not VisualElement.UxmlSerializedData elementSerializedData)
+                    continue;
+
+                var elementName = elementSerializedData.nameValue;
+                if (string.IsNullOrEmpty(elementName))
                     continue;
 
                 var namesCopy = new List<string>(namesPath);
                 var idsCopy = new List<int>(idsList);
-
-                var elementName = GetElementName(vea);
-                if (string.IsNullOrEmpty(elementName))
-                    continue;
 
                 var parentAsset = vea.parentAsset;
                 var nameInsertIndex = namesCopy.Count;
@@ -817,10 +574,10 @@ namespace UnityEditor.UIElements
                 {
                     if (parentAsset is TemplateAsset parentTemplateAsset)
                     {
-                        var parentElementName = GetElementName(parentTemplateAsset);
-                        if (!string.IsNullOrEmpty(parentElementName))
+                        if (parentTemplateAsset.serializedData is VisualElement.UxmlSerializedData parentElementSerializedData
+                            && !string.IsNullOrEmpty(parentElementSerializedData.nameValue))
                         {
-                            namesCopy.Insert(nameInsertIndex, parentElementName);
+                            namesCopy.Insert(nameInsertIndex, parentElementSerializedData.nameValue);
                         }
 
                         idsCopy.Insert(idInsertIndex, parentAsset.id);
@@ -832,31 +589,79 @@ namespace UnityEditor.UIElements
                 namesCopy.Add(elementName);
                 idsCopy.Add(vea.id);
 
-                var hasOverride = false;
-                for (var i = 0; i < overrideRanges.Count && !hasOverride; i++)
-                {
-                    for (var j = 0; j < overrideRanges[i].attributeOverrides.Count; j++)
-                    {
-                        if (overrideRanges[i].attributeOverrides[j].NamesPathMatchesElementNamesPath(namesCopy))
-                            hasOverride = true;
-                    }
-                }
-
-                if (!hasOverride)
-                    continue;
-
                 var desc = UxmlSerializedDataRegistry.GetDescription(vea.fullTypeName);
                 if (desc == null)
                     continue;
 
+                UxmlSerializedData serializedDataOverride = null;
                 var templateContext = new CreationContext(null, overrideRanges, null, vta, null, null, namesCopy, cc.templateAsset);
-                var serializedDataOverride = Serialize(desc, vea, templateContext, true);
-                rootTemplate.serializedDataOverrides.Add(new TemplateAsset.UxmlSerializedDataOverride()
+
+                var foundOverrides = DictionaryPool<string, (int pathLength, string attributeValue)>.Get();
+                var handledAttributes = HashSetPool<string>.Get();
+
+                // Find all the attribute overrides that match this element.
+                // Making sure to filter any duplicates so that we can filter out less specific overrides (shorter names paths).
+                foreach (var attributeOverride in overrideRanges)
                 {
-                    m_ElementId = vea.id,
-                    m_ElementIdsPath = idsCopy,
-                    m_SerializedData = serializedDataOverride
-                });
+                    foreach (var ao in attributeOverride.attributeOverrides)
+                    {
+                        if (!ao.NamesPathMatchesElementNamesPath(namesCopy))
+                            continue;
+
+                        if (foundOverrides.TryGetValue(ao.m_AttributeName, out var existingOverride))
+                        {
+                            // If we already have an override for this attribute we should check which one is more specific.
+                            if (ao.m_NamesPath.Length > existingOverride.pathLength)
+                            {
+                                // Longer paths are more specific.
+                                foundOverrides[ao.m_AttributeName] = (ao.m_NamesPath.Length, ao.m_Value);
+                            }
+                        }
+                        else
+                        {
+                            foundOverrides[ao.m_AttributeName] = (ao.m_NamesPath.Length, ao.m_Value);
+                        }
+                    }
+                }
+
+                // Now apply the found overrides.
+                foreach (var ao in foundOverrides)
+                {
+                    // We may find that some obsolete attributes map to the same current attribute.
+                    if (handledAttributes.Contains(ao.Key))
+                        continue;
+
+                    serializedDataOverride ??= desc.CreateSerializedData();
+
+                    if (desc.FindAttributeWithUxmlName(ao.Key) is { } attributeDescription)
+                    {
+                        TryParseSerializedAttribute(ao.Value.attributeValue, serializedDataOverride, attributeDescription, templateContext);
+                        handledAttributes.Add(ao.Key);
+                    }
+                    else
+                    {
+                        foreach (var obsoleteAttribute in desc.FindAttributesWithObsoleteUxmlName(ao.Key))
+                        {
+                            if (handledAttributes.Contains(obsoleteAttribute.name))
+                                continue;
+                            handledAttributes.Add(obsoleteAttribute.name);
+                            TryParseSerializedAttribute(ao.Value.attributeValue, serializedDataOverride, obsoleteAttribute, cc);
+                        }
+                    }
+                }
+
+                DictionaryPool<string, (int pathLength, string attributeValue)>.Release(foundOverrides);
+                HashSetPool<string>.Release(handledAttributes);
+
+                if (serializedDataOverride != null)
+                {
+                    rootTemplate.serializedDataOverrides.Add(new TemplateAsset.UxmlSerializedDataOverride()
+                    {
+                        m_ElementId = vea.id,
+                        m_ElementIdsPath = idsCopy,
+                        m_SerializedData = serializedDataOverride
+                    });
+                }
             }
 
             foreach (var ta in templateVta.DepthFirstTraversalOfType<TemplateAsset>())
@@ -864,10 +669,10 @@ namespace UnityEditor.UIElements
                 var idsCopy = new List<int>(idsList);
                 var namesCopy = new List<string>(namesPath);
 
-                var elementName = GetElementName(ta);
-                if (!string.IsNullOrEmpty(elementName))
+                if (ta.serializedData is VisualElement.UxmlSerializedData taSerializedData
+                    && !string.IsNullOrEmpty(taSerializedData.nameValue))
                 {
-                    namesCopy.Add(elementName);
+                    namesCopy.Add(taSerializedData.nameValue);
                 }
 
                 idsCopy.Add(ta.id);

@@ -50,6 +50,7 @@ namespace UnityEngine.UIElements
         HueRotate,
 
         /// <undoc/>
+        [Obsolete("Use Enum.GetValues(typeof(FilterFunctionType)).Length instead", false)]
         Count
     }
 
@@ -330,7 +331,7 @@ namespace UnityEngine.UIElements
             }
         }
 
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
         internal FilterFunctionDefinition GetDefinition()
         {
             if (m_Type == FilterFunctionType.Custom)

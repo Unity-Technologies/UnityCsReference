@@ -573,7 +573,7 @@ namespace Unity.GraphToolkit.Editor
             for (var i = 0; i < wires.Count; i++)
             {
                 var wire = wires[i];
-                var port = Direction == PortDirection.Input ? wire.FromPort : wire.ToPort;
+                var port = wire.GetOtherPort(this);
                 if (port != null)
                 {
                     results.Add(port);
@@ -668,8 +668,19 @@ namespace Unity.GraphToolkit.Editor
         /// <remarks>
         /// The default tooltip is "[name] [Input|Output] of type (friendly name of the port type)" for ports (e.g. "Input of type Float").
         /// </remarks>
-        public virtual string DefaultTooltip => ComputePortLabel(true) + ": " +(Direction == PortDirection.Output ? "Output" : "Input") +
-            (DataTypeHandle == TypeHandle.ExecutionFlow ? " execution flow" : $" of type {DataTypeHandle.FriendlyName}");
+        public virtual string DefaultTooltip
+        {
+            get
+            {
+                var portLabel = ComputePortLabel(true);
+                if (!string.IsNullOrEmpty(portLabel))
+                    portLabel += Orientation == PortOrientation.Horizontal ? ": " : "\n";
+
+                return portLabel
+                    + (Direction == PortDirection.Output ? "Output" : "Input")
+                    + (DataTypeHandle == TypeHandle.ExecutionFlow ? " execution flow" : $" of type {DataTypeHandle.FriendlyName}");
+            }
+        }
 
         /// <summary>
         /// The tooltip for the port.
@@ -851,6 +862,8 @@ namespace Unity.GraphToolkit.Editor
 
         string IPort.DisplayName => Title;
 
+        string IPort.Tooltip => ToolTip;
+
         void IPort.GetConnectedPorts(List<IPort> outConnectedPorts)
         {
             outConnectedPorts.Clear();
@@ -868,7 +881,7 @@ namespace Unity.GraphToolkit.Editor
              for (var i = 0; i < wires.Count; i++)
              {
                  var wire = wires[i];
-                 var port = Direction == PortDirection.Input ? wire.FromPort : wire.ToPort;
+                 var port = wire.GetOtherPort(this);
                  if (port == null)
                      return true;
                  if (port.NodeModel is WirePortalModel portal)

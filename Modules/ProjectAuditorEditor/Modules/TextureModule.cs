@@ -30,8 +30,8 @@ namespace Unity.ProjectAuditor.Editor.Modules
         static readonly IssueLayout k_TextureLayout = new IssueLayout
         {
             Category = IssueCategory.Texture,
-            Properties = new[]
-            {
+            Properties =
+            [
                 new PropertyDefinition { Type = PropertyType.Description, Format = PropertyFormat.String, Name = "Name", LongName = "Texture Name", MaxAutoWidth = 500 },
                 new PropertyDefinition { Type = PropertyTypeUtil.FromCustom(TextureProperty.Shape), Format = PropertyFormat.String, Name = "Shape", LongName = "Texture Shape" },
                 new PropertyDefinition { Type = PropertyTypeUtil.FromCustom(TextureProperty.ImporterType), Format = PropertyFormat.String, Name = "Importer Type", LongName = "Texture Importer Type" },
@@ -43,16 +43,16 @@ namespace Unity.ProjectAuditor.Editor.Modules
                 new PropertyDefinition { Type = PropertyTypeUtil.FromCustom(TextureProperty.SizeOnDisk), Format = PropertyFormat.Bytes, Name = "Size", LongName = "Texture Size" },
                 new PropertyDefinition { Type = PropertyTypeUtil.FromCustom(TextureProperty.StreamingMipMap), Format = PropertyFormat.Bool, Name = "Streaming", LongName = "Mipmaps Streaming" },
                 new PropertyDefinition { Type = PropertyType.Path, Name = "Path", MaxAutoWidth = 500 }
-            }
+            ]
         };
 
         public override string Name => "Textures";
 
-        public override IReadOnlyCollection<IssueLayout> SupportedLayouts => new IssueLayout[]
-        {
+        public override IReadOnlyCollection<IssueLayout> SupportedLayouts =>
+        [
             k_TextureLayout,
             AssetsModule.k_IssueLayout
-        };
+        ];
 
         public override void Initialize()
         {
@@ -139,8 +139,7 @@ namespace Unity.ProjectAuditor.Editor.Modules
 
                 issues.Add(context.CreateInsight(IssueCategory.Texture, context.Texture.name)
                     .WithCustomProperties(
-                        new object[(int)TextureProperty.Num]
-                        {
+                        [
                             context.Importer.textureShape,
                             context.Importer.textureType,
                             context.ImporterPlatformSettings.format,
@@ -150,7 +149,7 @@ namespace Unity.ProjectAuditor.Editor.Modules
                             resolution,
                             context.Size,
                             context.Importer.streamingMipmaps
-                        })
+                        ])
                     .WithLocation(new Location(assetPath)));
 
                 foreach (var analyzer in analyzers)

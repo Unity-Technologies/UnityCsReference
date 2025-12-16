@@ -21,6 +21,7 @@ namespace UnityEditor.Build.Profile
         internal const string k_SettingDevelopment = "development";
         internal const string k_SettingConnectProfiler = "connectProfiler";
         internal const string k_SettingBuildWithDeepProfilingSupport = "buildWithDeepProfilingSupport";
+        internal const string k_SettingBuildWithCodeCoverage = "buildWithCodeCoverage";
         internal const string k_SettingAllowDebugging = "allowDebugging";
         internal const string k_SettingWaitForManagedDebugger = "WaitForManagedDebugger";
         internal const string k_SettingManagedDebuggerFixedPort = "ManagedDebuggerFixedPort";
@@ -36,6 +37,7 @@ namespace UnityEditor.Build.Profile
         [SerializeField] bool m_Development = false;
         [SerializeField] bool m_ConnectProfiler = false;
         [SerializeField] bool m_BuildWithDeepProfilingSupport = false;
+        [SerializeField] bool m_BuildWithCodeCoverage = false;
         [SerializeField] bool m_AllowDebugging = false;
         [SerializeField] bool m_WaitForManagedDebugger = false;
         [SerializeField] int m_ManagedDebuggerFixedPort = 0;
@@ -64,6 +66,12 @@ namespace UnityEditor.Build.Profile
         {
             get => m_BuildWithDeepProfilingSupport;
             set => m_BuildWithDeepProfilingSupport = value;
+        }
+
+        internal protected virtual bool buildWithCodeCoverage
+        {
+            get => m_BuildWithCodeCoverage;
+            set => m_BuildWithCodeCoverage = value;
         }
 
         internal protected virtual bool allowDebugging
@@ -191,6 +199,7 @@ namespace UnityEditor.Build.Profile
                 k_SettingDevelopment => true,
                 k_SettingConnectProfiler => true,
                 k_SettingBuildWithDeepProfilingSupport => true,
+                k_SettingBuildWithCodeCoverage => false,
                 k_SettingAllowDebugging => true,
                 k_SettingWaitForManagedDebugger => true,
                 k_SettingManagedDebuggerFixedPort => false,

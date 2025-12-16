@@ -93,7 +93,7 @@ namespace Unity.ProjectAuditor.Editor.Utils
         /// <summary>
         /// Formats a given frequency as a string in the format "X Hz" or "X kHz".
         /// </summary>
-        /// <param name="size">Frequency value to format.</param>
+        /// <param name="frequency">Frequency value to format.</param>
         /// <returns>A string representation of the input value as a frequency in Hz or kHz.</returns>
         public static string FormatHz(int frequency)
         {

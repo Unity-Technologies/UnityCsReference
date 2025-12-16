@@ -44,5 +44,20 @@ namespace Unity.UIToolkit.Editor
             labelElement.AddToClassList(labelUssClassName);
             visualInput.AddToClassList(inputUssClassName);
         }
+
+        protected override MaterialDefinitionField CreateValueField()
+        {
+            return new MaterialDefinitionField();
+        }
+
+        protected override StyleMaterialDefinition CreateStyleValue(MaterialDefinition v)
+        {
+            return v;
+        }
+
+        internal override bool EqualsCurrentValue(StyleMaterialDefinition v)
+        {
+            return value == v;
+        }
     }
 }

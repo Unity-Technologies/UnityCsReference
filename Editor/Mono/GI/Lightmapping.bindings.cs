@@ -312,12 +312,11 @@ namespace UnityEditor
         [RequiredByNativeCode]
         private static void Internal_CallBakeStartedFunctions()
         {
-            if (bakeStarted != null)
-                bakeStarted();
-
             // Open all sub scenes before the bake so they can participate in the GI calculations.
             OpenNestedSubScenes();
 
+            if (bakeStarted != null)
+                bakeStarted();
 #pragma warning disable 0618
             if (started != null)
                 started();
@@ -373,6 +372,7 @@ namespace UnityEditor
         // Do not store and access BakeInput beyond the call-back.
         internal static event Action<BakeInput, LightmapRequests, LightProbeRequests, InputExtraction.SourceMap> createdBakeInput;
 
+        [RequiredByNativeCode]
         internal static void Internal_CallOnCreatedBakeInput(IntPtr p_BakeInput, IntPtr p_LightmapRequests, IntPtr LightProbeRequests, IntPtr p_SourceMap)
         {
             if (createdBakeInput != null)
@@ -404,6 +404,7 @@ namespace UnityEditor
 
         public static event Action bakeCancelled;
 
+        [RequiredByNativeCode]
         private static void Internal_CallBakeCancelledFunctions()
         {
             if (bakeCancelled != null)
@@ -504,6 +505,9 @@ namespace UnityEditor
 
         [StaticAccessor("GetLightmapSettings()")]
         public static extern LightingDataAsset lightingDataAsset { get; set; }
+
+        [StaticAccessor("GetLightmapSettings().GetReadOnlySharedData()")]
+        public static extern bool HasDynamicGILightmapTextures();
 
         public static bool TryGetLightingSettings(out LightingSettings settings)
         {

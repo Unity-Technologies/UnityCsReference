@@ -51,7 +51,7 @@ namespace UnityEditor
         float m_ZoomSpeed = 0f;
         float m_TotalMotion = 0f;
         float m_FPSScrollWheelMultiplier = .01f;
-        const float k_FlySpeedAcceleration = 1.8f;
+        const float k_FlySpeedAccelerationOffset = 1f; //User can set starting at 0.1, but values below 1 would result in negative acceleration. So we offset it by 1.
         public const float k_FlySpeed = 9f; // Also used in tests.
 
         readonly int k_ViewToolID = GUIUtility.GetPermanentControlID();
@@ -405,14 +405,19 @@ namespace UnityEditor
             var speedModifier = view.cameraSettings.speed;
 
             if (Event.current.shift)
-                speedModifier *= 5f;
+                speedModifier *= view.cameraSettings.speedModifier;
 
             if (m_Moving)
             {
                 if (view.cameraSettings.accelerationEnabled)
-                    m_FlySpeedTarget = m_FlySpeedTarget < Mathf.Epsilon ? k_FlySpeed : m_FlySpeedTarget * Mathf.Pow(k_FlySpeedAcceleration, deltaTime);
+                {
+                    float acceleration = view.cameraSettings.accelerationSpeed + k_FlySpeedAccelerationOffset;
+                    m_FlySpeedTarget = m_FlySpeedTarget < Mathf.Epsilon ? k_FlySpeed : m_FlySpeedTarget * Mathf.Pow(acceleration, deltaTime);
+                }
                 else
+                {
                     m_FlySpeedTarget = k_FlySpeed;
+                }
             }
             else
             {

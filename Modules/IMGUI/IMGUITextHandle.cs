@@ -5,11 +5,13 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using UnityEngine.TextCore;
 using UnityEngine.TextCore.Text;
+using static UnityEngine.TextCore.RichTextTagParser;
 
 namespace UnityEngine
 {
-    internal class IMGUITextHandle : TextHandle
+    internal partial class IMGUITextHandle : TextHandle
     {
         internal LinkedListNode<TextHandleTuple> tuple;
 
@@ -43,6 +45,39 @@ namespace UnityEngine
             public int hashCode;
         }
 
+        internal static void GetMeshInfo(GUIStyle style, Color color, string content, Rect rect, ref MeshInfoBindings[] meshInfos, ref Vector2 dimensions, ref int generationId)
+        {
+            if (IsAdvancedTextEnabled())
+            {
+                GetMeshInfoNative(style, color, content, rect, ref meshInfos, ref dimensions, ref generationId);
+                return;
+            }
+
+            bool isCached = false;
+            var textHandle = IMGUITextHandle.GetTextHandle(style, rect, content, color, ref isCached);
+            generationId = TextHandle.settings.GetHashCode();
+            var invScale = 1 / GUIUtility.pixelsPerPoint;
+            // If not already cached on the native side, we must send the meshInfo
+            if (!isCached)
+            {
+                var textInfo = textHandle.textInfo;
+                meshInfos = new MeshInfoBindings[textInfo.materialCount];
+                for (int i = 0; i < textInfo.materialCount; i++)
+                {
+                    meshInfos[i].vertexData = new TextCoreVertex[textInfo.meshInfo[i].vertexCount];
+                    meshInfos[i].vertexCount = textInfo.meshInfo[i].vertexCount;
+                    meshInfos[i].material = textInfo.meshInfo[i].material;
+                    Array.Copy(textInfo.meshInfo[i].vertexData, meshInfos[i].vertexData, textInfo.meshInfo[i].vertexCount);
+
+                    for (int j = 0; j < meshInfos[i].vertexData.Length; j++)
+                    {
+                        meshInfos[i].vertexData[j].position *= invScale;
+                    }
+                }
+            }
+            dimensions = textHandle.preferredSize;
+        }
+
         // This cleans both the managed and the native cache
         internal static void EmptyCache()
         {
@@ -58,8 +93,11 @@ namespace UnityEngine
             textHandlesTuple.Clear();
         }
 
-        internal static IMGUITextHandle GetTextHandle(GUIStyle style, Rect position, string content, Color32 textColor)
+        internal static IMGUITextHandle GetTextHandle(GUIStyle style, Rect position, string content, Color32 textColor, bool update = true)
         {
+            if (IsAdvancedTextEnabled())
+                return GetATGTextHandle(style, position, content, textColor, update);
+
             bool isCached = false;
             ConvertGUIStyleToGenerationSettings(settings, style, textColor, content, position);
             return GetTextHandle(settings, false, ref isCached);
@@ -67,6 +105,9 @@ namespace UnityEngine
 
         internal static IMGUITextHandle GetTextHandle(GUIStyle style, Rect position, string content, Color32 textColor, ref bool isCached)
         {
+            if (IsAdvancedTextEnabled())
+                return GetATGTextHandle(style, position, content, textColor, ref isCached);
+
             ConvertGUIStyleToGenerationSettings(settings, style, textColor, content, position);
             return GetTextHandle(settings, true, ref isCached);
         }
@@ -146,14 +187,27 @@ namespace UnityEngine
 
         internal static float GetLineHeight(GUIStyle style)
         {
-            ConvertGUIStyleToGenerationSettings(settings, style, Color.white, "", Rect.zero);
-            return GetLineHeightDefault(settings) / GUIUtility.pixelsPerPoint;
+            if (IsAdvancedTextEnabled())
+            {
+                return GetNativeLineHeightDefault(style) / GUIUtility.pixelsPerPoint;
+            }
+            else
+            {
+                ConvertGUIStyleToGenerationSettings(settings, style, Color.white, "", Rect.zero);
+                return GetLineHeightDefault(settings.fontAsset, settings.fontSize) / GUIUtility.pixelsPerPoint;
+            }
+            
         }
 
         //Width is in saled pixels
         internal int GetNumCharactersThatFitWithinWidth(float width)
         {
             AddToPermanentCacheAndGenerateMesh();
+            if (useAdvancedText)
+            {
+                width = PointsToPixels(width);
+                return TextLib.GetNumCharactersThatFitWithinWidth(textGenerationInfo, (int)(width * 64));
+            }
             int characterCount = textInfo.lineInfo[0].characterCount;
             int charCount;
             float currentSize = 0;
@@ -175,6 +229,20 @@ namespace UnityEngine
         public Rect[] GetHyperlinkRects(Rect content)
         {
             AddToPermanentCacheAndGenerateMesh();
+
+            if (useAdvancedText)
+            {
+                var hyperlinks = TextLib.GetHyperlinkRects(textGenerationInfo);
+                for (int i = 0; i < hyperlinks.Length; ++i)
+                {
+                    hyperlinks[i].position /= GUIUtility.pixelsPerPoint;
+                    hyperlinks[i].size /= GUIUtility.pixelsPerPoint;
+                    hyperlinks[i].position += new Vector2(content.x, content.y);
+                    
+                }
+                   
+                return hyperlinks;
+            }
 
             List<Rect> rects = new List<Rect>();
             var scaleinv = 1/ GetPixelsPerPoint();
@@ -326,10 +394,84 @@ namespace UnityEngine
             }
         }
 
+        static TextOverflow LegacyClippingToNativeOverflow(TextClipping clipping)
+        {
+            switch (clipping)
+            {
+                case TextClipping.Clip:
+                    return TextOverflow.Clip;
+                case TextClipping.Ellipsis:
+                    return TextOverflow.Ellipsis;
+                case TextClipping.Overflow:
+                default:
+                    return TextOverflow.Clip;
+            }
+        }
+
         internal override bool IsAdvancedTextEnabledForElement()
         {
+            return IsAdvancedTextEnabled();
+        }
+
+        internal static bool IsAdvancedTextEnabled()
+        {
+            return GUIStyle.useAdvancedText ?? GetEditorTextGeneratorType() == TextGeneratorType.Advanced;
+        }
+
+        public bool HasClickedOnLink(Vector2 mousePosition, out string linkData)
+        {
+            return useAdvancedText ? HasClickedOnLinkATG(mousePosition, out linkData) : HasClickedOnLinkTextCore(mousePosition, out linkData);
+        }
+
+        private bool HasClickedOnLinkTextCore(Vector2 mousePosition, out string linkData)
+        {
+            linkData = "";
+            var intersectingLink = FindIntersectingLink(mousePosition);
+            if (intersectingLink < 0)
+                return false;
+
+            var link = textInfo.linkInfo[intersectingLink];
+            if (link.linkId != null && link.linkIdLength > 0)
+            {
+                linkData = new string(link.linkId);
+                return true;
+            }
             return false;
-            //return GetEditorTextGeneratorType() == TextGeneratorType.Advanced;
+        }
+
+        internal bool HasClickedOnHREF(Vector2 mousePosition, out string href)
+        {
+            return useAdvancedText ? HasClickedOnHREFATG(mousePosition, out href) : HasClickedOnHREFTextCore(mousePosition, out href);
+        }
+
+        private bool HasClickedOnHREFTextCore(Vector2 mousePosition, out string href)
+        {
+            href = "";
+            var intersectingLink = FindIntersectingLink(mousePosition);
+            if (intersectingLink < 0)
+                return false;
+
+            var link = textInfo.linkInfo[intersectingLink];
+            if (link.hashCode == (int)MarkupTag.HREF)
+            {
+                if (link.linkId != null && link.linkIdLength > 0)
+                {
+                    href = new string(link.linkId);
+                    if (!href.StartsWith("href"))
+                        return false;
+                    // Removes href="..."
+                    if (href.StartsWith("href=\"") || href.StartsWith("href=\'"))
+                        href = href.Substring(6, href.Length - 7);
+                    // Removes href=...
+                    else
+                        href = href.Substring(5, href.Length - 6);
+                    if (Uri.IsWellFormedUriString(href, UriKind.Absolute))
+                    {
+                        return true;
+                    }
+                }
+            }
+            return false;
         }
     }
 }

@@ -241,7 +241,7 @@ namespace UnityEditor.Search
         internal SearchValue(UnityEngine.Object obj)
         {
             this.type = ValueType.Object;
-            this.text = SearchUtils.GetObjectPath(obj, true);
+            this.text = SearchUtils.GetObjectPath(obj, subAssetUseGlobalObjectId:true);
             this.floatNumber = float.NaN;
             this.color = default;
             this.v4 = default;
@@ -250,7 +250,7 @@ namespace UnityEditor.Search
         internal SearchValue(UnityEngine.Object obj, in string path)
         {
             this.type = ValueType.Object;
-            this.text = obj ? SearchUtils.GetObjectPath(obj, true) : path;
+            this.text = obj ? SearchUtils.GetObjectPath(obj, subAssetUseGlobalObjectId: true) : path;
             this.floatNumber = float.NaN;
             this.color = default;
             this.v4 = default;
@@ -319,7 +319,7 @@ namespace UnityEditor.Search
             else if (v is UnityEngine.Object obj)
             {
                 this.type = ValueType.Object;
-                this.text = SearchUtils.GetObjectPath(obj, true);
+                this.text = SearchUtils.GetObjectPath(obj, subAssetUseGlobalObjectId: true);
             }
             else if (v != null)
             {
@@ -405,6 +405,8 @@ namespace UnityEditor.Search
 
                 case SerializedPropertyType.Hash128:
                     return new SearchValue(sp.hash128Value.ToString());
+                case SerializedPropertyType.GUID:
+                    return new SearchValue(sp.guidValue.ToString());
                 case SerializedPropertyType.EntityId:
                     return new SearchValue(sp.entityIdValue.ToString());
             }

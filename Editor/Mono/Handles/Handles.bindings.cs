@@ -121,7 +121,6 @@ namespace UnityEditor
         internal static extern void DrawCameraFade([NotNull] Camera camera, float fade);
 
         [FreeFunction]
-        [return:UnityMarshalAs(NativeType.ScriptingObjectPtr)]
-        static extern Vector3[] Internal_MakeBezierPoints(Vector3 startPosition, Vector3 endPosition, Vector3 startTangent, Vector3 endTangent, int division);
+        static extern void Internal_MakeBezierPoints(Span<Vector3> points, Vector3 startPosition, Vector3 endPosition, Vector3 startTangent, Vector3 endTangent);
     }
 }

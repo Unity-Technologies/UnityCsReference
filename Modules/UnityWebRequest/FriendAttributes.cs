@@ -11,3 +11,6 @@ using System.Runtime.CompilerServices;
 
 // needed for UnityEngine.WWWTranscoder
 [assembly: InternalsVisibleTo("UnityEngine.UnityWebRequestWWWModule")]
+
+// tests specific
+[assembly: InternalsVisibleTo("Assembly-CSharp-firstpass-testable")]

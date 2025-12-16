@@ -11,3 +11,5 @@ using System.Runtime.CompilerServices;
 [assembly: InternalsVisibleTo("Unity.Modules.BuildProfile.Tests.Editor")]
 
 [assembly: InternalsVisibleTo("Unity.Insights.Editor.Tests")]
+
+[assembly: InternalsVisibleTo("UnityEditor.Rendering.ShaderBuildSettings.Tests")]

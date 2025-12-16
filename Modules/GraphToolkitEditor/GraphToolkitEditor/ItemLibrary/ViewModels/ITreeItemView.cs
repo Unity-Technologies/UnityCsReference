@@ -20,6 +20,11 @@ namespace Unity.GraphToolkit.ItemLibrary.Editor
         public string StyleName { get; }
 
         /// <summary>
+        /// Custom path for the item's icon. If set, it takes precedence over the style defined by <see cref="StyleName"/>.
+        /// </summary>
+        public string IconPath { get; }
+
+        /// <summary>
         /// Depth of this item in the hierarchy.
         /// </summary>
         public int Depth { get; }

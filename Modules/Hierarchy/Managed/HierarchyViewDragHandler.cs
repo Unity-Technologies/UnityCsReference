@@ -166,8 +166,8 @@ class HierarchyViewDragHandler
         if (IsSearchActive())
             return false;
 
-        using var draggedNodes = new RentSpanUnmanaged<HierarchyNode>(HierarchyViewModel.HasAllFlagsCount(HierarchyNodeFlags.Selected));
-        HierarchyViewModel.GetNodesWithAllFlags(HierarchyNodeFlags.Selected, draggedNodes);
+        using var draggedNodes = new RentSpanUnmanaged<HierarchyNode>(HierarchyViewModel.HasFlagsCount(HierarchyNodeFlags.Selected));
+        HierarchyViewModel.GetNodesWithFlags(HierarchyNodeFlags.Selected, draggedNodes);
 
         foreach (var handler in Hierarchy.EnumerateNodeTypeHandlers())
         {
@@ -180,9 +180,9 @@ class HierarchyViewDragHandler
 
     StartDragArgs SetupDragAndDrop(SetupDragAndDropArgs args)
     {
-        var count = HierarchyViewModel.HasAllFlagsCount(HierarchyNodeFlags.Selected);
+        var count = HierarchyViewModel.HasFlagsCount(HierarchyNodeFlags.Selected);
         var draggedNodes = new RentSpanUnmanaged<HierarchyNode>(count);
-        HierarchyViewModel.GetNodesWithAllFlags(HierarchyNodeFlags.Selected, draggedNodes);
+        HierarchyViewModel.GetNodesWithFlags(HierarchyNodeFlags.Selected, draggedNodes);
 
         var allEntityIds = new List<EntityId>();
         using var _ = ListPool<string>.Get(out var paths);
@@ -241,9 +241,9 @@ class HierarchyViewDragHandler
         if (!DragSourceIsCurrentListView(args))
             return HierarchyViewDragAndDropTargets.Rejected;
 
-        using var draggedNodes = new RentSpanUnmanaged<HierarchyNode>(HierarchyViewModel.HasAllFlagsCount(HierarchyNodeFlags.Selected));
+        using var draggedNodes = new RentSpanUnmanaged<HierarchyNode>(HierarchyViewModel.HasFlagsCount(HierarchyNodeFlags.Selected));
 
-        HierarchyViewModel.GetNodesWithAllFlags(HierarchyNodeFlags.Selected, draggedNodes);
+        HierarchyViewModel.GetNodesWithFlags(HierarchyNodeFlags.Selected, draggedNodes);
 
         var parentNodeTypeHandler = parentNode == Hierarchy.Root ? null : Hierarchy.GetNodeTypeHandler(in parentNode) as IHierarchyEditorNodeTypeHandler;
         for (var i = 0; i < draggedNodes.Span.Length; ++i)
@@ -334,12 +334,12 @@ class HierarchyViewDragHandler
         {
             m_HierarchyView.EnqueuePostUpdateAction(() =>
             {
-                foreach (ref readonly var node in m_HierarchyView.ViewModel.EnumerateNodesWithAllFlags(HierarchyNodeFlags.Selected))
+                foreach (ref readonly var node in m_HierarchyView.ViewModel.EnumerateNodesWithFlags(HierarchyNodeFlags.Selected))
                 {
                     if (node == HierarchyNode.Null || node == m_HierarchyView.Source.Root)
                         continue;
 
-                    m_HierarchyView.FrameNode(in node);
+                    m_HierarchyView.Frame(in node);
                     break;
                 }
             });
@@ -354,9 +354,9 @@ class HierarchyViewDragHandler
         if (!DragSourceIsCurrentListView(args))
             return DragVisualMode.Rejected;
 
-        using var rentedSpan = new RentSpanUnmanaged<HierarchyNode>(HierarchyViewModel.HasAllFlagsCount(HierarchyNodeFlags.Selected));
+        using var rentedSpan = new RentSpanUnmanaged<HierarchyNode>(HierarchyViewModel.HasFlagsCount(HierarchyNodeFlags.Selected));
         var draggedNodes = rentedSpan.Span;
-        HierarchyViewModel.GetNodesWithAllFlags(HierarchyNodeFlags.Selected, draggedNodes);
+        HierarchyViewModel.GetNodesWithFlags(HierarchyNodeFlags.Selected, draggedNodes);
 
         var existingChildren = Hierarchy.GetChildren(parentNode);
         var insertIndex = dragAndDropTargets.childIndex;
@@ -404,7 +404,7 @@ class HierarchyViewDragHandler
                 for (var j = 0; j < currentChildrenCount; ++j)
                 {
                     var node = oldSiblings[j];
-                    if (HierarchyViewModel.HasAllFlags(in node, HierarchyNodeFlags.Selected))
+                    if (HierarchyViewModel.HasFlags(in node, HierarchyNodeFlags.Selected))
                         continue;
 
                     Hierarchy.SetSortIndex(in node, currentSortIndex++);
@@ -426,7 +426,7 @@ class HierarchyViewDragHandler
         for (var i = 0; i < insertIndex && i < existingChildren.Length; ++i)
         {
             var node = existingChildren[i];
-            if (HierarchyViewModel.HasAllFlags(in node, HierarchyNodeFlags.Selected))
+            if (HierarchyViewModel.HasFlags(in node, HierarchyNodeFlags.Selected))
                 continue;
 
             Hierarchy.SetSortIndex(in node, currentSortIndex++);
@@ -440,7 +440,7 @@ class HierarchyViewDragHandler
         for (var i = insertIndex; i < existingChildren.Length; ++i)
         {
             var node = existingChildren[i];
-            if (HierarchyViewModel.HasAllFlags(in node, HierarchyNodeFlags.Selected))
+            if (HierarchyViewModel.HasFlags(in node, HierarchyNodeFlags.Selected))
                 continue;
 
             Hierarchy.SetSortIndex(in node, currentSortIndex++);
@@ -455,9 +455,9 @@ class HierarchyViewDragHandler
     {
         if (DragSourceIsCurrentListView(args))
         {
-            var count = HierarchyViewModel.HasAllFlagsCount(HierarchyNodeFlags.Selected);
+            var count = HierarchyViewModel.HasFlagsCount(HierarchyNodeFlags.Selected);
             using var indices = new RentSpanUnmanaged<int>(count);
-            HierarchyViewModel.GetIndicesWithAllFlags(HierarchyNodeFlags.Selected, indices);
+            HierarchyViewModel.GetIndicesWithFlags(HierarchyNodeFlags.Selected, indices);
             return HandleTreePosition(args, indices);
         }
         else
@@ -507,7 +507,7 @@ class HierarchyViewDragHandler
         var previousNode = HierarchyViewModel[previousNodeIndex];
         var nextNode = nextNodeIndex == k_InvalidIndex ? HierarchyNode.Null : HierarchyViewModel[nextNodeIndex];
 
-        var hoveringBetweenExpandedParentAndFirstChild = HierarchyFlattened.GetChildrenCount(in previousNode) > 0 && HierarchyViewModel.HasAllFlags(in previousNode, HierarchyNodeFlags.Expanded);
+        var hoveringBetweenExpandedParentAndFirstChild = HierarchyFlattened.GetChildrenCount(in previousNode) > 0 && HierarchyViewModel.HasFlags(in previousNode, HierarchyNodeFlags.Expanded);
         var previousNodeDepth = HierarchyFlattened.GetDepth(previousNode);
         var nextNodeDepth = nextNodeIndex == k_InvalidIndex ? 0 : HierarchyFlattened.GetDepth(nextNode);
         var minDepth = nextNodeDepth;
@@ -893,13 +893,13 @@ class HierarchyViewDragHandler
         {
             var node = HierarchyViewModel[itemIndex];
             var hasChildren = HierarchyViewModel.GetChildrenCount(in node) > 0;
-            var isExpanded = HierarchyViewModel.HasAllFlags(in node, HierarchyNodeFlags.Expanded);
+            var isExpanded = HierarchyViewModel.HasFlags(in node, HierarchyNodeFlags.Expanded);
 
             if (!hasChildren || isExpanded)
                 return;
 
             // todo: fix this so we don't allocate every time
-            var nodes = HierarchyViewModel.GetNodesWithAllFlags(HierarchyNodeFlags.Expanded);
+            var nodes = HierarchyViewModel.GetNodesWithFlags(HierarchyNodeFlags.Expanded);
 
             // Store the expanded array prior to drag so we can revert it with a delay later
             m_AutoExpansionData.expandedNodesBeforeDrag ??= nodes;

@@ -41,13 +41,14 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private float GetLabelsHeight()
         {
-            var labels = m_LabelsFoldOut?.Children().OfType<Toggle>() ?? Enumerable.Empty<Toggle>();
-            var firstLabels = labels.Take(k_MaxDisplayLabels);
-            var height = (labels.Any() ? k_FoldOutHeight : 0) + firstLabels.Count() * k_ToggleHeight;
+            var labels = m_LabelsFoldOut?.Children().OfType<Toggle>().ToArray() ?? Array.Empty<Toggle>();
+            var firstLabelsCount = Math.Min(k_MaxDisplayLabels, labels.Length);
+            var selectedLabelsCount = labels.Skip(k_MaxDisplayLabels).Count(t => t.value);
 
-            var selectedLabels = labels.Skip(k_MaxDisplayLabels).Where(t => t.value);
-            height += selectedLabels.Count() * k_ToggleHeight;
-            if (labels.Count() > firstLabels.Count() + selectedLabels.Count())
+            var height = (firstLabelsCount + selectedLabelsCount) * k_ToggleHeight;
+            if (labels.Length > 0)
+                height += k_FoldOutHeight;
+            if (labels.Length > firstLabelsCount + selectedLabelsCount)
                 height += k_ToggleHeight; // Show all button height
 
             return height;
@@ -67,7 +68,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                     return;
 
                 m_Labels = labels ?? new List<string>();
-                if (m_Labels.Any())
+                if (m_Labels.Count > 0)
                 {
                     DoLabelsDisplay();
                     ApplyFilters();
@@ -153,7 +154,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             }
             m_Container.Add(m_StatusFoldOut);
 
-            if (m_Categories.Any())
+            if (m_Categories.Count > 0)
             {
                 m_CategoriesFoldOut = new Foldout {text = L10n.Tr("Categories"), name = k_CategoriesFoldOutName, classList = {k_FoldoutClass}};
                 foreach (var category in m_Categories)

@@ -20,7 +20,7 @@ namespace UnityEditor.EditorTools
         internal static readonly string k_Tooltip = L10n.Tr("Creation Tools");
         CreationToolsGroup() {}
     }
-    
+
     sealed class EditorToolManager : ScriptableSingleton<EditorToolManager>
     {
         [SerializeField]
@@ -368,15 +368,15 @@ namespace UnityEditor.EditorTools
                 RestorePreviousPersistentTool();
         }
 
-        void SelectedObjectWasDestroyed(int id)
+        void SelectedObjectWasDestroyed(EntityId id)
         {
             bool componentToolActive = m_ComponentTools.Any(
                 x => x?.GetEditor<EditorTool>() == m_ActiveTool)
-                && m_ActiveTool.m_Targets.Any(x => x == null || x.GetInstanceID() == id);
+                && m_ActiveTool.m_Targets.Any(x => x == null || x.GetEntityId() == id);
 
             bool componentContextActive = m_ComponentContexts.Any(
                 x => x?.GetEditor<EditorToolContext>() == m_ActiveToolContext)
-                && m_ActiveToolContext.targets.Any(x => x == null || x.GetInstanceID() == id);
+                && m_ActiveToolContext.targets.Any(x => x == null || x.GetEntityId() == id);
 
             if (componentToolActive || componentContextActive)
             {
@@ -632,7 +632,7 @@ namespace UnityEditor.EditorTools
                     RestorePreviousPersistentTool();
                 }
             }
-            
+
             EditorToolsSettingsData.instance.RefreshToolsData();
             availableToolsChanged?.Invoke();
         }
@@ -868,7 +868,7 @@ namespace UnityEditor.EditorTools
                 var result = a.scope.CompareTo(b.scope);
                 if (result != 0)
                     return result;
-                
+
                 // For tool groups, ensure CreationToolGroups appears first
                 if (a.scope == ToolEntry.Scope.Grouped && b.scope == ToolEntry.Scope.Grouped)
                 {
@@ -877,24 +877,24 @@ namespace UnityEditor.EditorTools
                     if (a.group != typeof(CreationToolsGroup) && b.group == typeof(CreationToolsGroup))
                         return 1;
                 }
-                
+
                 // Ensure tools of same group stay adjacent
-                result = String.Compare(a.group == null ? string.Empty : a.group.Name, 
+                result = String.Compare(a.group == null ? string.Empty : a.group.Name,
                                         b.group == null ? string.Empty : b.group.Name, StringComparison.Ordinal);
                 if (result != 0)
                     return result;
-                
+
                 // Ensure tools targeting same components stay adjacent
-                result = String.Compare(a.targetBehaviour == null ? string.Empty : a.targetBehaviour.Name, 
+                result = String.Compare(a.targetBehaviour == null ? string.Empty : a.targetBehaviour.Name,
                                         b.targetBehaviour == null ? string.Empty : b.targetBehaviour.Name, StringComparison.Ordinal);
                 if (result != 0)
                     return result;
-                
+
                 // Sort by priority next
                 result = a.priority.CompareTo(b.priority);
                 if (result != 0)
                     return result;
-                
+
                 // Finally by hash code
                 return a.GetHashCode().CompareTo(b.GetHashCode());
             });

@@ -134,6 +134,15 @@ namespace UnityEditor
         [FreeFunction("ArtifactInfoBindings::GetImportResultID_Internal")]
         private static extern string GetImportResultID_Internal(ArtifactInfo self);
 
+        [FreeFunction("ArtifactInfoBindings::GetDependenciesID_Internal")]
+        private static extern Hash128 GetDependenciesID_Internal(ArtifactInfo self);
+
+        [FreeFunction("ArtifactInfoBindings::GetStaticDependenciesID_Internal")]
+        private static extern Hash128 GetStaticDependenciesID_Internal(ArtifactInfo self);
+
+        [FreeFunction("ArtifactInfoBindings::GetImportResultOutputID_Internal")]
+        private static extern Hash128 GetImportResultOutputID_Internal(ArtifactInfo self);
+
         [FreeFunction("ArtifactInfoBindings::GetImportAddress_Internal")]
         private static extern ArtifactKey GetImportAddress_Internal(ArtifactInfo self);
 
@@ -172,6 +181,10 @@ namespace UnityEditor
                 return m_ImportResultID;
             }
         }
+
+        internal Hash128 dependenciesID { get { return GetDependenciesID_Internal(this); } }
+        internal Hash128 staticDependenciesID { get { return GetStaticDependenciesID_Internal(this); } }
+        internal Hash128 importResultOutputID { get { return GetImportResultOutputID_Internal(this); } }
 
         internal string assetPath { get { return GetAssetPath_Internal(this); } }
         internal ArtifactKey artifactKey { get { return GetImportAddress_Internal(this); } }

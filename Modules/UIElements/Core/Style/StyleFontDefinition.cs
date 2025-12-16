@@ -82,11 +82,6 @@ namespace UnityEngine.UIElements
             : this(FontDefinition.FromFont(f), keyword)
         {}
 
-
-        internal StyleFontDefinition(GCHandle gcHandle, StyleKeyword keyword)
-            : this(gcHandle.IsAllocated ? FontDefinition.FromObject(gcHandle.Target) : new FontDefinition(), keyword)
-        {}
-
         internal StyleFontDefinition(FontDefinition f, StyleKeyword keyword)
         {
             m_Keyword = keyword;

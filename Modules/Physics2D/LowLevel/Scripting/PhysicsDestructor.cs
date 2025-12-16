@@ -56,6 +56,16 @@ namespace UnityEngine.LowLevelPhysics2D
             public readonly PhysicsTransform transform => m_Transform;
 
             /// <summary>
+            /// The geometry islands indicating how polygons are connected together.
+            /// Each generated polygon belongs to a unique island defining a set of polygons that are connected together as they share edges.
+            /// The array returned contains a series of ranges where each range is a unique connected island where the range indicates both the start index and length of the original polygon indices.
+            /// The number of discovered unique islands is defined by the size of the returned array.
+            ///
+            /// This is only valid when fragmenting with a mask with <see cref="LowLevelPhysics2D.PhysicsDestructor.Fragment(FragmentGeometry, FragmentGeometry, ReadOnlySpan{Vector2}, Allocator)"/>.
+            /// </summary>
+            public NativeArray<RangeInt> unbrokenGeometryIslands => m_UnbrokenGeometryIslands.ToNativeArray<RangeInt>();
+
+            /// <summary>
             /// The geometry that was not fragmented (unbroken).
             /// </summary>
             public NativeArray<PolygonGeometry> unbrokenGeometry => m_UnbrokenGeometry.ToNativeArray<PolygonGeometry>();
@@ -70,6 +80,7 @@ namespace UnityEngine.LowLevelPhysics2D
             /// </summary>
             public void Dispose()
             {
+                unbrokenGeometryIslands.Dispose();
                 unbrokenGeometry.Dispose();
                 brokenGeometry.Dispose();
             }
@@ -77,6 +88,7 @@ namespace UnityEngine.LowLevelPhysics2D
             #region Internal
 
             readonly PhysicsTransform m_Transform;
+            readonly PhysicsBuffer m_UnbrokenGeometryIslands;
             readonly PhysicsBuffer m_UnbrokenGeometry;
             readonly PhysicsBuffer m_BrokenGeometry;
 

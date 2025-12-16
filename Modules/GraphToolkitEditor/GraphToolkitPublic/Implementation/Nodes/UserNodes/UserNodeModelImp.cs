@@ -2,11 +2,11 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-
 //Do not edit UserNodeModelImp.cs directly : this file is auto-generated. Do not edit it directly. Make changes in UserNodeModelImp.inc.cs.t4 and re-run the template. ( Right click on .tt file in Rider).
 
 using System;
 using System.Collections.Generic;
+using UnityEditor;
 using UnityEngine;
 
 namespace Unity.GraphToolkit.Editor.Implementation
@@ -25,6 +25,31 @@ namespace Unity.GraphToolkit.Editor.Implementation
         Dictionary<string, INodeOption> IUserNodeModelImp.NodeOptionsByName => m_NodeOptionsByName;
 
         public override string Title => m_Node?.GetType().Name ?? "Missing Node";
+
+        string m_CustomTooltip;
+        Color m_CustomDefaultColor;
+
+        public override string Tooltip
+        {
+            get => !string.IsNullOrEmpty(m_CustomTooltip) ? m_CustomTooltip : base.Tooltip;
+            set
+            {
+                m_CustomTooltip = value;
+                GraphModel?.CurrentGraphChangeDescription.AddChangedModel(this, ChangeHint.Style);
+            }
+        }
+
+        public override string IconPath => m_Node?.GetType().GetAttribute<NodeAttribute>()?.IconPath ?? base.IconPath;
+
+        public override Color DefaultColor
+        {
+            get => m_CustomDefaultColor;
+            set
+            {
+                m_CustomDefaultColor = value;
+                GraphModel?.CurrentGraphChangeDescription.AddChangedModel(this, ChangeHint.Style);
+            }
+        }
 
         protected override void OnDefineNode(NodeDefinitionScope definitionScope)
         {
@@ -58,9 +83,8 @@ namespace Unity.GraphToolkit.Editor.Implementation
 
         protected override PortModel CreatePort(PortDirection direction, PortOrientation orientation, string portName, PortType portType, TypeHandle dataType, string portId, PortModelOptions options, Attribute[] attributes, PortModel parentPort)
         {
-            return new PortModelImp(this, direction, orientation, portName, portType, dataType, portId, options, attributes, parentPort);
+			return new PortModelImp(this, direction, orientation, portName, portType, dataType, portId, options, attributes, parentPort);
         }
-
 
     }
 
@@ -76,6 +100,31 @@ namespace Unity.GraphToolkit.Editor.Implementation
         Dictionary<string, INodeOption> IUserNodeModelImp.NodeOptionsByName => m_NodeOptionsByName;
 
         public override string Title => m_Node?.GetType().Name ?? "Missing Node";
+
+        string m_CustomTooltip;
+        Color m_CustomDefaultColor;
+
+        public override string Tooltip
+        {
+            get => !string.IsNullOrEmpty(m_CustomTooltip) ? m_CustomTooltip : base.Tooltip;
+            set
+            {
+                m_CustomTooltip = value;
+                GraphModel?.CurrentGraphChangeDescription.AddChangedModel(this, ChangeHint.Style);
+            }
+        }
+
+        public override string IconPath => m_Node?.GetType().GetAttribute<NodeAttribute>()?.IconPath ?? base.IconPath;
+
+        public override Color DefaultColor
+        {
+            get => m_CustomDefaultColor;
+            set
+            {
+                m_CustomDefaultColor = value;
+                GraphModel?.CurrentGraphChangeDescription.AddChangedModel(this, ChangeHint.Style);
+            }
+        }
 
         protected override void OnDefineNode(NodeDefinitionScope definitionScope)
         {
@@ -109,9 +158,10 @@ namespace Unity.GraphToolkit.Editor.Implementation
 
         protected override PortModel CreatePort(PortDirection direction, PortOrientation orientation, string portName, PortType portType, TypeHandle dataType, string portId, PortModelOptions options, Attribute[] attributes, PortModel parentPort)
         {
-            return new PortModelImp(this, direction, orientation, portName, portType, dataType, portId, options, attributes, parentPort);
+			if (orientation == PortOrientation.Vertical)
+				Debug.LogWarning($"The {(direction == PortDirection.Input ? "input" : "output")} port {portId} in {m_Node.GetType()} is configured as a vertical port. Vertical ports are not supported on block nodes.");
+			return new PortModelImp(this, direction, PortOrientation.Horizontal, portName, portType, dataType, portId, options, attributes, parentPort);
         }
-
 
     }
 
@@ -128,9 +178,35 @@ namespace Unity.GraphToolkit.Editor.Implementation
 
         public override string Title => m_Node?.GetType().Name ?? "Missing Node";
 
+        string m_CustomTooltip;
+        Color m_CustomDefaultColor = Color.darkGreen;
+
+        public override string Tooltip
+        {
+            get => !string.IsNullOrEmpty(m_CustomTooltip) ? m_CustomTooltip : base.Tooltip;
+            set
+            {
+                m_CustomTooltip = value;
+                GraphModel?.CurrentGraphChangeDescription.AddChangedModel(this, ChangeHint.Style);
+            }
+        }
+
+        public override string IconPath => m_Node?.GetType().GetAttribute<NodeAttribute>()?.IconPath ?? base.IconPath;
+
+        public override Color DefaultColor
+        {
+            get => m_CustomDefaultColor;
+            set
+            {
+                m_CustomDefaultColor = value;
+                GraphModel?.CurrentGraphChangeDescription.AddChangedModel(this, ChangeHint.Style);
+            }
+        }
+
         protected override void OnDefineNode(NodeDefinitionScope definitionScope)
         {
             ((IUserNodeModelImp)this).CustomOnDefineNode(definitionScope);
+			base.OnDefineNode(definitionScope);
         }
 
         public override void OnAfterDeserialize()
@@ -160,10 +236,8 @@ namespace Unity.GraphToolkit.Editor.Implementation
 
         protected override PortModel CreatePort(PortDirection direction, PortOrientation orientation, string portName, PortType portType, TypeHandle dataType, string portId, PortModelOptions options, Attribute[] attributes, PortModel parentPort)
         {
-            return new PortModelImp(this, direction, orientation, portName, portType, dataType, portId, options, attributes, parentPort);
+			return new PortModelImp(this, direction, orientation, portName, portType, dataType, portId, options, attributes, parentPort);
         }
 
-
     }
-
 }

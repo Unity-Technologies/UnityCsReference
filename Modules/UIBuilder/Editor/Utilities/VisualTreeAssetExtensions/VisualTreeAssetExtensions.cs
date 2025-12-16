@@ -20,7 +20,7 @@ namespace Unity.UI.Builder
             var newTreeAsset = VisualTreeAssetUtilities.CreateInstanceWithHideFlags();
 
             if (syncSerializedData)
-                UxmlSerializer.SyncVisualTreeAssetSerializedData(new CreationContext(vta), true);
+                UxmlSerializer.CreateSerializedDataOverrides(vta);
             vta.DeepOverwrite(newTreeAsset);
 
             // The DeepOverwrite will mark the vta dirty, so we need to
@@ -42,6 +42,7 @@ namespace Unity.UI.Builder
 
             var json = JsonUtility.ToJson(vta);
             JsonUtility.FromJsonOverwrite(json, other);
+            other.SetupReferences();
 
             other.inlineSheet = originalInlineSheet;
             if (vta.inlineSheet != null)

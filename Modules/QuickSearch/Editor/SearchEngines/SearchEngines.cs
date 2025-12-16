@@ -46,7 +46,7 @@ namespace UnityEditor.Search
         {
             if (context.searchInProgress)
             {
-                context.sessions.StopAllAsyncSearchSessions();
+                context.session.Stop();
             }
             context.asyncItemReceived -= OnAsyncItemsReceived;
         }
@@ -179,12 +179,15 @@ namespace UnityEditor.Search
             var searchSession = searchSessions[context.guid];
             var projectSearchContext = (ProjectSearchContext)context;
 
+            SetSearchContext(query, projectSearchContext, searchSession.context);
+            using var searchList = SearchService.Request(searchSession.context);
+            // Bypass the enumerator that would enumerate infinitely. We only want the first batch
+            var items = new List<SearchItem>();
+            items.AddRange(searchList.GetRange(0, searchList.Count));
             if (asyncItemsReceived != null)
             {
                 searchSession.onAsyncItemsReceived = asyncItemsReceived;
             }
-            SetSearchContext(query, projectSearchContext, searchSession.context);
-            var items = SearchService.GetItems(searchSession.context);
             return SearchItemConverter(items);
         }
 
@@ -219,11 +222,15 @@ namespace UnityEditor.Search
             }
 
             context.options &= ~SearchFlags.Packages;
+
+            // Note: For ADB : and = are equivalent.
+            // For Asset Provider ":" means StartsWith (ADB doesn't support this scheme) and "=" means equal.
+            // Since the query is passed to both ADB and Asset, converts all : to = to behave like the Legacy search.
             var processedQuery = ConvertContainsToEqual(query);
             if (project.searchFilter != null)
             {
                 context.userData = project.searchFilter;
-                
+
                 // Note: SearchFilter aggregates filter strangely. It uses the typed query and adds filter without those be represented
                 // in text form. For now use the result of FilterToSearchFieldString to get all filters. It would be best if we could combine those filter ourself.
                 processedQuery = project.searchFilter.FilterToSearchFieldString();
@@ -295,10 +302,13 @@ namespace UnityEditor.Search
             var searchItemsSet = m_SearchItemsBySession[context.guid];
             searchItemsSet.Clear();
 
-            foreach (var id in SearchService.GetItems(searchSession.context, SearchFlags.Synchronous).Select(item => Convert.ToUInt64(item.id)))
+            SearchService.Request(searchSession.context, (c, items) =>
             {
-                searchItemsSet.Add(EntityId.From(id));
-            }
+                foreach (var item in items)
+                {
+                    searchItemsSet.Add(EntityId.From(Convert.ToUInt64(item.id)));
+                }
+            }, SearchFlags.Synchronous);
         }
 
         public override void EndSearch(ISearchContext context)

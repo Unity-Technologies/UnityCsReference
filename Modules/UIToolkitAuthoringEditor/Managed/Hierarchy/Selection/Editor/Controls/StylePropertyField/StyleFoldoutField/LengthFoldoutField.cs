@@ -12,7 +12,7 @@ using UnityEngine.UIElements;
 
 namespace Unity.UIToolkit.Editor
 {
-    internal class LengthFoldoutField : StyleFoldoutField<TextField>
+    internal abstract class LengthFoldoutField : StyleFoldoutField<TextField>, INotifyCompositeStylePropertyChanged<StyleLength>
     {
         static readonly string TextUssClassName = FoldoutFieldPropertyName + "__textfield";
 
@@ -25,29 +25,32 @@ namespace Unity.UIToolkit.Editor
                 StyleFoldoutField<TextField>.UxmlSerializedData.Register();
                 UxmlDescriptionCache.RegisterType(typeof(UxmlSerializedData), Array.Empty<UxmlAttributeNames>(), true);
             }
-
-            public override object CreateInstance() => new LengthFoldoutField();
         }
+
+        const string k_TopFieldName = "top";
+        const string k_RightFieldName = "right";
+        const string k_BottomFieldName = "bottom";
+        const string k_LeftFieldName = "left";
+
+        static readonly BindingId topProperty = nameof(top);
+        static readonly BindingId rightProperty = nameof(right);
+        static readonly BindingId bottomProperty = nameof(bottom);
+        static readonly BindingId leftProperty = nameof(left);
 
         StyleLength m_Top;
         StyleLength m_Right;
         StyleLength m_Bottom;
         StyleLength m_Left;
 
-        public StyleLengthField topField;
-        public StyleLengthField rightField;
-        public StyleLengthField bottomField;
-        public StyleLengthField leftField;
+        public StyleLengthField topField { get; }
+        public StyleLengthField rightField { get; }
+        public StyleLengthField bottomField { get; }
+        public StyleLengthField leftField { get; }
 
-        public OverrideRow topRow;
-        public OverrideRow rightRow;
-        public OverrideRow bottomRow;
-        public OverrideRow leftRow;
-
-        protected virtual string topPropertyName { get; } = "top";
-        protected virtual string rightPropertyName { get; } = "right";
-        protected virtual string bottomPropertyName { get; } = "bottom";
-        protected virtual string leftPropertyName { get; } = "left";
+        protected abstract string topPropertyName { get; }
+        protected abstract string rightPropertyName { get; }
+        protected abstract string bottomPropertyName { get; }
+        protected abstract string leftPropertyName { get; }
 
         public List<StyleLengthField> fields => new()
         {
@@ -56,11 +59,6 @@ namespace Unity.UIToolkit.Editor
             bottomField,
             leftField
         };
-
-        const string k_TopFieldName = "top";
-        const string k_RightFieldName = "right";
-        const string k_BottomFieldName = "bottom";
-        const string k_LeftFieldName = "left";
 
         IntegerField m_DraggerField;
 
@@ -75,10 +73,10 @@ namespace Unity.UIToolkit.Editor
                 if (m_Top.Equals(value))
                     return;
 
+                var previousValue = m_Top;
                 m_Top = value;
                 Refresh();
-
-                NotifyPropertyChanged(nameof(top));
+                NotifyStylePropertyChanged(topProperty, previousValue, m_Top);
             }
         }
 
@@ -91,10 +89,10 @@ namespace Unity.UIToolkit.Editor
                 if (m_Right.Equals(value))
                     return;
 
+                var previousValue = m_Right;
                 m_Right = value;
                 Refresh();
-
-                NotifyPropertyChanged(nameof(right));
+                NotifyStylePropertyChanged(rightProperty, previousValue, m_Right);
             }
         }
 
@@ -107,10 +105,10 @@ namespace Unity.UIToolkit.Editor
                 if (m_Bottom.Equals(value))
                     return;
 
+                var previousValue = m_Bottom;
                 m_Bottom = value;
                 Refresh();
-
-                NotifyPropertyChanged(nameof(bottom));
+                NotifyStylePropertyChanged(bottomProperty, previousValue, m_Bottom);
             }
         }
 
@@ -123,35 +121,35 @@ namespace Unity.UIToolkit.Editor
                 if (m_Left.Equals(value))
                     return;
 
+                var previousValue = m_Left;
                 m_Left = value;
                 Refresh();
-
-                NotifyPropertyChanged(nameof(left));
+                NotifyStylePropertyChanged(leftProperty, previousValue, m_Left);
             }
         }
 
-        public LengthFoldoutField() : this(null) { }
+        protected LengthFoldoutField() : this(null) { }
 
-        public LengthFoldoutField(string text)
+        protected LengthFoldoutField(string text)
             : base(text)
         {
-            topRow = new OverrideRow() { name = k_TopFieldName };
-            topField = new StyleLengthField("Top") { name = k_TopFieldName };
+            var topRow = new OverrideRow() { name = k_TopFieldName };
+            topField = new StyleLengthField("Top") { name = k_TopFieldName, classList = { TextField.alignedFieldUssClassName }};
             topRow.Add(topField);
             Add(topRow);
 
-            rightRow = new OverrideRow() { name = k_RightFieldName };
-            rightField = new StyleLengthField("Right") { name = k_RightFieldName };
+            var rightRow = new OverrideRow() { name = k_RightFieldName };
+            rightField = new StyleLengthField("Right") { name = k_RightFieldName, classList = { TextField.alignedFieldUssClassName }};
             rightRow.Add(rightField);
             Add(rightRow);
 
-            bottomRow = new OverrideRow() { name = k_BottomFieldName };
-            bottomField = new StyleLengthField("Bottom") { name = k_BottomFieldName };
+            var bottomRow = new OverrideRow() { name = k_BottomFieldName };
+            bottomField = new StyleLengthField("Bottom") { name = k_BottomFieldName, classList = { TextField.alignedFieldUssClassName }};
             bottomRow.Add(bottomField);
             Add(bottomRow);
 
-            leftRow = new OverrideRow() { name = k_LeftFieldName };
-            leftField = new StyleLengthField("Left") { name = k_LeftFieldName };
+            var leftRow = new OverrideRow() { name = k_LeftFieldName };
+            leftField = new StyleLengthField("Left") { name = k_LeftFieldName, classList = { TextField.alignedFieldUssClassName }};
             leftRow.Add(leftField);
             Add(leftRow);
 
@@ -174,6 +172,11 @@ namespace Unity.UIToolkit.Editor
             headerInputField.RegisterValueChangedCallback(OnHeaderValueChange);
 
             UpdateFromChildFields();
+        }
+
+        protected override TextField CreateHeaderInputElement()
+        {
+            return new TextField();
         }
 
         public override void UpdateFromChildFields()
@@ -248,12 +251,11 @@ namespace Unity.UIToolkit.Editor
 
         protected override void Refresh()
         {
-            topField.value = m_Top;
-            rightField.value = m_Right;
-            bottomField.value = m_Bottom;
-            leftField.value = m_Left;
-
-            UpdateFromChildFields();
+            topField.SetValueWithoutNotify(top);
+            rightField.SetValueWithoutNotify(right);
+            bottomField.SetValueWithoutNotify(bottom);
+            leftField.SetValueWithoutNotify(left);
+            base.Refresh();
         }
 
         void OnDraggerFieldUpdate(ChangeEvent<int> evt)
@@ -264,34 +266,64 @@ namespace Unity.UIToolkit.Editor
         protected override void ForwardDependentPropertiesTracking(TrackStylePropertyEvent evt)
         {
             base.ForwardDependentPropertiesTracking(evt);
+            var target = default(VisualElement);
             if (evt.propertyName == topPropertyName)
-            {
-                var subEvent = TrackStylePropertyEvent.GetPooled(evt.provider,  evt.propertyName);
-                subEvent.target = topField;
-                topField.SendEvent(subEvent);
-                evt.StopImmediatePropagation();
-            }
+                target = topField;
             else if (evt.propertyName == rightPropertyName)
-            {
-                var subEvent = TrackStylePropertyEvent.GetPooled(evt.provider,  evt.propertyName);
-                subEvent.target = rightField;
-                rightField.SendEvent(subEvent);
-                evt.StopImmediatePropagation();
-            }
+                target = rightField;
             else if (evt.propertyName == bottomPropertyName)
-            {
-                var subEvent = TrackStylePropertyEvent.GetPooled(evt.provider,  evt.propertyName);
-                subEvent.target = bottomField;
-                bottomField.SendEvent(subEvent);
-                evt.StopImmediatePropagation();
-            }
+                target = bottomField;
             else if (evt.propertyName == leftPropertyName)
+                target = leftField;
+
+            if (target == null)
+                return;
+
+            var subEvent = TrackStylePropertyEvent.GetPooled(evt.provider,  evt.propertyName);
+            subEvent.target = target;
+            target.SendEvent(subEvent);
+            evt.StopImmediatePropagation();
+        }
+
+        public void SetValue(BindingId id, StyleLength v, bool notify)
+        {
+            if (id == topProperty)
             {
-                var subEvent = TrackStylePropertyEvent.GetPooled(evt.provider,  evt.propertyName);
-                subEvent.target = leftField;
-                leftField.SendEvent(subEvent);
-                evt.StopImmediatePropagation();
+                if (notify)
+                    top = v;
+                else
+                    m_Top = v;
             }
+            else if (id == rightProperty)
+            {
+                if (notify)
+                    right = v;
+                else
+                    m_Right = v;
+            }
+            else if (id == bottomProperty)
+            {
+                if (notify)
+                    bottom = v;
+                else
+                    m_Bottom = v;
+            }
+            else if (id == leftProperty)
+            {
+                if (notify)
+                    left = v;
+                else
+                    m_Left = v;
+            }
+
+            if (!notify)
+                Refresh();
+        }
+
+        public void NotifyStylePropertyChanged(BindingId id, StyleLength previousValue, StyleLength newValue)
+        {
+            this.NotifyStylePropertyChanged(this, id, previousValue, newValue);
+            NotifyPropertyChanged(id);
         }
     }
 
@@ -308,7 +340,7 @@ namespace Unity.UIToolkit.Editor
         protected override string bottomPropertyName { get; } = "paddingBottom";
         protected override string leftPropertyName { get; } = "paddingLeft";
 
-        public PaddingFoldoutField()
+        public PaddingFoldoutField() : base("Padding")
         {
             topField.tooltip = "USS property: padding-top\n\nSpace reserved for the top edge of the padding during the layout phase.";
             rightField.tooltip = "USS property: padding-right\n\nSpace reserved for the right edge of the padding during the layout phase.";
@@ -330,7 +362,7 @@ namespace Unity.UIToolkit.Editor
         protected override string bottomPropertyName { get; } = "marginBottom";
         protected override string leftPropertyName { get; } = "marginLeft";
 
-        public MarginFoldoutField()
+        public MarginFoldoutField() : base("Margin")
         {
             topField.tooltip = "USS property: margin-top\n\nSpace reserved for the top edge of the margin during the layout phase.";
             rightField.tooltip = "USS property: margin-right\n\nSpace reserved for the right edge of the margin during the layout phase.";

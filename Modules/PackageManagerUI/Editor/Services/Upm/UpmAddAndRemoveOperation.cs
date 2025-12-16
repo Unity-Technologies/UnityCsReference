@@ -13,6 +13,36 @@ namespace UnityEditor.PackageManager.UI.Internal
     [Serializable]
     internal class UpmAddAndRemoveOperation : UpmBaseOperation<AddAndRemoveRequest>
     {
+        [Serializable]
+        internal class UpmAddAndRemoveDryRun : UpmBaseOperation<AddAndRemoveRequest>
+        {
+            public override RefreshOptions refreshOptions => RefreshOptions.None;
+
+            [SerializeField]
+            protected string[] m_PackageIdsToAdd = new string[0];
+
+            [SerializeField]
+            protected string[] m_PackagesNamesToRemove = new string[0];
+
+            protected override AddAndRemoveRequest CreateRequest()
+            {
+                return m_ClientProxy.AddAndRemove(m_PackageIdsToAdd, m_PackagesNamesToRemove, true);
+            }
+
+            public void StartDryRun(string[] packageIdsToAdd, string[] packagesNamesToRemove)
+            {
+                m_PackageIdsToAdd = packageIdsToAdd;
+                m_PackagesNamesToRemove = packagesNamesToRemove;
+                Start();
+            }
+        }
+
+        private Func<PackageCollection, bool> m_ShouldProceedAfterDryRun;
+        public void SetDryRunFunction(Func<PackageCollection, bool> shouldProceedAfterDryRun)
+        {
+            m_ShouldProceedAfterDryRun = shouldProceedAfterDryRun;
+        }
+
         public override RefreshOptions refreshOptions => RefreshOptions.None;
 
         protected override string operationErrorMessage
@@ -37,8 +67,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         public IReadOnlyCollection<string> packagesNamesToRemove => m_PackagesNamesToRemove;
 
         [SerializeField]
-        protected bool m_DryRun = false;
-        public bool dryRun => m_DryRun;
+        private UpmAddAndRemoveDryRun m_DryRun = new ();
 
         [SerializeField]
         private string m_SpecialUniqueId = string.Empty;
@@ -46,18 +75,27 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public override string packageIdOrName => string.IsNullOrEmpty(m_SpecialUniqueId) ? base.packageIdOrName : m_SpecialUniqueId;
         public override string packageName => string.IsNullOrEmpty(m_SpecialUniqueId) ? base.packageName : m_SpecialUniqueId;
+        public override bool isInProgress => base.isInProgress || m_DryRun?.isInProgress == true;
 
         public PackageInfo FindMainPackageInfoFromResult()
         {
+            var result = m_Request?.Result;
+            if (result == null)
+                return null;
+
             // Since in the "Add package by git url" UI, we don't restrict people to only install git packages we need to handle different special ids such as
             // `com.unity.a`, `com.unity.a@1`, `com.unity.a@1.0.0`, `file:/path/to/package` or `git@git.path.to.package.git`
             if (isSpecialInstall)
             {
                 var extractedPackageName = m_SpecialUniqueId.Split(new[] { '@' }, 2)[0];
-                return m_Request.Result.FirstOrDefault(p => p.packageId == m_SpecialUniqueId || p.name == extractedPackageName || p.projectDependenciesEntry == m_SpecialUniqueId);
+                return result.FirstOrDefault(p =>
+                    p.packageId == m_SpecialUniqueId
+                    || p.name == extractedPackageName
+                    || p.projectDependenciesEntry == m_SpecialUniqueId);
             }
+
             var nameToMatch = packageName;
-            return string.IsNullOrEmpty(nameToMatch) ? null : m_Request.Result.FirstOrDefault(p => p.name == nameToMatch);
+            return string.IsNullOrEmpty(nameToMatch) ? null : result.FirstOrDefault(p => p.name == nameToMatch);
         }
 
         public void AddByPathOrUrl(string pathOrUrl)
@@ -120,9 +158,44 @@ namespace UnityEditor.PackageManager.UI.Internal
             Start();
         }
 
+        protected new void Start()
+        {
+            m_DryRun ??= new UpmAddAndRemoveDryRun();
+            m_DryRun.ResolveDependencies(m_ClientProxy, m_Application);
+            m_DryRun.onProcessResult += request =>
+            {
+                if (m_ShouldProceedAfterDryRun?.Invoke(request.Result) == true)
+                    base.Start();
+                else
+                {
+                    Cancel();
+                    // The Resolve() call below is used to clean up the project cache after an add/remove operation is cancelled by the user.
+                    // Since core unpacks the package in the project cache during the dry run, we need to resolve the cache to ensure consistency.
+                    m_ClientProxy.Resolve();
+                }
+            };
+            m_DryRun.onOperationError += (_, error) =>
+            {
+                OnError(error);
+                OnFinalize();
+            };
+            m_DryRun.StartDryRun(m_PackageIdsToAdd, m_PackagesNamesToRemove);
+        }
+
+        public new void RestoreProgress()
+        {
+            if (m_DryRun?.isInProgress == true)
+            {
+                m_DryRun.Cancel();
+                Start();
+            }
+            else
+                base.RestoreProgress();
+        }
+
         protected override AddAndRemoveRequest CreateRequest()
         {
-            return m_ClientProxy.AddAndRemove(m_PackageIdsToAdd, m_PackagesNamesToRemove, dryRun);
+            return m_ClientProxy.AddAndRemove(m_PackageIdsToAdd, m_PackagesNamesToRemove, dryRun: false);
         }
     }
 }

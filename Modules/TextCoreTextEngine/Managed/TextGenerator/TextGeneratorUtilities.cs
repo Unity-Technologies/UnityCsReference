@@ -1640,7 +1640,7 @@ namespace UnityEngine.TextCore.Text
             }
         }
 
-        [VisibleToOtherModules("UnityEngine.UIElementsModule")]
+        [VisibleToOtherModules("UnityEngine.UIElementsModule", "UnityEngine.IMGUIModule")]
         internal static UnityEngine.TextCore.HorizontalAlignment GetHorizontalAlignment(TextAnchor anchor)
         {
             switch (anchor)
@@ -1662,7 +1662,7 @@ namespace UnityEngine.TextCore.Text
             }
         }
 
-        [VisibleToOtherModules("UnityEngine.UIElementsModule")]
+        [VisibleToOtherModules("UnityEngine.UIElementsModule", "UnityEngine.IMGUIModule")]
         internal static UnityEngine.TextCore.VerticalAlignment GetVerticalAlignment(TextAnchor anchor)
         {
             switch (anchor)

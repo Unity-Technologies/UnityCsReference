@@ -454,7 +454,7 @@ namespace UnityEditor.UIElements
         {
             if (string.IsNullOrEmpty(m_Folder))
             {
-                m_ErrorMessage = "Path is invalid.";
+                m_ErrorMessage = "Path is invalid. It has to be inside the Project's Assets folder.";
                 return false;
             }
 

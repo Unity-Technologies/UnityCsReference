@@ -14,7 +14,7 @@ namespace UnityEngine.TextCore.Text
     {
         internal IntPtr nativeFontAsset
         {
-            [VisibleToOtherModules("UnityEngine.UIElementsModule")]
+            [VisibleToOtherModules("UnityEngine.UIElementsModule", "UnityEngine.IMGUIModule")]
             get
             {
                 EnsureNativeFontAssetIsCreated();
@@ -34,7 +34,7 @@ namespace UnityEngine.TextCore.Text
             Font sourceFont_editorRef = null;
             sourceFont_editorRef = SourceFont_EditorRef;
 
-            m_NativeFontAsset = Create(faceInfo, sourceFontFile, sourceFont_editorRef, m_SourceFontFilePath, instanceID, fallbacks, weightFallbacks.Item1, weightFallbacks.Item2, m_AtlasRenderMode);
+            m_NativeFontAsset = Create(faceInfo, sourceFontFile, sourceFont_editorRef, m_SourceFontFilePath, entityId, fallbacks, weightFallbacks.Item1, weightFallbacks.Item2, m_AtlasRenderMode);
         }
 
 
@@ -42,6 +42,7 @@ namespace UnityEngine.TextCore.Text
         {
             UpdateFontEditorRef(nativeFontAsset, SourceFont_EditorRef);
         }
+
         internal void UpdateFallbacks()
         {
             UpdateFallbacks(nativeFontAsset, GetFallbacks());
@@ -90,7 +91,7 @@ namespace UnityEngine.TextCore.Text
             return fallbackList.ToArray();
         }
 
-        private static HashSet<int> visitedFontAssets = new HashSet<int>();
+        private static HashSet<EntityId> visitedFontAssets = new HashSet<EntityId>();
         private bool HasRecursion(FontAsset fontAsset)
         {
             visitedFontAssets.Clear();
@@ -100,13 +101,13 @@ namespace UnityEngine.TextCore.Text
         private bool HasRecursionInternal(FontAsset fontAsset)
         {
             // Check if the node has already been visited
-            if (visitedFontAssets.Contains(fontAsset.instanceID))
+            if (visitedFontAssets.Contains(fontAsset.entityId))
             {
                 return true;
             }
 
             // Mark the node as visited
-            visitedFontAssets.Add(fontAsset.instanceID);
+            visitedFontAssets.Add(fontAsset.entityId);
 
             if (fontAsset.fallbackFontAssetTable != null)
             {
@@ -142,13 +143,25 @@ namespace UnityEngine.TextCore.Text
             }
 
             // Remove the node from the visited set when backtracking
-            visitedFontAssets.Remove(fontAsset.instanceID);
+            visitedFontAssets.Remove(fontAsset.entityId);
 
             return false;
         }
 
         private (IntPtr[], IntPtr[]) GetWeightFallbacks()
         {
+            // Font weight fallback arrays must be exactly size 10 to match native mapping
+            // Array indices correspond to TextFontWeight enum values as follows:
+            // [0] = unused (reserved)
+            // [1] = Thin (100)
+            // [2] = ExtraLight (200)
+            // [3] = Light (300)
+            // [4] = Regular (400)
+            // [5] = Medium (500)
+            // [6] = SemiBold (600)
+            // [7] = Bold (700)
+            // [8] = Heavy (800)
+            // [9] = Black (900)
             IntPtr[] regularTypefaces = new IntPtr[10];
             IntPtr[] italicTypefaces = new IntPtr[10];
 
@@ -193,16 +206,17 @@ namespace UnityEngine.TextCore.Text
         // Resetting the Unity FontObject destroys the FontEngine. Is then possible that the hb_face is no longer valid.
         [VisibleToOtherModules("UnityEngine.UIElementsModule")]
         internal static extern void CreateHbFaceIfNeeded();
-        private static extern void UpdateFontEditorRef(IntPtr ptr, Font sourceFont_EditorRef);
-        private static extern void UpdateFallbacks(IntPtr ptr, IntPtr[] fallbacks);
-        private static extern void UpdateWeightFallbacks(IntPtr ptr, IntPtr[] regularFallbacks, IntPtr[] italicFallbacks);
+        static extern void UpdateFontEditorRef(IntPtr ptr, Font sourceFont_EditorRef);
 
-        private static extern IntPtr Create(FaceInfo faceInfo, Font sourceFontFile, Font sourceFont_EditorRef, string sourceFontFilePath, int fontInstanceID, IntPtr[] fallbacks, IntPtr[] weightFallbacks, IntPtr[] italicFallbacks, GlyphRenderMode renderMode);
-        private static extern void UpdateFaceInfo(IntPtr ptr, FaceInfo faceInfo);
+        static extern void UpdateFallbacks(IntPtr ptr, IntPtr[] fallbacks);
+        static extern void UpdateWeightFallbacks(IntPtr ptr, IntPtr[] regularFallbacks, IntPtr[] italicFallbacks);
+
+        static extern IntPtr Create(FaceInfo faceInfo, Font sourceFontFile, Font sourceFont_EditorRef, string sourceFontFilePath, EntityId fontEntityId, IntPtr[] fallbacks, IntPtr[] weightFallbacks, IntPtr[] italicFallbacks, GlyphRenderMode renderMode);
+        static extern void UpdateFaceInfo(IntPtr ptr, FaceInfo faceInfo);
         static extern void UpdateRenderMode(IntPtr ptr, GlyphRenderMode renderMode);
 
         [FreeFunction("FontAsset::Destroy")]
-        private static extern void Destroy(IntPtr ptr);
+        static extern void Destroy(IntPtr ptr);
 
         internal static class BindingsMarshaller
         {

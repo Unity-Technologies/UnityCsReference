@@ -324,7 +324,7 @@ namespace UnityEditor.Search
             Dispatcher.Emit(eventName, new SearchEventPayload(this, arguments), onPrepare, onResolved);
         }
 
-        protected Action On(string eventName, SearchEventHandler handler)
+        public Action On(string eventName, SearchEventHandler handler)
         {
             return Dispatcher.On(eventName, evt =>
             {
@@ -334,12 +334,22 @@ namespace UnityEditor.Search
             }, SearchEventManager.GetSearchEventHandlerHashCode(handler));
         }
 
-        protected Action OnAll(string eventName, SearchEventHandler handler)
+        public Action On(string eventName, SearchEventHandler handler, int handlerHashCode)
+        {
+            return Dispatcher.On(eventName, evt =>
+            {
+                if (!IsEventFromSameView(evt))
+                    return;
+                handler(evt);
+            }, handlerHashCode);
+        }
+
+        public Action OnAll(string eventName, SearchEventHandler handler)
         {
             return Dispatcher.On(eventName, handler, SearchEventManager.GetSearchEventHandlerHashCode(handler));
         }
 
-        protected Action OnOther(string eventName, SearchEventHandler handler)
+        public Action OnOther(string eventName, SearchEventHandler handler)
         {
             return Dispatcher.On(eventName, evt =>
             {
@@ -349,23 +359,28 @@ namespace UnityEditor.Search
             }, SearchEventManager.GetSearchEventHandlerHashCode(handler));
         }
 
-        protected void Off(string eventName, SearchEventHandler handler)
+        public void Off(string eventName, SearchEventHandler handler)
         {
             Dispatcher.Off(eventName, SearchEventManager.GetSearchEventHandlerHashCode(handler));
         }
 
-        protected bool IsEventFromSameView(ISearchEvent evt)
+        public void Off(string eventName, int handlerHashCode)
+        {
+            Dispatcher.Off(eventName, handlerHashCode);
+        }
+
+        public bool IsEventFromSameView(ISearchEvent evt)
         {
             return evt.sourceViewState == viewState;
         }
 
-        protected Action RegisterGlobalEventHandler<T>(SearchGlobalEventHandler<T> eventHandler, int priority)
+        public Action RegisterGlobalEventHandler<T>(SearchGlobalEventHandler<T> eventHandler, int priority)
             where T : EventBase
         {
             return viewState.globalEventManager.RegisterGlobalEventHandler(eventHandler, priority);
         }
 
-        protected void UnregisterGlobalEventHandler<T>(SearchGlobalEventHandler<T> eventHandler)
+        public void UnregisterGlobalEventHandler<T>(SearchGlobalEventHandler<T> eventHandler)
             where T : EventBase
         {
             viewState.globalEventManager.UnregisterGlobalEventHandler(eventHandler);

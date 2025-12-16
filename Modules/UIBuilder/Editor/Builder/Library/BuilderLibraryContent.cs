@@ -10,6 +10,7 @@ using UnityEngine;
 using UnityEngine.UIElements;
 using Toolbar = UnityEditor.UIElements.Toolbar;
 using TreeViewItem = UnityEngine.UIElements.TreeViewItemData<Unity.UI.Builder.BuilderLibraryTreeItem>;
+using HelpBoxControl = UnityEngine.UIElements.HelpBox;
 
 namespace Unity.UI.Builder
 {
@@ -309,6 +310,9 @@ namespace Unity.UI.Builder
                 CreateItem("Radio Button Group", nameof(RadioButtonGroup), typeof(RadioButtonGroup), () => new RadioButtonGroup("Radio Button Group")),
                 CreateItem("Tab", nameof(Tab), typeof(Tab), () => new Tab("Tab")),
                 CreateItem("Tab View", nameof(TabView), typeof(TabView), () => new TabView()),
+                CreateItem("Help Box", nameof(HelpBoxControl), typeof(HelpBoxControl), () => new HelpBoxControl() { text = "Help Box" }),
+                CreateItem("Mask", nameof(MaskField), typeof(MaskField), () => new MaskField("Mask")),
+                CreateItem("Mask64", nameof(Mask64Field), typeof(Mask64Field), () => new Mask64Field("Mask64")),
             }, isHeader: true);
 
             var numericFields = CreateItem("Numeric Fields", null, null, null, null, new List<TreeViewItemData<BuilderLibraryTreeItem>>
@@ -345,8 +349,8 @@ namespace Unity.UI.Builder
                         colorKeys = new[]
                         {
                             new GradientColorKey(Color.red, 0),
-                            new GradientColorKey(Color.blue, 10),
-                            new GradientColorKey(Color.green, 20)
+                            new GradientColorKey(Color.blue, .33f),
+                            new GradientColorKey(Color.green, .66f)
                         }
                     }
                 })
@@ -358,8 +362,6 @@ namespace Unity.UI.Builder
                 //new LibraryTreeItem("Popup", () => new PopupField<string>("Normal Field", choices, 0)),
 
                 CreateItem("Tag", nameof(TagField), typeof(TagField), () => new TagField("Tag", "Player")),
-                CreateItem("Mask", nameof(MaskField), typeof(MaskField), () => new MaskField("Mask")),
-                CreateItem("Mask64", nameof(Mask64Field), typeof(Mask64Field), () => new Mask64Field("Mask64")),
                 CreateItem("Layer", nameof(LayerField), typeof(LayerField), () => new LayerField("Layer")),
                 CreateItem("Layer Mask", nameof(LayerMaskField), typeof(LayerMaskField), () => new LayerMaskField("LayerMask")),
                 CreateItem("Enum Flags", nameof(EnumFlagsField), typeof(EnumFlagsField), () => new EnumFlagsField("EnumFlags", UsageHints.DynamicTransform))

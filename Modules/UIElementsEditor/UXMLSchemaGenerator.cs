@@ -293,7 +293,12 @@ namespace UnityEditor.UIElements
             {
                 // UXML
                 var uxmlType = AddFakeElement(k_DefaultNamespace, "UXML");
-                var uxmlChildren = new XmlSchemaSequence();
+
+                var uxmlChildren = new XmlSchemaChoice
+                {
+                    MinOccurs = 0,
+                    MaxOccursString = "unbounded"
+                };
                 uxmlType.type.Particle = uxmlChildren;
                 uxmlChildren.Items.Add(new XmlSchemaElement { RefName = s_VisualElementName });
                 uxmlType.type.Attributes.Add(new XmlSchemaAttribute { Name = "class", SchemaTypeName = s_StringTypeQualifiedName });
@@ -333,9 +338,19 @@ namespace UnityEditor.UIElements
 
                 var attributes = xmlElementType.Attributes;
 
-                var sequence = new XmlSchemaSequence();
-                xmlElementType.Particle = sequence;
-                sequence.Items.Add(new XmlSchemaElement { RefName = s_VisualElementName });
+                var choice = new XmlSchemaChoice
+                {
+                    MinOccurs = 0,
+                    MaxOccursString = "unbounded"
+                };
+                xmlElementType.Particle = choice;
+                choice.Items.Add(new XmlSchemaElement { RefName = s_VisualElementName });
+
+                // Add attribute wildcard to support derived types when using restrictions
+                xmlElementType.AnyAttribute = new XmlSchemaAnyAttribute
+                {
+                    ProcessContents = XmlSchemaContentProcessing.Lax
+                };
 
                 // Add element to the schema.
                 var element = new XmlSchemaElement
@@ -346,6 +361,45 @@ namespace UnityEditor.UIElements
                 schemaInfo.schema.Items.Add(element);
 
                 return (element, xmlElementType);
+            }
+
+            /// <summary>
+            /// Determines if a type should use extension instead of restriction for derivation.
+            /// Returns true if the type adds new attributes or has UxmlObject children.
+            /// </summary>
+            bool ShouldUseExtension(UxmlSerializedDataDescription description, UxmlSerializedDataDescription baseType)
+            {
+                if (baseType == null)
+                    return false; // No base type, not using extension or restriction
+
+                // Check if this type adds new attributes not in the base type
+                var baseTypeAttributes = m_ProcessedTypes.ContainsKey(baseType.serializedDataType.DeclaringType)
+                    ? m_ProcessedTypes[baseType.serializedDataType.DeclaringType]
+                    : null;
+
+                if (baseTypeAttributes != null)
+                {
+                    foreach (var attr in description.serializedAttributes)
+                    {
+                        if (!baseTypeAttributes.Contains(attr.name))
+                        {
+                            // Found a new attribute - need extension
+                            return true;
+                        }
+                    }
+                }
+
+                // Check if this type has UxmlObject attributes (child elements)
+                foreach (var attr in description.serializedAttributes)
+                {
+                    if (attr is UxmlSerializedUxmlObjectAttributeDescription)
+                    {
+                        // Has UxmlObject children - need extension for flexibility
+                        return true;
+                    }
+                }
+
+                return false; // No new attributes or UxmlObjects - can use restriction
             }
 
             /// <summary>
@@ -374,33 +428,115 @@ namespace UnityEditor.UIElements
                 (var baseTypeName, var baseType) = GetElementBaseType(description);
 
                 var attributes = xmlElementType.Attributes;
+                bool useExtension = false;
 
-                // Extend the base type.
+                // Determine whether to use extension or restriction based on type characteristics
                 if (baseTypeName != null)
                 {
-                    // We cant use extensions because they let us extend the accepted child elements, which is needed for UxmlObjects.
-                    // We dont use restrictions because they cause problems with inherited restrictions and make UxmlObject support difficult.
-                    var complexContentExtension = new XmlSchemaComplexContentExtension { BaseTypeName = baseTypeName };
-                    schemaInfo.importNamespaces.Add(complexContentExtension.BaseTypeName.Namespace);
+                    useExtension = ShouldUseExtension(description, baseType);
 
-                    xmlElementType.ContentModel = new XmlSchemaComplexContent { Content = complexContentExtension };
-                    attributes = complexContentExtension.Attributes;
+                    if (useExtension)
+                    {
+                        // Use extension - allows adding new attributes and child elements
+                        var complexContentExtension = new XmlSchemaComplexContentExtension { BaseTypeName = baseTypeName };
+                        schemaInfo.importNamespaces.Add(complexContentExtension.BaseTypeName.Namespace);
+
+                        xmlElementType.ContentModel = new XmlSchemaComplexContent { Content = complexContentExtension };
+                        attributes = complexContentExtension.Attributes;
+                    }
+                    else
+                    {
+                        // Use restriction - for types that don't add new features
+                        var complexContentRestriction = new XmlSchemaComplexContentRestriction { BaseTypeName = baseTypeName };
+                        schemaInfo.importNamespaces.Add(complexContentRestriction.BaseTypeName.Namespace);
+
+                        xmlElementType.ContentModel = new XmlSchemaComplexContent { Content = complexContentRestriction };
+                        attributes = complexContentRestriction.Attributes;
+                    }
                 }
 
                 AddAttributes(description, attributes, elementTypeAttributes, xmlElementType, schemaInfo);
 
-                // Setup expected child types
-                var rootSequence = GetRootSequence(xmlElementType);
-                foreach (var childType in description.uxmlSupportedChildTypes)
+                // Add attribute wildcard ONLY for restriction-based types
+                // Extension-based types don't need wildcards as they can add attributes directly
+                if (!useExtension)
                 {
-                    var desc = UxmlSerializedDataRegistry.GetDescription(childType.FullName);
-                    if (desc != null)
+                    if (baseTypeName != null)
                     {
-                        var childElementType = AddElementType(desc);
-                        rootSequence.Items.Add(new XmlSchemaElement
+                        // Add anyAttribute to the restriction to match the base type's wildcard
+                        var restriction = xmlElementType.ContentModel?.Content as XmlSchemaComplexContentRestriction;
+                        if (restriction != null)
                         {
-                            RefName = new XmlQualifiedName(desc.uxmlName, childElementType.Namespace)
+                            restriction.AnyAttribute = new XmlSchemaAnyAttribute
+                            {
+                                ProcessContents = XmlSchemaContentProcessing.Lax
+                            };
+                        }
+                    }
+                    else
+                    {
+                        // Base types need an attribute wildcard to allow derived restriction types to add attributes
+                        xmlElementType.AnyAttribute = new XmlSchemaAnyAttribute
+                        {
+                            ProcessContents = XmlSchemaContentProcessing.Lax
+                        };
+                    }
+                }
+
+                // Setup expected child types
+                if (baseTypeName == null)
+                {
+                    // Base types define their own child element choices
+                    var rootChoice = GetRootChoice(xmlElementType);
+                    rootChoice.MinOccurs = 0;
+                    rootChoice.MaxOccursString = "unbounded";
+
+                    foreach (var childType in description.uxmlSupportedChildTypes)
+                    {
+                        var desc = UxmlSerializedDataRegistry.GetDescription(childType.FullName);
+                        if (desc != null)
+                        {
+                            var childElementType = AddElementType(desc);
+                            rootChoice.Items.Add(new XmlSchemaElement
+                            {
+                                RefName = new XmlQualifiedName(desc.uxmlName, childElementType.Namespace)
+                            });
+                        }
+                    }
+                }
+                else if (useExtension)
+                {
+                    // Extension-based derived types can freely add child elements via GetRootChoice
+                    // UxmlObjects will be added by AddAttributeUxmlObjectType if present
+                    var rootChoice = GetRootChoice(xmlElementType);
+                    if (rootChoice.Items.Count > 0)
+                    {
+                        // UxmlObjects were added, ensure choice has proper min/max
+                        rootChoice.MinOccurs = 0;
+                        rootChoice.MaxOccursString = "unbounded";
+                    }
+                }
+                else
+                {
+                    // Restriction-based derived types must have a particle that restricts the base type
+                    var rootChoice = GetRootChoice(xmlElementType);
+
+                    // Only add the generic VisualElement reference if UxmlObjects haven't already added elements
+                    // With restrictions, we cannot have more choice members than the base type
+                    if (rootChoice.Items.Count == 0)
+                    {
+                        rootChoice.MinOccurs = 0;
+                        rootChoice.MaxOccursString = "unbounded";
+                        rootChoice.Items.Add(new XmlSchemaElement
+                        {
+                            RefName = s_VisualElementName
                         });
+                    }
+                    else
+                    {
+                        // UxmlObjects were already added to the choice, set the min/max on the choice
+                        rootChoice.MinOccurs = 0;
+                        rootChoice.MaxOccursString = "unbounded";
                     }
                 }
 
@@ -444,9 +580,11 @@ namespace UnityEditor.UIElements
                 {
                     handledAttributes.Add(attributeDescription.name);
 
+                    // With restrictions + anyAttribute wildcards, inherited attributes are allowed through the wildcard.
+                    // We only define new attributes specific to this type, not inherited ones.
+                    // Redefining an inherited attribute with the same type would be invalid in XSD.
                     if (baseTypeAttributes?.Contains(attributeDescription.name) == true)
                     {
-                        // We cant support overridden attributes in the schema, that requires restrictions which dont support UxmlObjects.
                         continue;
                     }
 
@@ -473,6 +611,37 @@ namespace UnityEditor.UIElements
 
                     attributes.Add(xmlAttribute);
                     schemaInfo.importNamespaces.Add(attributeQualifiedName.Namespace);
+                }
+
+                // Add special common UXML attributes for VisualElement base type
+                // "class" and "style" are handled by VisualElementAsset, not UxmlSerializedData
+                // so we need to add them explicitly for proper schema validation
+                var elementTypeDeclaringType = description.serializedDataType.DeclaringType;
+                if (elementTypeDeclaringType == typeof(VisualElement))
+                {
+                    // Add "class" attribute (optional string for CSS class names)
+                    if (!handledAttributes.Contains("class"))
+                    {
+                        attributes.Add(new XmlSchemaAttribute
+                        {
+                            Name = "class",
+                            SchemaTypeName = s_StringTypeQualifiedName,
+                            Use = XmlSchemaUse.Optional
+                        });
+                        handledAttributes.Add("class");
+                    }
+
+                    // Add "style" attribute (optional string for inline styles)
+                    if (!handledAttributes.Contains("style"))
+                    {
+                        attributes.Add(new XmlSchemaAttribute
+                        {
+                            Name = "style",
+                            SchemaTypeName = s_StringTypeQualifiedName,
+                            Use = XmlSchemaUse.Optional
+                        });
+                        handledAttributes.Add("style");
+                    }
                 }
             }
 
@@ -557,17 +726,17 @@ namespace UnityEditor.UIElements
 
             XmlSchemaGroupBase GetRootSequence(XmlSchemaComplexType elementType)
             {
-                if (elementType?.ContentModel?.Content is XmlSchemaComplexContentExtension extension)
+                if (elementType?.ContentModel?.Content is XmlSchemaComplexContentRestriction restriction)
                 {
-                    if (extension.Particle == null)
+                    if (restriction.Particle == null)
                     {
                         var rootSequence = new XmlSchemaSequence();
-                        extension.Particle = rootSequence;
+                        restriction.Particle = rootSequence;
                         return rootSequence;
                     }
                     else
                     {
-                        return extension.Particle as XmlSchemaSequence;
+                        return restriction.Particle as XmlSchemaSequence;
                     }
                 }
                 else
@@ -585,6 +754,50 @@ namespace UnityEditor.UIElements
                 }
             }
 
+            XmlSchemaChoice GetRootChoice(XmlSchemaComplexType elementType)
+            {
+                // Handle both restrictions and extensions
+                if (elementType?.ContentModel?.Content is XmlSchemaComplexContentRestriction restriction)
+                {
+                    if (restriction.Particle == null)
+                    {
+                        var rootChoice = new XmlSchemaChoice();
+                        restriction.Particle = rootChoice;
+                        return rootChoice;
+                    }
+                    else
+                    {
+                        return restriction.Particle as XmlSchemaChoice;
+                    }
+                }
+                else if (elementType?.ContentModel?.Content is XmlSchemaComplexContentExtension extension)
+                {
+                    if (extension.Particle == null)
+                    {
+                        var rootChoice = new XmlSchemaChoice();
+                        extension.Particle = rootChoice;
+                        return rootChoice;
+                    }
+                    else
+                    {
+                        return extension.Particle as XmlSchemaChoice;
+                    }
+                }
+                else
+                {
+                    if (elementType.Particle == null)
+                    {
+                        var rootChoice = new XmlSchemaChoice();
+                        elementType.Particle = rootChoice;
+                        return rootChoice;
+                    }
+                    else
+                    {
+                        return elementType.Particle as XmlSchemaChoice;
+                    }
+                }
+            }
+
             /// <summary>
             /// Adds UxmlObjects as child elements to the schema.
             /// </summary>
@@ -594,8 +807,8 @@ namespace UnityEditor.UIElements
             /// <param name="schemaInfo"></param>
             void AddAttributeUxmlObjectType(UxmlSerializedDataDescription description, UxmlSerializedUxmlObjectAttributeDescription attributeDescription, XmlSchemaComplexType elementType, SchemaInfo schemaInfo)
             {
-                // Define sequence of child elements
-                var rootSequence = GetRootSequence(elementType);
+                // Define choice of child elements (consistent with other element handling)
+                var rootChoice = GetRootChoice(elementType);
 
                 // Create the attribute root element
                 if (!string.IsNullOrEmpty(attributeDescription.rootName))
@@ -607,7 +820,7 @@ namespace UnityEditor.UIElements
                     rootType.ContentModel.Content = restriction;
 
                     schemaInfo.schema.Items.Add(rootType);
-                    rootSequence.Items.Add(new XmlSchemaElement
+                    rootChoice.Items.Add(new XmlSchemaElement
                     {
                         Name = attributeDescription.rootName,
                         SchemaTypeName = new XmlQualifiedName(attributeTypeName, description.serializedDataType.Namespace),
@@ -620,11 +833,21 @@ namespace UnityEditor.UIElements
                         Form = XmlSchemaForm.Unqualified
                     });
 
-                    // We use sequence for lists and choice for single elements.
-                    // Use xsd:sequence when child elements must be present per their occurrence constraints and order does matters.
-                    // Use xsd:choice when one of the child element must be present.
-                    rootSequence = attributeDescription.isList ? new XmlSchemaSequence() : new XmlSchemaChoice();
-                    restriction.Particle = rootSequence;
+                    var nestedChoice = new XmlSchemaChoice();
+                    if (attributeDescription.isList)
+                        nestedChoice.MaxOccursString = "unbounded";
+                    rootChoice = nestedChoice;
+                    restriction.Particle = rootChoice;
+                }
+
+                // Track which elements have already been added to avoid duplicates
+                var existingElements = new HashSet<XmlQualifiedName>();
+                foreach (var item in rootChoice.Items)
+                {
+                    if (item is XmlSchemaElement existingElement && existingElement.RefName != null)
+                    {
+                        existingElements.Add(existingElement.RefName);
+                    }
                 }
 
                 foreach (var acceptedType in attributeDescription.uxmlObjectAcceptedTypes)
@@ -633,11 +856,18 @@ namespace UnityEditor.UIElements
                     if (acceptedTypeDescription == null)
                         continue;
 
+                    var qualifiedName = new XmlQualifiedName(acceptedTypeDescription.uxmlName, acceptedType.DeclaringType.Namespace);
+
+                    // Skip if this element is already in the choice (prevents ambiguous content model)
+                    if (existingElements.Contains(qualifiedName))
+                        continue;
+
                     var element = new XmlSchemaElement
                     {
-                        RefName = new XmlQualifiedName(acceptedTypeDescription.uxmlName, acceptedType.DeclaringType.Namespace)
+                        RefName = qualifiedName
                     };
-                    rootSequence.Items.Add(element);
+                    rootChoice.Items.Add(element);
+                    existingElements.Add(qualifiedName);
 
                     // We need to apply limits to the number of elements here as we can not do it in the root.
                     if (!attributeDescription.isList && !string.IsNullOrEmpty(attributeDescription.rootName))

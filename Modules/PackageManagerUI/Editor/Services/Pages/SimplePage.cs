@@ -16,8 +16,8 @@ namespace UnityEditor.PackageManager.UI.Internal
         public static readonly PageSortOption[] k_DefaultSupportedSortOptions = { PageSortOption.NameAsc, PageSortOption.NameDesc, PageSortOption.PublishedDateDesc };
         public static readonly PageFilters.Status[] k_DefaultSupportedStatusFilters = { PageFilters.Status.UpdateAvailable };
 
-        public override IEnumerable<PageFilters.Status> supportedStatusFilters => k_DefaultSupportedStatusFilters;
-        public override IEnumerable<PageSortOption> supportedSortOptions => k_DefaultSupportedSortOptions;
+        public override IReadOnlyCollection<PageFilters.Status> supportedStatusFilters => k_DefaultSupportedStatusFilters;
+        public override IReadOnlyCollection<PageSortOption> supportedSortOptions => k_DefaultSupportedSortOptions;
 
         [SerializeField]
         private VisualStateList m_VisualStateList = new();

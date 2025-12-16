@@ -84,13 +84,6 @@ namespace UnityEngine
             Apply();
         }
 
-        static internal void CleanupRoots()
-        {
-            // See GUI.CleanupRoots
-            current = null;
-            ms_Error = null;
-        }
-
         // The default font to use for all styles.
         public Font font { get { return m_Font; } set { m_Font = value; if (current == this) GUIStyle.SetDefaultFont(m_Font); Apply(); } }
 

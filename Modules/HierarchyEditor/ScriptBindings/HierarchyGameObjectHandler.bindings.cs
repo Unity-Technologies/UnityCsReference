@@ -23,7 +23,7 @@ namespace Unity.Hierarchy.Editor
     /// <summary>
     /// The hierarchy node type handler for GameObjects.
     /// </summary>
-    [RequiredByNativeCode(GenerateProxy = true, Optional = true), StructLayout(LayoutKind.Sequential)]
+    [RequiredByNativeCode(Optional = true), StructLayout(LayoutKind.Sequential)]
     [NativeHeader("Modules/HierarchyEditor/Public/HierarchyGameObjectHandler.h")]
     [NativeHeader("Modules/HierarchyEditor/HierarchyGameObjectHandlerBindings.h")]
     [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
@@ -45,15 +45,10 @@ namespace Unity.Hierarchy.Editor
             public static IntPtr ConvertToUnmanaged(HierarchyGameObjectHandler handler) => handler.m_Ptr;
         }
 
-        class ExcludeFromBindings
-        {
-            public HierarchyNodeType NodeType;
-            public ParsedQuery<GameObject> ParsedQuery;
-            public SearchMonitorView SearchMonitorView;
-            public Transform CustomParentForNewGameObjects;
-        }
-
-        ExcludeFromBindings m_State = new();
+        HierarchyNodeType m_NodeType;
+        ParsedQuery<GameObject> m_ParsedQuery;
+        SearchMonitorView m_SearchMonitorView;
+        Transform m_CustomParentForNewGameObjects;
         SceneQueryEngine m_QueryEngine;
 
         SceneQueryEngine QueryEngine
@@ -83,7 +78,7 @@ namespace Unity.Hierarchy.Editor
         protected override void Initialize()
         {
             var currentStage = StageUtility.GetCurrentStage();
-            m_State.CustomParentForNewGameObjects = currentStage is PrefabStage prefabStage ? prefabStage.prefabContentsRoot.transform : null;
+            m_CustomParentForNewGameObjects = currentStage is PrefabStage prefabStage ? prefabStage.prefabContentsRoot.transform : null;
         }
 
         /// <summary>
@@ -130,10 +125,10 @@ namespace Unity.Hierarchy.Editor
         /// <returns>The type of the hierarchy node.</returns>
         public new HierarchyNodeType GetNodeType()
         {
-            if (m_State.NodeType == HierarchyNodeType.Null)
-                m_State.NodeType = new HierarchyNodeType(GetStaticNodeType());
+            if (m_NodeType == HierarchyNodeType.Null)
+                m_NodeType = new HierarchyNodeType(GetStaticNodeType());
 
-            return m_State.NodeType;
+            return m_NodeType;
         }
 
         protected override void OnBindItem(HierarchyViewItem item)
@@ -193,7 +188,7 @@ namespace Unity.Hierarchy.Editor
 
         bool IHierarchyEditorNodeTypeHandler.OnPaste(HierarchyView view)
         {
-            ClipboardUtility.PasteGO(m_State.CustomParentForNewGameObjects);
+            ClipboardUtility.PasteGO(m_CustomParentForNewGameObjects);
             return true;
         }
 
@@ -242,18 +237,18 @@ namespace Unity.Hierarchy.Editor
 
         bool IHierarchyEditorNodeTypeHandler.OnDuplicate(HierarchyView view)
         {
-            ClipboardUtility.DuplicateGO(m_State.CustomParentForNewGameObjects);
+            ClipboardUtility.DuplicateGO(m_CustomParentForNewGameObjects);
             return true;
         }
 
         bool IHierarchyEditorNodeTypeHandler.CanDelete(HierarchyView view)
         {
-            if (m_State.CustomParentForNewGameObjects == null)
+            if (m_CustomParentForNewGameObjects == null)
                 return true;
 
             // In prefab stage, CustomParentForNewGameObjects and it's ancestors cannot be deleted.
-            var node = GetOrCreateNode(m_State.CustomParentForNewGameObjects.gameObject);
-            return !HierarchyViewSelectionExtension.IsChildOfSelectionOrSelected(view, in node);
+            var node = GetOrCreateNode(m_CustomParentForNewGameObjects.gameObject);
+            return !view.IsSelectedOrAnyAncestorSelected(in node);
         }
 
         bool IHierarchyEditorNodeTypeHandler.OnDelete(HierarchyView view)
@@ -343,7 +338,7 @@ namespace Unity.Hierarchy.Editor
         void BuildGameObjectContextMenu(HierarchyView view, in HierarchyNode node, GameObject gameObject, DropdownMenu menu)
         {
             // Set as Default Parent
-            if (!view.ViewModel.HasAllFlags(HierarchyNodeFlags.Selected) && gameObject == null || gameObject && (gameObject.name == PrefabUtility.kDummyPrefabStageRootObjectName || PrefabStageUtility.IsGameObjectThePrefabRootInAnyPrefabStage(gameObject)))
+            if (!view.ViewModel.HasFlags(HierarchyNodeFlags.Selected) && gameObject == null || gameObject && (gameObject.name == PrefabUtility.kDummyPrefabStageRootObjectName || PrefabStageUtility.IsGameObjectThePrefabRootInAnyPrefabStage(gameObject)))
             {
                 menu.AppendAction(L10n.Tr("Set as Default Parent"), _ => SetAsDefaultParent(view), DropdownMenuAction.Status.Disabled);
             }
@@ -389,7 +384,7 @@ namespace Unity.Hierarchy.Editor
 
         void PopulateCreateMenu(DropdownMenu menu, GameObject gameObject, GameObject[] selectedGameObjects)
         {
-            var customParent = m_State.CustomParentForNewGameObjects;
+            var customParent = m_CustomParentForNewGameObjects;
             var targetSceneForCreation = customParent != null ? customParent.gameObject.scene.handle : SceneHandle.None;
 
             // Set the context of each MenuItem to the current selection, so the created gameobjects will be added as children
@@ -405,19 +400,19 @@ namespace Unity.Hierarchy.Editor
 
         bool AllowCutCopyAndDuplicate(HierarchyView view)
         {
-            var customParent = m_State.CustomParentForNewGameObjects;
+            var customParent = m_CustomParentForNewGameObjects;
             if (customParent == null)
                 return true;
 
             var customParentNode = GetOrCreateNode(customParent.gameObject);
 
             // In Prefab stage, CustomParentForNewGameObjects's ancestors cannot be cut, copied nor duplicated.
-            return customParentNode != HierarchyNode.Null && !HierarchyViewSelectionExtension.IsChildOfSelectionOrSelected(view, Hierarchy.GetParent(in customParentNode));
+            return customParentNode != HierarchyNode.Null && !view.IsSelectedOrAnyAncestorSelected(Hierarchy.GetParent(in customParentNode));
         }
 
         bool IsSelectPrefabRootAvailable(HierarchyView view)
         {
-            foreach (ref readonly var selectedNode in view.ViewModel.EnumerateNodesWithAllFlags(HierarchyNodeFlags.Selected))
+            foreach (ref readonly var selectedNode in view.ViewModel.EnumerateNodesWithFlags(HierarchyNodeFlags.Selected))
             {
                 var go = GetGameObject(in selectedNode);
                 if (go == null)
@@ -434,7 +429,7 @@ namespace Unity.Hierarchy.Editor
         {
             List<HierarchyNode> rootNodes = new();
 
-            foreach (ref readonly var selectedNode in view.ViewModel.EnumerateNodesWithAllFlags(HierarchyNodeFlags.Selected))
+            foreach (ref readonly var selectedNode in view.ViewModel.EnumerateNodesWithFlags(HierarchyNodeFlags.Selected))
             {
                 var go = GetGameObject(in selectedNode);
                 if (go != null && PrefabUtility.IsPartOfAnyPrefab(go))
@@ -455,7 +450,7 @@ namespace Unity.Hierarchy.Editor
             }
             else
             {
-                view.ClearSelection();
+                view.DeselectAll();
             }
         }
 
@@ -479,7 +474,7 @@ namespace Unity.Hierarchy.Editor
             string assetPath = null;
             GameObject prefabAsset = null;
 
-            if (view.ViewModel.HasAllFlagsCount(HierarchyNodeFlags.Selected) == 1)
+            if (view.ViewModel.HasFlagsCount(HierarchyNodeFlags.Selected) == 1)
             {
                 assetPath = PrefabUtility.GetPrefabAssetPathOfNearestInstanceRoot(gameObject);
                 prefabAsset = (GameObject)AssetDatabase.LoadMainAssetAtPath(assetPath);
@@ -565,10 +560,10 @@ namespace Unity.Hierarchy.Editor
 
         GameObject[] GetSelectedGameObjects(HierarchyView view)
         {
-            var selectionCount = view.ViewModel.HasAllFlagsCount(HierarchyNodeFlags.Selected);
+            var selectionCount = view.ViewModel.HasFlagsCount(HierarchyNodeFlags.Selected);
 
             using var selectedNodes = new RentSpanUnmanaged<HierarchyNode>(selectionCount);
-            view.ViewModel.GetNodesWithAllFlags(HierarchyNodeFlags.Selected, selectedNodes);
+            view.ViewModel.GetNodesWithFlags(HierarchyNodeFlags.Selected, selectedNodes);
 
             using var pooledObject = ListPool<GameObject>.Get(out var gameObjects);
             for (var i = 0; i < selectionCount; i++)
@@ -595,10 +590,10 @@ namespace Unity.Hierarchy.Editor
 
         internal HierarchyNode GetCustomParentNode()
         {
-            if (m_State.CustomParentForNewGameObjects == null)
+            if (m_CustomParentForNewGameObjects == null)
                 return HierarchyNode.Null;
 
-            return GetOrCreateNode(m_State.CustomParentForNewGameObjects.gameObject);
+            return GetOrCreateNode(m_CustomParentForNewGameObjects.gameObject);
         }
 
         protected override void SearchBegin(HierarchySearchQueryDescriptor query)
@@ -612,9 +607,9 @@ namespace Unity.Hierarchy.Editor
             }
             CurrentFilter = new HierarchySearchQueryDescriptor(nonNativeFilters.ToArray());
             var queryStr = CurrentFilter.BuildFilterQuery();
-            m_State.ParsedQuery = QueryEngine.engine.ParseQuery(queryStr);
+            m_ParsedQuery = QueryEngine.engine.ParseQuery(queryStr);
             // TODO Search: GetView needs to be per Window id.
-            m_State.SearchMonitorView = SearchMonitor.GetView();
+            m_SearchMonitorView = SearchMonitor.GetView();
         }
 
         protected override bool SearchMatch(in HierarchyNode node)
@@ -625,7 +620,7 @@ namespace Unity.Hierarchy.Editor
                 return true;
             }
 
-            if (CurrentFilter.Invalid || !m_State.ParsedQuery.valid)
+            if (CurrentFilter.Invalid || !m_ParsedQuery.valid)
                 return false;
 
             var go = GetGameObject(in node);
@@ -634,12 +629,12 @@ namespace Unity.Hierarchy.Editor
 
         protected override void SearchEnd()
         {
-            m_State.SearchMonitorView.Dispose();
+            m_SearchMonitorView.Dispose();
         }
 
         internal bool IsGameObjectSearchMatch(GameObject go)
         {
-            return m_State.ParsedQuery.Test(go);
+            return m_ParsedQuery.Test(go);
         }
 
         #region IHierarchySearchPropositionProvider
@@ -676,10 +671,10 @@ namespace Unity.Hierarchy.Editor
             DragAndDropVisualMode visualMode;
             if (dropPosition == DragAndDropPosition.OutsideItems)
             {
-                if (m_State.CustomParentForNewGameObjects != null)
+                if (m_CustomParentForNewGameObjects != null)
                 {
                     // Use specific parent for DragAndDropForwarding
-                    visualMode = DragAndDrop.DropOnHierarchyWindow(EntityId.None, option, m_State.CustomParentForNewGameObjects, perform);
+                    visualMode = DragAndDrop.DropOnHierarchyWindow(EntityId.None, option, m_CustomParentForNewGameObjects, perform);
                 }
                 else
                 {
@@ -775,12 +770,12 @@ namespace Unity.Hierarchy.Editor
                     if (view?.ViewModel == null)
                         return;
 
-                    foreach (ref readonly var node in view.ViewModel.EnumerateNodesWithAllFlags(HierarchyNodeFlags.Selected))
+                    foreach (ref readonly var node in view.ViewModel.EnumerateNodesWithFlags(HierarchyNodeFlags.Selected))
                     {
                         if (node == HierarchyNode.Null)
                             continue;
 
-                        view.FrameNode(in node);
+                        view.Frame(in node);
                         break;
                     }
                 }

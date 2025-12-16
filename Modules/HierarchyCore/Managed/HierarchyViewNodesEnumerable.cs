@@ -3,13 +3,17 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.ComponentModel;
 using System.Runtime.CompilerServices;
 
 namespace Unity.Hierarchy
 {
+    #region Marked as obsolete warning in 6.3
     /// <summary>
     /// Represent an enumerable of <see cref="HierarchyNode"/> with specific <see cref="HierarchyNodeFlags"/>.
     /// </summary>
+    [Obsolete("HierarchyViewNodesEnumerable is obsolete, it has been renamed to HierarchyViewModelNodesEnumerable.", false)]
+    [EditorBrowsable(EditorBrowsableState.Never)]
     public readonly struct HierarchyViewNodesEnumerable
     {
         /// <summary>
@@ -18,13 +22,13 @@ namespace Unity.Hierarchy
         /// <param name="node">The hierarchy node.</param>
         /// <param name="flags">The hierarchy node flags.</param>
         /// <returns><see langword="true"/> if the node passes the predicate, <see langword="false"/> otherwise</returns>
-        internal delegate bool Predicate(in HierarchyNode node, HierarchyNodeFlags flags);
+        internal delegate bool PredicateCallback(in HierarchyNode node, HierarchyNodeFlags flags);
 
         readonly HierarchyViewModel m_HierarchyViewModel;
-        readonly Predicate m_Predicate;
+        readonly PredicateCallback m_Predicate;
         readonly HierarchyNodeFlags m_Flags;
 
-        internal HierarchyViewNodesEnumerable(HierarchyViewModel viewModel, HierarchyNodeFlags flags, Predicate predicate)
+        internal HierarchyViewNodesEnumerable(HierarchyViewModel viewModel, HierarchyNodeFlags flags, PredicateCallback predicate)
         {
             m_HierarchyViewModel = viewModel ?? throw new ArgumentNullException(nameof(viewModel));
             m_Predicate = predicate ?? throw new ArgumentNullException(nameof(predicate));
@@ -40,13 +44,12 @@ namespace Unity.Hierarchy
         /// <summary>
         /// An enumerator of <see cref="HierarchyNode"/>.
         /// </summary>
-        public unsafe struct Enumerator
+        public struct Enumerator
         {
             readonly HierarchyViewModel m_HierarchyViewModel;
-            readonly Predicate m_Predicate;
+            readonly PredicateCallback m_Predicate;
             readonly HierarchyNodeFlags m_Flags;
-            readonly HierarchyFlattenedNode* m_NodesPtr;
-            readonly int m_NodesCount;
+            readonly ReadOnlyNativeVector<HierarchyFlattenedNode> m_FlattenedNodes;
             readonly int m_Version;
             int m_Index;
 
@@ -55,8 +58,7 @@ namespace Unity.Hierarchy
                 m_HierarchyViewModel = enumerable.m_HierarchyViewModel;
                 m_Predicate = enumerable.m_Predicate;
                 m_Flags = enumerable.m_Flags;
-                m_NodesPtr = m_HierarchyViewModel.NodesPtr;
-                m_NodesCount = m_HierarchyViewModel.NodesCount;
+                m_FlattenedNodes = m_HierarchyViewModel.FlattenedNodes;
                 m_Version = m_HierarchyViewModel.Version;
                 m_Index = 0; // We initialize at 0 instead of -1 to skip the root node in the hierarchy flattened
             }
@@ -70,7 +72,7 @@ namespace Unity.Hierarchy
                 get
                 {
                     ThrowIfVersionChanged();
-                    return ref HierarchyFlattenedNode.GetNodeByRef(in m_NodesPtr[m_Index]);
+                    return ref HierarchyFlattenedNode.GetNodeByRef(in m_FlattenedNodes[m_Index]);
                 }
             }
 
@@ -84,10 +86,10 @@ namespace Unity.Hierarchy
                 ThrowIfVersionChanged();
                 while (true)
                 {
-                    if (++m_Index >= m_NodesCount)
+                    if (++m_Index >= m_FlattenedNodes.Count)
                         return false;
 
-                    if (m_Predicate(in HierarchyFlattenedNode.GetNodeByRef(in m_NodesPtr[m_Index]), m_Flags))
+                    if (m_Predicate(in HierarchyFlattenedNode.GetNodeByRef(in m_FlattenedNodes[m_Index]), m_Flags))
                         return true;
                 }
             }
@@ -100,4 +102,5 @@ namespace Unity.Hierarchy
             }
         }
     }
+    #endregion
 }

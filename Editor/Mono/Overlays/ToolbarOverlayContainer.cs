@@ -9,6 +9,40 @@ using UnityEngine.UIElements;
 
 namespace UnityEditor.Overlays
 {
+    sealed class ToolbarScrollView : ScrollView
+    {
+        const string k_ClassName = "unity-toolbar-scroll-view";
+        const string k_ScrollerClassName = "unity-toolbar-scroll-view__scroller";
+
+        public ToolbarScrollView() : base(ScrollViewMode.Horizontal)
+        {
+            AddToClassList(k_ClassName);
+            SetupScroller(horizontalScroller);
+            SetupScroller(verticalScroller);
+            contentViewport.RegisterCallback<GeometryChangedEvent>(ViewportGeometryChanged);
+        }
+
+        void SetupScroller(Scroller scroller)
+        {
+            scroller.AddToClassList(k_ScrollerClassName);
+            scroller.pickingMode = PickingMode.Ignore;
+            scroller.valueChanged += (value) => UpdateButtons(scroller);
+            UpdateButtons(scroller);
+        }
+
+        void ViewportGeometryChanged(GeometryChangedEvent evt)
+        {
+            UpdateButtons(horizontalScroller);
+            UpdateButtons(verticalScroller);
+        }
+
+        void UpdateButtons(Scroller scroller)
+        {
+            scroller.lowButton.style.display = scroller.value <= scroller.lowValue ? DisplayStyle.None : DisplayStyle.Flex;
+            scroller.highButton.style.display = scroller.value >= scroller.highValue ? DisplayStyle.None : DisplayStyle.Flex;
+        }
+    }
+
     class ToolbarOverlayContainer : OverlayContainer
     {
         [Serializable]
@@ -52,7 +86,7 @@ namespace UnityEditor.Overlays
 
         public ToolbarOverlayContainer()
         {
-            scrollView = new ScrollView(ScrollViewMode.Horizontal);
+            scrollView = new ToolbarScrollView();
             scrollView.style.width = new StyleLength(new Length(100, LengthUnit.Percent));
             hierarchy.Add(scrollView);
             scrollView.RegisterCallback<GeometryChangedEvent>(DelayScrollViewInit);
@@ -143,7 +177,9 @@ namespace UnityEditor.Overlays
         void DelayScrollViewInit(GeometryChangedEvent evt)
         {
             scrollView.UnregisterCallback<GeometryChangedEvent>(DelayScrollViewInit);
-            scrollView.horizontalScrollerVisibility = scrollView.verticalScrollerVisibility = ScrollerVisibility.Hidden;
+            
+            scrollView.horizontalScrollerVisibility = isHorizontal ? ScrollerVisibility.Auto : ScrollerVisibility.Hidden;
+            scrollView.verticalScrollerVisibility = !isHorizontal ? ScrollerVisibility.Auto : ScrollerVisibility.Hidden;
             if (!Mathf.Approximately(m_ScrollOffsetRequestedValue, 0))
                 scrollOffset = m_ScrollOffsetRequestedValue;
         }
@@ -157,6 +193,8 @@ namespace UnityEditor.Overlays
                 scrollView.mode = ScrollViewMode.Horizontal;
                 scrollView.style.width = new StyleLength(new Length(100, LengthUnit.Percent));
                 scrollView.style.height = new StyleLength(StyleKeyword.Auto);
+                scrollView.horizontalScrollerVisibility = ScrollerVisibility.Auto;
+                scrollView.verticalScrollerVisibility = ScrollerVisibility.Hidden;
             }
         }
 
@@ -169,6 +207,8 @@ namespace UnityEditor.Overlays
                 scrollView.mode = ScrollViewMode.Vertical;
                 scrollView.style.height = new StyleLength(new Length(100, LengthUnit.Percent));
                 scrollView.style.width = new StyleLength(StyleKeyword.Auto);
+                scrollView.horizontalScrollerVisibility = ScrollerVisibility.Hidden;
+                scrollView.verticalScrollerVisibility = ScrollerVisibility.Auto;
             }
         }
 

@@ -438,15 +438,33 @@ namespace UnityEngine.Bindings
     internal enum NativeType
     {
         /// <summary>
+        /// A CustomMarshaller must be specified
+        /// </summary>
+        Custom,
+        /// <summary>
         /// Marshal the reference as a ScriptingObjectPtr (ScritptingArrayPtr for arrays)
         /// </summary>
         ScriptingObjectPtr,
+
         /// <summary>
-        /// Marshal the type using a custom managed marshaled class set in CustomManarshaller
+        /// Pass a GCHandle to native code, native code is responsible for freeing the GC handle
+        /// GCHandleOptions must be specified
         /// </summary>
-        Custom,
+        GCHandle,
+
+        /// <summary>
+        /// Marshal as if this where a different type (Currently only implemented for arrays/lists of UnityEngine.Object types)
+        /// </summary>
+        MarshalAsType,
     }
 
+    [VisibleToOtherModules]
+    internal enum GCHandleOptions
+    {
+        Strong  = 0,
+        Weak    = 1,   
+        Pinned  = 2,
+    }
 
     [VisibleToOtherModules]
     [AttributeUsage(AttributeTargets.Method)]
@@ -458,20 +476,61 @@ namespace UnityEngine.Bindings
     }
 
 
+    /// <summary>
+    /// Applies Unity specific marshaling to a type/field/parameter/return.  This will override the default marshaling behavior.
+    /// </summary>
     [VisibleToOtherModules]
     [AttributeUsage(AttributeTargets.Class | AttributeTargets.Struct | AttributeTargets.Parameter | AttributeTargets.Field | AttributeTargets.ReturnValue, AllowMultiple = false, Inherited = false)]
     class UnityMarshalAsAttribute : Attribute, IBindingsAttribute
     {
+        /// <summary>
+        /// Specifies the native type to marshal as
+        /// </summary>
         public NativeType NativeType { get; }
 
         /// <summary>
-        /// Used for NativeType.Custom - sets the marshaller type
+        /// When NativeType is NativeType.Custom, this specifies the custom marshaller class to use
         /// </summary>
         public Type CustomMarshaller { get; set; }
+
+        /// <summary>
+        /// When NativeType is NativeType.MarshalAsType, marshal the type as if it was this type
+        /// This is currently only implemented for arrays/lists of UnityEngine.Object types and is indented to preserve previous marshaling behavior
+        /// </summary>
+        public Type MarshalAsType { get; set; }
+
+        /// <summary>
+        /// When NativeType is NativeType.GCHandle, specifies the GCHandleOptions to use
+        /// </summary>
+        public GCHandleOptions GCHandleOptions { get; set; }
 
         public UnityMarshalAsAttribute(NativeType nativeType)
         {
             NativeType = nativeType;
+        }
+    }
+
+    /// <summary>
+    /// Causes a Debugger.Launch() when the target is marshhalled
+    /// </summary>
+    [AttributeUsage(AttributeTargets.All, Inherited = false)]
+    [VisibleToOtherModules]
+    internal class BindingsGeneratorLaunchDebuggerAttribute : Attribute
+    {
+        public BindingsGeneratorLaunchDebuggerAttribute()
+        {
+        }
+    }
+
+    /// <summary>
+    // Prevents the bindings generator from generating bindings method this is applied to.
+    /// </summary>
+    [AttributeUsage(AttributeTargets.Method, Inherited = false)]
+    [VisibleToOtherModules]
+    internal class BindingsGeneratorIgnoreAttribute : Attribute
+    {
+        public BindingsGeneratorIgnoreAttribute()
+        {
         }
     }
 }

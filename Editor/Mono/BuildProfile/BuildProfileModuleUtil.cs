@@ -12,6 +12,7 @@ using UnityEditor.Profiling;
 using UnityEngine;
 using UnityEngine.Bindings;
 using UnityEngine.Rendering;
+using UnityEngine.Scripting;
 using UnityEngine.UIElements;
 using TargetAttributes = UnityEditor.BuildTargetDiscovery.TargetAttributes;
 using PlatformPackageList = UnityEditor.BuildTargetDiscovery.PlatformPackageList;
@@ -44,11 +45,91 @@ namespace UnityEditor.Build.Profile
         static readonly string k_BuildProfileRecompileReason = L10n.Tr("Active build profile scripting defines changes.");
         static readonly GUIContent k_OpenDownloadPage = EditorGUIUtility.TrTextContent("Open Download Page");
         static readonly GUIContent k_InstallModuleWithHub = EditorGUIUtility.TrTextContent("Install with Unity Hub");
+        static readonly string k_ModuleInstalled = L10n.Tr("{0} module has been installed.");
+        static readonly string k_RestartNeeded = L10n.Tr("Please restart the Unity Editor to load the module.");
+        static readonly string k_RestartEditor = L10n.Tr("Restart Unity Editor");
         static readonly GUIContent k_ActivateDerivedPlatform = EditorGUIUtility.TrTextContent("Enable Platform");
+
         static HashSet<string> s_BuildProfileIconModules = new()
         {
             "Switch",
         };
+
+        /// <summary>
+        /// Native callback invoked when Unity Hub completes a module installation.
+        /// </summary>
+        [RequiredByNativeCode]
+        internal static void OnModuleInstallationCompleted(string moduleId, string editorVersion, string timestamp, string message)
+        {
+            Debug.Log($"[BuildProfile] Module installation completed: {moduleId} (version: {editorVersion}) - {message}");
+            
+            // Check if this message is for the current editor version
+            // Hub broadcasts to all open editors, but only the matching version should respond
+            if (!string.Equals(Application.unityVersion, editorVersion, StringComparison.Ordinal))
+            {
+                Debug.Log($"[BuildProfile] Ignoring module installation for different editor version. Current: {Application.unityVersion}, Message: {editorVersion}");
+                return;
+            }
+            
+            // Map Hub's moduleId to Unity's platform GUID
+            var platformGuid = TryGetPlatformGuidFromModuleId(moduleId);
+            if (platformGuid == null)
+            {
+                Debug.LogWarning($"[BuildProfile] Could not find platform for Hub moduleId: {moduleId}");
+                return;
+            }
+
+            Debug.Log($"[BuildProfile] Mapped moduleId '{moduleId}' to platform: {BuildTargetDiscovery.BuildPlatformDisplayName(platformGuid.Value)}");
+            
+            // Mark this platform as pending editor restart
+            MarkPlatformPendingRestart(platformGuid.Value);
+            
+            // Notify subscribers to refresh platform requirements UI
+            EditorApplication.delayCall += () =>
+            {
+                OnPlatformModuleInstallationChanged?.Invoke(platformGuid.Value);
+                RepaintProjectSettingsWindow();
+            };
+        }
+
+        static HashSet<GUID> s_PlatformsPendingRestart = new HashSet<GUID>();
+
+        /// <summary>
+        /// Mark a platform as having been installed but pending editor restart.
+        /// </summary>
+        static void MarkPlatformPendingRestart(GUID platformGuid)
+        {
+            s_PlatformsPendingRestart.Add(platformGuid);
+        }
+
+        /// <summary>
+        /// Check if a platform is pending editor restart after module installation.
+        /// </summary>
+        public static bool IsPlatformPendingRestart(GUID platformGuid)
+        {
+            return s_PlatformsPendingRestart.Contains(platformGuid);
+        }
+
+        /// <summary>
+        /// Maps Unity Hub's moduleId to Unity's platform GUID.
+        /// Hub sends lowercase download link names (e.g., "android", "ios", "webgl").
+        /// </summary>
+        static GUID? TryGetPlatformGuidFromModuleId(string hubModuleId)
+        {
+            var allPlatforms = BuildTargetDiscovery.GetAllPlatforms();
+            foreach (var platformGuid in allPlatforms)
+            {
+                var downloadLinkName = BuildTargetDiscovery.BuildPlatformDownloadLinkName(platformGuid);
+                
+                // Case-insensitive comparison since Hub sends lowercase
+                if (string.Equals(downloadLinkName, hubModuleId, StringComparison.OrdinalIgnoreCase))
+                {
+                    return platformGuid;
+                }
+            }
+            
+            return null;
+        }
 
         /// <summary>
         /// Internal callback for BuildProfileModule to be notified of
@@ -61,6 +142,12 @@ namespace UnityEditor.Build.Profile
         /// editor settings change.
         /// </summary>
         public static Action OnEditorSettingsChanged;
+
+        /// <summary>
+        /// Internal static callback requesting an update of platform requirements UI
+        /// (e.g., when a module is installed).
+        /// </summary>
+        public static Action<GUID> OnPlatformModuleInstallationChanged;
 
         public static void UpdateActiveEditors(BuildProfile profile)
         {
@@ -226,6 +313,12 @@ namespace UnityEditor.Build.Profile
             container.styleSheets.Add(buildProfileWindowUss);
             container.AddClasses("flex-row align-items-center flex-wrap full-width");
 
+            // Check if module was just installed and needs restart
+            if (IsPlatformPendingRestart(platformId))
+            {
+                return GetPlatformPendingRestartElement(platformId, container);
+            }
+
             if (BuildTargetDiscovery.BuildPlatformIsInstalled(platformId) && BuildTargetDiscovery.BuildPlatformIsDerivedPlatform(platformId))
             {
                 return GetPlatformNotEnabledElement(platformId, container);
@@ -299,6 +392,20 @@ namespace UnityEditor.Build.Profile
         public static bool IsStandalonePlatform(BuildTarget buildTarget) =>
             BuildTargetDiscovery.PlatformHasFlag(buildTarget, TargetAttributes.IsStandalonePlatform);
 
+        public static bool IsCoverageSupported(BuildTarget buildTarget)
+        {
+            if (!IsStandalonePlatform(buildTarget))
+                return false;
+            
+            var activeProfile = BuildProfile.GetActiveBuildProfile();
+            var settings = GetBuildProfileOrGlobalPlayerSettings(activeProfile);
+            var buildTargetGroupName = BuildPipeline.GetBuildTargetGroupName(buildTarget);
+
+            var scriptingBackend = PlayerSettings.GetScriptingBackend_Internal(settings, buildTargetGroupName);
+
+            return scriptingBackend == ScriptingImplementation.Mono2x;
+        }
+
         /// <summary>
         /// Retrieve the respective module name for a platform guid.
         /// </summary>
@@ -360,7 +467,9 @@ namespace UnityEditor.Build.Profile
             options.targetGroup = buildTargetGroup;
             options.locationPathName = buildLocation;
             options.assetBundleManifestPath = assetBundleManifestPath ?? PostprocessBuildPlayer.GetStreamingAssetsBundleManifestPath();
+            options.previousBuildMetadataLocations = PostprocessBuildPlayer.GetPreviousContentBuildMetadataLocations();
             options.scenes = EditorBuildSettingsScene.GetActiveSceneList(activeProfile.GetScenesForBuild());
+            options.previousBuildMetadataLocations = PostprocessBuildPlayer.GetPreviousContentBuildMetadataLocations();
 
             return options;
         }
@@ -395,6 +504,8 @@ namespace UnityEditor.Build.Profile
 
             if (EditorUserBuildSettings.buildWithDeepProfilingSupport && developmentBuild)
                 options |= BuildOptions.EnableDeepProfilingSupport;
+            if (EditorUserBuildSettings.buildWithCodeCoverage && developmentBuild && IsCoverageSupported(buildTarget))
+                options |= BuildOptions.EnableCodeCoverage;
             if (EditorUserBuildSettings.buildScriptsOnly)
                 options |= BuildOptions.BuildScriptsOnly;
             if (!string.IsNullOrEmpty(ProfilerUserSettings.customConnectionID) && developmentBuild)
@@ -1130,6 +1241,33 @@ namespace UnityEditor.Build.Profile
         {
             container.Add(new Label(string.Format(k_DerivedPlatformDisabled,
                 BuildTargetDiscovery.BuildPlatformDisplayName(platformId))));
+
+            return container;
+        }
+
+        private static VisualElement GetPlatformPendingRestartElement(GUID platformId, VisualElement container)
+        {
+            var displayName = BuildTargetDiscovery.BuildPlatformDisplayName(platformId);
+            var moduleInstalledLabel = new Label(string.Format(k_ModuleInstalled, displayName));
+            var restartNeededLabel = new Label(k_RestartNeeded);
+            var labels = new VisualElement();
+
+            labels.AddClasses("flex-column flex-grow-1");
+            restartNeededLabel.AddClasses("text-small wrap");
+
+            labels.Add(moduleInstalledLabel);
+            labels.Add(restartNeededLabel);
+
+            var button = new Button(() =>
+            {
+                EditorApplication.RestartEditorAndRecompileScripts();
+            })
+            {
+                text = k_RestartEditor
+            };
+
+            container.Add(labels);
+            container.Add(button);
 
             return container;
         }

@@ -10,9 +10,9 @@ using UnityEditor.IMGUI.Controls;
 using UnityEditorInternal;
 using UnityEngine;
 using UnityEditor.Profiling;
-using TreeView = UnityEditor.IMGUI.Controls.TreeView<int>;
-using TreeViewItem = UnityEditor.IMGUI.Controls.TreeViewItem<int>;
-using TreeViewState = UnityEditor.IMGUI.Controls.TreeViewState<int>;
+using TreeView = UnityEditor.IMGUI.Controls.TreeView<UnityEngine.EntityId>;
+using TreeViewItem = UnityEditor.IMGUI.Controls.TreeViewItem<UnityEngine.EntityId>;
+using TreeViewState = UnityEditor.IMGUI.Controls.TreeViewState<UnityEngine.EntityId>;
 
 namespace UnityEditor
 {
@@ -20,7 +20,9 @@ namespace UnityEditor
     {
         private readonly CanvasBatchComparer m_Comparer;
 
+#pragma warning disable CS0618
         public ProfilerProperty property;
+#pragma warning restore CS0618
 
         private RootTreeViewItem m_AllCanvasesItem;
         private GUIStyle lineStyle;
@@ -40,7 +42,7 @@ namespace UnityEditor
 
         protected override TreeViewItem BuildRoot()
         {
-            return new TreeViewItem(0, -1);
+            return new TreeViewItem(EntityId.None, -1);
         }
 
         protected override IList<TreeViewItem> BuildRows(TreeViewItem root)
@@ -54,36 +56,38 @@ namespace UnityEditor
             m_AllCanvasesItem = new RootTreeViewItem();
             SetExpanded(m_AllCanvasesItem.id, true);
             root.AddChild(m_AllCanvasesItem);
+#pragma warning disable CS0618
             UISystemProfilerInfo[] UISystemData = property.GetUISystemProfilerInfo();
-            int[] allBatchesInstanceIDs = property.GetUISystemBatchInstanceIDs();
+#pragma warning restore CS0618
+            EntityId[] allBatchesEntityIds = property.GetUISystemBatchEntityIds();
 
             if (UISystemData != null && UISystemData.Length > 0)
             {
-                Dictionary<int, TreeViewItem> map = new Dictionary<int, TreeViewItem>();
+                Dictionary<EntityId, TreeViewItem> map = new Dictionary<EntityId, TreeViewItem>();
                 int batchIndex = 0;
                 foreach (var data in UISystemData)
                 {
                     TreeViewItem parent;
-                    if (!map.TryGetValue(data.parentId, out parent))
+                    if (!map.TryGetValue(data.parentEntityId, out parent))
                     {
                         parent = m_AllCanvasesItem;
                         m_AllCanvasesItem.totalBatchCount += data.totalBatchCount;
                         m_AllCanvasesItem.totalVertexCount += data.totalVertexCount;
-                        m_AllCanvasesItem.gameObjectCount += data.instanceIDsCount;
+                        m_AllCanvasesItem.gameObjectCount += data.entityIdsCount;
                     }
                     string name;
                     BaseTreeViewItem canvasTreeViewItem;
                     if (data.isBatch)
                     {
                         name = "Batch " + batchIndex++;
-                        canvasTreeViewItem = new BatchTreeViewItem(data, parent.depth + 1, name, allBatchesInstanceIDs);
+                        canvasTreeViewItem = new BatchTreeViewItem(data, parent.depth + 1, name, allBatchesEntityIds);
                     }
                     else
                     {
                         name = property.GetUISystemProfilerNameByOffset(data.objectNameOffset);
                         canvasTreeViewItem = new CanvasTreeViewItem(data, parent.depth + 1, name);
                         batchIndex = 0;
-                        map[data.objectInstanceId] = canvasTreeViewItem;
+                        map[data.objectEntityId] = canvasTreeViewItem;
                     }
                     if (!IsExpanded(parent.id))
                     {
@@ -154,7 +158,7 @@ namespace UnityEditor
             }
         }
 
-        protected override void ContextClickedItem(int id)
+        protected override void ContextClickedItem(EntityId id)
         {
             GenericMenu pm = new GenericMenu();
 
@@ -163,33 +167,33 @@ namespace UnityEditor
             pm.ShowAsContext();
         }
 
-        protected override void DoubleClickedItem(int id)
+        protected override void DoubleClickedItem(EntityId id)
         {
-            IList<TreeViewItem> rows = GetRowsFromIDs(new List<int> {id});
+            IList<TreeViewItem> rows = GetRowsFromIDs(new List<EntityId> {id});
             HighlightRowsMatchingObjects(rows);
         }
 
         private static void HighlightRowsMatchingObjects(IList<TreeViewItem> rows)
         {
-            List<int> instanceIds = new List<int>();
+            List<EntityId> entityIds = new List<EntityId>();
             foreach (var row in rows)
             {
                 var batchRow = row as BatchTreeViewItem;
                 if (batchRow != null)
                 {
-                    instanceIds.AddRange(batchRow.instanceIDs);
+                    entityIds.AddRange(batchRow.entityIds);
                     continue;
                 }
                 var canvasRow = row as CanvasTreeViewItem;
                 if (canvasRow == null)
                     continue;
-                Canvas canvas = EditorUtility.EntityIdToObject(canvasRow.info.objectInstanceId) as Canvas;
+                Canvas canvas = EditorUtility.EntityIdToObject(canvasRow.info.objectEntityId) as Canvas;
                 if (canvas == null || canvas.gameObject == null)
                     continue;
-                instanceIds.Add(canvas.gameObject.GetInstanceID());
+                entityIds.Add(canvas.gameObject.GetEntityId());
             }
-            if (instanceIds.Count > 0)
-                Selection.entityIds = instanceIds.ToArray().ToEntityIdArray();
+            if (entityIds.Count > 0)
+                Selection.entityIds = entityIds.ToArray();
         }
 
         private void SetupRows(TreeViewItem item, IList<TreeViewItem> rows)
@@ -237,25 +241,25 @@ namespace UnityEditor
                             return FormatBatchBreakingReason(info);
                         break;
                     case Column.GameObjectCount:
-                        return info.instanceIDsCount.ToString();
+                        return info.entityIdsCount.ToString();
                     case Column.InstanceIds:
-                        if (batchItem.instanceIDs.Length <= 5)
+                        if (batchItem.entityIds.Length <= 5)
                         {
                             StringBuilder sb = new StringBuilder();
-                            for (int i = 0; i < batchItem.instanceIDs.Length; i++)
+                            for (int i = 0; i < batchItem.entityIds.Length; i++)
                             {
                                 if (i != 0)
                                     sb.Append(", ");
-                                int iid = batchItem.instanceIDs[i];
+                                EntityId iid = batchItem.entityIds[i];
                                 var o = EditorUtility.EntityIdToObject(iid);
                                 if (o == null)
-                                    sb.Append(iid);
+                                    sb.Append(iid.ToString());
                                 else
                                     sb.Append(o.name);
                             }
                             return sb.ToString();
                         }
-                        return string.Format("{0} objects", batchItem.instanceIDs.Length);
+                        return string.Format("{0} objects", batchItem.entityIds.Length);
                     case Column.Element:
                     case Column.BatchCount:
                     case Column.TotalBatchCount:
@@ -273,7 +277,9 @@ namespace UnityEditor
             var canvasItem = args.item as CanvasTreeViewItem;
             if (canvasItem != null)
             {
+#pragma warning disable CS0618
                 UISystemProfilerInfo info = canvasItem.info;
+#pragma warning restore CS0618
                 switch ((Column)column)
                 {
                     case Column.BatchCount:
@@ -283,7 +289,7 @@ namespace UnityEditor
                     case Column.TotalVertexCount:
                         return info.totalVertexCount.ToString();
                     case Column.GameObjectCount:
-                        return info.instanceIDsCount.ToString();
+                        return info.entityIdsCount.ToString();
                     case Column.VertexCount:
                     case Column.BatchBreakingReason:
                     case Column.InstanceIds:
@@ -301,12 +307,14 @@ namespace UnityEditor
             return null;
         }
 
-        internal IList<TreeViewItem> GetRowsFromIDs(IList<int> selection)
+        internal IList<TreeViewItem> GetRowsFromIDs(IList<EntityId> selection)
         {
             return FindRows(selection);
         }
 
+#pragma warning disable CS0618
         private static string FormatBatchBreakingReason(UISystemProfilerInfo info)
+#pragma warning restore CS0618
         {
             switch (info.batchBreakingReason)
             {
@@ -370,7 +378,7 @@ namespace UnityEditor
                     case Column.TotalVertexCount:
                         return cx.info.totalVertexCount.CompareTo(cy.info.totalVertexCount) * i;
                     case Column.GameObjectCount:
-                        return cx.info.instanceIDsCount.CompareTo(cy.info.instanceIDsCount) * i;
+                        return cx.info.entityIdsCount.CompareTo(cy.info.entityIdsCount) * i;
                     default:
                         throw new ArgumentOutOfRangeException();
                 }
@@ -383,7 +391,7 @@ namespace UnityEditor
             public int totalBatchCount;
             public int totalVertexCount;
 
-            public RootTreeViewItem() : base(1, 0, null, "All Canvases")
+            public RootTreeViewItem() : base(EntityId.None, 0, null, "All Canvases")
             {
             }
         }
@@ -391,11 +399,13 @@ namespace UnityEditor
         internal class BaseTreeViewItem : TreeViewItem
         {
             protected static readonly Texture2D s_CanvasIcon = EditorGUIUtility.LoadIcon("RectTool On");
+#pragma warning disable CS0618
             public UISystemProfilerInfo info;
             public int renderDataIndex;
 
             internal BaseTreeViewItem(UISystemProfilerInfo info, int depth, string displayName)
-                : base(info.objectInstanceId, depth, displayName)
+#pragma warning restore CS0618
+                : base(info.objectEntityId, depth, displayName)
             {
                 this.info = info;
             }
@@ -403,7 +413,9 @@ namespace UnityEditor
 
         internal sealed class CanvasTreeViewItem : BaseTreeViewItem
         {
+#pragma warning disable CS0618
             public CanvasTreeViewItem(UISystemProfilerInfo info, int depth, string displayName) : base(info, depth, displayName)
+#pragma warning restore CS0618
             {
                 icon = s_CanvasIcon;
             }
@@ -411,14 +423,16 @@ namespace UnityEditor
 
         internal sealed class BatchTreeViewItem : BaseTreeViewItem
         {
-            public int[] instanceIDs;
+            public EntityId[] entityIds;
 
-            public BatchTreeViewItem(UISystemProfilerInfo info, int depth, string displayName, int[] allBatchesInstanceIDs)
+#pragma warning disable CS0618
+            public BatchTreeViewItem(UISystemProfilerInfo info, int depth, string displayName, EntityId[] allBatchesEntityIds)
+#pragma warning restore CS0618
                 : base(info, depth, displayName)
             {
                 icon = null;
-                instanceIDs = new int[info.instanceIDsCount];
-                Array.Copy(allBatchesInstanceIDs, info.instanceIDsIndex, instanceIDs, 0, info.instanceIDsCount);
+                entityIds = new EntityId[info.entityIdsCount];
+                Array.Copy(allBatchesEntityIds, info.entityIdsIndex, entityIds, 0, info.entityIdsCount);
                 renderDataIndex = info.renderDataIndex;
             }
         }

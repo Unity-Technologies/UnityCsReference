@@ -14,15 +14,11 @@ namespace UnityEditor.PackageManager.UI.Internal
         private readonly IPackageVersion m_Version;
         private Sample m_Sample;
 
-        private readonly ISelectionProxy m_Selection;
-        private readonly IAssetDatabaseProxy m_AssetDatabase;
         private readonly IApplicationProxy m_Application;
         private readonly IIOProxy m_IOProxy;
 
-        public PackageDetailsSampleItem(IPackageVersion version, Sample sample, ISelectionProxy selection, IAssetDatabaseProxy assetDatabase, IApplicationProxy application, IIOProxy iOProxy)
+        public PackageDetailsSampleItem(IPackageVersion version, Sample sample, IApplicationProxy application, IIOProxy iOProxy)
         {
-            m_Selection = selection;
-            m_AssetDatabase = assetDatabase;
             m_Application = application;
             m_IOProxy = iOProxy;
 
@@ -32,8 +28,15 @@ namespace UnityEditor.PackageManager.UI.Internal
             nameLabel.tooltip = sample.displayName; // add tooltip for when the label text is cut off
             sizeLabel.text = sample.size;
             descriptionLabel.text = sample.description;
-            RefreshImportStatus();
+            RefreshActionButtons();
             importButton.clickable.clicked += OnImportButtonClicked;
+            locateButton.clickable.clicked += OnLocateButtonClicked;
+        }
+
+        private void OnLocateButtonClicked()
+        {
+            PingSampleInProjectBrowser();
+            PackageManagerWindowAnalytics.SendEvent("locateSample", m_Version.uniqueId);
         }
 
         private void OnImportButtonClicked()
@@ -78,21 +81,14 @@ namespace UnityEditor.PackageManager.UI.Internal
 
             if (m_Sample.Import(Sample.ImportOptions.OverridePreviousImports))
             {
-                RefreshImportStatus();
-                if (m_Sample.isImported)
-                {
-                    // Highlight import path
-                    var currentPath = m_IOProxy.CurrentDirectory;
-                    var importRelativePath = m_Sample.importPath.Replace(currentPath + Path.DirectorySeparatorChar, "");
-                    var obj = m_AssetDatabase.LoadMainAssetAtPath(importRelativePath);
-                    m_Selection.activeObject = obj;
-                    EditorGUIUtility.PingObject(obj);
-                }
+                RefreshActionButtons();
+                PingSampleInProjectBrowser();
             }
         }
 
-        private void RefreshImportStatus()
+        private void RefreshActionButtons()
         {
+            UIUtils.SetElementDisplay(locateButton, true);
             if (m_Sample.isImported)
             {
                 importStatus.AddToClassList("imported");
@@ -105,20 +101,37 @@ namespace UnityEditor.PackageManager.UI.Internal
             }
             else
             {
+                UIUtils.SetElementDisplay(locateButton, false);
                 importStatus.RemoveFromClassList("imported");
                 importButton.text = L10n.Tr("Import");
             }
         }
 
+        private void PingSampleInProjectBrowser()
+        {
+            var importRelativePath = GetRelativePath(m_Sample.importPath);
+            if (m_Application.PingObjectInProjectBrowser(importRelativePath))
+                return;
+            importRelativePath = GetRelativePath(m_Sample.previousImports?.Last());
+            m_Application.PingObjectInProjectBrowser(importRelativePath);
+        }
+
+        private string GetRelativePath(string path)
+        {
+            return path?.Replace(m_IOProxy.CurrentDirectory + Path.DirectorySeparatorChar, "");
+        }
+
         private Label m_ImportStatus;
-        internal Label importStatus { get { return m_ImportStatus ??= new Label { classList = { "importStatus" } }; } }
+        public Label importStatus => m_ImportStatus ??= new Label { classList = { "importStatus" } };
         private Label m_NameLabel;
-        internal Label nameLabel { get { return m_NameLabel ??= new Label { classList = { "nameLabel" } }; } }
+        public Label nameLabel => m_NameLabel ??= new Label { classList = { "nameLabel" } };
         private Label m_SizeLabel;
-        internal Label sizeLabel { get { return m_SizeLabel ??= new Label { classList = { "sizeLabel" } }; } }
+        public Label sizeLabel => m_SizeLabel ??= new Label { classList = { "sizeLabel" } };
         private SelectableLabel m_DescriptionLabel;
-        internal SelectableLabel descriptionLabel { get { return m_DescriptionLabel ??= new SelectableLabel { classList = { "descriptionLabel" } }; } }
+        public SelectableLabel descriptionLabel => m_DescriptionLabel ??= new SelectableLabel { classList = { "descriptionLabel" } };
         private Button m_ImportButton;
-        internal Button importButton { get { return m_ImportButton ??= new Button { classList = { "importButton" } }; } }
+        public Button importButton => m_ImportButton ??= new Button { classList = { "actionButton" } };
+        private Button m_LocateButton;
+        public Button locateButton => m_LocateButton ??= new Button { text = L10n.Tr("Locate"), classList = { "actionButton" } };
     }
 }

@@ -97,10 +97,10 @@ namespace UnityEditor.PackageManager.UI
             this.interactiveImport = interactiveImport;
         }
 
-        internal static IEnumerable<Sample> FindByPackage(PackageInfo package, IUpmCache upmCache, IIOProxy ioProxy, IAssetDatabaseProxy assetDatabaseProxy)
+        internal static IReadOnlyCollection<Sample> FindByPackage(PackageInfo package, IUpmCache upmCache, IIOProxy ioProxy, IAssetDatabaseProxy assetDatabaseProxy)
         {
             if (package == null || (string.IsNullOrEmpty(package.upmReserved) && string.IsNullOrEmpty(package.resolvedPath)))
-                return Enumerable.Empty<Sample>();
+                return Array.Empty<Sample>();
 
             try
             {
@@ -135,21 +135,21 @@ namespace UnityEditor.PackageManager.UI
                         string.IsNullOrEmpty(displayName) ? string.Empty : IOUtils.SanitizeFileName(displayName)
                     );
                     return new Sample(ioProxy, assetDatabaseProxy, displayName, description, resolvedSamplePath, importPath, interactiveImport);
-                }).ToArray() ?? Enumerable.Empty<Sample>();
+                }).ToArray() ?? Array.Empty<Sample>();
             }
             catch (IOException e)
             {
                 Debug.Log($"[Package Manager Window] Cannot find samples for package {package.displayName}: {e}");
-                return Enumerable.Empty<Sample>();
+                return Array.Empty<Sample>();
             }
             catch (InvalidCastException e)
             {
                 Debug.Log($"[Package Manager Window] Invalid sample data for package {package.displayName}: {e}");
-                return Enumerable.Empty<Sample>();
+                return Array.Empty<Sample>();
             }
             catch (Exception)
             {
-                return Enumerable.Empty<Sample>();
+                return Array.Empty<Sample>();
             }
         }
 
@@ -188,12 +188,12 @@ namespace UnityEditor.PackageManager.UI
             {
                 var interactive = (options & ImportOptions.HideImportWindow) == ImportOptions.None && interactiveImport;
                 var unityPackages = m_IOProxy.DirectoryGetFiles(resolvedPath, "*.unitypackage");
-                if (unityPackages.Any())
+                if (unityPackages.Length > 0)
                     m_AssetDatabase.ImportPackage(unityPackages[0], interactive);
                 else
                 {
                     var prevImports = previousImports;
-                    if (prevImports.Any() && (options & ImportOptions.OverridePreviousImports) == ImportOptions.None)
+                    if (prevImports.Count > 0 && (options & ImportOptions.OverridePreviousImports) == ImportOptions.None)
                         return false;
                     foreach (var v in prevImports)
                     {

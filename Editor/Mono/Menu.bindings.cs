@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using UnityEngine.Bindings;
 using UnityEngine.Scripting;
+using System.Runtime.InteropServices;
 
 namespace UnityEditor
 {
@@ -56,7 +57,7 @@ namespace UnityEditor
         internal static extern bool GetEnabledWithContext(string menuPath, UnityEngine.Object[] context);
 
         [FreeFunction("MenuController::GetMenuItemDefaultShortcuts")]
-        internal static extern void GetMenuItemDefaultShortcuts(List<string> outItemNames, List<string> outItemDefaultShortcuts);
+        internal static extern void GetMenuItemDefaultShortcuts([Out] List<string> outItemNames, [Out] List<string> outItemDefaultShortcuts);
 
         [FreeFunction("MenuController::SetMenuItemHotkey")]
         internal static extern void SetHotkey(string menuPath, string hotkey);
