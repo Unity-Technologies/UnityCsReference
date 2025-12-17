@@ -298,8 +298,6 @@ namespace UnityEditor.Modules
                     EditorGUILayout.EndVertical();
                 }
             }
-            else
-                m_InstallInBuildFolder.boolValue = false;
 
             if (m_IsClassicProfile)
             {

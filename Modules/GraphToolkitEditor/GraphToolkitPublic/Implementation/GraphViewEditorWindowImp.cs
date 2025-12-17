@@ -11,6 +11,12 @@ namespace Unity.GraphToolkit.Editor.Implementation
 {
     class GraphViewEditorWindowImp : GraphViewEditorWindow
     {
+        class MainToolbarDefinition : ToolbarDefinition
+        {
+            /// <inheritdoc />
+            public override IEnumerable<string> ElementIds => new[] { SaveButton.id, ShowInProjectWindowButton.id };
+        }
+
         static List<GraphViewEditorWindowImp> s_OpenedWindows;
 
         public static GraphViewEditorWindowImp GetOpenedWindow(GraphObjectImp graphObject)
@@ -54,9 +60,9 @@ namespace Unity.GraphToolkit.Editor.Implementation
                     return;
                 }
             }
+
             var graphWindow = EditorWindow.CreateWindow<GraphViewEditorWindowImp>(typeof(GraphViewEditorWindowImp), typeof(GraphViewEditorWindow), typeof(SceneView));
             graphWindow.GraphTool.Dispatch(new LoadGraphCommand(graphObject.GraphModel));
-            graphWindow.UpdateTooltips();
         }
 
         protected override void OnEnable()
@@ -103,6 +109,17 @@ namespace Unity.GraphToolkit.Editor.Implementation
         protected override BlackboardContentModel CreateBlackboardContentModel()
         {
             return new BlackboardContentModelImp(GraphTool);
+        }
+
+        protected override ToolbarDefinition CreateToolbarDefinition(string toolbarId)
+        {
+            switch (toolbarId)
+            {
+                case MainToolbar.toolbarId:
+                    return new MainToolbarDefinition();
+                default:
+                    return base.CreateToolbarDefinition(toolbarId);
+            }
         }
     }
 }

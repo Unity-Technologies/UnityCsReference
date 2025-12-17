@@ -253,6 +253,9 @@ namespace Unity.GraphToolkit.Editor
             if (panel == null)
                 return;
 
+            if (m_UpdateObserver == null)
+                return;
+
             var updateSelection = false;
             var updateCollapse = false;
             var shouldRebuildTreeView = false;

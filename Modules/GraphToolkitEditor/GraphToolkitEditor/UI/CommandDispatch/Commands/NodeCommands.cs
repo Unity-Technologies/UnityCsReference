@@ -280,6 +280,8 @@ namespace Unity.GraphToolkit.Editor
             using (var changeScope = graphModelState.GraphModel.ChangeDescriptionScope)
             {
                 command.Constant.ObjectValue = command.Value;
+                command.Constant.SetterMethod?.Invoke(command.Constant.ObjectValue);
+
                 graphUpdater.MarkUpdated(changeScope.ChangeDescription);
             }
         }

@@ -562,6 +562,8 @@ namespace UnityEditor.Build.Profile
             if (actions[firstEnabledIndex].state != ActionState.Enabled)
                 dropdown.SetEnabled(false);
 
+            dropdown.focusable = true;
+
             m_AdditionalActionsDropdown.Clear();
             m_AdditionalActionsDropdown.Add(dropdown);
             m_AdditionalActionsDropdown.Show();
@@ -754,7 +756,7 @@ namespace UnityEditor.Build.Profile
             menu.AddItem(new GUIContent(TrText.forceSkipDataBuild), false,
                 () => OnBuildButtonClicked(BuildOptions.ShowBuiltPlayer | BuildOptions.BuildScriptsOnly));
             return new DropdownButton(TrText.build,
-                () => OnBuildButtonClicked(BuildOptions.ShowBuiltPlayer), menu);
+                () => OnBuildButtonClicked(BuildOptions.ShowBuiltPlayer), menu) {focusable = true};
         }
 
         void UpdateToolbarButtonState()

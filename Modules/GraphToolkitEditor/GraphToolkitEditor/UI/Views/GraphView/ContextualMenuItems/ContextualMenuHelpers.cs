@@ -112,7 +112,6 @@ namespace Unity.GraphToolkit.Editor.ContextualMenuItems
         internal static ContextualMenuItem createStickyNoteItem = new(ContextualMenuCategory.OrganizationalElements, "Create Sticky Note");
         internal static ContextualMenuItem createEmptyLocalSubgraphItem = new(ContextualMenuCategory.OrganizationalElements, "Create Empty Local Subgraph");
         internal static ContextualMenuItem selectAllItem = new(ContextualMenuCategory.Organization, "Select All");
-        internal static ContextualMenuItem showOverlayMenuItem = new(ContextualMenuCategory.External, "Show Overlay Menu");
 
         // Node menu items:
         internal static ContextualMenuItem editSubtitleItem = new(ContextualMenuCategory.Modifications, "Edit Subtitle");

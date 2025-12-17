@@ -24,19 +24,6 @@ namespace Unity.Multiplayer.PlayMode.Editor
 
         internal void Listen(CloneContext vpContext)
         {
-            /*
-             * These system classes are simply an aggregation of logic and other events
-             *
-             * Its only purpose is to forward events to the Internal Runtimes, Workflows, and MultiplayerPlaymode (UI)
-             */
-            if (!SessionState.GetBool(k_InitializeMessageSent, false))
-            {
-                SessionState.SetBool(k_InitializeMessageSent, true);
-                vpContext.MessagingService.Broadcast(
-                    new CloneInitializedMessage(VirtualProjectsEditor.CloneIdentifier));
-            }
-
-
             const int durationUntilKillCloneOneSecond = 1;
             const int durationUntilPlaymodeThreeSeconds = 3;
             var playmodeStartTime = DateTime.UtcNow;

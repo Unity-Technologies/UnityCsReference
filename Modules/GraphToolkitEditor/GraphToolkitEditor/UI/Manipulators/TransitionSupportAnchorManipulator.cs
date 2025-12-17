@@ -77,7 +77,7 @@ namespace Unity.GraphToolkit.Editor
             m_OriginalAnchorSide = m_TransitionModel?.ToNodeAnchorSide ?? AnchorSide.None;
             m_AnchorWorldOffset = evt.mousePosition - transition.LocalToWorld(transition?.GetTo() ?? Vector2.zero);
             m_MouseDownPosition = evt.mousePosition;
-            m_AdjustedPositionPadding = k_PositionPadding * GraphView.resolvedStyle.scale.value.x;
+            m_AdjustedPositionPadding = k_PositionPadding * GraphView.Zoom;
 
             transition.CaptureMouse();
             evt.StopPropagation();

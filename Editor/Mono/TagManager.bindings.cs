@@ -113,5 +113,10 @@ namespace UnityEditor
             RenderPipelineEditorUtility.onRenderingLayerCountChanged?.Invoke();
         }
 
+        [FreeFunction("GetTagManager().TryMigrateRenderingLayers")]
+        internal static extern bool TryMigrateRenderingLayers(string renderPipelineFullName, string[] renderingLayerNames);
+
+        [FreeFunction("GetTagManager().ClearMigratedRenderPipelines")]
+        internal static extern void ClearMigratedRenderPipelines();
     }
 }

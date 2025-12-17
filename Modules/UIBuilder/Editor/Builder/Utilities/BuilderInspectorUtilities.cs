@@ -2,9 +2,11 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System.Collections.Generic;
 using UnityEditor;
 using UnityEngine;
 using UnityEditor.UIElements;
+using UnityEngine.Pool;
 using UnityEngine.UIElements;
 
 namespace Unity.UI.Builder
@@ -16,7 +18,8 @@ namespace Unity.UI.Builder
             return ve.Q(className: BuilderConstants.InspectorLocalStyleOverrideClassName) != null;
         }
 
-        public static VisualElement FindInspectorField(BuilderInspector inspector, string propertyPath)
+
+        public static IEnumerable<VisualElement> FindInspectorFields(BuilderInspector inspector, string propertyPath)
         {
             if (propertyPath.Contains("style."))
             {
@@ -27,28 +30,23 @@ namespace Unity.UI.Builder
                 {
                     foreach (var field in fields)
                     {
-                        // We can have multiple fields with the same binding path. Return the one that has the value info.
                         if (field.HasProperty(BuilderConstants.InspectorFieldValueInfoVEPropertyName))
-                        {
-                            return field;
-                        }
+                            yield return field;
                     }
                 }
+                yield break;
             }
 
-            var dataFields = inspector.Query<BuilderUxmlAttributesView.UxmlSerializedDataAttributeField>();
-
-            BuilderUxmlAttributesView.UxmlSerializedDataAttributeField dataField = null;
-            dataFields.ForEach(x =>
+            var dataFields = inspector.Query<BuilderUxmlAttributesView.UxmlSerializedDataAttributeField>().Build();
+            foreach (var x in dataFields)
             {
                 var serializedAttribute = x.GetLinkedAttributeDescription();
                 if (serializedAttribute.serializedField.Name == propertyPath)
                 {
-                    dataField = x;
+                    yield return x;
+                    yield break;
                 }
-            });
-
-            return dataField;
+            }
         }
 
         internal static string GetBindingProperty(VisualElement fieldElement)

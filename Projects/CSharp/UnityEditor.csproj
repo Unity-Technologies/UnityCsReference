@@ -7058,6 +7058,9 @@
     <Compile Include="..\..\Modules\GraphToolkitEditor\GraphToolkitEditor\UI\Views\CopyPasteData.cs">
       <Link>Modules\GraphToolkitEditor\GraphToolkitEditor\UI\Views\CopyPasteData.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\GraphToolkitEditor\GraphToolkitEditor\UI\Views\GTKOverlayWrapper.cs">
+      <Link>Modules\GraphToolkitEditor\GraphToolkitEditor\UI\Views\GTKOverlayWrapper.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\GraphToolkitEditor\GraphToolkitEditor\UI\Views\GraphObjectDragAndDropHandler.cs">
       <Link>Modules\GraphToolkitEditor\GraphToolkitEditor\UI\Views\GraphObjectDragAndDropHandler.cs</Link>
     </Compile>
@@ -7201,6 +7204,9 @@
     </Compile>
     <Compile Include="..\..\Modules\GraphToolkitEditor\GraphToolkitEditor\UI\Windows\GraphViewEditorWindow.cs">
       <Link>Modules\GraphToolkitEditor\GraphToolkitEditor\UI\Windows\GraphViewEditorWindow.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolkitEditor\GraphToolkitEditor\UI\Windows\GraphViewEditorWindow_Overlays.cs">
+      <Link>Modules\GraphToolkitEditor\GraphToolkitEditor\UI\Windows\GraphViewEditorWindow_Overlays.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\GraphToolkitEditor\GraphToolkitEditor\UI\Windows\GraphViewSettings.cs">
       <Link>Modules\GraphToolkitEditor\GraphToolkitEditor\UI\Windows\GraphViewSettings.cs</Link>
@@ -7418,11 +7424,11 @@
     <Compile Include="..\..\Modules\GraphToolkitEditor\InternalBridge\Editor\EditorGUIUtilityBridge.cs">
       <Link>Modules\GraphToolkitEditor\InternalBridge\Editor\EditorGUIUtilityBridge.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\GraphToolkitEditor\InternalBridge\Editor\EditorToolbarBridge.cs">
+      <Link>Modules\GraphToolkitEditor\InternalBridge\Editor\EditorToolbarBridge.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\GraphToolkitEditor\InternalBridge\Editor\IDiscoveryShortcutProviderProxy.cs">
       <Link>Modules\GraphToolkitEditor\InternalBridge\Editor\IDiscoveryShortcutProviderProxy.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\GraphToolkitEditor\InternalBridge\Editor\OverlayBridge.cs">
-      <Link>Modules\GraphToolkitEditor\InternalBridge\Editor\OverlayBridge.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\GraphToolkitEditor\InternalBridge\Editor\ToolShortcutDiscoveryProvider.cs">
       <Link>Modules\GraphToolkitEditor\InternalBridge\Editor\ToolShortcutDiscoveryProvider.cs</Link>
@@ -8347,9 +8353,6 @@
     </Compile>
     <Compile Include="..\..\Modules\MultiplayerEditor\Managed\MultiplayerPlayMode\VirtualProjects\Messaging\Messages\BroadcastOpenPlayerWindowMessage.cs">
       <Link>Modules\MultiplayerEditor\Managed\MultiplayerPlayMode\VirtualProjects\Messaging\Messages\BroadcastOpenPlayerWindowMessage.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\MultiplayerEditor\Managed\MultiplayerPlayMode\VirtualProjects\Messaging\Messages\CloneInitializedMessage.cs">
-      <Link>Modules\MultiplayerEditor\Managed\MultiplayerPlayMode\VirtualProjects\Messaging\Messages\CloneInitializedMessage.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\MultiplayerEditor\Managed\MultiplayerPlayMode\VirtualProjects\Messaging\Messages\LogMessage.cs">
       <Link>Modules\MultiplayerEditor\Managed\MultiplayerPlayMode\VirtualProjects\Messaging\Messages\LogMessage.cs</Link>

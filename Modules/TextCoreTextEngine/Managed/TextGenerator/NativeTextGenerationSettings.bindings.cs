@@ -229,7 +229,8 @@ namespace UnityEngine.TextCore
         Left,
         Center,
         Right,
-        Justified
+        Justified,
+        Flush
     }
 
     [VisibleToOtherModules("UnityEngine.UIElementsModule")]

@@ -6,7 +6,9 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Unity.GraphToolsAuthoringFramework.InternalEditorBridge;
+using UnityEditor.GraphToolkitEditor.InternalBridge.Editor;
 using UnityEditor.Overlays;
+using UnityEditor.Toolbars;
 using UnityEngine.UIElements;
 
 namespace Unity.GraphToolkit.Editor
@@ -27,13 +29,26 @@ namespace Unity.GraphToolkit.Editor
         /// </summary>
         protected GraphTool GraphTool => (containerWindow as GraphViewEditorWindow)?.GraphTool;
 
-        /// <inheritdoc />
-        public virtual IEnumerable<string> toolbarElements => GraphTool?.GetToolbarDefinition(this)?.ElementIds ?? Enumerable.Empty<string>();
+        GraphViewEditorWindow GraphEditorWindow => containerWindow as GraphViewEditorWindow;
 
         /// <inheritdoc />
+        public virtual IEnumerable<string> toolbarElements
+        {
+            get
+            {
+                var window = GraphEditorWindow;
+                if (window != null)
+                {
+                    return window.GetToolbarDefinition(this)?.ElementIds;
+                }
+
+                return Enumerable.Empty<string>();
+            }
+        }
+
         public override VisualElement CreatePanelContent()
         {
-            return OverlayBridge.CreateOverlay(toolbarElements, containerWindow);
+            return EditorToolbarBridge.CreateOverlay(toolbarElements, containerWindow);
         }
 
         /// <summary>

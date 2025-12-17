@@ -4,7 +4,6 @@
 
 using System;
 using UnityEditor;
-using UnityEditor.PackageManager.UI;
 using UnityEditor.ShortcutManagement;
 using UnityEditor.Utils;
 using UnityEngine;

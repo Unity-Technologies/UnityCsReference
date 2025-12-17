@@ -106,6 +106,7 @@ namespace Unity.GraphToolkit.Editor
         float m_ReferenceScale = ContentZoomer.DefaultReferenceScale;
 
         float m_Zoom = 1.0f;
+        Vector2 m_Pan;
 
         readonly VisualElement m_GraphViewContainer;
         readonly VisualElement m_MarkersParent;
@@ -180,6 +181,11 @@ namespace Unity.GraphToolkit.Editor
         /// The current zoom level of the <see cref="GraphView"/>
         /// </summary>
         public float Zoom => m_Zoom;
+
+        /// <summary>
+        /// The current translation of the <see cref="GraphView"/>.
+        /// </summary>
+        public Vector2 Pan => m_Pan;
 
         /// <summary>
         /// Whether a wire is currently being dragged in the graph.
@@ -304,11 +310,19 @@ namespace Unity.GraphToolkit.Editor
         public void RegisterElementZoomLevelClass(VisualElement element, GraphViewZoomMode zoomLevel, string ussClass)
         {
             m_ElementsPerZoom[(int)zoomLevel].Add(element, ussClass);
+            if (m_ZoomMode >= zoomLevel && m_ZoomMode != GraphViewZoomMode.Unknown)
+            {
+                element.AddToClassList(ussClass);
+            }
         }
 
         public void UnregisterElementZoomLevelClass(VisualElement element, GraphViewZoomMode zoomLevel)
         {
-            m_ElementsPerZoom[(int)zoomLevel].Remove(element);
+            if (m_ElementsPerZoom[(int)zoomLevel].TryGetValue(element, out var ussClass))
+            {
+                m_ElementsPerZoom[(int)zoomLevel].Remove(element);
+                element.RemoveFromClassList(ussClass);
+            }
         }
 
         /// <summary>
@@ -529,6 +543,17 @@ namespace Unity.GraphToolkit.Editor
             }
 
             ClearSpacePartitioning();
+
+            if (GraphViewModel?.SpacePartitioningState != null)
+            {
+                //This is needed because, when the current GraphModel is changed to null, the GraphView registers all its elements for culling removal. But space partition is not updated if GraphModel == null.
+                //if you then reopen the same graph, the space partition will still have all models as needing removal, therefore nothing will be culled.
+                // This is shown when running NodeCullingTests.NodeAreCulledWithWidthBasedOnLongTitleHasBeenSetup(??, ReloadKind.LoadingGraph) that fails without this line because the node is not culled when it should.
+                using (var spUpdater = GraphViewModel.SpacePartitioningState.UpdateScope)
+                {
+                    spUpdater.ForceCompleteUpdate();
+                }
+            }
         }
 
         static ProfilerMarker s_UpdateViewTransformMarker = new ProfilerMarker("UpdateAllElementsLevelOfDetail");
@@ -560,6 +585,9 @@ namespace Unity.GraphToolkit.Editor
 
             pan.x = this.RoundToPanelPixelSize(pan.x);
             pan.y = this.RoundToPanelPixelSize(pan.y);
+
+            m_Zoom = zoom.x;
+            m_Pan = pan;
 
             ContentViewContainer.style.translate = new StyleTranslate(new Translate(pan.x, pan.y));
 
@@ -609,8 +637,6 @@ namespace Unity.GraphToolkit.Editor
 
         void UpdateAllElementsLevelOfDetail(float zoomLevel, GraphViewZoomMode newZoomMode, GraphViewZoomMode oldZoomMode)
         {
-            m_Zoom = zoomLevel;
-
             if (GraphModel != null)
             {
                 using var cullingUpdater = GraphViewModel?.GraphViewCullingState?.UpdateScope;
@@ -984,14 +1010,7 @@ namespace Unity.GraphToolkit.Editor
         void AppendDeveloperBuildMenuActions(ContextualMenuPopulateEvent evt, List<GraphElementModel> selection)
         {
             evt.menu.AppendSeparator();
-            evt.menu.AppendAction("Overlays/Save Positions", _ =>
-                (Window as GraphViewEditorWindow)?.SaveOverlayPositions());
-            evt.menu.AppendAction("Overlays/Set to Saved Positions", _ =>
-                (Window as GraphViewEditorWindow)?.RestoreOverlayPositions());
-            evt.menu.AppendAction("Overlays/Set to Default Positions", _ =>
-                (Window as GraphViewEditorWindow)?.ResetOverlayPositions());
-            evt.menu.AppendAction("Overlays/Clear Saved Positions", _ =>
-                (Window as GraphViewEditorWindow)?.HardResetOverlayPositions());
+
             evt.menu.AppendAction("Refresh All UI", _ =>
             {
                 using (var updater = GraphViewModel.GraphViewState.UpdateScope)
@@ -1051,7 +1070,6 @@ namespace Unity.GraphToolkit.Editor
             menuActionMap.Add(ContextualMenuHelpers.addNodeItem.Name, () => AppendAddNodeItemMenuItem(evt));
             menuActionMap.Add(ContextualMenuHelpers.createStickyNoteItem.Name, () => AppendCreateStickyNoteMenuItem(evt));
             menuActionMap.Add(ContextualMenuHelpers.createEmptyLocalSubgraphItem.Name, () => AppendCreateEmptyLocalSubgraph(evt));
-            menuActionMap.Add(ContextualMenuHelpers.showOverlayMenuItem.Name, () => AppendShowOverlayMenuMenuItem(evt));
 
             // Nodes menu items:
             menuActionMap.Add(ContextualMenuHelpers.deleteAndReconnectItem.Name, () => AppendDeleteAndReconnectMenuItem(evt, selection));
@@ -1452,19 +1470,6 @@ namespace Unity.GraphToolkit.Editor
                         });
                 }
             }
-        }
-
-        void AppendShowOverlayMenuMenuItem(ContextualMenuPopulateEvent evt)
-        {
-            if (Window is not GraphViewEditorWindow graphViewEditorWindow)
-                return;
-
-            var binding = new ShortcutBinding(new KeyCombination(KeyCode.BackQuote));
-            evt.menu.AppendAction(L10n.Tr("Show Overlay Menu") + " " + binding.GetShortcutMenuString(), menuAction =>
-            {
-                Vector2 mousePosition = menuAction?.eventInfo?.mousePosition ?? Event.current.mousePosition;
-                graphViewEditorWindow.ShowOverlayMenuAtPosition(mousePosition);
-            });
         }
 
         void AppendToggleCollapseMenuItem(ContextualMenuPopulateEvent evt, List<GraphElementModel> selection)
@@ -2419,7 +2424,7 @@ namespace Unity.GraphToolkit.Editor
                 }
             }
 
-            graphElement.SetLevelOfDetail(resolvedStyle.scale.value.x, m_ZoomMode, GraphViewZoomMode.Unknown);
+            graphElement.SetLevelOfDetail(Zoom, ZoomMode, GraphViewZoomMode.Unknown);
 
             if (HasCullingOnZoom && CullingState == GraphViewCullingState.Enabled && IsZoomCullingSize(m_ZoomMode))
             {
@@ -4718,7 +4723,6 @@ namespace Unity.GraphToolkit.Editor
             ContextualMenuHelpers.createEmptyLocalSubgraphItem,
             ContextualMenuHelpers.pasteItem,
             ContextualMenuHelpers.selectAllItem,
-            ContextualMenuHelpers.showOverlayMenuItem,
         };
 
         internal class TestAccess

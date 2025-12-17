@@ -370,7 +370,7 @@ internal class VisualTreeAssetExporter
         ctx.Append(name);
         ctx.Append('=');
         ctx.Append('"');
-        ctx.Append(WebUtility.HtmlEncode(value));
+        ctx.Append(URIHelpers.EncodeUri(value));
         ctx.Append('"');
     }
 

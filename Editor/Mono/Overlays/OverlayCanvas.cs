@@ -9,7 +9,6 @@ using System.Linq;
 using System.Reflection;
 using UnityEditor.Toolbars;
 using UnityEngine;
-using UnityEngine.Bindings;
 using UnityEngine.Profiling;
 using UnityEngine.Serialization;
 using UnityEngine.UIElements;
@@ -24,7 +23,6 @@ namespace UnityEditor.Overlays
     }
 
     [Serializable]
-    [VisibleToOtherModules("UnityEditor.GraphToolkitModule")]
     public class SaveData : IEquatable<SaveData>
     {
         // Note on the obsolete fields in this class:
@@ -39,47 +37,33 @@ namespace UnityEditor.Overlays
         const int k_InvalidIndex = -1;
 
         [SerializeField]
-        [VisibleToOtherModules("UnityEditor.GraphToolkitModule")]
         internal DockPosition dockPosition = DockPosition.Bottom;
         [SerializeField]
-        [VisibleToOtherModules("UnityEditor.GraphToolkitModule")]
         internal string containerId = string.Empty;
         [SerializeField]
-        [VisibleToOtherModules("UnityEditor.GraphToolkitModule")]
         internal bool displayed;
         [SerializeField]
-        [VisibleToOtherModules("UnityEditor.GraphToolkitModule")]
         internal string id;
         [SerializeField]
-        [VisibleToOtherModules("UnityEditor.GraphToolkitModule")]
         internal int index = k_InvalidIndex;
         [SerializeField]
-        [VisibleToOtherModules("UnityEditor.GraphToolkitModule")]
         internal string contents;
 
         [SerializeField, Obsolete]
-        [VisibleToOtherModules("UnityEditor.GraphToolkitModule")]
         internal bool floating;
         [SerializeField, Obsolete]
-        [VisibleToOtherModules("UnityEditor.GraphToolkitModule")]
         internal bool collapsed;
         [SerializeField, Obsolete]
-        [VisibleToOtherModules("UnityEditor.GraphToolkitModule")]
         internal Vector2 snapOffset;
         [SerializeField, Obsolete]
-        [VisibleToOtherModules("UnityEditor.GraphToolkitModule")]
         internal Vector2 snapOffsetDelta;
         [SerializeField, Obsolete]
-        [VisibleToOtherModules("UnityEditor.GraphToolkitModule")]
         internal SnapCorner snapCorner;
         [SerializeField, Obsolete]
-        [VisibleToOtherModules("UnityEditor.GraphToolkitModule")]
         internal Layout layout = Layout.Panel;
         [SerializeField, Obsolete]
-        [VisibleToOtherModules("UnityEditor.GraphToolkitModule")]
         internal Vector2 size;
         [SerializeField, Obsolete]
-        [VisibleToOtherModules("UnityEditor.GraphToolkitModule")]
         [FormerlySerializedAs("sizeOverriden")]
         internal bool sizeOverridden;
 
@@ -110,7 +94,6 @@ namespace UnityEditor.Overlays
         public SaveData(Overlay overlay)
             : this(overlay, k_InvalidIndex) { }
 
-        [VisibleToOtherModules("UnityEditor.GraphToolkitModule")]
         internal SaveData(Overlay overlay, int indexInContainer)
         {
             if (indexInContainer < 0)
@@ -249,14 +232,12 @@ namespace UnityEditor.Overlays
 
     //Dock position within container
     //for a horizontal container, Top is left, Bottom is right
-    [VisibleToOtherModules("UnityEditor.GraphToolkitModule")]
     public enum DockPosition
     {
         Top,
         Bottom
     }
 
-    [VisibleToOtherModules("UnityEditor.GraphToolkitModule")]
     enum SnapCorner
     {
         TopLeft,

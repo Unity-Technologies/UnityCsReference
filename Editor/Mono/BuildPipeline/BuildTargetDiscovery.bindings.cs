@@ -695,14 +695,14 @@ namespace UnityEditor
                 new("1e09bd9b55c8d45e9a11b4727bf18e88"),
                 new PlatformInfo
                 {
-                    displayName = "Android Render Service",
+                    displayName = "Unity Render Service for Android™",
                     buildTarget = BuildTarget.Android,
                     iconName = "BuildSettings.Android",
                     internalPackages = new PlatformPackageList
                     {
                         requiredPackages = new[]
                         {
-                            new PlatformPackageInfo(L10n.Tr("Unity Render Service Support"), "com.unity.android.render-service", L10n.Tr("Enables you to build a Unity Render Service on Android and integrate into Android Applications. Contact your sales representative to get access."))
+                            new PlatformPackageInfo(L10n.Tr("Unity Render Service for Android™ Support"), "com.unity.android.render-service", L10n.Tr("Enables building the Unity Render Service for Android™. Contact your sales representative for access."))
                         }
                     },
                     flags = PlatformAttributes.IsWindowsBuildTarget | PlatformAttributes.IsWindowsArm64BuildTarget | PlatformAttributes.IsLinuxBuildTarget | PlatformAttributes.IsMacBuildTarget | PlatformAttributes.IsDerivedBuildTarget | PlatformAttributes.IsHidden | PlatformAttributes.IsVisibleInPlatformBrowserOnly

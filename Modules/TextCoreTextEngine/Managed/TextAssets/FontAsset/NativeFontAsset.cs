@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
+using Unity.Jobs.LowLevel.Unsafe;
 using UnityEngine.Bindings;
 using UnityEngine.TextCore.LowLevel;
 
@@ -27,6 +28,22 @@ namespace UnityEngine.TextCore.Text
         {
             if (m_NativeFontAsset != IntPtr.Zero)
                 return;
+
+            // We always try to create the asset on the main thread. If we are here on a job, it means the asset is invalid.
+            if (JobsUtility.IsExecutingJob)
+                return;
+
+            if (atlasPopulationMode == AtlasPopulationMode.Static && characterTable.Count > 0)
+            {
+                Debug.LogWarning($"Advanced text system cannot use static font asset {name}.");
+                return;
+            }
+
+            if (atlasPopulationMode == AtlasPopulationMode.Dynamic && sourceFontFile == null)
+            {
+                Debug.LogWarning($"{name} FontAsset is invalid. Please assign a Source Font File.");
+                return;
+            }
 
             var fallbacks = GetFallbacks();
             var weightFallbacks = GetWeightFallbacks();

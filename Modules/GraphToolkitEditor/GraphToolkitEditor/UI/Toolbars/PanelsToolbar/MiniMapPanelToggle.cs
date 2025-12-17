@@ -18,8 +18,16 @@ namespace Unity.GraphToolkit.Editor
     {
         public const string id = "GraphToolkit/Overlay Windows/MiniMap";
 
+        static readonly string k_CachedTooltipText =  L10n.Tr("MiniMap");
+
         /// <inheritdoc />
         protected override string WindowId => MiniMapOverlay.idValue;
+
+        /// <inheritdoc />
+        protected override string TooltipText => k_CachedTooltipText;
+
+        /// <inheritdoc />
+        protected override string ShortcutString => ShortcutToggleMinimapEvent.GetShortcutString((containerWindow as GraphViewEditorWindow)?.GraphTool);
 
         /// <summary>
         /// Initializes a new instance of the <see cref="MiniMapPanelToggle"/> class.
@@ -27,8 +35,8 @@ namespace Unity.GraphToolkit.Editor
         public MiniMapPanelToggle()
         {
             name = "MiniMap";
-            tooltip = L10n.Tr("MiniMap");
             icon = EditorGUIUtilityBridge.LoadIcon($"{GraphElementHelper.k_IconFolder}PanelsToolbar/MiniMap.png");
+            UpdateInspectorTooltip();
         }
     }
 }

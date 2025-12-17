@@ -57,7 +57,7 @@ namespace Unity.UIToolkit.Editor
 
         static readonly string FieldClassName = "unity-background-position-style-field";
         static readonly string UxmlPath = "UIToolkitAuthoring/Inspector/Controls/BackgroundPositionStyleField.uxml";
-        static readonly string IconPath =  "UIToolkit/Icons/Enum/Background";
+        static readonly string IconPath =  "UIToolkit/Icons";
         public static readonly string BackgroundPositionFieldName = "position";
         public static readonly string BackgroundPositionAlignFieldName = "align";
         public static readonly string InspectorContainerClassName = "unity-builder-inspector__container";

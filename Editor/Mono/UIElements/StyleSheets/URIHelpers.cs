@@ -74,6 +74,8 @@ namespace UnityEditor.UIElements.StyleSheets
 
         public static string EncodeUri(string uri)
         {
+            if (string.IsNullOrEmpty(uri)) return String.Empty;
+
             uri = uri.Replace("&", "&amp;"); // Has to be done first!
             uri = uri.Replace("\"", "&quot;");
             uri = uri.Replace("\'", "&apos;");

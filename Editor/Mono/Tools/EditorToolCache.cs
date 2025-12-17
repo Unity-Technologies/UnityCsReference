@@ -261,7 +261,7 @@ namespace UnityEditor.EditorTools
                 var target = editor != null ? editor.target : null;
 
                 if (target == null)
-                    return;
+                    continue;
                 var eligible = GetEditorsForTargetType(editor.target.GetType());
                 var activeContextType = ctx == null ? typeof(GameObjectToolContext) : ctx.GetType();
 

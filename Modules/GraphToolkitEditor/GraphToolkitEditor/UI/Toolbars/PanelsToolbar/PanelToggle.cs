@@ -27,6 +27,16 @@ namespace Unity.GraphToolkit.Editor
         protected abstract string WindowId { get; }
 
         /// <summary>
+        /// The string to display for the toggle tooltip.
+        /// </summary>
+        protected abstract string TooltipText { get; }
+
+        /// <summary>
+        /// The string representing the shortcut key used to access the toggle.
+        /// </summary>
+        protected abstract string ShortcutString { get; }
+
+        /// <summary>
         /// Initializes a new instance of the <see cref="PanelToggle"/> class.
         /// </summary>
         protected PanelToggle()
@@ -83,6 +93,12 @@ namespace Unity.GraphToolkit.Editor
             }
 
             SetValueWithoutNotify(displayed);
+        }
+
+        public void UpdateInspectorTooltip()
+        {
+            // Delay the tooltip update to ensure the shortcuts have fully registered
+            schedule.Execute(_=> tooltip = ShortcutString != null ? $"{TooltipText} ({ShortcutString})" : TooltipText).ExecuteLater(0);
         }
     }
 }

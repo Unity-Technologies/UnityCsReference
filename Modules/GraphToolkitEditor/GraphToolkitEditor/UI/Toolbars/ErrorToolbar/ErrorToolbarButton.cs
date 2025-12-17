@@ -92,7 +92,7 @@ namespace Unity.GraphToolkit.Editor
         public virtual void Update()
         {
             bool enabled = GraphTool?.ToolState.GraphModel != null;
-            bool hasError = GraphView.GraphViewModel.ProcessingErrorsState.Errors.Count > 0;
+            bool hasError = GraphView != null && GraphView.GraphViewModel.ProcessingErrorsState.Errors.Count > 0;
             SetEnabled(enabled && hasError);
         }
 

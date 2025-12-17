@@ -179,21 +179,24 @@ namespace Unity.PlayMode.Editor
         {
             return new ContextualMenuManipulator(evt =>
             {
+                var scenario = element.userData as PlayModeScenario;
+                var persistentAssetActionStatus = EditorUtility.IsPersistent(scenario)
+                    ? DropdownMenuAction.Status.Normal
+                    : DropdownMenuAction.Status.Disabled;
+
                 evt.menu.AppendAction("Delete", _ =>
                 {
-                    var config = element.userData as PlayModeScenario;
-
-                    var delete = EditorUtility.DisplayDialog($"{config.name}", $"Do you really want to delete {config.name}", "Delete", "Cancel");
+                    var delete = EditorUtility.DisplayDialog($"{scenario.name}", $"Do you really want to delete {scenario.name}", "Delete", "Cancel");
 
                     if (delete)
                     {
-                        AssetDatabase.DeleteAsset(AssetDatabase.GetAssetPath(config));
+                        AssetDatabase.DeleteAsset(AssetDatabase.GetAssetPath(scenario));
                     }
-                });
+                }, persistentAssetActionStatus);
 
-                evt.menu.AppendAction("Rename", _ => element.EnableEditMode());
+                evt.menu.AppendAction("Rename", _ => element.EnableEditMode(), persistentAssetActionStatus);
 
-                evt.menu.AppendAction("Duplicate", _ => PlayModeScenarioUtils.CopyPlayModeConfiguration(element.userData as PlayModeScenario));
+                evt.menu.AppendAction("Duplicate", _ => PlayModeScenarioUtils.CopyPlayModeConfiguration(element.userData as PlayModeScenario), persistentAssetActionStatus);
             });
         }
 

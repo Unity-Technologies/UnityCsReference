@@ -67,8 +67,22 @@ namespace UnityEditor.IMGUI.Controls
 
         internal bool hasChildren => m_Children.Count > 0;
 
+        /// <summary>
+        /// Compute hierarchical ID by combining parent ID with child name
+        /// </summary>
+        /// <param name="parent"></param>
+        /// <param name="childName"></param>
+        /// <returns></returns>
+        internal static int GenerateChildId(int parent, string childName) => HashCode.Combine(parent, childName);
+
+        /// <summary>
+        /// Adds a child item to this item. The child's Id will be computed based on the parent's ID and the child's name to ensure uniqueness.
+        /// </summary>
+        /// <param name="child"></param>
         public void AddChild(AdvancedDropdownItem child)
         {
+            // This ensures "Window/Animation" folder and "Window/Animation/Animation" item get different IDs (UUM-127073)
+            child.m_Id = GenerateChildId(m_Id, child.name);
             m_Children.Add(child);
         }
 

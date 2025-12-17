@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
@@ -102,59 +103,93 @@ namespace Unity.UI.Builder
             this.needsUnit = needsUnit;
         }
 
+        private void SetFieldBinding(BaseField<TValueType> field, StylePropertyId path)
+        {
+            field.bindingPath = path.UssName();
+            StylePropertyUtil.stylePropertyIdToPropertyName.TryGetValue(path, out var propertyName);
+            field.name = propertyName;
+        }
+
         private void SetBindingPaths()
         {
             switch (boxType)
             {
                 case BoxType.Margin:
-                    m_BindingPathArray = new[] { StylePropertyId.MarginLeft.UssName(), StylePropertyId.MarginRight.UssName(),
-                        StylePropertyId.MarginTop.UssName(), StylePropertyId.MarginBottom.UssName() };
-                    m_LeftField.bindingPath = StylePropertyId.MarginLeft.UssName();
-                    m_RightField.bindingPath = StylePropertyId.MarginRight.UssName();
-                    m_TopField.bindingPath = StylePropertyId.MarginTop.UssName();
-                    m_BottomField.bindingPath = StylePropertyId.MarginBottom.UssName();
+                    m_BindingPathArray = new[]
+                    {
+                        StylePropertyId.MarginLeft.UssName(),
+                        StylePropertyId.MarginRight.UssName(),
+                        StylePropertyId.MarginTop.UssName(),
+                        StylePropertyId.MarginBottom.UssName()
+                    };
+                    SetFieldBinding(m_LeftField, StylePropertyId.MarginLeft);
+                    SetFieldBinding(m_RightField, StylePropertyId.MarginRight);
+                    SetFieldBinding(m_TopField, StylePropertyId.MarginTop);
+                    SetFieldBinding(m_BottomField, StylePropertyId.MarginBottom);
                     break;
                 case BoxType.BorderColor:
-                    // to show the width and radius unit in the color box
-                    m_BindingPathArray = new[] { StylePropertyId.BorderLeftWidth.UssName(), StylePropertyId.BorderRightWidth.UssName(),
-                        StylePropertyId.BorderTopWidth.UssName(), StylePropertyId.BorderBottomWidth.UssName(),
-                        StylePropertyId.BorderTopLeftRadius.UssName(), StylePropertyId.BorderTopRightRadius.UssName(),
-                        StylePropertyId.BorderBottomLeftRadius.UssName(), StylePropertyId.BorderBottomRightRadius.UssName()
+                    m_BindingPathArray = new[]
+                    {
+                        StylePropertyId.BorderLeftWidth.UssName(),
+                        StylePropertyId.BorderRightWidth.UssName(),
+                        StylePropertyId.BorderTopWidth.UssName(),
+                        StylePropertyId.BorderBottomWidth.UssName(),
+                        StylePropertyId.BorderTopLeftRadius.UssName(),
+                        StylePropertyId.BorderTopRightRadius.UssName(),
+                        StylePropertyId.BorderBottomLeftRadius.UssName(),
+                        StylePropertyId.BorderBottomRightRadius.UssName()
                     };
-                    m_LeftField.bindingPath = StylePropertyId.BorderLeftColor.UssName();
-                    m_RightField.bindingPath = StylePropertyId.BorderRightColor.UssName();
-                    m_TopField.bindingPath = StylePropertyId.BorderTopColor.UssName();
-                    m_BottomField.bindingPath = StylePropertyId.BorderBottomColor.UssName();
+                    SetFieldBinding(m_LeftField, StylePropertyId.BorderLeftColor);
+                    SetFieldBinding(m_RightField, StylePropertyId.BorderRightColor);
+                    SetFieldBinding(m_TopField, StylePropertyId.BorderTopColor);
+                    SetFieldBinding(m_BottomField, StylePropertyId.BorderBottomColor);
                     break;
                 case BoxType.Padding:
-                    m_BindingPathArray = new[] { StylePropertyId.PaddingLeft.UssName(), StylePropertyId.PaddingRight.UssName(),
-                        StylePropertyId.PaddingTop.UssName(), StylePropertyId.PaddingBottom.UssName() };
-                    m_LeftField.bindingPath = StylePropertyId.PaddingLeft.UssName();
-                    m_RightField.bindingPath = StylePropertyId.PaddingRight.UssName();
-                    m_TopField.bindingPath = StylePropertyId.PaddingTop.UssName();
-                    m_BottomField.bindingPath = StylePropertyId.PaddingBottom.UssName();
+                    m_BindingPathArray = new[]
+                    {
+                        StylePropertyId.PaddingLeft.UssName(),
+                        StylePropertyId.PaddingRight.UssName(),
+                        StylePropertyId.PaddingTop.UssName(),
+                        StylePropertyId.PaddingBottom.UssName()
+                    };
+                    SetFieldBinding(m_LeftField, StylePropertyId.PaddingLeft);
+                    SetFieldBinding(m_RightField, StylePropertyId.PaddingRight);
+                    SetFieldBinding(m_TopField, StylePropertyId.PaddingTop);
+                    SetFieldBinding(m_BottomField, StylePropertyId.PaddingBottom);
                     break;
                 case BoxType.BorderWidth:
-                    m_BindingPathArray = new[] { StylePropertyId.BorderLeftWidth.UssName(), StylePropertyId.BorderRightWidth.UssName(),
-                        StylePropertyId.BorderTopWidth.UssName(), StylePropertyId.BorderBottomWidth.UssName(),
-                        StylePropertyId.BorderTopLeftRadius.UssName(), StylePropertyId.BorderTopRightRadius.UssName(),
-                        StylePropertyId.BorderBottomLeftRadius.UssName(), StylePropertyId.BorderBottomRightRadius.UssName()
+                    m_BindingPathArray = new[]
+                    {
+                        StylePropertyId.BorderLeftWidth.UssName(),
+                        StylePropertyId.BorderRightWidth.UssName(),
+                        StylePropertyId.BorderTopWidth.UssName(),
+                        StylePropertyId.BorderBottomWidth.UssName(),
+                        StylePropertyId.BorderTopLeftRadius.UssName(),
+                        StylePropertyId.BorderTopRightRadius.UssName(),
+                        StylePropertyId.BorderBottomLeftRadius.UssName(),
+                        StylePropertyId.BorderBottomRightRadius.UssName()
                     };
-                    m_LeftField.bindingPath = StylePropertyId.BorderLeftWidth.UssName();
-                    m_RightField.bindingPath = StylePropertyId.BorderRightWidth.UssName();
-                    m_TopField.bindingPath = StylePropertyId.BorderTopWidth.UssName();
-                    m_BottomField.bindingPath = StylePropertyId.BorderBottomWidth.UssName();
+                    SetFieldBinding(m_LeftField, StylePropertyId.BorderLeftWidth);
+                    SetFieldBinding(m_RightField, StylePropertyId.BorderRightWidth);
+                    SetFieldBinding(m_TopField, StylePropertyId.BorderTopWidth);
+                    SetFieldBinding(m_BottomField, StylePropertyId.BorderBottomWidth);
                     break;
                 case BoxType.BorderRadius:
-                    m_BindingPathArray = new[] { StylePropertyId.BorderLeftWidth.UssName(), StylePropertyId.BorderRightWidth.UssName(),
-                        StylePropertyId.BorderTopWidth.UssName(), StylePropertyId.BorderBottomWidth.UssName(),
-                        StylePropertyId.BorderTopLeftRadius.UssName(), StylePropertyId.BorderTopRightRadius.UssName(),
-                        StylePropertyId.BorderBottomLeftRadius.UssName(), StylePropertyId.BorderBottomRightRadius.UssName()
+                    m_BindingPathArray = new[]
+                    {
+                        StylePropertyId.BorderLeftWidth.UssName(),
+                        StylePropertyId.BorderRightWidth.UssName(),
+                        StylePropertyId.BorderTopWidth.UssName(),
+                        StylePropertyId.BorderBottomWidth.UssName(),
+                        StylePropertyId.BorderTopLeftRadius.UssName(),
+                        StylePropertyId.BorderTopRightRadius.UssName(),
+                        StylePropertyId.BorderBottomLeftRadius.UssName(),
+                        StylePropertyId.BorderBottomRightRadius.UssName()
                     };
-                    m_LeftField.bindingPath = StylePropertyId.BorderBottomLeftRadius.UssName();
-                    m_RightField.bindingPath = StylePropertyId.BorderTopRightRadius.UssName();
-                    m_TopField.bindingPath = StylePropertyId.BorderTopLeftRadius.UssName();
-                    m_BottomField.bindingPath = StylePropertyId.BorderBottomRightRadius.UssName();
+                    SetFieldBinding(m_LeftField, StylePropertyId.BorderBottomLeftRadius);
+                    SetFieldBinding(m_RightField, StylePropertyId.BorderTopRightRadius);
+                    SetFieldBinding(m_TopField, StylePropertyId.BorderTopLeftRadius);
+                    SetFieldBinding(m_BottomField, StylePropertyId.BorderBottomRightRadius);
                     break;
             }
         }

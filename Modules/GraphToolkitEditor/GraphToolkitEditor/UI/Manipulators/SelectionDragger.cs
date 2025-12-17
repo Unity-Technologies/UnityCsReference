@@ -170,8 +170,8 @@ namespace Unity.GraphToolkit.Editor
 
         Vector2 GetViewPositionInGraphSpace(Vector2 localPosition)
         {
-            var gvPos = new Vector2(m_GraphView.ContentViewContainer.resolvedStyle.translate.x, m_GraphView.ContentViewContainer.resolvedStyle.translate.y);
-            var gvScale = m_GraphView.ContentViewContainer.resolvedStyle.scale.value.x;
+            var gvPos = m_GraphView.Pan;
+            var gvScale = m_GraphView.Zoom;
             return (localPosition - gvPos) / gvScale;
         }
 

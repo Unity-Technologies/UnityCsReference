@@ -102,11 +102,11 @@ namespace Unity.GraphToolkit.Editor
                 //then we find the largest input label and set the min-size of all the labels to this.
                 visible = false;
 
-                schedule.Execute(() =>
+                RegisterCallbackOnce<GeometryChangedEvent>(_ =>
                 {
                     visible = true;
                     OnSetVisible();
-                }).ExecuteLater(0);
+                });
             }
             else
             {
@@ -209,6 +209,8 @@ namespace Unity.GraphToolkit.Editor
         /// <inheritdoc />
         protected override bool IsReadyForCulling()
         {
+            if(EditableTitlePart != null && !EditableTitlePart.IsLayoutValid())
+                return false;
             return visible && base.IsReadyForCulling();
         }
     }

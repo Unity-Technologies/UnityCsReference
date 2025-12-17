@@ -992,7 +992,14 @@ namespace UnityEngine.UIElements.HierarchyV2
         /// <param name="index">The item index.</param>
         /// <returns>The item's root element.</returns>
         public VisualElement GetRootElementForIndex(int index)
-            => m_IndexToItemDictionary.TryGetValue(index, out var recycledItem) ? recycledItem.element : null;
+        {
+            foreach (var item in m_DisplayedList)
+            {
+                if (item.index == index)
+                    return item.element;
+            }
+            return null;
+        }
 
         /// <summary>
         /// Returns or sets the selected item's index in the data source. If multiple items are selected, returns the

@@ -19,7 +19,7 @@ namespace Unity.GraphToolkit.Editor
     {
         public const string idValue = "gtf-inspector";
 
-        ModelInspectorView m_ModelInspectorView;
+        ModelInspectorView m_ModelInspectorView => OverlayWrapper?.RootView as ModelInspectorView;
 
         public override RootView RootView => m_ModelInspectorView;
 
@@ -35,22 +35,25 @@ namespace Unity.GraphToolkit.Editor
             var window = containerWindow as GraphViewEditorWindow;
             if (window != null)
             {
-                if (m_ModelInspectorView != null)
+                if (OverlayWrapper != null)
                 {
                     window.UnregisterView(m_ModelInspectorView);
-                    m_ModelInspectorView.Dispose();
+                    OverlayWrapper.DisposeRoot();
                 }
 
-
-                m_ModelInspectorView = window.CreateAndSetupInspectorView();
+                OverlayWrapper = window.CreateAndSetupInspectorView();
                 if (m_ModelInspectorView != null)
-                    return m_ModelInspectorView;
+                    return OverlayWrapper;
             }
 
             var placeholder = new VisualElement();
+            if (OverlayWrapper != null)
+                OverlayWrapper.RootView = placeholder;
+
             placeholder.AddToClassList(ModelInspectorView.ussClassName);
             placeholder.AddPackageStylesheet("ModelInspector.uss");
-            return placeholder;
+
+            return OverlayWrapper ?? placeholder;
         }
 
         /// <inheritdoc />
@@ -58,14 +61,14 @@ namespace Unity.GraphToolkit.Editor
         {
             base.OnWillBeDestroyed();
 
-            if (m_ModelInspectorView != null)
+            if (OverlayWrapper != null)
             {
                 var window = containerWindow as GraphViewEditorWindow;
                 if (window != null)
                     window.UnregisterView(m_ModelInspectorView);
 
-                m_ModelInspectorView.Dispose();
-                m_ModelInspectorView = null;
+                OverlayWrapper.DisposeRoot();
+                OverlayWrapper = null;
             }
         }
     }

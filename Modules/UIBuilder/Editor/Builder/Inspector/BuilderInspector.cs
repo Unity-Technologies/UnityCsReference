@@ -547,12 +547,15 @@ namespace Unity.UI.Builder
             if (target != currentVisualElement || !IsElementSelected())
                 return;
 
-            // Find field
-            var field = BuilderInspectorUtilities.FindInspectorField(this, bindingPath);
+            // Find fields
+            var fields = BuilderInspectorUtilities.FindInspectorFields(this, bindingPath);
 
-            if (field != null)
+            if (fields != null)
             {
-                UpdateFieldStatus(field, null);
+                foreach (var field in fields)
+                {
+                    UpdateFieldStatus(field, null);
+                }
             }
         }
 
@@ -760,9 +763,11 @@ namespace Unity.UI.Builder
                     {
                         var bindingProperty = BuilderInspectorUtilities.GetBindingProperty(x);
                         var bindingId = new BindingId(bindingProperty);
-                        if (DataBindingUtility.TryGetLastUIBindingResult(bindingId, currentVisualElement, out var bindingResult))
+                        if (currentVisualElement.GetBinding(bindingId) != null)
                         {
                             hasBindings = true;
+                            DataBindingUtility.TryGetLastUIBindingResult(bindingId, currentVisualElement,
+                                out var bindingResult);
                             hasResolvedBindings |= bindingResult.status == BindingStatus.Success;
                         }
                     });

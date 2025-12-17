@@ -740,7 +740,7 @@ namespace UnityEditor.IMGUI.Controls
 
             // Keep inside clip region so callbacks that might want to get
             // rects of rows have correct context.
-            KeyboardGUI();
+            KeyboardGUI(true);
 
             if (m_UseScrollView)
                 GUI.EndScrollView(showingVerticalScrollBar || showingHorizontalScrollBar);
@@ -1146,9 +1146,9 @@ namespace UnityEditor.IMGUI.Controls
             }
         }
 
-        void KeyboardGUI()
+        public void KeyboardGUI(bool checkKeyboardControl)
         {
-            if (m_KeyboardControlID != GUIUtility.keyboardControl || !GUI.enabled)
+            if (checkKeyboardControl && m_KeyboardControlID != GUIUtility.keyboardControl || !GUI.enabled)
                 return;
 
             // Let client handle keyboard first

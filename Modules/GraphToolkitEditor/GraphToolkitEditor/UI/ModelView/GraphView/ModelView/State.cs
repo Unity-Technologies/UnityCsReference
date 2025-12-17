@@ -62,7 +62,7 @@ namespace Unity.GraphToolkit.Editor
             {
                 var side = transitionModel.FromNodeAnchorSide;
                 var offset = transitionModel.FromNodeAnchorOffset;
-                return this.GetPositionFromAnchorAndOffset(side, offset, GraphView.ContentViewContainer.resolvedStyle.scale.value.x);
+                return this.GetPositionFromAnchorAndOffset(side, offset, GraphView.Zoom);
             }
 
             // This is a single state transition; use ToPoint as the FromPoint
@@ -78,7 +78,7 @@ namespace Unity.GraphToolkit.Editor
         {
             var side = transitionModel.ToNodeAnchorSide;
             var offset = transitionModel.ToNodeAnchorOffset;
-            return this.GetPositionFromAnchorAndOffset(side, offset, GraphView.ContentViewContainer.resolvedStyle.scale.value.x);
+            return this.GetPositionFromAnchorAndOffset(side, offset, GraphView.Zoom);
         }
 
         /// <summary>

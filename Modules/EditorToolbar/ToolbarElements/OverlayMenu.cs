@@ -7,7 +7,6 @@ using System.Collections.Generic;
 using UnityEditor.ShortcutManagement;
 using UnityEditor.Toolbars;
 using UnityEngine;
-using UnityEngine.Bindings;
 using UnityEngine.UIElements;
 using static UnityEditor.EditorWindow;
 
@@ -61,7 +60,6 @@ namespace UnityEditor.Overlays
 
     [Overlay(typeof(EditorWindow), k_Id, k_DisplayName , k_UssName, defaultDockZone = DockZone.LeftColumn, defaultLayout = Layout.HorizontalToolbar, defaultDisplay = true, defaultDockIndex = 0, group = OverlayAttribute.unityGroup)]
     [Icon("Icons/Overlays/OverlayMenu.png")]
-    [VisibleToOtherModules("UnityEditor.GraphToolkitModule")]
     sealed class OverlayMenu : Overlay, ICreateHorizontalToolbar, ICreateVerticalToolbar
     {
         const string k_DisplayName = "Overlay Menu";

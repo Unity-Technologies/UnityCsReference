@@ -18,6 +18,8 @@ namespace Unity.GraphToolkit.Editor
     {
         float m_TitleMinWidthPadding = 8f;
 
+        float m_ExpectedMinWidth = 0;
+
         /// <summary>
         /// The USS class name added to a <see cref="EditableTitlePart"/>.
         /// </summary>
@@ -86,6 +88,8 @@ namespace Unity.GraphToolkit.Editor
             /// </summary>
             public const int Default = SetWidth | UseEllipsis;
         }
+
+        bool m_FirstGeometryChange;
 
         /// <summary>
         /// Creates a new instance of the <see cref="EditableTitlePart"/> class.
@@ -260,6 +264,13 @@ namespace Unity.GraphToolkit.Editor
         {
             base.PostBuildUI();
             TitleContainer.AddPackageStylesheet("EditableTitlePart.uss");
+
+            TitleContainer.RegisterCallbackOnce<GeometryChangedEvent>(OnFirstGeometryChange);
+            TitleContainer.RegisterCallback<DetachFromPanelEvent>(_ =>
+            {
+                m_FirstGeometryChange = false;
+                TitleContainer.RegisterCallbackOnce<GeometryChangedEvent>(OnFirstGeometryChange);
+            });
         }
 
         /// <summary>
@@ -323,15 +334,15 @@ namespace Unity.GraphToolkit.Editor
 
             if (TitleLabel != null)
             {
-                if (float.IsFinite(TitleLabel.layout.width))
-                    SetupLod();
-                else
-                    Root.schedule.Execute(SetupLod).ExecuteLater(0);
+                SetupLod();
             }
         }
 
         void SetupLod()
         {
+            if (!m_FirstGeometryChange)
+                return;
+
             if (WantedTextSize != 0 && m_CurrentZoom != 0)
             {
                 TextElement te = null;
@@ -391,22 +402,43 @@ namespace Unity.GraphToolkit.Editor
             if (te is null)
             {
                 TitleLabel.parent.style.minWidth = StyleKeyword.Null;
+                m_ExpectedMinWidth = 0;
             }
             else
             {
-                te.RegisterCallbackOnce<GeometryChangedEvent>(evt =>
-                {
-                    // Set dependencies only once the layout is valid
-                    SetTitleMinWidth(te);
-                });
+                SetTitleMinWidth(te);
             }
+        }
+
+        void OnFirstGeometryChange(GeometryChangedEvent evt)
+        {
+            m_FirstGeometryChange = true;
+            SetupLod();
+            SetupWidthFromOriginalSize();
+        }
+
+        // Layout is valid if the current width is greater than or equal to the expected min width
+        // This is used to allow or disallow culling of the node. We don't want to cull if the title does not yet have its correct size as the culled node will appear too small.
+        internal bool IsLayoutValid()
+        {
+            return m_ExpectedMinWidth <= TitleLabel.parent.layout.width;
         }
 
         void SetTitleMinWidth(TextElement te)
         {
-            TitleLabel.parent.style.minWidth = !string.IsNullOrEmpty(te.text)
-                ? new StyleLength(m_TitleMinWidthPadding + Mathf.Ceil(GetTextWidthWithFontSize(te, WantedTextSize)))
-                : StyleKeyword.Null;
+            if (!m_FirstGeometryChange)
+                return;
+
+            if (!string.IsNullOrEmpty(te.text))
+            {
+                m_ExpectedMinWidth = m_TitleMinWidthPadding + Mathf.Ceil(GetTextWidthWithFontSize(te, WantedTextSize));
+                TitleLabel.parent.style.minWidth = m_ExpectedMinWidth;
+            }
+            else
+            {
+                m_ExpectedMinWidth = 0;
+                TitleLabel.parent.style.minWidth = StyleKeyword.Null;
+            }
         }
     }
 }

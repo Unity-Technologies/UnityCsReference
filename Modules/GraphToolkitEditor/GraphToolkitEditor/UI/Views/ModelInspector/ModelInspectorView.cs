@@ -504,6 +504,9 @@ namespace Unity.GraphToolkit.Editor
             if (panel == null)
                 return;
 
+            if (m_UpdateObserver == null)
+                return;
+
             using (var modelStateObservation = m_UpdateObserver.ObserveState(ModelInspectorViewModel.GraphModelState))
             using (var inspectorStateObservation = m_UpdateObserver.ObserveState(ModelInspectorViewModel.ModelInspectorState))
             {

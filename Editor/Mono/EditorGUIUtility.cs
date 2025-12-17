@@ -1279,7 +1279,7 @@ namespace UnityEditor
 
         // Ping an object in a window like clicking it in an inspector
         [Obsolete("PingObject(int) is obsolete. Use PingObject(EntityId) instead.")]
-        public static void PingObject(int targetInstanceID) => PingObject(targetInstanceID);
+        public static void PingObject(int targetInstanceID) => PingObject((EntityId)targetInstanceID);
         public static void PingObject(EntityId targetEntityId)
         {
             if (IsBuiltinResource(AssetDatabase.GetAssetPath(targetEntityId)))

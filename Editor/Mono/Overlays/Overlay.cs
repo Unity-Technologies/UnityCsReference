@@ -6,7 +6,6 @@ using System;
 using System.ComponentModel;
 using UnityEditor.Toolbars;
 using UnityEngine;
-using UnityEngine.Bindings;
 using UnityEngine.UIElements;
 
 namespace UnityEditor.Overlays
@@ -264,7 +263,6 @@ namespace UnityEditor.Overlays
 
         internal bool userControlledVisibility => !(this is IControlVisibility || this is ITransientOverlay);
 
-        [VisibleToOtherModules("UnityEditor.GraphToolkitModule")]
         internal OverlayContainer container
         {
             get => m_Container;
@@ -752,7 +750,7 @@ namespace UnityEditor.Overlays
 
             var position = canvas.EnsureOverlapsWindow(new Rect(floatingPosition, m_Size)).position;
             UpdateSnapping(position);
-            
+
             if (m_ModalPopup != null)
                 ApplyPopupSize();
         }

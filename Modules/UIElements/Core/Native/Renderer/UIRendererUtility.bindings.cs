@@ -112,6 +112,9 @@ namespace UnityEngine.UIElements.UIR
         [ThreadSafe] public extern static void ApplyShaderPropertySheet(IntPtr shaderPropertySheet);
         [ThreadSafe] public extern static void ReleasePropertySheet(IntPtr shaderPropertySheet);
 
+        [ThreadSafe] public extern static IntPtr AllocateTextureRef(Texture texture);
+        [ThreadSafe] public extern static void ReleaseTextureRef(IntPtr textureRef);
+
         [ThreadSafe] public extern static void SetScissorRect(RectInt scissorRect);
         [ThreadSafe] public extern static void DisableScissor();
         [ThreadSafe] public extern static bool IsScissorEnabled();

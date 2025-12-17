@@ -127,6 +127,9 @@ namespace Unity.GraphToolkit.Editor
             if (panel == null)
                 return;
 
+            if (m_UpdateObserver == null)
+                return;
+
             using (var toolObservation = m_UpdateObserver.ObserveState(GraphTool.ToolState))
             using (var selectionObservation = m_UpdateObserver.ObserveState(MiniMapViewModel.SelectionState))
             using (var graphModelObservation = m_UpdateObserver.ObserveState(MiniMapViewModel.GraphModelState))

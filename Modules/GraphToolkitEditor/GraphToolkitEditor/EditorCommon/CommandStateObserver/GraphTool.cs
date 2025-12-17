@@ -50,8 +50,6 @@ namespace Unity.GraphToolkit.Editor
         }
 
 
-        Dictionary<string, ToolbarDefinition> m_ToolbarDefinitions;
-
         /// <summary>
         /// The clipboard service provider, used for copy, paste and duplicate operations.
         /// </summary>
@@ -125,7 +123,6 @@ namespace Unity.GraphToolkit.Editor
         /// </summary>
         public GraphTool()
         {
-            m_ToolbarDefinitions = new Dictionary<string, ToolbarDefinition>();
         }
 
 
@@ -283,49 +280,6 @@ namespace Unity.GraphToolkit.Editor
         void UndoRedo(in UndoRedoInfo info)
         {
             Dispatch(new UndoRedoCommand(info.isRedo));
-        }
-
-        /// <summary>
-        /// Creates the toolbar definition for a toolbar.
-        /// </summary>
-        /// <param name="toolbarId">The toolbar id.</param>
-        /// <returns>A toolbar definition object.</returns>
-        protected virtual ToolbarDefinition CreateToolbarDefinition(string toolbarId)
-        {
-            switch (toolbarId)
-            {
-                case MainToolbar.toolbarId:
-                    return new MainToolbarDefinition();
-                case PanelsToolbar.toolbarId:
-                    return new PanelsToolbarDefinition();
-                case ErrorToolbar.toolbarId:
-                    return new ErrorToolbarDefinition();
-                case OptionsMenuToolbar.toolbarId:
-                    return new OptionsToolbarDefinition();
-                case BreadcrumbsToolbar.toolbarId:
-                    return new BreadcrumbsToolbarDefinition();
-                default:
-                    return null;
-            }
-        }
-
-        /// <summary>
-        /// Gets the toolbar definition for a toolbar.
-        /// </summary>
-        /// <param name="toolbar">The toolbar for which to get the definition.</param>
-        /// <returns>The toolbar definition for the toolbar.</returns>
-        internal ToolbarDefinition GetToolbarDefinition(Toolbar toolbar)
-        {
-            if (!m_ToolbarDefinitions.TryGetValue(toolbar.id, out var toolbarDefinition))
-            {
-                toolbarDefinition = CreateToolbarDefinition(toolbar.id);
-                if (toolbarDefinition is null)
-                    toolbar.IsEnabled = false;
-                else
-                    m_ToolbarDefinitions[toolbar.id] = toolbarDefinition;
-            }
-
-            return toolbarDefinition;
         }
 
         /// <summary>
