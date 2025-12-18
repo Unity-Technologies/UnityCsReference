@@ -322,6 +322,7 @@ namespace UnityEngine
             target = current - change;
 
             float temp = (currentVelocity + omega * change) * deltaTime;
+            float originalVelocity = currentVelocity;
             currentVelocity = (currentVelocity - omega * temp) * exp;
             float output = target + (change + temp) * exp;
 
@@ -329,7 +330,9 @@ namespace UnityEngine
             if (originalTo - current > 0.0F == output > originalTo)
             {
                 output = originalTo;
-                currentVelocity = (output - originalTo) / deltaTime;
+                // Mathematically, a deltaTime of 0 would create an infinite velocity. However,
+                // it makes more sense that if no time has passed just keep the velocity what was passed in.
+                currentVelocity = deltaTime != 0 ? (output - originalTo) / deltaTime : originalVelocity;
             }
 
             return output;

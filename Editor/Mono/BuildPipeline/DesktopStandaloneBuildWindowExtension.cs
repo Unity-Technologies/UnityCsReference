@@ -308,4 +308,5 @@ internal abstract class DesktopStandaloneBuildWindowExtension : DefaultBuildWind
     {
         return true;
     }
+
 }

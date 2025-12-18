@@ -140,7 +140,6 @@ namespace UnityEditor
             }
         }
 
-
         Vector2 scrollPosition = new Vector2(0, 0);
         Vector2 buildTargetSettingsScrollPosition = new Vector2(0, 0);
         const string kEditorBuildSettingsPath = "ProjectSettings/EditorBuildSettings.asset";
@@ -1018,6 +1017,7 @@ namespace UnityEditor
                     cmpIdx = EditorGUILayout.Popup(styles.compressionMethod, cmpIdx, styles.compressionStrings);
                     EditorUserBuildSettings.SetCompressionType(namedBuildTarget.ToBuildTargetGroup(), styles.compressionTypes[cmpIdx]);
                 }
+
 
                 canInstallInBuildFolder = Unsupported.IsSourceBuild() && PostprocessBuildPlayer.SupportsInstallInBuildFolder(namedBuildTarget.ToBuildTargetGroup(), buildTarget);
 

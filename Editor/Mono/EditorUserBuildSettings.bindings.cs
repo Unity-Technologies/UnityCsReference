@@ -259,6 +259,14 @@ namespace UnityEditor
         Lz4HC = 3,
     }
 
+    [NativeType(Header = "Runtime/Serialize/BuildTarget.h")]
+    internal enum DiagnosticSetting
+    {
+        ProjectSettings = 0,
+        Disabled = 1,
+        Enabled = 2,
+    }
+
     [NativeType(Header = "Editor/Src/EditorUserBuildSettings.h")]
     public enum AndroidBuildSystem
     {
@@ -566,6 +574,23 @@ namespace UnityEditor
 
         [NativeMethod("SetSelectedCompressionType")]
         private static extern void SetCompressionTypeInternal(BuildTargetGroup targetGroup, int type);
+
+        //Diagnostic setting set/get methods for the map containing type for BuildTargetGroup
+        internal static DiagnosticSetting GetDiagnosticSetting(BuildTargetGroup targetGroup)
+        {
+            return (DiagnosticSetting)GetDiagnosticSettingInternal(targetGroup);
+        }
+
+        [NativeMethod("GetSelectedDiagnosticSetting")]
+        private static extern int GetDiagnosticSettingInternal(BuildTargetGroup targetGroup);
+
+        internal static void SetDiagnosticSetting(BuildTargetGroup targetGroup, DiagnosticSetting type)
+        {
+            SetDiagnosticSettingInternal(targetGroup, (int)type);
+        }
+
+        [NativeMethod("SetSelectedDiagnosticSetting")]
+        private static extern void SetDiagnosticSettingInternal(BuildTargetGroup targetGroup, int type);
 
         public static extern AndroidETC2Fallback androidETC2Fallback
         {

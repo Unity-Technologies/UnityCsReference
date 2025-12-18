@@ -330,6 +330,8 @@ namespace UnityEditor.Modules
         // Grays out managed debugger options
         bool ShouldDisableManagedDebuggerCheckboxes();
 
+        bool ShouldShowDiagnosticsDataOption();
+
         // UI rendering functions for general options
         // Todo: move all of them from BuildPlayerWindow
         void DoScriptsOnlyGUI();
