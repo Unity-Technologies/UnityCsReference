@@ -420,6 +420,8 @@ namespace UnityEditor
                 fold = EditorPrefs.GetBool(k_layerMatrixFoldoutPref);
 
             var layerGridContainer = new VisualElement();
+            layerGridContainer.style.overflow = Overflow.Hidden;
+
             var layerGridUXML = EditorGUIUtility.Load(UXMLPath.physicsLayerGrid) as VisualTreeAsset;
             layerGridUXML.CloneTree(layerGridContainer);
 

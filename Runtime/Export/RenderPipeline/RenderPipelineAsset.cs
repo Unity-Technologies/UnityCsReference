@@ -109,6 +109,8 @@ namespace UnityEngine.Rendering
         {
             RenderPipelineManager.CleanupRenderPipeline();
         }
+
+        protected internal virtual bool requiresCompatibleRenderPipelineGlobalSettings { get; } = false;
     }
 
     public abstract partial class RenderPipelineAsset<TRenderPipeline> : RenderPipelineAsset

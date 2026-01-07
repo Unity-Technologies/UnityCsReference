@@ -42,6 +42,8 @@ namespace UnityEditor.Build.Profile
         Button m_AddBuildProfileButton;
         BuildProfilePlatformBrowserClosed m_CloseEvent;
 
+        VisualElement m_RhsDetailsPanel;
+
         VisualElement m_PackageContainer;
         ListView m_InternalPackageListView;
         ListView m_PartnerPackageListView;
@@ -184,6 +186,7 @@ namespace UnityEditor.Build.Profile
             m_CloseEvent = new BuildProfilePlatformBrowserClosed();
 
             // Capture static visual element reference.
+            m_RhsDetailsPanel = rootVisualElement.Q<VisualElement>("platform-details-panel");
             m_AddBuildProfileButton = rootVisualElement.Q<Button>("add-build-profile-button");
             m_SelectedDisplayNameLabel = rootVisualElement.Q<Label>("selected-card-name");
             m_SelectedCardImage = rootVisualElement.Q<Image>("selected-card-icon");
@@ -275,6 +278,10 @@ namespace UnityEditor.Build.Profile
 
             // First element should match standalone platform.
             OnCardSelected(m_Cards[0]);
+
+            m_RhsDetailsPanel.focusable = true;
+            m_RhsDetailsPanel.delegatesFocus = true;
+            rootVisualElement.RegisterCallback<NavigationSubmitEvent>(OnFocusToDetailsPanel);
         }
 
         void OnPackageInfoUpdated()
@@ -380,6 +387,15 @@ namespace UnityEditor.Build.Profile
             m_AddtionalInfoLabel.Clear();
             m_InternalPackageListView.itemsSource = Array.Empty<PlatformPackageEntry>();
             m_PartnerPackageListView.itemsSource = Array.Empty<PlatformPackageEntry>();
+        }
+
+        void OnFocusToDetailsPanel(NavigationSubmitEvent e)
+        {
+            if (e.target is BuildProfilePlatformElement)
+            {
+                m_RhsDetailsPanel.Focus();
+                e.StopPropagation();
+            }
         }
 
         /// <summary>
