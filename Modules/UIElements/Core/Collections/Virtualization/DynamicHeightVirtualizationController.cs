@@ -557,7 +557,7 @@ namespace UnityEngine.UIElements
 
         void Fill()
         {
-            if (!m_CollectionView.HasValidDataAndBindings() || firstVisibleIndex < 0)
+            if (!m_CollectionView.HasValidDataAndBindings())
                 return;
 
             m_FillExecuted = true;
@@ -571,7 +571,7 @@ namespace UnityEngine.UIElements
             }
 
             // Let the UI stabilize.
-            if (anchoredIndex < 0)
+            if (anchoredIndex < 0 || firstVisibleIndex < 0)
                 return;
 
             // Wait for view to scroll first.

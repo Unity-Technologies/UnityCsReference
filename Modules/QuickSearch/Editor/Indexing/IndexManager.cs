@@ -887,6 +887,7 @@ namespace UnityEditor.Search
             if (deleteIndex >= 0 && deleteIndex < m_IndexSettingsAssets.Count)
             {
                 var db = m_IndexSettingsAssets[deleteIndex];
+                db.DeleteBackupIndex();
                 SearchDatabase.Unload(db);
             }
             m_IndexSettingsAssets.RemoveAt(deleteIndex);

@@ -129,6 +129,12 @@ namespace UnityEngine.Rendering
         }
 
 
+        public static bool TrySetCurrentRenderPipelineGlobalSettings(RenderPipelineGlobalSettings asset)
+        {
+            Debug.LogError("GraphicsSettings.TrySetCurrentRenderPipelineGlobalSettings is not allowed to be used in the Editor. Use EditorGraphicsSettings.SetRenderPipelineGlobalSettingsAsset to set Global Settings instead.");
+            return false;
+        }
+
         public static bool TryGetCurrentRenderPipelineGlobalSettings(out RenderPipelineGlobalSettings asset)
         {
             asset = Internal_GetCurrentRenderPipelineGlobalSettings();

@@ -939,7 +939,7 @@ namespace UnityEditor.Search
             SearchMonitor.contentRefreshed += OnContentRefreshed;
         }
 
-        private string GetBackupIndexPath(bool createDirectory)
+        internal string GetBackupIndexPath(bool createDirectory)
         {
             if (createDirectory && !Directory.Exists(k_QuickSearchLibraryPath))
                 Directory.CreateDirectory(k_QuickSearchLibraryPath);

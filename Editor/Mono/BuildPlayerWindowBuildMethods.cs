@@ -71,7 +71,6 @@ namespace UnityEditor
         /// <summary>
         /// Method called by the UI when the "Build" or "Build and Run" buttons are pressed.
         /// </summary>
-        /// <param name="defaultBuildOptions"></param>
         internal static void CallBuildMethods(bool askForBuildLocation, BuildOptions defaultBuildOptions)
         {
             if (EditorCompilationInterface.IsCompiling())
@@ -92,7 +91,7 @@ namespace UnityEditor
                 if (getBuildPlayerOptionsHandler != null)
                     options = getBuildPlayerOptionsHandler(options);
                 else
-                    options = DefaultBuildMethods.GetBuildPlayerOptionsInternal(askForBuildLocation, options);
+                    options = DefaultBuildMethods.GetBuildPlayerOptionsFromActiveBuildTarget(askForBuildLocation, options);
 
                 if (buildPlayerHandler != null)
                     buildPlayerHandler(options);
@@ -223,13 +222,41 @@ namespace UnityEditor
 
             internal static BuildPlayerOptions GetBuildPlayerOptionsInternal(bool askForBuildLocation, BuildPlayerOptions defaultBuildPlayerOptions)
             {
+                return GetBuildPlayerOptions(askForBuildLocation, defaultBuildPlayerOptions, false);
+            }
+
+            /// <summary>
+            /// Get build player options using the active build target instead of selected target.
+            /// </summary>
+            internal static BuildPlayerOptions GetBuildPlayerOptionsFromActiveBuildTarget(bool askForBuildLocation, BuildPlayerOptions defaultBuildPlayerOptions)
+            {
+                return GetBuildPlayerOptions(askForBuildLocation, defaultBuildPlayerOptions, true);
+            }
+            
+            private static BuildPlayerOptions GetBuildPlayerOptions(bool askForBuildLocation, BuildPlayerOptions defaultBuildPlayerOptions, bool activeTarget)
+            {
                 var options = defaultBuildPlayerOptions;
 
                 bool updateExistingBuild = false;
 
-                BuildTarget buildTarget = EditorUserBuildSettingsUtils.CalculateSelectedBuildTarget();
-                BuildTargetGroup buildTargetGroup = EditorUserBuildSettings.selectedBuildTargetGroup;
-                int subtarget = EditorUserBuildSettings.GetSelectedSubtargetFor(buildTarget);
+                BuildTarget buildTarget;
+                BuildTargetGroup buildTargetGroup;
+                int subtarget;
+
+                if (activeTarget)
+                {
+                    // Use the active target
+                    buildTarget = EditorUserBuildSettings.activeBuildTarget;
+                    buildTargetGroup = BuildPipeline.GetBuildTargetGroup(buildTarget);
+                    subtarget = EditorUserBuildSettings.GetActiveSubtargetFor(buildTarget);
+                }
+                else
+                {
+                    // Use the selected target
+                    buildTarget = EditorUserBuildSettingsUtils.CalculateSelectedBuildTarget();
+                    buildTargetGroup = EditorUserBuildSettings.selectedBuildTargetGroup;
+                    subtarget = EditorUserBuildSettings.GetSelectedSubtargetFor(buildTarget);
+                }
 
                 options.options = BuildProfileModuleUtil.GetBuildOptions(buildTarget, buildTargetGroup, string.Empty, options.options);
 

@@ -222,7 +222,10 @@ namespace UnityEngine
         public static RenderPipelineAsset renderPipeline
         {
             get { return INTERNAL_renderPipeline as RenderPipelineAsset; }
-            set { INTERNAL_renderPipeline = value; }
+            set
+            {
+                INTERNAL_renderPipeline = value;
+            }
         }
 
         [NativeName("GetRenderPipelineAssetAt")]

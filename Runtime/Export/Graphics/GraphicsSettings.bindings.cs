@@ -92,7 +92,10 @@ namespace UnityEngine.Rendering
         public static RenderPipelineAsset defaultRenderPipeline
         {
             get { return INTERNAL_defaultRenderPipeline as RenderPipelineAsset; }
-            set { INTERNAL_defaultRenderPipeline = value; }
+            set
+            {
+                INTERNAL_defaultRenderPipeline = value;
+            }
         }
 
         [NativeName("GetAllConfiguredRenderPipelinesForScript")] extern static private ScriptableObject[] GetAllConfiguredRenderPipelines();

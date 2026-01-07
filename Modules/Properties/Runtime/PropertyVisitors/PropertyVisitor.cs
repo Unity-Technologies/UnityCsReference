@@ -17,6 +17,8 @@ namespace Unity.Properties
 
     /// <summary>
     /// Base class for implementing algorithms using properties. This is an abstract class.
+    ///
+    /// For more information on how to implement a property visitor by deriving from this class, including an example, refer to [Create a property visitor with the PropertyVisitor class](/property-visitors-PropertyVisitor.md)
     /// </summary>
     public abstract class PropertyVisitor :
         IPropertyBagVisitor,
