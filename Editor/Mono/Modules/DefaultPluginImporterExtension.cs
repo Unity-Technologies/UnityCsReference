@@ -175,7 +175,9 @@ namespace UnityEditor.Modules
         protected Dictionary<string, List<PluginImporter>> GetCompatiblePlugins(string buildTargetName, string[] defines)
         {
             var pluginImporters = PluginImporter.GetImporters(buildTargetName);
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var plugins = pluginImporters
+#pragma warning restore RS0030
                 .Where(pluginImporter => IsPluginDefinesCompatible(pluginImporter, buildTargetName, defines));
 
             plugins = PluginImporter.FilterAssembliesByAssemblyVersion(plugins);

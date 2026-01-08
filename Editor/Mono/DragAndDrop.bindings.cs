@@ -340,7 +340,9 @@ namespace UnityEditor
             {
                 return false;
             }
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return handlers != null && handlers.Any(dropHandler => dropHandler == handler);
+#pragma warning restore RS0030
         }
 
         [Obsolete("Use AddDropHandlerV2 instead")] // not upgradable since it's a different delegate

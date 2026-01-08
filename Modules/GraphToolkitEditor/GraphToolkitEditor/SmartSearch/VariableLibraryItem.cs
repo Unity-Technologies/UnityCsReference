@@ -33,8 +33,9 @@ namespace Unity.GraphToolkit.Editor
         /// <param name="name">The name used to search the item.</param>
         /// <param name="type">The type represented by the item.</param>
         /// <param name="variableType">The type that must derived from VariableDeclarationModel.</param>
-        public VariableLibraryItem(string name, TypeHandle type, Type variableType = null)
-            : base(name, type)
+        /// <param name="graphModel">The graph model associated with the item.</param>
+        public VariableLibraryItem(string name, TypeHandle type, Type variableType = null, GraphModel graphModel = null)
+            : base(name, type, graphModel)
         {
             VariableType = variableType;
         }

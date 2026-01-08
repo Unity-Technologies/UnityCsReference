@@ -22,7 +22,9 @@ namespace UnityEditor.Utils
             var uniqueChars = new HashSet<char>(Path.GetInvalidFileNameChars());
             uniqueChars.Add(Path.DirectorySeparatorChar);
             uniqueChars.Add(Path.AltDirectorySeparatorChar);
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             invalidFilenameChars = uniqueChars.ToArray();
+#pragma warning restore RS0030
         }
 
         public static string Combine(params string[] components)
@@ -118,7 +120,9 @@ namespace UnityEditor.Utils
         public static string GetPathRelativeToProjectDirectory(string filePath)
         {
             return String.Join(separator: "/",
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 value: filePath.ConvertSeparatorsToUnity().TrimTrailingSlashes().Split('/').SkipWhile(s => s != "assets" && s != "Assets").ToArray());
+#pragma warning restore RS0030
         }
 
         public static string SkipPathPrefix(string path, string prefix)
@@ -349,7 +353,9 @@ namespace UnityEditor.Utils
             while (charEnum.MoveNext())
             {
                 var c = charEnum.GetTextElement();
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 if (c.Length == 1 && invalidFilenameChars.Contains(c[0]))
+#pragma warning restore RS0030
                     continue;
                 var unicodeCategory = CharUnicodeInfo.GetUnicodeCategory(c, 0);
                 if (unicodeCategory != UnicodeCategory.NonSpacingMark)

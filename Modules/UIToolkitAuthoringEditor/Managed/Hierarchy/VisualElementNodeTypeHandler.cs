@@ -10,6 +10,7 @@ using Unity.Hierarchy;
 using Unity.Hierarchy.Editor;
 using Unity.Properties;
 using UnityEditor;
+using UnityEditor.SceneManagement;
 using UnityEditor.Search;
 using UnityEngine;
 using UnityEngine.Pool;
@@ -24,6 +25,8 @@ internal abstract class VisualElementNodeTypeHandler :
     IHierarchyEntityIdConverter,
     IHierarchyEditorNodeTypeHandler
 {
+    protected const string VisualElementDisabledUssClass = "unity-disabled";
+
     // Used for tests
     internal MappingsAccess GetMappings() => new(this);
 
@@ -54,6 +57,8 @@ internal abstract class VisualElementNodeTypeHandler :
     public const string HierarchyItemDisabledClassName = HierarchyItemClassName + "__disabled";
 
     private const string k_StyleSheetPath = "UIToolkitAuthoring/Hierarchy/VisualElementNodeTypeHandler.uss";
+
+    static readonly ManipulatorActivationFilter k_StageAltActivationFilter = new() { button = MouseButton.LeftMouse, modifiers = EventModifiers.Alt };
 
     // [TODO] MP: Convenience struct until APIs are added to retrieve the selection from the HierarchyView
     protected readonly ref struct SelectionContext
@@ -201,12 +206,14 @@ internal abstract class VisualElementNodeTypeHandler :
     private ParsedQuery<VisualElement> m_ParsedQuery;
 
     private UIHierarchyDisplayOptions m_DisplayOptions;
+    private bool m_EnableUIStages;
+
+    protected IVisualElementSelectionHandler SelectionHandler => m_SelectionHandler;
 
     /// <summary>
-    /// Flags indicating is mutating operations are permitted in the hierarchy.
+    /// Flags indicating if mutating operations are permitted in the hierarchy.
     /// </summary>
-    // TODO [MP]: Switch visibility to protected once we support mutating operations.
-    private bool isReadonly { get; set; } = true;
+    protected bool isReadonly { get; set; } = true;
 
     private StyleSheet StyleSheet
     {
@@ -243,6 +250,8 @@ internal abstract class VisualElementNodeTypeHandler :
         m_SelectionHandler = selectionHandler;
         UIToolkitAuthoringSettings.DisplayOptionsChanged += OnDisplayOptionsChanged;
         m_DisplayOptions = UIToolkitAuthoringSettings.DisplayOptions;
+        UIToolkitAuthoringSettings.UIStagesChanged += EnableUIStages;
+        m_EnableUIStages = UIToolkitAuthoringSettings.EnableUIStages;
     }
 
     /// <inheritdoc cref="HierarchyNodeTypeHandler.Dispose"/>>
@@ -285,6 +294,7 @@ internal abstract class VisualElementNodeTypeHandler :
         {
             item.Icon.style.backgroundImage = GetIcon(element);
             Bind(item, element);
+            BindNavigation(item, element);
         }
         else
         {
@@ -299,6 +309,7 @@ internal abstract class VisualElementNodeTypeHandler :
         if (m_Mappings.TryGetValue(item.Node, out var element))
         {
             Unbind(item, element);
+            UnbindNavigation(item, element);
         }
         else
         {
@@ -309,6 +320,7 @@ internal abstract class VisualElementNodeTypeHandler :
             item.EnableInClassList(HierarchyItemDisabledClassName, false);
             item.LeftCustomContainer.Clear();
             item.parent.Q(className: HierarchyItemElementTypeNameClassName)?.RemoveFromHierarchy();
+            UnsetStageNodeNavigation(item);
         }
     }
 
@@ -464,9 +476,33 @@ internal abstract class VisualElementNodeTypeHandler :
         if (isReadonly)
             return false;
 
+        if (parent == Hierarchy.Root)
+            return AcceptRootAsParent();
+
         var handler = Hierarchy.GetNodeTypeHandlerBase(in parent);
-        return handler is VisualElementNodeTypeHandler;
+        if (handler != this)
+            return false;
+
+        if (TryGetElementFromNode(parent, out var physicalParentElement))
+        {
+            var logicalParent = GetLogicalParentFromPhysicalParent(physicalParentElement);
+            if (TryGetNodeFromElement(logicalParent, out var logicalParentNode))
+            {
+                return AcceptParent(view, in logicalParentNode, logicalParent);
+            }
+        }
+
+        return false;
     }
+
+    protected static VisualElement GetLogicalParentFromPhysicalParent(VisualElement physicalParent)
+    {
+        return physicalParent.GetFirstAncestorWhere(ve => ve.contentContainer == physicalParent) ?? physicalParent;
+    }
+
+    protected virtual bool AcceptRootAsParent() => false;
+
+    protected virtual bool AcceptParent(HierarchyView view, in HierarchyNode parentNode, VisualElement parent) => false;
 
     bool IHierarchyEditorNodeTypeHandler.AcceptChild(HierarchyView view, in HierarchyNode child)
     {
@@ -474,8 +510,13 @@ internal abstract class VisualElementNodeTypeHandler :
             return false;
 
         var handler = Hierarchy.GetNodeTypeHandlerBase(in child);
-        return handler is VisualElementNodeTypeHandler;
+        if (handler != this)
+            return false;
+
+        return TryGetElementFromNode(child, out var childElement) && AcceptChild(view, in child, childElement);
     }
+
+    protected virtual bool AcceptChild(HierarchyView view, in HierarchyNode childNode, VisualElement child) => false;
 
     bool IHierarchyEditorNodeTypeHandler.CanStartDrag(HierarchyView view, ReadOnlySpan<HierarchyNode> nodes)
     {
@@ -494,13 +535,18 @@ internal abstract class VisualElementNodeTypeHandler :
         };
     }
 
-    void IHierarchyEditorNodeTypeHandler.OnStartDrag(in HierarchyViewDragAndDropSetupData data)
+    void IHierarchyEditorNodeTypeHandler.OnStartDrag(in HierarchyViewDragAndDropSetupData data) =>
+        InitializeDrag(in data);
+
+    protected virtual void InitializeDrag(in HierarchyViewDragAndDropSetupData data)
     {
     }
 
-    DragVisualMode IHierarchyEditorNodeTypeHandler.CanDrop(in HierarchyViewDragAndDropHandlingData data) => DragVisualMode.None;
+    DragVisualMode IHierarchyEditorNodeTypeHandler.CanDrop(in HierarchyViewDragAndDropHandlingData data) => HandleDrop(in data, false);
 
-    DragVisualMode IHierarchyEditorNodeTypeHandler.OnDrop(in HierarchyViewDragAndDropHandlingData data) => DragVisualMode.None;
+    DragVisualMode IHierarchyEditorNodeTypeHandler.OnDrop(in HierarchyViewDragAndDropHandlingData data) => HandleDrop(in data, true);
+
+    protected virtual DragVisualMode HandleDrop(in HierarchyViewDragAndDropHandlingData data, bool performDrop) => DragVisualMode.None;
     #endregion
 
     #region IHierarchySearchPropositionProvider
@@ -693,6 +739,139 @@ internal abstract class VisualElementNodeTypeHandler :
         typenameElement?.RemoveFromHierarchy();
     }
 
+    protected virtual void BindNavigation(HierarchyViewItem item, VisualElement container)
+    {
+    }
+
+    protected virtual void UnbindNavigation(HierarchyViewItem item, VisualElement container)
+    {
+    }
+
+    protected void SetStageNodeNavigation(HierarchyViewItem item, VisualElement container)
+    {
+        switch (container)
+        {
+            case IPanelComponentRootElement panelComponentRoot when panelComponentRoot.panelComponent != null && panelComponentRoot.panelComponent.visualTreeAsset != null:
+            {
+                var panelComponent = panelComponentRoot.panelComponent;
+                var context = new VisualTreeAssetEditingContext(panelComponent.visualTreeAsset, panelComponent.panelSettings);
+                SetStageNodeNavigation(item, context);
+                break;
+            }
+            case { visualElementAsset: TemplateAsset subDocument }:
+            {
+                using var _ = ListPool<TemplateAsset>.Get(out var subDocumentPath);
+                GenerateSubDocumentPath(container, subDocumentPath);
+
+                var panelSettings = GetPanelSettings(container);
+                var context = new VisualTreeAssetEditingContext(
+                    GetRootVisualTreeAsset(container),
+                    subDocumentPath.ToArray(),
+                    SubDocumentOptions.InContext,
+                    panelSettings
+                );
+                SetStageNodeNavigation(item, context);
+                break;
+            }
+            default:
+                UnsetStageNodeNavigation(item);
+                break;
+        }
+    }
+
+    private void GenerateSubDocumentPath(VisualElement element, List<TemplateAsset> path)
+    {
+        while (element != null)
+        {
+            if (element is { visualElementAsset: TemplateAsset subDocument })
+                path.Add(subDocument);
+            element = element.hierarchy.parent;
+        }
+        path.Reverse();
+    }
+
+    private VisualTreeAsset GetRootVisualTreeAsset(VisualElement element)
+    {
+        var vta = default(VisualTreeAsset);
+        while (element != null)
+        {
+            if (element.visualTreeAssetSource != null)
+                vta = element.visualTreeAssetSource;
+            element = element.parent;
+        }
+
+        return vta;
+    }
+
+    private PanelSettings GetPanelSettings(VisualElement element)
+    {
+        var root = element.GetFirstOfType<IPanelComponentRootElement>();
+        if (root != null)
+            return root.panelComponent.panelSettings;
+
+        var panelElement = element.GetFirstOfType<PanelElement>();
+        if (panelElement != null)
+            return panelElement.PanelSettings;
+
+        return null;
+    }
+
+    protected void SetStageNodeNavigation(HierarchyViewItem item, VisualTreeAssetEditingContext context)
+    {
+        const string navigationTooltip = "Open Visual Tree Asset in context.\nPress the Alt modifier key to open in isolation.";
+
+        if (!m_EnableUIStages)
+            return;
+        item.NavigateIntoButton.style.display = DisplayStyle.Flex;
+        item.NavigateIntoButton.tooltip = navigationTooltip;
+        if (item.NavigateIntoButton.userData == null)
+        {
+            item.NavigateIntoButton.clickable.activators.Add(k_StageAltActivationFilter);
+            item.NavigateIntoButton.clickable.clickedWithEventInfo += OpenStageMode;
+        }
+
+        item.NavigateIntoButton.userData = context;
+    }
+
+    protected void UnsetStageNodeNavigation(HierarchyViewItem item)
+    {
+        item.NavigateIntoButton.style.display = DisplayStyle.None;
+        item.NavigateIntoButton.tooltip = null;
+        item.NavigateIntoButton.clickable.activators.Remove(k_StageAltActivationFilter);
+        item.NavigateIntoButton.clickable.clickedWithEventInfo -= OpenStageMode;
+        item.NavigateIntoButton.userData = null;
+    }
+
+    void OpenStageMode(EventBase obj)
+    {
+        if (obj.target is not Button button)
+            return;
+
+        if (button.userData is not VisualTreeAssetEditingContext context)
+            return;
+
+        if (obj is PointerUpEvent { altKey: true } && context.SubDocumentPath != null)
+        {
+            GoToStage(new VisualTreeAssetEditingContext(
+                context.RootVisualTreeAsset,
+                context.SubDocumentPath,
+                SubDocumentOptions.Isolation,
+                context.PanelSettings
+            ));
+        }
+        else
+        {
+            GoToStage(context);
+        }
+    }
+
+    void GoToStage(VisualTreeAssetEditingContext context)
+    {
+        var stage = ScriptableObject.CreateInstance<VisualElementEditingStage>();
+        stage.SetContext(context);
+        StageUtility.GoToStage(stage, false);
+    }
+
     /// <summary>
     /// Customize the tooltip displayed when the mouse hovers the node name label.
     /// </summary>
@@ -744,18 +923,37 @@ internal abstract class VisualElementNodeTypeHandler :
         if (null == element)
             throw new ArgumentNullException(nameof(element));
 
-        var parent = element.parent;
+        var parent = element.hierarchy.parent;
         if (null == parent)
         {
             parentNode = Hierarchy.Root;
             return true;
         }
 
-        if (m_Mappings.TryGetValue(parent, out parentNode))
-            return true;
-
-        parentNode = HierarchyNode.Null;
-        return false;
+        while (true)
+        {
+            switch (ShouldCreateNode(parent))
+            {
+                case NodeCreationType.DontCreate:
+                    parentNode = HierarchyNode.Null;
+                    break;
+                case NodeCreationType.Create:
+                    if (m_Mappings.TryGetValue(parent, out parentNode))
+                        return true;
+                    parentNode = HierarchyNode.Null;
+                    return false;
+                case NodeCreationType.CreateChildren:
+                    parent = parent.hierarchy.parent;
+                    if (parent == null)
+                    {
+                        parentNode = Hierarchy.Root;
+                        return true;
+                    }
+                    break;
+                default:
+                    throw new ArgumentOutOfRangeException();
+            }
+        }
     }
 
     /// <summary>
@@ -766,6 +964,8 @@ internal abstract class VisualElementNodeTypeHandler :
     {
         panel.RegisterChangeProcessor(this);
         m_RegisteredPanels.Add(panel);
+        if (Hierarchy.IsCreated)
+            Rebuild(panel);
     }
 
     /// <summary>
@@ -1013,6 +1213,35 @@ internal abstract class VisualElementNodeTypeHandler :
 
     private void RefreshChildrenSortingIndices(HierarchyNode node)
     {
+        if (node == Hierarchy.Root)
+        {
+            var children = Hierarchy.GetChildren(node);
+            VisualElement rootParent = null;
+            for (var i = 0; i < children.Length; ++i)
+            {
+                if (!TryGetElementFromNode(children[i], out var element))
+                {
+                    continue;
+                }
+
+                if (rootParent == null)
+                    rootParent = element.hierarchy.parent;
+                if (rootParent != element.hierarchy.parent)
+                    Debug.LogWarning("Weird Case detected");
+            }
+
+            if (rootParent == null)
+                return;
+            for (var i = 0; i < rootParent.hierarchy.childCount; ++i)
+            {
+                if (!TryGetNodeFromElement(rootParent.hierarchy[i], out var elementNode))
+                    continue;
+                CommandList.SetSortIndex(elementNode, i);
+            }
+            CommandList.SortChildren(node);
+            return;
+        }
+
         if (!m_Mappings.TryGetValue(node, out var parent))
             return;
 
@@ -1192,6 +1421,13 @@ internal abstract class VisualElementNodeTypeHandler :
     private void OnDisplayOptionsChanged(UIHierarchyDisplayOptions options)
     {
         m_DisplayOptions = options;
+        if (Hierarchy.IsCreated)
+            CommandList.SetDirty();
+    }
+
+    private void EnableUIStages(bool value)
+    {
+        m_EnableUIStages = value;
         if (Hierarchy.IsCreated)
             CommandList.SetDirty();
     }

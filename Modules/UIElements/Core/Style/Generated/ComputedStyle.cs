@@ -22,7 +22,7 @@ namespace UnityEngine.UIElements
         public StyleDataRef<InheritedData> inheritedData;
         public StyleDataRefUnmanaged<LayoutData> layoutData;
         public StyleDataRef<RareData> rareData;
-        public StyleDataRef<TransformData> transformData;
+        public StyleDataRefUnmanaged<TransformData> transformData;
         public StyleDataRef<TransitionData> transitionData;
         public StyleDataRefUnmanaged<VisualData> visualData;
 
@@ -118,10 +118,14 @@ namespace UnityEngine.UIElements
         public Length width => layoutData.Read().width;
         public Length wordSpacing => inheritedData.Read().wordSpacing;
 
+
         public static ComputedStyle Create(ref ComputedStyle parentStyle)
         {
             ref var initialStyle = ref InitialStyle.Get();
-            var cs = new ComputedStyle{dpiScaling = 1f};
+            var cs = new ComputedStyle
+            {
+                dpiScaling = 1f
+            };
             cs.customData = initialStyle.customData.Acquire();
             cs.inheritedData = parentStyle.inheritedData.Acquire();
             cs.layoutData = initialStyle.layoutData.Acquire();
@@ -134,12 +138,15 @@ namespace UnityEngine.UIElements
 
         public static ComputedStyle CreateInitial()
         {
-            var cs = new ComputedStyle{dpiScaling = 1f};
+            var cs = new ComputedStyle
+            {
+                dpiScaling = 1f
+            };
             cs.customData = StyleDataRef<CustomData>.Create();
             cs.inheritedData = StyleDataRef<InheritedData>.Create();
             cs.layoutData = StyleDataRefUnmanaged<LayoutData>.Create();
             cs.rareData = StyleDataRef<RareData>.Create();
-            cs.transformData = StyleDataRef<TransformData>.Create();
+            cs.transformData = StyleDataRefUnmanaged<TransformData>.Create();
             cs.transitionData = StyleDataRef<TransitionData>.Create();
             cs.visualData = StyleDataRefUnmanaged<VisualData>.Create();
             return cs;
@@ -1680,6 +1687,332 @@ namespace UnityEngine.UIElements
                     ve.layoutNode.MarkDirty();
                     ve.IncrementVersion(VersionChangeType.Layout);
                     break;
+                default:
+                    throw new ArgumentException("Invalid animation property id. Can't apply value of type 'Ratio' to property '" + id + "'. Please make sure that this property is animatable.", nameof(id));
+            }
+        }
+
+        public Length ReadPropertyAnimationLength(StylePropertyId id)
+        {
+            switch (id)
+            {
+                case StylePropertyId.BorderBottomLeftRadius:
+                    return visualData.Read().borderBottomLeftRadius;
+                case StylePropertyId.BorderBottomRightRadius:
+                    return visualData.Read().borderBottomRightRadius;
+                case StylePropertyId.BorderTopLeftRadius:
+                    return visualData.Read().borderTopLeftRadius;
+                case StylePropertyId.BorderTopRightRadius:
+                    return visualData.Read().borderTopRightRadius;
+                case StylePropertyId.Bottom:
+                    return layoutData.Read().bottom;
+                case StylePropertyId.Display:
+                    return (int)layoutData.Read().display;
+                case StylePropertyId.FlexBasis:
+                    return layoutData.Read().flexBasis;
+                case StylePropertyId.FontSize:
+                    return inheritedData.Read().fontSize;
+                case StylePropertyId.Height:
+                    return layoutData.Read().height;
+                case StylePropertyId.Left:
+                    return layoutData.Read().left;
+                case StylePropertyId.LetterSpacing:
+                    return inheritedData.Read().letterSpacing;
+                case StylePropertyId.MarginBottom:
+                    return layoutData.Read().marginBottom;
+                case StylePropertyId.MarginLeft:
+                    return layoutData.Read().marginLeft;
+                case StylePropertyId.MarginRight:
+                    return layoutData.Read().marginRight;
+                case StylePropertyId.MarginTop:
+                    return layoutData.Read().marginTop;
+                case StylePropertyId.MaxHeight:
+                    return layoutData.Read().maxHeight;
+                case StylePropertyId.MaxWidth:
+                    return layoutData.Read().maxWidth;
+                case StylePropertyId.MinHeight:
+                    return layoutData.Read().minHeight;
+                case StylePropertyId.MinWidth:
+                    return layoutData.Read().minWidth;
+                case StylePropertyId.PaddingBottom:
+                    return layoutData.Read().paddingBottom;
+                case StylePropertyId.PaddingLeft:
+                    return layoutData.Read().paddingLeft;
+                case StylePropertyId.PaddingRight:
+                    return layoutData.Read().paddingRight;
+                case StylePropertyId.PaddingTop:
+                    return layoutData.Read().paddingTop;
+                case StylePropertyId.Right:
+                    return layoutData.Read().right;
+                case StylePropertyId.Top:
+                    return layoutData.Read().top;
+                case StylePropertyId.UnityEditorTextRenderingMode:
+                    return (int)inheritedData.Read().unityEditorTextRenderingMode;
+                case StylePropertyId.UnityParagraphSpacing:
+                    return inheritedData.Read().unityParagraphSpacing;
+                case StylePropertyId.UnityTextGenerator:
+                    return (int)inheritedData.Read().unityTextGenerator;
+                case StylePropertyId.Width:
+                    return layoutData.Read().width;
+                case StylePropertyId.WordSpacing:
+                    return inheritedData.Read().wordSpacing;
+                default:
+                    throw new ArgumentException("Invalid animation property id. Can't apply value of type 'Length' to property '" + id + "'. Please make sure that this property is animatable.", nameof(id));
+            }
+        }
+
+        public float ReadPropertyAnimationFloat(StylePropertyId id)
+        {
+            switch (id)
+            {
+                case StylePropertyId.BorderBottomWidth:
+                    return layoutData.Read().borderBottomWidth;
+                case StylePropertyId.BorderLeftWidth:
+                    return layoutData.Read().borderLeftWidth;
+                case StylePropertyId.BorderRightWidth:
+                    return layoutData.Read().borderRightWidth;
+                case StylePropertyId.BorderTopWidth:
+                    return layoutData.Read().borderTopWidth;
+                case StylePropertyId.FlexGrow:
+                    return layoutData.Read().flexGrow;
+                case StylePropertyId.FlexShrink:
+                    return layoutData.Read().flexShrink;
+                case StylePropertyId.Opacity:
+                    return visualData.Read().opacity;
+                case StylePropertyId.UnitySliceScale:
+                    return rareData.Read().unitySliceScale;
+                case StylePropertyId.UnityTextOutlineWidth:
+                    return inheritedData.Read().unityTextOutlineWidth;
+                default:
+                    throw new ArgumentException("Invalid animation property id. Can't apply value of type 'Float' to property '" + id + "'. Please make sure that this property is animatable.", nameof(id));
+            }
+        }
+
+        public int ReadPropertyAnimationInt(StylePropertyId id)
+        {
+            switch (id)
+            {
+                case StylePropertyId.AlignContent:
+                    return (int)layoutData.Read().alignContent;
+                case StylePropertyId.AlignItems:
+                    return (int)layoutData.Read().alignItems;
+                case StylePropertyId.AlignSelf:
+                    return (int)layoutData.Read().alignSelf;
+                case StylePropertyId.FlexDirection:
+                    return (int)layoutData.Read().flexDirection;
+                case StylePropertyId.FlexWrap:
+                    return (int)layoutData.Read().flexWrap;
+                case StylePropertyId.JustifyContent:
+                    return (int)layoutData.Read().justifyContent;
+                case StylePropertyId.Overflow:
+                    return (int)layoutData.Read().overflow;
+                case StylePropertyId.Position:
+                    return (int)layoutData.Read().position;
+                case StylePropertyId.TextOverflow:
+                    return (int)rareData.Read().textOverflow;
+                case StylePropertyId.UnityFontStyleAndWeight:
+                    return (int)inheritedData.Read().unityFontStyleAndWeight;
+                case StylePropertyId.UnityOverflowClipBox:
+                    return (int)rareData.Read().unityOverflowClipBox;
+                case StylePropertyId.UnitySliceBottom:
+                    return rareData.Read().unitySliceBottom;
+                case StylePropertyId.UnitySliceLeft:
+                    return rareData.Read().unitySliceLeft;
+                case StylePropertyId.UnitySliceRight:
+                    return rareData.Read().unitySliceRight;
+                case StylePropertyId.UnitySliceTop:
+                    return rareData.Read().unitySliceTop;
+                case StylePropertyId.UnitySliceType:
+                    return (int)rareData.Read().unitySliceType;
+                case StylePropertyId.UnityTextAlign:
+                    return (int)inheritedData.Read().unityTextAlign;
+                case StylePropertyId.UnityTextOverflowPosition:
+                    return (int)rareData.Read().unityTextOverflowPosition;
+                case StylePropertyId.Visibility:
+                    return (int)inheritedData.Read().visibility;
+                case StylePropertyId.WhiteSpace:
+                    return (int)inheritedData.Read().whiteSpace;
+                default:
+                    throw new ArgumentException("Invalid animation property id. Can't apply value of type 'Int' to property '" + id + "'. Please make sure that this property is animatable.", nameof(id));
+            }
+        }
+
+        public BackgroundPosition ReadPropertyAnimationBackgroundPosition(StylePropertyId id)
+        {
+            switch (id)
+            {
+                case StylePropertyId.BackgroundPositionX:
+                    return visualData.Read().backgroundPositionX;
+                case StylePropertyId.BackgroundPositionY:
+                    return visualData.Read().backgroundPositionY;
+                default:
+                    throw new ArgumentException("Invalid animation property id. Can't apply value of type 'BackgroundPosition' to property '" + id + "'. Please make sure that this property is animatable.", nameof(id));
+            }
+        }
+
+        public BackgroundRepeat ReadPropertyAnimationBackgroundRepeat(StylePropertyId id)
+        {
+            switch (id)
+            {
+                case StylePropertyId.BackgroundRepeat:
+                    return visualData.Read().backgroundRepeat;
+                default:
+                    throw new ArgumentException("Invalid animation property id. Can't apply value of type 'BackgroundRepeat' to property '" + id + "'. Please make sure that this property is animatable.", nameof(id));
+            }
+        }
+
+        public BackgroundSize ReadPropertyAnimationBackgroundSize(StylePropertyId id)
+        {
+            switch (id)
+            {
+                case StylePropertyId.BackgroundSize:
+                    return visualData.Read().backgroundSize;
+                default:
+                    throw new ArgumentException("Invalid animation property id. Can't apply value of type 'BackgroundSize' to property '" + id + "'. Please make sure that this property is animatable.", nameof(id));
+            }
+        }
+
+        public Color ReadPropertyAnimationColor(StylePropertyId id)
+        {
+            switch (id)
+            {
+                case StylePropertyId.BackgroundColor:
+                    return visualData.Read().backgroundColor;
+                case StylePropertyId.BorderBottomColor:
+                    return visualData.Read().borderBottomColor;
+                case StylePropertyId.BorderLeftColor:
+                    return visualData.Read().borderLeftColor;
+                case StylePropertyId.BorderRightColor:
+                    return visualData.Read().borderRightColor;
+                case StylePropertyId.BorderTopColor:
+                    return visualData.Read().borderTopColor;
+                case StylePropertyId.Color:
+                    return inheritedData.Read().color;
+                case StylePropertyId.UnityBackgroundImageTintColor:
+                    return rareData.Read().unityBackgroundImageTintColor;
+                case StylePropertyId.UnityTextOutlineColor:
+                    return inheritedData.Read().unityTextOutlineColor;
+                default:
+                    throw new ArgumentException("Invalid animation property id. Can't apply value of type 'Color' to property '" + id + "'. Please make sure that this property is animatable.", nameof(id));
+            }
+        }
+
+        public EntityId ReadPropertyAnimationBackground(StylePropertyId id)
+        {
+            switch (id)
+            {
+                case StylePropertyId.BackgroundImage:
+                    return visualData.Read().backgroundImage;
+                default:
+                    throw new ArgumentException("Invalid animation property id. Can't apply value of type 'Background' to property '" + id + "'. Please make sure that this property is animatable.", nameof(id));
+            }
+        }
+
+        public Font ReadPropertyAnimationFont(StylePropertyId id)
+        {
+            switch (id)
+            {
+                case StylePropertyId.UnityFont:
+                    return inheritedData.Read().unityFont;
+                default:
+                    throw new ArgumentException("Invalid animation property id. Can't apply value of type 'Font' to property '" + id + "'. Please make sure that this property is animatable.", nameof(id));
+            }
+        }
+
+        public FontDefinition ReadPropertyAnimationFontDefinition(StylePropertyId id)
+        {
+            switch (id)
+            {
+                case StylePropertyId.UnityFontDefinition:
+                    return inheritedData.Read().unityFontDefinition;
+                default:
+                    throw new ArgumentException("Invalid animation property id. Can't apply value of type 'FontDefinition' to property '" + id + "'. Please make sure that this property is animatable.", nameof(id));
+            }
+        }
+
+        public TextShadow ReadPropertyAnimationTextShadow(StylePropertyId id)
+        {
+            switch (id)
+            {
+                case StylePropertyId.TextShadow:
+                    return inheritedData.Read().textShadow;
+                default:
+                    throw new ArgumentException("Invalid animation property id. Can't apply value of type 'TextShadow' to property '" + id + "'. Please make sure that this property is animatable.", nameof(id));
+            }
+        }
+
+        public List<FilterFunction> ReadPropertyAnimationList(StylePropertyId id)
+        {
+            switch (id)
+            {
+                case StylePropertyId.Filter:
+                    return rareData.Read().filter;
+                default:
+                    throw new ArgumentException("Invalid animation property id. Can't apply value of type 'List' to property '" + id + "'. Please make sure that this property is animatable.", nameof(id));
+            }
+        }
+
+        public Translate ReadPropertyAnimationTranslate(StylePropertyId id)
+        {
+            switch (id)
+            {
+                case StylePropertyId.Translate:
+                    return transformData.Read().translate;
+                default:
+                    throw new ArgumentException("Invalid animation property id. Can't apply value of type 'Translate' to property '" + id + "'. Please make sure that this property is animatable.", nameof(id));
+            }
+        }
+
+        public TransformOrigin ReadPropertyAnimationTransformOrigin(StylePropertyId id)
+        {
+            switch (id)
+            {
+                case StylePropertyId.TransformOrigin:
+                    return transformData.Read().transformOrigin;
+                default:
+                    throw new ArgumentException("Invalid animation property id. Can't apply value of type 'TransformOrigin' to property '" + id + "'. Please make sure that this property is animatable.", nameof(id));
+            }
+        }
+
+        public Rotate ReadPropertyAnimationRotate(StylePropertyId id)
+        {
+            switch (id)
+            {
+                case StylePropertyId.Rotate:
+                    return transformData.Read().rotate;
+                default:
+                    throw new ArgumentException("Invalid animation property id. Can't apply value of type 'Rotate' to property '" + id + "'. Please make sure that this property is animatable.", nameof(id));
+            }
+        }
+
+        public Scale ReadPropertyAnimationScale(StylePropertyId id)
+        {
+            switch (id)
+            {
+                case StylePropertyId.Scale:
+                    return transformData.Read().scale;
+                default:
+                    throw new ArgumentException("Invalid animation property id. Can't apply value of type 'Scale' to property '" + id + "'. Please make sure that this property is animatable.", nameof(id));
+            }
+        }
+
+        public MaterialDefinition ReadPropertyAnimationMaterialDefinition(StylePropertyId id)
+        {
+            switch (id)
+            {
+                case StylePropertyId.UnityMaterial:
+                    return inheritedData.Read().unityMaterial;
+                default:
+                    throw new ArgumentException("Invalid animation property id. Can't apply value of type 'MaterialDefinition' to property '" + id + "'. Please make sure that this property is animatable.", nameof(id));
+            }
+        }
+
+        public Ratio ReadPropertyAnimationRatio(StylePropertyId id)
+        {
+            switch (id)
+            {
+                case StylePropertyId.AspectRatio:
+                    return layoutData.Read().aspectRatio;
                 default:
                     throw new ArgumentException("Invalid animation property id. Can't apply value of type 'Ratio' to property '" + id + "'. Please make sure that this property is animatable.", nameof(id));
             }

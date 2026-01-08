@@ -478,20 +478,26 @@ namespace UnityEditor
             IEnumerable<TreeViewItem<EntityId>> tmprows = m_Items;
 
             if (!m_ShowInactiveObjects && m_ShowFilterGUI)
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 tmprows = m_Items.Where((TreeViewItem<EntityId> item) => { return ((SerializedPropertyItem)item).GetData().activeInHierarchy; });
+#pragma warning restore RS0030
 
             if (m_bFilterSelection && m_ShowFilterGUI)
             {
                 if (m_SelectionFilter == null)
                     m_SelectionFilter = Selection.entityIds;
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 tmprows = m_Items.Where((TreeViewItem<EntityId> item) => { return m_SelectionFilter.Contains(item.id); });
+#pragma warning restore RS0030
             }
             else
                 m_SelectionFilter = null;
 
             tmprows = Filter(tmprows);
 
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var rows = tmprows.ToList();
+#pragma warning restore RS0030
 
             if (multiColumnHeader.sortedColumnIndex >= 0)
                 Sort(rows, multiColumnHeader.sortedColumnIndex);
@@ -566,7 +572,9 @@ namespace UnityEditor
                     {
                         IList<TreeViewItem<EntityId>> rows = FindRows(selIds);
 
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                         Undo.RecordObjects(rows.Select(r => ((SerializedPropertyItem)r).GetData().serializedObject.targetObject).ToArray(), "Modify Multiple Properties");
+#pragma warning restore RS0030
 
                         foreach (var r in rows)
                         {
@@ -667,7 +675,9 @@ namespace UnityEditor
 
         protected override void SelectionChanged(IList<EntityId> selectedIds)
         {
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             Selection.entityIds = selectedIds.ToArray();
+#pragma warning restore RS0030
         }
 
         protected override void KeyEvent()
@@ -758,11 +768,15 @@ namespace UnityEditor
                     if (c.filter.GetType().Equals(typeof(SerializedPropertyFilters.Name)))
                     {
                         var f = (SerializedPropertyFilters.Name)c.filter;
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                         tmp = tmp.Where((TreeViewItem<EntityId> item) => { return f.Filter(((SerializedPropertyItem)item).GetData().name); });
+#pragma warning restore RS0030
                     }
                     else
                     {
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                         tmp = tmp.Where((TreeViewItem<EntityId> item) => { return c.filter.Filter(((SerializedPropertyItem)item).GetData().properties[idx]); });
+#pragma warning restore RS0030
                     }
                 }
             }

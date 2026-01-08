@@ -471,7 +471,9 @@ namespace UnityEditor
                     NormalizePath(basePath + "/UserSettings")
                 };
 
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 var invalidPath = invalidPaths.FirstOrDefault(p => cleanedPath.Contains(p, StringComparison.OrdinalIgnoreCase));
+#pragma warning restore RS0030
                 if (!string.IsNullOrEmpty(invalidPath))
                 {
                     var dirName = Path.GetFileName(invalidPath);

@@ -16,7 +16,9 @@ namespace Unity.GraphToolkit.Editor
     internal abstract class PortNodeModel : AbstractNodeModel
     {
         /// <inheritdoc />
+        #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
         public override IEnumerable<GraphElementModel> DependentModels => base.DependentModels.Concat(GetPorts());
+#pragma warning restore RS0030
 
         /// <summary>
         /// Retrieves all port models of this node.
@@ -32,7 +34,9 @@ namespace Unity.GraphToolkit.Editor
         /// <returns>The input ports of the node that satisfy the requested direction and type.</returns>
         public IEnumerable<PortModel> GetPorts(PortDirection direction, PortType portType)
         {
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return GetPorts().Where(p => (p.Direction & direction) == direction && p.PortType == portType);
+#pragma warning restore RS0030
         }
 
         /// <summary>
@@ -89,9 +93,13 @@ namespace Unity.GraphToolkit.Editor
         public override IEnumerable<WireModel> GetConnectedWires()
         {
             if (GraphModel != null)
+                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 return GetPorts().SelectMany(p => GraphModel.GetWiresForPort(p)).Distinct();
+#pragma warning restore RS0030
 
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return Enumerable.Empty<WireModel>();
+#pragma warning restore RS0030
         }
 
         internal virtual void OnPortDataTypeChanged(PortModel portModel, TypeHandle previousType, TypeHandle dataTypeHandle) { }

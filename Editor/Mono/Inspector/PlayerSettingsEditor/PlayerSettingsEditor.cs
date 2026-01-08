@@ -181,6 +181,9 @@ namespace UnityEditor
             public static readonly GUIContent muteOtherAudioSources = EditorGUIUtility.TrTextContent("Mute Other Audio Sources*");
             public static readonly GUIContent prepareIOSForRecording = EditorGUIUtility.TrTextContent("Prepare iOS for Recording");
             public static readonly GUIContent forceIOSSpeakersWhenRecording = EditorGUIUtility.TrTextContent("Force iOS Speakers when Recording");
+            public static readonly GUIContent adjustIOSFPSUsingThermalState = EditorGUIUtility.TrTextContent("Adjust iOS FPS based on thermal state", "When the device overheats, iOS enters Serious and then Critical thermal states. In Critical state, iOS reduces system-wide performance to lower device temperature. If this setting is enabled Unity proactively lowers the frame rate in Serious and Critical thermal states, helping prevent the device from becoming too hot, improving responsiveness under overheating conditions, and reducing the likelihood of GPU timeouts or rendering freezes.");
+            public static readonly GUIContent thermalStateSeriousIOSFPS = EditorGUIUtility.TrTextContent("Serious Thermal State FPS", "When the device enters Serious Thermal State Unity will lower the frame rate to this value.");
+            public static readonly GUIContent thermalStateCriticalIOSFPS = EditorGUIUtility.TrTextContent("Critical Thermal State FPS", "When the device enters Critical Thermal State Unity will lower the frame rate to this value.");
             public static readonly GUIContent UIRequiresPersistentWiFi = EditorGUIUtility.TrTextContent("Requires Persistent WiFi*");
             public static readonly GUIContent insecureHttpOption = EditorGUIUtility.TrTextContent("Allow downloads over HTTP*", "");
             public static readonly GUIContent insecureHttpWarning = EditorGUIUtility.TrTextContent("Plain text HTTP connections are not secure and can make your application vulnerable to attacks.");
@@ -384,6 +387,9 @@ namespace UnityEditor
         SerializedProperty m_MuteOtherAudioSources;
         SerializedProperty m_PrepareIOSForRecording;
         SerializedProperty m_ForceIOSSpeakersWhenRecording;
+        SerializedProperty m_AdjustIOSFPSUsingThermalState;
+        SerializedProperty m_SeriousThermalStateIOSFPS;
+        SerializedProperty m_CriticalThermalStateIOSFPS;
 
         SerializedProperty m_EnableInternalProfiler;
         SerializedProperty m_ActionOnDotNetUnhandledException;
@@ -633,6 +639,9 @@ namespace UnityEditor
             m_MuteOtherAudioSources         = FindPropertyAssert("muteOtherAudioSources");
             m_PrepareIOSForRecording        = FindPropertyAssert("Prepare IOS For Recording");
             m_ForceIOSSpeakersWhenRecording = FindPropertyAssert("Force IOS Speakers When Recording");
+            m_AdjustIOSFPSUsingThermalState = FindPropertyAssert("adjustIOSFPSUsingThermalState");
+            m_SeriousThermalStateIOSFPS     = FindPropertyAssert("thermalStateSeriousIOSFPS");
+            m_CriticalThermalStateIOSFPS    = FindPropertyAssert("thermalStateCriticalIOSFPS");
             m_UIRequiresPersistentWiFi      = FindPropertyAssert("uIRequiresPersistentWiFi");
             m_InsecureHttpOption            = FindPropertyAssert("insecureHttpOption");
             m_SubmitAnalytics               = FindPropertyAssert("submitAnalytics");
@@ -1470,7 +1479,9 @@ namespace UnityEditor
             if (apis == null)
                 return;
             var apiToAdd = GraphicsDeviceTypeFromString(options[selected]);
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             apis = apis.Append(apiToAdd).ToArray();
+#pragma warning restore RS0030
             m_CurrentTarget.SetGraphicsAPIs_Internal(target, apis, true);
             OnTargetObjectChangedDirectly();
         }
@@ -1485,7 +1496,9 @@ namespace UnityEditor
             //As part of OpenGL deprection from MacOS, hide the option of adding OpenGL
             if (target == BuildTarget.StandaloneOSX)
             {
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 var availableDeviceList = availableDevices.ToList();
+#pragma warning restore RS0030
                 availableDeviceList.Remove(GraphicsDeviceType.OpenGLCore);
                 availableDevices = availableDeviceList.ToArray();
             }
@@ -1536,7 +1549,9 @@ namespace UnityEditor
                 return;
             }
 
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var apiList = apis.ToList();
+#pragma warning restore RS0030
             var removedElement = apiList[list.index];
             if (CheckRemoveFallbackGraphicsDeviceElement(removedElement, target, list))
             {
@@ -1732,7 +1747,9 @@ namespace UnityEditor
 
             var apis = m_CurrentTarget.GetGraphicsAPIs_Internal(targetPlatform);
             // only available if we include ES3
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var hasMinES3 = apis.Contains(GraphicsDeviceType.OpenGLES3);
+#pragma warning restore RS0030
             if (!hasMinES3)
                 return;
 
@@ -1809,7 +1826,9 @@ namespace UnityEditor
             }
 
             GraphicsDeviceType[] devices = m_CurrentTarget.GetGraphicsAPIs_Internal(targetPlatform);
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var devicesList = (devices != null) ? devices.ToList() : new List<GraphicsDeviceType>();
+#pragma warning restore RS0030
             // create reorderable list for this target if needed
             if (!m_GraphicsDeviceLists.ContainsKey(targetPlatform))
             {
@@ -1947,7 +1966,9 @@ namespace UnityEditor
         private void AddColorGamutMenuSelected(object userData, string[] options, int selected)
         {
             var colorGamuts = (ColorGamut[])userData;
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var colorGamutList = m_CurrentTarget.GetColorGamuts_Internal().ToList();
+#pragma warning restore RS0030
             colorGamutList.Add(colorGamuts[selected]);
             m_CurrentTarget.SetColorGamuts_Internal(colorGamutList.ToArray());
             OnTargetObjectChangedDirectly();
@@ -1963,7 +1984,9 @@ namespace UnityEditor
 
         private void RemoveColorGamutElement(ReorderableList list)
         {
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var colorGamutList = m_CurrentTarget.GetColorGamuts_Internal().ToList();
+#pragma warning restore RS0030
             // don't allow removing the last ColorGamut
             if (colorGamutList.Count < 2)
             {
@@ -2007,7 +2030,9 @@ namespace UnityEditor
             if (m_ColorGamutList == null)
             {
                 ColorGamut[] colorGamuts = m_CurrentTarget.GetColorGamuts_Internal();
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 var colorGamutsList = (colorGamuts != null) ? colorGamuts.ToList() : new List<ColorGamut>();
+#pragma warning restore RS0030
                 var rlist = new ReorderableList(colorGamutsList, typeof(ColorGamut), true, true, true, true);
                 rlist.onCanRemoveCallback = CanRemoveColorGamutElement;
                 rlist.onRemoveCallback = RemoveColorGamutElement;
@@ -2127,7 +2152,9 @@ namespace UnityEditor
                 using (new EditorGUI.PropertyScope(horizontal.rect, GUIContent.none, property))
                 {
                     var values = (T[])Enum.GetValues(typeof(T));
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     var valueNames = Enum.GetNames(typeof(T)).Select(e => new GUIContent(e)).ToArray();
+#pragma warning restore RS0030
                     PlayerSettingsEditor.BuildEnumPopup(property, name, values, valueNames);
                 }
             }
@@ -2941,7 +2968,9 @@ namespace UnityEditor
         {
             foreach (var target in k_WebGPUSupportedBuildTargets)
             {
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 if (m_CurrentTarget.GetGraphicsAPIs_Internal(target).Contains(GraphicsDeviceType.WebGPU))
+#pragma warning restore RS0030
                 {
                     return true;
                 }
@@ -3174,7 +3203,7 @@ namespace UnityEditor
             if (m_Il2CppCodeGeneration.TryGetMapEntry(namedBuildTarget.TargetName, out var entry))
                 return (Il2CppCodeGeneration)entry.FindPropertyRelative("second").intValue;
             else
-                return Il2CppCodeGeneration.OptimizeSpeed;
+                return PlayerSettings.GetDefaultIl2CppCodeGeneration(namedBuildTarget);
         }
 
         private Il2CppStacktraceInformation GetCurrentIl2CppStacktraceInformationOptionForTarget(NamedBuildTarget namedBuildTarget)
@@ -3482,6 +3511,18 @@ namespace UnityEditor
                     {
                         EditorGUILayout.PropertyField(m_PrepareIOSForRecording, SettingsContent.prepareIOSForRecording);
                         EditorGUILayout.PropertyField(m_ForceIOSSpeakersWhenRecording, SettingsContent.forceIOSSpeakersWhenRecording);
+
+
+                        EditorGUILayout.PropertyField(m_AdjustIOSFPSUsingThermalState, SettingsContent.adjustIOSFPSUsingThermalState);
+
+                        using (new EditorGUI.DisabledScope(!m_AdjustIOSFPSUsingThermalState.boolValue))
+                        {
+                            using (new EditorGUI.IndentLevelScope())
+                            {
+                                EditorGUILayout.PropertyField(m_SeriousThermalStateIOSFPS, SettingsContent.thermalStateSeriousIOSFPS);
+                                EditorGUILayout.PropertyField(m_CriticalThermalStateIOSFPS, SettingsContent.thermalStateCriticalIOSFPS);
+                            }
+                        }
                     }
                     EditorGUILayout.PropertyField(m_UIRequiresPersistentWiFi, SettingsContent.UIRequiresPersistentWiFi);
                 }
@@ -3616,7 +3657,9 @@ namespace UnityEditor
                         var GUIState = GUI.enabled;
 
 
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                         GUI.enabled = serializedScriptingDefines.Count() > 0;
+#pragma warning restore RS0030
 
                         if (GUILayout.Button(SettingsContent.scriptingDefineSymbolsCopyDefines, EditorStyles.miniButton))
                         {
@@ -4047,7 +4090,9 @@ namespace UnityEditor
 
         static GUIContent[] GetNiceScriptingBackendNames(ScriptingImplementation[] scriptingBackends)
         {
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return scriptingBackends.Select(s => GetNiceScriptingBackendName(s)).ToArray();
+#pragma warning restore RS0030
         }
 
         static GUIContent GetNiceScriptingBackendName(ScriptingImplementation scriptingBackend)
@@ -4277,7 +4322,9 @@ namespace UnityEditor
         void InitReorderableAdditionalCompilerArgumentsList(NamedBuildTarget namedBuildTarget)
         {
             var additionalCompilerArgumentsArray = GetAdditionalCompilerArgumentsForGroup(namedBuildTarget);
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             additionalCompilerArgumentsList = additionalCompilerArgumentsArray.ToList();
+#pragma warning restore RS0030
 
             additionalCompilerArgumentsReorderableList = new ReorderableList(additionalCompilerArgumentsList, typeof(string), true, true, true, true);
             additionalCompilerArgumentsReorderableList.drawElementCallback = (rect, index, isActive, isFocused) => DrawTextFieldAdditionalCompilerArguments(rect, index);
@@ -4364,14 +4411,18 @@ namespace UnityEditor
             if (m_ColorGamutList == null)
                 return;
 
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             m_ColorGamutList.list = m_CurrentTarget.GetColorGamuts_Internal().ToList();
+#pragma warning restore RS0030
         }
 
         void SyncPlatformAPIsList(BuildTarget target)
         {
             if (!m_GraphicsDeviceLists.ContainsKey(target))
                 return;
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             m_GraphicsDeviceLists[target].list = m_CurrentTarget.GetGraphicsAPIs_Internal(target).ToList();
+#pragma warning restore RS0030
         }
     }
 }

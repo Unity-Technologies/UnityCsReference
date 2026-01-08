@@ -745,8 +745,9 @@ namespace UnityEngine.LowLevelPhysics2D
                 case PhysicsWorld.TransformWriteMode.Off:
                     return false;
 
-                // Write the fast case.
+                // Write both the fast and slow cases.
                 case PhysicsWorld.TransformWriteMode.Fast2D:
+                case PhysicsWorld.TransformWriteMode.Slow3D:
                 {
                     // Set the transform pose.
                     GetPositionAndRotation3D(transformObject, transformWriteMode, transformPlane, out var newPosition, out var newRotation);

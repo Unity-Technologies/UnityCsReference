@@ -25,7 +25,9 @@ namespace Unity.ProjectAuditor.Editor.Core
 
         public static string GetPlatformsSummary(this Descriptor descriptor)
         {
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return (descriptor.Platforms == null || descriptor.Platforms.Length == 0) ? "Any" : Formatting.CombineStrings(descriptor.Platforms.Select(p => p.ToString()).ToArray());
+#pragma warning restore RS0030
         }
 
         public static string GetFullTypeName(this Descriptor descriptor)
@@ -40,7 +42,7 @@ namespace Unity.ProjectAuditor.Editor.Core
         {
             if (descriptor.Platforms == null || descriptor.Platforms.Length == 0)
                 return true;
-            return descriptor.Platforms.Contains(buildTarget);
+            return Array.IndexOf(descriptor.Platforms, buildTarget) != -1;
         }
 
         public static bool IsApplicable(this Descriptor desc, AnalysisParams analysisParams)

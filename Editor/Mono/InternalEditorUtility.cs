@@ -427,7 +427,9 @@ namespace UnityEditorInternal
                     allSelectedInstanceIDs.AddRange(allIDs.GetRange(from, to - from + 1));
 
                     if (clickedInTheMiddle)
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                         allSelectedInstanceIDs = allSelectedInstanceIDs.Distinct().ToList();
+#pragma warning restore RS0030
                 }
                 else
                 {
@@ -569,7 +571,9 @@ namespace UnityEditorInternal
 
         internal static IEnumerable<string> GetAllScriptGUIDs()
         {
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return AssetDatabase.GetAllAssetPaths()
+#pragma warning restore RS0030
                 .Where(asset => (IsScriptOrAssembly(asset) && !UnityEditor.PackageManager.Folders.IsPackagedAssetPath(asset)))
                 .Select(asset => AssetDatabase.AssetPathToGUID(asset));
         }

@@ -140,7 +140,9 @@ namespace UnityEditor.IMGUI.Controls
 
         void BuildSearchableElements(AdvancedDropdownItem item)
         {
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             if (!item.children.Any())
+#pragma warning restore RS0030
             {
                 m_SearchableElements.Add(item);
                 return;

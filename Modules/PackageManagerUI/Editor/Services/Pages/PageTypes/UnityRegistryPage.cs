@@ -29,23 +29,33 @@ namespace UnityEditor.PackageManager.UI.Internal
         public override bool ShouldInclude(IPackage package)
         {
             return package?.isDiscoverable == true
+                   #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                    && package.versions.Any(v => v.availableRegistry == RegistryType.UnityRegistry)
+#pragma warning restore RS0030
+                   #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                    && !package.versions.All(v => v.HasTag(PackageTag.BuiltIn));
+#pragma warning restore RS0030
         }
 
         public override string GetGroupName(IPackage package)
         {
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return package.versions.All(v => v.HasTag(PackageTag.Feature)) ? L10n.Tr("Features") : L10n.Tr("Packages");
+#pragma warning restore RS0030
         }
 
         public override bool RefreshSupportedStatusFiltersOnEntitlementPackageChange()
         {
             var oldSupportedStatusFilters = m_SupportedStatusFilters;
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             m_SupportedStatusFilters = m_PackageDatabase.allPackages.Any(p => ShouldInclude(p) && p.hasEntitlements)
+#pragma warning restore RS0030
                 ? new[] { PageFilters.Status.UpdateAvailable, PageFilters.Status.SubscriptionBased }
                 : new[] { PageFilters.Status.UpdateAvailable };
 
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return !m_SupportedStatusFilters.SequenceEqual(oldSupportedStatusFilters);
+#pragma warning restore RS0030
         }
     }
 }

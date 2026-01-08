@@ -314,14 +314,18 @@ namespace UnityEditor
         {
             FetchCachedMessages(shader);
             var errors = GetShaderMessages(shader);
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return errors.Any(x => x.severity == ShaderCompilerMessageSeverity.Error);
+#pragma warning restore RS0030
         }
 
         public static bool ShaderHasWarnings(Shader shader)
         {
             FetchCachedMessages(shader);
             var errors = GetShaderMessages(shader);
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return errors.Any(x => x.severity == ShaderCompilerMessageSeverity.Warning);
+#pragma warning restore RS0030
         }
 
         internal static extern bool PassHasShaderStage(Shader s, int subshaderIndex, int passIndex, ShaderType shaderType);

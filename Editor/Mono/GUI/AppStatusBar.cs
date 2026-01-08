@@ -125,7 +125,9 @@ namespace UnityEditor
             m_LastUpdate = now;
             if (Progress.running)
             {
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 var unresponsiveItem = Progress.EnumerateItems().FirstOrDefault(item => !item.responding);
+#pragma warning restore RS0030
                 if (unresponsiveItem != null)
                 {
                     m_CurrentProgressNotResponding = true;
@@ -355,7 +357,9 @@ namespace UnityEditor
                 return;
             }
 
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var idleCount = Progress.EnumerateItems().Count(item => item.running && item.priority == (int)Progress.Priority.Idle);
+#pragma warning restore RS0030
             var taskCount = Progress.GetRunningProgressCount() - idleCount;
             if (taskCount == 0)
             {
@@ -363,15 +367,23 @@ namespace UnityEditor
             }
             else
             {
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 var currentItem = progressItems.FirstOrDefault(item => item.priority != (int)Progress.Priority.Idle);
+#pragma warning restore RS0030
                 if (currentItem != null && !String.IsNullOrEmpty(currentItem.description))
                     m_ProgressStatus.tooltip = currentItem.name + "\r\n" + currentItem.description;
                 m_ProgressPercentageStatus.text = Progress.globalProgress.ToString("P", percentageFormat);
 
                 var remainingTimeText = "";
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 var runningProgresses = Progress.EnumerateItems().Where(item => item.running);
+#pragma warning restore RS0030
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 if (Progress.globalRemainingTime.TotalSeconds > 0 && runningProgresses.Any(item => item.timeDisplayMode == Progress.TimeDisplayMode.ShowRemainingTime && item.priority != (int)Progress.Priority.Idle) &&
+#pragma warning restore RS0030
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     runningProgresses.All(item => !item.indefinite))
+#pragma warning restore RS0030
                 {
                     remainingTimeText = $" [{Progress.globalRemainingTime:g}]";
                 }

@@ -55,7 +55,6 @@ namespace UnityEditor
             public GUIContent eula = EditorGUIUtility.TrTextContent("Eula");
             public string addToYourPro = L10n.Tr("Add {0} to your Unity Pro license");
             public GUIContent installInBuildFolder = EditorGUIUtility.TrTextContent("Install into source code 'build' folder", "Install into source checkout 'build' folder, for debugging with source code");
-            public GUIContent installInBuildFolderHelp = EditorGUIUtility.TrIconContent("_Help", "Open documentation about source code building and debugging");
 
             public Texture2D activePlatformIcon = EditorGUIUtility.IconContent("BuildSettings.SelectedIcon").image as Texture2D;
 
@@ -278,7 +277,9 @@ namespace UnityEditor
                 if (scene.path.Length == 0 && !EditorSceneManager.SaveScene(scene, "", false))
                     continue;
 
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 if (list.Any(s => s.path == scene.path))
+#pragma warning restore RS0030
                     continue;
 
                 GUID newGUID;
@@ -977,14 +978,6 @@ namespace UnityEditor
             {
                 GUILayout.BeginHorizontal();
                 EditorUserBuildSettings.installInBuildFolder = GUILayout.Toggle(EditorUserBuildSettings.installInBuildFolder, styles.installInBuildFolder, GUILayout.ExpandWidth(false));
-                if (GUILayout.Button(styles.installInBuildFolderHelp, EditorStyles.iconButton))
-                {
-                    var path = Path.Combine(Unsupported.GetBaseUnityDeveloperFolder(), "Documentation/BuildDocs/view");
-                    if (Application.platform == RuntimePlatform.WindowsEditor)
-                        System.Diagnostics.Process.Start(path + ".cmd");
-                    else
-                        System.Diagnostics.Process.Start("/bin/bash", path);
-                }
                 GUILayout.EndHorizontal();
             }
             else

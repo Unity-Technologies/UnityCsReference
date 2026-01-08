@@ -21,15 +21,20 @@ namespace UnityEditor.Toolbars
         {
             MainToolbar.Refresh(k_Path);
         }
-
-        [UnityOnlyMainToolbarPreset]
+        
         [MainToolbarElement(k_Path, defaultDockIndex = 2, defaultDockPosition = MainToolbarDockPosition.Right)]
         static MainToolbarElement CreateButton()
         {
-            return new MainToolbarDropdown(new MainToolbarContent(ModeService.modeNames[ModeService.currentIndex], L10n.Tr("Select which layers display in the Scene view.")), (buttonRect) => OpenModesDropdown(buttonRect))
-            {
-                displayed = Unsupported.IsDeveloperBuild() && ModeService.hasSwitchableModes
-            };
+            return new MainToolbarDropdown(
+                new MainToolbarContent(ModeService.modeNames[ModeService.currentIndex],
+                    L10n.Tr("Select which layers display in the Scene view.")),
+                (buttonRect) => OpenModesDropdown(buttonRect));
+        }
+        
+        [MainToolbarElementAvailability(k_Path)]
+        static bool IsAvailable()
+        {
+            return (Unsupported.IsDeveloperBuild() && Unsupported.IsDeveloperMode()) && ModeService.hasSwitchableModes;
         }
 
         static void OpenModesDropdown(Rect buttonRect)

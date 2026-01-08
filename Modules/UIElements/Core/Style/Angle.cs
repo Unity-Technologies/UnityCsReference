@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using System.Globalization;
+using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
 using UnityEngine.UIElements.StyleSheets;
 
@@ -36,7 +37,7 @@ namespace UnityEngine.UIElements
     /// <summary>
     /// Represents an angle value.
     /// </summary>
-    [Serializable]
+    [Serializable, StructLayout(LayoutKind.Sequential)]
     public partial struct Angle : IEquatable<Angle>
     {
         // Extension of the AngleUnit to include keywords that can be used with StyleAngle

@@ -141,7 +141,9 @@ namespace UnityEditor.EditorTools
             {
                 if (!(obj is SceneView scene))
                     continue;
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 var overlay = scene.overlayCanvas?.overlays.FirstOrDefault(x => x is TransformToolsOverlayToolBar);
+#pragma warning restore RS0030
                 if(overlay != null)
                     overlay.RebuildContent();
             }

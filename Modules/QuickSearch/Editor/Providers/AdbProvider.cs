@@ -82,7 +82,9 @@ namespace UnityEditor.Search.Providers
 
         internal static bool IsExplicitQuery(SearchContext context)
         {
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return (context.searchQuery.StartsWith(filterId) || context.providers.Count() == 1 || context.searchWords.Contains(explicitToggle)) && !context.searchWords.Contains(implicitToggle);
+#pragma warning restore RS0030
         }
 
         internal static string ConvertProjectQueryToAdb(string query, ref bool filterByTypeIntersection)
@@ -280,7 +282,9 @@ namespace UnityEditor.Search.Providers
             if (s_BundleResourceObjects.TryGetValue(path, out var objects))
                 return objects;
 
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             objects = AssetDatabase.LoadAllAssetsAtPath(path).ToArray();
+#pragma warning restore RS0030
             s_BundleResourceObjects[path] = objects;
             return objects;
         }
@@ -307,7 +311,9 @@ namespace UnityEditor.Search.Providers
 
             if (!parsedQuery.valid)
             {
+                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 context.AddSearchQueryErrors(parsedQuery.errors.Select(e => new SearchQueryError(e, context, provider)));
+#pragma warning restore RS0030
                 yield break;
             }
 
@@ -348,10 +354,14 @@ namespace UnityEditor.Search.Providers
             var resources = GetAllResourcesAtPath(k_BuiltinExtraResources);
             // Add editorResources and defaultResources if needed.
             if (context.wantsMore)
+                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 resources = resources.Concat(GetAllResourcesAtPath(k_EditorResources)).Concat(GetAllResourcesAtPath(k_DefaultResources));
+#pragma warning restore RS0030
 
             if (context.filterType != null)
+                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 resources = resources.Where(r => context.filterType.IsAssignableFrom(r.GetType()));
+#pragma warning restore RS0030
 
             if (!string.IsNullOrEmpty(searchQuery))
                 resources = resourcesQueryEngine.Search(searchQuery, context, provider, resources);

@@ -38,42 +38,22 @@ namespace UnityEngine.UIElements
     [Flags]
     internal enum VisualElementFlags
     {
-        // Need to compute world transform
-        WorldTransformDirty = 1 << 0,
-        // Need to compute world transform inverse
-        WorldTransformInverseDirty = 1 << 1,
         // Need to compute world clip
         WorldClipDirty = 1 << 2,
-        // Need to compute bounding box
-        BoundingBoxDirty = 1 << 3,
-        // Need to compute world bounding box
-        WorldBoundingBoxDirty = 1 << 4,
         // Need to compute world bounding box
         EventInterestParentCategoriesDirty = 1 << 5,
-        // Element layout is manually set
-        LayoutManual = 1 << 6,
         // Element is a root for composite controls
         CompositeRoot = 1 << 7,
         // Element has a custom measure function
         RequireMeasureFunction = 1 << 8,
         // Element has view data persistence
         EnableViewDataPersistence = 1 << 9,
-        // Element never clip regardless of overflow style (useful for ScrollView)
-        DisableClipping = 1 << 10,
         // Element needs to receive an AttachToPanel event
         NeedsAttachToPanelEvent = 1 << 11,
-        // Element is shown in the hierarchy (element or one of its ancestors is not DisplayStyle.None)
-        // Note that this flag is up-to-date only after UIRLayoutUpdater is done with its updates
-        HierarchyDisplayed = 1 << 12,
         // Element style are computed
         StyleInitialized = 1 << 13,
         // Element is not rendered, but we keep the generated geometry in case it is shown later
         DisableRendering = 1 << 14,
-        // Element uses 3-D transforms or contains children that do
-        Needs3DBounds = 1 << 15,
-        // Element's 3-D transform local bounds need to be recalculated (with or without nested UIDocuments)
-        LocalBounds3DDirty = 1 << 16,
-        LocalBoundsWithoutNested3DDirty = 1 << 17,
         // The DataSource tracking of the element should not ne processed when the element has not been configured properly
         DetachedDataSource = 1 << 18,
         // Element has capture on one or more pointerIds
@@ -82,11 +62,9 @@ namespace UnityEngine.UIElements
         IsWorldSpaceRootUIDocument = 1 << 20,
         // Element wants a GeometryChangedEvent if any of its descendent receives one
         ReceivesHierarchyGeometryChangedEvents = 1 << 21,
-        // Element or descendent received a GeometryChangedEvent since last Layout update
-        BoundingBoxDirtiedSinceLastLayoutPass = 1 << 22,
 
         // Element initial flags
-        Init = WorldTransformDirty | WorldTransformInverseDirty | WorldClipDirty | BoundingBoxDirty | WorldBoundingBoxDirty | EventInterestParentCategoriesDirty | LocalBounds3DDirty | LocalBoundsWithoutNested3DDirty | DetachedDataSource
+        Init = WorldClipDirty | EventInterestParentCategoriesDirty | DetachedDataSource
     }
 
     /// <summary>
@@ -379,10 +357,11 @@ namespace UnityEngine.UIElements
         // (See UIRLayoutUpdater::UpdateHierarchyDisplayed() to understand how it is set.)
         internal bool areAncestorsAndSelfDisplayed
         {
-            get => (m_Flags & VisualElementFlags.HierarchyDisplayed) == VisualElementFlags.HierarchyDisplayed;
+            get => (transformFlags & VisualElementTransformFlags.HierarchyDisplayed) == VisualElementTransformFlags.HierarchyDisplayed;
             set
             {
-                m_Flags = value ? m_Flags | VisualElementFlags.HierarchyDisplayed : m_Flags & ~VisualElementFlags.HierarchyDisplayed;
+                ref var f = ref transformFlags;
+                f = value ? f | VisualElementTransformFlags.HierarchyDisplayed : f & ~VisualElementTransformFlags.HierarchyDisplayed;
 
                 if (renderData == null)
                     return;
@@ -452,6 +431,8 @@ namespace UnityEngine.UIElements
                 }
             }
         }
+
+        internal ref VisualElementTransformFlags transformFlags => ref transformData.Flags;
 
         // Used for view data persistence (ie. scroll position or tree view expanded states)
         private string m_ViewDataKey;
@@ -797,8 +778,8 @@ namespace UnityEngine.UIElements
 
         internal bool isLayoutManual
         {
-            get => (m_Flags & VisualElementFlags.LayoutManual) == VisualElementFlags.LayoutManual;
-            private set => m_Flags = value ? m_Flags | VisualElementFlags.LayoutManual : m_Flags & ~VisualElementFlags.LayoutManual;
+            get => (transformFlags & VisualElementTransformFlags.LayoutManual) == VisualElementTransformFlags.LayoutManual;
+            private set => transformFlags = value ? transformFlags | VisualElementTransformFlags.LayoutManual : transformFlags & ~VisualElementTransformFlags.LayoutManual;
         }
 
         /// <summary>
@@ -826,7 +807,7 @@ namespace UnityEngine.UIElements
         [Obsolete("unityBackgroundScaleMode is deprecated. Use background-* properties instead.")]
         StyleEnum<ScaleMode> IResolvedStyle.unityBackgroundScaleMode => resolvedStyle.unityBackgroundScaleMode;
 
-        Rect m_Layout;
+        private ref Rect manualLayout => ref transformData.ManualLayout;
 
         // This will replace the Rect position
         // origin and size relative to parent
@@ -843,7 +824,7 @@ namespace UnityEngine.UIElements
             get
             {
                 if (isLayoutManual)
-                    return m_Layout;
+                    return manualLayout;
 
                 if (!layoutNode.IsUndefined)
                 {
@@ -856,7 +837,7 @@ namespace UnityEngine.UIElements
             internal set
             {
                 // Same position value while type is already manual should not trigger any layout change, return early
-                if (isLayoutManual && m_Layout == value)
+                if (isLayoutManual && manualLayout == value)
                     return;
 
                 Rect lastLayout = layout;
@@ -867,7 +848,7 @@ namespace UnityEngine.UIElements
                     changeType |= VersionChangeType.Size;
 
                 // set results so we can read straight back in get without waiting for a pass
-                m_Layout = value;
+                manualLayout = value;
                 isLayoutManual = true;
 
                 // mark as inline so that they do not get overridden if needed.
@@ -958,43 +939,39 @@ namespace UnityEngine.UIElements
 
         internal bool needs3DBounds
         {
-            get => (m_Flags & VisualElementFlags.Needs3DBounds) != 0;
-            set => m_Flags = value ? m_Flags | VisualElementFlags.Needs3DBounds : m_Flags & ~VisualElementFlags.Needs3DBounds;
+            get => (transformFlags & VisualElementTransformFlags.Needs3DBounds) != 0;
+            set => transformFlags = value ? transformFlags | VisualElementTransformFlags.Needs3DBounds : transformFlags & ~VisualElementTransformFlags.Needs3DBounds;
         }
 
         internal bool isLocalBounds3DDirty
         {
-            get => (m_Flags & VisualElementFlags.LocalBounds3DDirty) != 0;
-            set => m_Flags = value ? m_Flags | VisualElementFlags.LocalBounds3DDirty : m_Flags & ~VisualElementFlags.LocalBounds3DDirty;
+            get => (transformFlags & VisualElementTransformFlags.LocalBounds3DDirty) != 0;
+            set => transformFlags = value ? transformFlags | VisualElementTransformFlags.LocalBounds3DDirty : transformFlags & ~VisualElementTransformFlags.LocalBounds3DDirty;
         }
 
         internal bool isLocalBoundsWithoutNested3DDirty
         {
-            get => (m_Flags & VisualElementFlags.LocalBoundsWithoutNested3DDirty) != 0;
-            set => m_Flags = value ? m_Flags | VisualElementFlags.LocalBoundsWithoutNested3DDirty : m_Flags & ~VisualElementFlags.LocalBoundsWithoutNested3DDirty;
+            get => (transformFlags & VisualElementTransformFlags.LocalBoundsWithoutNested3DDirty) != 0;
+            set => transformFlags = value ? transformFlags | VisualElementTransformFlags.LocalBoundsWithoutNested3DDirty : transformFlags & ~VisualElementTransformFlags.LocalBoundsWithoutNested3DDirty;
         }
 
         internal bool isBoundingBoxDirty
         {
-            get => (m_Flags & VisualElementFlags.BoundingBoxDirty) == VisualElementFlags.BoundingBoxDirty;
-            set => m_Flags = value ? m_Flags | VisualElementFlags.BoundingBoxDirty : m_Flags & ~VisualElementFlags.BoundingBoxDirty;
+            get => (transformFlags & VisualElementTransformFlags.BoundingBoxDirty) == VisualElementTransformFlags.BoundingBoxDirty;
+            set => transformFlags = value ? transformFlags | VisualElementTransformFlags.BoundingBoxDirty : transformFlags & ~VisualElementTransformFlags.BoundingBoxDirty;
         }
-
-        private Rect m_BoundingBox;
 
         internal bool isWorldBoundingBoxDirty
         {
-            get => (m_Flags & VisualElementFlags.WorldBoundingBoxDirty) == VisualElementFlags.WorldBoundingBoxDirty;
-            set => m_Flags = value ? m_Flags | VisualElementFlags.WorldBoundingBoxDirty : m_Flags & ~VisualElementFlags.WorldBoundingBoxDirty;
+            get => (transformFlags & VisualElementTransformFlags.WorldBoundingBoxDirty) == VisualElementTransformFlags.WorldBoundingBoxDirty;
+            set => transformFlags = value ? transformFlags | VisualElementTransformFlags.WorldBoundingBoxDirty : transformFlags & ~VisualElementTransformFlags.WorldBoundingBoxDirty;
         }
 
-        private const VisualElementFlags worldBoundingBoxDirtyDependencies =
-            VisualElementFlags.WorldBoundingBoxDirty | VisualElementFlags.BoundingBoxDirty |
-            VisualElementFlags.WorldTransformDirty;
+        private const VisualElementTransformFlags worldBoundingBoxDirtyDependencies =
+            VisualElementTransformFlags.WorldBoundingBoxDirty | VisualElementTransformFlags.BoundingBoxDirty |
+            VisualElementTransformFlags.WorldTransformDirty;
 
-        internal bool isWorldBoundingBoxOrDependenciesDirty => (m_Flags & worldBoundingBoxDirtyDependencies) != 0;
-
-        private Rect m_WorldBoundingBox;
+        internal bool isWorldBoundingBoxOrDependenciesDirty => (transformFlags & worldBoundingBoxDirtyDependencies) != 0;
 
         // Bounding box in the local space of the element. It starts with the layout of the element and is inflated to
         // contain the descendants.
@@ -1008,7 +985,7 @@ namespace UnityEngine.UIElements
                     isBoundingBoxDirty = false;
                 }
 
-                return m_BoundingBox;
+                return transformData.BoundingBox;
             }
         }
 
@@ -1036,7 +1013,7 @@ namespace UnityEngine.UIElements
                     isWorldBoundingBoxDirty = false;
                 }
 
-                return m_WorldBoundingBox;
+                return transformData.WorldBoundingBox;
             }
         }
 
@@ -1050,22 +1027,43 @@ namespace UnityEngine.UIElements
             }
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal void UpdateBoundingBox()
+        {
+            // World-space implementation is managed only for now.
+            if (elementPanel != null && !elementPanel.isFlat)
+            {
+                UpdateBoundingBoxManaged();
+                return;
+            }
+
+            // The native implementation is about 8 times faster. See MathTests.cs.
+            UpdateBoundingBoxNative();
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal unsafe void UpdateBoundingBoxNative()
+        {
+            NativeTransformUtils.UpdateBoundingBox(layoutNode.Handle);
+        }
+
+        internal void UpdateBoundingBoxManaged()
         {
             // boundingBoxWithoutNested is only used in world-space mode.
             bool shouldComputedWithoutNested = (elementPanel != null && !elementPanel.isFlat);
+            ref var bbox = ref transformData.BoundingBox;
             Rect bboxWithoutNested;
 
             var r = rect;
             if (float.IsNaN(r.x) || float.IsNaN(r.y) || float.IsNaN(r.width) || float.IsNaN(r.height))
             {
                 // Ignored unlayouted VisualElements.
-                m_BoundingBox = Rect.zero;
+                bbox = Rect.zero;
                 bboxWithoutNested = Rect.zero;
             }
             else
             {
-                m_BoundingBox = r;
+                bbox = r;
                 bboxWithoutNested = r;
                 if (!ShouldClip() && resolvedStyle.display == DisplayStyle.Flex)
                 {
@@ -1077,12 +1075,12 @@ namespace UnityEngine.UIElements
                             continue;
 
                         var childBB = child.boundingBoxInParentSpace;
-                        m_BoundingBox.xMin = Math.Min(m_BoundingBox.xMin, childBB.xMin);
-                        m_BoundingBox.xMax = Math.Max(m_BoundingBox.xMax, childBB.xMax);
-                        m_BoundingBox.yMin = Math.Min(m_BoundingBox.yMin, childBB.yMin);
-                        m_BoundingBox.yMax = Math.Max(m_BoundingBox.yMax, childBB.yMax);
+                        bbox.xMin = Math.Min(bbox.xMin, childBB.xMin);
+                        bbox.xMax = Math.Max(bbox.xMax, childBB.xMax);
+                        bbox.yMin = Math.Min(bbox.yMin, childBB.yMin);
+                        bbox.yMax = Math.Max(bbox.yMax, childBB.yMax);
 
-                        if (shouldComputedWithoutNested && !(child is UIDocumentRootElement))
+                        if (shouldComputedWithoutNested && !(child is IPanelComponentRootElement))
                         {
                             // Only update "bounding-box without nested" for non-UIDocumentRootElement
                             bboxWithoutNested.xMin = Math.Min(bboxWithoutNested.xMin, childBB.xMin);
@@ -1108,8 +1106,8 @@ namespace UnityEngine.UIElements
 
         internal void UpdateWorldBoundingBox()
         {
-            m_WorldBoundingBox = boundingBox;
-            TransformAlignedRect(ref worldTransformRef, ref m_WorldBoundingBox);
+            transformData.WorldBoundingBox = boundingBox;
+            TransformAlignedRect(ref worldTransformRef, ref transformData.WorldBoundingBox);
         }
 
         internal Bounds localBounds3D
@@ -1192,8 +1190,8 @@ namespace UnityEngine.UIElements
                 {
                     var child = hierarchy[i];
 
-                    bool childIsUIDocumentRoot = child is UIDocumentRootElement;
-                    if (!childIsUIDocumentRoot) // Skip local bounds update when child is a UIDocument root
+                    bool childIsPanelComponentRoot = child is IPanelComponentRootElement;
+                    if (!childIsPanelComponentRoot) // Skip local bounds update when child is a UIDocument root
                     {
                         var childBoundsWithoutNested = child.localBounds3DWithoutNested3D;
                         if (childBoundsWithoutNested.extents.x >= 0)
@@ -1273,7 +1271,7 @@ namespace UnityEngine.UIElements
             get
             {
                 if (isLayoutManual)
-                    return m_Layout.size;
+                    return manualLayout.size;
 
                 return layoutNode.GetLayoutSize();
             }
@@ -1286,7 +1284,7 @@ namespace UnityEngine.UIElements
             get
             {
                 if (isLayoutManual)
-                    return m_Layout.min;
+                    return manualLayout.min;
 
                 return layoutNode.GetLayoutPosition();
             }
@@ -1303,24 +1301,21 @@ namespace UnityEngine.UIElements
 
         internal bool isWorldTransformDirty
         {
-            get => (m_Flags & VisualElementFlags.WorldTransformDirty) == VisualElementFlags.WorldTransformDirty;
-            set => m_Flags = value ? m_Flags | VisualElementFlags.WorldTransformDirty : m_Flags & ~VisualElementFlags.WorldTransformDirty;
+            get => (transformFlags & VisualElementTransformFlags.WorldTransformDirty) == VisualElementTransformFlags.WorldTransformDirty;
+            set => transformFlags = value ? transformFlags | VisualElementTransformFlags.WorldTransformDirty : transformFlags & ~VisualElementTransformFlags.WorldTransformDirty;
         }
 
         internal bool isWorldTransformInverseDirty
         {
-            get => (m_Flags & VisualElementFlags.WorldTransformInverseDirty) == VisualElementFlags.WorldTransformInverseDirty;
-            set => m_Flags = value ? m_Flags | VisualElementFlags.WorldTransformInverseDirty : m_Flags & ~VisualElementFlags.WorldTransformInverseDirty;
+            get => (transformFlags & VisualElementTransformFlags.WorldTransformInverseDirty) == VisualElementTransformFlags.WorldTransformInverseDirty;
+            set => transformFlags = value ? transformFlags | VisualElementTransformFlags.WorldTransformInverseDirty : transformFlags & ~VisualElementTransformFlags.WorldTransformInverseDirty;
         }
 
-        private const VisualElementFlags worldTransformInverseDirtyDependencies =
-            VisualElementFlags.WorldTransformInverseDirty | VisualElementFlags.WorldTransformDirty;
+        private const VisualElementTransformFlags worldTransformInverseDirtyDependencies =
+            VisualElementTransformFlags.WorldTransformInverseDirty | VisualElementTransformFlags.WorldTransformDirty;
 
         internal bool isWorldTransformInverseOrDependenciesDirty =>
-            (m_Flags & worldTransformInverseDirtyDependencies) != 0;
-
-        private Matrix4x4 m_WorldTransformCache = Matrix4x4.identity;
-        private Matrix4x4 m_WorldTransformInverseCache = Matrix4x4.identity;
+            (transformFlags & worldTransformInverseDirtyDependencies) != 0;
 
         /// <summary>
         /// Returns a matrix that cumulates the following operations (in order):
@@ -1340,7 +1335,7 @@ namespace UnityEngine.UIElements
             {
                 if (isWorldTransformDirty)
                     UpdateWorldTransform();
-                return m_WorldTransformCache;
+                return transformData.WorldTransform;
             }
         }
 
@@ -1350,7 +1345,7 @@ namespace UnityEngine.UIElements
             {
                 if (isWorldTransformDirty)
                     UpdateWorldTransform();
-                return ref m_WorldTransformCache;
+                return ref transformData.WorldTransform;
             }
         }
 
@@ -1361,11 +1356,36 @@ namespace UnityEngine.UIElements
             {
                 if (isWorldTransformInverseOrDependenciesDirty)
                     UpdateWorldTransformInverse();
-                return ref m_WorldTransformInverseCache;
+                return ref transformData.WorldTransformInverse;
             }
         }
 
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal void UpdateWorldTransform()
+        {
+            // The native implementation is generally 2 to 5 times faster. See MathTests.cs.
+            UpdateWorldTransformNative();
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal unsafe void UpdateWorldTransformNative()
+        {
+            NativeTransformUtils.UpdateWorldTransform(layoutNode.Handle,
+                elementPanel == null || elementPanel.duringLayoutPhase,
+                elementPanel != null && elementPanel.isFlat);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal unsafe void UpdateWorldTransformHierarchyNative()
+        {
+            Debug.Assert(!elementPanel.duringLayoutPhase, "!elementPanel.duringLayoutPhase");
+            NativeTransformUtils.UpdateWorldTransformHierarchy(layoutNode.Handle,
+                elementPanel != null && elementPanel.isFlat);
+        }
+
+        // Kept for performance tests. Must also be called if manual layout is in use.
+        internal void UpdateWorldTransformManaged()
         {
             // If we are during a layout we don't want to remove the dirty transform flag
             // since this could lead to invalid computed transform (see ScopeContentContainer.DoMeasure)
@@ -1378,17 +1398,17 @@ namespace UnityEngine.UIElements
             {
                 if (hasDefaultRotationAndScale)
                 {
-                    TranslateMatrix34(ref hierarchy.parent.worldTransformRef, positionWithLayout, out m_WorldTransformCache);
+                    TranslateMatrix34(ref hierarchy.parent.worldTransformRef, positionWithLayout, out transformData.WorldTransform);
                 }
                 else
                 {
                     GetPivotedMatrixWithLayout(out var mat);
-                    MultiplyMatrix34(ref hierarchy.parent.worldTransformRef, ref mat, out m_WorldTransformCache);
+                    MultiplyMatrix34(ref hierarchy.parent.worldTransformRef, ref mat, out transformData.WorldTransform);
                 }
             }
             else
             {
-                GetPivotedMatrixWithLayout(out m_WorldTransformCache);
+                GetPivotedMatrixWithLayout(out transformData.WorldTransform);
             }
 
             isWorldTransformInverseDirty = true;
@@ -1397,7 +1417,7 @@ namespace UnityEngine.UIElements
 
         internal void UpdateWorldTransformInverse()
         {
-            Matrix4x4.Inverse3DAffine(worldTransform, ref m_WorldTransformInverseCache);
+            Matrix4x4.Inverse3DAffine(worldTransform, ref transformData.WorldTransformInverse);
             isWorldTransformInverseDirty = false;
         }
 
@@ -1459,8 +1479,8 @@ namespace UnityEngine.UIElements
 
         internal bool boundingBoxDirtiedSinceLastLayoutPass
         {
-            get => (m_Flags & VisualElementFlags.BoundingBoxDirtiedSinceLastLayoutPass) == VisualElementFlags.BoundingBoxDirtiedSinceLastLayoutPass;
-            set => m_Flags = value ? m_Flags | VisualElementFlags.BoundingBoxDirtiedSinceLastLayoutPass : m_Flags & ~VisualElementFlags.BoundingBoxDirtiedSinceLastLayoutPass;
+            get => (transformFlags & VisualElementTransformFlags.BoundingBoxDirtiedSinceLastLayoutPass) == VisualElementTransformFlags.BoundingBoxDirtiedSinceLastLayoutPass;
+            set => transformFlags = value ? transformFlags | VisualElementTransformFlags.BoundingBoxDirtiedSinceLastLayoutPass : transformFlags & ~VisualElementTransformFlags.BoundingBoxDirtiedSinceLastLayoutPass;
         }
 
         // which pseudo states would change the current VE styles if added
@@ -1722,7 +1742,7 @@ namespace UnityEngine.UIElements
 
         internal string fullTypeName
         {
-            [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+            [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
             get => typeData.fullTypeName;
         }
 
@@ -1742,6 +1762,9 @@ namespace UnityEngine.UIElements
                 return ref m_LayoutNode;
             }
         }
+
+        private readonly unsafe VisualElementTransformData* m_TransformDataPTr;
+        private unsafe ref VisualElementTransformData transformData => ref *m_TransformDataPTr;
 
         internal ref ComputedStyle computedStyle
         {
@@ -1813,6 +1836,12 @@ namespace UnityEngine.UIElements
             name = string.Empty;
 
             layoutNode = LayoutManager.SharedManager.CreateNode();
+            unsafe
+            {
+                // Fast-tracked access to the transform matrices and flags, as their access is quite frequent.
+                // Removing this direct access makes Picking ~25% slower. See UIElementsEvents.OptimizePick tests.
+                m_TransformDataPTr = layoutNode.VisualElementTransformDataPtr;
+            }
 
             renderHints = RenderHints.None;
 
@@ -2031,7 +2060,7 @@ namespace UnityEngine.UIElements
 
                 // UUM-42891: We must presume that we're not displayed because when it's the case (i.e. when we are not
                 // displayed), the layout updater will not process the children unless there is a display *change* in the ancestors.
-                m_Flags &= ~VisualElementFlags.HierarchyDisplayed;
+                transformFlags &= ~VisualElementTransformFlags.HierarchyDisplayed;
 
                 // Only send this event if the element hasn't received it yet
                 if ((m_Flags & VisualElementFlags.NeedsAttachToPanelEvent) == VisualElementFlags.NeedsAttachToPanelEvent)

@@ -206,36 +206,44 @@ namespace Unity.UIToolkit.Editor
                 case FieldAffordanceSourceInfoType.Inline:
                     return FieldStatusIndicatorInlineTooltip;
                 case FieldAffordanceSourceInfoType.ResolvedBinding:
-                    GetBindingStrings(out var dataSourceString, out var dataSourcePathStr);
-                    return string.Format(FieldTooltipDataDefinitionBindingFormatString,
-                        FieldStatusIndicatorResolvedBindingTooltip,
-                        dataSourceString,
-                        dataSourcePathStr,
-                        fieldAffordanceData.binding?.bindingMode.ToString(),
-                        GetFormattedConvertersString(fieldAffordanceData.binding?.uiToSourceConvertersString,
-                            fieldAffordanceData.binding?.sourceToUiConvertersString));
+                    if (fieldAffordanceData.binding is DataBinding resolvedBinding)
+                    {
+                        GetBindingStrings(out var dataSourceString, out var dataSourcePathStr);
+                        return string.Format(FieldTooltipDataDefinitionBindingFormatString,
+                            FieldStatusIndicatorResolvedBindingTooltip,
+                            dataSourceString,
+                            dataSourcePathStr,
+                            resolvedBinding?.bindingMode.ToString(),
+                            GetFormattedConvertersString(resolvedBinding?.uiToSourceConvertersString,
+                                resolvedBinding?.sourceToUiConvertersString));
+                    }
+                    return FieldStatusIndicatorResolvedBindingTooltip;
                 case FieldAffordanceSourceInfoType.UnresolvedBinding:
-                    if (fieldAffordanceData.binding != null)
+                    if (fieldAffordanceData.binding is DataBinding unresolvedBinding)
                     {
                         GetBindingStrings(out var unresolvedBindingDataSourceString, out var unresolvedBindingDataSourcePathStr);
                         return string.Format(FieldTooltipDataDefinitionBindingFormatString,
                             FieldStatusIndicatorUnresolvedBindingTooltip,
                             unresolvedBindingDataSourceString,
                             unresolvedBindingDataSourcePathStr,
-                            fieldAffordanceData.binding?.bindingMode.ToString(),
-                            GetFormattedConvertersString(fieldAffordanceData.binding?.uiToSourceConvertersString,
-                                fieldAffordanceData.binding?.sourceToUiConvertersString));
+                            unresolvedBinding.bindingMode.ToString(),
+                            GetFormattedConvertersString(unresolvedBinding.uiToSourceConvertersString,
+                                unresolvedBinding.sourceToUiConvertersString));
                     }
                     return FieldStatusIndicatorUnresolvedBindingTooltip;
                 case FieldAffordanceSourceInfoType.UnhandledBinding:
-                    GetBindingStrings(out var unhandledBindingDataSourceString, out var unhandledBindingDataSourcePathStr);
-                    return string.Format(FieldTooltipDataDefinitionBindingFormatString,
-                        FieldStatusIndicatorUnhandledBindingTooltip,
-                        unhandledBindingDataSourceString,
-                        unhandledBindingDataSourcePathStr,
-                        fieldAffordanceData.binding?.bindingMode.ToString(),
-                        GetFormattedConvertersString(fieldAffordanceData.binding?.uiToSourceConvertersString,
-                            fieldAffordanceData.binding?.sourceToUiConvertersString));
+                    if (fieldAffordanceData.binding is DataBinding unhandledBinding)
+                    {
+                        GetBindingStrings(out var unhandledBindingDataSourceString, out var unhandledBindingDataSourcePathStr);
+                        return string.Format(FieldTooltipDataDefinitionBindingFormatString,
+                            FieldStatusIndicatorUnhandledBindingTooltip,
+                            unhandledBindingDataSourceString,
+                            unhandledBindingDataSourcePathStr,
+                            unhandledBinding.bindingMode.ToString(),
+                            GetFormattedConvertersString(unhandledBinding.uiToSourceConvertersString,
+                                unhandledBinding.sourceToUiConvertersString));
+                    }
+                    return FieldStatusIndicatorUnhandledBindingTooltip;
                 case FieldAffordanceSourceInfoType.USSVariable:
                     var variableSheetName = GetSheetName();
                     if (variableSheetName != null)
@@ -283,12 +291,11 @@ namespace Unity.UIToolkit.Editor
         {
             dataSourceString = NotDefinedString;
             dataSourcePathStr = NotDefinedString;
-            if (fieldAffordanceData.binding != null)
+            if (fieldAffordanceData.binding is DataBinding dataBinding)
             {
-                var binding = fieldAffordanceData.binding;
-                var currentElementDataSource = GetBindingDataSourceOrRelativeHierarchicalDataSource(fieldAffordanceData.targetElement, binding.property);
+                var currentElementDataSource = GetBindingDataSourceOrRelativeHierarchicalDataSource(fieldAffordanceData.targetElement, dataBinding.property);
                 dataSourceString = currentElementDataSource?.ToString() ?? NotDefinedString;
-                dataSourcePathStr = binding.dataSourcePath.IsEmpty ? NotDefinedString : binding.dataSourcePath.ToString();
+                dataSourcePathStr = dataBinding.dataSourcePath.IsEmpty ? NotDefinedString : dataBinding.dataSourcePath.ToString();
             }
         }
 

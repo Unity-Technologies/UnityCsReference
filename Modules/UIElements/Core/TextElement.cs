@@ -189,8 +189,6 @@ namespace UnityEngine.UIElements
             }
 
             uitkTextHandle.ReleaseResourcesIfPossible();
-            // The Hyperlink getter on the panel is not thread safe
-            uitkTextHandle.atgHyperlinkColor = (panel as Panel)?.HyperlinkColor ?? Color.blue;
         }
 
         private void OnDetachFromPanel(DetachFromPanelEvent detachEvent)

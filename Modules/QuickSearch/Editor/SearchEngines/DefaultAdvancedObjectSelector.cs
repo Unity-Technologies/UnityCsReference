@@ -60,7 +60,9 @@ namespace UnityEditor.Search
             if (Utils.IsRunningTests())
                 searchFlags |= SearchFlags.Dockable;
 
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var requiredTypes = selectContext.requiredTypes.ToArray();
+#pragma warning restore RS0030
             var searchQuery = SearchUtils.BuildUnionTypeQuery(requiredTypes) ?? "";
             var selectHandler = parameters.selectorClosedHandler;
             var trackingHandler = parameters.trackingHandler;

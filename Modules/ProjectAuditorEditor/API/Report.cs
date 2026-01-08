@@ -160,7 +160,9 @@ namespace Unity.ProjectAuditor.Editor
         {
             get
             {
+                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 return m_Issues.Where(i => !i.IsIssue()).ToArray();
+#pragma warning restore RS0030
             }
         }
 
@@ -168,7 +170,9 @@ namespace Unity.ProjectAuditor.Editor
         {
             get
             {
+                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 return m_Issues.Where(i => i.IsIssue() && !i.WasFixed).ToArray();
+#pragma warning restore RS0030
             }
         }
 
@@ -244,7 +248,9 @@ namespace Unity.ProjectAuditor.Editor
         public int GetNumIssues(IssueCategory category)
         {
             s_Mutex.WaitOne();
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var result = m_Issues.Count(i => i.Category == category);
+#pragma warning restore RS0030
             s_Mutex.ReleaseMutex();
             return result;
         }
@@ -264,7 +270,9 @@ namespace Unity.ProjectAuditor.Editor
                     {
                         if (module.Name == moduleInfo.name || (moduleInfo.name == "AudioClips" && module.Name == "Audio Clips"))
                         {
+                            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                             moduleInfo.layouts = module.SupportedLayouts.ToArray();
+#pragma warning restore RS0030
                         }
                     }
                 }
@@ -296,7 +304,9 @@ namespace Unity.ProjectAuditor.Editor
         public IReadOnlyCollection<ReportItem> FindByCategory(IssueCategory category)
         {
             s_Mutex.WaitOne();
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var result = m_Issues.Where(i => i.Category == category).ToArray();
+#pragma warning restore RS0030
             s_Mutex.ReleaseMutex();
             return result;
         }
@@ -309,7 +319,9 @@ namespace Unity.ProjectAuditor.Editor
         public IReadOnlyCollection<ReportItem> FindByDescriptorId(string id)
         {
             s_Mutex.WaitOne();
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var result = m_Issues.Where(i => i.Id.IsValid() && i.Id.Equals(id)).ToArray();
+#pragma warning restore RS0030
             s_Mutex.ReleaseMutex();
             return result;
         }
@@ -324,7 +336,7 @@ namespace Unity.ProjectAuditor.Editor
             m_Issues.RemoveAll(issue => issue.Category == Category);
             foreach (var info in moduleMetadata)
             {
-                var categories = info.categories.ToList();
+                var categories = new List<SerializableEnum<IssueCategory>>(info.categories);
                 categories.RemoveAll(c => c == Category);
                 info.categories = categories.ToArray();
             }
@@ -349,7 +361,7 @@ namespace Unity.ProjectAuditor.Editor
                 if (ic >= IssueCategory.FirstCustomCategory)
                     break;
 
-                if (SessionInfo != null && SessionInfo.Categories != null && !SessionInfo.Categories.Contains(ic))
+                if (SessionInfo != null && SessionInfo.Categories != null && Array.IndexOf(SessionInfo.Categories, ic) == -1)
                     continue;
 
                 IssueLayout il = GetLayout(ic);
@@ -357,7 +369,9 @@ namespace Unity.ProjectAuditor.Editor
                     return false;
             }
 
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return m_Issues.All(i => i.IsValid()) && moduleMetadata.All(m => m.result != AnalysisResult.Cancelled);
+#pragma warning restore RS0030
         }
 
         /// <summary>
@@ -418,14 +432,18 @@ namespace Unity.ProjectAuditor.Editor
         internal void RecordModuleInfo(Module module, DateTime startTime, DateTime endTime, AnalysisResult analysisResult)
         {
             var name = module.Name;
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var info = moduleMetadata.FirstOrDefault(m => m.name.Equals(name));
+#pragma warning restore RS0030
             if (info == null)
             {
                 info = new ModuleInfo
                 {
                     name = module.Name,
                     categories = module.Categories.ToSerializableArray(),
+                    #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     layouts = module.SupportedLayouts.ToArray(),
+#pragma warning restore RS0030
                 };
                 moduleMetadata.Add(info);
             }
@@ -442,7 +460,7 @@ namespace Unity.ProjectAuditor.Editor
 
             foreach (ModuleInfo moduleInfo in moduleMetadata)
             {
-                if (moduleInfo.categories.Any(c => c == category))
+                if (Array.Exists(moduleInfo.categories, c => c == category))
                     result += moduleInfo.durationMs;
             }
 

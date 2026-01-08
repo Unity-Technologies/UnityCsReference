@@ -229,6 +229,8 @@ namespace UnityEngine.UIElements
 
             nativeSettings.vertexPadding = (int)(GetVertexPadding(fa) * 64.0f);
             nativeSettings.fontAsset = fa.nativeFontAsset;
+            if (fa.nativeFontAsset == IntPtr.Zero)
+                return false;
             nativeSettings.textSettings = TextUtilities.GetTextSettingsFrom(m_TextElement).nativeTextSettings;
             // TODO: We should expose this to user. Possibly disable it by default.
             nativeSettings.disableAdvancedFontFeatures = false;
@@ -239,7 +241,7 @@ namespace UnityEngine.UIElements
                 TextPreprocessor.PreProcessString(ref nativeSettings.text, nativeSettings.preProcessFlags);
                 nativeSettings.preProcessFlags = PreProcessFlags.None;
                 //TODO GetBlurryFontAssetMapping for other fonts in the rich text tags
-                CreateTextGenerationSettingsArray(ref nativeSettings, Links, atgHyperlinkColor, GetPixelsPerPoint(), TextUtilities.GetTextSettingsFrom(m_TextElement));
+                CreateTextGenerationSettingsArray(ref nativeSettings, Links, GetPixelsPerPoint(), TextUtilities.GetTextSettingsFrom(m_TextElement), m_HoveredTag);
             }
             else
                 nativeSettings.textSpans = null;

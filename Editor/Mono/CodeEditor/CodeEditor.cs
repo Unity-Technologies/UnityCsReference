@@ -40,7 +40,9 @@ namespace Unity.CodeEditor
                     // try to resolve first found visual studio installation and enable it
                     try
                     {
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                         var vs = m_ExternalCodeEditors.FirstOrDefault(e => e.GetType().Name == "VisualStudioEditor");
+#pragma warning restore RS0030
                         var installs = vs?.Installations;
                         if (installs != null && installs.Length > 0)
                         {
@@ -154,7 +156,9 @@ namespace Unity.CodeEditor
         {
             var result = new Dictionary<string, string>();
 
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             foreach (var installation in m_ExternalCodeEditors.SelectMany(codeEditor => codeEditor.Installations))
+#pragma warning restore RS0030
             {
                 AddIfPathExists(installation.Name, installation.Path, result);
             }
@@ -190,10 +194,14 @@ namespace Unity.CodeEditor
 
         private IExternalCodeEditor ComputeCurrentEditor(string editorPath)
         {
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             if (m_ExternalCodeEditors.Count() == 0)
+#pragma warning restore RS0030
             {
                 TypeCollection collection = TypeCache.GetTypesDerivedFrom<IExternalCodeEditor>();
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 for (int i = 0; i < collection.Count(); i++)
+#pragma warning restore RS0030
                 {
                     var codeEditorType = collection[i];
                     if (codeEditorType == typeof(DefaultExternalCodeEditor))
@@ -212,7 +220,9 @@ namespace Unity.CodeEditor
 
         public static void Register(IExternalCodeEditor externalCodeEditor)
         {
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             if (Editor.m_ExternalCodeEditors.Select(editor => editor.GetType()).Any(editorType => editorType == externalCodeEditor.GetType()))
+#pragma warning restore RS0030
                 return;
             Editor.m_ExternalCodeEditors.Add(externalCodeEditor);
             if (IsCurrentEditorPathExplicitlySet)

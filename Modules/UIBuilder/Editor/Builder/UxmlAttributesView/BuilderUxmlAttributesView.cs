@@ -8,6 +8,7 @@ using System.Reflection;
 using System.Text.RegularExpressions;
 using Unity.Profiling;
 using Unity.Properties;
+using Unity.UIToolkit.Editor;
 using UnityEditor;
 using UnityEditor.UIElements;
 using UnityEditor.UIElements.Bindings;
@@ -191,7 +192,7 @@ namespace Unity.UI.Builder
 
             var serializedProperty = context.rootSerializedObject.FindProperty(path);
             var handler = ScriptAttributeUtility.GetHandler(serializedProperty);
-            if (handler.hasPropertyDrawer)
+            if (handler.hasPropertyDrawer && handler.propertyDrawer is not UxmlSerializedDataPropertyDrawer)
             {
                 serializedProperty.boxedValue = value;
                 serializedProperty.serializedObject.ApplyModifiedPropertiesWithoutUndo();
@@ -432,7 +433,7 @@ namespace Unity.UI.Builder
         protected void CreateUxmlObjectField(SerializedProperty serializedProperty, UxmlSerializedDataDescription dataDescription, UxmlAssetSerializedDataRoot root)
         {
             var handler = ScriptAttributeUtility.GetHandler(serializedProperty);
-            if (handler.hasPropertyDrawer)
+            if (handler.hasPropertyDrawer && handler.propertyDrawer is not UxmlSerializedDataPropertyDrawer)
             {
                 CreateCustomPropertyDrawerField(serializedProperty, root);
             }

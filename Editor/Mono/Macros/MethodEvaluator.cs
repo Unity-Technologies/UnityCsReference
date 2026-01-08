@@ -92,7 +92,9 @@ namespace UnityEditor.Macros
                     try
                     {
                         var assembly = CurrentAssemblies.LoadFromPath(dllPath);
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                         if (assembly != null && assembly.GetTypes().Any(t => t.Name == args.Name))
+#pragma warning restore RS0030
                             return assembly;
                     }
                     catch (Exception)
@@ -146,7 +148,9 @@ namespace UnityEditor.Macros
                 case Type[] t:
                     return t;
                 case string[] s:
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     return s.Select(Type.GetType).ToArray();
+#pragma warning restore RS0030
                 default:
                     throw new FormatException($"Expected {o} to be a string[] or a Type[]. It is a {o.GetType()}");
             }
@@ -288,7 +292,9 @@ namespace UnityEditor.Macros
             var parts = serialized.Split('\n', StringSplitOptions.RemoveEmptyEntries);
             var declaringType = TypeOrTypeName(parts[0]);
             var methodName = parts[1];
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var parameterTypes = TypesOrTypeNames(parts.Skip(2).ToArray());
+#pragma warning restore RS0030
             const BindingFlags methodVisibility = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static;
             var method = declaringType.GetMethod(methodName, methodVisibility, null, parameterTypes, null);
             if (method == null)
@@ -311,7 +317,9 @@ namespace UnityEditor.Macros
 
         private static string ToCommaSeparatedString<T>(IEnumerable<T> items)
         {
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return string.Join(", ", items.Select(o => o.ToString()).ToArray());
+#pragma warning restore RS0030
         }
     }
 }

@@ -1960,12 +1960,16 @@ namespace UnityEditor
                 }
             }
 
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             childRendererIDs = tempChildRendererIDs.ToArray();
+#pragma warning restore RS0030
         }
 
         internal static void FilterEntityIds(IEnumerable<GameObject> gameObjects, out EntityId[] parentEntityIds, out EntityId[] childEntityIds, out HashSet<EntityId> childEntityIdsHashSet)
         {
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             if (gameObjects.Count() == 0)
+#pragma warning restore RS0030
             {
                 parentEntityIds = new EntityId[0];
                 childEntityIds = new EntityId[0];
@@ -2016,8 +2020,12 @@ namespace UnityEditor
                 }
             }
 
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             parentEntityIds = tempParentEntityIds.ToArray();
+#pragma warning restore RS0030
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             childEntityIds = childEntityIdsHashSet.ToArray();
+#pragma warning restore RS0030
         }
 
         static bool HasMatchingEntityId(EntityId[] ids, EntityId id, int cutoff)

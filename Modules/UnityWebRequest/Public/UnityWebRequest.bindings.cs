@@ -31,6 +31,12 @@ namespace UnityEngine.Networking
         }
     }
 
+    public enum HttpForcedVersion
+    {
+        NotForced = 0,
+        HTTP2 = 1,
+    }
+
     [StructLayout(LayoutKind.Sequential)]
     [NativeHeader("Modules/UnityWebRequest/Public/UnityWebRequest.h")]
     public partial class UnityWebRequest : IDisposable
@@ -559,6 +565,28 @@ namespace UnityEngine.Networking
             return headers;
         }
 
+        public extern string GetResponseTrailer(string name);
+
+        internal extern string[] GetResponseTrailerKeys();
+
+        public Dictionary<string, string> GetResponseTrailers()
+        {
+            string[] headerKeys = GetResponseTrailerKeys();
+            if (headerKeys == null || headerKeys.Length == 0)
+            {
+                return null;
+            }
+
+            Dictionary<string, string> headers = new Dictionary<string, string>(headerKeys.Length, StringComparer.OrdinalIgnoreCase);
+            for (int i = 0; i < headerKeys.Length; i++)
+            {
+                string val = GetResponseTrailer(headerKeys[i]);
+                headers.Add(headerKeys[i], val);
+            }
+
+            return headers;
+        }
+
         private extern UnityWebRequestError SetUploadHandler(UploadHandler uh);
 
         public UploadHandler uploadHandler
@@ -646,6 +674,31 @@ namespace UnityEngine.Networking
                 UnityWebRequestError ret = SetSuppressErrorsToConsole(value);
                 if (ret != UnityWebRequestError.OK)
                     throw new InvalidOperationException(UnityWebRequest.GetWebErrorString(ret));
+            }
+        }
+
+        private extern HttpForcedVersion GetHttpForcedVersion();
+        private extern UnityWebRequestError SetHttpForcedVersion(HttpForcedVersion forceHttp2);
+
+        internal HttpForcedVersion httpForcedVersion
+        {
+            get { return GetHttpForcedVersion(); }
+            set
+            {
+                if (!isModifiable)
+                    throw new InvalidOperationException("UnityWebRequest has already been sent; cannot modify the protocol version");
+                UnityWebRequestError ret = SetHttpForcedVersion(value);
+                if (ret != UnityWebRequestError.OK)
+                    throw new InvalidOperationException(UnityWebRequest.GetWebErrorString(ret));
+            }
+        }
+
+        private extern string responseVersionString { get; }
+        internal Version responseVersion
+        {
+            get
+            {
+                return new Version(responseVersionString);
             }
         }
 

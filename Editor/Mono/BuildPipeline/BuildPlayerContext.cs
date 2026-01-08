@@ -25,7 +25,9 @@ namespace UnityEditor.Build
 
         // Streaming Assets
         private Dictionary<NPath, NPath> StreamingAssetFiles { get; } = new Dictionary<NPath, NPath>();
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
         internal IEnumerable<(NPath dst, NPath src)> StreamingAssets => StreamingAssetFiles.Select(e => (e.Key, e.Value));
+#pragma warning restore RS0030
 
         public void AddAdditionalPathToStreamingAssets(string directoryOrFile, string pathInStreamingAssets = null)
         {

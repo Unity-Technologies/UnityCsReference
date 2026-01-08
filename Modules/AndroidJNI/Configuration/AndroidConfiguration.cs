@@ -113,9 +113,7 @@ namespace UnityEngine.Android
             primaryLocaleLanguage = otherConfiguration.primaryLocaleLanguage;
         }
 
-#pragma warning disable RS0030 // This [Preserve] usage be addressed by https://jira.unity3d.com/browse/UUM-128401
-        [Preserve]
-#pragma warning restore RS0030
+        [RequiredMember]
         public override string ToString()
         {
             var contents = new StringBuilder();

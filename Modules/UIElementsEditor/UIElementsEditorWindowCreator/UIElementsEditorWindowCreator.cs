@@ -501,7 +501,9 @@ namespace UnityEditor.UIElements
         bool ClassExists()
         {
             // Types can be different, so use GetLoadedAssemblies instead of TypeCache
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             bool classExists = CurrentAssemblies.GetLoadedAssemblies().Any(a => a.GetType(m_CSharpName, false) != null);
+#pragma warning restore RS0030
             if (classExists)
             {
                 m_ErrorMessage = "Class name " + name + " already exists.";

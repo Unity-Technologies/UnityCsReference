@@ -288,7 +288,9 @@ namespace UnityEditor
             // Init
             if (m_DrawOrder.Count == 0)
             {
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 m_DrawOrder = m_AnimationCurves.Select(cw => cw.id).ToList();
+#pragma warning restore RS0030
                 return;
             }
 
@@ -340,7 +342,9 @@ namespace UnityEditor
                 //      Cylinder
                 //          InnerCyl
                 // Since we cannot generate unique curve ids for identical paths like Cylinder and InnerCyl.
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 m_DrawOrder = m_AnimationCurves.Select(cw => cw.id).ToList();
+#pragma warning restore RS0030
             }
         }
 
@@ -876,8 +880,12 @@ namespace UnityEditor
             //Aggregate selected key in between curves.
             if (hasSelection)
             {
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 CurveSelection[] selected = selectedCurves.OrderBy(p => p.curveID).ThenBy(p => p.key).ToArray();
+#pragma warning restore RS0030
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 int currentCurveId = selected.First().curveID;
+#pragma warning restore RS0030
                 CurveWrapper currentCurveWrapper = GetCurveWrapperFromID(currentCurveId);
                 for (int i = 0; i < selected.Length - 1; i++)
                 {
@@ -977,7 +985,9 @@ namespace UnityEditor
 
         public void UpdateCurves(List<ChangedCurve> changedCurves, string undoText)
         {
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             UpdateCurves(new List<int>(changedCurves.Select(curve => curve.curveId)), undoText);
+#pragma warning restore RS0030
         }
 
         public void StartLiveEdit()
@@ -2330,7 +2340,9 @@ namespace UnityEditor
                                 BeginRangeSelection();
                                 for (int keyIndex = 0; keyIndex < curve.length; ++keyIndex)
                                 {
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                                     if (!selectedCurves.Any(x => x.curveID == selectedPoint.curveID && x.key == keyIndex))
+#pragma warning restore RS0030
                                     {
                                         var keySelection = new CurveSelection(selectedPoint.curveID, keyIndex);
                                         AddSelection(keySelection);
@@ -2416,7 +2428,9 @@ namespace UnityEditor
                                     BeginRangeSelection();
                                     for (var keyIndex = keyMin; keyIndex <= keyMax; ++keyIndex)
                                     {
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                                         if (!selectedCurves.Any(x => x.curveID == selectedPoint.curveID && x.key == keyIndex))
+#pragma warning restore RS0030
                                         {
                                             var rangeSelection = new CurveSelection(selectedPoint.curveID, keyIndex);
                                             AddSelection(rangeSelection);
@@ -2689,10 +2703,18 @@ namespace UnityEditor
 
         Vector2 GetPointEditionFieldPosition()
         {
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var minTime = selectedCurves.Min(x => GetKeyframeFromSelection(x).time);
+#pragma warning restore RS0030
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var maxTime = selectedCurves.Max(x => GetKeyframeFromSelection(x).time);
+#pragma warning restore RS0030
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var minValue = selectedCurves.Min(x => GetKeyframeFromSelection(x).value);
+#pragma warning restore RS0030
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var maxValue = selectedCurves.Max(x => GetKeyframeFromSelection(x).value);
+#pragma warning restore RS0030
             return new Vector2(minTime + maxTime, minValue + maxValue) * 0.5f;
         }
 
@@ -2718,9 +2740,13 @@ namespace UnityEditor
             m_NewTime = 0.0f;
             m_NewValue = 0.0f;
             Keyframe keyframe = GetKeyframeFromSelection(selectedCurves[0]);
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             if (selectedCurves.All(x => GetKeyframeFromSelection(x).time == keyframe.time))
+#pragma warning restore RS0030
                 m_NewTime = keyframe.time;
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             if (selectedCurves.All(x => GetKeyframeFromSelection(x).value == keyframe.value))
+#pragma warning restore RS0030
                 m_NewValue = keyframe.value;
 
             m_EditingPoints = true;
@@ -2871,7 +2897,9 @@ namespace UnityEditor
             string label)
         {
             float firstSelectedValue = memberGetter(selectedCurves[0]);
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             bool sameValues = selectedCurves.All(x => memberGetter(x) == firstSelectedValue);
+#pragma warning restore RS0030
             if (!sameValues)
                 EditorGUI.showMixedValue = true;
 
@@ -3797,8 +3825,12 @@ namespace UnityEditor
             // EnumPopupInternal begins
 
             // sa and values are sorted in the same order
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             Enum[] enumValues = Enum.GetValues(typeof(WrapModeFixedCurve)).Cast<Enum>().ToArray();
+#pragma warning restore RS0030
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var stringNames = Enum.GetNames(typeof(WrapModeFixedCurve)).Select(x => ObjectNames.NicifyVariableName(x)).ToArray();
+#pragma warning restore RS0030
 
             int i = Array.IndexOf(enumValues, selectedValue);
 

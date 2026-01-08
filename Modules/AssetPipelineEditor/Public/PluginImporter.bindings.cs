@@ -43,7 +43,9 @@ namespace UnityEditor
             // Contains all unique finalPaths. Used to remove overridable plugins from the finalImporters list
             Dictionary<string, PluginImporter> uniqueFinalPathToImporterMap = new Dictionary<string, PluginImporter>();
 
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             PluginImporter[] allImporters = GetAllImporters().Where(imp => imp.GetCompatibleWithPlatformOrAnyPlatformBuildTarget(platformName)).ToArray();
+#pragma warning restore RS0030
             IPluginImporterExtension pluginImporterExtension = ModuleManager.GetPluginImporterExtension(platformName);
 
             if (pluginImporterExtension == null)
@@ -97,7 +99,9 @@ namespace UnityEditor
 
         public static PluginImporter[] GetImporters(string buildTargetGroup, string buildTarget)
         {
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return GetAllImporters().Where(imp => imp.GetCompatibleWithPlatformOrAnyPlatformBuildGroupAndTarget(buildTargetGroup, buildTarget)).ToArray();
+#pragma warning restore RS0030
         }
 
         public static PluginImporter[] GetImporters(BuildTargetGroup buildTargetGroup, BuildTarget buildTarget)

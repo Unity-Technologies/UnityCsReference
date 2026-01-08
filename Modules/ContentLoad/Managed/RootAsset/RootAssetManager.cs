@@ -9,6 +9,7 @@ using UnityEngine;
 using UnityEngine.Bindings;
 using UnityEngine.Loading;
 
+#pragma warning disable CS1574 // XML comment with cref attribute to types in UnityEditor namespace
 
 namespace UnityEngine
 {
@@ -16,9 +17,12 @@ namespace UnityEngine
     /// RootAssetManager is a utility class that provides access to root assets in the project.
     /// </summary>
     /// <remarks>
-    /// It is available both in the Editor and Runtime. In the runtime the available objects are based on which roots have been
-    /// included when performing the player build.
+    /// The RootAssetManager is available both in the Editor play mode and Runtime.  It exposes the root assets
+    /// that are available from the currently registered content directories. This means that
+    /// it always exposes built content, not the current state of the source asset in the project.
     /// </remarks>
+    /// <seealso cref="BuildPipeline.BuildContentDirectory(string)"/>
+    /// <seealso cref="ContentLoadManager.RegisterContentDirectory(string)"/>
     /*UCBP-PUBLIC*/ internal sealed partial class RootAssetManager
     {
         private static RootAssetProviderHandler providerHandler
@@ -41,7 +45,7 @@ namespace UnityEngine
         /// build.
         /// </summary>
         /// <typeparam name="T">
-        /// Requested type. Typically this would be a class derived from ScriptableObject.
+        /// Requested type. Must be a class derived from ScriptableObject.
         /// </typeparam>
         /// <returns>
         /// If a root asset exists of the requested type then it is returned. Otherwise it returns null.
@@ -61,9 +65,13 @@ namespace UnityEngine
         /// </summary>
         /// <remarks>
         /// By default the key is the project-relative path of the asset in the Unity project.
+        ///
+        /// Any root asset available from registered Content Directories can be retrieved through this API. When the
+        /// same key is present in multiple registered Content Directories then the one from the most recently registered
+        /// Content Directory is exposed.
         /// </remarks>
         /// <typeparam name="T">
-        /// Requested type. Typically this would be a class derived from <see cref="ScriptableObject"/>.
+        /// Requested type. Must be a class derived from <see cref="ScriptableObject"/>.
         /// </typeparam>
         /// <param name="key">The case sensitive key of the asset.</param>
         /// <returns>
@@ -83,7 +91,7 @@ namespace UnityEngine
         /// Retrieve a root asset filtered by type and name.
         /// </summary>
         /// <typeparam name="T">
-        /// Requested type. Typically this would be a class derived from ScriptableObject.
+        /// Requested type. Must be a class derived from ScriptableObject.
         /// </typeparam>
         /// <param name="name"><see cref="Object.name"/></param>
         /// <returns>
@@ -106,7 +114,7 @@ namespace UnityEngine
         /// This is useful in cases where multiple instances of the same type may exist as root assets in a project or build.
         /// </remarks>
         /// <typeparam name="T">
-        /// Requested type. Typically this would be a class derived from ScriptableObject.
+        /// Requested type. Must be a class derived from ScriptableObject.
         /// </typeparam>
         /// <seealso cref="ScriptableObject"/>
         public static List<T> GetRootAssets<T>() where T : Object

@@ -608,7 +608,9 @@ namespace UnityEditorInternal
                     Transform t = activeRootGameObject.transform.Find(curve.path);
                     if (t != null)
                     {
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                         if (!m_SelectionFilter.Contains(t.gameObject.GetEntityId()))
+#pragma warning restore RS0030
                             return false;
                     }
                     else
@@ -738,7 +740,9 @@ namespace UnityEditorInternal
                             activeCurveWrappers.Add(wrapper);
 
                     // If there are no active curves, we would end up with empty curve editor so we just give all curves insteads
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     if (!activeCurveWrappers.Any())
+#pragma warning restore RS0030
                         foreach (AnimationWindowCurve curve in filteredCurves)
                             if (AnimationWindowUtility.GetCurveWrapper(this, curve) is CurveWrapper wrapper)
                                 activeCurveWrappers.Add(wrapper);
@@ -1254,7 +1258,9 @@ namespace UnityEditorInternal
 
             List<AnimationWindowCurve> clipboardCurves = new List<AnimationWindowCurve>();
             foreach (AnimationWindowKeyframe keyframe in s_KeyframeClipboard)
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 if (!clipboardCurves.Any() || clipboardCurves.Last() != keyframe.curve)
+#pragma warning restore RS0030
                     clipboardCurves.Add(keyframe.curve);
 
             // If we have equal number of target and source curves, then match by index. If not, then try to match with AnimationWindowUtility.BestMatchForPaste.
@@ -1406,7 +1412,9 @@ namespace UnityEditorInternal
             //  Only update curve wrappers that were modified.
             for (int i = 0; i < updateList.Count; ++i)
             {
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 var entry = updateList.ElementAt(i);
+#pragma warning restore RS0030
 
                 CurveWrapper curveWrapper = m_ActiveCurveWrappersCache[entry.Key];
                 if (curveWrapper.renderer != null)
@@ -1472,7 +1480,9 @@ namespace UnityEditorInternal
 
         public List<AnimationWindowKeyframe> GetAggregateKeys(AnimationWindowHierarchyNode hierarchyNode)
         {
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             DopeLine dopeline = dopelines.FirstOrDefault(e => e.hierarchyNodeID == hierarchyNode.id);
+#pragma warning restore RS0030
             if (dopeline == null)
                 return null;
             return dopeline.keys;

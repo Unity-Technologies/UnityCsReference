@@ -125,6 +125,7 @@ namespace UnityEditor.Overlays
         void AttachToPanel(AttachToPanelEvent evt)
         {
             m_Overlay.displayedChanged += OnDisplayChanged;
+            UpdateToggleState();
         }
 
         void DetachFromPanel(DetachFromPanelEvent evt)

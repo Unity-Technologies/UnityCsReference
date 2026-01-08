@@ -44,7 +44,9 @@ namespace UnityEditor
             {
                 Type = assetPostprocessorType;
                 Methods = implementedMethods;
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 StaticDependency = Methods.Intersect(AssetPostprocessingInternal.k_NonAutomaticDependencyMethods).Count() != Methods.Length;
+#pragma warning restore RS0030
 
                 var inst = (AssetPostprocessor)Activator.CreateInstance(assetPostprocessorType);
                 Version = inst.GetVersion();
@@ -431,7 +433,9 @@ namespace UnityEditor
         static Type[] GetCachedAssetPostprocessorClasses()
         {
             if (m_PostprocessorClasses == null)
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 m_PostprocessorClasses = TypeCache.GetTypesDerivedFrom<AssetPostprocessor>().ToArray();
+#pragma warning restore RS0030
             return m_PostprocessorClasses;
         }
 
@@ -514,7 +518,9 @@ namespace UnityEditor
 
         static bool ImplementsAnyOfTheses(Type type, IEnumerable<string> methods, out List<string> usedMethods)
         {
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             usedMethods = new List<string>(methods.Where(method => type.GetMethod(method, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance) != null));
+#pragma warning restore RS0030
             return usedMethods.Count > 0;
         }
 
@@ -558,12 +564,16 @@ namespace UnityEditor
             * The asset has dynamic dependencies to an Asset Postprocessor, so let's find any Postprocessors which
             * implements those methods.
             */
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var distinctMethodNames = allMethodsNames.Distinct();
+#pragma warning restore RS0030
             foreach (Type assetPostprocessorClass in GetCachedAssetPostprocessorClasses())
             {
                 if (ImplementsAnyOfTheses(assetPostprocessorClass, distinctMethodNames, out var methods))
                 {
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     if (assetPostprocessorClass.GetConstructors().Any(t => t.GetParameters().Count() == 0))
+#pragma warning restore RS0030
                         list.Add(new AssetPostprocessor.PostprocessorInfo(assetPostprocessorClass, methods.ToArray()));
                     else
                         LogPostProcessorMissingDefaultConstructor(assetPostprocessorClass);
@@ -599,7 +609,9 @@ namespace UnityEditor
                 return cachedPostprocessors;
 
             var list = new SortedSet<AssetPostprocessor.PostprocessorInfo>(new CompareAssetImportPriority());
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var allMethodsNames = defaultMethods.ToList();
+#pragma warning restore RS0030
             var methodsType = importer;
             while (methodsType != null && methodsType != typeof(AssetImporter))
             {
@@ -612,7 +624,9 @@ namespace UnityEditor
             {
                 if (ImplementsAnyOfTheses(assetPostprocessorClass, allMethodsNames, out var methods))
                 {
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     if (assetPostprocessorClass.GetConstructors().Any(t => t.GetParameters().Count() == 0))
+#pragma warning restore RS0030
                         list.Add(new AssetPostprocessor.PostprocessorInfo(assetPostprocessorClass, methods.ToArray()));
                     else
                         LogPostProcessorMissingDefaultConstructor(assetPostprocessorClass);

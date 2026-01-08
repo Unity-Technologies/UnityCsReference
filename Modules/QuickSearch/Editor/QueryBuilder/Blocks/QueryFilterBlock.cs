@@ -534,7 +534,9 @@ namespace UnityEditor.Search
 
         private static Type ParseMarkerType<T>(in QueryMarker marker, int typeArgIndex = 1)
         {
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var typeString = marker.EvaluateArgs().Skip(typeArgIndex).FirstOrDefault()?.ToString();
+#pragma warning restore RS0030
             if (string.IsNullOrEmpty(typeString))
                 return null;
             return SearchUtils.FindType<T>(typeString);

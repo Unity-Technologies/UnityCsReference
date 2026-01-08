@@ -7,6 +7,7 @@ using System.Collections.ObjectModel;
 using System.Linq;
 using UnityEditor.IMGUI.Controls;
 using UnityEngine;
+using UnityEngine.Bindings;
 using UnityEngine.SceneManagement;
 
 namespace UnityEditor.SceneManagement
@@ -20,30 +21,52 @@ namespace UnityEditor.SceneManagement
 
         // Called when the user have accepted to switch away from previous stage. This method should load stage contents.
         // Should return 'true' if the stage was opened succesfully otherwise 'false'.
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
         protected internal abstract bool OnOpenStage();
 
         // Called when the stage is destroyed (when OnDestroy() is called). Should unload the contents of the stage.
         // Only called if OnOpenStage was called.
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
         protected abstract void OnCloseStage();
 
         // Called when returning to a previous open stage (e.g by clicking a non-current breadcrumb)
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
         protected internal virtual void OnReturnToStage() {}
 
         internal bool opened { get; set; }
 
-        internal virtual bool isValid { get { return true; } }
+        internal virtual bool isValid
+        {
+            [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
+            get { return true; }
+        }
 
-        internal virtual bool isAssetMissing { get { return false; } }
+        internal virtual bool isAssetMissing
+        {
+            [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
+            get { return false; }
+        }
 
         public virtual string assetPath { get { return string.Empty; } }
 
         internal virtual bool showOptionsButton { get { return false; } }
 
         internal abstract int sceneCount { get; }
+
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
         internal abstract Scene GetSceneAt(int index);
 
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
         internal virtual bool SupportsSaving() { return false; }
-        internal virtual bool hasUnsavedChanges { get { return false; } }
+
+
+        internal virtual bool hasUnsavedChanges
+        {
+            [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
+            get { return false; }
+        }
+
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
         internal virtual bool Save()
         {
             if (!SupportsSaving() || !hasUnsavedChanges)
@@ -51,6 +74,7 @@ namespace UnityEditor.SceneManagement
             throw new System.NotImplementedException("This Stage returns true for SupportsSaving() but has not implemented an override for the Save() method.");
         }
 
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
         internal virtual void DiscardChanges()
         {
             if (!SupportsSaving() || !hasUnsavedChanges)
@@ -121,12 +145,16 @@ namespace UnityEditor.SceneManagement
             return null;
         }
 
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
         protected internal abstract GUIContent CreateHeaderContent();
 
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
         internal virtual BreadcrumbBar.Item CreateBreadcrumbItem()
         {
             var history = StageNavigationManager.instance.stageHistory;
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             bool isLastCrumb = this == history.Last();
+#pragma warning restore RS0030
             var style = isLastCrumb ? BreadcrumbBar.DefaultStyles.labelBold : BreadcrumbBar.DefaultStyles.label;
 
             return new BreadcrumbBar.Item
@@ -138,6 +166,7 @@ namespace UnityEditor.SceneManagement
             };
         }
 
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
         internal virtual ulong GetSceneCullingMask() { return EditorSceneManager.DefaultSceneCullingMask; }
 
         public virtual StageHandle stageHandle
@@ -180,6 +209,7 @@ namespace UnityEditor.SceneManagement
 
         // Called on the the current stage when trying to switch to new stage. Should return true if it OK to continue to switch away
         // from current stage. False if not ok to continue.
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
         internal virtual bool AskUserToSaveModifiedStageBeforeSwitchingStage()
         {
             return true;
@@ -190,6 +220,7 @@ namespace UnityEditor.SceneManagement
         // Used for writing state files to HDD
         // Should typically be a persistent unique hash per content shown.
         // For stages that use the assetPath property, the hash is by default based on the asset GUID.
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
         protected internal virtual Hash128 GetHashForStateStorage()
         {
             if (!string.IsNullOrEmpty(assetPath))

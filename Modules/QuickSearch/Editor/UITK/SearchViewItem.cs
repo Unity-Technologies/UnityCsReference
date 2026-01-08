@@ -102,29 +102,33 @@ namespace UnityEditor.Search
 
         public virtual bool ShouldFetchPreview()
         {
-            return SearchSettings.fetchPreview && !m_ViewModel.previewManager.HasPreview(m_PreviewKey);
+            return SearchSettings.fetchPreview && CanFetchPreview() && !m_ViewModel.previewManager.HasPreview(m_PreviewKey);
         }
 
         public virtual void Bind(in SearchItem item)
         {
+            userData = item.id;
             name = item.id;
             m_BindedItem = item;
             m_Label.text = item.GetLabel(context);
 
             UpdatePreview();
+            if (CanFetchPreview())
+            {
+                // Last tries at getting the preview. (For the AssetStoreProvider).
+                // TODO FetchItemProperties(DOTSE - 1994): All the fetching of async properties should be consolidated in the ResultView/SearchView.
+                var counter = 0;
+                m_PreviewRefreshCallback = m_Thumbnail.schedule.Execute(() =>
+                {
+                    if (m_FetchPreviewOff == null)
+                        UpdatePreview();
+                }).StartingIn(500).Every(500).Until(() =>
+                {
+                    counter++;
+                    return m_ViewModel.previewManager.HasPreview(m_PreviewKey) || counter >= k_PreviewFetchCounter;
+                });
+            }
 
-            // Last tries at getting the preview. (For the AssetStoreProvider).
-            // TODO FetchItemProperties(DOTSE - 1994): All the fetching of async properties should be consolidated in the ResultView/SearchView.
-            var counter = 0;
-            m_PreviewRefreshCallback = m_Thumbnail.schedule.Execute(() =>
-            {
-                if (m_FetchPreviewOff == null)
-                    UpdatePreview();
-            }).StartingIn(500).Every(500).Until(() =>
-            {
-                counter++;
-                return m_ViewModel.previewManager.HasPreview(m_PreviewKey) || counter >= k_PreviewFetchCounter;
-            });
             UpdateFavoriteImage();
         }
 
@@ -210,6 +214,11 @@ namespace UnityEditor.Search
             {
                 m_FetchPreviewOff = Utils.CallDelayed(AsyncFetchPreview, 0.01d); // To make sure the style is resolved.
             }
+        }
+
+        private bool CanFetchPreview()
+        {
+            return m_BindedItem.provider.fetchPreview != null;
         }
 
         private void FetchPreview(SearchItem item, SearchContext context, FetchPreviewOptions options, Vector2 size, OnPreviewReady onPreviewReady)

@@ -19,7 +19,9 @@ namespace UnityEditor.Rendering
     {
         public static Type[] GetDerivedTypesSupportedOnCurrentPipeline<T>()
         {
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return TypeCache.GetTypesDerivedFrom<T>()
+#pragma warning restore RS0030
                 .Where(t => t.GetCustomAttribute<SupportedOnRenderPipelineAttribute>() is { isSupportedOnCurrentPipeline: true })
                 .ToArray();
         }

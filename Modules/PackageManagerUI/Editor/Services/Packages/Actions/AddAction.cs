@@ -27,7 +27,9 @@ internal class AddAction : PackageAction
 
     protected override bool TriggerActionImplementation(IReadOnlyCollection<IPackage> packages)
     {
+        #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
         var primaryVersions = packages.Select(p => p.versions.primary).ToArray();
+#pragma warning restore RS0030
         if(!m_OperationDispatcher.Install(primaryVersions))
             return false;
         // The current multi-select UI does not allow users to install non-recommended versions
@@ -45,7 +47,9 @@ internal class AddAction : PackageAction
             if (customizedDependencies.Length > 0)
             {
                 var packageNameAndVersions = string.Join("\n\u2022 ",
+                    #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     customizedDependencies.Select(package => $"{package.displayName} - {package.versions.recommended.version}").ToArray());
+#pragma warning restore RS0030
 
                 var title = string.Format(L10n.Tr("Installing {0}"), version.GetDescriptor());
                 var message = customizedDependencies.Length == 1 ?

@@ -289,7 +289,7 @@ namespace Unity.UIToolkit.Editor
             headerInputField.value = evt.newValue.ToString();
         }
 
-        protected override void ForwardDependentPropertiesTracking(TrackStylePropertyEvent evt)
+        protected override void ForwardDependentPropertiesTracking(TrackPropertyEvent evt)
         {
             base.ForwardDependentPropertiesTracking(evt);
             var target = evt.propertyName switch
@@ -304,7 +304,7 @@ namespace Unity.UIToolkit.Editor
             if (target == null)
                 return;
 
-            var subEvent = TrackStylePropertyEvent.GetPooled(evt.provider,  evt.propertyName);
+            var subEvent = TrackPropertyEvent.GetPooled(evt.provider,  evt.propertyName);
             subEvent.target = target;
             target.SendEvent(subEvent);
             evt.StopImmediatePropagation();

@@ -225,10 +225,14 @@ namespace UnityEditor.PackageManager.UI.Internal
             if (!userInfoReady || m_PackageDatabase.isEmpty || !m_PageRefreshHandler.IsInitialFetchingDone(m_PageManager.activePage))
                 return;
 
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var entitlements = m_PackageDatabase.allPackages.Where(package =>  package.hasEntitlements);
+#pragma warning restore RS0030
             if (loggedIn)
             {
+                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 if (entitlements.Any(package => (package.versions?.primary.isInstalled ?? false) && (package.versions?.primary.hasEntitlementsError ?? false)))
+#pragma warning restore RS0030
                     m_UpmClient.Resolve();
                 else
                 {
@@ -238,7 +242,9 @@ namespace UnityEditor.PackageManager.UI.Internal
             }
             else
             {
+                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 if (entitlements.Any())
+#pragma warning restore RS0030
                 {
                     m_PageRefreshHandler.Refresh(RefreshOptions.UpmList | RefreshOptions.UpmSearch);
                     m_PageManager.activePage.TriggerOnSelectionChanged();
@@ -291,7 +297,9 @@ namespace UnityEditor.PackageManager.UI.Internal
             if (packageNameAndVersion.Contains("@"))
             {
                 var values = packageNameAndVersion.Split('@');
+                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 if (values.Count() > 1)
+#pragma warning restore RS0030
                 {
                     packageName = values[0];
                     packageVersion = values[1];
@@ -340,8 +348,12 @@ namespace UnityEditor.PackageManager.UI.Internal
 
                 // When there are multiple versions selected, we want to make the legacy single select arguments to be null
                 // that way extension UI implemented for single package selection will not show for multi-select cases.
+                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 var packages = selections.Select(selection => m_PackageDatabase.GetPackage(selection)).ToArray();
+#pragma warning restore RS0030
+                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 var package = packages.Length > 1 ? null : packages.FirstOrDefault();
+#pragma warning restore RS0030
                 return new PackageSelectionArgs { package = package, packageVersion = package?.versions.primary, packages = packages, window = this };
             }
         }

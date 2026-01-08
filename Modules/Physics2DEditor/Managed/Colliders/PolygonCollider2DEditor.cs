@@ -67,7 +67,9 @@ namespace UnityEditor
             if (!targetRect.Contains(Event.current.mousePosition))
                 return;
 
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             foreach (var obj in DragAndDrop.objectReferences.Where(obj => obj is Sprite || obj is Texture2D))
+#pragma warning restore RS0030
             {
                 DragAndDrop.visualMode = DragAndDropVisualMode.Copy;
 
@@ -76,7 +78,9 @@ namespace UnityEditor
                     var sprite = obj is Sprite ? obj as Sprite : SpriteUtility.TextureToSprite(obj as Texture2D);
 
                     // Copy collider to all selected components
+                    #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     foreach (var collider in targets.Select(target => target as PolygonCollider2D))
+#pragma warning restore RS0030
                     {
                         Vector2[][] paths;
                         UnityEditor.Sprites.SpriteUtility.GenerateOutlineFromSprite(sprite, 0.25f, 200, true, out paths);

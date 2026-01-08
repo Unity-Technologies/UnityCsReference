@@ -21,7 +21,9 @@ namespace UnityEngine.UIElements
 
         void DragCleanup() { }
         void HandleAutoExpand(ReusableCollectionItem item, Vector2 pointerPosition) { }
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
         IEnumerable<int> GetSortedSelectedIds() => Enumerable.Empty<int>();
+#pragma warning restore RS0030
     }
 
     /// <summary>
@@ -246,7 +248,9 @@ namespace UnityEngine.UIElements
         [System.Obsolete("Use SetEntityIds instead, and call Object.GetEntityId() if you really need to convert from a Unity object to an EntityId.")]
         public void SetUnityObjectReferences(IEnumerable<Object> references)
         {
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             SetEntityIds(references.Select(x => x.GetEntityId()).ToList());
+#pragma warning restore RS0030
         }
 
         /// <summary>

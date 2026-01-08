@@ -165,7 +165,9 @@ namespace UnityEditor
         public IList<DataMode> supportedDataModes
         {
             get => m_SupportedDataModes;
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             private set => m_SupportedDataModes = value.ToArray();
+#pragma warning restore RS0030
         }
 
         [SerializeField] internal bool isAutomatic = true;
@@ -174,7 +176,9 @@ namespace UnityEditor
 
         public void UpdateSupportedDataModes(IList<DataMode> supported, DataMode preferred)
         {
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             SanitizeSupportedDataModesList(supported.ToList(), m_DataModeSanitizationCache);
+#pragma warning restore RS0030
 
             supportedDataModes = m_DataModeSanitizationCache.Count != 0 ? m_DataModeSanitizationCache : k_DefaultModes;
 

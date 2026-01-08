@@ -30,8 +30,8 @@ namespace UnityEngine.UIElements
 
         protected const VersionChangeType AnythingChanged = ChildrenChanged | BoundingBoxChanged | VersionChanged;
 
-        protected const VisualElementFlags BoundingBoxDirtyFlags =
-            VisualElementFlags.BoundingBoxDirty | VisualElementFlags.WorldBoundingBoxDirty | VisualElementFlags.BoundingBoxDirtiedSinceLastLayoutPass;
+        protected const VisualElementTransformFlags BoundingBoxDirtyFlags =
+            VisualElementTransformFlags.BoundingBoxDirty | VisualElementTransformFlags.WorldBoundingBoxDirty | VisualElementTransformFlags.BoundingBoxDirtiedSinceLastLayoutPass;
 
         public override void OnVersionChanged(VisualElement ve, VersionChangeType versionChangeType)
         {
@@ -54,35 +54,38 @@ namespace UnityEngine.UIElements
             }
         }
 
-        protected static VisualElementFlags GetChildrenMustDirtyFlags(VisualElement ve, VersionChangeType versionChangeType)
+        protected static (VisualElementFlags, VisualElementTransformFlags) GetChildrenMustDirtyFlags(VisualElement ve, VersionChangeType versionChangeType)
         {
             VisualElementFlags mustDirty = 0;
+            VisualElementTransformFlags mustDirtyTransform = 0;
 
             if ((versionChangeType & WorldTransformChanged) != 0)
-                mustDirty |= VisualElementFlags.WorldTransformDirty | VisualElementFlags.WorldBoundingBoxDirty;
+                mustDirtyTransform |= VisualElementTransformFlags.WorldTransformDirty | VisualElementTransformFlags.WorldBoundingBoxDirty;
             if ((versionChangeType & WorldClipChanged) != 0)
                 mustDirty |= VisualElementFlags.WorldClipDirty;
             if ((versionChangeType & EventParentCategoriesChanged) != 0)
                 mustDirty |= VisualElementFlags.EventInterestParentCategoriesDirty;
 
-            return mustDirty;
+            return (mustDirty, mustDirtyTransform);
         }
 
-        protected static void DirtyChildrenHierarchy(VisualElement ve, VisualElementFlags mustDirtyFlags)
+        protected static void DirtyChildrenHierarchy(VisualElement ve, (VisualElementFlags flags, VisualElementTransformFlags transformFlags) mustDirty)
         {
             // Are these operations already done?
-            var needDirtyFlags = mustDirtyFlags & ~ve.flags;
-            if (needDirtyFlags == 0)
+            var needDirtyFlags = mustDirty.flags & ~ve.flags;
+            var needDirtyTransformFlags = mustDirty.transformFlags & ~ve.transformFlags;
+            if (needDirtyFlags == 0 && needDirtyTransformFlags == 0)
                 return;
 
             // We use VisualElementFlags to track changes across the hierarchy since all those values come from flags.
             ve.flags |= needDirtyFlags;
+            ve.transformFlags |= needDirtyTransformFlags;
 
             int count = ve.hierarchy.childCount;
             for (int i = 0; i < count; i++)
             {
                 var child = ve.hierarchy[i];
-                DirtyChildrenHierarchy(child, needDirtyFlags);
+                DirtyChildrenHierarchy(child, (needDirtyFlags, needDirtyTransformFlags));
             }
         }
 
@@ -91,15 +94,15 @@ namespace UnityEngine.UIElements
             // Even if all the local bounding box flags are dirty already, we need to check the first parent too.
             // This is because other factors can impact the parent boundingBox besides our own boundingBox changing
             // (for instance, if our ShouldClip() method or resolvedStyle.display return a different value).
-            ve.flags |= BoundingBoxDirtyFlags;
+            ve.transformFlags |= BoundingBoxDirtyFlags;
             DirtyParentHierarchy(ve.hierarchy.parent, BoundingBoxDirtyFlags);
         }
 
-        private static void DirtyParentHierarchy(VisualElement ve, VisualElementFlags flags)
+        private static void DirtyParentHierarchy(VisualElement ve, VisualElementTransformFlags flags)
         {
-            while (ve != null && (ve.flags & flags) != flags)
+            while (ve != null && (ve.transformFlags & flags) != flags)
             {
-                ve.flags |= flags;
+                ve.transformFlags |= flags;
                 ve = ve.hierarchy.parent;
             }
         }
@@ -148,15 +151,15 @@ namespace UnityEngine.UIElements
             }
         }
 
-        private new const VisualElementFlags BoundingBoxDirtyFlags =
-            VisualTreeHierarchyFlagsUpdater.BoundingBoxDirtyFlags | VisualElementFlags.LocalBounds3DDirty | VisualElementFlags.LocalBoundsWithoutNested3DDirty;
+        private new const VisualElementTransformFlags BoundingBoxDirtyFlags =
+            VisualTreeHierarchyFlagsUpdater.BoundingBoxDirtyFlags | VisualElementTransformFlags.LocalBounds3DDirty | VisualElementTransformFlags.LocalBoundsWithoutNested3DDirty;
 
-        private static VisualElementFlags GetParentMustDirtyFlags(VisualElement ve)
+        private static VisualElementTransformFlags GetParentMustDirtyFlags(VisualElement ve)
         {
             var mustDirty = BoundingBoxDirtyFlags;
 
             if (ve.has3DTransform)
-                mustDirty |= VisualElementFlags.Needs3DBounds;
+                mustDirty |= VisualElementTransformFlags.Needs3DBounds;
 
             return mustDirty;
         }
@@ -164,24 +167,24 @@ namespace UnityEngine.UIElements
         private static void DirtyBoundingBoxHierarchy(VisualElement ve)
         {
             var flags = GetParentMustDirtyFlags(ve);
-            ve.flags |= flags;
+            ve.transformFlags |= flags;
 
-            if (ve is UIDocumentRootElement)
+            if (ve is IPanelComponentRootElement)
                 // We crossed a UIDocument boundary, don't dirty the "without nested" flags anymore
-                flags &= ~VisualElementFlags.LocalBoundsWithoutNested3DDirty;
+                flags &= ~VisualElementTransformFlags.LocalBoundsWithoutNested3DDirty;
 
             DirtyParentHierarchy(ve.hierarchy.parent, flags);
         }
 
-        private static void DirtyParentHierarchy(VisualElement ve, VisualElementFlags flags)
+        private static void DirtyParentHierarchy(VisualElement ve, VisualElementTransformFlags flags)
         {
-            while (ve != null && (ve.flags & flags) != flags)
+            while (ve != null && (ve.transformFlags & flags) != flags)
             {
-                ve.flags |= flags;
+                ve.transformFlags |= flags;
 
-                if (ve is UIDocumentRootElement)
+                if (ve is IPanelComponentRootElement)
                     // We crossed a UIDocument boundary, don't dirty the "without nested" flags anymore
-                    flags &= ~VisualElementFlags.LocalBoundsWithoutNested3DDirty;
+                    flags &= ~VisualElementTransformFlags.LocalBoundsWithoutNested3DDirty;
 
                 ve = ve.hierarchy.parent;
             }

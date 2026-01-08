@@ -1423,7 +1423,7 @@ namespace Unity.UIToolkit.Editor
 
             using var _ = s_VisitorPool.Get(out var visitor);
             visitor.binding = ctx.binding;
-            visitor.diff = ctx.styleDiff;
+            visitor.authoringContext = ctx.authoringContext;
             visitor.bindingId = ctx.bindingId;
             visitor.element = ctx.element;
             var element = ctx.element;
@@ -1436,7 +1436,7 @@ namespace Unity.UIToolkit.Editor
             {
                 if (ShouldProcessChange())
                 {
-                    ProcessChange(value, diff, binding, SetEnum);
+                    ProcessChange(value, authoringContext.StyleDiff, binding, SetEnum);
                 }
             }
 
@@ -1444,7 +1444,7 @@ namespace Unity.UIToolkit.Editor
             {
                 if (ShouldProcessChange())
                 {
-                    ProcessChange(value, diff, binding, SetEnum);
+                    ProcessChange(value, authoringContext.StyleDiff, binding, SetEnum);
                 }
             }
 
@@ -1452,7 +1452,7 @@ namespace Unity.UIToolkit.Editor
             {
                 if (ShouldProcessChange())
                 {
-                    ProcessChange(value, diff, binding, SetRatio);
+                    ProcessChange(value, authoringContext.StyleDiff, binding, SetRatio);
                 }
             }
 
@@ -1460,7 +1460,7 @@ namespace Unity.UIToolkit.Editor
             {
                 if (ShouldProcessChange())
                 {
-                    ProcessChange(value, diff, binding, SetRatio);
+                    ProcessChange(value, authoringContext.StyleDiff, binding, SetRatio);
                 }
             }
 
@@ -1468,7 +1468,7 @@ namespace Unity.UIToolkit.Editor
             {
                 if (ShouldProcessChange())
                 {
-                    ProcessChange(value, diff, binding, SetColor);
+                    ProcessChange(value, authoringContext.StyleDiff, binding, SetColor);
                 }
             }
 
@@ -1476,7 +1476,7 @@ namespace Unity.UIToolkit.Editor
             {
                 if (ShouldProcessChange())
                 {
-                    ProcessChange(value, diff, binding, SetColor);
+                    ProcessChange(value, authoringContext.StyleDiff, binding, SetColor);
                 }
             }
 
@@ -1484,7 +1484,7 @@ namespace Unity.UIToolkit.Editor
             {
                 if (ShouldProcessChange())
                 {
-                    ProcessChange(value, diff, binding, SetBackground);
+                    ProcessChange(value, authoringContext.StyleDiff, binding, SetBackground);
                 }
             }
 
@@ -1492,7 +1492,7 @@ namespace Unity.UIToolkit.Editor
             {
                 if (ShouldProcessChange())
                 {
-                    ProcessChange(value, diff, binding, SetBackground);
+                    ProcessChange(value, authoringContext.StyleDiff, binding, SetBackground);
                 }
             }
 
@@ -1500,7 +1500,7 @@ namespace Unity.UIToolkit.Editor
             {
                 if (ShouldProcessChange())
                 {
-                    ProcessChange(value, diff, binding, SetBackgroundPosition);
+                    ProcessChange(value, authoringContext.StyleDiff, binding, SetBackgroundPosition);
                 }
             }
 
@@ -1508,7 +1508,7 @@ namespace Unity.UIToolkit.Editor
             {
                 if (ShouldProcessChange())
                 {
-                    ProcessChange(value, diff, binding, SetBackgroundPosition);
+                    ProcessChange(value, authoringContext.StyleDiff, binding, SetBackgroundPosition);
                 }
             }
 
@@ -1516,7 +1516,7 @@ namespace Unity.UIToolkit.Editor
             {
                 if (ShouldProcessChange())
                 {
-                    ProcessChange(value, diff, binding, SetBackgroundRepeat);
+                    ProcessChange(value, authoringContext.StyleDiff, binding, SetBackgroundRepeat);
                 }
             }
 
@@ -1524,7 +1524,7 @@ namespace Unity.UIToolkit.Editor
             {
                 if (ShouldProcessChange())
                 {
-                    ProcessChange(value, diff, binding, SetBackgroundRepeat);
+                    ProcessChange(value, authoringContext.StyleDiff, binding, SetBackgroundRepeat);
                 }
             }
 
@@ -1532,7 +1532,7 @@ namespace Unity.UIToolkit.Editor
             {
                 if (ShouldProcessChange())
                 {
-                    ProcessChange(value, diff, binding, SetBackgroundSize);
+                    ProcessChange(value, authoringContext.StyleDiff, binding, SetBackgroundSize);
                 }
             }
 
@@ -1540,7 +1540,7 @@ namespace Unity.UIToolkit.Editor
             {
                 if (ShouldProcessChange())
                 {
-                    ProcessChange(value, diff, binding, SetBackgroundSize);
+                    ProcessChange(value, authoringContext.StyleDiff, binding, SetBackgroundSize);
                 }
             }
 
@@ -1548,7 +1548,7 @@ namespace Unity.UIToolkit.Editor
             {
                 if (ShouldProcessChange())
                 {
-                    ProcessChange(value, diff, binding, SetLength);
+                    ProcessChange(value, authoringContext.StyleDiff, binding, SetLength);
                 }
             }
 
@@ -1556,7 +1556,7 @@ namespace Unity.UIToolkit.Editor
             {
                 if (ShouldProcessChange())
                 {
-                    ProcessChange(value, diff, binding, SetLength);
+                    ProcessChange(value, authoringContext.StyleDiff, binding, SetLength);
                 }
             }
 
@@ -1564,7 +1564,7 @@ namespace Unity.UIToolkit.Editor
             {
                 if (ShouldProcessChange())
                 {
-                    ProcessChange(value, diff, binding, SetFloat);
+                    ProcessChange(value, authoringContext.StyleDiff, binding, SetFloat);
                 }
             }
 
@@ -1572,7 +1572,7 @@ namespace Unity.UIToolkit.Editor
             {
                 if (ShouldProcessChange())
                 {
-                    ProcessChange(value, diff, binding, SetFloat);
+                    ProcessChange(value, authoringContext.StyleDiff, binding, SetFloat);
                 }
             }
 
@@ -1580,7 +1580,7 @@ namespace Unity.UIToolkit.Editor
             {
                 if (ShouldProcessChange())
                 {
-                    ProcessChange(value, diff, binding, SetCursor);
+                    ProcessChange(value, authoringContext.StyleDiff, binding, SetCursor);
                 }
             }
 
@@ -1588,7 +1588,7 @@ namespace Unity.UIToolkit.Editor
             {
                 if (ShouldProcessChange())
                 {
-                    ProcessChange(value, diff, binding, SetCursor);
+                    ProcessChange(value, authoringContext.StyleDiff, binding, SetCursor);
                 }
             }
 
@@ -1596,7 +1596,7 @@ namespace Unity.UIToolkit.Editor
             {
                 if (ShouldProcessChange())
                 {
-                    ProcessChange(value, diff, binding, SetEnum);
+                    ProcessChange(value, authoringContext.StyleDiff, binding, SetEnum);
                 }
             }
 
@@ -1604,7 +1604,7 @@ namespace Unity.UIToolkit.Editor
             {
                 if (ShouldProcessChange())
                 {
-                    ProcessChange(value, diff, binding, SetEnum);
+                    ProcessChange(value, authoringContext.StyleDiff, binding, SetEnum);
                 }
             }
 
@@ -1612,7 +1612,7 @@ namespace Unity.UIToolkit.Editor
             {
                 if (ShouldProcessChange())
                 {
-                    ProcessChange(value, diff, binding, SetFilterFunctionList);
+                    ProcessChange(value, authoringContext.StyleDiff, binding, SetFilterFunctionList);
                 }
             }
 
@@ -1620,7 +1620,7 @@ namespace Unity.UIToolkit.Editor
             {
                 if (ShouldProcessChange())
                 {
-                    ProcessChange(value, diff, binding, SetFilterFunctionList);
+                    ProcessChange(value, authoringContext.StyleDiff, binding, SetFilterFunctionList);
                 }
             }
 
@@ -1628,7 +1628,7 @@ namespace Unity.UIToolkit.Editor
             {
                 if (ShouldProcessChange())
                 {
-                    ProcessChange(value, diff, binding, SetEnum);
+                    ProcessChange(value, authoringContext.StyleDiff, binding, SetEnum);
                 }
             }
 
@@ -1636,7 +1636,7 @@ namespace Unity.UIToolkit.Editor
             {
                 if (ShouldProcessChange())
                 {
-                    ProcessChange(value, diff, binding, SetEnum);
+                    ProcessChange(value, authoringContext.StyleDiff, binding, SetEnum);
                 }
             }
 
@@ -1644,7 +1644,7 @@ namespace Unity.UIToolkit.Editor
             {
                 if (ShouldProcessChange())
                 {
-                    ProcessChange(value, diff, binding, SetEnum);
+                    ProcessChange(value, authoringContext.StyleDiff, binding, SetEnum);
                 }
             }
 
@@ -1652,7 +1652,7 @@ namespace Unity.UIToolkit.Editor
             {
                 if (ShouldProcessChange())
                 {
-                    ProcessChange(value, diff, binding, SetEnum);
+                    ProcessChange(value, authoringContext.StyleDiff, binding, SetEnum);
                 }
             }
 
@@ -1660,7 +1660,7 @@ namespace Unity.UIToolkit.Editor
             {
                 if (ShouldProcessChange())
                 {
-                    ProcessChange(value, diff, binding, SetEnum);
+                    ProcessChange(value, authoringContext.StyleDiff, binding, SetEnum);
                 }
             }
 
@@ -1668,7 +1668,7 @@ namespace Unity.UIToolkit.Editor
             {
                 if (ShouldProcessChange())
                 {
-                    ProcessChange(value, diff, binding, SetEnum);
+                    ProcessChange(value, authoringContext.StyleDiff, binding, SetEnum);
                 }
             }
 
@@ -1676,7 +1676,7 @@ namespace Unity.UIToolkit.Editor
             {
                 if (ShouldProcessChange())
                 {
-                    ProcessChange(value, diff, binding, SetEnum);
+                    ProcessChange(value, authoringContext.StyleDiff, binding, SetEnum);
                 }
             }
 
@@ -1684,7 +1684,7 @@ namespace Unity.UIToolkit.Editor
             {
                 if (ShouldProcessChange())
                 {
-                    ProcessChange(value, diff, binding, SetEnum);
+                    ProcessChange(value, authoringContext.StyleDiff, binding, SetEnum);
                 }
             }
 
@@ -1692,7 +1692,7 @@ namespace Unity.UIToolkit.Editor
             {
                 if (ShouldProcessChange())
                 {
-                    ProcessChange(value, diff, binding, SetEnum);
+                    ProcessChange(value, authoringContext.StyleDiff, binding, SetEnum);
                 }
             }
 
@@ -1700,7 +1700,7 @@ namespace Unity.UIToolkit.Editor
             {
                 if (ShouldProcessChange())
                 {
-                    ProcessChange(value, diff, binding, SetEnum);
+                    ProcessChange(value, authoringContext.StyleDiff, binding, SetEnum);
                 }
             }
 
@@ -1708,7 +1708,7 @@ namespace Unity.UIToolkit.Editor
             {
                 if (ShouldProcessChange())
                 {
-                    ProcessChange(value, diff, binding, SetRotate);
+                    ProcessChange(value, authoringContext.StyleDiff, binding, SetRotate);
                 }
             }
 
@@ -1716,7 +1716,7 @@ namespace Unity.UIToolkit.Editor
             {
                 if (ShouldProcessChange())
                 {
-                    ProcessChange(value, diff, binding, SetRotate);
+                    ProcessChange(value, authoringContext.StyleDiff, binding, SetRotate);
                 }
             }
 
@@ -1724,7 +1724,7 @@ namespace Unity.UIToolkit.Editor
             {
                 if (ShouldProcessChange())
                 {
-                    ProcessChange(value, diff, binding, SetScale);
+                    ProcessChange(value, authoringContext.StyleDiff, binding, SetScale);
                 }
             }
 
@@ -1732,7 +1732,7 @@ namespace Unity.UIToolkit.Editor
             {
                 if (ShouldProcessChange())
                 {
-                    ProcessChange(value, diff, binding, SetScale);
+                    ProcessChange(value, authoringContext.StyleDiff, binding, SetScale);
                 }
             }
 
@@ -1740,7 +1740,7 @@ namespace Unity.UIToolkit.Editor
             {
                 if (ShouldProcessChange())
                 {
-                    ProcessChange(value, diff, binding, SetEnum);
+                    ProcessChange(value, authoringContext.StyleDiff, binding, SetEnum);
                 }
             }
 
@@ -1748,7 +1748,7 @@ namespace Unity.UIToolkit.Editor
             {
                 if (ShouldProcessChange())
                 {
-                    ProcessChange(value, diff, binding, SetEnum);
+                    ProcessChange(value, authoringContext.StyleDiff, binding, SetEnum);
                 }
             }
 
@@ -1756,7 +1756,7 @@ namespace Unity.UIToolkit.Editor
             {
                 if (ShouldProcessChange())
                 {
-                    ProcessChange(value, diff, binding, SetTextShadow);
+                    ProcessChange(value, authoringContext.StyleDiff, binding, SetTextShadow);
                 }
             }
 
@@ -1764,7 +1764,7 @@ namespace Unity.UIToolkit.Editor
             {
                 if (ShouldProcessChange())
                 {
-                    ProcessChange(value, diff, binding, SetTextShadow);
+                    ProcessChange(value, authoringContext.StyleDiff, binding, SetTextShadow);
                 }
             }
 
@@ -1772,7 +1772,7 @@ namespace Unity.UIToolkit.Editor
             {
                 if (ShouldProcessChange())
                 {
-                    ProcessChange(value, diff, binding, SetTransformOrigin);
+                    ProcessChange(value, authoringContext.StyleDiff, binding, SetTransformOrigin);
                 }
             }
 
@@ -1780,7 +1780,7 @@ namespace Unity.UIToolkit.Editor
             {
                 if (ShouldProcessChange())
                 {
-                    ProcessChange(value, diff, binding, SetTransformOrigin);
+                    ProcessChange(value, authoringContext.StyleDiff, binding, SetTransformOrigin);
                 }
             }
 
@@ -1788,7 +1788,7 @@ namespace Unity.UIToolkit.Editor
             {
                 if (ShouldProcessChange())
                 {
-                    ProcessChange(value, diff, binding, SetTimeValueList);
+                    ProcessChange(value, authoringContext.StyleDiff, binding, SetTimeValueList);
                 }
             }
 
@@ -1796,7 +1796,7 @@ namespace Unity.UIToolkit.Editor
             {
                 if (ShouldProcessChange())
                 {
-                    ProcessChange(value, diff, binding, SetTimeValueList);
+                    ProcessChange(value, authoringContext.StyleDiff, binding, SetTimeValueList);
                 }
             }
 
@@ -1804,7 +1804,7 @@ namespace Unity.UIToolkit.Editor
             {
                 if (ShouldProcessChange())
                 {
-                    ProcessChange(value, diff, binding, SetStylePropertyNameList);
+                    ProcessChange(value, authoringContext.StyleDiff, binding, SetStylePropertyNameList);
                 }
             }
 
@@ -1812,7 +1812,7 @@ namespace Unity.UIToolkit.Editor
             {
                 if (ShouldProcessChange())
                 {
-                    ProcessChange(value, diff, binding, SetStylePropertyNameList);
+                    ProcessChange(value, authoringContext.StyleDiff, binding, SetStylePropertyNameList);
                 }
             }
 
@@ -1820,7 +1820,7 @@ namespace Unity.UIToolkit.Editor
             {
                 if (ShouldProcessChange())
                 {
-                    ProcessChange(value, diff, binding, SetEasingFunctionList);
+                    ProcessChange(value, authoringContext.StyleDiff, binding, SetEasingFunctionList);
                 }
             }
 
@@ -1828,7 +1828,7 @@ namespace Unity.UIToolkit.Editor
             {
                 if (ShouldProcessChange())
                 {
-                    ProcessChange(value, diff, binding, SetEasingFunctionList);
+                    ProcessChange(value, authoringContext.StyleDiff, binding, SetEasingFunctionList);
                 }
             }
 
@@ -1836,7 +1836,7 @@ namespace Unity.UIToolkit.Editor
             {
                 if (ShouldProcessChange())
                 {
-                    ProcessChange(value, diff, binding, SetTranslate);
+                    ProcessChange(value, authoringContext.StyleDiff, binding, SetTranslate);
                 }
             }
 
@@ -1844,7 +1844,7 @@ namespace Unity.UIToolkit.Editor
             {
                 if (ShouldProcessChange())
                 {
-                    ProcessChange(value, diff, binding, SetTranslate);
+                    ProcessChange(value, authoringContext.StyleDiff, binding, SetTranslate);
                 }
             }
 
@@ -1852,7 +1852,7 @@ namespace Unity.UIToolkit.Editor
             {
                 if (ShouldProcessChange())
                 {
-                    ProcessChange(value, diff, binding, SetEnum);
+                    ProcessChange(value, authoringContext.StyleDiff, binding, SetEnum);
                 }
             }
 
@@ -1860,7 +1860,7 @@ namespace Unity.UIToolkit.Editor
             {
                 if (ShouldProcessChange())
                 {
-                    ProcessChange(value, diff, binding, SetEnum);
+                    ProcessChange(value, authoringContext.StyleDiff, binding, SetEnum);
                 }
             }
 
@@ -1868,7 +1868,7 @@ namespace Unity.UIToolkit.Editor
             {
                 if (ShouldProcessChange())
                 {
-                    ProcessChange(value, diff, binding, SetFont);
+                    ProcessChange(value, authoringContext.StyleDiff, binding, SetFont);
                 }
             }
 
@@ -1876,7 +1876,7 @@ namespace Unity.UIToolkit.Editor
             {
                 if (ShouldProcessChange())
                 {
-                    ProcessChange(value, diff, binding, SetFont);
+                    ProcessChange(value, authoringContext.StyleDiff, binding, SetFont);
                 }
             }
 
@@ -1884,7 +1884,7 @@ namespace Unity.UIToolkit.Editor
             {
                 if (ShouldProcessChange())
                 {
-                    ProcessChange(value, diff, binding, SetFontDefinition);
+                    ProcessChange(value, authoringContext.StyleDiff, binding, SetFontDefinition);
                 }
             }
 
@@ -1892,7 +1892,7 @@ namespace Unity.UIToolkit.Editor
             {
                 if (ShouldProcessChange())
                 {
-                    ProcessChange(value, diff, binding, SetFontDefinition);
+                    ProcessChange(value, authoringContext.StyleDiff, binding, SetFontDefinition);
                 }
             }
 
@@ -1900,7 +1900,7 @@ namespace Unity.UIToolkit.Editor
             {
                 if (ShouldProcessChange())
                 {
-                    ProcessChange(value, diff, binding, SetEnum);
+                    ProcessChange(value, authoringContext.StyleDiff, binding, SetEnum);
                 }
             }
 
@@ -1908,7 +1908,7 @@ namespace Unity.UIToolkit.Editor
             {
                 if (ShouldProcessChange())
                 {
-                    ProcessChange(value, diff, binding, SetEnum);
+                    ProcessChange(value, authoringContext.StyleDiff, binding, SetEnum);
                 }
             }
 
@@ -1916,7 +1916,7 @@ namespace Unity.UIToolkit.Editor
             {
                 if (ShouldProcessChange())
                 {
-                    ProcessChange(value, diff, binding, SetMaterialDefinition);
+                    ProcessChange(value, authoringContext.StyleDiff, binding, SetMaterialDefinition);
                 }
             }
 
@@ -1924,7 +1924,7 @@ namespace Unity.UIToolkit.Editor
             {
                 if (ShouldProcessChange())
                 {
-                    ProcessChange(value, diff, binding, SetMaterialDefinition);
+                    ProcessChange(value, authoringContext.StyleDiff, binding, SetMaterialDefinition);
                 }
             }
 
@@ -1932,7 +1932,7 @@ namespace Unity.UIToolkit.Editor
             {
                 if (ShouldProcessChange())
                 {
-                    ProcessChange(value, diff, binding, SetEnum);
+                    ProcessChange(value, authoringContext.StyleDiff, binding, SetEnum);
                 }
             }
 
@@ -1940,7 +1940,7 @@ namespace Unity.UIToolkit.Editor
             {
                 if (ShouldProcessChange())
                 {
-                    ProcessChange(value, diff, binding, SetEnum);
+                    ProcessChange(value, authoringContext.StyleDiff, binding, SetEnum);
                 }
             }
 
@@ -1948,7 +1948,7 @@ namespace Unity.UIToolkit.Editor
             {
                 if (ShouldProcessChange())
                 {
-                    ProcessChange(value, diff, binding, SetInt);
+                    ProcessChange(value, authoringContext.StyleDiff, binding, SetInt);
                 }
             }
 
@@ -1956,7 +1956,7 @@ namespace Unity.UIToolkit.Editor
             {
                 if (ShouldProcessChange())
                 {
-                    ProcessChange(value, diff, binding, SetInt);
+                    ProcessChange(value, authoringContext.StyleDiff, binding, SetInt);
                 }
             }
 
@@ -1964,7 +1964,7 @@ namespace Unity.UIToolkit.Editor
             {
                 if (ShouldProcessChange())
                 {
-                    ProcessChange(value, diff, binding, SetEnum);
+                    ProcessChange(value, authoringContext.StyleDiff, binding, SetEnum);
                 }
             }
 
@@ -1972,7 +1972,7 @@ namespace Unity.UIToolkit.Editor
             {
                 if (ShouldProcessChange())
                 {
-                    ProcessChange(value, diff, binding, SetEnum);
+                    ProcessChange(value, authoringContext.StyleDiff, binding, SetEnum);
                 }
             }
 
@@ -1980,7 +1980,7 @@ namespace Unity.UIToolkit.Editor
             {
                 if (ShouldProcessChange())
                 {
-                    ProcessChange(value, diff, binding, SetEnum);
+                    ProcessChange(value, authoringContext.StyleDiff, binding, SetEnum);
                 }
             }
 
@@ -1988,7 +1988,7 @@ namespace Unity.UIToolkit.Editor
             {
                 if (ShouldProcessChange())
                 {
-                    ProcessChange(value, diff, binding, SetEnum);
+                    ProcessChange(value, authoringContext.StyleDiff, binding, SetEnum);
                 }
             }
 
@@ -1996,7 +1996,7 @@ namespace Unity.UIToolkit.Editor
             {
                 if (ShouldProcessChange())
                 {
-                    ProcessChange(value, diff, binding, SetTextAutoSize);
+                    ProcessChange(value, authoringContext.StyleDiff, binding, SetTextAutoSize);
                 }
             }
 
@@ -2004,7 +2004,7 @@ namespace Unity.UIToolkit.Editor
             {
                 if (ShouldProcessChange())
                 {
-                    ProcessChange(value, diff, binding, SetTextAutoSize);
+                    ProcessChange(value, authoringContext.StyleDiff, binding, SetTextAutoSize);
                 }
             }
 
@@ -2012,7 +2012,7 @@ namespace Unity.UIToolkit.Editor
             {
                 if (ShouldProcessChange())
                 {
-                    ProcessChange(value, diff, binding, SetEnum);
+                    ProcessChange(value, authoringContext.StyleDiff, binding, SetEnum);
                 }
             }
 
@@ -2020,7 +2020,7 @@ namespace Unity.UIToolkit.Editor
             {
                 if (ShouldProcessChange())
                 {
-                    ProcessChange(value, diff, binding, SetEnum);
+                    ProcessChange(value, authoringContext.StyleDiff, binding, SetEnum);
                 }
             }
 
@@ -2028,7 +2028,7 @@ namespace Unity.UIToolkit.Editor
             {
                 if (ShouldProcessChange())
                 {
-                    ProcessChange(value, diff, binding, SetEnum);
+                    ProcessChange(value, authoringContext.StyleDiff, binding, SetEnum);
                 }
             }
 
@@ -2036,7 +2036,7 @@ namespace Unity.UIToolkit.Editor
             {
                 if (ShouldProcessChange())
                 {
-                    ProcessChange(value, diff, binding, SetEnum);
+                    ProcessChange(value, authoringContext.StyleDiff, binding, SetEnum);
                 }
             }
 
@@ -2044,7 +2044,7 @@ namespace Unity.UIToolkit.Editor
             {
                 if (ShouldProcessChange())
                 {
-                    ProcessChange(value, diff, binding, SetEnum);
+                    ProcessChange(value, authoringContext.StyleDiff, binding, SetEnum);
                 }
             }
 
@@ -2052,7 +2052,7 @@ namespace Unity.UIToolkit.Editor
             {
                 if (ShouldProcessChange())
                 {
-                    ProcessChange(value, diff, binding, SetEnum);
+                    ProcessChange(value, authoringContext.StyleDiff, binding, SetEnum);
                 }
             }
 
@@ -2060,7 +2060,7 @@ namespace Unity.UIToolkit.Editor
             {
                 if (ShouldProcessChange())
                 {
-                    ProcessChange(value, diff, binding, SetEnum);
+                    ProcessChange(value, authoringContext.StyleDiff, binding, SetEnum);
                 }
             }
 
@@ -2068,7 +2068,7 @@ namespace Unity.UIToolkit.Editor
             {
                 if (ShouldProcessChange())
                 {
-                    ProcessChange(value, diff, binding, SetEnum);
+                    ProcessChange(value, authoringContext.StyleDiff, binding, SetEnum);
                 }
             }
         }

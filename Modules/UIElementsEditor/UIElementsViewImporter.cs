@@ -25,7 +25,7 @@ namespace UnityEditor.UIElements
     // Make sure UXML is imported after assets than can be addressed in USS
     [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
     [HelpURL("UIE-VisualTree-landing")]
-    [ScriptedImporter(version: 26, ext: "uxml", importQueueOffset: 1102)]
+    [ScriptedImporter(version: 27, ext: "uxml", importQueueOffset: 1102)]
     [ExcludeFromPreset]
     internal class UIElementsViewImporter : ScriptedImporter
     {
@@ -1429,18 +1429,24 @@ namespace UnityEditor.UIElements
                             vta,
                             ImportErrorType.Semantic,
                             ImportErrorCode.InvalidCssInStyleAttribute,
+                            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                             parser.errors.Aggregate("", (s, error) => s + error.ToString() + "\n"),
+#pragma warning restore RS0030
                             xattr);
                         return true;
                     }
 
+                    #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     if (parsed.StyleRules.Count() != 1)
+#pragma warning restore RS0030
                     {
                         LogWarning(
                             vta,
                             ImportErrorType.Semantic,
                             ImportErrorCode.InvalidCssInStyleAttribute,
+                            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                             "Expected one style rule, found " + parsed.StyleRules.Count(),
+#pragma warning restore RS0030
                             xattr);
                         return true;
                     }
@@ -1450,7 +1456,9 @@ namespace UnityEditor.UIElements
                     // it's then applied during tree cloning
                     m_Builder.BeginRule(-1);
                     m_CurrentLine = ((IXmlLineInfo)xattr).LineNumber;
+                    #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     foreach (var prop in parsed.StyleRules.First().Style.Declarations)
+#pragma warning restore RS0030
                     {
                         m_Builder.BeginProperty(prop.Name);
                         VisitValue(prop);

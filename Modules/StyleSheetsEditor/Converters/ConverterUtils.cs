@@ -95,7 +95,9 @@ namespace UnityEditor.StyleSheets
 
         static ConverterUtils()
         {
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             k_GuiStyleTypeNames = GetGUIStyleProperties().ToDictionary(p => p.Name.ToLower(), p => p.Name.Capitalize());
+#pragma warning restore RS0030
 
             k_StyleProperties = new HashSet<string>();
             k_StyleProperties.Add(k_TextAlignment);
@@ -296,7 +298,9 @@ namespace UnityEditor.StyleSheets
         public static StyleComplexSelector CreateSelectorFromSource(StyleComplexSelector srcSelector, string newSelectorBase)
         {
             var newSelector = new StyleComplexSelector();
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var newSelectorParts = srcSelector.selectors[0].parts.ToArray();
+#pragma warning restore RS0030
             if (newSelectorBase[0] == '.')
             {
                 newSelectorParts[0].type = StyleSelectorType.Class;
@@ -378,7 +382,9 @@ namespace UnityEditor.StyleSheets
         {
             state.background = src.background;
             state.textColor = src.textColor;
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             state.scaledBackgrounds = src.scaledBackgrounds.ToArray();
+#pragma warning restore RS0030
         }
 
         public static void Assign(this GUIStyle style, GUIStyle src)
@@ -422,7 +428,9 @@ namespace UnityEditor.StyleSheets
 
         public static void Assign(this GUISkin skin, GUISkin src)
         {
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             skin.customStyles = src.customStyles.Select(style =>
+#pragma warning restore RS0030
             {
                 var newStyle = new GUIStyle();
                 newStyle.Assign(style);
@@ -466,12 +474,16 @@ namespace UnityEditor.StyleSheets
 
         public static IEnumerable<PropertyInfo> GetGUIStyleProperties()
         {
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return typeof(GUISkin).GetProperties().Where(p => p.PropertyType == typeof(GUIStyle)).OrderBy(style => style.Name);
+#pragma warning restore RS0030
         }
 
         public static IEnumerable<PropertyInfo> GetGUIStateProperties()
         {
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return typeof(GUIStyle).GetProperties().Where(p => p.PropertyType == typeof(GUIStyleState));
+#pragma warning restore RS0030
         }
 
         public static string FindStyleName(this StyleComplexSelector selector, string selectorStr, StyleSheet sheet)
@@ -516,13 +528,17 @@ namespace UnityEditor.StyleSheets
 
         public static GUIStyle GetStyleFromSkin(this GUISkin skin, string styleName)
         {
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var propertyInfo = typeof(GUISkin).GetProperties().FirstOrDefault(pi => pi.Name.ToLower() == styleName.ToLower());
+#pragma warning restore RS0030
             if (propertyInfo != null)
             {
                 return propertyInfo.GetValue(skin, null) as GUIStyle;
             }
 
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return skin.customStyles.FirstOrDefault(s => s.name == styleName);
+#pragma warning restore RS0030
         }
 
         public static string EscapeSelectorName(string name)
@@ -561,7 +577,9 @@ namespace UnityEditor.StyleSheets
 
         public static string ToUssPropertyName(params string[] values)
         {
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return String.Join("-", values.Where(v => !String.IsNullOrEmpty(v)).ToArray());
+#pragma warning restore RS0030
         }
 
         public static T LoadResource<T>(string path) where T : Object
@@ -707,7 +725,9 @@ namespace UnityEditor.StyleSheets
         public static string[] GetSheetPathsFromRootFolders(IEnumerable<string> rootFolders, SkinTarget target, string sheetPostFix = "")
         {
             var skinSheetName = $"{(target == SkinTarget.Light ? "light" : "dark")}{sheetPostFix}.uss";
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var sheetPaths = rootFolders.Select(folderPath => Directory.GetFiles(EditorResources.ExpandPath(folderPath), "*.uss", SearchOption.AllDirectories))
+#pragma warning restore RS0030
                 .SelectMany(p => p)
                 .Where(p => p.EndsWith("common.uss") || p.EndsWith(skinSheetName))
                 .Select(p => p.Replace("\\", "/"))

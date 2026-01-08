@@ -90,7 +90,9 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private void RefreshInProgressSpinner(bool? showSpinner = null)
         {
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             if (showSpinner ?? (m_AssetStoreDownloadManager.IsAnyDownloadInProgress() || m_UpmClient.packageIdsOrNamesInstalling.Any()))
+#pragma warning restore RS0030
                 inProgressSpinner.Start();
             else
                 inProgressSpinner.Stop();
@@ -125,7 +127,9 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private void UpdateFilterMenuText(PageFilters filters)
         {
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var filtersSet = new[] { filters.status.GetDisplayName() }.Concat(filters.categories).Concat(filters.labels)
+#pragma warning restore RS0030
                 .Where(s => !string.IsNullOrEmpty(s)).ToArray();
             filtersMenu.text = filtersSet.Length > 0 ? string.Format(L10n.Tr("Filters ({0})"), string.Join(", ", filtersSet)) : L10n.Tr("Filters");
         }

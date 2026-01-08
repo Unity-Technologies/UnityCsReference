@@ -10,6 +10,7 @@ using System.Text.RegularExpressions;
 using Unity.Properties;
 using UnityEngine;
 using UnityEngine.UIElements;
+using UnityEngine.Bindings;
 
 namespace UnityEditor.UIElements
 {
@@ -104,6 +105,9 @@ namespace UnityEditor.UIElements
         int m_DrawNestingLevel;
         PropertyField m_DrawParentProperty;
         VisualElement m_DecoratorDrawersContainer;
+
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
+        internal event Action reset;
 
         SerializedProperty serializedProperty => m_SerializedProperty;
 
@@ -215,6 +219,18 @@ namespace UnityEditor.UIElements
         }
 
         void Reset(SerializedProperty newProperty)
+        {
+            try
+            {
+                ResetInternal(newProperty);
+            }
+            finally
+            {
+                reset?.Invoke();
+            }
+        }
+
+        void ResetInternal(SerializedProperty newProperty)
         {
             string newPropertyTypeName = null;
             var newPropertyType = newProperty.propertyType;
@@ -1080,13 +1096,17 @@ namespace UnityEditor.UIElements
                         var enumData = EnumDataUtility.GetCachedEnumData(enumType);
                         if (originalField != null && originalField is EnumFlagsField enumFlagsField)
                         {
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                             enumFlagsField.choices = enumData.displayNames.ToList();
+#pragma warning restore RS0030
                             enumFlagsField.value = (Enum)Enum.ToObject(enumType, property.intValue);
                         }
                         return ConfigureField<EnumFlagsField, Enum>(originalField as EnumFlagsField, property,
                             () => new EnumFlagsField
                             {
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                                 choices = enumData.displayNames.ToList(),
+#pragma warning restore RS0030
                                 value = (Enum)Enum.ToObject(enumType, property.intValue)
                             });
                     }
@@ -1097,7 +1117,9 @@ namespace UnityEditor.UIElements
                         // in the same order.
                         var enumData = enumType != null ? (EnumData?)EnumDataUtility.GetCachedEnumData(enumType) : null;
                         var propertyDisplayNames = EditorGUI.EnumNamesCache.GetEnumDisplayNames(property);
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                         var popupEntries = (enumData?.displayNames ?? propertyDisplayNames).ToList();
+#pragma warning restore RS0030
                         int propertyFieldIndex = (property.enumValueIndex < 0 || property.enumValueIndex >= propertyDisplayNames.Length
                             ? PopupField<string>.kPopupFieldDefaultIndex : (enumData != null
                                 ? Array.IndexOf(enumData.Value.displayNames, propertyDisplayNames[property.enumValueIndex])

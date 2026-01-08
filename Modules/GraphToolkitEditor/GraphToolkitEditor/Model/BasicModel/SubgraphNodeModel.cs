@@ -199,13 +199,17 @@ namespace Unity.GraphToolkit.Editor
         public List<GraphElementModel> Update()
         {
             // Get connected wires before the obsolete ones get removed in DefineNode.
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var wiresBeforeDefineNode = GetConnectedWires().ToList();
+#pragma warning restore RS0030
 
             DefineNode();
 
             var elementsToUpdate = new List<GraphElementModel> { this };
 
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             foreach (var wireModel in wiresBeforeDefineNode.OfType<WireModel>())
+#pragma warning restore RS0030
             {
                 wireModel.UpdatePortFromCache();
                 wireModel.ResetPortCache();

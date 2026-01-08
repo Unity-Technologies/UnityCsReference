@@ -107,19 +107,19 @@ namespace UnityEditor.Build.Content
 
         ///<summary>Returns true if the ObjectIdentifiers are different.</summary>
         ///<remarks>Internal use only. See <see cref="Build.Content.ObjectIdentifier" />.</remarks>
-        public static bool operator!=(ObjectIdentifier a, ObjectIdentifier b)
+        public static bool operator !=(ObjectIdentifier a, ObjectIdentifier b)
         {
             return a.CompareTo(b) != 0;
         }
 
         [ExcludeFromDocs]
-        public static bool operator<(ObjectIdentifier a, ObjectIdentifier b)
+        public static bool operator <(ObjectIdentifier a, ObjectIdentifier b)
         {
             return a.CompareTo(b) < 0;
         }
 
         [ExcludeFromDocs]
-        public static bool operator>(ObjectIdentifier a, ObjectIdentifier b)
+        public static bool operator >(ObjectIdentifier a, ObjectIdentifier b)
         {
             return a.CompareTo(b) > 0;
         }

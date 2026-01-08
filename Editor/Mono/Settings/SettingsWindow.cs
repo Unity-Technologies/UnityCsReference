@@ -657,8 +657,12 @@ namespace UnityEditor
 
         internal static SettingsWindow FindWindowByScope(SettingsScope scopes)
         {
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var settingsWindows = Resources.FindObjectsOfTypeAll(typeof(SettingsWindow)).Cast<SettingsWindow>();
+#pragma warning restore RS0030
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return settingsWindows.FirstOrDefault(settingsWindow => settingsWindow.m_Scope == scopes);
+#pragma warning restore RS0030
         }
 
         [VisibleToOtherModules("UnityEditor.ProjectAuditorModule")]

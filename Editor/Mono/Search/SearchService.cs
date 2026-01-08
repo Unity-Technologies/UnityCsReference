@@ -225,9 +225,9 @@ namespace UnityEditor.SearchService
             syncSearchChanged?.Invoke(evt, syncViewId, searchQuery);
         }
 
-        public static void HandleSearchEvent(EditorWindow window, Event evt, string searchText)
+        public static object HandleSearchEvent(EditorWindow window, Event evt, string searchText)
         {
-            OpenSearchHelper.HandleSearchEvent(window, evt, searchText);
+            return OpenSearchHelper.HandleSearchEvent(window, evt, searchText);
         }
 
         public static void DrawOpenSearchButton(EditorWindow window, string searchText)
@@ -247,7 +247,9 @@ namespace UnityEditor.SearchService
 
         List<TEngine> engines { get; } = new List<TEngine>();
 
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
         IEnumerable<ISearchEngineBase> ISearchApi.engines => engines.Cast<ISearchEngineBase>();
+#pragma warning restore RS0030
 
         public string activeSearchEngineName { get; private set; }
 
@@ -282,7 +284,9 @@ namespace UnityEditor.SearchService
             var activeEngineIndex = engines.FindIndex(engine => engine.name == actualActiveEngineName);
             if (activeEngineIndex < 0)
             {
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 var defaultEngine = GetDefaultEngine() ?? engines.First();
+#pragma warning restore RS0030
                 SetActiveSearchEngine(defaultEngine.name);
                 return defaultEngine;
             }
@@ -417,7 +421,9 @@ namespace UnityEditor.SearchService
         void RegisterAllEngines()
         {
             var types = TypeCache.GetTypesWithAttribute<TAttribute>();
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var instantiatedEngines = types.Select(type => Activator.CreateInstance(type));
+#pragma warning restore RS0030
             foreach (var instantiatedEngine in instantiatedEngines)
             {
                 if (instantiatedEngine is TEngine typedEngine)

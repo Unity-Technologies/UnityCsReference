@@ -77,10 +77,10 @@ namespace UnityEditor.UIElements
             m_Panel.Dispose();
         }
 
-        public bool GetTooltip(Vector2 windowMouseCoordinates, out string tooltip, out Rect screenRectPosition)
+        public bool GetTooltip(Vector2 windowMouseCoordinates, out string tooltip, out Rect windowRectPosition)
         {
             tooltip = string.Empty;
-            screenRectPosition = Rect.zero;
+            windowRectPosition = Rect.zero;
 
             VisualElement target = m_Panel.Pick(windowMouseCoordinates);
             if (target != null)
@@ -98,7 +98,7 @@ namespace UnityEditor.UIElements
                     if (!string.IsNullOrEmpty(tooltipEvent.tooltip))
                     {
                         tooltip = tooltipEvent.tooltip;
-                        screenRectPosition = tooltipEvent.rect;
+                        windowRectPosition = tooltipEvent.rect;
                         return true;
                     }
                 }

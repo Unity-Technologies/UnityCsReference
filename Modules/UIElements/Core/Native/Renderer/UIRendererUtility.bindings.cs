@@ -109,6 +109,7 @@ namespace UnityEngine.UIElements.UIR
         [ThreadSafe] public extern static IntPtr AllocateShaderPropertySheet();
         [ThreadSafe] public extern static void SetAllTextures(IntPtr shaderPropertySheet, IntPtr textureNames, IntPtr texturePtrs, int count);
         [ThreadSafe] public extern static void SetPropertyBlock(MaterialPropertyBlock props);
+        [ThreadSafe] public extern static void SetPropertyBlockPtr(IntPtr props);
         [ThreadSafe] public extern static void ApplyShaderPropertySheet(IntPtr shaderPropertySheet);
         [ThreadSafe] public extern static void ReleasePropertySheet(IntPtr shaderPropertySheet);
 

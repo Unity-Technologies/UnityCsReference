@@ -510,6 +510,12 @@ namespace Unity.GraphToolkit.Editor.Implementation
             }
         }
 
+        public override (Texture2D icon, Color color)? GetDataTypeStyle(Type dataType)
+        {
+            // Use the Graph's type (instead of the GraphModel's type) to get the correct style since the DataTypeStyleMapperAttribute is defined on Graph types in the public API.
+            return BaseDataTypeStyleMapper.GetDataTypeStyle(dataType, Graph.GetType());
+        }
+
         static void GetPortTypesForNode(INode node, HashSet<Type> hashSet)
         {
             if (node == null)

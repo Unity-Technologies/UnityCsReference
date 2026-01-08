@@ -68,7 +68,9 @@ namespace UnityEditor
                 {
                     bool currentAssetWasChanged = false; // when multi-editing, some assets might e.g. already have the label that was added to all
                     string[] currentLabels = AssetDatabase.GetLabels(currentAsset);
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     List<string> currentLabelList = currentLabels.ToList<string>();
+#pragma warning restore RS0030
                     if (m_ChangeWasAdd)
                     {
                         if (!currentLabelList.Contains(m_ChangedLabel))
@@ -140,8 +142,12 @@ namespace UnityEditor
                     {
                         element.filterScore = pair.Value;
                     }
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     element.selected = all.Any(label => string.Equals(label, pair.Key, StringComparison.OrdinalIgnoreCase));
+#pragma warning restore RS0030
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     element.partiallySelected = partial.Any(label => string.Equals(label, pair.Key, StringComparison.OrdinalIgnoreCase));
+#pragma warning restore RS0030
                 }
             }
 
@@ -199,7 +205,9 @@ namespace UnityEditor
         {
             GUIStyle labelStyle = partiallySelected ? EditorStyles.assetLabelPartial : EditorStyles.assetLabel;
             Event evt = Event.current;
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             foreach (GUIContent content in (from i in m_AssetLabels.m_ListElements where (partiallySelected ? i.partiallySelected : i.selected) orderby i.text.ToLower() select i.m_Content).Take(s_MaxShownLabels))
+#pragma warning restore RS0030
             {
                 Rect rt = GUILayoutUtility.GetRect(content, labelStyle);
                 if (Event.current.type == EventType.Repaint && rt.xMax >= xMax)

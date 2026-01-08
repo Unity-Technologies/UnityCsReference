@@ -1439,7 +1439,9 @@ namespace UnityEditor.StyleSheets
 
         public StyleBlock GetComposedStyle(int selectorKey, params StyleState[] states)
         {
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return GetStyle(selectorKey, states.Concat(new[] {StyleState.normal}).ToArray());
+#pragma warning restore RS0030
         }
 
         public void Load(params string[] paths)
@@ -1449,7 +1451,9 @@ namespace UnityEditor.StyleSheets
 
         public void Load(IEnumerable<string> paths)
         {
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var sheets = paths.Select(p =>
+#pragma warning restore RS0030
             {
                 var x = EditorResources.Load<UnityEngine.Object>(p, false) as StyleSheet;
 
@@ -1467,7 +1471,9 @@ namespace UnityEditor.StyleSheets
             try
             {
                 var resolver = new StyleSheetResolver();
+                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 resolver.AddStyleSheets(sheets.ToArray());
+#pragma warning restore RS0030
                 resolver.Resolve();
                 Load(resolver);
             }
@@ -1706,7 +1712,9 @@ namespace UnityEditor.StyleSheets
         private List<StyleValue> ExpandValues(List<StyleValue> values,
             List<float> numbers, List<Color> colors, List<string> strings, List<StyleRect> rects, List<StyleValueGroup> groups)
         {
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var states = values.Select(v => v.state).Distinct().ToArray();
+#pragma warning restore RS0030
 
             // Rects
             values = ExpandRect(states, values, numbers, rects, StyleCatalogKeyword.position, StyleCatalogKeyword.top, StyleCatalogKeyword.right, StyleCatalogKeyword.bottom, StyleCatalogKeyword.left);

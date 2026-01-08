@@ -144,7 +144,9 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private void OnPackageInfosUpdated(IReadOnlyCollection<(PackageInfo oldInfo, PackageInfo newInfo)> updatedInfos, PackagesChangedSource changedSource)
         {
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var packageNames = updatedInfos.Select(i => i.oldInfo?.name ?? i.newInfo?.name).ToArray();
+#pragma warning restore RS0030
             GeneratePackagesAndTriggerChangeEvent(packageNames, changedSource);
         }
 
@@ -156,13 +158,17 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private void OnShowPreReleasePackagesOrSeeAllVersionsChanged(bool _)
         {
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var allPackageNames = m_UpmCache.installedPackageInfos.Concat(m_UpmCache.searchPackageInfos).Select(p => p.name).ToHashSet();
+#pragma warning restore RS0030
             GeneratePackagesAndTriggerChangeEvent(allPackageNames);
         }
 
         public void GeneratePackagesAndTriggerChangeEvent(IEnumerable<string> packageNames, PackagesChangedSource changedSource = PackagesChangedSource.Other)
         {
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             if (packageNames?.Any() != true)
+#pragma warning restore RS0030
                 return;
 
             var updatedPackages = new List<IPackage>();
@@ -187,7 +193,9 @@ namespace UnityEditor.PackageManager.UI.Internal
                 else
                 {
                     var versionList = new UpmVersionList(packageData, tagsToExclude);
+                    #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     if (!versionList.Any())
+#pragma warning restore RS0030
                     {
                         packagesToRemove.Add(packageName);
                         continue;
@@ -278,15 +286,21 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private void OnShowPreReleasePackagesOrSeeAllVersionsChanged(bool _)
         {
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var allProductIds = m_PackageDatabase.allPackages
+#pragma warning restore RS0030
+                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 .Where(p => p.product != null && p.versions.Any(v => v.HasTag(PackageTag.UpmFormat)))
+#pragma warning restore RS0030
                 .Select(p => p.product.id);
             GeneratePackagesAndTriggerChangeEvent(allProductIds);
         }
 
         public void GeneratePackagesAndTriggerChangeEvent(IEnumerable<long> productIds)
         {
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             if (productIds?.Any() != true)
+#pragma warning restore RS0030
                 return;
 
             var packagesChanged = new List<IPackage>();
@@ -384,7 +398,9 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private bool HasMatchingScopedRegistry(string packageName, out RegistryInfo scopedRegistry)
         {
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             scopedRegistry = m_SettingsProxy.scopedRegistries.FirstOrDefault(r => r.AnyScopeMatchesPackageName(packageName));
+#pragma warning restore RS0030
             return scopedRegistry != null;
         }
 
@@ -395,7 +411,9 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private void OnPurchaseInfosChanged(IEnumerable<AssetStorePurchaseInfo> purchaseInfos)
         {
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             GeneratePackagesAndTriggerChangeEvent(purchaseInfos.Select(info => info.productId));
+#pragma warning restore RS0030
         }
 
         private void OnPackageInfosUpdated(IReadOnlyCollection<(PackageInfo oldInfo, PackageInfo newInfo)> updatedInfos, PackagesChangedSource changedSource = PackagesChangedSource.Other)
@@ -441,8 +459,12 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_UpmCache.ClearExtraInfoCache();
             m_FetchStatusTracker.ClearCache();
 
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var productIds = m_PackageDatabase.allPackages
+#pragma warning restore RS0030
+                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 .Where(p => p.product != null && p.versions.Any(v => v.HasTag(PackageTag.UpmFormat)))
+#pragma warning restore RS0030
                 .Select(p => p.product.id).ToArray();
             if (productIds.Length > 0)
                 GeneratePackagesAndTriggerChangeEvent(productIds);
@@ -456,14 +478,20 @@ namespace UnityEditor.PackageManager.UI.Internal
 
             // We only remove packages from the Asset Store that are of UPM format. We handle the Legacy format in AssetStorePackageFactory.
             // Also, we use `ToArray` here as m_PackageDatabase.UpdatePackages will modify the enumerable and throw an error if we don't.
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var packagesToRemove = m_PackageDatabase.allPackages
+#pragma warning restore RS0030
+                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 .Where(p => p.product != null && p.versions.Any(v => v.HasTag(PackageTag.UpmFormat)) &&
+#pragma warning restore RS0030
                             p.versions.installed == null).Select(p => p.uniqueId).ToArray();
 
             if (packagesToRemove.Length > 0)
                 m_PackageDatabase.UpdatePackages(toRemove: packagesToRemove);
 
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var productIds = m_UpmCache.installedPackageInfos.Select(info => info.ParseProductId()).Where(id => id > 0);
+#pragma warning restore RS0030
             GeneratePackagesAndTriggerChangeEvent(productIds);
         }
     }

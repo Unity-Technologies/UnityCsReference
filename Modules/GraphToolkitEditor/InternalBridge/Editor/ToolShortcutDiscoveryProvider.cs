@@ -45,7 +45,9 @@ namespace Unity.GraphToolsAuthoringFramework.InternalEditorBridge
             EditorApplication.update -= Initialize;
             m_Initialized = true;
 
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var providers = GetShortcutProviders().ToList();
+#pragma warning restore RS0030
             if (!providers.Contains(this))
             {
                 providers.Add(this);
@@ -73,7 +75,9 @@ namespace Unity.GraphToolsAuthoringFramework.InternalEditorBridge
 
         IEnumerable<IShortcutEntryDiscoveryInfo> IDiscoveryShortcutProvider.GetDefinedShortcuts()
         {
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return Proxy?.GetDefinedShortcuts().Select(si => new ToolShortcutEntryInfo(si)) ?? Enumerable.Empty<IShortcutEntryDiscoveryInfo>();
+#pragma warning restore RS0030
         }
 
         static IEnumerable<IDiscoveryShortcutProvider> GetShortcutProviders()
@@ -84,13 +88,17 @@ namespace Unity.GraphToolsAuthoringFramework.InternalEditorBridge
             var discoveryField = controller.GetType().GetField("m_Discovery", BindingFlags.NonPublic | BindingFlags.Instance);
 
             if (!(discoveryField?.GetValue(controller) is Discovery discovery))
+                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 return Enumerable.Empty<IDiscoveryShortcutProvider>();
+#pragma warning restore RS0030
 
             // Get discovery.m_ShortcutProviders and replace it by our own (current + ours)
             var shortcutProvidersField = discovery.GetType().GetField("m_ShortcutProviders", BindingFlags.NonPublic | BindingFlags.Instance);
 
             if (!(shortcutProvidersField?.GetValue(discovery) is IEnumerable<IDiscoveryShortcutProvider> shortcutProviders))
+                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 return Enumerable.Empty<IDiscoveryShortcutProvider>();
+#pragma warning restore RS0030
 
             return shortcutProviders;
         }

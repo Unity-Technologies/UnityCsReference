@@ -20,7 +20,9 @@ internal class DeselectAction : PackageAction
 
     protected override bool TriggerActionImplementation(IReadOnlyCollection<IPackage> packages)
     {
+        #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
         var packageUniqueIds = packages.Select(p => p.uniqueId).ToArray();
+#pragma warning restore RS0030
         m_PageManager.activePage.RemoveSelection(packageUniqueIds);
         if (!string.IsNullOrEmpty(m_AnalyticsEventName))
             PackageManagerWindowAnalytics.SendEvent(m_AnalyticsEventName, packageIds: packageUniqueIds);

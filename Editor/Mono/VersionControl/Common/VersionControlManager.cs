@@ -52,14 +52,18 @@ namespace UnityEditor.VersionControl
             var descriptorList = new List<VersionControlDescriptor>(types.Count);
             foreach (var type in types)
             {
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 var attribute = (VersionControlAttribute)type.GetCustomAttributes(typeof(VersionControlAttribute), false).Single();
+#pragma warning restore RS0030
                 var name = attribute.name;
                 if (!typeof(VersionControlObject).IsAssignableFrom(type))
                 {
                     Debug.LogWarning($"Version control object {type.FullName} named '{name}' will be ignored because it's not derived from {typeof(VersionControlObject).FullName}.");
                     continue;
                 }
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 var duplicate = descriptorList.FirstOrDefault(d => string.Equals(d.name, name, StringComparison.Ordinal));
+#pragma warning restore RS0030
                 if (duplicate != null)
                 {
                     Debug.LogWarning($"Version control name '{name}' is not unique. Version control object {type.FullName} will be ignored. Another version control object is {duplicate.type.FullName}.");
@@ -74,7 +78,9 @@ namespace UnityEditor.VersionControl
         [RequiredByNativeCode]
         static bool HasDescriptor(string name)
         {
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return versionControlDescriptors.Any(d => string.Equals(d.name, name, StringComparison.Ordinal));
+#pragma warning restore RS0030
         }
 
         public static bool SetVersionControl(string name)
@@ -100,7 +106,9 @@ namespace UnityEditor.VersionControl
         {
             Deactivate();
 
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var descriptor = versionControlDescriptors.FirstOrDefault(d => string.Equals(d.name, name, StringComparison.Ordinal));
+#pragma warning restore RS0030
             if (descriptor == null)
                 return false;
 

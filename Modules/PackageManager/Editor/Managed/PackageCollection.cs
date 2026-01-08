@@ -32,7 +32,9 @@ namespace UnityEditor.PackageManager
             IEnumerable<PackageInfo> packages,
             Error error)
         {
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             m_PackageList = (packages ?? new PackageInfo[] {}).ToArray();
+#pragma warning restore RS0030
             m_Error = error;
             m_HasError = (m_Error != null);
         }

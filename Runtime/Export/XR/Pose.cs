@@ -8,7 +8,7 @@ using System;
 namespace UnityEngine
 {
     [Serializable]
-    public partial struct Pose : IEquatable<Pose>
+    public partial struct Pose : IEquatable<Pose>, IFormattable
     {
         public Vector3 position;
         public Quaternion rotation;
@@ -25,6 +25,8 @@ namespace UnityEngine
         {
             return string.Format("({0}, {1})", position.ToString(format), rotation.ToString(format));
         }
+
+        string IFormattable.ToString(string format, IFormatProvider formatProvider) => ToString(format);
 
         public Pose GetTransformedBy(Pose lhs)
         {

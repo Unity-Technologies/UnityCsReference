@@ -121,7 +121,9 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private void RefreshLockIcons(IEnumerable<IPackageVersion> featureSets, VisualState visualState = null)
         {
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var showLockedIcon = featureSets?.Any() == true;
+#pragma warning restore RS0030
             if (showLockedIcon)
             {
                 visualState ??= m_PageManager.activePage.visualStates.Get(m_Package?.uniqueId);
@@ -146,7 +148,9 @@ namespace UnityEditor.PackageManager.UI.Internal
             if (!args.page.isActivePage)
                 return;
 
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var visualState = args.visualStates.FirstOrDefault(vs => vs.packageUniqueId == m_Package?.uniqueId);
+#pragma warning restore RS0030
             if (visualState != null)
                 RefreshFeatureSetElements(visualState);
         }
@@ -162,7 +166,9 @@ namespace UnityEditor.PackageManager.UI.Internal
         private void RefreshUsedInFeatureSetMessage(IEnumerable<IPackageVersion> featureSets)
         {
             usedInFeatureSetMessageContainer.Clear();
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var featureSetsCount = featureSets?.Count() ?? 0;
+#pragma warning restore RS0030
             var showFeatureSetMessage = featureSetsCount > 0;
             UIUtils.SetElementDisplay(usedInFeatureSetMessageContainer, showFeatureSetMessage);
 
@@ -184,12 +190,18 @@ namespace UnityEditor.PackageManager.UI.Internal
 
             element.Add(message);
             usedInFeatureSetMessageContainer.Add(element);
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             usedInFeatureSetMessageContainer.Add(CreateLink(featureSets.FirstOrDefault()));
+#pragma warning restore RS0030
 
             if (featureSetsCount > 2)
             {
+                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 var remaining = featureSets.Skip(1);
+#pragma warning restore RS0030
+                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 remaining.Take(featureSetsCount - 2).Aggregate(usedInFeatureSetMessageContainer, (current, next) =>
+#pragma warning restore RS0030
                 {
                     var comma = new Label(", ");
                     comma.style.marginLeft = 0;
@@ -207,7 +219,9 @@ namespace UnityEditor.PackageManager.UI.Internal
                 and.style.paddingLeft = 0;
 
                 usedInFeatureSetMessageContainer.Add(and);
+                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 usedInFeatureSetMessageContainer.Add(CreateLink(featureSets.LastOrDefault()));
+#pragma warning restore RS0030
                 usedInFeatureSetMessageContainer.Add(new Label(L10n.Tr("features.")));
             }
             else
@@ -218,13 +232,17 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private void RefreshTags()
         {
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             foreach (var tag in versionContainer.Children().OfType<PackageBaseTagLabel>())
+#pragma warning restore RS0030
                 tag.Refresh(m_Version);
         }
 
         private void RefreshHelpBoxes()
         {
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             foreach (var helpBox in helpBoxContainer.Children().OfType<PackageBaseHelpBox>())
+#pragma warning restore RS0030
                 helpBox.Refresh(m_Version);
         }
 

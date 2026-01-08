@@ -102,7 +102,9 @@ namespace UnityEditor
         {
             // Remove any selections that do not exist.
             int points = m_LineRenderer.positionCount;
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             m_Selection = m_Selection.Where(o => o < points).ToList();
+#pragma warning restore RS0030
         }
 
         private void SelectAllPoints(EditorWindow window)

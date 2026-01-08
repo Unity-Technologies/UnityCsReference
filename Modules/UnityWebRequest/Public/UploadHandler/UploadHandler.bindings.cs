@@ -167,4 +167,42 @@ namespace UnityEngine.Networking
             public static IntPtr ConvertToNative(UploadHandlerFile uploadHandler) => uploadHandler.m_Ptr;
         }
     }
+
+    [StructLayout(LayoutKind.Sequential)]
+    [NativeHeader("Modules/UnityWebRequest/Public/UploadHandler/UploadHandlerStream.h")]
+    internal sealed class UploadHandlerStream : UploadHandler
+    {
+        private static extern unsafe IntPtr Create([UnityMarshalAs(NativeType.ScriptingObjectPtr)] UploadHandlerStream self);
+
+        [NativeMethod(IsThreadSafe = true)]
+        public extern void Close();
+
+        [NativeMethod(IsThreadSafe = true)]
+        private extern void Reset();
+
+        [NativeMethod(IsThreadSafe = true)]
+        private extern void PushData(ReadOnlySpan<byte> data);
+
+        public UploadHandlerStream()
+        {
+            unsafe
+            {
+                m_Ptr = Create(this);
+            }
+        }
+
+        public void WriteData(ReadOnlySpan<byte> data) {
+            PushData(data);
+        }
+
+        internal override byte[] GetData()
+        {
+            throw new System.NotSupportedException("Raw data access is not supported");
+        }
+
+        new internal static class BindingsMarshaller
+        {
+            public static IntPtr ConvertToNative(UploadHandlerStream uploadHandler) => uploadHandler.m_Ptr;
+        }
+    }
 }

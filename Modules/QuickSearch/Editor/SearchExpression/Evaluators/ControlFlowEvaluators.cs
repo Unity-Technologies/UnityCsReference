@@ -50,7 +50,9 @@ namespace UnityEditor.Search
         [SearchExpressionEvaluator(SearchExpressionType.AnyValue | SearchExpressionType.Variadic)]
         public static IEnumerable<SearchItem> Empty(SearchExpressionContext c)
         {
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return c.args.Select(e => SearchExpression.CreateItem(!e.Execute(c).Any()));
+#pragma warning restore RS0030
         }
 
         [Description("Return true if each elements evaluates has being true."), Category("Filters")]
@@ -95,7 +97,9 @@ namespace UnityEditor.Search
                 var templateExpr = c.expression.parameters[i];
                 var currentStreamName = $"apply@stream#{i}";
                 var currentStream = SearchExpression.CreateStreamExpression(resultStreamExpr, currentStreamName);
+                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 var args = new[] { currentStream }.Concat(templateExpr.parameters).ToArray();
+#pragma warning restore RS0030
                 var innerText = templateExpr.innerText;
                 var evaluator = templateExpr.evaluator;
 
@@ -123,7 +127,9 @@ namespace UnityEditor.Search
             }
 
             // Pull on the last element to start the evaluation chain
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return exprs.Last().Execute(c);
+#pragma warning restore RS0030
         }
     }
 }

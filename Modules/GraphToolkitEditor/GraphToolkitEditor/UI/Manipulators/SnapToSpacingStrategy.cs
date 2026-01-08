@@ -92,7 +92,9 @@ namespace Unity.GraphToolkit.Editor
             List<SnapToSpacingResult> results = GetClosestSpacingPositions(sourceRect);
 
             snapDirection = SnapDirection.SnapNone;
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             foreach (var result in results.Where(result => result != null))
+#pragma warning restore RS0030
             {
                 ApplySnapToSpacingResult(ref snapDirection, sourceRect.position, ref snappedPosition, result);
 
@@ -163,7 +165,9 @@ namespace Unity.GraphToolkit.Editor
             Rect rectToFit = graphView.layout;
 
             graphView.GraphModel.GetGraphElementModels().GetAllViews(graphView, null, k_GetRectsToConsiderInViewAllUIs);
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             foreach (GraphElement element in k_GetRectsToConsiderInViewAllUIs.OfType<GraphElement>())
+#pragma warning restore RS0030
             {
                 if (!IsIgnoredElement(selectedElement, element, rectToFit))
                 {
@@ -340,7 +344,9 @@ namespace Unity.GraphToolkit.Editor
             SnapToSpacingResult minResult = null;
             float minDistance = float.MaxValue;
 
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             foreach (var spacingPos in m_SpacingPositions.Where(spacingPos => spacingPos.Value.Orientation == orientation))
+#pragma warning restore RS0030
             {
                 SnapToSpacingResult result = GetSnapToSpacingResult(sourceRect, spacingPos.Key, spacingPos.Value);
                 if (result != null && minDistance > result.Distance)
@@ -418,7 +424,9 @@ namespace Unity.GraphToolkit.Editor
             SnapReference startReference = orientation == PortOrientation.Vertical ? SnapReference.BottomWire : SnapReference.RightWire;
             SnapReference endReference = orientation == PortOrientation.Vertical ? SnapReference.TopWire : SnapReference.LeftWire;
 
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             float maxCoordinate = rects.Max(rect => orientation == PortOrientation.Vertical ? rect.xMax : rect.yMax) + SpacingLine.DefaultSpacingLineSideLength;
+#pragma warning restore RS0030
             float spacingLineSideLength = SpacingLine.DefaultSpacingLineSideLength;
 
             Vector2 firstSidePos = GetMaxPos(rects[0], startReference);

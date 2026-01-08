@@ -17,7 +17,9 @@ namespace UnityEditor
         {
             serializedObject.Update();
 
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             using (new EditorGUI.DisabledScope(!targets.Any(x => (x as HingeJoint2D).gameObject.activeInHierarchy)))
+#pragma warning restore RS0030
             {
                 EditorGUILayout.EditorToolbarForTarget(EditorGUIUtility.TrTempContent("Edit Angular Limits"), this);
                 GUILayout.Space(5);

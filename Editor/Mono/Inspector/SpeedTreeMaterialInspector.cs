@@ -58,14 +58,18 @@ namespace UnityEditor
                 geomTypes[i] = SpeedTreeGeometryType.Branch;
                 for (int j = 0; j < speedTreeGeometryTypeString.Length; ++j)
                 {
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     if (((Material)targets[i]).shaderKeywords.Contains(speedTreeGeometryTypeString[j]))
+#pragma warning restore RS0030
                     {
                         geomTypes[i] = (SpeedTreeGeometryType)j;
                         break;
                     }
                 }
             }
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             EditorGUI.showMixedValue = geomTypes.Distinct().Count() > 1;
+#pragma warning restore RS0030
             EditorGUI.BeginChangeCheck();
             var setGeomType = (SpeedTreeGeometryType)EditorGUILayout.EnumPopup("Geometry Type", geomTypes[0]);
             if (EditorGUI.EndChangeCheck())
@@ -73,7 +77,9 @@ namespace UnityEditor
                 bool shouldEnableAlphaTest = ShouldEnableAlphaTest(setGeomType);
                 UnityEngine.Rendering.CullMode cullMode = shouldEnableAlphaTest ? UnityEngine.Rendering.CullMode.Off : UnityEngine.Rendering.CullMode.Back;
 
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 foreach (var m in targets.Cast<Material>())
+#pragma warning restore RS0030
                 {
                     if (shouldEnableAlphaTest)
                         m.SetOverrideTag("RenderType", "treeTransparentCutout");
@@ -100,11 +106,17 @@ namespace UnityEditor
             {
                 props.Remove(bumpMap);
 
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 var enableBump = targets.Select(t => ((Material)t).shaderKeywords.Contains("EFFECT_BUMP"));
+#pragma warning restore RS0030
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 bool? enable = ToggleShaderProperty(bumpMap, enableBump.First(), enableBump.Distinct().Count() > 1);
+#pragma warning restore RS0030
                 if (enable != null)
                 {
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     foreach (var m in targets.Cast<Material>())
+#pragma warning restore RS0030
                     {
                         if (enable.Value)
                             m.EnableKeyword("EFFECT_BUMP");
@@ -119,20 +131,28 @@ namespace UnityEditor
             if (detailTex != null)
             {
                 props.Remove(detailTex);
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 if (geomTypes.Contains(SpeedTreeGeometryType.BranchDetail))
+#pragma warning restore RS0030
                     ShaderProperty(detailTex, detailTex.displayName);
             }
 
             //---------------------------------------------------------------
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var enableHueVariation = targets.Select(t => ((Material)t).shaderKeywords.Contains("EFFECT_HUE_VARIATION"));
+#pragma warning restore RS0030
             var hueVariation = props.Find(prop => prop.name == "_HueVariation");
             if (enableHueVariation != null && hueVariation != null)
             {
                 props.Remove(hueVariation);
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 bool? enable = ToggleShaderProperty(hueVariation, enableHueVariation.First(), enableHueVariation.Distinct().Count() > 1);
+#pragma warning restore RS0030
                 if (enable != null)
                 {
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     foreach (var m in targets.Cast<Material>())
+#pragma warning restore RS0030
                     {
                         if (enable.Value)
                             m.EnableKeyword("EFFECT_HUE_VARIATION");
@@ -147,7 +167,9 @@ namespace UnityEditor
             if (alphaCutoff != null)
             {
                 props.Remove(alphaCutoff);
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 if (geomTypes.Any(t => ShouldEnableAlphaTest(t)))
+#pragma warning restore RS0030
                     ShaderProperty(alphaCutoff, alphaCutoff.displayName);
             }
 

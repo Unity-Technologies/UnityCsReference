@@ -75,7 +75,7 @@ namespace UnityEngine.SceneManagement
     [Serializable]
     [NativeHeader("Runtime/SceneManager/UnitySceneHandle.h")]
     [NativeClass("UnitySceneHandle")]
-    public struct SceneHandle : IEquatable<SceneHandle>
+    public struct SceneHandle : IEquatable<SceneHandle>, IFormattable
     {
         internal EntityId m_Value;
         public static SceneHandle None => default;
@@ -131,6 +131,8 @@ namespace UnityEngine.SceneManagement
 
         public override string ToString() => m_Value.ToString();
         public string ToString(string format) => m_Value.ToString(format);
+
+        public string ToString(string format, IFormatProvider formatProvider) => m_Value.ToString(format, formatProvider);
 
         internal EntityId ToEntityId() => m_Value;
 

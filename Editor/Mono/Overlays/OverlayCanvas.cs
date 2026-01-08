@@ -230,6 +230,12 @@ namespace UnityEditor.Overlays
         }
     }
 
+    public enum DynamicPanelBehavior
+    {
+        None,
+        DisplaceWindow
+    }
+
     //Dock position within container
     //for a horizontal container, Top is left, Bottom is right
     public enum DockPosition
@@ -367,6 +373,7 @@ namespace UnityEditor.Overlays
 
 
         List<OverlayContainer> m_Containers;
+        HashSet<MainToolbarOverlay> m_NewMainToolbarOverlays = new HashSet<MainToolbarOverlay>();
 
         internal IEnumerable<OverlayContainer> containers => m_Containers;
 
@@ -443,14 +450,10 @@ namespace UnityEditor.Overlays
             }
         }
 
-        internal enum DynamicPanelBehavior
-        {
-            None,
-            DisplaceWindow
-        }
-
         [SerializeField]
         DynamicPanelBehavior m_DynamicPanelBehavior = DynamicPanelBehavior.None;
+        [SerializeField]
+        bool m_DynamicPanelBehaviorModified = false;
 
         internal DynamicPanelBehavior dynamicPanelBehavior
         {
@@ -460,9 +463,17 @@ namespace UnityEditor.Overlays
                 if (m_DynamicPanelBehavior != value)
                 {
                     m_DynamicPanelBehavior = value;
+                    m_DynamicPanelBehaviorModified = true;
                     DisplaceWindow();
                 }
             }
+        }
+
+        internal void ResetDynamicPanelBehavior()
+        {
+            m_DynamicPanelBehaviorModified = false;
+            m_DynamicPanelBehavior = OverlayPrefs.GetDefaultDynamicPanelBehavior(containerWindow.GetType());
+            DisplaceWindow();
         }
 
         internal OverlayCanvas() { }
@@ -565,8 +576,12 @@ namespace UnityEditor.Overlays
                 // Verify if the left and right dynamic panel overlay containers
                 // are direct children of the vertical overlay container group.
                 // If they are, the layout is already correct.
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 if (displaceContainer.Children().Contains(leftDynamicPanelOverlayContainer)
+#pragma warning restore RS0030
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     && displaceContainer.Children().Contains(rightDynamicPanelOverlayContainer))
+#pragma warning restore RS0030
                     return;
 
                 displaceContainer.Add(leftDynamicPanelOverlayContainer);
@@ -579,8 +594,12 @@ namespace UnityEditor.Overlays
                 // Verify if the left and right dynamic panel overlay containers
                 // are direct children of the overlay scene container.
                 // If they are, the layout is already correct.
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 if (sceneContainers.Children().Contains(leftDynamicPanelOverlayContainer)
+#pragma warning restore RS0030
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     && sceneContainers.Children().Contains(rightDynamicPanelOverlayContainer))
+#pragma warning restore RS0030
                     return;
 
                 var anchoredContainer = sceneContainers.Q<VisualElement>(k_AnchoredContainerName);
@@ -760,6 +779,7 @@ namespace UnityEditor.Overlays
                     OverlayAttribute defaultOverlayAttrib = new OverlayAttribute();
                     MainToolbarOverlay mainToolbarOverlay = new MainToolbarOverlay();
                     mainToolbarOverlay.createElementMethod = definition.method;
+                    mainToolbarOverlay.elementAvailabilityMethod = definition.availabilityMethod;
                     mainToolbarOverlay.Initialize(definition.attr.path, definition.attr.ussName, definition.attr.displayName, defaultOverlayAttrib.defaultSize, defaultOverlayAttrib.minSize, defaultOverlayAttrib.maxSize, defaultOverlayAttrib.priority, defaultOverlayAttrib.group);
                     AddOverlay(mainToolbarOverlay);
                 }
@@ -812,6 +832,9 @@ namespace UnityEditor.Overlays
                     }
                 }
             }
+
+            if (!m_DynamicPanelBehaviorModified)
+                m_DynamicPanelBehavior = OverlayPrefs.GetDefaultDynamicPanelBehavior(window.GetType());
 
             // If save data is still null at this point, initialize it to empty list as code down the line is not expecting it to be null.
             if (m_SaveData == null)
@@ -1127,13 +1150,17 @@ namespace UnityEditor.Overlays
 
         internal bool TryGetOverlay(string id, out Overlay overlay)
         {
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             overlay = m_Overlays.FirstOrDefault(x => x.id == id);
+#pragma warning restore RS0030
             return overlay != null;
         }
 
         internal bool TryGetOverlay<T>(string id, out T overlay) where T : Overlay
         {
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             overlay = m_Overlays.FirstOrDefault(x => x is T && x.id == id) as T;
+#pragma warning restore RS0030
             return overlay != null;
         }
 
@@ -1164,7 +1191,9 @@ namespace UnityEditor.Overlays
         // used by tests
         internal SaveData FindSaveData(Overlay overlay)
         {
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var data = m_SaveData.FirstOrDefault(x => x.id == overlay.id);
+#pragma warning restore RS0030
 
             if (data == null)
             {
@@ -1200,10 +1229,24 @@ namespace UnityEditor.Overlays
                         data.dockPosition = (DockPosition)(int)attr.defaultDockPosition;
                         data.displayed = mtOverlay.createElementMethod.GetCustomAttribute<UnityOnlyMainToolbarPresetAttribute>() != null;
                     }
+
+                    m_NewMainToolbarOverlays.Add(mtOverlay);
                 }
             }
 
             return data;
+        }
+
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        internal IEnumerable<MainToolbarOverlay> GetNewMainToolbarOverlaysBuffer()
+        {
+            return m_NewMainToolbarOverlays;
+        }
+
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        internal void ClearNewMainToolbarOverlaysBuffer()
+        {
+            m_NewMainToolbarOverlays.Clear();
         }
 
         internal void ClearHighlights()
@@ -1270,7 +1313,9 @@ namespace UnityEditor.Overlays
                 overlay.ApplySaveData(data);
 #pragma warning restore 618
 
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var container = m_Containers.FirstOrDefault(x => data.containerId == x.name);
+#pragma warning restore RS0030
 
             // Overlays were implemented with the idea that they are always associated with an OverlayContainer. While
             // this doesn't really need to be true (floating Overlays don't need a Container), the code isn't capable
@@ -1320,7 +1365,9 @@ namespace UnityEditor.Overlays
             foreach(var o in this.overlays)
                 overlays.Add(new Tuple<SaveData, Overlay>(FindSaveData(o), o));
 
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var ordered = overlays.OrderBy(x => x.Item1.index);
+#pragma warning restore RS0030
             foreach (var o in ordered)
                 RestoreOverlay(o.Item2, o.Item1);
 

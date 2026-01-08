@@ -665,7 +665,9 @@ namespace UnityEditor
                 prop.Next(false);
             }
 
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             TreeViewUtility.SetChildParentReferences(nodeInfos.Cast<TreeViewItem>().ToList(), rootNode);
+#pragma warning restore RS0030
             return rootNode;
         }
 

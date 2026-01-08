@@ -8,7 +8,7 @@ using UnityEditor;
 using UnityEngine.Pool;
 using UnityEngine.UIElements;
 
-namespace Unity.UIToolkit.Editor.Stages;
+namespace Unity.UIToolkit.Editor;
 
 internal readonly record struct VisualTreeAssetEditingContext
 {
@@ -40,7 +40,7 @@ internal readonly record struct VisualTreeAssetEditingContext
 
         RootVisualTreeAsset = visualTreeAsset;
         SubDocumentPath = subDocumentPath;
-        SubDocumentOptions = SubDocumentPath == null ? SubDocumentOptions.None : subDocumentOptions;
+        SubDocumentOptions = SubDocumentPath == null  || subDocumentPath.Length == 0 ? SubDocumentOptions.None : subDocumentOptions;
         PanelSettings = panelSettings;
     }
 
@@ -51,12 +51,12 @@ internal readonly record struct VisualTreeAssetEditingContext
         switch (subDocumentOptions)
         {
             case SubDocumentOptions.None:
-                if (subDocumentPath != null)
+                if (subDocumentPath != null && subDocumentPath.Length > 0)
                     throw new ArgumentException($"Invalid sub-document options '{subDocumentOptions}' provided to edit a sub-document of a {nameof(VisualTreeAsset)}. Please use either '{nameof(SubDocumentOptions.Isolation)}' or '{nameof(SubDocumentOptions.InContext)}'.", nameof(subDocumentOptions));
                 break;
             case SubDocumentOptions.InContext:
             case SubDocumentOptions.Isolation:
-                if (subDocumentPath == null)
+                if (subDocumentPath == null || subDocumentPath.Length == 0)
                     throw new ArgumentException($"Invalid sub-document options '{subDocumentOptions}' provided to edit a root {nameof(VisualTreeAsset)}. Please use '{nameof(SubDocumentOptions.None)}'.", nameof(subDocumentOptions));
                 if (!ValidateSubDocumentIsPartOrMainAssetHierarchy(visualTreeAsset, subDocumentPath))
                     throw new ArgumentException($"Provided {nameof(TemplateAsset)} is not part of the '{visualTreeAsset.name}' {nameof(VisualTreeAsset)}.", nameof(subDocumentPath));
@@ -104,10 +104,9 @@ internal readonly record struct VisualTreeAssetEditingContext
     public static VisualTreeAssetEditingContext Reimport(VisualTreeAssetEditingContext context)
     {
         var rootPath = AssetDatabase.GetAssetPath(context.RootVisualTreeAsset);
-        AssetDatabase.ImportAsset(rootPath, ImportAssetOptions.ForceSynchronousImport);
 
         var path = context.SubDocumentPath;
-        if (context.SubDocumentPath != null)
+        if (context.SubDocumentPath != null && context.SubDocumentPath.Length > 0)
         {
             var template = context.SubDocumentPath[^1];
             var editedVisualTreeAsset = template.ResolveTemplate();
@@ -128,6 +127,10 @@ internal readonly record struct VisualTreeAssetEditingContext
                     }
                 }
             }
+        }
+        else
+        {
+            AssetDatabase.ImportAsset(rootPath, ImportAssetOptions.ForceSynchronousImport);
         }
 
         return new VisualTreeAssetEditingContext(

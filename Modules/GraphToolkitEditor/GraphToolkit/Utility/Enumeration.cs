@@ -60,7 +60,9 @@ namespace Unity.GraphToolkit
             where T : Enumeration
         {
             var fields = typeof(T).GetFields(BindingFlags.Public | BindingFlags.Static | BindingFlags.DeclaredOnly);
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return fields.Select(f => f.GetValue(null)).Cast<T>();
+#pragma warning restore RS0030
         }
 
         /// <summary>
@@ -74,7 +76,9 @@ namespace Unity.GraphToolkit
             where TBase : Enumeration
         {
             var fields = typeof(T).GetFields(BindingFlags.Public | BindingFlags.Static | BindingFlags.FlattenHierarchy);
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return fields.Select(f => f.GetValue(null)).Cast<TBase>();
+#pragma warning restore RS0030
         }
 
         /// <summary>

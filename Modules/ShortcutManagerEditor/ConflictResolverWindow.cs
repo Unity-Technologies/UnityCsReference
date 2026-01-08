@@ -198,7 +198,9 @@ namespace UnityEditor.ShortcutManagement
         {
             m_PreviouslyFocusedView = previouslyFocusedView;
             m_ConflictResolver = conflictResolver;
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             m_Entries = entries.ToList();
+#pragma warning restore RS0030
 
             var multiColumnHeader = new MultiColumnHeader(m_MulticolumnHeaderState);
             multiColumnHeader.ResizeToFit();
@@ -318,7 +320,9 @@ namespace UnityEditor.ShortcutManagement
                 {
                     ShortcutEntry entry = null;
                     if (hasSelection)
+                        #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                         entry = m_Entries[m_ConflictListView.GetSelection().First()];
+#pragma warning restore RS0030
 
                     using (new EditorGUI.DisabledScope(entry == null || (entry.type == ShortcutType.Clutch && !m_Rebind)))
                     {

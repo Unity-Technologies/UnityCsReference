@@ -65,7 +65,9 @@ namespace UnityEditor.Scripting.ScriptCompilation
 
             // If none of the automatic references package assemblies are in
             // the project, do not add anything.
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             if (!additionalReferences.Any())
+#pragma warning restore RS0030
             {
                 return;
             }
@@ -85,7 +87,9 @@ namespace UnityEditor.Scripting.ScriptCompilation
                     continue;
 
                 // Add the automatic references.
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 var newReferences = assembly.References.Concat(additionalReferences).Distinct().ToList();
+#pragma warning restore RS0030
                 assembly.References = newReferences;
             }
         }

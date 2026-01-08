@@ -63,7 +63,9 @@ namespace UnityEditor.EditorTools
 
         internal static int availableComponentContextCount => instance.m_ComponentContexts.Count;
 
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
         internal static IEnumerable<Type> additionalContextToolTypesCache = Enumerable.Empty<Type>();
+#pragma warning restore RS0030
 
         [SerializeField]
         EditorToolContext m_ActiveToolContext;
@@ -100,7 +102,9 @@ namespace UnityEditor.EditorTools
                 // Make sure to get the active tool enum prior to setting the context, otherwise we'll be comparing
                 // apples to oranges. Ie, the transform tools will be different despite being the same `Tool` enum value.
                 var tool = Tools.current;
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 var wasAdditionalContextTool = tool == Tool.Custom && additionalContextToolTypesCache.Contains(activeTool.GetType());
+#pragma warning restore RS0030
                 var prev = instance.m_ActiveToolContext;
 
                 if (prev != null)
@@ -137,7 +141,9 @@ namespace UnityEditor.EditorTools
                 // when moving to that new context
                 else if(wasAdditionalContextTool)
                 {
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     var isAdditionalContextTool = instance.m_ActiveToolContext.GetAdditionalToolTypes().Contains(activeTool.GetType());
+#pragma warning restore RS0030
 
                     if(!isAdditionalContextTool)
                         RestorePreviousPersistentTool();
@@ -257,7 +263,9 @@ namespace UnityEditor.EditorTools
                     toolType = customTool ? tool.GetType() : null;
                     contextType = customContext ? context.GetType() : null;
                     targetObject = tool.target;
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     targetObjects = tool.targets.ToArray();
+#pragma warning restore RS0030
                 }
                 else
                 {
@@ -279,7 +287,9 @@ namespace UnityEditor.EditorTools
                     return false;
 
                 // todo need to cache ComponentEditor targets
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 return toolType == editor.GetType() && targetObjects.SequenceEqual(editor.targets);
+#pragma warning restore RS0030
             }
 
             public override string ToString()
@@ -370,13 +380,21 @@ namespace UnityEditor.EditorTools
 
         void SelectedObjectWasDestroyed(EntityId id)
         {
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             bool componentToolActive = m_ComponentTools.Any(
+#pragma warning restore RS0030
                 x => x?.GetEditor<EditorTool>() == m_ActiveTool)
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 && m_ActiveTool.m_Targets.Any(x => x == null || x.GetEntityId() == id);
+#pragma warning restore RS0030
 
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             bool componentContextActive = m_ComponentContexts.Any(
+#pragma warning restore RS0030
                 x => x?.GetEditor<EditorToolContext>() == m_ActiveToolContext)
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 && m_ActiveToolContext.targets.Any(x => x == null || x.GetEntityId() == id);
+#pragma warning restore RS0030
 
             if (componentToolActive || componentContextActive)
             {
@@ -392,7 +410,9 @@ namespace UnityEditor.EditorTools
 
         void RestoreCustomEditorTool()
         {
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var restored = m_ComponentTools.FirstOrDefault(m_PreviousComponentToolCache.IsEqual);
+#pragma warning restore RS0030
 
             if (restored != null)
             {
@@ -677,7 +697,9 @@ namespace UnityEditor.EditorTools
         {
             if (includeLockedInspectorTools)
                 return instance.m_ComponentTools.Count;
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return instance.m_ComponentTools.Count(x => !x.lockedInspector);
+#pragma warning restore RS0030
         }
 
         // Used by tests.
@@ -816,7 +838,9 @@ namespace UnityEditor.EditorTools
                 {
                     // Because this function collects all variants when appending to the list, we can safely assume that
                     // if a variant group exists in the tools list the tool is also already appended.
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     if (tools.Any(x => x.variantGroup == meta.variantGroup
+#pragma warning restore RS0030
                                     && x.componentTool == entry.componentTool))
                         return;
 
@@ -829,7 +853,9 @@ namespace UnityEditor.EditorTools
                     entry.tools.Add(i);
                 }
 
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 if (entry.tools.Any())
+#pragma warning restore RS0030
                     tools.Add(entry);
             }
 
@@ -856,7 +882,9 @@ namespace UnityEditor.EditorTools
                      tool.typeAssociation.targetContext == context.GetType())
                     && tool.editorType != null // The editor type can be null on domain reload after renaming an EditorTool (UUM-113403)
                     && !tool.lockedInspector
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     && !tools.Any(entry => entry.tools.Any(x => x == tool.editor)))
+#pragma warning restore RS0030
                     AddToolEntry(tool.editorType, tool.typeAssociation.group == null ? ToolEntry.Scope.Component : ToolEntry.Scope.Grouped);
         }
 

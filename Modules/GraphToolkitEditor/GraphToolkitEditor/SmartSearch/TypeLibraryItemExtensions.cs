@@ -22,23 +22,25 @@ namespace Unity.GraphToolkit.Editor
         /// Creates a <see cref="ItemLibraryDatabase"/> for types.
         /// </summary>
         /// <param name="types">Types to create the <see cref="ItemLibraryDatabase"/> from.</param>
+        /// <param name="graphModel">The graph model associated with the database</param>
         /// <returns>A <see cref="ItemLibraryDatabase"/> containing the types passed in parameter.</returns>
-        public static ItemLibraryDatabaseBase ToDatabase(this IEnumerable<Type> types)
+        public static ItemLibraryDatabaseBase ToDatabase(this IEnumerable<Type> types, GraphModel graphModel)
         {
-            return ToDatabase(types, t => t.GenerateTypeHandle());
+            return ToDatabase(types, t => t.GenerateTypeHandle(), graphModel);
         }
 
         /// <summary>
         /// Creates a <see cref="ItemLibraryDatabase"/> for types.
         /// </summary>
         /// <param name="types">Types to create the <see cref="ItemLibraryDatabase"/> from.</param>
+        /// <param name="graphModel">The graph model associated with the database</param>
         /// <returns>A <see cref="ItemLibraryDatabase"/> containing the types passed in parameter.</returns>
-        public static ItemLibraryDatabaseBase ToDatabase(this IEnumerable<TypeHandle> types)
+        public static ItemLibraryDatabaseBase ToDatabase(this IEnumerable<TypeHandle> types, GraphModel graphModel)
         {
-            return ToDatabase(types, t => t);
+            return ToDatabase(types, t => t, graphModel);
         }
 
-        static ItemLibraryDatabaseBase ToDatabase<T>(this IEnumerable<T> types, Func<T, TypeHandle> func)
+        static ItemLibraryDatabaseBase ToDatabase<T>(this IEnumerable<T> types, Func<T, TypeHandle> func, GraphModel graphModel)
         {
             var items = new List<ItemLibraryItem>();
             foreach (var item in types)
@@ -47,7 +49,7 @@ namespace Unity.GraphToolkit.Editor
                 var type = typeHandle.Resolve();
                 if (type.IsClass || type.IsValueType)
                 {
-                    var classItem = new TypeLibraryItem(TypeHelpers.GetFriendlyName(type), typeHandle);
+                    var classItem = new TypeLibraryItem(TypeHelpers.GetFriendlyName(type), typeHandle, graphModel);
                     items.Add(classItem);
                 }
             }

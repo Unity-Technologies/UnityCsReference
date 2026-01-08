@@ -60,7 +60,9 @@ namespace UnityEditor.PackageManager.UI.Internal
         {
             get
             {
+                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 m_ActivePage ??= m_Pages.Values.FirstOrDefault(p => p.isActivePage);
+#pragma warning restore RS0030
                 if (m_ActivePage != null)
                     return m_ActivePage;
                 m_ActivePage = GetPage(k_DefaultPageId);
@@ -82,7 +84,9 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         [NonSerialized]
         private List<ExtensionPageArgs> m_OrderedExtensionPageArgs = new();
+        #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
         public IEnumerable<IPage> orderedExtensionPages => m_OrderedExtensionPageArgs.Select(a => GetPage(a.id));
+#pragma warning restore RS0030
 
         [SerializeReference]
         private IPage[] m_SerializedPages = Array.Empty<IPage>();
@@ -109,7 +113,9 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public void OnBeforeSerialize()
         {
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             m_SerializedPages = m_Pages.Values.ToArray();
+#pragma warning restore RS0030
             m_SerializedLastActivePageId = lastActivePage?.id ?? string.Empty;
             m_SerializedActivePageId = m_ActivePage?.id ?? string.Empty;
         }
@@ -161,7 +167,9 @@ namespace UnityEditor.PackageManager.UI.Internal
                 return;
             }
 
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             if (m_OrderedExtensionPageArgs.Any(a => a.name == args.name))
+#pragma warning restore RS0030
             {
                 Debug.LogWarning(string.Format(L10n.Tr("An extension page with name {0} already exists. Please use a different name."), args.name));
                 return;
@@ -201,8 +209,12 @@ namespace UnityEditor.PackageManager.UI.Internal
         {
             // Here we only want to remove outdated pages and update existing pages when needed
             // We will delay the creation of new pages to when the UI is displaying them to save some resources
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var scopedRegistries = m_SettingsProxy.scopedRegistries.ToDictionary(r => r.id, r => r);
+#pragma warning restore RS0030
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var scopedRegistryPages = m_Pages.Values.OfType<ScopedRegistryPage>().ToArray();
+#pragma warning restore RS0030
             var pagesToRemove = new HashSet<string>();
             foreach (var page in scopedRegistryPages)
             {
@@ -235,11 +247,15 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public IPage FindPage(IList<IPackage> packages)
         {
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             if (packages == null || packages.Count == 0 || packages.All(p => activePage.visualStates.Contains(p.uniqueId) || activePage.ShouldInclude(p)))
+#pragma warning restore RS0030
                 return activePage;
 
             var pageIdsToCheck = new[] { BuiltInPage.k_Id, InProjectPage.k_Id, UnityRegistryPage.k_Id, MyAssetsPage.k_Id, MyRegistriesPage.k_Id};
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return pageIdsToCheck.Select(GetPage).FirstOrDefault(page => !page.isActivePage && packages.All(page.ShouldInclude));
+#pragma warning restore RS0030
         }
 
         [ExcludeFromCodeCoverage]

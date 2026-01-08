@@ -176,7 +176,11 @@ namespace UnityEditor.UIElements.StyleSheets
             return m_Errors.GetEnumerator();
         }
 
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
         public bool hasErrors { get { return m_Errors.Any(e => !e.isWarning); } }
+#pragma warning restore RS0030
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
         public bool hasWarning { get { return m_Errors.Any(e => e.isWarning); } }
+#pragma warning restore RS0030
     }
 }

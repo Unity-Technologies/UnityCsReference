@@ -140,6 +140,10 @@ namespace UnityEngine.Networking
         protected virtual void ReceiveContentLength(int contentLength) {}
 
         [RequiredByNativeCode]
+        private static void CompleteHeadersStatic(DownloadHandler handler) { handler.CompleteHeaders(); }
+        internal virtual void CompleteHeaders() { }
+
+        [RequiredByNativeCode]
         protected virtual void CompleteContent() {}
 
         [RequiredByNativeCode]
@@ -337,5 +341,77 @@ namespace UnityEngine.Networking
             public static IntPtr ConvertToNative(DownloadHandlerFile handler) => handler.m_Ptr;
         }
 
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    [NativeHeader("Modules/UnityWebRequest/Public/DownloadHandler/DownloadHandlerStream.h")]
+    internal sealed class DownloadHandlerStream : DownloadHandler
+    {
+        private extern static IntPtr Create([UnityMarshalAs(NativeType.ScriptingObjectPtr)] DownloadHandlerStream obj);
+
+        private bool m_headersComplete = false;
+        private System.Action m_headersCompleteCallback;
+
+        private void InternalCreateStream()
+        {
+            m_Ptr = Create(this);
+        }
+
+        public DownloadHandlerStream()
+        {
+            InternalCreateStream();
+        }
+
+        [NativeMethod(IsThreadSafe = true)]
+        private extern int PopData(Span<byte> outData);
+
+        [NativeMethod(IsThreadSafe = true)]
+        public extern void Close();
+
+        public int ReadData(Span<byte> outData)
+        {
+            return InternalReadData(outData);
+        }
+
+        internal int InternalReadData(Span<byte> outData)
+        {
+            if (m_Ptr == IntPtr.Zero) return 0;
+
+            return PopData(outData);
+        }
+
+        internal override void CompleteHeaders()
+        {
+            if (m_headersCompleteCallback != null)
+            {
+                m_headersCompleteCallback();
+                m_headersCompleteCallback = null;
+            }
+            m_headersComplete = true;
+        }
+
+        public event System.Action headersCompleted
+        {
+            add
+            {
+                if (m_headersComplete)
+                {
+                    value();
+                }
+                else
+                {
+                    m_headersCompleteCallback += value;
+                }
+            }
+            remove
+            {
+                m_headersCompleteCallback -= value;
+            }
+        }
+
+        new internal static class BindingsMarshaller
+        {
+            public static IntPtr ConvertToNative(DownloadHandlerStream handler) => handler.m_Ptr;
+        }
     }
 }

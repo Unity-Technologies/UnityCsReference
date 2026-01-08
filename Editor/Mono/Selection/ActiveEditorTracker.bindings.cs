@@ -69,15 +69,12 @@ namespace UnityEditor
         // List<T> version
         internal void GetObjectsLockedByThisTracker(List<UnityObject> lockedObjects)
         {
-            GetObjectsLockedByThisTrackerInternal(lockedObjects);
+            GetObjectsLockedByThisTrackerInternal(this, lockedObjects);
         }
 
         [FreeFunction]
-        static extern void Internal_GetObjectsLockedByThisTrackerInternal(ActiveEditorTracker self, [NotNull] object lockedObjects);
-        internal void GetObjectsLockedByThisTrackerInternal(object lockedObjects)
-        {
-            Internal_GetObjectsLockedByThisTrackerInternal(this, lockedObjects);
-        }
+        [NativeName("Internal_GetObjectsLockedByThisTrackerInternal")]
+        static extern void GetObjectsLockedByThisTrackerInternal(ActiveEditorTracker self, [NotNull, Out] List<UnityObject> lockedObjects);
 
         // List<T> version
         internal void SetObjectsLockedByThisTracker(List<UnityObject> toBeLocked)

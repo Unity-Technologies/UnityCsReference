@@ -158,7 +158,7 @@ namespace UnityEditor.Profiling
 
         [NativeMethod("GetItemMergedSamplesColumnData")]
         [ThreadSafe]
-        extern void GetItemMergedSamplesColumnDataInternal(int id, int column, [Out] List<string> outStrings);
+        extern void GetItemMergedSamplesColumnDataInternal(int id, int column, [Out,NotNull] List<string> outStrings);
 
         public void GetItemMergedSamplesColumnDataAsFloats(int id, int column, List<float> outValues)
         {

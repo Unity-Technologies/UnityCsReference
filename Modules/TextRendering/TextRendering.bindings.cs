@@ -473,9 +473,9 @@ namespace UnityEngine
         public extern UICharInfo[] GetCharactersArray();
         public extern UILineInfo[] GetLinesArray();
 
-        [NativeThrows] private extern void GetVerticesInternal(object vertices);
-        [NativeThrows] private extern void GetCharactersInternal(object characters);
-        [NativeThrows] private extern void GetLinesInternal(object lines);
+        private extern void GetVerticesInternal([NotNull, Out] List<UIVertex> vertices);
+        private extern void GetCharactersInternal([NotNull, Out] List<UICharInfo> characters);
+        private extern void GetLinesInternal([NotNull, Out] List<UILineInfo> lines);
 
         internal static class BindingsMarshaller
         {

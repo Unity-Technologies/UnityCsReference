@@ -45,7 +45,9 @@ namespace UnityEditor.UIElements.Debugger
                 template.Add(new XAttribute(XNamespace.Xmlns + it.Value, it.Key));
             }
 
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             foreach (var it in usings.OrderByDescending(x => x))
+#pragma warning restore RS0030
             {
                 template.AddFirst(new XElement("Using", new XAttribute("alias", it), new XAttribute("path", it)));
             }
@@ -109,7 +111,9 @@ namespace UnityEditor.UIElements.Debugger
                 elt.SetAttributeValue("text", elementText);
 
             var classes = ve.GetClassesForIteration();
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             if (classes.Any())
+#pragma warning restore RS0030
                 elt.SetAttributeValue("class", string.Join(" ", classes.ToArray()));
 
             if (ve is TemplateContainer)

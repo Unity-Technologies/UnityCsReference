@@ -34,7 +34,7 @@ namespace UnityEditor.Build.Content
         internal bool m_LODFadeCrossfade;
 
         [ExcludeFromDocs]
-        public static BuildUsageTagGlobal operator|(BuildUsageTagGlobal x, BuildUsageTagGlobal y)
+        public static BuildUsageTagGlobal operator |(BuildUsageTagGlobal x, BuildUsageTagGlobal y)
         {
             var results = new BuildUsageTagGlobal();
             results.m_LightmapModesUsed = x.m_LightmapModesUsed | y.m_LightmapModesUsed;

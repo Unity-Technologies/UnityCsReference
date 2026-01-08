@@ -47,7 +47,9 @@ namespace UnityEditor.ShortcutManagement
                 foreach (string tag in m_SerializedTags) Tags.Add(tag);
             }
 
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             void OnDisable() => m_SerializedTags = Tags.ToArray();
+#pragma warning restore RS0030
         }
 
         internal class GlobalContext {}
@@ -64,7 +66,9 @@ namespace UnityEditor.ShortcutManagement
 
         public static Action onTagChange;
 
+        #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
         public int activeContextCount => 1 + ((focusedWindow != null) ? 1 : 0) + m_PriorityContexts.Count(c => c.active) + m_ToolContexts.Count(c => c.active);
+#pragma warning restore RS0030
 
         public bool playModeContextIsActive => focusedWindow is GameView && EditorApplication.isPlaying && !EditorApplication.isPaused;
 
@@ -253,12 +257,18 @@ namespace UnityEditor.ShortcutManagement
             result.Add(globalContextType);
             var targetType = m_FocusedWindow.Target?.GetType();
             if(targetType != null) result.Add(targetType);
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             result.AddRange(m_PriorityContexts.Where(p => p.active).Select(p => p.GetType()));
+#pragma warning restore RS0030
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             result.AddRange(m_ToolContexts.Where(c => c.active).Select(c => c.GetType()));
+#pragma warning restore RS0030
 
             return result;
         }
 
+        #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
         public List<string> GetActiveTags() => TagManager.instance.Tags.ToList();
+#pragma warning restore RS0030
     }
 }

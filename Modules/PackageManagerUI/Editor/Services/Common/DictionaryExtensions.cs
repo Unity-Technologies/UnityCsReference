@@ -63,7 +63,9 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public static IEnumerable<T> GetList<T>(this IDictionary<string, object> dict, string key)
         {
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return Get<IList>(dict, key)?.OfType<T>();
+#pragma warning restore RS0030
         }
 
         public static string GetString(this IDictionary<string, object> dict, string key)

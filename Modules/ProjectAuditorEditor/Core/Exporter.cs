@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using UnityEngine;
@@ -25,7 +26,9 @@ namespace Unity.ProjectAuditor.Editor.Core
             m_StreamWriter = new StreamWriter(path);
             var issues = m_Report.FindByCategory(category);
             if (predicate != null)
-                issues = issues.Where(predicate).ToList();
+                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                issues = new List<ReportItem>(issues.Where(predicate));
+#pragma warning restore RS0030
             var layout = m_Report.GetLayout(category);
             if (layout == null)
                 Debug.LogWarning($"Could not find issue layout for category {category}");

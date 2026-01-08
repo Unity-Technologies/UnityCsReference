@@ -120,11 +120,6 @@ namespace Unity.Multiplayer.PlayMode.Editor
                     if (ScenarioFactory.GetRoleForInstance(inst) != MultiplayerRoleFlags.Client)
                         currentServerCount++;
                 }
-                foreach (var inst in config.RemoteInstances)
-                {
-                    if (ScenarioFactory.GetRoleForInstance(inst) != MultiplayerRoleFlags.Client)
-                        currentServerCount++;
-                }
 
                 if (currentServerCount + 1 > ScenarioConfigEditor.MaxServerCount)
                 {

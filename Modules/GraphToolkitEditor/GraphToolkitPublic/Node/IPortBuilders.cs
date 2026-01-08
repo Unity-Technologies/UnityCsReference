@@ -116,6 +116,19 @@ namespace Unity.GraphToolkit.Editor
         /// This is useful for optimizing performance or avoiding intermediate updates during data entry.
         /// </remarks>
         T Delayed();
+
+        /// <summary>
+        /// Configures the input port to use the <see cref="TextAreaAttribute"/>.
+        /// </summary>
+        /// <param name="minLines">The maximum amount of lines the text area can show before it starts using a scrollbar. Defaults to 3.</param>
+        /// <param name="maxLines">The minimum amount of lines the text area will use. Defaults to 3.</param>
+        /// <returns>The current builder instance for method chaining.</returns>
+        /// <remarks>
+        /// Applies only to string input ports. Use this setting to make the port value a Text Area.
+        /// A Text Area is a multi-line input field that allows users to enter large amounts of text.
+        /// Its height automatically adjusts between specified minimum and maximum lines, and a scrollbar appears if the content exceeds the visible area.
+        /// </remarks>
+        T AsTextArea(int minLines = 3, int maxLines = 3);
     }
 
     /// <summary>

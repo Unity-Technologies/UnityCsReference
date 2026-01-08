@@ -159,10 +159,14 @@ namespace UnityEditor
             if (playableAsset == null)
                 return true;
 
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             if (playableAsset.outputs.Count() != m_SynchedPlayableBindings.Length)
+#pragma warning restore RS0030
                 return true;
 
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return playableAsset.outputs.Where((t, i) => t.sourceObject != m_SynchedPlayableBindings[i].sourceObject).Any();
+#pragma warning restore RS0030
         }
 
         GUIContent GetContentForOutput(PlayableBinding binding, UnityEngine.Object source)
@@ -217,7 +221,9 @@ namespace UnityEditor
             if (source == null || key == null)
                 return default(PlayableBinding);
 
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return source.outputs.FirstOrDefault(a => a.sourceObject == key);
+#pragma warning restore RS0030
         }
 
         void SynchronizeSceneBindings()
@@ -305,7 +311,9 @@ namespace UnityEditor
             if (playableAsset != null)
             {
                 var bindings = playableAsset.outputs;
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 m_SynchedPlayableBindings = bindings.ToArray();
+#pragma warning restore RS0030
             }
 
             foreach (var binding in m_SynchedPlayableBindings)

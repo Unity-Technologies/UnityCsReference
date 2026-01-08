@@ -76,7 +76,7 @@ namespace UnityEngine
     [StructLayout(LayoutKind.Sequential, Size = 4)]
     [Serializable]
     [Obsolete("Obsolete - Please use EntityId instead.")]
-    public struct InstanceID : IEquatable<InstanceID>, IComparable<InstanceID>
+    public struct InstanceID : IEquatable<InstanceID>, IComparable<InstanceID>, IFormattable
     {
         [SerializeField]
         int m_Data;
@@ -124,6 +124,7 @@ namespace UnityEngine
 
         public override string ToString() => m_Data.ToString();
         public string ToString(string format) => m_Data.ToString(format);
+        public string ToString(string format, IFormatProvider formatProvider) => m_Data.ToString(format, formatProvider);
     }
 
 #pragma warning disable 612, 618
@@ -132,7 +133,7 @@ namespace UnityEngine
     [Serializable]
     [NativeClass("EntityId")]
     [NativeHeader("Runtime/BaseClasses/BaseObject.h")]
-    public struct EntityId : IEquatable<EntityId>, IComparable<EntityId>
+    public struct EntityId : IEquatable<EntityId>, IComparable<EntityId>, IFormattable
     {
         [SerializeField]
         int m_Data;
@@ -185,6 +186,7 @@ namespace UnityEngine
 
         public override string ToString() => m_Data.ToString();
         public string ToString(string format) => m_Data.ToString(format);
+        public string ToString(string format, IFormatProvider formatProvider) => m_Data.ToString(format, formatProvider);
 
         [VisibleToOtherModules("UnityEngine.UIElementsModule", "UnityEngine.AnimationModule")]
         internal static EntityId From(int input) => new EntityId {m_Data = input};

@@ -4,9 +4,7 @@
 
 using System;
 using System.Collections.Generic;
-using JetBrains.Annotations;
 using UnityEngine.Bindings;
-using NotNullAttribute = JetBrains.Annotations.NotNullAttribute;
 
 namespace UnityEngine.UIElements;
 
@@ -16,47 +14,47 @@ internal static class WorldSpaceInput
     // We don't expose the Pick3D methods in a public class until all the pieces are in place
 
     /// <summary>
-    /// Pick the closest element (in drawing order) from a document's hierarchy that intersects the given ray.
+    /// Pick the closest element (in drawing order) from a panel component's hierarchy that intersects the given ray.
     /// </summary>
-    /// <param name="document">The UI Document to pick from.</param>
+    /// <param name="panelComponent">The panel component to pick from.</param>
     /// <param name="worldRay">A ray specified in absolute coordinates.</param>
     /// <returns>The closest pickable element that intersects the ray if any, or null if there are none.</returns>
-    public static VisualElement Pick3D(UIDocument document, Ray worldRay)
+    public static VisualElement Pick3D(IPanelComponent panelComponent, Ray worldRay)
     {
-        var documentRay = document.transform.worldToLocalMatrix.TransformRay(worldRay);
-        return Pick_Internal(document, documentRay);
+        var documentRay = panelComponent.gameObject.transform.worldToLocalMatrix.TransformRay(worldRay);
+        return Pick_Internal(panelComponent, documentRay);
     }
 
     /// <summary>
     /// Pick all elements from a document's hierarchy that intersect the given ray.
     /// Results are appended in drawing order.
     /// </summary>
-    /// <param name="document">The UI Document to pick from.</param>
+    /// <param name="panelComponent">The panel component to pick from.</param>
     /// <param name="worldRay">A ray specified in the absolute coordinates.</param>
     /// <param name="outResults">All elements that intersect the ray, in draw order from closest to farthest.</param>
-    public static void PickAll3D(UIDocument document, Ray worldRay, List<VisualElement> outResults)
+    public static void PickAll3D(IPanelComponent panelComponent, Ray worldRay, List<VisualElement> outResults)
     {
-        var documentRay = document.transform.worldToLocalMatrix.TransformRay(worldRay);
-        Pick_Internal(document, documentRay, outResults);
+        var documentRay = panelComponent.gameObject.transform.worldToLocalMatrix.TransformRay(worldRay);
+        Pick_Internal(panelComponent, documentRay, outResults);
     }
 
     /// <summary>
-    /// Pick the closest element (in drawing order) from a document's hierarchy that intersects the given ray.
+    /// Pick the closest element (in drawing order) from a panel component's hierarchy that intersects the given ray.
     /// </summary>
-    /// <param name="document">The UI Document to pick from.</param>
+    /// <param name="panelComponent">The panel component to pick from.</param>
     /// <param name="worldRay">A ray specified in absolute coordinates.</param>
     /// <param name="distance">The element's distance along the ray, or positive infinity if there is none.</param>
     /// <returns>The closest pickable element that intersects the ray if any, or null if there are none.</returns>
-    public static VisualElement Pick3D(UIDocument document, Ray worldRay, out float distance)
+    public static VisualElement Pick3D(IPanelComponent panelComponent, Ray worldRay, out float distance)
     {
-        var documentRay = document.transform.worldToLocalMatrix.TransformRay(worldRay);
-        var pickedElement = Pick_Internal(document, documentRay);
+        var documentRay = panelComponent.gameObject.transform.worldToLocalMatrix.TransformRay(worldRay);
+        var pickedElement = Pick_Internal(panelComponent, documentRay);
 
         if (pickedElement != null)
         {
             pickedElement.IntersectWorldRay(documentRay, out var distanceWithinDocument, out _);
             var documentPoint = documentRay.origin + documentRay.direction * distanceWithinDocument;
-            var worldPoint = document.transform.TransformPoint(documentPoint);
+            var worldPoint = panelComponent.gameObject.transform.TransformPoint(documentPoint);
             distance = Vector3.Distance(worldRay.origin, worldPoint);
         }
         else
@@ -70,14 +68,14 @@ internal static class WorldSpaceInput
     /// <summary>
     /// Pick the closest element (in drawing order) from a document's hierarchy that intersects the given ray.
     /// </summary>
-    /// <param name="document">The UI Document to pick from.</param>
+    /// <param name="panelComponent">The panel component to pick from.</param>
     /// <param name="worldRay">A ray specified in absolute coordinates.</param>
     /// <param name="pickResult">The result of the ray intersection.</param>
     /// <returns>True if a pickable element intersects the ray, false otherwise.</returns>
-    public static bool Pick3D(UIDocument document, Ray worldRay, out PickResult pickResult)
+    public static bool Pick3D(IPanelComponent panelComponent, Ray worldRay, out PickResult pickResult)
     {
-        var documentRay = document.transform.worldToLocalMatrix.TransformRay(worldRay);
-        var pickedElement = Pick_Internal(document, documentRay);
+        var documentRay = panelComponent.gameObject.transform.worldToLocalMatrix.TransformRay(worldRay);
+        var pickedElement = Pick_Internal(panelComponent, documentRay);
 
         if (pickedElement == null)
         {
@@ -87,12 +85,14 @@ internal static class WorldSpaceInput
 
         pickedElement.IntersectWorldRay(documentRay, out var distanceWithinDocument, out _);
         var documentPoint = documentRay.origin + documentRay.direction * distanceWithinDocument;
-        var worldPoint = document.transform.TransformPoint(documentPoint);
+        var worldPoint = panelComponent.gameObject.transform.TransformPoint(documentPoint);
         var distance = Vector3.Distance(worldRay.origin, worldPoint);
 
         pickResult = new PickResult
         {
-            document = document, pickedElement = pickedElement, distance = distance
+            panelComponent = panelComponent,
+            pickedElement = pickedElement,
+            distance = distance
         };
         pickResult.ComputeCollisionData(worldRay);
         return true;
@@ -109,11 +109,11 @@ internal static class WorldSpaceInput
     /// <returns>True if the ray intersects the element.</returns>
     public static bool PickElement3D(VisualElement element, Ray worldRay, out PickResult pickResult, bool acceptOutside = false)
     {
-        var document = UIDocument.FindRootUIDocument(element);
-        if (document == null)
+        var panelComponent = element.FindRootPanelComponent();
+        if (panelComponent == null)
             throw new ArgumentException("Element must be part of a UI Document.");
 
-        var documentRay = document.transform.worldToLocalMatrix.TransformRay(worldRay);
+        var documentRay = panelComponent.gameObject.transform.worldToLocalMatrix.TransformRay(worldRay);
         if (!element.IntersectWorldRay(documentRay, out var distance, out _) && (!acceptOutside || !(distance > 0)))
         {
             pickResult = PickResult.Empty;
@@ -122,7 +122,9 @@ internal static class WorldSpaceInput
 
         pickResult = new PickResult
         {
-            document = document, pickedElement = element, distance = distance
+            panelComponent = panelComponent,
+            pickedElement = element,
+            distance = distance
         };
         pickResult.ComputeCollisionData(worldRay);
         return true;
@@ -147,9 +149,9 @@ internal static class WorldSpaceInput
         public Collider collider;
 
         /// <summary>
-        /// The document containing the picked element.
+        /// The panel component containing the picked element.
         /// </summary>
-        public UIDocument document;
+        public IPanelComponent panelComponent;
 
         /// <summary>
         /// A VisualElement intersected by the ray from the Picking operation.
@@ -187,11 +189,11 @@ internal static class WorldSpaceInput
         {
             point = ray.origin + ray.direction * distance;
 
-            if (document != null && pickedElement != null)
+            if (panelComponent != null && pickedElement != null)
             {
                 localPoint = pickedElement.worldTransformInverse.MultiplyPoint3x4(
-                             document.transform.InverseTransformPoint(point));
-                normal = document.transform.TransformDirection(
+                             panelComponent.gameObject.transform.InverseTransformPoint(point));
+                normal = panelComponent.gameObject.transform.TransformDirection(
                          pickedElement.worldTransformRef.MultiplyVector(Vector3.forward));
             }
         }
@@ -236,8 +238,8 @@ internal static class WorldSpaceInput
 
             // Non-Document objects on the same layer can block raycasts.
             // If we hit a real-world object, we can conclude our search with the best candidate so far.
-            var document = hit.collider.GetComponentInParent<UIDocument>(includeInactive: true);
-            if (document == null)
+            var panelComponent = hit.collider.GetComponentInParent<IPanelComponent>(includeInactive: true);
+            if (panelComponent == null)
             {
                 if (distance < bestSoFar.distance)
                     bestSoFar = new PickResult { distance = distance, collider = hit.collider, normal = hit.normal, point = hit.point, localPoint = hit.point };
@@ -251,16 +253,17 @@ internal static class WorldSpaceInput
             activeDistance += rayIncrement;
 
             // Skip inactive or invalid documents (treat them the same as empty documents).
-            if (document.containerPanel == null)
+            if (PanelComponentUtils.GetContainerPanel(panelComponent) == null)
                 continue;
 
             // When we've hit a Document, reduce max distance to match the back of the document's bounding box.
             // We can't use hit.collider.bounds.size.magnitude because we allow multiple colliders for the same doc.
-            var bb = GetPicking3DLocalBounds(document.rootVisualElement);
-            ref var documentWt = ref document.rootVisualElement.worldTransformRef;
+            var root = PanelComponentUtils.GetRootVisualElement(panelComponent);
+            var bb = GetPicking3DLocalBounds(root);
+            ref var documentWt = ref root.worldTransformRef;
             Vector3 documentCenter = documentWt.MultiplyPoint3x4(bb.center);
             Vector3 documentDiagonal = documentWt.MultiplyVector(bb.size);
-            var transformWt = document.transform.localToWorldMatrix;
+            var transformWt = panelComponent.gameObject.transform.localToWorldMatrix;
             Vector3 worldCenter = documentWt.MultiplyPoint3x4(documentCenter);
             Vector3 worldDiagonal = transformWt.MultiplyVector(documentDiagonal);
             float distanceToBackOfDocument =
@@ -277,13 +280,18 @@ internal static class WorldSpaceInput
             // drawn on top of it, but that other element could then also be rejected because it has a distance
             // larger than the max distance. In that case, no element is accepted because we don't want to interact
             // with an element that's hidden behind another one that's interactable.
-            var pickedElement = Pick3D(document, worldRay, out distance);
+            var pickedElement = Pick3D(panelComponent, worldRay, out distance);
 
             // Compare again with the real distance from the pickedElement
             if (pickedElement != null && distance <= maxDistance && distance < bestSoFar.distance)
             {
                 // Update the result but don't fast-forward the activeRay!
-                bestSoFar = new PickResult { collider = hit.collider, pickedElement = pickedElement, document = document, distance = distance };
+                bestSoFar = new PickResult {
+                    collider = hit.collider,
+                    pickedElement = pickedElement,
+                    panelComponent = panelComponent,
+                    distance = distance
+                };
                 bestSoFar.ComputeCollisionData(worldRay);
             }
         }
@@ -291,12 +299,13 @@ internal static class WorldSpaceInput
         return bestSoFar;
     }
 
-    internal static VisualElement Pick_Internal(UIDocument document, Ray documentRay,
+    internal static VisualElement Pick_Internal(IPanelComponent panelComponent, Ray documentRay,
         List<VisualElement> outResults = null)
     {
-        document.containerPanel.ValidateLayout();
+        var containerPanel = PanelComponentUtils.GetContainerPanel(panelComponent);
+        containerPanel.ValidateLayout();
 
-        var root = document.rootVisualElement;
+        var root = PanelComponentUtils.GetRootVisualElement(panelComponent);
         var ray = root.WorldToLocal(documentRay);
 
         return PerformPick(root, ray, null);
@@ -453,11 +462,11 @@ internal static class WorldSpaceInput
     /// <param name="localPoint">The point to transform.</param>
     public static Vector3 LocalPointToGameObjectWorldSpace(VisualElement element, Vector3 localPoint)
     {
-        var document = UIDocument.FindRootUIDocument(element);
-        if (document == null)
+        var panelComponent = element.FindRootPanelComponent();
+        if (panelComponent == null)
             throw new ArgumentException("Element must be part of a UI Document.");
         var documentPoint = element.LocalToWorld3D(localPoint);
-        return document.transform.TransformPoint(documentPoint);
+        return panelComponent.gameObject.transform.TransformPoint(documentPoint);
     }
 
     /// <summary>
@@ -482,10 +491,10 @@ internal static class WorldSpaceInput
     /// <param name="worldPoint">The point to transform.</param>
     public static Vector3 GameObjectWorldSpaceToLocalPoint(VisualElement element, Vector3 worldPoint)
     {
-        var document = UIDocument.FindRootUIDocument(element);
-        if (document == null)
+        var panelComponent = element.FindRootPanelComponent();
+        if (panelComponent == null)
             throw new ArgumentException("Element must be part of a UI Document.");
-        var documentPoint = document.transform.InverseTransformPoint(worldPoint);
+        var documentPoint = panelComponent.gameObject.transform.InverseTransformPoint(worldPoint);
         return element.WorldToLocal3D(documentPoint);
     }
 

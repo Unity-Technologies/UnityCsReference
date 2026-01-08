@@ -84,7 +84,9 @@ namespace UnityEngine
 
                 foreach (var assemblyData in data.assemblyData)
                 {
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     catalog.Add(assemblyData.assemblyName, assemblyData.methodInfos.ToList());
+#pragma warning restore RS0030
                 }
             }
         }

@@ -53,7 +53,9 @@ namespace UnityEngine.UIElements
 
         public override string ToString()
         {
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return string.Join(", ", parts.Select(p => p.ToString()).ToArray());
+#pragma warning restore RS0030
         }
     }
 }

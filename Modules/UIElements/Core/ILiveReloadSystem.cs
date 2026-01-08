@@ -19,7 +19,7 @@ namespace UnityEngine.UIElements
         All = Document | Text | StyleSheet
     }
 
-    [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+    [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
     internal interface ILiveReloadSystem
     {
         bool enable { get; set; }

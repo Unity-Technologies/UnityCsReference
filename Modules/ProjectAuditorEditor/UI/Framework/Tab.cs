@@ -15,6 +15,7 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
         Shaders,
         Settings,
         Build,
+        GameObjects,
     }
 
     [Serializable]

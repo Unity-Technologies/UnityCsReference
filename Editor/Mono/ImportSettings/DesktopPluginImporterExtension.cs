@@ -269,7 +269,9 @@ namespace UnityEditor
 
         public void ValidateSingleCPUTargets(PluginImporterInspector inspector)
         {
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var singleCPUTargets = GetPropertiesForInspector(inspector).OfType<DesktopSingleCPUProperty>();
+#pragma warning restore RS0030
 
             foreach (var target in singleCPUTargets)
             {

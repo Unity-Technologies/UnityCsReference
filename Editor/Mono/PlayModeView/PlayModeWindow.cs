@@ -11,7 +11,9 @@ namespace UnityEditor
     public class PlayModeWindow
     {
         static Type s_SimulatorWindowType =
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             PlayModeView.GetAvailableWindowTypes().Keys.FirstOrDefault(x => x.Name.Contains("SimulatorWindow"));
+#pragma warning restore RS0030
 
         PlayModeWindow()
         {

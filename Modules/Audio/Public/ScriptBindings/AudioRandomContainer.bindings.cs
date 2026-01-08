@@ -51,6 +51,7 @@ sealed class AudioContainerElement : Object
 }
 
 [NativeHeader("Modules/Audio/Public/AudioRandomContainer.h")]
+[HelpURL("AudioRandomContainer-UI")]
 [ExcludeFromPreset]
 sealed class AudioRandomContainer : AudioResource, IAudioGenerator
 {

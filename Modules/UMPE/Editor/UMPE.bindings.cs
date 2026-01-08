@@ -3,8 +3,11 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Reflection;
 using System.Runtime.InteropServices;
-using UnityEditor;
+using UnityEngine;
 using UnityEngine.Bindings;
 using UnityEngine.Scripting;
 using UnityEngine.Scripting.APIUpdating;
@@ -221,7 +224,7 @@ namespace UnityEditor.MPE
     [MovedFrom("Unity.MPE")]
     [NativeHeader("Modules/UMPE/ProcessService.h"),
      StaticAccessor("Unity::MPE::ProcessService", StaticAccessorType.DoubleColon)]
-    public class ProcessService
+    public partial class ProcessService
     {
         public static extern ProcessLevel level { get; }
         public static extern string roleName { get; }
@@ -272,6 +275,40 @@ namespace UnityEditor.MPE
         private static void OnProcessExited(int pid, ProcessState newState)
         {
             ProcessExitedEvent?.Invoke(pid, newState);
+        }
+
+        [RequiredByNativeCode]
+        static void RefreshRoleProviders()
+        {
+            s_RoleProviders = new List<RoleProvider>();
+
+            var userAssemblies = new HashSet<string>();
+            foreach(var assemblyName in ScriptingRuntime.GetAllUserAssemblies())
+                userAssemblies.Add(Path.GetFileNameWithoutExtension(assemblyName));
+
+            var methods = TypeCache.GetMethodsWithAttribute(typeof(RoleProviderAttribute));
+            foreach (var method in methods)
+            {
+                if (!userAssemblies.Contains(method.Module.Assembly.GetName().Name))
+                    continue;
+
+                var attributeInfo = method.GetCustomAttribute<RoleProviderAttribute>();
+                s_RoleProviders.Add(new RoleProvider() { name = attributeInfo.name, eventType = attributeInfo.eventType, level = attributeInfo.level, execute = method });
+            }
+        }
+
+        [RequiredByNativeCode]
+        static void InvokeProcessRoleProviderEvent(ProcessLevel level, string roleName, ProcessEvent eventType)
+        {
+            var providers = s_RoleProviders;
+            if (providers == null)
+                return;
+
+            foreach (var provider in providers)
+            {
+                if ((provider.eventType == eventType && provider.level == level) || (roleName != "" && provider.name == roleName))
+                    provider.execute?.Invoke(null, null);
+            }
         }
     }
 

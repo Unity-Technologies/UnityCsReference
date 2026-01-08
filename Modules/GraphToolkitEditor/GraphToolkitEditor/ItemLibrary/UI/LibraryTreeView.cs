@@ -88,7 +88,9 @@ namespace Unity.GraphToolkit.ItemLibrary.Editor
 
             itemsChosen += obj =>
             {
+                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 var first = obj.FirstOrDefault();
+#pragma warning restore RS0030
                 if (first is IItemView itemView) // do not notify if the item chosen is a category and not an item
                     OnItemChosen(itemView.Item);
             };
@@ -153,7 +155,9 @@ namespace Unity.GraphToolkit.ItemLibrary.Editor
             if (ViewMode == ResultsViewMode.Hierarchy)
             {
                 m_FavoriteCategoryView.ClearItems();
+                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 foreach (var favoriteItem in m_Library.CurrentFavorites.Where(f => m_Results.Contains(f)))
+#pragma warning restore RS0030
                 {
                     IItemView itemViewToAdd = null;
                     if (selectedItemView != null && selectedItemView.IsInCategory(m_FavoriteCategoryView))
@@ -221,7 +225,9 @@ namespace Unity.GraphToolkit.ItemLibrary.Editor
 
             // force selection callback if first viewmodel was already selected
             if (firstItemWasSelected)
+                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 OnModelViewSelectionChange?.Invoke(m_VisibleItems.Take(1).ToList());
+#pragma warning restore RS0030
         }
 
         void OnKeyDownEvent(KeyDownEvent evt)
@@ -381,21 +387,32 @@ namespace Unity.GraphToolkit.ItemLibrary.Editor
             icon.AddToClassList(customItemClassName + "-" + itemName + CategoryIconSuffix);
         }
 
-        bool TryAddTypeIcon(VisualElement iconElement, IItemView itemView)
+        bool TryAddTypeIcon(Image iconElement, IItemView itemView)
         {
             if (iconElement.childCount > 0)
                 return false;
 
             TypeHandle type;
+            GraphModel graphModel;
             var portModel = itemView.PortToConnect;
             if (portModel != null)
+            {
                 type = portModel.DataTypeHandle;
-            else if (itemView.Item is TypeLibraryItem typeLibraryItem)
-                type = typeLibraryItem.Type;
-            else if (itemView.Item is GraphNodeModelLibraryItem { Data: TypeItemLibraryData data })
-                type = data.Type;
-            else
-                return false;
+                graphModel = portModel.GraphModel;
+            }
+            else switch (itemView.Item)
+            {
+                case TypeLibraryItem typeLibraryItem:
+                    type = typeLibraryItem.Type;
+                    graphModel = typeLibraryItem.GraphModel;
+                    break;
+                case GraphNodeModelLibraryItem { Data: TypeItemLibraryData data }:
+                    type = data.Type;
+                    graphModel = data.GraphModel;
+                    break;
+                default:
+                    return false;
+            }
 
             m_TypeHandleInfos.AddUssClasses(GraphElementHelper.iconDataTypeClassPrefix, iconElement, type);
 
@@ -408,6 +425,19 @@ namespace Unity.GraphToolkit.ItemLibrary.Editor
                     direction = variableLibraryItem.ModifierFlags == ModifierFlags.Write ? PortDirection.Output : PortDirection.Input;
 
                 iconElement.AddToClassList(direction == PortDirection.Output ? Port.outputUssClassName : Port.inputUssClassName);
+            }
+
+            // If there is a registered style for the type, use it.
+            var resolvedType = type.Resolve();
+            if (resolvedType != null)
+            {
+                var typeStyle = graphModel != null ? graphModel.GetDataTypeStyle(resolvedType) : BaseDataTypeStyleMapper.GetDataTypeStyle(resolvedType);
+                if (typeStyle.HasValue)
+                {
+                    iconElement.tintColor = typeStyle.Value.color;
+                    if (typeStyle.Value.icon != null)
+                        iconElement.image = typeStyle.Value.icon;
+                }
             }
 
             return true;
@@ -430,23 +460,6 @@ namespace Unity.GraphToolkit.ItemLibrary.Editor
                 }
 
                 return true;
-            }
-
-            return false;
-        }
-
-        bool TryAddCompatiblePortIcon(VisualElement iconElement, IItemView itemView)
-        {
-            var portToConnect = itemView?.PortToConnect;
-
-            if (portToConnect != null && m_Library.Adapter is GraphNodeLibraryAdapter nodeLibraryAdapter && nodeLibraryAdapter.PreviewGraphView != null)
-            {
-                var portToConnectModelView = portToConnect.GetView(nodeLibraryAdapter.PreviewGraphView);
-                if (portToConnectModelView is Port portToConnectUI)
-                {
-                    portToConnectUI.AssignIconToPortItemInLibrary(iconElement);
-                    return true;
-                }
             }
 
             return false;
@@ -512,7 +525,9 @@ namespace Unity.GraphToolkit.ItemLibrary.Editor
 
             void RemoveCustomClassIfFound(VisualElement visualElement)
             {
+                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 var customClass = visualElement.GetClasses()
+#pragma warning restore RS0030
                     .FirstOrDefault(c => c.StartsWith(customItemClassName));
                 if (customClass != null)
                     visualElement.RemoveFromClassList(customClass);
@@ -575,7 +590,9 @@ namespace Unity.GraphToolkit.ItemLibrary.Editor
             if (!selectedItems.HasAny())
                 m_ItemChosenCallback(null);
             else
+                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 OnModelViewSelectionChange?.Invoke(selectedItems
+#pragma warning restore RS0030
                     .OfType<ITreeItemView>()
                     .ToList());
         }

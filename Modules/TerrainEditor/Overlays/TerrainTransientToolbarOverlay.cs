@@ -91,7 +91,9 @@ namespace UnityEditor.TerrainTools
         private bool IsOverlaysPackageVersionInstalled()
         {
             var upm = UnityEditor.PackageManager.PackageInfo.GetAllRegisteredPackages();
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var terrainPackageInfo = upm.Where(pi => pi.name == "com.unity.terrain-tools").ToArray();
+#pragma warning restore RS0030
 
             Debug.Assert(terrainPackageInfo.Length <= 1, "Only one version of terrain-tools package allowed to be installed");
 
@@ -192,7 +194,9 @@ namespace UnityEditor.TerrainTools
 
         void StoreToolsInDictionary()
         {
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             foreach (var category in Enum.GetValues(typeof(TerrainCategory)).Cast<TerrainCategory>())
+#pragma warning restore RS0030
             {
                 m_CategoryToTools[category] =
                     new List<ITerrainPaintToolWithOverlays>();
@@ -242,7 +246,9 @@ namespace UnityEditor.TerrainTools
         private void KeepOverrides()
         {
             // if duplicate names, keep only the overrides and NOT the built-in tool
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             foreach (var category in Enum.GetValues(typeof(TerrainCategory)).Cast<TerrainCategory>())
+#pragma warning restore RS0030
             {
                 m_CategoryToTools[category] =
                     KeepOverrides(m_CategoryToTools[category]);
@@ -252,9 +258,13 @@ namespace UnityEditor.TerrainTools
         private void SetLastActiveToolToDefaultTool()
         {
             // by default, set the last active sculptTool to the first in the list
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             foreach (var category in Enum.GetValues(typeof(TerrainCategory)).Cast<TerrainCategory>())
+#pragma warning restore RS0030
             {
+                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 m_CategoryToLastUsedTool[category] = (EditorTool)m_CategoryToTools[category].FirstOrDefault() ??
+#pragma warning restore RS0030
                                                      EditorToolManager.GetSingleton<NoneTool>();
             }
         }
@@ -265,11 +275,15 @@ namespace UnityEditor.TerrainTools
             foreach (var tool in list)
             {
                 // if the tool occurs more than once in the tools name list
+                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 if (m_ToolNames.Count(t => t == tool.GetName()) > 1)
+#pragma warning restore RS0030
                 {
                     var klass = m_ToolToTypeDict[tool];
                     //if this tool is a builtin tool
+                    #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     if (klass.Assembly.GetCustomAttributes(typeof(AssemblyIsEditorAssembly), false).Any())
+#pragma warning restore RS0030
                         continue;
                     noRepeats.Add(tool); // if not a builtin tool, then add
                 }
@@ -501,10 +515,14 @@ namespace UnityEditor.TerrainTools
             GetPaintTools();
 
             // sort each list by terrainTool.GetIconIndex()
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             foreach (var category in Enum.GetValues(typeof(TerrainCategory)).Cast<TerrainCategory>())
+#pragma warning restore RS0030
             {
                 m_CategoryToTools[category] =
+                    #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     m_CategoryToTools[category].OrderBy(o => o.IconIndex).ToList();
+#pragma warning restore RS0030
             }
 
             // cull the repeats if exists (keep the appropriate overrides)

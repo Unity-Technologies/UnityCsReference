@@ -690,9 +690,13 @@ namespace UnityEditor
 
             // Does this transfrom is already set
             //List<BoneWrapper> match = ArrayUtility.FindAll (m_BoneWrappers, delegate (Transform t) { return t == m_BoneWrappers[i].bone; });
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             IEnumerable<AvatarSetupTool.BoneWrapper> match = m_Bones.Where(f => f.bone == bone.bone);
+#pragma warning restore RS0030
             // when we search in the list we must add 1 because the bone is in this list
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             if (match.Count() > 1)
+#pragma warning restore RS0030
             {
                 error = bone.messageName + " is also assigned to ";
                 bool first = true;
@@ -839,7 +843,9 @@ namespace UnityEditor
                 string boneName = humanTemplate.Find(m_Bones[i].humanBoneName);
                 if (boneName.Length > 0)
                 {
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     Transform transform = modelBones.Keys.FirstOrDefault(f => AvatarMappingEditor.MatchName(f.name, boneName));
+#pragma warning restore RS0030
                     m_Bones[i].bone = transform;
                 }
                 else

@@ -186,11 +186,21 @@ namespace UnityEditor
         // Vertices are expanded by the shader therefore the mesh vertices are not used (filled by zeroes).
         internal static void MakeRenderMesh(Mesh mesh, BillboardAsset billboard)
         {
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             mesh.SetVertices(Enumerable.Repeat(Vector3.zero, billboard.vertexCount).ToList());
+#pragma warning restore RS0030
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             mesh.SetColors(Enumerable.Repeat(Color.black, billboard.vertexCount).ToList());
+#pragma warning restore RS0030
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             mesh.SetUVs(0, billboard.GetVertices().ToList());
+#pragma warning restore RS0030
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             mesh.SetUVs(1, Enumerable.Repeat(new Vector4(1.0f, 1.0f, 0.0f, 0.0f), billboard.vertexCount).ToList());
+#pragma warning restore RS0030
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             mesh.SetTriangles(billboard.GetIndices().Select(v => (int)v).ToList(), 0);
+#pragma warning restore RS0030
         }
 
         // Make a mesh out of the BillboardAsset that is suitable for previewing the geometry.
@@ -200,8 +210,12 @@ namespace UnityEditor
             float width = billboard.width;
             float height = billboard.height;
             float bottom = billboard.bottom;
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             mesh.SetVertices(Enumerable.Repeat(
+#pragma warning restore RS0030
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 billboard.GetVertices().Select(v => new Vector3(
+#pragma warning restore RS0030
                     (v.x - 0.5f) * width,
                     v.y * height + bottom,
                     0)),
@@ -210,8 +224,12 @@ namespace UnityEditor
 
             // (0,0,1) for the front-facing vertices and (0,0,-1) for the back-facing vertices
             mesh.SetNormals(
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 Enumerable.Repeat(Vector3.forward, billboard.vertexCount).Concat(
+#pragma warning restore RS0030
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     Enumerable.Repeat(-Vector3.forward, billboard.vertexCount)).ToList());
+#pragma warning restore RS0030
 
             // make a new triangle list with second half triangles flipped
             var indices = new int[billboard.indexCount * 2];

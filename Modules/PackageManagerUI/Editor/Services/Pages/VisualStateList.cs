@@ -28,11 +28,15 @@ namespace UnityEditor.PackageManager.UI.Internal
         // a reverse look up table such that we can find an visual state easily through package unique id
         protected Dictionary<string, int> m_UniqueIdToIndexLookup = new();
 
+        #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
         public VisualStateList() : this(Enumerable.Empty<string>()) {}
+#pragma warning restore RS0030
 
         public VisualStateList(IEnumerable<string> packageUniqueIds)
         {
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             Rebuild(packageUniqueIds ?? Enumerable.Empty<string>());
+#pragma warning restore RS0030
         }
 
         [ExcludeFromCodeCoverage]
@@ -48,13 +52,19 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public void Rebuild(IEnumerable<string> packageUniqueIds)
         {
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             Rebuild(packageUniqueIds.Select(id => Get(id) ?? new VisualState(id)));
+#pragma warning restore RS0030
         }
 
         public void Rebuild(IEnumerable<VisualState> orderedVisualStates, IEnumerable<string> orderedGroupNames = null)
         {
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             m_OrderedVisualStates = orderedVisualStates.ToList();
+#pragma warning restore RS0030
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             m_OrderedGroups = orderedGroupNames?.ToArray() ?? Array.Empty<string>();
+#pragma warning restore RS0030
             SetupLookupTable();
         }
 
@@ -84,7 +94,9 @@ namespace UnityEditor.PackageManager.UI.Internal
             // The order of items within each group is kept untouched
             if (m_OrderedGroups.Length > 1)
                 foreach (var groupName in m_OrderedGroups)
+                    #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     foreach (var v in orderedListBeforeGrouping.Where(v => v.groupName == groupName))
+#pragma warning restore RS0030
                         yield return v;
             else
                 foreach (var v in orderedListBeforeGrouping)

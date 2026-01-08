@@ -168,12 +168,20 @@ namespace UnityEditor
                 int modes;
 
                 // Hide unsupported items and headers
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 headers = Styles.sBuiltinCameraModes.Where(mode => m_SceneView.IsCameraDrawModeSupported(mode) && mode.show)
+#pragma warning restore RS0030
                               .Select(mode => mode.section).Distinct().Count() +
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                           SceneView.userDefinedModes.Where(mode => m_SceneView.IsCameraDrawModeSupported(mode) && mode.show)
+#pragma warning restore RS0030
                               .Select(mode => mode.section).Distinct().Count();
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 modes = Styles.sBuiltinCameraModes.Count(mode => m_SceneView.IsCameraDrawModeSupported(mode) && mode.show) +
+#pragma warning restore RS0030
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                         SceneView.userDefinedModes.Count(mode => m_SceneView.IsCameraDrawModeSupported(mode) && mode.show);
+#pragma warning restore RS0030
 
                 return UpdatedHeight(headers, modes, GraphicsSettings.isScriptableRenderPipelineEnabled);
             }
@@ -262,7 +270,9 @@ namespace UnityEditor
             var drawPos = new Rect(0, 0, listElementWidth, EditorGUI.kSingleLineHeight);
             string lastSection = null;
 
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             foreach (SceneView.CameraMode mode in SceneView.userDefinedModes.OrderBy(mode => mode.section)
+#pragma warning restore RS0030
                          .Concat(Styles.sBuiltinCameraModes))
             {
                 if (!mode.show)
@@ -330,7 +340,9 @@ namespace UnityEditor
             int modes = 0;
 
             string lastSection = null;
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             foreach (SceneView.CameraMode mode in SceneView.userDefinedModes.OrderBy(mode => mode.section)
+#pragma warning restore RS0030
                          .Concat(Styles.sBuiltinCameraModes))
             {
                 if (!mode.show)
@@ -389,7 +401,9 @@ namespace UnityEditor
         {
             if (drawCameraMode == DrawCameraMode.UserDefined)
                 return GUIContent.none;
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return EditorGUIUtility.TextContent(Styles.sBuiltinCameraModes
+#pragma warning restore RS0030
                 .Single(mode => mode.drawMode == drawCameraMode).name);
         }
 
@@ -397,7 +411,9 @@ namespace UnityEditor
         {
             if (drawMode == DrawCameraMode.Normal)
                 drawMode = DrawCameraMode.Textured;
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return Styles.sBuiltinCameraModes.Single(mode => mode.drawMode == drawMode);
+#pragma warning restore RS0030
         }
 
         internal static bool DrawCameraModeExists(DrawCameraMode drawMode)

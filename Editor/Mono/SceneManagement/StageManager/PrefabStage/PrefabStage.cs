@@ -312,7 +312,9 @@ namespace UnityEditor.SceneManagement
             else if (m_Mode == Mode.InContext)
             {
                 var stageHistory = StageNavigationManager.instance.stageHistory;
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 if (this == stageHistory.Last())
+#pragma warning restore RS0030
                 {
                     ulong mask = GetSceneCullingMask();
                     int count = stageHistory.Count;
@@ -1228,7 +1230,9 @@ namespace UnityEditor.SceneManagement
             GUIContent content = CreateHeaderContent();
 
             var history = StageNavigationManager.instance.stageHistory;
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             bool isLastCrumb = this == history.Last();
+#pragma warning restore RS0030
             var style = isLastCrumb ? BreadcrumbBar.DefaultStyles.labelBold : BreadcrumbBar.DefaultStyles.label;
             var separatorstyle = mode == Mode.InIsolation ? BreadcrumbBar.SeparatorStyle.Line : BreadcrumbBar.SeparatorStyle.Arrow;
             if (isAssetMissing)

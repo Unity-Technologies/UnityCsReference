@@ -6,6 +6,7 @@ using UnityEngine;
 using UnityEngine.Bindings;
 using System.Collections.Generic;
 using UnityEngine.SceneManagement;
+using System.Runtime.InteropServices;
 
 using System;
 using Object = UnityEngine.Object;
@@ -34,7 +35,6 @@ namespace UnityEditor
         int m_IsRedo;
 
         public bool isRedo { get { return m_IsRedo != 0; } set { m_IsRedo = value ? 1 : 0; } }
-
     }
 
     internal class AtomicUndoScope : IDisposable
@@ -74,15 +74,11 @@ namespace UnityEditor
         }
 
         [StaticAccessor("UndoBindings", StaticAccessorType.DoubleColon)]
-        private static extern void GetRecordsInternal(object undoRecords, out int undoCursorPos);
-
-        internal static void GetRecords(List<string> undoRecords, out int undoCursor)
-        {
-            GetRecordsInternal(undoRecords, out undoCursor);
-        }
+        [NativeName("GetRecordsInternal")]
+        internal static extern void GetRecords([Out,NotNull] List<string> undoRecords, out int undoCursor);
 
         [StaticAccessor("UndoBindings", StaticAccessorType.DoubleColon)]
-        private static extern void GetTimelineRecordsInternal(object undoRecords, object redoRecords);
+        private static extern void GetTimelineRecordsInternal([Out,NotNull] List<string> undoRecords, [Out,NotNull] List<string> redoRecords);
 
         internal static void GetRecords(List<string> undoRecords, List<string> redoRecords)
         {
@@ -90,12 +86,8 @@ namespace UnityEditor
         }
 
         [StaticAccessor("UndoBindings", StaticAccessorType.DoubleColon)]
-        private static extern void GetUndoListInternal(object undoList, out int undoCursorPos, bool serialized);
-
-        internal static void GetUndoList(List<string> undoList, out int undoCursor, bool serialized = false)
-        {
-            GetUndoListInternal(undoList, out undoCursor, serialized);
-        }
+        [NativeName("GetUndoListInternal")]
+        internal static extern void GetUndoList([Out,NotNull] List<string> undoList, out int undoCursor, bool serialized = false);
 
         public static void RegisterCompleteObjectUndo(Object objectToUndo, string name)
         {
@@ -334,8 +326,10 @@ namespace UnityEditor
                 evt();
         }
 
-        private static void Internal_CallUndoRedoEvent(UndoRedoInfo undoInfo)
+        [RequiredByNativeCode]
+        private static void Internal_CallUndoRedoEvent(string undoName, int undoGroup, bool isRedo)
         {
+            var undoInfo = new UndoRedoInfo { undoName = undoName, undoGroup = undoGroup, isRedo = isRedo };
             foreach (var evt in m_UndoRedoEvent.UpdateAndInvoke(undoRedoEvent))
                 evt(undoInfo);
         }

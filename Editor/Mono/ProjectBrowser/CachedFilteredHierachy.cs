@@ -192,8 +192,12 @@ namespace UnityEditor
         {
             System.Array.Resize(ref m_Results, entityIdsSet.Count);
             var currentResultIndex = 0;
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var rootPaths = idsUnderEachRoot.Keys.ToArray();
+#pragma warning restore RS0030
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var idCounts = idsUnderEachRoot.Values.ToArray();
+#pragma warning restore RS0030
             for (var i = 0; i < rootPaths.Length; ++i)
             {
                 var rootPath = rootPaths[i];
@@ -273,7 +277,9 @@ namespace UnityEditor
                         searchFilter = m_SearchFilter,
                         rootIterator = property,
                         requiredTypeNames = m_SearchFilter.classNames,
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                         requiredTypes = searchFilter.classNames.Select(name => TypeCache.GetTypesDerivedFrom<Object>().FirstOrDefault(t => name == t.FullName || name == t.Name))
+#pragma warning restore RS0030
                     };
                 }, m_SearchSessionOptions);
 

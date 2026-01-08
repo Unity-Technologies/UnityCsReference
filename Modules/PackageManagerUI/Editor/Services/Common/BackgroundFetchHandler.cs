@@ -45,8 +45,12 @@ namespace UnityEditor.PackageManager.UI.Internal
         {
             get
             {
+                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 var numDownloadedAssets = m_AssetStoreCache.localInfos.Count();
+#pragma warning restore RS0030
+                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 var numItemsChecked = numDownloadedAssets - m_CheckUpdateStack.Distinct().Count();
+#pragma warning restore RS0030
                 return numItemsChecked <= 0 || numDownloadedAssets <= 0 ? 0 : Math.Min(100, numItemsChecked * 100 / numDownloadedAssets);
             }
         }
@@ -146,15 +150,29 @@ namespace UnityEditor.PackageManager.UI.Internal
         {
             // We need to re-trigger all the fetching after serialization, so we just add the current in progress product ids
             // back to the queue/stack to make the queue mechanism handle it properly
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             m_SerializedCheckUpdateStack = m_CheckUpdateStack.Concat(m_CheckUpdateInProgress).ToArray();
+#pragma warning restore RS0030
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             m_SerializedFetchPurchaseInfoQueue = m_FetchPurchaseInfoInProgress.Concat(m_FetchPurchaseInfoQueue).ToArray();
+#pragma warning restore RS0030
 
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             m_SerializedFetchProductInfoQueue = m_FetchProductInfoInProgress
+#pragma warning restore RS0030
+                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 .Concat(m_FetchProductInfoQueue.Where(id => m_ProductInfosToFetch.Remove(id))).ToList();
+#pragma warning restore RS0030
 
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             m_SerializedExtraFetchPackageInfoQueue = m_ExtraFetchPackageInfoInProgress.Concat(m_ExtraFetchPackageInfoQueue).ToArray();
+#pragma warning restore RS0030
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             m_SerializedPackageNameToProductIdMapKeys = m_PackageNameToProductIdMap.Keys.ToArray();
+#pragma warning restore RS0030
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             m_SerializedPackageNameToProductIdMapValues = m_PackageNameToProductIdMap.Values.ToArray();
+#pragma warning restore RS0030
         }
 
         public void OnAfterDeserialize()
@@ -163,7 +181,9 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_FetchPurchaseInfoQueue = new Queue<long>(m_SerializedFetchPurchaseInfoQueue);
 
             m_FetchProductInfoQueue = new Queue<long>(m_SerializedFetchProductInfoQueue);
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             m_ProductInfosToFetch = m_FetchProductInfoQueue.ToHashSet();
+#pragma warning restore RS0030
 
             m_ExtraFetchPackageInfoQueue = new Queue<string>(m_SerializedExtraFetchPackageInfoQueue);
             for (var i = 0; i < m_SerializedPackageNameToProductIdMapKeys.Length; ++i)
@@ -172,7 +192,9 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private void OnLocalInfosChanged(IEnumerable<AssetStoreLocalInfo> addedOrUpdated, IEnumerable<AssetStoreLocalInfo> removed)
         {
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             PushToCheckUpdateStack(addedOrUpdated?.Where(info =>
+#pragma warning restore RS0030
                 m_AssetStoreCache.GetPurchaseInfo(info.productId) != null &&
                 m_AssetStoreCache.GetUpdateInfo(info.productId) == null).Select(info => info.productId));
         }
@@ -351,14 +373,20 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public void PushToCheckUpdateStack(IEnumerable<long> productIds, bool forceCheckUpdate = false)
         {
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             foreach (var productId in productIds?.Reverse() ?? Enumerable.Empty<long>())
+#pragma warning restore RS0030
                 PushToCheckUpdateStack(productId, forceCheckUpdate);
         }
 
         public void ForceCheckUpdateAllCachedAndImportedPackages()
         {
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var productIdsToCheck = m_AssetStoreCache.localInfos.Select(i => i.productId)
+#pragma warning restore RS0030
+                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 .Concat(m_AssetStoreCache.importedPackages.Select(i => i.productId)).ToHashSet();
+#pragma warning restore RS0030
             PushToCheckUpdateStack(productIdsToCheck, true);
         }
 
@@ -370,7 +398,9 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public void CheckUpdateForUncheckedLocalInfos()
         {
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var idsWithNoUpdateInfo = m_AssetStoreCache.localInfos
+#pragma warning restore RS0030
                 .Where(info => m_AssetStoreCache.GetUpdateInfo(info?.productId) == null)
                 .Select(info => info.productId).ToArray();
 

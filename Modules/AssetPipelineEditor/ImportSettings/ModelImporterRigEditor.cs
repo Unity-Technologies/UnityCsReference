@@ -640,8 +640,12 @@ With this option, this model will not create any avatar but only import animatio
             serializedObject.Update();
 
             ImportLog importLog = AssetImporter.GetImportLog(singleImporter.assetPath);
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             ImportLog.ImportLogEntry[] importRigErrors = importLog ? importLog.logEntries.Where(x => x.flags == ImportLogFlags.Error && x.message.StartsWith(k_RigErrorPrefix)).ToArray() : new ImportLog.ImportLogEntry[0];
+#pragma warning restore RS0030
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             ImportLog.ImportLogEntry[] importRigWarnings = importLog ? importLog.logEntries.Where(x => x.flags == ImportLogFlags.Warning && x.message.StartsWith(k_RigErrorPrefix)).ToArray() : new ImportLog.ImportLogEntry[0];
+#pragma warning restore RS0030
 
             if (importRigErrors.Length > 0)
             {

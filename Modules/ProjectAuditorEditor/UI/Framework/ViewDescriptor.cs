@@ -48,7 +48,9 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
 
         public static ViewDescriptor[] GetAll()
         {
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return s_ViewDescriptorsRegistry.Select(pair => pair.Value).ToArray();
+#pragma warning restore RS0030
         }
     }
 }

@@ -420,6 +420,8 @@ namespace UnityEditor
                 fold = EditorPrefs.GetBool(k_layerMatrixFoldoutPref);
 
             var layerGridContainer = new VisualElement();
+            layerGridContainer.style.overflow = Overflow.Hidden;
+
             var layerGridUXML = EditorGUIUtility.Load(UXMLPath.physicsLayerGrid) as VisualTreeAsset;
             layerGridUXML.CloneTree(layerGridContainer);
 
@@ -446,8 +448,10 @@ namespace UnityEditor
             tab.Add(foldOut);
         }
 
+
         static void SetupClassicTab(VisualElement tab, SerializedObject serializedObject)
         {
+            tab.Add(new PropertyField(serializedObject.FindProperty("m_LogVerbosity")));
             tab.Add(new PropertyField(serializedObject.FindProperty("m_DefaultMaterial")));
             tab.Add(new PropertyField(serializedObject.FindProperty("m_BounceThreshold")));
             tab.Add(new PropertyField(serializedObject.FindProperty("m_DefaultMaxDepenetrationVelocity")));

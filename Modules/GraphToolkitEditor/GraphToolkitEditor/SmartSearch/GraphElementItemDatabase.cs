@@ -57,7 +57,9 @@ namespace Unity.GraphToolkit.Editor
             var types = TypeCache.GetTypesWithAttribute<LibraryItemAttribute>();
             foreach (var type in types)
             {
+                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 var attributes = type.GetCustomAttributes<LibraryItemAttribute>().ToList();
+#pragma warning restore RS0030
                 if (!attributes.HasAny())
                     continue;
 
@@ -129,7 +131,7 @@ namespace Unity.GraphToolkit.Editor
             TypeHandle handle = type.GenerateTypeHandle();
 
             Items.Add(new GraphNodeModelLibraryItem($"{TypeHelpers.GetFriendlyName(type).Nicify()} {ConstantsPath}",
-                new TypeItemLibraryData(handle),
+                new TypeItemLibraryData(handle, GraphModel),
                 data => data.CreateConstantNode("", handle))
             {
                 CategoryPath = ConstantsPath,
@@ -155,7 +157,7 @@ namespace Unity.GraphToolkit.Editor
             const string description = "Creates variable of the data type last selected from the Blackboard dropdown";
 
             Items.Add(
-                new VariableLibraryItem(itemName, lastVariable.TypeHandle, lastVariable.VariableType)
+                new VariableLibraryItem(itemName, lastVariable.TypeHandle, lastVariable.VariableType, GraphModel)
                 {
                     ModifierFlags = lastVariable.ModifierFlags,
                     Scope = lastVariable.Scope,
@@ -184,7 +186,7 @@ namespace Unity.GraphToolkit.Editor
             variableCreationInfos.TypeHandle = portModel.DataTypeHandle;
 
             Items.Add(
-                new VariableLibraryItem(itemName, variableCreationInfos.TypeHandle, variableCreationInfos.VariableType)
+                new VariableLibraryItem(itemName, variableCreationInfos.TypeHandle, variableCreationInfos.VariableType, GraphModel)
                 {
                     ModifierFlags = variableCreationInfos.ModifierFlags,
                     Scope = variableCreationInfos.Scope,
@@ -205,7 +207,7 @@ namespace Unity.GraphToolkit.Editor
             foreach (var declarationModel in graphModel.VariableDeclarations)
             {
                 Items.Add(new GraphNodeModelLibraryItem(declarationModel.Title,
-                    new TypeItemLibraryData(declarationModel.DataType),
+                    new TypeItemLibraryData(declarationModel.DataType, GraphModel),
                     data => data.CreateVariableNode(declarationModel))
                 { CategoryPath = "Variables" });
             }
@@ -249,7 +251,9 @@ namespace Unity.GraphToolkit.Editor
                 return subGraphModels;
             }
 
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return Enumerable.Empty<GraphModel>();
+#pragma warning restore RS0030
         }
 
         /// <summary>
@@ -321,7 +325,7 @@ namespace Unity.GraphToolkit.Editor
                 if (graphModel.GraphObject is not null)
                     libraryData = new NodeItemLibraryData(graphModel.GraphObject.GetType(), graphModel.GetGraphReference(true));
                 else
-                    libraryData = new TypeItemLibraryData(GraphModel.GetSubgraphTypeHandle());
+                    libraryData = new TypeItemLibraryData(GraphModel.GetSubgraphTypeHandle(), graphModel);
 
                 Items.Add(new GraphNodeModelLibraryItem(GetSubgraphName(graphModel),
                     libraryData,

@@ -20,19 +20,24 @@ namespace Unity.Profiling.Editor.UI
         public FrameTimesSectionViewController(
             ProfilerWindow profilerWindow,
             string rangeDescriptor,
-            TopMarkersViewController.IResponder topMarkersResponder) : base(k_Title)
+            TopMarkersViewController.IResponder topMarkersResponder,
+            IDetailsElementBinder detailsBinder) : base(k_Title)
         {
             m_FrameTimeBoxPlotViewController = new BoxPlotViewController(
                 $"Frame time across {rangeDescriptor}",
                 profilerWindow);
             m_TopFrameMarkersViewController = new TopMarkersViewController(
                 "Top markers on longest frame (self time)",
+                profilerWindow,
                 TopMarkersViewController.Action.ChangeSelectedFrame,
-                topMarkersResponder);
+                topMarkersResponder,
+                detailsBinder);
             m_TopRangeMarkersViewController = new TopMarkersViewController(
                 $"Top markers across {rangeDescriptor} (self time)",
+                profilerWindow,
                 TopMarkersViewController.Action.ChangeSelectedFrame,
-                topMarkersResponder);
+                topMarkersResponder,
+                detailsBinder);
         }
 
         public void RefreshFrameTimesView(BoxPlotModel frameTimes)

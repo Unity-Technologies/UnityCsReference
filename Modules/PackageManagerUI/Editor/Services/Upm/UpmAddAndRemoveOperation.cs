@@ -49,8 +49,12 @@ namespace UnityEditor.PackageManager.UI.Internal
         {
             get
             {
+                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 var packageIds = packageIdsToAdd.Concat(packagesNamesToRemove);
+#pragma warning restore RS0030
+                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 return string.Format(L10n.Tr("Error adding/removing packages: {0}."), string.Join(",", packageIds.ToArray()));
+#pragma warning restore RS0030
             }
         }
 
@@ -88,14 +92,18 @@ namespace UnityEditor.PackageManager.UI.Internal
             if (isSpecialInstall)
             {
                 var extractedPackageName = m_SpecialUniqueId.Split(new[] { '@' }, 2)[0];
+                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 return result.FirstOrDefault(p =>
+#pragma warning restore RS0030
                     p.packageId == m_SpecialUniqueId
                     || p.name == extractedPackageName
                     || p.projectDependenciesEntry == m_SpecialUniqueId);
             }
 
             var nameToMatch = packageName;
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return string.IsNullOrEmpty(nameToMatch) ? null : result.FirstOrDefault(p => p.name == nameToMatch);
+#pragma warning restore RS0030
         }
 
         public void AddByPathOrUrl(string pathOrUrl)
@@ -114,14 +122,16 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_PackageIdsToAdd = new  [] {versionId};
             m_PackagesNamesToRemove = new string[0];
             m_PackageIdOrName = versionId;
-            m_SpecialUniqueId = string.Empty;
+            m_SpecialUniqueId = versionId;
             Start();
         }
 
         public void AddByIds(IEnumerable<string> versionIds)
         {
             m_PackageIdsToReset = new string[0];
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             m_PackageIdsToAdd = (versionIds ?? Enumerable.Empty<string>()).ToArray();
+#pragma warning restore RS0030
             m_PackagesNamesToRemove = new string[0];
             m_PackageIdOrName = string.Empty;
             m_SpecialUniqueId = string.Empty;
@@ -132,7 +142,9 @@ namespace UnityEditor.PackageManager.UI.Internal
         {
             m_PackageIdsToReset = new string[0];
             m_PackageIdsToAdd = new string[0];
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             m_PackagesNamesToRemove = (packagesNames ?? Enumerable.Empty<string>()).ToArray();
+#pragma warning restore RS0030
             m_PackageIdOrName = string.Empty;
             m_SpecialUniqueId = string.Empty;
             Start();
@@ -142,7 +154,9 @@ namespace UnityEditor.PackageManager.UI.Internal
         {
             m_PackageIdsToReset = new string[0];
             m_PackageIdsToAdd = new [] { packageId };
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             m_PackagesNamesToRemove = (dependencyPackagesNames ?? Enumerable.Empty<string>()).ToArray();
+#pragma warning restore RS0030
             m_PackageIdOrName = packageId;
             m_SpecialUniqueId = string.Empty;
             Start();
@@ -152,7 +166,9 @@ namespace UnityEditor.PackageManager.UI.Internal
         {
             m_PackageIdsToReset = new [] { packageId };
             m_PackageIdsToAdd = new string[0];
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             m_PackagesNamesToRemove = (dependencyPackagesNames ?? Enumerable.Empty<string>()).ToArray();
+#pragma warning restore RS0030
             m_PackageIdOrName = packageId;
             m_SpecialUniqueId = string.Empty;
             Start();

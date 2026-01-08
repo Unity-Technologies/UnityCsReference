@@ -288,9 +288,13 @@ namespace UnityEditor
                 for (int i = 0; i < options.Length; i++)
                 {
                     if (LightmapVisualizationUtility.IsTextureTypeEnabled(types[i]))
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                         menu.AddItem(options[i], m_SelectedPreviewTextureOptionIndex == i, SelectPreviewTextureIndex, options.ElementAt(i));
+#pragma warning restore RS0030
                     else
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                         menu.AddDisabledItem(options.ElementAt(i));
+#pragma warning restore RS0030
                 }
                 menu.DropDown(dropRect);
             }
@@ -605,9 +609,13 @@ namespace UnityEditor
                 {
                     Hash128[] mainHashes = Lightmapping.GetMainSystemHashes();
 
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     if (!m_RealtimeTextureHash.isValid || !mainHashes.Contains(m_RealtimeTextureHash))
+#pragma warning restore RS0030
                     {
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                         m_RealtimeTextureHash = mainHashes.ElementAtOrDefault(m_LightmapIndex);
+#pragma warning restore RS0030
                     }
                 }
             }

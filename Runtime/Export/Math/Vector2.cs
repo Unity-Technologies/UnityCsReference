@@ -22,7 +22,7 @@ namespace UnityEngine
     [RequiredByNativeCode(Optional = true, GenerateProxy = true)]
     [Unity.IL2CPP.CompilerServices.Il2CppEagerStaticClassConstruction]
     [Serializable]
-    public struct Vector2 : IEquatable<Vector2>, IFormattable
+    public partial struct Vector2 : IEquatable<Vector2>, IFormattable
     {
         // X component of the vector.
         public float x;

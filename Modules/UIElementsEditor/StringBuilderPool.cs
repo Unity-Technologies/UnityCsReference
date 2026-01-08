@@ -8,7 +8,7 @@ using UnityEngine.Pool;
 
 namespace UnityEditor.UIElements;
 
-[VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+[VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
 internal static class StringBuilderPool
 {
     internal static readonly ObjectPool<StringBuilder> s_Pool = new (() => new StringBuilder(), null, sb => sb.Clear());

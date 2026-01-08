@@ -155,7 +155,9 @@ namespace UnityEditor
 
         void UpdateRendererMeshListCounts()
         {
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             m_ReoderableMeshListCounts = m_RendererMeshLists.Select(i => i.count).ToArray();
+#pragma warning restore RS0030
             UpdateEnabledMeshLods();
         }
 
@@ -361,8 +363,12 @@ namespace UnityEditor
 
         void DrawLODGroupFoldout(Camera camera, int lodGroupIndex, ref SavedBool foldoutState)
         {
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var totalTriCount = m_PrimitiveCounts.Length > 0 ? m_PrimitiveCounts[lodGroupIndex].Sum() : 0;
+#pragma warning restore RS0030
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var lod0TriCount = m_PrimitiveCounts[0].Sum();
+#pragma warning restore RS0030
             var triCountChange = lod0TriCount != 0 ? (float)totalTriCount / lod0TriCount * 100 : 0;
             var triangleChangeLabel = lodGroupIndex > 0 && lod0TriCount != 0 ? $"({triCountChange.ToString("f2")}% LOD0)" : "";
 
@@ -849,7 +855,9 @@ namespace UnityEditor
                     bool dragArea = false;
                     if (drawArea.Contains(evt.mousePosition))
                     {
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                         if (alreadyDrawn.All(x => !x.Contains(evt.mousePosition)))
+#pragma warning restore RS0030
                             dragArea = true;
                     }
 
@@ -866,8 +874,12 @@ namespace UnityEditor
                             // First try gameobjects...
                             var selectedGameObjects =
                                 from go in DragAndDrop.objectReferences
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                                 where go as GameObject != null
+#pragma warning restore RS0030
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                                 select go as GameObject;
+#pragma warning restore RS0030
 
                             var renderers = GetRenderers(selectedGameObjects, true);
                             AddGameObjectRenderers(renderers, true);
@@ -989,16 +1001,22 @@ namespace UnityEditor
                 return new List<Renderer>();
 
             var validSearchObjects = from go in selectedGameObjects
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 where go.transform.IsChildOf(m_LODGroup.transform)
+#pragma warning restore RS0030
                 select go;
 
             var nonChildObjects = from go in selectedGameObjects
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 where !go.transform.IsChildOf(m_LODGroup.transform)
+#pragma warning restore RS0030
                 select go;
 
             // Handle reparenting
             var validChildren = new List<GameObject>();
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             if (nonChildObjects.Count() > 0)
+#pragma warning restore RS0030
             {
                 const string kReparent = "Some objects are not children of the LODGroup GameObject. Do you want to reparent them and add them to the LODGroup?";
                 if (EditorUtility.DisplayDialog(
@@ -1007,6 +1025,9 @@ namespace UnityEditor
                     "Yes, Reparent",
                     "No, Use Only Existing Children"))
                 {
+                    Undo.IncrementCurrentGroup();
+                    Undo.SetCurrentGroupName("Reparent GameObjects for LOD Group");
+
                     foreach (var go in nonChildObjects)
                     {
                         if (EditorUtility.IsPersistent(go))
@@ -1014,7 +1035,8 @@ namespace UnityEditor
                             var newGo = Instantiate(go);
                             if (newGo != null)
                             {
-                                newGo.transform.parent = m_LODGroup.transform;
+                                Undo.RegisterCreatedObjectUndo(newGo, "Reparent GameObjects for LOD Group");
+                                Undo.SetTransformParent(newGo.transform, m_LODGroup.transform, "Reparent GameObjects for LOD Group");
                                 newGo.transform.localPosition = Vector3.zero;
                                 newGo.transform.localRotation = Quaternion.identity;
                                 validChildren.Add(newGo);
@@ -1022,11 +1044,13 @@ namespace UnityEditor
                         }
                         else
                         {
-                            go.transform.parent = m_LODGroup.transform;
+                            Undo.SetTransformParent(go.transform, m_LODGroup.transform, "Reparent GameObjects for LOD Group");
                             validChildren.Add(go);
                         }
                     }
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     validSearchObjects = validSearchObjects.Union(validChildren);
+#pragma warning restore RS0030
                 }
             }
 
@@ -1042,8 +1066,12 @@ namespace UnityEditor
 
             // Then try renderers
             var selectedRenderers = from go in DragAndDrop.objectReferences
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 where go as Renderer != null
+#pragma warning restore RS0030
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 select go as Renderer;
+#pragma warning restore RS0030
 
             renderers.AddRange(selectedRenderers);
             return renderers;
@@ -1300,8 +1328,12 @@ namespace UnityEditor
                         var clickedButton = false;
 
                         // case:464019 have to re-sort the LOD array for these buttons to get the overlaps in the right order...
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                         var lodsLeft = lods.Where(lod => lod.ScreenPercent > 0.5f).OrderByDescending(x => x.LODIndex);
+#pragma warning restore RS0030
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                         var lodsRight = lods.Where(lod => lod.ScreenPercent <= 0.5f).OrderBy(x => x.LODIndex);
+#pragma warning restore RS0030
 
                         var lodButtonOrder = new List<LODGUI.LODInfo>();
                         lodButtonOrder.AddRange(lodsLeft);
@@ -1405,8 +1437,12 @@ namespace UnityEditor
                             {
                                 // First try gameobjects...
                                 var selectedGameObjects = from go in DragAndDrop.objectReferences
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                                     where go as GameObject != null
+#pragma warning restore RS0030
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                                     select go as GameObject;
+#pragma warning restore RS0030
                                 var renderers = GetRenderers(selectedGameObjects, true);
 
                                 if (lodLevel == -1)
@@ -1784,7 +1820,9 @@ namespace UnityEditor
             var camera = SceneView.lastActiveSceneView.camera;
 
             var info = LODUtility.CalculateVisualizationData(camera, m_LODGroup, activeLOD);
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return activeLOD != -1 ? string.Format("{0} Renderer(s)\n{1} Triangle(s)\n{2} Material(s)", renderers.arraySize, info.triangleCount, materials.Distinct().Count()) : "LOD: culled";
+#pragma warning restore RS0030
         }
     }
 }

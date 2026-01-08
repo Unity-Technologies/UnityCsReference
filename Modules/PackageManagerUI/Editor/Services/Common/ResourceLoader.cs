@@ -179,7 +179,9 @@ namespace UnityEditor.PackageManager.UI.Internal
                 var styleSheet = FindResolvedStyleSheetFromType(StyleSheetType.PackageManagerWindow);
                 if (styleSheet == null)
                 {
+                    #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     var styleSheetsToResolve = StyleSheetPath.packageManagerComponents.Select(p =>
+#pragma warning restore RS0030
                     {
                         var styleSheet = Load<StyleSheet>(p);
                         if (styleSheet == null)
@@ -245,7 +247,9 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private StyleSheet ResolveStyleSheets(StyleSheetType styleSheetType, params string[] styleSheetPaths)
         {
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return ResolveStyleSheets(styleSheetType, styleSheetPaths.Select(p =>
+#pragma warning restore RS0030
             {
                 var styleSheet = Load<StyleSheet>(p);
                 if (styleSheet == null)
@@ -313,7 +317,9 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public void Reset()
         {
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             foreach (var styleSheetId in s_ResolvedDarkStyleSheetIds.Concat(s_ResolvedLightStyleSheetIds).Where(id => id != EntityId.None))
+#pragma warning restore RS0030
                 UnityEngine.Object.DestroyImmediate(UnityEngine.Object.FindObjectFromInstanceID(styleSheetId));
 
             for (var i = 0; i < (int)StyleSheetType.Count; i++)

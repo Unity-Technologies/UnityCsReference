@@ -157,7 +157,9 @@ namespace UnityEditor.Search
 
         public IEnumerable<TResult> Select<TResult>(Func<SearchItem, TResult> selector)
         {
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return Fetch().Where(item =>
+#pragma warning restore RS0030
             {
                 context.Tick();
                 return item != null;
@@ -574,7 +576,9 @@ namespace UnityEditor.Search
         double m_ThrottlerTimer;
         static readonly TimeSpan k_ThrottleDelay = TimeSpan.FromSeconds(1);
 
+        #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
         public bool Sorted => m_Groups.All(g => ((Group)g).sorted);
+#pragma warning restore RS0030
         public override int Count => m_Groups[m_CurrentGroupIndex >= 0 ? m_CurrentGroupIndex : 0].count;
         public int TotalCount => m_Groups[0].count;
 
@@ -633,7 +637,9 @@ namespace UnityEditor.Search
 
         internal IEnumerable<IGroup> GetGroupByType(string groupType)
         {
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return m_Groups.Where(group => group.type == groupType);
+#pragma warning restore RS0030
         }
 
         public IEnumerable<IGroup> EnumerateGroups(bool showAll = true)
@@ -642,7 +648,9 @@ namespace UnityEditor.Search
                 yield return m_Groups[1];
             else
             {
+                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 foreach (var g in m_Groups.Skip(showAll ? 0 : 1).Where(g => !g.optional || g.count > 0))
+#pragma warning restore RS0030
                     yield return g;
             }
         }
@@ -669,7 +677,9 @@ namespace UnityEditor.Search
 
         private void AddDefaultGroups()
         {
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var defaultGroups = context.providers
+#pragma warning restore RS0030
                 .Where(p => p.showDetailsOptions.HasFlag(ShowDetailsOptions.DefaultGroup))
                 .Select(p => CreateGroup(p.id, p.type, p.name, m_DefaultComparer, p.priority, optional: false));
             m_Groups.AddRange(defaultGroups);
@@ -783,13 +793,17 @@ namespace UnityEditor.Search
         {
             int queryItemCount = 0;
 
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             if (activeProviderTypes == null || !activeProviderTypes.Any())
+#pragma warning restore RS0030
                 return TotalCount;
 
             foreach (var providerType in activeProviderTypes)
             {
                 var groupsWithType = GetGroupByType(providerType);
+                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 if (groupsWithType == null || !groupsWithType.Any())
+#pragma warning restore RS0030
                     continue;
 
                 foreach (var group in groupsWithType)
@@ -982,7 +996,9 @@ namespace UnityEditor.Search
 
         public override bool Contains(SearchItem item)
         {
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return m_UnorderedItems.Contains(item);
+#pragma warning restore RS0030
         }
 
         public override void CopyTo(SearchItem[] array, int arrayIndex)

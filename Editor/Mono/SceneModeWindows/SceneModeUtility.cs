@@ -269,7 +269,9 @@ namespace UnityEditor
         }
 
         public static GameObject[] GetObjects(Object[] gameObjects, bool includeChildren)
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             => GetObjectsSpan(gameObjects.OfType<GameObject>().ToArray(), includeChildren);
+#pragma warning restore RS0030
 
         internal static GameObject[] GetObjectsSpan(ReadOnlySpan<GameObject> gameObjects, bool includeChildren)
         {

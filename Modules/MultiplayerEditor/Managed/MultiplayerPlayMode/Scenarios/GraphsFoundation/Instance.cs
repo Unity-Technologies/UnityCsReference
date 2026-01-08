@@ -154,20 +154,6 @@ namespace Unity.Multiplayer.PlayMode.Editor
             return m_RunModeState == RunModeState.ManualControl;
         }
 
-        // This is used for the Analytics OnPlayFromScenario event's UseMultiplay data
-        // TODO: We'll need to update this once we support different server deployment modes for editor and remote instances.
-        internal static string GetInstanceUseMultiplayDataFromServerDeployMode(InstanceDescription instanceDescription)
-        {
-            return instanceDescription switch
-            {
-                LocalInstanceDescription localInstanceDescription when localInstanceDescription.IsServer() =>
-                    ServerSettings.GetUseMultiplayString(localInstanceDescription
-                        .ServerSettings.DeployMode),
-                RemoteInstanceDescription remoteInstanceDescription => "Multiplay",
-                _ => string.Empty
-            };
-        }
-
         // Returns the array of analytics InstanceData from Instances
         internal static InstanceData[] GetAnalyticsDataArray(List<Instance> instances)
         {
@@ -204,13 +190,6 @@ namespace Unity.Multiplayer.PlayMode.Editor
 
             var isRunning = isFreeRun && IsActive();
 
-            string serverDeployMode = null;
-            var instanceDescription = GetInstanceDescription();
-            if (instanceDescription != null)
-            {
-                serverDeployMode = GetInstanceUseMultiplayDataFromServerDeployMode(instanceDescription);
-            }
-
             return new InstanceData
             {
                 Type = m_InstanceDescriptionType,
@@ -222,7 +201,6 @@ namespace Unity.Multiplayer.PlayMode.Editor
                 InstanceDeployStageDurationMs = deployStageDurationMs,
                 InstanceRunStageDurationMs = runStageDurationMs,
                 MultiplayerRole = m_MultiplayerRole,
-                UseMultiplay = serverDeployMode
             };
         }
 

@@ -29,7 +29,9 @@ namespace UnityEditor.Search
             {
                 var oldOptions = context.options;
                 context.options |= SearchFlags.Synchronous;
+                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 foreach (var r in expression.Execute(context).Where(item => item != null).Select(item => item.value))
+#pragma warning restore RS0030
                     yield return r;
                 context.options = oldOptions;
             }
@@ -39,7 +41,9 @@ namespace UnityEditor.Search
         {
             using (var context = SearchService.CreateContext(""))
             {
+                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 return Evaluate(context, reevaluateLiterals).ToList();
+#pragma warning restore RS0030
             }
         }
 
@@ -126,7 +130,9 @@ namespace UnityEditor.Search
                         continue;
                     }
                     var results = expression.Execute(context);
+                    #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     var resolvedValue = results.FirstOrDefault(item => item != null);
+#pragma warning restore RS0030
                     var resolvedValueObject = resolvedValue?.value;
                     queryMarkerArguments.Add(new QueryMarkerArgument { rawText = arg, expression = expression, value = resolvedValueObject });
                 }
@@ -230,7 +236,9 @@ namespace UnityEditor.Search
                 var valueArg = queryMarker.args[0];
                 var value = valueArg.value;
                 if (valueArg.needsEvaluation)
+                    #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     value = valueArg.Evaluate(context).FirstOrDefault();
+#pragma warning restore RS0030
                 if (value == null)
                     continue;
 
@@ -253,26 +261,34 @@ namespace UnityEditor.Search
         {
             using (var context = SearchService.CreateContext(""))
             {
+                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 return EvaluateArgs(context, reevaluateLiterals).ToList(); // Calling ToList to force evaluation so context is not used after disposal.
+#pragma warning restore RS0030
             }
         }
 
         public IEnumerable<object> EvaluateArgs(SearchContext context, bool reevaluateLiterals = false)
         {
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return args.SelectMany(qma => qma.Evaluate(context, reevaluateLiterals));
+#pragma warning restore RS0030
         }
 
         public IEnumerable<object> EvaluateArgsNoSpread(bool reevaluateLiterals = false)
         {
             using (var context = SearchService.CreateContext(""))
             {
+                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 return EvaluateArgsNoSpread(context, reevaluateLiterals).ToList(); // Calling ToList to force evaluation so context is not used after disposal.
+#pragma warning restore RS0030
             }
         }
 
         public IEnumerable<object> EvaluateArgsNoSpread(SearchContext context, bool reevaluateLiterals = false)
         {
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return args.Select(qma => qma.Evaluate(context, reevaluateLiterals));
+#pragma warning restore RS0030
         }
 
         public override string ToString()

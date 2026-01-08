@@ -60,10 +60,10 @@ namespace UnityEditor.AssetImporters
         public bool TryGetProperty(string propertyName, out string value) => TryGetStringProperty(propertyName, out value);
         public bool TryGetProperty(string propertyName, out TexturePropertyDescription value) => TryGetTextureProperty(propertyName, out value);
 
-        public extern void GetVector4PropertyNames([Out] List<string> names);
-        public extern void GetFloatPropertyNames([Out] List<string> names);
-        public extern void GetTexturePropertyNames([Out] List<string> names);
-        public extern void GetStringPropertyNames([Out] List<string> names);
+        public extern void GetVector4PropertyNames([Out,NotNull] List<string> names);
+        public extern void GetFloatPropertyNames([Out,NotNull] List<string> names);
+        public extern void GetTexturePropertyNames([Out,NotNull] List<string> names);
+        public extern void GetStringPropertyNames([Out,NotNull] List<string> names);
 
         extern bool TryGetVector4Property(string propertyName, out Vector4 value);
         extern bool TryGetFloatProperty(string propertyName, out float value);

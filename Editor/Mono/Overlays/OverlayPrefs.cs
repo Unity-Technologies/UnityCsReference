@@ -13,18 +13,44 @@ using UnityEngine.UIElements;
 namespace UnityEditor.Overlays
 {
     [AttributeUsage(AttributeTargets.Class)]
-    internal sealed class OverlayDefaultBackgroundColorAttribute : Attribute
+    public sealed class OverlayCanvasSettingsAttribute : Attribute
     {
-        public Color darkColor { get; }
-        public Color lightColor { get; }
+        internal const string invalidColorFormatError = "Invalid color format in OverlayCanvasSettings. Color array should have 3 or 4 elements, it currently has {0}.";
 
-        // Structs aren't allowed in attributes so dividing the floats is required
-        public OverlayDefaultBackgroundColorAttribute(
-            float darkR, float darkG, float darkB, float darkA,
-            float lightR, float lightG, float lightB, float lightA)
+        public float[] defaultColor { get; set; } = null;
+        public float[] defaultColorLight { get; set; } = null;
+        public float[] defaultColorDark { get; set; } = null;
+        public DynamicPanelBehavior dynamicPanelBehavior { get; set; } = DynamicPanelBehavior.None;
+        public bool allowDynamicPanelBehaviorChanges { get; set; } = true;
+
+        internal bool TryGetDefaultColor(out Color color)
         {
-            darkColor = new Color(darkR, darkG, darkB, darkA);
-            lightColor = new Color(lightR, lightG, lightB, lightA);
+            var themeColor = EditorGUIUtility.isProSkin ? defaultColorDark : defaultColorLight;
+            if (themeColor != null && themeColor.Length > 0)
+            {
+                return TryCastToColor(themeColor, out color);
+            }
+
+            if (defaultColor != null && defaultColor.Length > 0)
+            {
+                return TryCastToColor(defaultColor, out color);
+            }
+
+            color = default;
+            return false;
+        }
+
+        internal static bool TryCastToColor(float[] raw, out Color color)
+        {
+            if (raw.Length != 3 && raw.Length != 4)
+            {
+                Debug.LogErrorFormat(invalidColorFormatError, raw.Length);
+                color = default;
+                return false;
+            }
+
+            color = new Color(raw[0], raw[1], raw[2], raw.Length > 3 ? raw[3] : 1);
+            return true;
         }
     }
 
@@ -42,6 +68,9 @@ namespace UnityEditor.Overlays
 
             public PrefColor backgroundColor { get; private set; }
 
+            public DynamicPanelBehavior dynamicPanelBehavior { get; private set; }
+            public bool allowDynamicPanelBehaviorChanges { get; private set; }
+
             public bool enabled
             {
                 get => EditorPrefs.GetBool($"OverlayEnabled.{type.AssemblyQualifiedName}", true);
@@ -52,8 +81,10 @@ namespace UnityEditor.Overlays
                 }
             }
 
-            public WindowSettings(Type type, Color defaultBackgroundColor)
+            public WindowSettings(Type type, Color defaultBackgroundColor, DynamicPanelBehavior dynamicPanelBehavior, bool allowDynamicPanelBehaviorChanges)
             {
+                this.dynamicPanelBehavior = dynamicPanelBehavior;
+                this.allowDynamicPanelBehaviorChanges = allowDynamicPanelBehaviorChanges;
                 this.type = type;
                 this.defaultBackgroundColor = defaultBackgroundColor;
                 backgroundColor = new PrefColor(k_BackgroundColorPrefKey + type.Name,
@@ -126,6 +157,26 @@ namespace UnityEditor.Overlays
                 settings.backgroundColor.ResetToDefault();
                 WriteStylesheetFromPrefs();
             }
+        }
+
+        public static bool IsDynamicPanelBehaviorChangesAllowed(Type windowType)
+        {
+            if (instance.m_Windows.TryGetValue(windowType, out var settings))
+            {
+                return settings.allowDynamicPanelBehaviorChanges;
+            }
+
+            return true;
+        }
+
+        public static DynamicPanelBehavior GetDefaultDynamicPanelBehavior(Type windowType)
+        {
+            if (instance.m_Windows.TryGetValue(windowType, out var settings))
+            {
+                return settings.dynamicPanelBehavior;
+            }
+
+            return DynamicPanelBehavior.None;
         }
 
         internal static string GetPreferenceCanvasClass(Type windowType)
@@ -206,12 +257,19 @@ namespace UnityEditor.Overlays
                 if (typeof(EditorWindow).IsAssignableFrom(type) && !type.IsAbstract && type != typeof(MainToolbarWindow))
                 {
                     // Get default background color override (if any)
-                    var attr = type.GetCustomAttribute<OverlayDefaultBackgroundColorAttribute>();
+                    var attr = type.GetCustomAttribute<OverlayCanvasSettingsAttribute>();
                     var defaultBackgroundColor = EditorGUIUtility.isProSkin ? k_DefaultDarkBackgroundColor : k_DefaultLightBackgroundColor;
+                    var dynamicPanelBehavior = DynamicPanelBehavior.None;
+                    bool allowDynamicPanelBehaviorChanges = true;
                     if (attr != null)
-                        defaultBackgroundColor = EditorGUIUtility.isProSkin ? attr.darkColor : attr.lightColor;
+                    {
+                        if (attr.TryGetDefaultColor(out var color))
+                            defaultBackgroundColor = color;
+                        dynamicPanelBehavior = attr.dynamicPanelBehavior;
+                        allowDynamicPanelBehaviorChanges = attr.allowDynamicPanelBehaviorChanges;
+                    }
 
-                    var settings = new WindowSettings(type, defaultBackgroundColor);
+                    var settings = new WindowSettings(type, defaultBackgroundColor, dynamicPanelBehavior, allowDynamicPanelBehaviorChanges);
                     m_Windows.Add(type, settings);
                     m_SupportedTypes.Add(type);
                     m_ColorPrefKeys.Add(settings.backgroundColor.Name);

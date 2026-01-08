@@ -102,12 +102,16 @@ namespace UnityEditor.Scripting.ScriptCompilation
         }
 
         private Dictionary<UnityAssembliesKey, PrecompiledAssembly[]> m_UnityAssemblies;
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
         public override PrecompiledAssembly[] CachedUnityAssemblies => m_UnityAssemblies?.Values
+#pragma warning restore RS0030
         .SelectMany(x => x).ToArray();
 
         private Dictionary<string, PrecompiledAssembly> m_EditorPrecompiledAssemblies;
         private PrecompiledAssembly[] m_AllPrecompiledAssemblies;
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
         public override PrecompiledAssembly[] CachedEditorPrecompiledAssemblies => m_EditorPrecompiledAssemblies?.Values.ToArray();
+#pragma warning restore RS0030
 
         public override PrecompiledAssembly[] GetUnityAssemblies(bool isEditor, BuildTarget buildTarget)
         {
@@ -129,7 +133,9 @@ namespace UnityEditor.Scripting.ScriptCompilation
 
         public override PrecompiledAssembly[] GetPrecompiledAssemblies(EditorScriptCompilationOptions compilationOptions, BuildTarget buildTarget, string[] extraScriptingDefines)
         {
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return GetPrecompiledAssembliesDictionary(compilationOptions, buildTarget, extraScriptingDefines, includeRedirectedAssemblies: true).Values.ToArray();
+#pragma warning restore RS0030
         }
 
         public override PrecompiledAssembly[] GetAllPrecompiledAssemblies()

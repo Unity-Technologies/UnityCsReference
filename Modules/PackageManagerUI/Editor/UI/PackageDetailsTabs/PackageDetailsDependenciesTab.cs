@@ -158,7 +158,9 @@ namespace UnityEditor.PackageManager.UI.Internal
             reverseDependenciesNames.Clear();
             reverseDependenciesVersions.Clear();
 
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var hasReverseDependencies = reverseDependencies?.Any() ?? false;
+#pragma warning restore RS0030
             UIUtils.SetElementDisplay(noReverseDependencies, !hasReverseDependencies);
             UIUtils.SetElementDisplay(reverseDependenciesNames, hasReverseDependencies);
             UIUtils.SetElementDisplay(reverseDependenciesVersions, hasReverseDependencies);

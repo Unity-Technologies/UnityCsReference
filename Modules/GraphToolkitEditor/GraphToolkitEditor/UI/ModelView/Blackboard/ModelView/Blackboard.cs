@@ -322,7 +322,9 @@ namespace Unity.GraphToolkit.Editor
                     else
                         insertAfter = (args.childIndex == 0 ? null : group.Items[args.childIndex - 1]);
 
+                    #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     RootView.Dispatch(new ReorderGroupItemsCommand(group, insertAfter, draggedModels.Cast<IGroupItemModel>().ToList()));
+#pragma warning restore RS0030
                     return DragVisualMode.Move;
                 }
             }
@@ -456,7 +458,9 @@ namespace Unity.GraphToolkit.Editor
                 }
             }
 
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             m_ItemToInfos[item] = new ItemInfo() { id = id,  childrenIds = children?.Select(t => t.id).ToList()};
+#pragma warning restore RS0030
             return new TreeViewItemData<IGroupItemModel>(id++, item, children);
         }
 
@@ -587,7 +591,9 @@ namespace Unity.GraphToolkit.Editor
                 {
                     int index = (int)s_GetIndexFromPositionMethod.Invoke(s_VirtualizationControllerProperty.GetValue(m_TreeView), new object[] {m_TreeView.Q<ScrollView>().contentContainer.WorldToLocal(evt.mousePosition)});
                     var model = m_TreeView.GetItemDataForIndex<IGroupItemModel>(index);
+                    #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     if (model != null && model.ParentGroup is GroupModel && !BlackboardView.GetSelection().OfType<IGroupItemModel>().HasAny(t => t.GetSection() != model.GetSection() || t.ParentGroup is not GroupModel))
+#pragma warning restore RS0030
                     {
                         groupModel = model;
                     }

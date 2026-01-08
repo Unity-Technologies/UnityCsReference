@@ -99,7 +99,7 @@ namespace UnityEditor.DeviceSimulation
             m_AllowedAutoRotation.Add(ScreenOrientation.LandscapeRight, m_PlayerSettings.allowedLandscapeRight);
 
             // Set the full screen mode.
-            m_IsFullScreen = !m_DeviceInfo.IsAndroidDevice() || m_PlayerSettings.androidStartInFullscreen;
+            m_IsFullScreen = !m_DeviceInfo.IsAndroidDevice() || m_PlayerSettings.androidFullscreenMode == FullScreenMode.FullScreenWindow;
             m_RequestedFullScreen = m_IsFullScreen;
             m_IsRenderingOutsideSafeArea = !m_DeviceInfo.IsAndroidDevice() || m_PlayerSettings.androidRenderOutsideSafeArea;
 
@@ -119,7 +119,9 @@ namespace UnityEditor.DeviceSimulation
             {
                 // The real iPhone X responds to this absolute corner case by crashing, we will not do that.
                 m_AutoRotation = false;
+                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 RequestOrientation(m_SupportedOrientations.Keys.ToArray()[0]);
+#pragma warning restore RS0030
             }
 
             m_RequestInsetUpdate = true;

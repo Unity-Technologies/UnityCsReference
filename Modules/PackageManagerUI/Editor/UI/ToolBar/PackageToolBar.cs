@@ -192,7 +192,9 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private void RefreshExtensionItems()
         {
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var activeDisableCondition = new DisableCondition[]
+#pragma warning restore RS0030
             {
                 new DisableIfInstallOrEmbedOrUninstallInProgress(m_OperationDispatcher),
                 new DisableIfCompiling(m_Application)

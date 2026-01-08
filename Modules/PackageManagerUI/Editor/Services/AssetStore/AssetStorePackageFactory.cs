@@ -83,7 +83,9 @@ namespace UnityEditor.PackageManager.UI.Internal
             // We only regenerate and remove packages from the Asset Store that are of Legacy format. We handle the UPM format in UpmPackageFactory.
             var packagesToRemove = new List<IPackage>();
             var packagesToRegenerate = new List<IPackage>();
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             foreach (var package in m_PackageDatabase.allPackages.Where(p => p.product != null && p.versions.Any(v => v.HasTag(PackageTag.LegacyFormat))))
+#pragma warning restore RS0030
             {
                 if (package.versions.imported != null)
                     packagesToRegenerate.Add(package);
@@ -93,10 +95,14 @@ namespace UnityEditor.PackageManager.UI.Internal
 
             // We use `ToArray` here as m_PackageDatabase.UpdatePackages will modify the enumerable and throw an error if we don't
             if (packagesToRemove.Count > 0)
+                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 m_PackageDatabase.UpdatePackages(toRemove: packagesToRemove.Select(p => p.uniqueId).ToArray());
+#pragma warning restore RS0030
 
             if (packagesToRegenerate.Count > 0)
+                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 GeneratePackagesAndTriggerChangeEvent(packagesToRegenerate.Select(p => p.product.id));
+#pragma warning restore RS0030
         }
 
         private void AddPackageError(Package package, UIError error)
@@ -107,7 +113,9 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private void SetPackagesProgress(IEnumerable<IPackage> packages, PackageProgress progress)
         {
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var packagesUpdated = packages.OfType<Package>().Where(p => p.progress != progress).ToArray();
+#pragma warning restore RS0030
             foreach (var package in packagesUpdated)
                 SetProgress(package, progress);
             if (packagesUpdated.Length > 0)
@@ -182,7 +190,9 @@ namespace UnityEditor.PackageManager.UI.Internal
         {
             // Since users could have way more locally downloaded .unitypackages than what's in their purchase list
             // we don't want to trigger change events for all of them, only the ones we already checked before (the ones with productInfos)
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var productIds = addedOrUpdated?.Select(info => info.productId).Concat(removed.Select(info => info.productId) ?? new long[0])?.
+#pragma warning restore RS0030
                 Where(id => m_AssetStoreCache.GetProductInfo(id) != null);
             GeneratePackagesAndTriggerChangeEvent(productIds);
         }
@@ -191,7 +201,9 @@ namespace UnityEditor.PackageManager.UI.Internal
         {
             // Since users could have way more locally downloaded .unitypackages than what's in their purchase list
             // we don't want to trigger change events for all of them, only the ones we already checked before (the ones with productInfos)
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var productIds = addedOrUpdated?.Select(info => info.productId).Concat(removed.Select(info => info.productId) ?? new long[0]);
+#pragma warning restore RS0030
             GeneratePackagesAndTriggerChangeEvent(productIds);
         }
 
@@ -199,7 +211,9 @@ namespace UnityEditor.PackageManager.UI.Internal
         {
             // Right now updateInfo goes hands in hands with localInfo, so we handle it the same way as localInfo changes
             // and only check packages we already checked before (the ones with productInfos). This behaviour might change in the future
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             GeneratePackagesAndTriggerChangeEvent(updateInfos?.Select(info => info.productId).Where(id => m_AssetStoreCache.GetProductInfo(id) != null));
+#pragma warning restore RS0030
         }
 
         private void OnProductInfoChanged(AssetStoreProductInfo productInfo)
@@ -209,7 +223,9 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private void OnPurchaseInfosChanged(IEnumerable<AssetStorePurchaseInfo> purchaseInfos)
         {
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             GeneratePackagesAndTriggerChangeEvent(purchaseInfos.Select(info => info.productId));
+#pragma warning restore RS0030
         }
 
         private void OnFetchStatusChanged(FetchStatus fetchStatus)
@@ -219,7 +235,9 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public void GeneratePackagesAndTriggerChangeEvent(IEnumerable<long> productIds)
         {
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             if (productIds?.Any() != true)
+#pragma warning restore RS0030
                 return;
 
             var packagesChanged = new List<IPackage>();

@@ -35,7 +35,9 @@ namespace UnityEditor.Search
                 if (s_Providers == null)
                 {
                     var supportedSignature = MethodSignature.FromDelegate<SearchPropositionsProviderHandler>();
+                    #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     s_Providers = ReflectionUtils.LoadAllMethodsWithAttribute<SearchPropositionsProviderAttribute, SearchPropositionProvider>((mi, attribute, handler) =>
+#pragma warning restore RS0030
                     {
                         if (handler is SearchPropositionsProviderHandler _handler)
                             return new SearchPropositionProvider(_handler);
@@ -221,8 +223,12 @@ namespace UnityEditor.Search
 
         private static void FillProviderPropositions(SearchContext context, in SearchPropositionOptions options, HashSet<SearchProposition> propositions)
         {
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var providers = context.providers.Where(p => context.filterId == null || context.filterId == p.filterId);
+#pragma warning restore RS0030
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var queryEmpty = string.IsNullOrWhiteSpace(context.searchText) && providers.Count(p => !p.isExplicitProvider) > 1;
+#pragma warning restore RS0030
             foreach (var p in providers)
             {
                 if (queryEmpty && !options.HasAny(SearchPropositionFlags.ForceAllProviders))
@@ -254,7 +260,9 @@ namespace UnityEditor.Search
         private static void FillBuiltInPropositions(SearchContext context, HashSet<SearchProposition> propositions)
         {
             int builtPriority = -50;
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             foreach (var rs in SearchSettings.recentSearches.Take(5))
+#pragma warning restore RS0030
             {
                 if (!rs.StartsWith(context.searchText, StringComparison.OrdinalIgnoreCase))
                     continue;
@@ -315,7 +323,9 @@ namespace UnityEditor.Search
             {
                 if (m_Tokens == null)
                 {
+                    #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     m_Tokens = new[]
+#pragma warning restore RS0030
                     {
                         GetTokenAtCursorPosition(query, cursor, IsDelimiter),
                         GetTokenAtCursorPosition(query, cursor, IsExtendedDelimiter)
@@ -327,12 +337,16 @@ namespace UnityEditor.Search
 
         internal bool StartsWith(string token)
         {
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return tokens.Any(t => t.StartsWith(token, StringComparison.OrdinalIgnoreCase));
+#pragma warning restore RS0030
         }
 
         internal bool StartsWith(params string[] tokens)
         {
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return tokens.Any(t => StartsWith(t));
+#pragma warning restore RS0030
         }
 
         internal SearchPropositionOptions(SearchPropositionFlags flags)
@@ -469,10 +483,14 @@ namespace UnityEditor.Search
 
         static BuiltinPropositions()
         {
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             foreach (var t in baseTypeFilters.Concat(TypeCache.GetTypesDerivedFrom<ScriptableObject>().Select(t => t.Name)))
+#pragma warning restore RS0030
                 help[$"t:{t.ToLowerInvariant()}"] = $"Search {t} assets";
 
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             foreach (var t in TypeCache.GetTypesDerivedFrom<Component>().Select(t => t.Name))
+#pragma warning restore RS0030
                 help[$"t:{t.ToLowerInvariant()}"] = $"Search {t} components";
         }
 

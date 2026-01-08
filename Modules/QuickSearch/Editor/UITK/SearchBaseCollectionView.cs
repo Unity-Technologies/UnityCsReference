@@ -6,7 +6,6 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
-using Unity.Collections.LowLevel.Unsafe;
 using UnityEngine;
 using UnityEngine.Pool;
 using UnityEngine.UIElements;
@@ -80,7 +79,6 @@ namespace UnityEditor.Search
             m_ListView.itemsChosen += OnItemsChosen;
             On(SearchEvent.SelectionHasChanged, OnSelectionChanged);
             On(SearchEvent.DisplayModeChanged, OnDisplayModeChanged);
-            On(SearchEvent.RefreshContent, OnRefreshContent);
 
             RegisterGlobalEventHandler<KeyDownEvent>(OnKeyNavigation, 20);
             RegisterCallback<PointerDownEvent>(OnPointerDown);
@@ -94,7 +92,6 @@ namespace UnityEditor.Search
             UnregisterCallback<PointerDownEvent>(OnPointerDown);
             UnregisterGlobalEventHandler<KeyDownEvent>(OnKeyNavigation);
 
-            Off(SearchEvent.RefreshContent, OnRefreshContent);
             Off(SearchEvent.DisplayModeChanged, OnDisplayModeChanged);
             Off(SearchEvent.SelectionHasChanged, OnSelectionChanged);
             m_ListView.itemsChosen -= OnItemsChosen;
@@ -111,7 +108,9 @@ namespace UnityEditor.Search
 
         private void OnItemsChosen(IEnumerable<object> chosenItems)
         {
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var convertedItems = chosenItems.Select(item => (SearchItem)item).ToArray();
+#pragma warning restore RS0030
             m_ViewModel.ExecuteAction(null, convertedItems, !SearchSettings.keepOpen);
         }
 
@@ -150,8 +149,14 @@ namespace UnityEditor.Search
         void IResultView.Focus() => m_ListView.Focus();
         public virtual void Refresh(RefreshFlags flags)
         {
+            if (flags.HasAny(RefreshFlags.ItemsChanged))
+            {
+                Refresh();
+            }
             if (flags.HasAny(RefreshFlags.DisplayModeChanged))
+            {
                 OnDisplayModeChanged(null);
+            }
         }
 
         void IResultView.OnGroupChanged(string prevGroupId, string newGroupId) => OnGroupChanged(prevGroupId, newGroupId);
@@ -167,13 +172,6 @@ namespace UnityEditor.Search
             Refresh();
         }
 
-        private void OnRefreshContent(ISearchEvent evt)
-        {
-            var flags = evt.GetArgument<RefreshFlags>(0);
-            if (flags.HasAny(RefreshFlags.ItemsChanged | RefreshFlags.QueryCompleted))
-                Refresh();
-        }
-
         protected void Refresh()
         {
             // We are throttling the update of the view so that we don't call
@@ -186,34 +184,12 @@ namespace UnityEditor.Search
 
         protected virtual void UpdateView()
         {
-            if (ShouldRefreshView())
-                m_ListView.RefreshItems();
+            m_ListView.RefreshItems();
         }
 
         void IResultView.UpdateView()
         {
             UpdateView();
-        }
-
-        private bool ShouldRefreshView()
-        {
-            if (((IList)m_ListView.activeItems).Count < m_ViewModel.results.Count)
-                return true;
-                
-            // This is a local workaround for https://jira.unity3d.com/browse/UUM-127210 until UITk fixes it directly in the BaseListView.
-            if (m_ViewModel.results.Count > 0 && m_ListView.Q<Label>(null, BaseListView.emptyLabelUssClassName) != null)
-                return true;
-
-            foreach (var e in m_ListView.activeItems)
-            {
-                if (e.index < 0 || e.index >= m_ViewModel.results.Count)
-                    return true;
-
-                if (m_ViewModel.results[e.index].id.GetHashCode() != e.rootElement.name.GetHashCode())
-                    return true;
-            }
-
-            return false;
         }
 
         protected virtual void UpdateItemSize()
@@ -233,7 +209,9 @@ namespace UnityEditor.Search
         protected virtual void UpdateSelection()
         {
             var selectedIndexes = m_ViewModel.selection.indexes;
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             if (m_ListView.selectedIndices.SequenceEqual(selectedIndexes))
+#pragma warning restore RS0030
                 return;
 
             var firstSelection = selectedIndexes.Count > 0 ? selectedIndexes[0] : -1;
@@ -247,7 +225,9 @@ namespace UnityEditor.Search
 
         private void HandleItemsSelected(IEnumerable<int> selection)
         {
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var selArray = selection.ToArray();
+#pragma warning restore RS0030
             m_ViewModel.SetSelection(selArray);
             Dispatcher.Emit(SearchEvent.SelectionHasChanged, new SearchEventPayload(this, selection));
         }
@@ -279,7 +259,9 @@ namespace UnityEditor.Search
         private void OnNavigationMove(NavigationMoveEvent evt)
         {
             var itemCount = m_ListView.itemsSource.Count;
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var currentIndex = m_ListView.selectedIndex == -1 ? -1 : m_ListView.selectedIndices.Last();
+#pragma warning restore RS0030
             var nextSelectedIndex = -1;
             if (evt.direction == NavigationMoveEvent.Direction.Down)
                 SearchCollectionUtils.NextSelectedItem(currentIndex, itemCount, ref nextSelectedIndex);
@@ -302,7 +284,9 @@ namespace UnityEditor.Search
                     m_ListView.selectedIndex = nextSelectedIndex;
                 else
                 {
+                    #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     if (!m_ListView.selectedIndices.Contains(nextSelectedIndex))
+#pragma warning restore RS0030
                     {
                         using var pool = ListPool<int>.Get(out var newSelection);
                         if (nextSelectedIndex > currentIndex)
@@ -345,7 +329,9 @@ namespace UnityEditor.Search
             if (evt.target is not VisualElement ve || !IsValidKey(evt))
                 return false;
 
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var currentIndex = m_ListView.selectedIndex == -1 ? -1 : m_ListView.selectedIndices.Last();
+#pragma warning restore RS0030
             var itemCount = m_ListView.itemsSource.Count;
             if (m_ListView == ve || m_ListView.Contains(ve))
             {
@@ -357,7 +343,9 @@ namespace UnityEditor.Search
 
             if ((evt.keyCode == KeyCode.Return || evt.keyCode == KeyCode.KeypadEnter) && m_ListView.selectedIndex != -1)
             {
+                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 var items = m_ListView.selectedItems.Cast<SearchItem>().ToArray();
+#pragma warning restore RS0030
                 var action = evt.altKey ? SearchView.GetSecondaryAction(m_ViewModel.selection, items) : SearchView.GetDefaultAction(m_ViewModel.selection, items);
                 m_ViewModel.ExecuteAction(action, items, !SearchSettings.keepOpen);
                 return true;
@@ -377,10 +365,14 @@ namespace UnityEditor.Search
                 if (currentIndex == -1)
                 {
                     if (itemCount > 0)
+                        #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                         nextSelectedIndex = m_ListView.activeItems.LastOrDefault()?.index ?? -1;
+#pragma warning restore RS0030
                 }
                 else
+                    #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     nextSelectedIndex = Math.Min(currentIndex + m_ListView.activeItems.Count(), itemCount - 1);
+#pragma warning restore RS0030
             }
             else if (evt.keyCode == KeyCode.PageUp)
             {
@@ -390,7 +382,9 @@ namespace UnityEditor.Search
                         nextSelectedIndex = currentIndex = itemCount - 1;
                 }
                 else if (itemCount > 0)
+                    #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     nextSelectedIndex = Math.Max(currentIndex - m_ListView.activeItems.Count(), 0);
+#pragma warning restore RS0030
             }
 
             return VerifySelectionChanged(currentIndex, nextSelectedIndex, evt);

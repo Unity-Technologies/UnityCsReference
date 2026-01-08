@@ -78,6 +78,14 @@ namespace UnityEngine
         [FreeFunction("ShaderScripting::IDToTag")] extern internal static string IDToTag(int name);
 
         [FreeFunction(Name = "ShaderScripting::PropertyToID", IsThreadSafe = true)] extern public static int PropertyToID(string name);
+        [FreeFunction(Name = "ShaderScripting::PropertyIDToName", IsThreadSafe = true)] extern public static bool TryConvertPropertyIDToName(int propertyID, out string name);
+
+        public static string PropertyIDToName(int id)
+        {
+            if (TryConvertPropertyIDToName(id, out string value))
+                return value;
+            return null;
+        }
 
         extern public Shader GetDependency(string name);
 

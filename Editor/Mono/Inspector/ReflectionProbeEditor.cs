@@ -252,7 +252,9 @@ namespace UnityEditor
 
         private bool IsCollidingWithOtherProbes(string targetPath, ReflectionProbe targetProbe, out ReflectionProbe collidingProbe)
         {
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             ReflectionProbe[] probes = FindObjectsByType<ReflectionProbe>(FindObjectsSortMode.InstanceID).ToArray();
+#pragma warning restore RS0030
             collidingProbe = null;
             foreach (var probe in probes)
             {

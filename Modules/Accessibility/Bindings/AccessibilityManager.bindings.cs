@@ -288,21 +288,39 @@ namespace UnityEngine.Accessibility
             }
         }
 
+        [NativeHeader("Modules/Accessibility/Native/AccessibilityManager.h")]
+        [FreeFunction("SetAccessibilityNodeDataPtr")]
+        internal extern static void SetAccessibilityNodeDataPtr(IntPtr destNodeDataPtr, AccessibilityNodeData sourceNodeData);
+
         /// <summary>
         /// Returns a struct with information from the managed AccessibilityNode.
         /// </summary>
-        [RequiredByNativeCode]
-        internal static bool Internal_GetNode(int nodeId, ref AccessibilityNodeData nodeData)
+        internal static bool Internal_GetNode(int nodeId, out AccessibilityNodeData nodeData)
         {
-            if (!AccessibilityHierarchyService.TryGetNode(nodeId, out var node))
+            nodeData = new AccessibilityNodeData();
+
+            if (AccessibilityHierarchyService.TryGetNode(nodeId, out var node))
             {
-                return false;
+                node.GetNodeData(ref nodeData);
+                return true;
             }
 
-            nodeData = new AccessibilityNodeData();
-            node.GetNodeData(ref nodeData);
+            return false;
+        }
 
-            return true;
+        /// <summary>
+        /// Returns a native struct with information from the managed AccessibilityNode.
+        /// </summary>
+        [RequiredByNativeCode]
+        private static bool Internal_GetNode_Native(int nodeId, IntPtr nodeDataPtr)
+        {
+            if (Internal_GetNode(nodeId, out var nodeData))
+            {
+                SetAccessibilityNodeDataPtr(nodeDataPtr, nodeData);
+                return true;
+            }
+
+            return false;
         }
 
         [RequiredByNativeCode]

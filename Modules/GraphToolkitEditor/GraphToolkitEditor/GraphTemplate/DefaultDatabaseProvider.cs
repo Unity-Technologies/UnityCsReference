@@ -96,7 +96,7 @@ namespace Unity.GraphToolkit.Editor
         {
             return m_TypeDatabases ??= new List<ItemLibraryDatabaseBase>
                 {
-                    SupportedTypes.ToDatabase()
+                    SupportedTypes.ToDatabase(GraphModel)
                 };
         }
 

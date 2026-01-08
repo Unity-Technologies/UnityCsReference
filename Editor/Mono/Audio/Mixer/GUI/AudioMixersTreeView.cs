@@ -145,7 +145,9 @@ namespace UnityEditor
             var parentMixerItem = parentNode as AudioMixerItem;
             if (parentMixerItem != null && dragData != null)
             {
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 List<AudioMixerGroupController> draggedMasterGroups = (from i in draggedItems select i.mixer.masterGroup).ToList();
+#pragma warning restore RS0030
                 var allGroups = parentMixerItem.mixer.GetAllAudioGroupsSlow();
                 bool causesFeedback = AudioMixerController.WillModificationOfTopologyCauseFeedback(allGroups, draggedMasterGroups, parentMixerItem.mixer.masterGroup, null);
                 bool validDrag = ValidDrag(parentNode, draggedItems) && !causesFeedback;
@@ -161,7 +163,9 @@ namespace UnityEditor
 
         bool ValidDrag(TreeViewItem<EntityId> parent, List<AudioMixerItem> draggedItems)
         {
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var draggedIDs = (from n in draggedItems select n.id).ToList();
+#pragma warning restore RS0030
 
             var currentParent = parent;
             while (currentParent != null)
@@ -176,12 +180,16 @@ namespace UnityEditor
         private List<AudioMixerItem> GetAudioMixerItemsFromIDs(List<EntityId> draggedMixers)
         {
             var found = TreeViewUtility<EntityId>.FindItemsInList(draggedMixers, m_TreeView.data.GetRows());
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return found.OfType<AudioMixerItem>().ToList();
+#pragma warning restore RS0030
         }
 
         private List<AudioMixerController> GetAudioMixersFromItems(List<AudioMixerItem> draggedItems)
         {
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return (from i in draggedItems select i.mixer).ToList();
+#pragma warning restore RS0030
         }
     }
 
@@ -213,7 +221,9 @@ namespace UnityEditor
             if (m_Mixers.Count > 0)
             {
                 // First create a tree view item for each controller
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 var roots = m_Mixers.Select(mixer => new AudioMixerItem(mixer.GetEntityId(), 0, m_RootItem, mixer.name, mixer, GetInfoText(mixer))).ToList();
+#pragma warning restore RS0030
 
                 // Rearrange items to a tree based on output mixer group
                 foreach (var item in roots)
@@ -469,7 +479,9 @@ namespace UnityEditor
 
         AudioMixerItem GetSelectedItem()
         {
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return m_TreeView.FindItem(m_TreeView.GetSelection().FirstOrDefault()) as AudioMixerItem;
+#pragma warning restore RS0030
         }
 
         override protected void SyncFakeItem()
@@ -564,7 +576,9 @@ namespace UnityEditor
             AudioMixerController controller = (AudioMixerController)obj;
             if (controller != null)
             {
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 ProjectWindowUtil.DeleteAssets(new[] { controller.GetEntityId() }.ToList(), true);
+#pragma warning restore RS0030
             }
         }
 
@@ -639,7 +653,9 @@ namespace UnityEditor
                 {
                     Event.current.Use();
                     if (execute)
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                         ProjectWindowUtil.DeleteAssets(m_TreeView.GetSelection().ToList(), true);
+#pragma warning restore RS0030
                 }
                 else if (Event.current.commandName == EventCommandNames.Duplicate)
                 {
@@ -665,7 +681,9 @@ namespace UnityEditor
         void OnMixersDroppedOnMixerCallback(List<AudioMixerController> draggedMixers, AudioMixerController droppedUponMixer)
         {
             // Set Unity selection when drag ended (when dragging non selected items we just render them as selected while dragging)
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var draggedIDs = (from i in draggedMixers select i.GetEntityId()).ToArray();
+#pragma warning restore RS0030
             m_TreeView.SetSelection(draggedIDs, true);
             Selection.entityIds = draggedIDs;
 
@@ -717,7 +735,9 @@ namespace UnityEditor
                     ReloadTree();
 
                     // Ensure newly selected output group is revealed
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     var selectedIDs = (from i in m_DraggedMixers select i.GetEntityId()).ToArray();
+#pragma warning restore RS0030
                     m_TreeView.SetSelection(selectedIDs, true);
                 }
 

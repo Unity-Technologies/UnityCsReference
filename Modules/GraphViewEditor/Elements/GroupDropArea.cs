@@ -16,7 +16,9 @@ namespace UnityEditor.Experimental.GraphView
             if (selection.Count == 0)
                 return false;
 
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return !selection.Cast<GraphElement>().Any(ge => !(ge is Edge) && (ge == null || ge is Group || !ge.IsGroupable()));
+#pragma warning restore RS0030
         }
 
         public bool DragLeave(DragLeaveEvent evt, IEnumerable<ISelectable> selection, IDropTarget leftTarget, ISelection dragSource)
@@ -41,12 +43,18 @@ namespace UnityEditor.Experimental.GraphView
             Group group = parent.GetFirstAncestorOfType<Group>();
 
             List<GraphElement> elemsToAdd =
+                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 selection
+#pragma warning restore RS0030
                     .Cast<GraphElement>()
+                    #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     .Where(e => e != group && !group.containedElements.Contains(e) && !(e.GetContainingScope() is Group) && e.IsGroupable())
+#pragma warning restore RS0030
                     .ToList(); // ToList required here as the enumeration might be done again *after* the elements are added to the group
 
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             if (elemsToAdd.Any())
+#pragma warning restore RS0030
             {
                 group.AddElements(elemsToAdd);
             }
@@ -67,7 +75,9 @@ namespace UnityEditor.Experimental.GraphView
 
                 var selectedGraphElement = selectedElement as GraphElement;
                 bool dropCondition = selectedGraphElement != null
+                    #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     && !group.containedElements.Contains(selectedGraphElement)
+#pragma warning restore RS0030
                     && !(selectedGraphElement.GetContainingScope() is Group)
                     && selectedGraphElement.IsGroupable();
 
@@ -75,7 +85,9 @@ namespace UnityEditor.Experimental.GraphView
                 {
                     canDrop = true;
                 }
+                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 else if (evt.modifiers == EventModifiers.Shift && group.containedElements.Contains(selectedElement))
+#pragma warning restore RS0030
                 {
                     group.RemoveElement(selectedGraphElement);
                 }

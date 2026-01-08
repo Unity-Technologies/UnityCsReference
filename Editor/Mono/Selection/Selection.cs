@@ -98,26 +98,36 @@ namespace UnityEditor
         {
             if (typeof(Component).IsAssignableFrom(type) || type.IsInterface)
             {
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 return GetTransforms(mode).Select(t =>
+#pragma warning restore RS0030
                 {
                     t.TryGetComponent(type, out var component);
                     return component;
                 }).Where(c => !ReferenceEquals(c, null));
             }
             else if (typeof(GameObject).IsAssignableFrom(type))
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 return GetTransforms(mode).Select(t => t.gameObject);
+#pragma warning restore RS0030
             else
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 return GetObjectsMode(mode).Where(o => o != null && type.IsAssignableFrom(o.GetType()));
+#pragma warning restore RS0030
         }
 
         public static T[] GetFiltered<T>(SelectionMode mode) // no generic constraint because we also want to allow interfaces
         {
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return GetFilteredInternal(typeof(T), mode).Cast<T>().ToArray();
+#pragma warning restore RS0030
         }
 
         public static Object[] GetFiltered(System.Type type, SelectionMode mode)
         {
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return GetFilteredInternal(type, mode).Cast<Object>().ToArray();
+#pragma warning restore RS0030
         }
     }
 }

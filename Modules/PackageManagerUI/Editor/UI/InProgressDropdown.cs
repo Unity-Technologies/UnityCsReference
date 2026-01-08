@@ -128,13 +128,17 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private void ViewPackagesOnPage(IPage page, PackageProgress progress, PackageTag tag = PackageTag.None)
         {
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var packagesInProgress = m_PackageDatabase.allPackages.Where(p =>
+#pragma warning restore RS0030
                 p.progress == progress && (tag == PackageTag.None || p.versions.primary.HasTag(tag))).ToArray();
             if (packagesInProgress.Length > 0)
             {
                 m_PageManager.activePage = page;
                 page.LoadExtraItems(packagesInProgress);
+                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 page.SetNewSelection(packagesInProgress.Select(p => p.uniqueId));
+#pragma warning restore RS0030
             }
             Close();
         }

@@ -58,7 +58,9 @@ namespace UnityEditor
             List<SettingsProvider> children = null;
             var pathItem = FindItem(path.GetHashCode(), rootItem);
             if (pathItem != null)
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 children = pathItem.children.Select(item => FindProviderById(item.id)).Where(p => p != null).ToList();
+#pragma warning restore RS0030
             return children ?? new List<SettingsProvider>();
         }
 
@@ -69,7 +71,9 @@ namespace UnityEditor
 
         protected override void SelectionChanged(IList<int> selectedIds)
         {
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             SettingsProvider selectedProvider = GetFirstValidProvider(selectedIds.Count > 0 ? selectedIds.First() : -1);
+#pragma warning restore RS0030
             if (currentProviderChanged?.Invoke(currentProvider, selectedProvider) ?? true)
                 currentProvider = selectedProvider;
         }
@@ -86,7 +90,9 @@ namespace UnityEditor
                 if (treeViewItem.children.Count <= 0)
                     break;
 
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 treeViewItem = treeViewItem.children.First();
+#pragma warning restore RS0030
                 provider = FindProviderById(treeViewItem.id);
             }
 
@@ -95,7 +101,9 @@ namespace UnityEditor
 
         private SettingsProvider FindProviderById(int id)
         {
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return providers.FirstOrDefault(p => p.settingsPath.GetHashCode() == id);
+#pragma warning restore RS0030
         }
 
         protected override void RowGUI(RowGUIArgs args)
@@ -138,7 +146,9 @@ namespace UnityEditor
             var rows = GetRows();
             if (rows.Count == 0)
                 return;
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             if (!GetSelection().Any(selectedId => rows.Any(r => r.id == selectedId)))
+#pragma warning restore RS0030
                 SetSelection(new[] { rows[0].id }, TreeViewSelectionOptions.FireSelectionChanged);
         }
 
@@ -199,7 +209,9 @@ namespace UnityEditor
 
         private void AppendSettingsNode(SettingsNode node, string rootPath, int depth, ICollection<TreeViewItem> items)
         {
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var sortedChildNames = node.children.Keys.ToList();
+#pragma warning restore RS0030
             sortedChildNames.Sort();
             foreach (var nodeName in sortedChildNames)
             {

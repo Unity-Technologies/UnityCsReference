@@ -198,10 +198,14 @@ namespace UnityEditor.UIElements.Samples
 
             Action<IEnumerable<int>> onSelectionChanged = selectedIndices =>
             {
+                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 if (!selectedIndices.Any())
+#pragma warning restore RS0030
                     return;
 
+                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 var sampleItem = treeView.GetItemDataForIndex<SampleTreeItem>(selectedIndices.First());
+#pragma warning restore RS0030
                 m_ContentPanel.Clear();
                 m_ContentPanel.Add(sampleItem.makeItem(sampleItem));
             };
@@ -230,7 +234,9 @@ namespace UnityEditor.UIElements.Samples
             // Force TreeView to select something if nothing is selected.
             treeView.schedule.Execute(() =>
             {
+                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 if (treeView.selectedItems.Count() > 0)
+#pragma warning restore RS0030
                     return;
 
                 treeView.SetSelection(0);

@@ -187,7 +187,9 @@ namespace UnityEngine.UIElements
         {
             BindItem(reusableItem.bindableElement, index);
             SetBindingContext(reusableItem, index);
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             reusableItem.SetSelected(m_View.selectedIndices.Contains(index));
+#pragma warning restore RS0030
             reusableItem.rootElement.pseudoStates &= ~PseudoStates.Hover;
             reusableItem.index = index;
         }

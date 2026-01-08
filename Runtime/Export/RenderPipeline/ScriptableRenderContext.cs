@@ -157,7 +157,7 @@ namespace UnityEngine.Rendering
         internal void GetCameras(List<Camera> results)
         {
             Validate();
-            GetCameras_Internal(typeof(Camera), results);
+            GetCameras_Internal(results);
         }
 
         const bool deprecateDrawXmethods = false;

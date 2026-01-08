@@ -166,7 +166,9 @@ namespace Unity.UI.Builder
             var selectedElements = selection.selection;
             var sortedSelectedElementsInAsset = documentRootElement.FindSelectedElements();
 
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             sortedSelectedElementsInAsset.RemoveAll(x => !selectedElements.Contains(x));
+#pragma warning restore RS0030
 
             return sortedSelectedElementsInAsset;
         }

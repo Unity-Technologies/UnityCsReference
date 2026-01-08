@@ -100,15 +100,29 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public void OnBeforeSerialize()
         {
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             m_SerializedCategories = m_Categories.Keys.ToArray();
+#pragma warning restore RS0030
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             m_SerializedCategoryCounts = m_Categories.Values.ToArray();
+#pragma warning restore RS0030
 
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             m_SerializedPurchaseInfos = m_PurchaseInfos.Values.ToArray();
+#pragma warning restore RS0030
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             m_SerializedProductInfos = m_ProductInfos.Values.ToArray();
+#pragma warning restore RS0030
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             m_SerializedLocalInfos = m_LocalInfos.Values.ToArray();
+#pragma warning restore RS0030
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             m_SerializedUpdateInfos = m_UpdateInfos.Values.ToArray();
+#pragma warning restore RS0030
 
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             m_SerializedImportedAssets = m_ImportedAssets.Values.ToArray();
+#pragma warning restore RS0030
         }
 
         public void OnAfterDeserialize()
@@ -116,12 +130,22 @@ namespace UnityEditor.PackageManager.UI.Internal
             for (var i = 0; i < m_SerializedCategories.Length; i++)
                 m_Categories[m_SerializedCategories[i]] = m_SerializedCategoryCounts[i];
 
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             m_PurchaseInfos = m_SerializedPurchaseInfos.ToDictionary(info => info.productId, info => info);
+#pragma warning restore RS0030
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             m_ProductInfos = m_SerializedProductInfos.ToDictionary(info => info.productId, info => info);
+#pragma warning restore RS0030
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             m_LocalInfos = m_SerializedLocalInfos.ToDictionary(info => info.productId, info => info);
+#pragma warning restore RS0030
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             m_UpdateInfos = m_SerializedUpdateInfos.ToDictionary(info => info.productId, info => info);
+#pragma warning restore RS0030
 
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             m_ImportedAssets = m_SerializedImportedAssets.ToDictionary(asset => asset.importedPath, asset => asset);
+#pragma warning restore RS0030
 
             // We don't serialize imported packages, because the list of imported packages can be constructed from imported assets
             foreach (var asset in m_SerializedImportedAssets)
@@ -318,7 +342,9 @@ namespace UnityEditor.PackageManager.UI.Internal
             var oldInfo = m_LocalInfos.Get(productId);
             m_LocalInfos[productId] = localInfo;
             if (IsLocalInfoUpdated(oldInfo, localInfo))
+                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 onLocalInfosChanged?.Invoke(new []{ localInfo }, Enumerable.Empty<AssetStoreLocalInfo>());
+#pragma warning restore RS0030
         }
 
         private static bool IsLocalInfoUpdated(AssetStoreLocalInfo oldInfo, AssetStoreLocalInfo newInfo)
@@ -348,7 +374,9 @@ namespace UnityEditor.PackageManager.UI.Internal
         public void UpdateImportedAssets(IEnumerable<Asset> addedOrUpdatedAssets, IEnumerable<string> removedAssetPaths)
         {
             var modifiedProductIds = new HashSet<long>();
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             foreach (var path in removedAssetPaths ?? Enumerable.Empty<string>())
+#pragma warning restore RS0030
             {
                 if (!m_ImportedAssets.ContainsKey(path))
                     continue;
@@ -356,7 +384,9 @@ namespace UnityEditor.PackageManager.UI.Internal
                 modifiedProductIds.Add(m_ImportedAssets[path].origin.productId);
                 m_ImportedAssets.Remove(path);
             }
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             foreach (var asset in addedOrUpdatedAssets ?? Enumerable.Empty<Asset>())
+#pragma warning restore RS0030
             {
                 modifiedProductIds.Add(asset.origin.productId);
                 m_ImportedAssets[asset.importedPath] = asset;

@@ -70,7 +70,9 @@ namespace UnityEditor.Scripting.APIUpdater
         {
             foreach (var entry in m_Graph)
             {
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 var found = entry.m_Dependencies.FirstOrDefault(dependency => dependency.m_Name == root);
+#pragma warning restore RS0030
                 if (found != null)
                     return found;
             }
@@ -83,7 +85,9 @@ namespace UnityEditor.Scripting.APIUpdater
             var result = new List<string>();
             foreach (var dependencyEntry in m_Graph)
             {
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 if (dependencyEntry.m_Dependencies.Any(candidate => candidate.m_Name == source))
+#pragma warning restore RS0030
                     result.Add(dependencyEntry.m_Name);
             }
 
@@ -95,7 +99,9 @@ namespace UnityEditor.Scripting.APIUpdater
             var found = FindAssembly(dependent);
             if (found != null)
             {
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 return found.m_Dependencies.Select(dep => dep.m_Name);
+#pragma warning restore RS0030
             }
 
             return new string[0];
@@ -110,7 +116,9 @@ namespace UnityEditor.Scripting.APIUpdater
             if (entry == null)
                 return;
 
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             entry.m_Dependencies.RemoveAll(candidate => dependencies.Contains(candidate.m_Name));
+#pragma warning restore RS0030
         }
 
         public void RemoveRoot(string tbr, bool updateDependents = false)
@@ -148,7 +156,9 @@ namespace UnityEditor.Scripting.APIUpdater
 
             Array.Sort(array, CompareElements);
 
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return array.Select(e => e.m_Name);
+#pragma warning restore RS0030
         }
 
         /*
@@ -216,7 +226,9 @@ namespace UnityEditor.Scripting.APIUpdater
 
                 if (seen.Contains(entry.Name))
                 {
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     Console.WriteLine($"[APIUpdater] Warning: Cycle detected in assembly references: {string.Join("->", seen.ToArray())}->{entry.Name}. This is not supported and AssemblyUpdater may not work as expected.");
+#pragma warning restore RS0030
                     continue;
                 }
 

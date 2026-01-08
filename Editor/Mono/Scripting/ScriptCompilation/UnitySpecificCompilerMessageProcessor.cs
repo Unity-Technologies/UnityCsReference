@@ -92,7 +92,9 @@ namespace UnityEditor.Scripting.ScriptCompilation
 
                 var file = new NPath(m.file).MakeAbsolute(editorCompilation.projectDirectory);
 
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 return editorCompilation
+#pragma warning restore RS0030
                     .GetCustomScriptAssemblies()
                     .FirstOrDefault(c => file.IsChildOf(new NPath(c.PathPrefix).MakeAbsolute()));
             }

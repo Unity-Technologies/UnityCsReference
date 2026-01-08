@@ -303,7 +303,9 @@ namespace Unity.GraphToolkit.Editor
                 return;
             }
 
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             if (command.CreationData.All(nodeData => nodeData.VariableDeclaration == null) && command.CreationData.All(nodeData => nodeData.NodeLibraryItem == null) && command.CreationData.All(nodeData => nodeData.VariableCreationInfos == null))
+#pragma warning restore RS0030
                 return;
 
             using (var undoStateUpdater = undoState.UpdateScope)
@@ -429,13 +431,17 @@ namespace Unity.GraphToolkit.Editor
                             var existingPortToConnect = creationData.PortModel;
                             var portToConnectItem = creationData.NodeLibraryItem?.Data is NodeItemLibraryData data ? data.PortToConnect : null;
                             var newPortToConnect = portToConnectItem != null ?
+                                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                                 portNodeModel?.GetPorts().FirstOrDefault(p => p.UniqueName == portToConnectItem.UniqueName) :
+#pragma warning restore RS0030
                                 portNodeModel?.GetPortFitToConnectTo(existingPortToConnect);
 
                             if (newPortToConnect != null)
                             {
                                 // Old wires to delete
+                                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                                 wiresToDelete = WireCommandHelper.GetDropWireModelsToDelete(creationData.PortModel).ToList();
+#pragma warning restore RS0030
 
                                 WireModel newWire;
                                 if (existingPortToConnect.Direction == PortDirection.Output)
@@ -492,11 +498,15 @@ namespace Unity.GraphToolkit.Editor
                             }
                             break;
                         case ConnectionsToMake.ExistingWires:
+                            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                             foreach (var wire in creationData.WiresToConnect.ToList())
+#pragma warning restore RS0030
                             {
                                 var portToConnect = creationData.NodeLibraryItem?.Data is NodeItemLibraryData nodeData ? nodeData.PortToConnect : null;
                                 var newPort = portToConnect != null ?
+                                    #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                                     portNodeModel?.GetPorts().FirstOrDefault(p => p.UniqueName == portToConnect.UniqueName) :
+#pragma warning restore RS0030
                                     portNodeModel?.GetPortFitToConnectTo(wire.model.GetOtherPort(wire.side));
 
                                 WireModel newWire = null;

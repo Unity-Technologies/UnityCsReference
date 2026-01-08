@@ -30,7 +30,7 @@ namespace Unity.UIToolkit.Editor
         static readonly string s_FieldClassName = "unity-background-repeat-style-field";
         static readonly string s_UxmlPath = "UIToolkitAuthoring/Inspector/Controls/BackgroundRepeatStyleField.uxml";
         static readonly string s_UssPath = "UIToolkitAuthoring/Inspector/Controls/BackgroundRepeatStyleField.uss";
-        static readonly string s_IconPath = "UIToolkit/Icons/Enum/Background";
+        static readonly string s_IconPath = "UIToolkit/Icons";
 
         public static readonly string s_BackgroundRepeatXFieldName = "repeatx";
         public static readonly string s_BackgroundRepeatYFieldName = "repeaty";

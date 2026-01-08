@@ -35,9 +35,7 @@ namespace UnityEngine.Bindings
             {
                 return new OutArrayNativeData
                 {
-                    createAndCallback = (IntPtr)(delegate* unmanaged[Cdecl]<IntPtr, IntPtr, int, delegate* unmanaged[Cdecl]<byte*, IntPtr, void>, IntPtr, void>)&CreateAndFillCalbacks.CreateAndCallbackPinned1,
                     arrayRef = (IntPtr)UnsafeUtility.AsPointer(ref marshalled.array),
-                    createArray = (IntPtr)(delegate* <int, Array>)&CreateArray
                 };
             }
 
@@ -60,9 +58,9 @@ namespace UnityEngine.Bindings
     [UnityMarshalAs(NativeType.Custom, CustomMarshaller = typeof(OutArray2D<>.BindingsMarshaller))]
     internal ref struct OutArray2D<T> where T : unmanaged
     {
-        public static Array CreateArray(int length1, int lenght2)
+        public static Array CreateArray(int length1, int length2)
         {
-            return new T[length1, lenght2];
+            return new T[length1, length2];
         }
 
         public unsafe static class BindingsMarshaller
@@ -71,9 +69,7 @@ namespace UnityEngine.Bindings
             {
                 return new OutArrayNativeData
                 {
-                    createAndCallback = (IntPtr)(delegate* unmanaged[Cdecl]<IntPtr, IntPtr, int, int, delegate* unmanaged[Cdecl]<byte*, IntPtr, void>, IntPtr, void>)&CreateAndFillCalbacks.CreateAndCallbackPinned2,
                     arrayRef = (IntPtr)UnsafeUtility.AsPointer(ref marshalled.array),
-                    createArray = (IntPtr)(delegate* <int, int, Array>)&CreateArray
                 };
             }
 
@@ -96,9 +92,9 @@ namespace UnityEngine.Bindings
     [UnityMarshalAs(NativeType.Custom, CustomMarshaller = typeof(OutArray3D<>.BindingsMarshaller))]
     internal ref struct OutArray3D<T> where T : unmanaged
     {
-        public static Array CreateArray(int length1, int lenght2, int length3)
+        public static Array CreateArray(int length1, int length2, int length3)
         {
-            return new T[length1, lenght2, length3];
+            return new T[length1, length2, length3];
         }
 
         public unsafe static class BindingsMarshaller
@@ -107,9 +103,7 @@ namespace UnityEngine.Bindings
             {
                 return new OutArrayNativeData
                 {
-                    createAndCallback = (IntPtr)(delegate* unmanaged[Cdecl]<IntPtr, IntPtr, int, int, int, delegate* unmanaged[Cdecl]<byte*, IntPtr, void>, IntPtr, void>)&CreateAndFillCalbacks.CreateAndCallbackPinned3,
                     arrayRef = (IntPtr)UnsafeUtility.AsPointer(ref marshalled.array),
-                    createArray = (IntPtr)(delegate*<int, int, int, Array>)&CreateArray
                 };
             }
 
@@ -129,8 +123,6 @@ namespace UnityEngine.Bindings
     unsafe ref struct OutArrayNativeData
     {
         public IntPtr arrayRef;             // Pointer to an Array& on the stack
-        public IntPtr createAndCallback;    // Pointer to [UnmanagedCallersOnly] function that will be called from native code
-        public IntPtr createArray;          // Managed function pointer to allocate the array
     }
 
     static class CreateAndFillCalbacks

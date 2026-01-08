@@ -643,14 +643,15 @@ namespace UnityEngine.UIElements
                 // When the new content gets attached to it, a new panel will be created.
                 panelSettings.m_PanelAccess.DisposePanel();
 
-                if (panelSettings.m_AttachedUIDocumentsList != null)
+                if (panelSettings.m_AttachedPanelComponentsList != null)
                 {
-                    List<UIDocument> attachedUIDocuments =
-                        new List<UIDocument>(panelSettings.m_AttachedUIDocumentsList.m_AttachedUIDocuments);
+                    var attachedUIDocuments = new List<UIDocument>();
+                    foreach (var panelComponent in panelSettings.m_AttachedPanelComponentsList.m_AttachedPanelComponents)
+                        if (panelComponent is UIDocument uidoc)
+                            attachedUIDocuments.Add(uidoc);
+
                     foreach (var attachedUIDocument in attachedUIDocuments)
-                    {
                         attachedUIDocument.OnLiveReloadOptionChanged();
-                    }
                 }
             }
         }
@@ -672,7 +673,7 @@ namespace UnityEngine.UIElements
         /// </summary>
         internal VisualElement visualTree => m_PanelAccess.panel.visualTree;
 
-        internal UIDocumentList m_AttachedUIDocumentsList;
+        internal PanelComponentList m_AttachedPanelComponentsList;
 
         [HideInInspector]
         [SerializeField]
@@ -1073,30 +1074,28 @@ namespace UnityEngine.UIElements
             return new (Vector2.zero, GetGameViewResolution(m_TargetDisplay) ?? new (Display.main.renderingWidth, Display.main.renderingHeight));
         }
 
-        internal void AttachAndInsertUIDocumentToVisualTree(UIDocument uiDocument)
+        internal void AttachAndInsertPanelComponentToVisualTree(IPanelComponent panelComponent)
         {
-            if (m_AttachedUIDocumentsList == null)
+            if (m_AttachedPanelComponentsList == null)
             {
-                m_AttachedUIDocumentsList = new UIDocumentList();
+                m_AttachedPanelComponentsList = new PanelComponentList();
             }
             else
             {
-                m_AttachedUIDocumentsList.RemoveFromListAndFromVisualTree(uiDocument);
+                m_AttachedPanelComponentsList.RemoveFromListAndFromVisualTree(panelComponent);
             }
 
-            m_AttachedUIDocumentsList.AddToListAndToVisualTree(uiDocument, visualTree, false);
+            m_AttachedPanelComponentsList.AddToListAndToVisualTree(panelComponent, visualTree, false);
         }
 
-        internal void DetachUIDocument(UIDocument uiDocument)
+        internal void DetachPanelComponent(IPanelComponent panelComponent)
         {
-            if (m_AttachedUIDocumentsList == null)
-            {
+            if (m_AttachedPanelComponentsList == null)
                 return;
-            }
 
-            m_AttachedUIDocumentsList.RemoveFromListAndFromVisualTree(uiDocument);
+            m_AttachedPanelComponentsList.RemoveFromListAndFromVisualTree(panelComponent);
 
-            if (m_AttachedUIDocumentsList.m_AttachedUIDocuments.Count == 0)
+            if (m_AttachedPanelComponentsList.m_AttachedPanelComponents.Count == 0)
                 m_PanelAccess.MarkPotentiallyEmpty();
         }
 

@@ -67,7 +67,9 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private void SyncListViewSelectionToPageManager(IEnumerable<object> items)
         {
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var selections = items.Select(item =>
+#pragma warning restore RS0030
             {
                 var visualState = item as VisualState;
                 var package = m_PackageDatabase.GetPackage(visualState?.packageUniqueId);
@@ -137,7 +139,9 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private VisualState GetVisualStateByIndex(int index)
         {
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return (itemsSource as List<VisualState>)?.ElementAtOrDefault(index);
+#pragma warning restore RS0030
         }
 
         private void OnSelectionChanged(PageSelectionChangeArgs args)
@@ -159,8 +163,12 @@ namespace UnityEditor.PackageManager.UI.Internal
                 return;
 
             selection ??= page.GetSelection();
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var oldSelectedVisualStates = selectedItems.OfType<VisualState>().ToArray();
+#pragma warning restore RS0030
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             if (oldSelectedVisualStates.Length == selection.Count && oldSelectedVisualStates.All(v => selection.Contains(v.packageUniqueId)))
+#pragma warning restore RS0030
                 return;
 
             var newSelectionIndices = new List<int>();
@@ -194,7 +202,9 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public void OnVisualStateChange(IEnumerable<VisualState> visualStates)
         {
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             if (!visualStates.Any())
+#pragma warning restore RS0030
                 return;
 
             foreach (var state in visualStates)
@@ -206,7 +216,9 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public void OnListRebuild(IPage page)
         {
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             UpdateItemsSource(page.visualStates.ToList(), true);
+#pragma warning restore RS0030
 
             m_PageManager.activePage.UpdateSelectionIfCurrentSelectionIsInvalid();
             ScrollToSelection();
@@ -214,7 +226,9 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public void OnListUpdate(ListUpdateArgs args)
         {
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var rebuildCalled = UpdateItemsSource(args.page.visualStates.ToList(), args.added.Count > 0 || args.removed.Count > 0);
+#pragma warning restore RS0030
             if (!rebuildCalled)
             {
                 foreach (var package in args.updated)
@@ -250,15 +264,23 @@ namespace UnityEditor.PackageManager.UI.Internal
                     evt.StopPropagation();
                     break;
                 case KeyCode.PageUp:
+                    #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     if (!selectedIndices.Any()) return;
+#pragma warning restore RS0030
+                    #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     index = Mathf.Max(0, selectedIndices.Max() - (virtualizationController.visibleItemCount - 1));
+#pragma warning restore RS0030
                     HandleSelectionAndScroll(index, evt.shiftKey);
                     evt.StopPropagation();
                     break;
                 case KeyCode.PageDown:
+                    #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     if (!selectedIndices.Any()) return;
+#pragma warning restore RS0030
                     index = Mathf.Min(viewController.itemsSource.Count - 1,
+                        #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                         selectedIndices.Max() + (virtualizationController.visibleItemCount - 1));
+#pragma warning restore RS0030
                     HandleSelectionAndScroll(index, evt.shiftKey);
                     evt.StopPropagation();
                     break;

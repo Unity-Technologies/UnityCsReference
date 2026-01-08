@@ -4,11 +4,9 @@
 
 using System;
 using System.IO;
-using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Bindings;
 using UnityEditor.Build.Reporting;
-using Mono.Cecil;
 using UnityEditor.Scripting.ScriptCompilation;
 using System.Runtime.InteropServices;
 using UnityEditor.Build;
@@ -552,5 +550,22 @@ namespace UnityEditor
         }
 
         /*UCBP-PUBLIC*/ internal static extern void CleanBuildCache();
+
+        [RequiredByNativeCode]
+        internal static bool InvokeGenerateBuildTimeAssets()
+        {
+            try
+            {
+                // Invoke BuildTimeAssetGeneration.GenerateAssets()
+                var buildTimeAssetGenerationClass = Type.GetType("UnityEditor.BuildTimeAssetGeneration, Assembly-CSharp-Editor-firstpass-testable, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null", true);
+                var generateAssetsMethod = buildTimeAssetGenerationClass.GetMethod("GenerateAssets", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static);
+                return (bool)generateAssetsMethod.Invoke(null, null);
+            }
+            catch (Exception e)
+            {
+                Debug.LogError("Exception while trying to generate build time assets: " + e.Message);
+                return false;
+            }
+        }
     }
 }

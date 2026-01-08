@@ -23,10 +23,14 @@ namespace Unity.ProjectAuditor.Editor.Core
 
         public IssueCategory[] Categories
         {
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             get { return SupportedLayouts.Select(l => l.Category).ToArray(); }
+#pragma warning restore RS0030
         }
 
+        #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
         public IReadOnlyCollection<DescriptorId> SupportedDescriptorIds => m_Ids != null ? m_Ids.ToArray() : Array.Empty<DescriptorId>();
+#pragma warning restore RS0030
 
         public abstract IReadOnlyCollection<IssueLayout> SupportedLayouts
         {
@@ -40,12 +44,18 @@ namespace Unity.ProjectAuditor.Editor.Core
 
         public static string[] GetAssetPathsByFilter(string filter, AnalysisContext context)
         {
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var assetsEnumerable = AssetDatabase.FindAssets(filter).Select(AssetDatabase.GUIDToAssetPath);
+#pragma warning restore RS0030
             if (context.Params.AssetPathFilter != null)
             {
+                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 assetsEnumerable = assetsEnumerable.Where(path => context.Params.AssetPathFilter(path));
+#pragma warning restore RS0030
             }
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return assetsEnumerable.ToArray();
+#pragma warning restore RS0030
         }
 
         static string[] FilterAssetPathsArray(AnalysisContext context, string[] assets)

@@ -13,7 +13,7 @@ using System.Collections.Generic;
 
 namespace UnityEngine.UIElements.StyleSheets
 {
-    internal static class InitialStyle
+    internal static partial class InitialStyle
     {
         private static ComputedStyle s_InitialStyle;
 
@@ -118,6 +118,7 @@ namespace UnityEngine.UIElements.StyleSheets
             s_InitialStyle.inheritedData.Write().whiteSpace = WhiteSpace.Normal;
             s_InitialStyle.layoutData.Write().width = StyleKeyword.Auto.ToLength();
             s_InitialStyle.inheritedData.Write().wordSpacing = 0f;
+            CopyDataToNative();
         }
 
         public static Align alignContent => s_InitialStyle.layoutData.Read().alignContent;

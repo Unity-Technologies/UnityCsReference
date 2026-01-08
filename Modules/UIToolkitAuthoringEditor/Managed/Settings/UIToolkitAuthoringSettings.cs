@@ -20,11 +20,15 @@ internal enum UIHierarchyDisplayOptions
 internal static class UIToolkitAuthoringSettings
 {
     private const string k_EnableHierarchyIntegration = "UIAuthoring.EnableHierarchyIntegration";
+    private const string k_EnableUIStages = "UIAuthoring.EnableUIStages";
     private const string k_DisplayOptions = "UIAuthoring.DisplayOptions";
     private const UIHierarchyDisplayOptions DefaultDisplayOptions = UIHierarchyDisplayOptions.Typename | UIHierarchyDisplayOptions.UssClasses;
 
     [NoAutoStaticsCleanup]
     internal static event Action<bool> HierarchyIntegrationChanged;
+
+    [NoAutoStaticsCleanup]
+    internal static event Action<bool> UIStagesChanged;
 
     [NoAutoStaticsCleanup]
     internal static event Action<UIHierarchyDisplayOptions> DisplayOptionsChanged;
@@ -44,6 +48,24 @@ internal static class UIToolkitAuthoringSettings
                 return;
             EditorUserSettings.SetConfigValue(k_EnableHierarchyIntegration, value.ToString());
             HierarchyIntegrationChanged?.Invoke(value);
+        }
+    }
+
+    [NoAutoStaticsCleanup]
+    public static bool EnableUIStages
+    {
+        get
+        {
+            var value = EditorUserSettings.GetConfigValue(k_EnableUIStages);
+            return !string.IsNullOrEmpty(value) && Convert.ToBoolean(value);
+        }
+        set
+        {
+            var currentValue = EnableUIStages;
+            if (currentValue == value)
+                return;
+            EditorUserSettings.SetConfigValue(k_EnableUIStages, value.ToString());
+            UIStagesChanged?.Invoke(value);
         }
     }
 

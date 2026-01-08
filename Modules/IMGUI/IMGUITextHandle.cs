@@ -125,7 +125,9 @@ namespace UnityEngine
             var currentTime = Time.realtimeSinceStartup;
             while (textHandlesTuple.Count > 0)
             {
+                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 var tuple = textHandlesTuple.First();
+#pragma warning restore RS0030
                 if (ShouldCleanup(currentTime, tuple.lastTimeUsed, sTimeToFlush))
                 {
                     GUIStyle.Internal_DestroyTextGenerator(tuple.hashCode);

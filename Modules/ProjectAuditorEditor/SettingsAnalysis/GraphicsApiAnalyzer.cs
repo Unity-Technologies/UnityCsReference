@@ -4,7 +4,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using Unity.ProjectAuditor.Editor.Core;
 using UnityEditor;
 using UnityEngine.Rendering;
@@ -61,15 +60,13 @@ namespace Unity.ProjectAuditor.Editor.SettingsAnalysis
         static bool IsNotUsingMetal()
         {
             var graphicsAPIs = PlayerSettings.GetGraphicsAPIs(BuildTarget.iOS);
-
-            var hasMetal = graphicsAPIs.Contains(GraphicsDeviceType.Metal);
-
-            return !hasMetal;
+            return Array.IndexOf(graphicsAPIs, GraphicsDeviceType.Metal) == -1;
         }
 
         static bool IsNotUsingVulkan()
         {
-            return !PlayerSettings.GetGraphicsAPIs(BuildTarget.Android).Contains(GraphicsDeviceType.Vulkan);
+            var graphicsAPIs = PlayerSettings.GetGraphicsAPIs(BuildTarget.Android);
+            return Array.IndexOf(graphicsAPIs, GraphicsDeviceType.Vulkan) == -1;
         }
     }
 }

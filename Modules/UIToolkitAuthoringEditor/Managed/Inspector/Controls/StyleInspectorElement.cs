@@ -16,6 +16,7 @@ internal sealed class StyleInspectorElement : VisualElement, IVisualElementChang
 {
     public static BindingId SelectionProperty = nameof(Element);
     public static BindingId ContentAssetProperty = nameof(ContentAsset);
+    public static BindingId IsReadOnlyProperty = nameof(IsReadOnly);
 
     public const string UssClassName = "unity-style-inspector";
     public const string InspectorFlexColumnModeClassName = UssClassName + "--flex-column";
@@ -59,8 +60,33 @@ internal sealed class StyleInspectorElement : VisualElement, IVisualElementChang
                 e.ContentAsset = ContentAsset;
         }
     }
-    StyleDiff m_StyleDiff;
-    StyleDiffAdditionalDataFlags m_StyleDiffFlags;
+
+    public class AuthoringContext : IDisposable
+    {
+        StyleDiff m_StyleDiff = new ();
+        StyleDiffAdditionalDataFlags m_StyleDiffFlags = StyleDiffAdditionalDataFlags.All;
+        bool m_IsReadonly = true;
+
+        public StyleDiff StyleDiff => m_StyleDiff;
+
+        public bool IsReadOnly
+        {
+            get => m_IsReadonly;
+            set => m_IsReadonly = value;
+        }
+
+        public void Refresh(VisualElement element)
+        {
+            m_StyleDiff.RefreshElement(element, m_StyleDiffFlags);
+        }
+
+        public void Dispose()
+        {
+            m_StyleDiff?.Dispose();
+        }
+    }
+
+    AuthoringContext m_Context;
 
     VisualElement m_Element;
 
@@ -96,6 +122,23 @@ internal sealed class StyleInspectorElement : VisualElement, IVisualElementChang
         }
     }
 
+    private bool m_IsReadOnly = true;
+
+    [CreateProperty]
+    public bool IsReadOnly
+    {
+        get => m_IsReadOnly;
+        set
+        {
+            if (m_IsReadOnly == value)
+                return;
+            m_IsReadOnly = value;
+            if (m_Context != null)
+                m_Context.IsReadOnly = value;
+            NotifyPropertyChanged(IsReadOnlyProperty);
+        }
+    }
+
     private VisualElement m_ContentContainer;
 
     public override VisualElement contentContainer { get; }
@@ -107,8 +150,6 @@ internal sealed class StyleInspectorElement : VisualElement, IVisualElementChang
 
     public StyleInspectorElement(VisualTreeAsset content)
     {
-        m_StyleDiffFlags = StyleDiffAdditionalDataFlags.All;
-
         AddToClassList(UssClassName);
         m_ContentContainer = new VisualElement();
         hierarchy.Add(m_ContentContainer);
@@ -126,8 +167,11 @@ internal sealed class StyleInspectorElement : VisualElement, IVisualElementChang
             {
                 if (attachToPanelEvent.destinationPanel == null)
                     return;
-                m_StyleDiff = new StyleDiff();
-                dataSource = m_StyleDiff;
+                m_Context = new AuthoringContext
+                {
+                    IsReadOnly = IsReadOnly
+                };
+                dataSource = m_Context;
                 if (m_Element != null)
                     AcquireSelection(m_Element);
                 else
@@ -142,8 +186,7 @@ internal sealed class StyleInspectorElement : VisualElement, IVisualElementChang
                 if (m_Element != null)
                     ReleaseSelection(m_Element);
                 dataSource = null;
-                m_StyleDiff.Dispose();
-                m_StyleDiff = null;
+                m_Context.Dispose();
                 break;
             }
         }
@@ -187,10 +230,10 @@ internal sealed class StyleInspectorElement : VisualElement, IVisualElementChang
 
     private void Refresh()
     {
-        if (m_StyleDiff != null)
+        if (m_Context != null)
         {
-            m_StyleDiff.RefreshElement(Element, m_StyleDiffFlags);
-            UpdateFlexColumnGlobalState(m_StyleDiff.flexDirection.computedValue);
+            m_Context.Refresh(Element);
+            UpdateFlexColumnGlobalState(m_Context.StyleDiff.flexDirection.computedValue);
         }
         else
         {

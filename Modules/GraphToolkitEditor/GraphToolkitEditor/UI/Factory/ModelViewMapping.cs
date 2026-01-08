@@ -26,7 +26,9 @@ namespace Unity.GraphToolkit.Editor
             var view = modelView.RootView;
             var context = modelView.Context;
 
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var contextualizedView = m_ContextualizedModelViews.FirstOrDefault(cge
+#pragma warning restore RS0030
                 => cge.View == view && cge.Context == context);
 
             if (contextualizedView == null)
@@ -46,7 +48,9 @@ namespace Unity.GraphToolkit.Editor
             var view = modelView.RootView;
             var context = modelView.Context;
 
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var contextualizedView = m_ContextualizedModelViews.FirstOrDefault(cge
+#pragma warning restore RS0030
                 => cge.View == view && cge.Context == context);
 
             if (contextualizedView == null)
@@ -66,7 +70,9 @@ namespace Unity.GraphToolkit.Editor
             if (modelView.Model == null)
                 return;
 
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var contextualizedView = m_ContextualizedModelViews.FirstOrDefault(cge => cge.View == modelView.RootView && cge.Context == modelView.Context);
+#pragma warning restore RS0030
 
             contextualizedView?.ModelViews.Remove(modelView.Model.Guid);
         }
@@ -76,7 +82,9 @@ namespace Unity.GraphToolkit.Editor
             if (modelView.Models == null || modelView.Models.Count == 0)
                 return;
 
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var contextualizedView = m_ContextualizedModelViews.FirstOrDefault(cge => cge.View == modelView.RootView && cge.Context == modelView.Context);
+#pragma warning restore RS0030
 
             foreach (var model in modelView.Models)
             {

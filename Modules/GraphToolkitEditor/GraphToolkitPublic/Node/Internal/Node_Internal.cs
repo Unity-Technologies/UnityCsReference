@@ -86,6 +86,8 @@ namespace Unity.GraphToolkit.Editor
 
                 IInputPortBuilder IInputBasePortBuilder<IInputPortBuilder>.Delayed() => Delayed();
                 ITypedInputPortBuilder IInputBasePortBuilder<ITypedInputPortBuilder>.Delayed() => Delayed();
+                IInputPortBuilder IInputBasePortBuilder<IInputPortBuilder>.AsTextArea(int minLines, int maxLines) => AsTextArea(minLines, maxLines);
+                ITypedInputPortBuilder IInputBasePortBuilder<ITypedInputPortBuilder>.AsTextArea(int minLines, int maxLines) => AsTextArea(minLines, maxLines);
 
                 IOutputPortBuilder IOutputPortBuilder.WithDataType(Type portType) => WithDataType(portType);
                 IOutputPortBuilder<T> IOutputPortBuilder.WithDataType<T>() => WithDataType<T>();
@@ -155,6 +157,13 @@ namespace Unity.GraphToolkit.Editor
                     return this;
                 }
 
+                public PortBuilder AsTextArea(int minLines, int maxLines)
+                {
+                    if (!m_Attributes.HasAny(t => t is TextAreaAttribute))
+                        m_Attributes.Add(new TextAreaAttribute(minLines, maxLines));
+                    return this;
+                }
+
                 public IPort Build()
                 {
                     IPort result;
@@ -192,6 +201,7 @@ namespace Unity.GraphToolkit.Editor
                 IInputPortBuilder<TData> IPortBuilder<IInputPortBuilder<TData>>.WithConnectorUI(PortConnectorUI connectorUI) => WithConnectorUI(connectorUI);
 
                 IInputPortBuilder<TData> IInputBasePortBuilder<IInputPortBuilder<TData>>.Delayed() => Delayed();
+                IInputPortBuilder<TData> IInputBasePortBuilder<IInputPortBuilder<TData>>.AsTextArea(int minLines, int maxLines) => AsTextArea(minLines, maxLines);
 
                 IInputPortBuilder<TData> IInputPortBuilder<TData>.WithDefaultValue(TData defaultValue) => WithDefaultValue(defaultValue);
 
@@ -227,6 +237,13 @@ namespace Unity.GraphToolkit.Editor
                     parent.Delayed();
                     return this;
                 }
+
+                PortBuilder<TData> AsTextArea(int minLines, int maxLines)
+                {
+                    parent.AsTextArea(minLines, maxLines);
+                    return this;
+                }
+
 
                 PortBuilder<TData> WithDefaultValue(TData defaultValue)
                 {
@@ -390,6 +407,13 @@ namespace Unity.GraphToolkit.Editor
                     return this;
                 }
 
+                public IOptionBuilder AsTextArea(int minLines, int maxLines)
+                {
+                    if (!m_Attributes.HasAny(t => t is TextAreaAttribute))
+                        m_Attributes.Add(new TextAreaAttribute(minLines, maxLines));
+                    return this;
+                }
+
                 public IOptionBuilder ShowInInspectorOnly()
                 {
                     m_ShowInInspectorOnly = true;
@@ -440,6 +464,12 @@ namespace Unity.GraphToolkit.Editor
                 public IOptionBuilder<TData> Delayed()
                 {
                     parent.Delayed();
+                    return this;
+                }
+
+                public IOptionBuilder<TData> AsTextArea(int minLines, int maxLines)
+                {
+                    parent.AsTextArea(minLines, maxLines);
                     return this;
                 }
 

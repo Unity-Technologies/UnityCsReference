@@ -151,14 +151,18 @@ namespace UnityEditor.PackageManager.UI.Internal
                 return;
 
             var currentView = this.currentView;
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             foreach (var item in args.selection.previousSelections.Where(s => !args.selection.Contains(s)).Concat(args.selection))
+#pragma warning restore RS0030
                 currentView.GetPackageItem(item)?.RefreshSelection();
 
             if (!args.isExplicitUserSelection)
                 currentView.ScrollToSelection();
 
             if (args.selection.previousSelections.Count == 1)
+                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 m_UpmCache.SetLoadAllVersions(args.selection.previousSelections.FirstOrDefault(), false);
+#pragma warning restore RS0030
         }
 
         private void OnCheckUpdateProgress()
@@ -185,7 +189,9 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_ButtonAction = buttonAction;
             UIUtils.SetElementDisplay(messageAreaButton, buttonAction != null);
 
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             m_PageManager.activePage.SetNewSelection(Enumerable.Empty<string>());
+#pragma warning restore RS0030
         }
 
         private void HideMessageShowList(bool skipListRebuild)
@@ -235,7 +241,9 @@ namespace UnityEditor.PackageManager.UI.Internal
                 }
             }
 
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var isListEmpty = !page.visualStates.Any(v => v.visible);
+#pragma warning restore RS0030
             var isInitialFetchingDone = m_PageRefreshHandler.IsInitialFetchingDone(page);
             if (isListEmpty || !isInitialFetchingDone)
             {

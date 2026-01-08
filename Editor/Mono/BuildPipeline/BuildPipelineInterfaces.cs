@@ -703,7 +703,9 @@ namespace UnityEditor.Build
         {
             var snippet = new ShaderSnippetData(shaderType, passType, passName, passIdentifier);
 
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var dataList = data.ToList();
+#pragma warning restore RS0030
             if (processors.shaderProcessors != null)
             {
                 foreach (IPreprocessShaders abtc in processors.shaderProcessors)
@@ -717,7 +719,9 @@ namespace UnityEditor.Build
         [RequiredByNativeCode]
         internal static ShaderCompilerData[] OnPreprocessComputeShaders(ComputeShader shader, string kernelName, ShaderCompilerData[] data)
         {
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var dataList = data.ToList();
+#pragma warning restore RS0030
             if (processors.computeShaderProcessors != null)
             {
                 foreach (IPreprocessComputeShaders abtc in processors.computeShaderProcessors)
@@ -738,7 +742,9 @@ namespace UnityEditor.Build
         [RequiredByNativeCode]
         internal static bool HasOnPostBuildPlayerScriptDLLs()
         {
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return (processors.buildPlayerScriptDLLProcessors != null && processors.buildPlayerScriptDLLProcessors.Any());
+#pragma warning restore RS0030
         }
 
         [RequiredByNativeCode]
@@ -784,7 +790,9 @@ namespace UnityEditor.Build
                 }
             }
 
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             if (!filteredAssemblies.All(x => startAssemblies.Contains(x)))
+#pragma warning restore RS0030
             {
                 throw new Exception("New Assembly names are in the list. Only filtering are allowed");
             }

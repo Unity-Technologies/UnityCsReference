@@ -184,7 +184,9 @@ namespace UnityEditor
         public string[] GetCurrentVisibleNames()
         {
             var list = m_LocalAssets.GetVisibleNameAndEntityIds();
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return list.Select(x => x.Key).ToArray();
+#pragma warning restore RS0030
         }
 
         public void Init(Rect rect, HierarchyType hierarchyType, SearchFilter searchFilter, bool checkThumbnails)
@@ -239,8 +241,12 @@ namespace UnityEditor
                     return new SearchService.ProjectSearchContext
                     {
                         requiredTypeNames = searchFilter.classNames,
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                         requiredTypes = searchFilter.classNames.Select(name =>
+#pragma warning restore RS0030
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                             TypeCache.GetTypesDerivedFrom<UnityEngine.Object>()
+#pragma warning restore RS0030
                                 .FirstOrDefault(t => name == t.FullName || name == t.Name)),
                         searchFilter = searchFilter
                     };
@@ -994,7 +1000,9 @@ namespace UnityEditor
 
         bool IsLocalAssetsCurrentlySelected()
         {
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             EntityId currentSelectedEntityId = m_State.m_SelectedInstanceIDs.FirstOrDefault();
+#pragma warning restore RS0030
             if (currentSelectedEntityId != EntityId.None)
             {
                 int index = m_LocalAssets.IndexOf(currentSelectedEntityId);

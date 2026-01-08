@@ -30,6 +30,7 @@ namespace UnityEditor.Overlays
         static VisualTreeAsset s_MainToolbarOverlayTreeAsset = null;
 
         internal MethodInfo createElementMethod { get; set; }
+        internal MethodInfo elementAvailabilityMethod { get; set; }
 
         OverlayDragger m_Dragger = null;
         VisualElement m_MainToolbarEditModeDragger = null;
@@ -37,26 +38,26 @@ namespace UnityEditor.Overlays
         public OverlayToolbar CreateHorizontalToolbarContent()
         {
             OverlayToolbar toolbar = new OverlayToolbar();
+            if (!IsAvailable())
+                return toolbar;
+            
             var result = createElementMethod.Invoke(null, null);
-            if (result is MainToolbarElement single)
+            
+            if (result is MainToolbarElement singleElement)
             {
-                var ve = single.Rebuild();
-                SetDraggerTooltip(ve);
-                SetElementTooltip(ve);
-                AddContextMenu(single, ve);
+                var ve = RebuildElement(singleElement, setDraggerTooltip: true);
                 toolbar.Add(ve);
             }
             else if (result is IEnumerable multiple)
             {
                 SetDraggerTooltip(toolbar);
                 foreach (var element in multiple)
-                    if (element is MainToolbarElement data)
+                    if (element is MainToolbarElement singleOfMultiElement)
                     {
-                        var ve = data.Rebuild();
-                        SetElementTooltip(ve);
-                        AddContextMenu(data, ve);
+                        var ve = RebuildElement(singleOfMultiElement, setDraggerTooltip: false);
                         toolbar.Add(ve);
                     }
+
                 toolbar.SetupChildrenAsButtonStrip();
             }
 
@@ -66,6 +67,17 @@ namespace UnityEditor.Overlays
             afterContentRebuilt?.Invoke(toolbar);
 
             return toolbar;
+        }
+
+        VisualElement RebuildElement(MainToolbarElement toolbarElement, bool setDraggerTooltip)
+        {
+            var ve = toolbarElement.Rebuild();
+            if (setDraggerTooltip)
+                SetDraggerTooltip(ve);
+            SetElementTooltip(ve);
+            AddContextMenu(toolbarElement, ve);
+            
+            return ve;
         }
 
         void OnContentGeometryChanged(GeometryChangedEvent evt)
@@ -131,6 +143,11 @@ namespace UnityEditor.Overlays
             m_MainToolbarEditModeDragger.style.display = mode != MainToolbarEditMode.Inactive
                 ? DisplayStyle.Flex
                 : DisplayStyle.None;
+        }
+        
+        internal bool IsAvailable()
+        {
+            return elementAvailabilityMethod == null || (bool)elementAvailabilityMethod.Invoke(null, null);
         }
 
         internal override void PopulateRoot(VisualElement root)

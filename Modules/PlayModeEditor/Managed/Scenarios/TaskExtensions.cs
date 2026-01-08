@@ -27,11 +27,23 @@ namespace Unity.PlayMode.Editor
                     await task.ConfigureAwait(false);
                 }
                 catch (OperationCanceledException) { }
+                catch (AggregateException aggregateException) when (IsOperationCanceledException(aggregateException)) {}
                 catch (Exception exception)
                 {
                     Debug.LogException(exception);
                 }
             }
+        }
+
+        private static bool IsOperationCanceledException(AggregateException exception)
+        {
+            foreach (var innerException in exception.InnerExceptions)
+            {
+                if (innerException is not OperationCanceledException)
+                    return false;
+            }
+
+            return true;
         }
     }
 }

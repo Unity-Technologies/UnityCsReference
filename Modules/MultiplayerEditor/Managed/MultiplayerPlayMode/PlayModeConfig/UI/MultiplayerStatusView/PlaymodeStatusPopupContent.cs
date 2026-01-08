@@ -167,27 +167,6 @@ namespace Unity.Multiplayer.PlayMode.Editor
                         roleLabel.text = MultiplayerRolesSettings.instance.GetMultiplayerRoleForBuildProfile(localInstanceDescription.BuildProfile).ToString();
                 }
 
-                if (instance is RemoteInstanceDescription remoteInstanceDescription)
-                {
-                    instanceIcon.style.backgroundImage = InternalUtilities.GetBuildProfileTypeIcon(remoteInstanceDescription.BuildProfile);
-                    roleLabel.text = "no role";
-                    if (remoteInstanceDescription.BuildProfile != null)
-                        roleLabel.text = MultiplayerRolesSettings.instance.GetMultiplayerRoleForBuildProfile(remoteInstanceDescription.BuildProfile).ToString();
-                    var linkToDashboard = new VisualElement();
-                    linkToDashboard.RegisterCallback<MouseDownEvent>(evt =>
-                    {
-                        var orgId = CloudProjectSettings.organizationKey;
-                        var projectId = CloudProjectSettings.projectId;
-
-                        Application.OpenURL($"https://cloud.unity.com/home/organizations/{orgId}/projects/{projectId}/multiplay/overview");
-                    });
-
-
-                    linkToDashboard.AddToClassList("dashboard-link");
-                    linkToDashboard.AddToClassList("icon");
-                    statusContainer.Add(linkToDashboard);
-                }
-
                 Add(instanceContainer);
                 Add(statusContainer);
             }
@@ -247,9 +226,6 @@ namespace Unity.Multiplayer.PlayMode.Editor
                         if (instanceDescription.InstanceTypeName == LocalInstanceDescription.k_LocalInstanceTypeName)
                             return "This instance is controlled by the main editor process.\n" +
                                    "It will build and run when entering play mode.";
-                        if (instanceDescription.InstanceTypeName == RemoteInstanceDescription.k_RemoteInstanceTypeName)
-                            return "This instance is controlled by the main editor process.\n" +
-                                   "It will build and deploy when entering play mode";
 
                         // Default tool tip for manually controlled instances.
                         return "This instance is controlled by the main editor process.";

@@ -16,7 +16,9 @@ namespace UnityEditor.Search
         public static IEnumerable<SearchItem> Count(SearchExpressionContext c)
         {
             foreach (var arg in c.args)
+                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 yield return SearchExpression.CreateItem(arg.Execute(c).Count(), c.ResolveAlias(arg, "Count"));
+#pragma warning restore RS0030
         }
 
         [Description("Find the minimal value for each expression."), Category("Math")]
@@ -32,7 +34,9 @@ namespace UnityEditor.Search
                 selector = c.args[0].innerText.ToString();
             }
 
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             foreach (var arg in c.args.Skip(skipCount))
+#pragma warning restore RS0030
             {
                 double min = double.MaxValue;
                 foreach (var r in arg.Execute(c))
@@ -54,7 +58,9 @@ namespace UnityEditor.Search
                 selector = c.args[0].innerText.ToString();
             }
 
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             foreach (var arg in c.args.Skip(skipCount))
+#pragma warning restore RS0030
             {
                 double max = double.MinValue;
                 foreach (var r in arg.Execute(c))
@@ -76,7 +82,9 @@ namespace UnityEditor.Search
                 selector = c.args[0].innerText.ToString();
             }
 
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             foreach (var arg in c.args.Skip(skipCount))
+#pragma warning restore RS0030
             {
                 var avg = Average.Zero;
                 foreach (var r in arg.Execute(c))
@@ -98,7 +106,9 @@ namespace UnityEditor.Search
                 selector = c.args[0].innerText.ToString();
             }
 
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             foreach (var arg in c.args.Skip(skipCount))
+#pragma warning restore RS0030
             {
                 var sum = 0d;
                 foreach (var r in arg.Execute(c))

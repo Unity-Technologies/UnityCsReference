@@ -173,7 +173,9 @@ namespace UnityEditor.Search
             }
         }
 
+        #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
         public static IEnumerable<SearchQuery> userQueries => searchQueries.Where(IsUserQuery);
+#pragma warning restore RS0030
 
         public SearchQuery()
         {
@@ -282,7 +284,9 @@ namespace UnityEditor.Search
             if (!Directory.Exists(folder))
                 Directory.CreateDirectory(folder);
 
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var allQueryPaths = Directory.EnumerateFiles(folder, "*.query").Select(Utils.CleanPath);
+#pragma warning restore RS0030
             foreach (var path in allQueryPaths)
             {
                 var query = LoadSearchQuery(path);

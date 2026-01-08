@@ -164,7 +164,9 @@ namespace UnityEngine.UIElements
 
         public override string ToString()
         {
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return string.Format("[{0}]", string.Join(", ", m_Selectors.Select(x => x.ToString()).ToArray()));
+#pragma warning restore RS0030
         }
 
         // Sort StyleSelectorPart elements in decreasing type order, then decreasing value order.

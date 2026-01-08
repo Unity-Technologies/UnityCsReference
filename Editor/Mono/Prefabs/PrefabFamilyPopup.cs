@@ -206,7 +206,9 @@ namespace UnityEditor
                     m_NamesWidth = Mathf.Max(GUI.skin.label.CalcSize(EditorGUIUtility.TempContent(prefabName)).x + 40, m_NamesWidth);
                 }
 
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 m_OverridesCounter = new OverridesCounterForPrefabAssets(m_AncestorItems.Select(x => AssetDatabase.LoadAssetAtPath<GameObject>(x.assetPath)).ToList());
+#pragma warning restore RS0030
                 EditorApplication.update += CalculateOverrideCountsTimeSliced;
 
                 float scrollBarWidthOffset = numRows >= k_MaxTableRows ? k_ScrollbarWidth : 0;
@@ -238,7 +240,9 @@ namespace UnityEditor
             {
                 if (m_OverridesCounter.changedCount)
                 {
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     for (int i = 0; i < m_AncestorItems.Count(); ++i)
+#pragma warning restore RS0030
                     {
                         m_AncestorItems[i].overrideCount = m_OverridesCounter.GetCurrentOverrideCount(i);
                     }

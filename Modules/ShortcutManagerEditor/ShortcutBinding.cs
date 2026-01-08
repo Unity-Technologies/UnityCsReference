@@ -15,14 +15,18 @@ namespace UnityEditor.ShortcutManagement
 
         readonly KeyCombination[] m_KeyCombinationSequence;
 
+        #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
         public IEnumerable<KeyCombination> keyCombinationSequence => m_KeyCombinationSequence ?? Enumerable.Empty<KeyCombination>();
+#pragma warning restore RS0030
 
         internal ShortcutBinding(IEnumerable<KeyCombination> keyCombinationSequence)
         {
             if (keyCombinationSequence == null)
                 throw new ArgumentNullException(nameof(keyCombinationSequence));
 
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             m_KeyCombinationSequence = keyCombinationSequence.Any() ? keyCombinationSequence.ToArray() : null;
+#pragma warning restore RS0030
         }
 
         public ShortcutBinding(KeyCombination keyCombination)
@@ -34,7 +38,9 @@ namespace UnityEditor.ShortcutManagement
 
         public bool Equals(ShortcutBinding other)
         {
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return keyCombinationSequence.SequenceEqual(other.keyCombinationSequence);
+#pragma warning restore RS0030
         }
 
         public override bool Equals(object obj)

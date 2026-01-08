@@ -259,7 +259,9 @@ sealed class AudioContainerWindow : EditorWindow
 
                 m_Day0RootVisualElement.style.display = DisplayStyle.None;
                 m_ContainerRootVisualElement.style.display = DisplayStyle.Flex;
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 m_CachedElements = State.AudioContainer.elements.ToList();
+#pragma warning restore RS0030
                 m_ClipsListView.Rebuild(); // Force a list rebuild when the list has changed or it will not always render correctly due to a UI toolkit bug.
             }
         }
@@ -350,7 +352,9 @@ sealed class AudioContainerWindow : EditorWindow
         if (State.AudioContainer == null)
             m_CachedElements.Clear();
         else
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             m_CachedElements = State.AudioContainer.elements.ToList();
+#pragma warning restore RS0030
     }
 
     void OnSerializedObjectChanged(SerializedObject obj)
@@ -863,7 +867,9 @@ sealed class AudioContainerWindow : EditorWindow
     {
         State.OnAudioClipListChanged();
 
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
         var indicesArray = indices as int[] ?? indices.ToArray();
+#pragma warning restore RS0030
         const string undoName = $"Add {nameof(AudioRandomContainer)} element";
         var groupUndoName = undoName;
 
@@ -873,7 +879,9 @@ sealed class AudioContainerWindow : EditorWindow
         }
 
         Undo.SetCurrentGroupName(groupUndoName);
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
         var elements = State.AudioContainer.elements.ToList();
+#pragma warning restore RS0030
         m_AddedElements.Clear();
 
         foreach (var index in indicesArray)
@@ -900,7 +908,9 @@ sealed class AudioContainerWindow : EditorWindow
     {
         State.OnAudioClipListChanged();
 
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
         var indicesArray = indices as int[] ?? indices.ToArray();
+#pragma warning restore RS0030
 
         // Confusingly, this callback is sometimes invoked post-delete and sometimes pre-delete,
         // i.e. the AudioRandomContainer.elements property may or may not be updated at this time,
@@ -943,7 +953,9 @@ sealed class AudioContainerWindow : EditorWindow
 
         Undo.RegisterCompleteObjectUndo(State.AudioContainer, groupUndoName);
         Undo.SetCurrentGroupName(groupUndoName);
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
         var elements = State.AudioContainer.elements.ToList();
+#pragma warning restore RS0030
         m_AddedElements.Clear();
 
         foreach (var audioClip in audioClips)
@@ -996,7 +1008,9 @@ sealed class AudioContainerWindow : EditorWindow
         }
 
         // Update the cached list of elements
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
         m_CachedElements = State.AudioContainer.elements.ToList();
+#pragma warning restore RS0030
 
         // Force a list rebuild when the list has changed or it will not always render correctly
         m_ClipsListView.Rebuild();

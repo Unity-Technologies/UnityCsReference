@@ -174,6 +174,7 @@ namespace UnityEngine.UIElements
             s_EditorEventDispatcher = null;
         }
 
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
         internal static EventDispatcher CreateDefault()
         {
 #pragma warning disable 618

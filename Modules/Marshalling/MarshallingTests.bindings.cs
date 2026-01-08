@@ -8,12 +8,12 @@
 
 
 using System;
-using UnityEngine.Internal;
-using UnityEngine.Bindings;
+using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using UnityEngine.Bindings;
+using UnityEngine.Internal;
 using UnityEngine.Scripting;
-using System.Collections.Generic;
 
 #pragma warning disable 169
 
@@ -176,6 +176,13 @@ namespace UnityEngine
         public static extern StructFixedBuffer ReturnStructFixedBuffer();
 
         public static extern StructInt structIntProperty { get; set; }
+    }
+
+    [NativeHeader("Modules/Marshalling/MarshallingTests.h")]
+    [ExcludeFromDocs]
+    internal class RealWorldTypesTests
+    {
+        [NativeThrows] public static extern void GetAccessibilityNodeData();
     }
 
     // --------------------------------------------------------------------
@@ -847,12 +854,6 @@ namespace UnityEngine
     {
         [return: UnityMarshalAs(NativeType.ScriptingObjectPtr)]
         public static extern float[] ReturnArrayOfPrimitiveTypeWorks_Float1D();
-
-        [return: UnityMarshalAs(NativeType.ScriptingObjectPtr)]
-        public static extern float[,] ReturnArrayOfPrimitiveTypeWorks_Float2D();
-
-        [return: UnityMarshalAs(NativeType.ScriptingObjectPtr)]
-        public static extern float[,,] ReturnArrayOfPrimitiveTypeWorks_Float3D();
     }
 
     // --------------------------------------------------------------------
@@ -1012,20 +1013,19 @@ namespace UnityEngine
     }
 
     // --------------------------------------------------------------------
-    // System.Collections.Generic.List tests
-    [NativeType("Modules/Marshalling/MarshallingTests.h")]
-    internal class ValueTypeListOfTTests
+    // Blittable System.Collections.Generic.List tests
+    [NativeHeader("Modules/Marshalling/MarshallingTests.h")]
+    internal class BlittableListOfTTests
     {
-        [NativeThrows] public static extern void ParameterListOfIntRead(List <int> param);
-        [NativeThrows] public static extern void ParameterListOfIntReadChangeVaules(List <int> param);
-        [NativeThrows, NativeMethod(Name = "ParameterListOfIntReadChangeVaules")] public static extern void ParameterListOfIntReadChangeVaulesWithOutAttribute([Out] List <int> param);
-        [NativeThrows] public static extern void ParameterListOfIntAddNoGrow(List <int> param);
-        [NativeThrows] public static extern void ParameterListOfIntAddAndGrow(List <int> param);
+        [NativeThrows] public static extern void ParameterListOfIntRead(List <int> param, int expectedCapacity);
+        [NativeThrows] public static extern void ParameterListOfIntReadChangeVaules(List <int> param, int expectedCapacity);
+        [NativeThrows] public static extern void ParameterListOfIntAddNoGrow(List <int> param, int expectedCapacity);
+        [NativeThrows] public static extern void ParameterListOfIntAddAndGrow(List <int> param, int expectedCapacity);
         [NativeThrows] public static extern void ParameterListOfIntPassNullThrow([NotNull] List <int> param);
         [NativeThrows] public static extern void ParameterListOfIntPassNullNoThrow(List<int> param);
-        [NativeThrows] public static extern void ParameterListOfIntNativeAllocateSmaller(List<int> param);
-        [NativeThrows] public static extern void ParameterListOfIntNativeAttachOtherMemoryBlock(List<int> param);
-        [NativeThrows] public static extern void ParameterListOfIntNativeCallsClear(List<int> param);
+        [NativeThrows] public static extern void ParameterListOfIntNativeAllocateSmaller(List<int> param, int expectedCapacity);
+        [NativeThrows] public static extern void ParameterListOfIntNativeAttachOtherMemoryBlock(List<int> param, int expectedCapacity);
+        [NativeThrows] public static extern void ParameterListOfIntNativeCallsClear(List<int> param, int expectedCapacity);
         [NativeThrows] public static extern void ParameterListOfBoolReadWrite(List<bool> param);
         [NativeThrows] public static extern void ParameterListOfCharReadWrite(List<char> param);
         [NativeThrows] public static extern void ParameterListOfEnumReadWrite(List<SomeEnum> param);
@@ -1058,6 +1058,12 @@ namespace UnityEngine
         [NativeThrows] public static extern void ParameterNativeRemovesItemUnityObjectPPtrVector([In,Out] List<MarshallingTestObject> param);
 
         [NativeThrows] public static extern void ParameterTwoListOfStringAddWithCapacity([In,Out] List<string> param1, [In,Out] List<string> param2);
+        [NativeThrows] public static extern void ParameterListOfStringRefAddWithCapacity([In,Out] List<string> param);
+        [NativeThrows] public static extern void ParameterListOfConstCharPtrAddWithCapacity([In,Out] List<string> param);
+        
+        [NativeThrows] public static extern void ParameterCheckNullableWithNull([In] List<string> param1, [Out] List<string> param2, [In,Out] List<string> param3);
+        [NativeThrows] public static extern void ParameterCheckNullableWithNotNullEmpty([In] List<string> param1, [Out] List<string> param2, [In,Out] List<string> param3);
+        [NativeThrows] public static extern void ParameterCheckNullableWithNotNullNotEmpty([In] List<string> param1, [Out] List<string> param2, [In,Out] List<string> param3);
     }
 
     // --------------------------------------------------------------------
@@ -1110,6 +1116,77 @@ namespace UnityEngine
         static double InvokeDouble(double arg) { return arg; }
     }
 
+    [NativeHeader("Modules/Marshalling/MarshallingTests.h")]
+    [Flags]
+    internal enum Test_AccessibilityRole : ushort
+    {
+        Button = 1 << 0,
+    }
+
+    [NativeHeader("Modules/Marshalling/MarshallingTests.h")]
+    [Flags]
+    internal enum Test_AccessibilityState : byte
+    {
+        Selected = 1 << 1,
+    }
+
+    [NativeHeader("Modules/Marshalling/MarshallingTests.h")]
+    [StructLayout(LayoutKind.Sequential)]
+    internal struct Test_AccessibilityNodeData
+    {
+        public int[] childIds { get; set; }
+        public string label { get; set; }
+        public string value { get; set; }
+        public string hint { get; set; }
+        public Rect frame { get; set; }
+        public int nodeId { get; set; }
+        public int parentId { get; set; }
+        public Test_AccessibilityRole role { get; set; }
+        public Test_AccessibilityState state { get; set; }
+        public bool isActive { get; set; }
+        public bool allowsDirectInteraction { get; set; }
+        public bool implementsInvoked { get; set; }
+        public bool implementsScrolled { get; set; }
+        public bool implementsDismissed { get; set; }
+    }
+
+    // Test proxy calls taking and returning-by-ref real world non-blittable types
+    internal class NonBlittableProxyParameterTests
+    {
+        static void VerifyEqual(object expectation, object actual, string fieldName)
+        {
+            if (!actual.Equals(expectation))
+                throw new Exception($"Expected '{expectation}' but got '{actual}' for field '{fieldName}'");
+        }
+
+        [NativeHeader("Modules/Marshalling/MarshallingTests.h")]
+        [FreeFunction("Test_GetAccessibilityNodeData")]
+        extern static void Test_GetAccessibilityNodeData(IntPtr nodeDataPtr, Test_AccessibilityNodeData nodeData);
+
+        [RequiredByNativeCode]
+        static void GetAccessibilityNodeData(IntPtr nodeDataPtr)
+        {
+            Test_AccessibilityNodeData nodeData = new Test_AccessibilityNodeData()
+            {
+                nodeId = 123,
+                isActive = true,
+                label = "TestLabel",
+                value = "TestValue",
+                hint = "TestHint",
+                allowsDirectInteraction = true,
+                frame = new Rect(10, 20, 110, 220),
+                parentId = 456,
+                role = Test_AccessibilityRole.Button,
+                state = Test_AccessibilityState.Selected,
+                childIds = new int[] { 101, 102 },
+                implementsDismissed = true,
+                implementsInvoked = true,
+                implementsScrolled = true,
+            };
+
+            Test_GetAccessibilityNodeData(nodeDataPtr, nodeData);
+        }
+    }
 
     internal static class CustomMarshallingTests
     {

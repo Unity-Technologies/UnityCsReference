@@ -121,7 +121,9 @@ namespace Unity.UI.Builder
 
         void ReselectIfNecessary(VisualElement documentElement)
         {
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             if (!m_Selection.selection.Contains(documentElement))
+#pragma warning restore RS0030
                 m_Selection.Select(null, documentElement);
         }
 
@@ -140,7 +142,9 @@ namespace Unity.UI.Builder
             evt.StopImmediatePropagation();
 
             // Ensure selection only affects 1 element. In case of right-click on an item that is not part of the selection.
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             bool isSingleElementAffected = m_Selection.selectionCount == 1 || !m_Selection.selection.Contains(documentElement);
+#pragma warning restore RS0030
 
             bool isValidRenameTarget = isValidTarget && isSingleElementAffected;
 
@@ -210,7 +214,9 @@ namespace Unity.UI.Builder
 
             var isLinkedOpenVTAActiveVTA = linkedOpenVTA == activeOpenUXML.visualTreeAsset;
             var isLinkedInstancedVTAActiveVTA = linkedInstancedVTA == activeOpenUXML.visualTreeAsset;
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var isLinkedVEADirectChild = activeOpenUXML.visualTreeAsset.DepthFirstTraversalOfType<TemplateAsset>().Contains(linkedTemplateVEA);
+#pragma warning restore RS0030
             var isSelector = documentElement != null && BuilderSharedStyles.IsSelectorElement(documentElement);
             var isStyleSheet = documentElement != null && BuilderSharedStyles.IsStyleSheetElement(documentElement);
 
@@ -225,7 +231,9 @@ namespace Unity.UI.Builder
             // eg. Making Tab into TemplateContainer is not allowed because TabView's content container expects only Tabs.
             var isTemplateContainerAllowed = BuilderAssetUtilities.IsSupportedChildType(documentElement?.parent, typeof(TemplateContainer));
 
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var showCreateTemplateAction = activeOpenUXML.visualTreeAsset.DepthFirstTraversal().Contains(linkedVEA) &&
+#pragma warning restore RS0030
                                            isSingleElementAffected && isTemplateContainerAllowed;
 
             if (showOpenInBuilder || showReturnToParentAction || showOpenInIsolationAction || showOpenInPlaceAction || showSiblingOpenActions)

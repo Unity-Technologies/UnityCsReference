@@ -60,17 +60,25 @@ namespace UnityEditor.Scripting.ScriptCompilation
             {
                 //we want to see if this is the only error on this location.  we will make an enumerable that matches all compilermessages that match this location
                 //We do Skip(1).Any() as a bit of an unconventional way to express what we care about: is there more than 1 or not.
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 return !compilerMessages.Where(m => MatchesFileLineAndColumn(compilerMessage, m)).Skip(1).Any();
+#pragma warning restore RS0030
             }
 
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var upgradableMessages = compilerMessages.Where(c => c.message.Contains("(UnityUpgradable")).ToArray();
+#pragma warning restore RS0030
 
             //Some (UnityUpgradable) errors can be paired with a genuine user error on the same line/column. When this happens it is a known problem
             //that we are unable to upgrade the UnityUpgradable error. So we'll only return Certainly if there is not an other compilermessage pointing to the
             //same file,line,column. otherwise, we return maybe, so that a failure to do the update won't print a console message saying there is a bug.
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             if (upgradableMessages.Any(IsOnlyMessageForThisFileLineAndColumn))
+#pragma warning restore RS0030
                 return CanUpdateAny.Certainly;
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             if (upgradableMessages.Any())
+#pragma warning restore RS0030
                 return CanUpdateAny.Maybe;
 
             //The "unknown type or namespace" genre of messages we are not sure about. Some of these are legit user programming errors, some of them
@@ -186,8 +194,12 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 {
                     var updateLines = updateTxtFile.ReadAllLines();
 
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     updates = updateLines.Select(ParseLineIntoUpdate).ToArray();
+#pragma warning restore RS0030
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     if (updates.Contains(null))
+#pragma warning restore RS0030
                         return ErrorResult($"Script updater for {nodeOutputFile} emitted an invalid line to {updateTxtFile}");
 
                     if (containsUpdatableCompilerMessage == CanUpdateAny.Certainly && updates.Length == 0)
@@ -227,7 +239,9 @@ namespace UnityEditor.Scripting.ScriptCompilation
         {
             var scriptCompilationDataOut = dataFromBuildProgram.Get<ScriptCompilationData_Out>();
             var outputfileForwardSlash = new NPath(nodeResult.Node.OutputFile).ToString();
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var assemblyDataOut = scriptCompilationDataOut.Assemblies.FirstOrDefault(a => a.Path == outputfileForwardSlash);
+#pragma warning restore RS0030
             return assemblyDataOut ?? throw new ArgumentException($"Unable to find entry for {outputfileForwardSlash} in dataFromBuildProgram");
         }
 

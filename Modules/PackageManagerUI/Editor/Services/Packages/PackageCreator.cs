@@ -145,15 +145,23 @@ internal class PackageCreator : BaseService<IPackageCreator>, IPackageCreator
     {
         var packageName = "com." + PackageValidator.SanitizePackageTechnicalName(organization) + "." + PackageValidator.SanitizePackageTechnicalName(displayName);
         var packageNameWithoutSuffixNumber = RemoveSuffixNumber(packageName);
+        #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
         var potentialNameConflicts = m_PackageDatabase.allPackages.Where(i =>
+#pragma warning restore RS0030
                 i.versions.installed != null && i.name.StartsWith(packageNameWithoutSuffixNumber))
             .Select(p => p.name).ToArray();
 
+        #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
         if (potentialNameConflicts.Any(n => n == packageName))
+#pragma warning restore RS0030
         {
             var regex = new Regex($@"^{Regex.Escape(packageNameWithoutSuffixNumber)}(?<count>\d+)$");
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var matches = potentialNameConflicts.Select(str => regex.Match(str)).Where(match => match.Success);
+#pragma warning restore RS0030
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var numbers = matches.Select(match => int.Parse(match.Groups["count"].Value)).OrderBy(n => n);
+#pragma warning restore RS0030
             var firstMissingNumber = GetFirstMissingNumber(numbers);
             packageName = $"{packageNameWithoutSuffixNumber}{firstMissingNumber}";
             displayName = $"{RemoveSuffixNumber(displayName)} {firstMissingNumber}";
@@ -229,7 +237,9 @@ internal class PackageCreator : BaseService<IPackageCreator>, IPackageCreator
 
     private string ReplaceVariablesInString(Dictionary<string, string> variables, string txt)
     {
+        #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
         return variables.Aggregate(txt ?? string.Empty, (current, kvp) => current.Replace(kvp.Key, kvp.Value));
+#pragma warning restore RS0030
     }
 
     private Dictionary<string, string> CreateTemplateVariables(string packageName, string displayName, string rootNamespace)

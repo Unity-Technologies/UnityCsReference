@@ -39,24 +39,35 @@ internal sealed partial class HierarchySelectionHandler : IVisualElementSelectio
     [AutoStaticsCleanupOnCodeReload]
     private static readonly Dictionary<VisualElement, RefCountedSelection> s_SelectionMappings = new();
 
+    Dictionary<VisualElement, RefCountedSelection> SelectionMapping => s_SelectionMappings;
+
+    private IVisualElementEditingManager m_Manager;
+
     private T Acquire<T>(VisualElement element)
         where T : UISelectionObject
     {
-        if (s_SelectionMappings.TryGetValue(element, out var refCounted))
+        if (SelectionMapping.TryGetValue(element, out var refCounted))
         {
-            s_SelectionMappings[element] = refCounted.Acquire();
+            SelectionMapping[element] = refCounted.Acquire();
             return (T)refCounted.SelectionObject;
         }
 
         var selectionObject = ScriptableObject.CreateInstance<T>();
+        if (m_Manager == null)
+            selectionObject.IsReadOnly = true;
+        else
+        {
+            var flags = m_Manager.GetEditFlags(element);
+            selectionObject.IsReadOnly = flags == VisualElementEditFlags.None;
+        }
         selectionObject.hideFlags |= HideFlags.DontUnloadUnusedAsset | HideFlags.DontSaveInEditor;
-        s_SelectionMappings[element] = new RefCountedSelection(selectionObject, 1);
+        SelectionMapping[element] = new RefCountedSelection(selectionObject, 1);
         return selectionObject;
     }
 
     private void Remap(VisualElement element, UISelectionObject instance)
     {
-        if (s_SelectionMappings.TryGetValue(element, out var refCounted))
+        if (SelectionMapping.TryGetValue(element, out var refCounted))
         {
             if (refCounted.Count > 0 || !refCounted.Alive)
                 Debug.LogError("Trying to remap something that is already mapped");
@@ -68,12 +79,12 @@ internal sealed partial class HierarchySelectionHandler : IVisualElementSelectio
             visualElementSelection.Element = element;
         }
 
-        s_SelectionMappings[element] = new RefCountedSelection(instance, 0);
+        SelectionMapping[element] = new RefCountedSelection(instance, 0);
     }
 
     private bool Release(VisualElement element)
     {
-        if (s_SelectionMappings.TryGetValue(element, out var refCounted))
+        if (SelectionMapping.TryGetValue(element, out var refCounted))
         {
             if (refCounted.Count == 1)
             {
@@ -82,36 +93,42 @@ internal sealed partial class HierarchySelectionHandler : IVisualElementSelectio
                     Undo.ClearUndo(refCounted.SelectionObject);
                     Object.DestroyImmediate(refCounted.SelectionObject);
                 }
-                s_SelectionMappings.Remove(element);
+                SelectionMapping.Remove(element);
                 return true;
             }
 
-            s_SelectionMappings[element] = refCounted.Release();
+            SelectionMapping[element] = refCounted.Release();
         }
 
         return false;
     }
 
+    public void SetEditingManager(IVisualElementEditingManager manager)
+    {
+        m_Manager = manager;
+    }
+
     public EntityId AcquireInstanceId(VisualElement element)
     {
-        if (element is UIDocumentRootElement uiDocumentRootElement)
+        if (element is IPanelComponentRootElement panelComponentRootElement)
         {
             var vtaSelection = Acquire<VisualTreeAssetSelection>(element);
-            element.SetProperty(VisualElementRemapper.k_UIDocumentId, GlobalObjectId.GetGlobalObjectIdSlow(uiDocumentRootElement.document));
-            vtaSelection.Document = uiDocumentRootElement.document;
+            element.SetProperty(VisualElementRemapper.k_PanelComponentId, GlobalObjectId.GetGlobalObjectIdSlow((Object)panelComponentRootElement.panelComponent));
+            vtaSelection.panelComponent = panelComponentRootElement.panelComponent;
             return vtaSelection.GetEntityId();
         }
 
         var veSelection = Acquire<VisualElementSelection>(element);
+        veSelection.EditFlags = m_Manager?.GetEditFlags(element) ?? VisualElementEditFlags.None;
         veSelection.Element = element;
         return veSelection.GetEntityId();
     }
 
     public void ReleaseInstanceId(VisualElement element)
     {
-        if (element is UIDocumentRootElement uiDocumentRootElement)
+        if (element is IPanelComponentRootElement)
         {
-            element.ClearProperty(VisualElementRemapper.k_UIDocumentId);
+            element.ClearProperty(VisualElementRemapper.k_PanelComponentId);
         }
         Release(element);
     }
@@ -120,9 +137,9 @@ internal sealed partial class HierarchySelectionHandler : IVisualElementSelectio
     {
         foreach (var remap in remappings)
         {
-            if (s_SelectionMappings.TryGetValue(remap.Previous, out var selection))
+            if (SelectionMapping.TryGetValue(remap.Previous, out var selection))
             {
-                s_SelectionMappings[remap.Previous] = selection.Kill();
+                SelectionMapping[remap.Previous] = selection.Kill();
                 Remap(remap.Remapped, selection.SelectionObject);
             }
         }

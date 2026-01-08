@@ -449,5 +449,14 @@ namespace UnityEditor
 
         [FreeFunction]
         extern internal static bool IsPathInStreamingAssets(string path);
+
+        [StaticAccessor("PrefabUtilityBindings", StaticAccessorType.DoubleColon)]
+        [NativeThrows]
+        extern private static bool ApplyObjectOverride([NotNull] Object componentOrGameObject, string assetPath);
+
+        [StaticAccessor("PrefabUtilityBindings", StaticAccessorType.DoubleColon)]
+        [NativeThrows]
+        extern private static bool ApplyObjectOverrideWithoutUndo([NotNull] Object componentOrGameObject, string assetPath);
+
     }
 }

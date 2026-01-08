@@ -58,7 +58,9 @@ namespace UnityEditor.Experimental.GraphView
 
         IEnumerable<MethodInfo> GetExtensionMethods(Assembly assembly, Type extendedType)
         {
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return assembly.GetTypes()
+#pragma warning restore RS0030
                 .Where(t => t.IsSealed && !t.IsGenericType && !t.IsNested)
                 .SelectMany(t => t.GetMethods(BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic))
                 .Where(m => m.IsDefined(typeof(ExtensionAttribute), false) && m.GetParameters()[0].ParameterType == extendedType);
@@ -131,7 +133,9 @@ namespace UnityEditor.Experimental.GraphView
                             foreach (MethodInfo i in methodInfos)
                             {
                                 object[] allAttrs = i.GetCustomAttributes(typeof(TypeAdapter), false);
+                                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                                 if (allAttrs.Any())
+#pragma warning restore RS0030
                                 {
                                     s_TypeAdapters.Add(i);
                                 }

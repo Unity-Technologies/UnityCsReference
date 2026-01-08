@@ -56,7 +56,9 @@ namespace UnityEditorInternal
 
         internal static IEnumerable<NPath> GetUserBlacklistFiles()
         {
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return Directory.GetFiles("Assets", "link.xml", SearchOption.AllDirectories)
+#pragma warning restore RS0030
                 .Select(s => Path.Combine(Directory.GetCurrentDirectory(), s))
                 .ToNPaths();
         }
@@ -89,7 +91,9 @@ namespace UnityEditorInternal
                 }
             }
 
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return linkXmlFiles
+#pragma warning restore RS0030
                 .Where(p => p?.FileExists() ?? false)
                 .Select(p => p.MakeAbsolute().ToString())
                 .ToArray();
@@ -109,14 +113,18 @@ namespace UnityEditorInternal
 
             var sb = new StringBuilder();
             sb.AppendLine("<linker>");
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             foreach (var assemblyTypePair in items.OrderBy(t => t.Key))
+#pragma warning restore RS0030
             {
                 // Some how stuff for assemblies that will not be in the build make it into UsedTypePerUserAssembly such as
                 // ex: [UnityEditor.TestRunner.dll] UnityEditor.TestTools.TestRunner.TestListCacheData
                 //
                 // Filter anything out where the assembly doesn't exist so that UnityLinker can be strict about preservations in link xml files
                 var filename = assemblyTypePair.Key.ToNPath().FileNameWithoutExtension;
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 if (buildFiles.All(file => !BuildFileMatchesAssembly(file, filename)))
+#pragma warning restore RS0030
                     continue;
 
                 if (assemblyTypePair.Value.Length == 0)
@@ -128,7 +136,9 @@ namespace UnityEditorInternal
                 }
 
                 sb.AppendLine($"\t<assembly fullname=\"{filename}\">");
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 foreach (var type in assemblyTypePair.Value.OrderBy(s => s))
+#pragma warning restore RS0030
                 {
                     sb.AppendLine($"\t\t<type fullname=\"{type}\" preserve=\"nothing\"/>");
                 }
@@ -147,14 +157,20 @@ namespace UnityEditorInternal
             var oneOrMoreItemsWritten = false;
             var sb = new StringBuilder();
             sb.AppendLine("<linker>");
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             foreach (var assemblyTypePair in items.OrderBy(t => t.Key))
+#pragma warning restore RS0030
             {
                 // Filter anything out where the assembly doesn't exist so that UnityLinker can be strict about preservations in link xml files
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 if (buildFiles.All(file => !BuildFileMatchesAssembly(file, assemblyTypePair.Key)))
+#pragma warning restore RS0030
                     continue;
 
                 sb.AppendLine($"\t<assembly fullname=\"{assemblyTypePair.Key}\">");
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 foreach (var type in assemblyTypePair.Value.OrderBy(s => s))
+#pragma warning restore RS0030
                 {
                     oneOrMoreItemsWritten = true;
                     sb.AppendLine($"\t\t<type fullname=\"{type}\" preserve=\"nothing\" serialized=\"true\"/>");
@@ -236,7 +252,9 @@ namespace UnityEditorInternal
 
             var editorToLinkerData = new EditorToLinkerData
             {
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 typesInScenes = GetTypesInScenesInformation(args.report, args.usedClassRegistry)
+#pragma warning restore RS0030
                     .OrderBy(data => data.fullManagedTypeName ?? data.nativeClass)
                     .ToArray(),
                 allNativeTypes = CollectNativeTypeData().ToArray(),
@@ -257,7 +275,9 @@ namespace UnityEditorInternal
                 var unityType = UnityType.FindTypeByName(nativeClass);
 
                 var managedName = RuntimeClassMetadataUtils.ScriptingWrapperTypeNameForNativeID(unityType.persistentTypeID);
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 var usedInScenes = rcr.GetScenesForClass(unityType.persistentTypeID)?.OrderBy(p => p);
+#pragma warning restore RS0030
 
                 bool noManagedType = unityType.persistentTypeID != 0 && managedName == "UnityEngine.Object";
                 var information = new EditorToLinkerData.TypeInSceneData(
@@ -265,7 +285,9 @@ namespace UnityEditorInternal
                     noManagedType ? null : managedName,
                     nativeClass,
                     unityType.module,
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     usedInScenes != null ? usedInScenes.ToArray() : null);
+#pragma warning restore RS0030
 
                 items.Add(information);
             }
@@ -279,7 +301,9 @@ namespace UnityEditorInternal
                 // Filter anything out where the assembly doesn't exist so that UnityLinker can be strict about being able to find
                 // all of the types that are reported as being in the scene.
                 var filename = userAssembly.Key.ToNPath().FileNameWithoutExtension;
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 if (buildFiles.All(file => !BuildFileMatchesAssembly(file, filename)))
+#pragma warning restore RS0030
                     continue;
 
                 foreach (var type in userAssembly.Value)
@@ -326,7 +350,9 @@ namespace UnityEditorInternal
             }
 
             public bool IsModuleIncluded(string moduleName)
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 => m_ForceIncludes.Any(i => string.Equals(i, moduleName));
+#pragma warning restore RS0030
         }
 
         public static event Action<IPreStrippingModuleAdder> onCollectIncludedModules;
@@ -367,16 +393,30 @@ namespace UnityEditorInternal
             var sb = new StringBuilder();
             sb.AppendLine("<linker>");
 
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var groupedByAssembly = rcr.GetMethodsToPreserve().GroupBy(m => m.assembly);
+#pragma warning restore RS0030
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             foreach (var assembly in groupedByAssembly.OrderBy(a => a.Key))
+#pragma warning restore RS0030
             {
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 var assemblyName = assembly.Key;
+#pragma warning restore RS0030
                 sb.AppendLine(string.Format("\t<assembly fullname=\"{0}\" ignoreIfMissing=\"1\">", assemblyName));
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 var groupedByType = assembly.GroupBy(m => m.fullTypeName);
+#pragma warning restore RS0030
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 foreach (var type in groupedByType.OrderBy(t => t.Key))
+#pragma warning restore RS0030
                 {
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     sb.AppendLine(string.Format("\t\t<type fullname=\"{0}\">", type.Key));
+#pragma warning restore RS0030
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     foreach (var method in type.OrderBy(m => m.methodName))
+#pragma warning restore RS0030
                         sb.AppendLine(string.Format("\t\t\t<method name=\"{0}\"/>", method.methodName));
                     sb.AppendLine("\t\t</type>");
                 }

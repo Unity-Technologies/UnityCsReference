@@ -30,7 +30,9 @@ namespace UnityEditor.UIElements.Debugger
         {
             string t = ve.GetType() == typeof(VisualElement) ? String.Empty : (ve.GetType().Name + " ");
             string n = String.IsNullOrEmpty(ve.name) ? String.Empty : ("#" + ve.name + " ");
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             string res = t + n + (ve.GetClassesForIteration().Any() ? ("." + string.Join(",.", ve.GetClassesForIteration().ToArray())) : String.Empty);
+#pragma warning restore RS0030
             if (res == String.Empty)
                 return ve.GetType().Name;
             if (ve.renderHints != RenderHints.None)

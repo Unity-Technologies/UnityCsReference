@@ -4,16 +4,12 @@
 
 using System;
 using System.Runtime.InteropServices;
-using System.Collections.Generic;
-using System.Linq;
 using UnityEngine;
 using UnityEngine.Bindings;
 using UnityEngine.Scripting;
 using uei = UnityEngine.Internal;
-using UnityEditor;
 using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
-using UnityEngine.Assertions;
 
 namespace UnityEditor.Experimental
 {
@@ -89,14 +85,6 @@ namespace UnityEditor.Experimental
             Off = 0,
             Lazy = 1,
             Background = 2
-        }
-
-        [Obsolete("ImportSyncMode has been removed from the editor API", true)]
-        public enum ImportSyncMode
-        {
-            Block = 0,
-            Queue = 1,
-            Poll = 2
         }
 
         [PreventExecutionInState(AssetDatabasePreventExecution.kCodeReload, PreventExecutionSeverity.PreventExecution_ManagedException, AssetDatabase.kPreventExecutionDuringCodeReloadHowToFixMsg)]
@@ -251,19 +239,6 @@ namespace UnityEditor.Experimental
             LookupPrimaryArtifacts((IntPtr)guids.GetUnsafePtr(), (IntPtr)hashesOut.GetUnsafePtr(), guids.Length);
         }
 
-        [Obsolete("GetArtifactHash() has been removed. Use LookupArtifact(), ProduceArtifact() or ForceProduceArtifact() instead.", true)]
-        [uei.ExcludeFromDocs]
-        public static Hash128 GetArtifactHash(string guid, ImportSyncMode mode = ImportSyncMode.Block)
-        {
-            throw new NotImplementedException();
-        }
-
-        [Obsolete("GetArtifactHash() has been removed. Use LookupArtifact(), ProduceArtifact() or ForceProduceArtifact() instead.", true)]
-        public static Hash128 GetArtifactHash(string guid, [uei.DefaultValue("null")] Type importerType, ImportSyncMode mode = ImportSyncMode.Block)
-        {
-            throw new NotImplementedException();
-        }
-
         public static bool GetArtifactPaths(ImportResultID hash, out string[] paths)
         {
             bool success;
@@ -272,35 +247,11 @@ namespace UnityEditor.Experimental
             return success;
         }
 
-        [Obsolete("GetArtifactPaths(Hash128, out string[]) has been removed. Use GetArtifactPaths(ImportResultID, out string[]) instead.", true)]
-        public static bool GetArtifactPaths(Hash128 hash, out string[] paths)
-        {
-            throw new NotImplementedException();
-        }
-
-        [Obsolete("GetArtifactHashes() has been removed. Use LookupArtifact(), ProduceArtifact() or ForceProduceArtifact() instead.", true)]
-        public static Hash128[] GetArtifactHashes(string[] guids, ImportSyncMode mode = ImportSyncMode.Block)
-        {
-            throw new NotImplementedException();
-        }
-
         [PreventExecutionInState(AssetDatabasePreventExecution.kCodeReload, PreventExecutionSeverity.PreventExecution_ManagedException, AssetDatabase.kPreventExecutionDuringCodeReloadHowToFixMsg)]
         private extern static string[] GetArtifactPathsImpl(ImportResultID hash, out bool success);
 
         [PreventExecutionInState(AssetDatabasePreventExecution.kCodeReload, PreventExecutionSeverity.PreventExecution_ManagedException, AssetDatabase.kPreventExecutionDuringCodeReloadHowToFixMsg)]
         public extern static OnDemandProgress GetOnDemandArtifactProgress(ArtifactKey artifactKey);
-
-        [Obsolete("GetOnDemandArtifactProgress(string) has been removed. Use GetOnDemandArtifactProgress(ArtifactKey) instead.", true)]
-        public static OnDemandProgress GetOnDemandArtifactProgress(string guid)
-        {
-            return GetOnDemandArtifactProgress(CreateArtifactKey(new GUID(guid)));
-        }
-
-        [Obsolete("GetOnDemandArtifactProgress(string,Type) has been removed. Use GetOnDemandArtifactProgress(ArtifactKey) instead.", true)]
-        public static OnDemandProgress GetOnDemandArtifactProgress(string guid, Type importerType)
-        {
-            return GetOnDemandArtifactProgress(CreateArtifactKey(new GUID(guid), importerType));
-        }
 
         [FreeFunction("AssetDatabase::GetArtifactStaticDependencyHash")]
         [PreventExecutionInState(AssetDatabasePreventExecution.kCodeReload, PreventExecutionSeverity.PreventExecution_ManagedException, AssetDatabase.kPreventExecutionDuringCodeReloadHowToFixMsg)]

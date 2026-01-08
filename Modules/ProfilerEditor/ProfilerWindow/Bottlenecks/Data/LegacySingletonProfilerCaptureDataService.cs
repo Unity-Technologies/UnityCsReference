@@ -93,7 +93,22 @@ namespace Unity.Profiling.Editor
 
         public RawFrameDataView GetRawFrameDataView(int frameIndex, int threadIndex)
         {
+            if (frameIndex < ProfilerDriver.firstFrameIndex)
+                throw new ArgumentOutOfRangeException(nameof(frameIndex), $"frameIndex is out of range of loaded profiler data. Must be greater or equal than {ProfilerDriver.firstFrameIndex}");
+            if (frameIndex > ProfilerDriver.lastFrameIndex)
+                throw new ArgumentOutOfRangeException(nameof(frameIndex), $"frameIndex is out of range of loaded profiler data. Must be smaller or equal than {ProfilerDriver.lastFrameIndex}");
+
             return ProfilerDriver.GetRawFrameDataView(frameIndex, threadIndex);
+        }
+
+        public HierarchyFrameDataView GetHierarchyFrameDataView(int frameIndex, int threadIndex, HierarchyFrameDataView.ViewModes viewMode, int sortColumn, bool sortAscending)
+        {
+            if (frameIndex < ProfilerDriver.firstFrameIndex)
+                throw new ArgumentOutOfRangeException(nameof(frameIndex), $"frameIndex is out of range of loaded profiler data. Must be greater or equal than {ProfilerDriver.firstFrameIndex}");
+            if (frameIndex > ProfilerDriver.lastFrameIndex)
+                throw new ArgumentOutOfRangeException(nameof(frameIndex), $"frameIndex is out of range of loaded profiler data. Must be smaller or equal than {ProfilerDriver.lastFrameIndex}");
+
+            return ProfilerDriver.GetHierarchyFrameDataView(frameIndex, threadIndex, viewMode, sortColumn, sortAscending);
         }
 
         public void Dispose()

@@ -491,6 +491,9 @@
     <Compile Include="..\..\Modules\AndroidJNI\AndroidDiagnosticsReporting.cs">
       <Link>Modules\AndroidJNI\AndroidDiagnosticsReporting.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\AndroidJNI\AndroidFoldingFeatures.cs">
+      <Link>Modules\AndroidJNI\AndroidFoldingFeatures.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\AndroidJNI\AndroidGame.bindings.cs">
       <Link>Modules\AndroidJNI\AndroidGame.bindings.cs</Link>
     </Compile>
@@ -1339,6 +1342,270 @@
     </Compile>
     <Compile Include="..\..\Modules\Marshalling\MarshallingTests2.bindings.cs">
       <Link>Modules\Marshalling\MarshallingTests2.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Mathematics\Managed\Geometry\MinMaxAABB.cs">
+      <Link>Modules\Mathematics\Managed\Geometry\MinMaxAABB.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Mathematics\Managed\Geometry\Plane.cs">
+      <Link>Modules\Mathematics\Managed\Geometry\Plane.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Mathematics\Managed\Noise\cellular2D.cs">
+      <Link>Modules\Mathematics\Managed\Noise\cellular2D.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Mathematics\Managed\Noise\cellular2x2.cs">
+      <Link>Modules\Mathematics\Managed\Noise\cellular2x2.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Mathematics\Managed\Noise\cellular2x2x2.cs">
+      <Link>Modules\Mathematics\Managed\Noise\cellular2x2x2.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Mathematics\Managed\Noise\cellular3D.cs">
+      <Link>Modules\Mathematics\Managed\Noise\cellular3D.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Mathematics\Managed\Noise\classicnoise2D.cs">
+      <Link>Modules\Mathematics\Managed\Noise\classicnoise2D.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Mathematics\Managed\Noise\classicnoise3D.cs">
+      <Link>Modules\Mathematics\Managed\Noise\classicnoise3D.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Mathematics\Managed\Noise\classicnoise4D.cs">
+      <Link>Modules\Mathematics\Managed\Noise\classicnoise4D.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Mathematics\Managed\Noise\common.cs">
+      <Link>Modules\Mathematics\Managed\Noise\common.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Mathematics\Managed\Noise\noise2D.cs">
+      <Link>Modules\Mathematics\Managed\Noise\noise2D.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Mathematics\Managed\Noise\noise3D.cs">
+      <Link>Modules\Mathematics\Managed\Noise\noise3D.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Mathematics\Managed\Noise\noise3Dgrad.cs">
+      <Link>Modules\Mathematics\Managed\Noise\noise3Dgrad.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Mathematics\Managed\Noise\noise4D.cs">
+      <Link>Modules\Mathematics\Managed\Noise\noise4D.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Mathematics\Managed\Noise\psrdnoise2D.cs">
+      <Link>Modules\Mathematics\Managed\Noise\psrdnoise2D.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Mathematics\Managed\Properties\AssemblyInfo.cs">
+      <Link>Modules\Mathematics\Managed\Properties\AssemblyInfo.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Mathematics\Managed\affine_transform.cs">
+      <Link>Modules\Mathematics\Managed\affine_transform.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Mathematics\Managed\bool2.gen.cs">
+      <Link>Modules\Mathematics\Managed\bool2.gen.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Mathematics\Managed\bool2x2.gen.cs">
+      <Link>Modules\Mathematics\Managed\bool2x2.gen.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Mathematics\Managed\bool2x3.gen.cs">
+      <Link>Modules\Mathematics\Managed\bool2x3.gen.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Mathematics\Managed\bool2x4.gen.cs">
+      <Link>Modules\Mathematics\Managed\bool2x4.gen.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Mathematics\Managed\bool3.gen.cs">
+      <Link>Modules\Mathematics\Managed\bool3.gen.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Mathematics\Managed\bool3x2.gen.cs">
+      <Link>Modules\Mathematics\Managed\bool3x2.gen.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Mathematics\Managed\bool3x3.gen.cs">
+      <Link>Modules\Mathematics\Managed\bool3x3.gen.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Mathematics\Managed\bool3x4.gen.cs">
+      <Link>Modules\Mathematics\Managed\bool3x4.gen.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Mathematics\Managed\bool4.gen.cs">
+      <Link>Modules\Mathematics\Managed\bool4.gen.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Mathematics\Managed\bool4x2.gen.cs">
+      <Link>Modules\Mathematics\Managed\bool4x2.gen.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Mathematics\Managed\bool4x3.gen.cs">
+      <Link>Modules\Mathematics\Managed\bool4x3.gen.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Mathematics\Managed\bool4x4.gen.cs">
+      <Link>Modules\Mathematics\Managed\bool4x4.gen.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Mathematics\Managed\double2.gen.cs">
+      <Link>Modules\Mathematics\Managed\double2.gen.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Mathematics\Managed\double2x2.gen.cs">
+      <Link>Modules\Mathematics\Managed\double2x2.gen.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Mathematics\Managed\double2x3.gen.cs">
+      <Link>Modules\Mathematics\Managed\double2x3.gen.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Mathematics\Managed\double2x4.gen.cs">
+      <Link>Modules\Mathematics\Managed\double2x4.gen.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Mathematics\Managed\double3.gen.cs">
+      <Link>Modules\Mathematics\Managed\double3.gen.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Mathematics\Managed\double3x2.gen.cs">
+      <Link>Modules\Mathematics\Managed\double3x2.gen.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Mathematics\Managed\double3x3.gen.cs">
+      <Link>Modules\Mathematics\Managed\double3x3.gen.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Mathematics\Managed\double3x4.gen.cs">
+      <Link>Modules\Mathematics\Managed\double3x4.gen.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Mathematics\Managed\double4.gen.cs">
+      <Link>Modules\Mathematics\Managed\double4.gen.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Mathematics\Managed\double4x2.gen.cs">
+      <Link>Modules\Mathematics\Managed\double4x2.gen.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Mathematics\Managed\double4x3.gen.cs">
+      <Link>Modules\Mathematics\Managed\double4x3.gen.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Mathematics\Managed\double4x4.gen.cs">
+      <Link>Modules\Mathematics\Managed\double4x4.gen.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Mathematics\Managed\float2.gen.cs">
+      <Link>Modules\Mathematics\Managed\float2.gen.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Mathematics\Managed\float2x2.gen.cs">
+      <Link>Modules\Mathematics\Managed\float2x2.gen.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Mathematics\Managed\float2x3.gen.cs">
+      <Link>Modules\Mathematics\Managed\float2x3.gen.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Mathematics\Managed\float2x4.gen.cs">
+      <Link>Modules\Mathematics\Managed\float2x4.gen.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Mathematics\Managed\float3.gen.cs">
+      <Link>Modules\Mathematics\Managed\float3.gen.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Mathematics\Managed\float3x2.gen.cs">
+      <Link>Modules\Mathematics\Managed\float3x2.gen.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Mathematics\Managed\float3x3.gen.cs">
+      <Link>Modules\Mathematics\Managed\float3x3.gen.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Mathematics\Managed\float3x4.gen.cs">
+      <Link>Modules\Mathematics\Managed\float3x4.gen.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Mathematics\Managed\float4.gen.cs">
+      <Link>Modules\Mathematics\Managed\float4.gen.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Mathematics\Managed\float4x2.gen.cs">
+      <Link>Modules\Mathematics\Managed\float4x2.gen.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Mathematics\Managed\float4x3.gen.cs">
+      <Link>Modules\Mathematics\Managed\float4x3.gen.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Mathematics\Managed\float4x4.gen.cs">
+      <Link>Modules\Mathematics\Managed\float4x4.gen.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Mathematics\Managed\half.cs">
+      <Link>Modules\Mathematics\Managed\half.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Mathematics\Managed\half2.gen.cs">
+      <Link>Modules\Mathematics\Managed\half2.gen.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Mathematics\Managed\half3.gen.cs">
+      <Link>Modules\Mathematics\Managed\half3.gen.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Mathematics\Managed\half4.gen.cs">
+      <Link>Modules\Mathematics\Managed\half4.gen.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Mathematics\Managed\int2.gen.cs">
+      <Link>Modules\Mathematics\Managed\int2.gen.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Mathematics\Managed\int2x2.gen.cs">
+      <Link>Modules\Mathematics\Managed\int2x2.gen.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Mathematics\Managed\int2x3.gen.cs">
+      <Link>Modules\Mathematics\Managed\int2x3.gen.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Mathematics\Managed\int2x4.gen.cs">
+      <Link>Modules\Mathematics\Managed\int2x4.gen.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Mathematics\Managed\int3.gen.cs">
+      <Link>Modules\Mathematics\Managed\int3.gen.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Mathematics\Managed\int3x2.gen.cs">
+      <Link>Modules\Mathematics\Managed\int3x2.gen.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Mathematics\Managed\int3x3.gen.cs">
+      <Link>Modules\Mathematics\Managed\int3x3.gen.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Mathematics\Managed\int3x4.gen.cs">
+      <Link>Modules\Mathematics\Managed\int3x4.gen.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Mathematics\Managed\int4.gen.cs">
+      <Link>Modules\Mathematics\Managed\int4.gen.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Mathematics\Managed\int4x2.gen.cs">
+      <Link>Modules\Mathematics\Managed\int4x2.gen.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Mathematics\Managed\int4x3.gen.cs">
+      <Link>Modules\Mathematics\Managed\int4x3.gen.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Mathematics\Managed\int4x4.gen.cs">
+      <Link>Modules\Mathematics\Managed\int4x4.gen.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Mathematics\Managed\math.cs">
+      <Link>Modules\Mathematics\Managed\math.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Mathematics\Managed\matrix.cs">
+      <Link>Modules\Mathematics\Managed\matrix.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Mathematics\Managed\matrix.gen.cs">
+      <Link>Modules\Mathematics\Managed\matrix.gen.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Mathematics\Managed\quaternion.cs">
+      <Link>Modules\Mathematics\Managed\quaternion.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Mathematics\Managed\random.cs">
+      <Link>Modules\Mathematics\Managed\random.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Mathematics\Managed\rigid_transform.cs">
+      <Link>Modules\Mathematics\Managed\rigid_transform.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Mathematics\Managed\svd.cs">
+      <Link>Modules\Mathematics\Managed\svd.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Mathematics\Managed\uint2.gen.cs">
+      <Link>Modules\Mathematics\Managed\uint2.gen.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Mathematics\Managed\uint2x2.gen.cs">
+      <Link>Modules\Mathematics\Managed\uint2x2.gen.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Mathematics\Managed\uint2x3.gen.cs">
+      <Link>Modules\Mathematics\Managed\uint2x3.gen.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Mathematics\Managed\uint2x4.gen.cs">
+      <Link>Modules\Mathematics\Managed\uint2x4.gen.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Mathematics\Managed\uint3.gen.cs">
+      <Link>Modules\Mathematics\Managed\uint3.gen.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Mathematics\Managed\uint3x2.gen.cs">
+      <Link>Modules\Mathematics\Managed\uint3x2.gen.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Mathematics\Managed\uint3x3.gen.cs">
+      <Link>Modules\Mathematics\Managed\uint3x3.gen.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Mathematics\Managed\uint3x4.gen.cs">
+      <Link>Modules\Mathematics\Managed\uint3x4.gen.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Mathematics\Managed\uint4.gen.cs">
+      <Link>Modules\Mathematics\Managed\uint4.gen.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Mathematics\Managed\uint4x2.gen.cs">
+      <Link>Modules\Mathematics\Managed\uint4x2.gen.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Mathematics\Managed\uint4x3.gen.cs">
+      <Link>Modules\Mathematics\Managed\uint4x3.gen.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Mathematics\Managed\uint4x4.gen.cs">
+      <Link>Modules\Mathematics\Managed\uint4x4.gen.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\Multiplayer\Managed\AssemblyInfo.cs">
       <Link>Modules\Multiplayer\Managed\AssemblyInfo.cs</Link>
@@ -2873,6 +3140,9 @@
     <Compile Include="..\..\Modules\UIElements\Core\GameObjects\NavigateFocusRing.cs">
       <Link>Modules\UIElements\Core\GameObjects\NavigateFocusRing.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\GameObjects\PanelComponentUtils.cs">
+      <Link>Modules\UIElements\Core\GameObjects\PanelComponentUtils.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\UIElements\Core\GameObjects\PanelInputConfiguration.cs">
       <Link>Modules\UIElements\Core\GameObjects\PanelInputConfiguration.cs</Link>
     </Compile>
@@ -3059,8 +3329,17 @@
     <Compile Include="..\..\Modules\UIElements\Core\MouseManipulator.cs">
       <Link>Modules\UIElements\Core\MouseManipulator.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Native\Renderer\IPanelComponent.cs">
+      <Link>Modules\UIElements\Core\Native\Renderer\IPanelComponent.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\UIElements\Core\Native\Renderer\MeshWriteDataInterface.bindings.cs">
       <Link>Modules\UIElements\Core\Native\Renderer\MeshWriteDataInterface.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Native\Renderer\PanelComponentList.cs">
+      <Link>Modules\UIElements\Core\Native\Renderer\PanelComponentList.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Native\Renderer\PanelRenderer.bindings.cs">
+      <Link>Modules\UIElements\Core\Native\Renderer\PanelRenderer.bindings.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\UIElements\Core\Native\Renderer\UIPainter2D.bindings.cs">
       <Link>Modules\UIElements\Core\Native\Renderer\UIPainter2D.bindings.cs</Link>
@@ -3079,6 +3358,9 @@
     </Compile>
     <Compile Include="..\..\Modules\UIElements\Core\Native\TextNative.bindings.cs">
       <Link>Modules\UIElements\Core\Native\TextNative.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Native\Transform\NativeTransformUtils.bindings.cs">
+      <Link>Modules\UIElements\Core\Native\Transform\NativeTransformUtils.bindings.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\UIElements\Core\Native\UIElementsUtility.bindings.cs">
       <Link>Modules\UIElements\Core\Native\UIElementsUtility.bindings.cs</Link>
@@ -3104,8 +3386,17 @@
     <Compile Include="..\..\Modules\UIElements\Core\Referencing\AuthoringIdPath.cs">
       <Link>Modules\UIElements\Core\Referencing\AuthoringIdPath.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Referencing\IVisualElementReferenceHandler.cs">
+      <Link>Modules\UIElements\Core\Referencing\IVisualElementReferenceHandler.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\UIElements\Core\Referencing\VisualElementAssetReferenceTable.cs">
       <Link>Modules\UIElements\Core\Referencing\VisualElementAssetReferenceTable.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Referencing\VisualElementReference.cs">
+      <Link>Modules\UIElements\Core\Referencing\VisualElementReference.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Referencing\VisualElementReferenceProvider.cs">
+      <Link>Modules\UIElements\Core\Referencing\VisualElementReferenceProvider.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\UIElements\Core\Renderer\GCHandlePool.cs">
       <Link>Modules\UIElements\Core\Renderer\GCHandlePool.cs</Link>
@@ -3494,11 +3785,17 @@
     <Compile Include="..\..\Modules\UIElements\Core\Style\Generated\StylePropertyUtil.cs">
       <Link>Modules\UIElements\Core\Style\Generated\StylePropertyUtil.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Style\Generated\UIAnimationBinder.cs">
+      <Link>Modules\UIElements\Core\Style\Generated\UIAnimationBinder.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\UIElements\Core\Style\IResolvedStyle.cs">
       <Link>Modules\UIElements\Core\Style\IResolvedStyle.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\UIElements\Core\Style\IStyle.cs">
       <Link>Modules\UIElements\Core\Style\IStyle.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Style\InitialStyle.cs">
+      <Link>Modules\UIElements\Core\Style\InitialStyle.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\UIElements\Core\Style\InlineStyle.ManagedProps.cs">
       <Link>Modules\UIElements\Core\Style\InlineStyle.ManagedProps.cs</Link>
@@ -3719,6 +4016,9 @@
     <Compile Include="..\..\Modules\UIElements\Core\Transitions.cs">
       <Link>Modules\UIElements\Core\Transitions.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\UIAnimationBinder.cs">
+      <Link>Modules\UIElements\Core\UIAnimationBinder.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\UIElements\Core\UIElementsBridge.cs">
       <Link>Modules\UIElements\Core\UIElementsBridge.cs</Link>
     </Compile>
@@ -3850,6 +4150,9 @@
     </Compile>
     <Compile Include="..\..\Modules\UIElements\Core\VisualElementTooltip.cs">
       <Link>Modules\UIElements\Core\VisualElementTooltip.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\VisualElementTransformData.cs">
+      <Link>Modules\UIElements\Core\VisualElementTransformData.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\UIElements\Core\VisualElementTypeData.cs">
       <Link>Modules\UIElements\Core\VisualElementTypeData.cs</Link>
@@ -4021,6 +4324,9 @@
     </Compile>
     <Compile Include="..\..\Modules\UnityWebRequest\Public\MultipartFormHelper.cs">
       <Link>Modules\UnityWebRequest\Public\MultipartFormHelper.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UnityWebRequest\Public\UnityHttpMessageHandler.cs">
+      <Link>Modules\UnityWebRequest\Public\UnityHttpMessageHandler.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\UnityWebRequest\Public\UnityWebRequest.bindings.cs">
       <Link>Modules\UnityWebRequest\Public\UnityWebRequest.bindings.cs</Link>
@@ -4859,6 +5165,9 @@
     <Compile Include="..\..\Runtime\Export\Math\Vector4.cs">
       <Link>Runtime\Export\Math\Vector4.cs</Link>
     </Compile>
+    <Compile Include="..\..\Runtime\Export\Math\math_unity_conversion.cs">
+      <Link>Runtime\Export\Math\math_unity_conversion.cs</Link>
+    </Compile>
     <Compile Include="..\..\Runtime\Export\Misc\ObjectDispatcher.bindings.cs">
       <Link>Runtime\Export\Misc\ObjectDispatcher.bindings.cs</Link>
     </Compile>
@@ -4942,6 +5251,9 @@
     </Compile>
     <Compile Include="..\..\Runtime\Export\Properties\DrivenPropertyManager.bindings.cs">
       <Link>Runtime\Export\Properties\DrivenPropertyManager.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Runtime\Export\PropertyDrawer\MathematicsPropertyAttributes.cs">
+      <Link>Runtime\Export\PropertyDrawer\MathematicsPropertyAttributes.cs</Link>
     </Compile>
     <Compile Include="..\..\Runtime\Export\PropertyDrawer\PropertyAttribute.cs">
       <Link>Runtime\Export\PropertyDrawer\PropertyAttribute.cs</Link>
@@ -5870,6 +6182,9 @@
     <Compile Include="..\..\Runtime\Scripting\Marshalling\ArrayHandleOnStack.cs">
       <Link>Runtime\Scripting\Marshalling\ArrayHandleOnStack.cs</Link>
     </Compile>
+    <Compile Include="..\..\Runtime\Scripting\Marshalling\ArrayMarshalling.cs">
+      <Link>Runtime\Scripting\Marshalling\ArrayMarshalling.cs</Link>
+    </Compile>
     <Compile Include="..\..\Runtime\Scripting\Marshalling\BindingsHelpers.bindings.cs">
       <Link>Runtime\Scripting\Marshalling\BindingsHelpers.bindings.cs</Link>
     </Compile>
@@ -5882,11 +6197,17 @@
     <Compile Include="..\..\Runtime\Scripting\Marshalling\BlittableNestedCollectionMarshaller.cs">
       <Link>Runtime\Scripting\Marshalling\BlittableNestedCollectionMarshaller.cs</Link>
     </Compile>
+    <Compile Include="..\..\Runtime\Scripting\Marshalling\CollectionMarshallerAccessors.cs">
+      <Link>Runtime\Scripting\Marshalling\CollectionMarshallerAccessors.cs</Link>
+    </Compile>
     <Compile Include="..\..\Runtime\Scripting\Marshalling\ExceptionMarshaller.cs">
       <Link>Runtime\Scripting\Marshalling\ExceptionMarshaller.cs</Link>
     </Compile>
     <Compile Include="..\..\Runtime\Scripting\Marshalling\GCHandleMarshalling.cs">
       <Link>Runtime\Scripting\Marshalling\GCHandleMarshalling.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Runtime\Scripting\Marshalling\IntPtrObjectMarshalling.cs">
+      <Link>Runtime\Scripting\Marshalling\IntPtrObjectMarshalling.cs</Link>
     </Compile>
     <Compile Include="..\..\Runtime\Scripting\Marshalling\ManagedSpanWrapper.cs">
       <Link>Runtime\Scripting\Marshalling\ManagedSpanWrapper.cs</Link>
@@ -5924,9 +6245,17 @@
     <Compile Include="..\..\artifacts\generated\UnityEvent\UnityEvent_4.cs">
       <Link>artifacts\generated\UnityEvent\UnityEvent_4.cs</Link>
     </Compile>
+    <AdditionalFiles Include="..\..\Tools\Unity.BuildSystem\Unity.BuildSystem\BannedSymbolsFiles\BannedSymbols.RuntimeModules.txt">
+      <Link>BannedSymbols.RuntimeModules.txt</Link>
+    </AdditionalFiles>
+    <AdditionalFiles Include="..\..\Tools\Unity.BuildSystem\Unity.BuildSystem\BannedSymbolsFiles\BannedSymbols.Linq.txt">
+      <Link>BannedSymbols.Linq.txt</Link>
+    </AdditionalFiles>
+  </ItemGroup>
+  <ItemGroup>
+    <TargetingPack Include="Unity.BCLExtensions.Netstandard21" Path="/usr/src/app/repos/unity/External/BCLExtensions/built/TargetingPacks/netstandard2.1" NuGetPackageId="Unity.BCLExtensions.Netstandard21" NuGetPackageVersion="1.0.0" />
   </ItemGroup>
   <ItemGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
-    <TargetingPack Include="Unity.BCLExtensions.Netstandard21" Path="/usr/src/app/repos/unity/External/BCLExtensions/built/TargetingPacks/netstandard2.1" NuGetPackageId="Unity.BCLExtensions.Netstandard21" NuGetPackageVersion="1.0.0" />
     <FrameworkReference Include="Unity.BCLExtensions.Netstandard21" />
   </ItemGroup>
   <PropertyGroup>

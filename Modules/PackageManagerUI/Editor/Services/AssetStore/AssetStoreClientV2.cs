@@ -90,7 +90,9 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private void FetchPurchaseInfosWithRetry(IEnumerable<long> productIds, bool checkHiddenPurchases, Action doneCallback)
         {
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var productIdsWithoutPurchaseInfo = productIds?.Where(id => m_AssetStoreCache.GetPurchaseInfo(id) == null).ToList() ?? new List<long>();
+#pragma warning restore RS0030
             if (productIdsWithoutPurchaseInfo.Count == 0)
                 return;
 
@@ -116,8 +118,12 @@ namespace UnityEditor.PackageManager.UI.Internal
                 if (fetchOperation.result.list.Count < productIdsWithoutPurchaseInfo.Count && !checkHiddenPurchases)
                 {
                     fetchHiddenProductsRequired = true;
+                    #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     var productIdsFound = fetchOperation.result.list.Select(info => info.productId).ToHashSet();
+#pragma warning restore RS0030
+                    #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     var potentiallyHiddenProductIds = productIdsWithoutPurchaseInfo.Where(id => !productIdsFound.Contains(id));
+#pragma warning restore RS0030
                     FetchPurchaseInfosWithRetry(potentiallyHiddenProductIds, true, doneCallback);
                 }
             };
@@ -207,7 +213,9 @@ namespace UnityEditor.PackageManager.UI.Internal
             filter.anyWithAssetOrigin = true;
 
             var guidsWithOrigin = m_AssetDatabase.FindAssets(filter);
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return guidsWithOrigin.Select(guid =>
+#pragma warning restore RS0030
             {
                 var assetOrigin = m_AssetDatabase.GetAssetOrigin(guid);
                 var assetPath = m_AssetDatabase.GUIDToAssetPath(guid);
@@ -223,9 +231,13 @@ namespace UnityEditor.PackageManager.UI.Internal
         public void OnPostProcessAllAssets(string[] importedAssetPaths, string[] deletedAssetPaths, string[] movedAssetPaths, string[] movedFromAssetPaths)
         {
             var addedOrUpdatedAssets = new List<Asset>();
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var removedAssetPaths = deletedAssetPaths.Union(movedFromAssetPaths).ToHashSet();
+#pragma warning restore RS0030
 
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var pathsToCheckForOrigin = importedAssetPaths.Union(movedAssetPaths).ToArray();
+#pragma warning restore RS0030
             foreach (var path in pathsToCheckForOrigin)
             {
                 var guid = m_AssetDatabase.AssetPathToGUID(path);
@@ -246,7 +258,9 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public void RefreshImportedAssets()
         {
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             m_AssetStoreCache.UpdateImportedAssets(ListImportedAssets(), m_AssetStoreCache.importedAssets.Select(a => a.importedPath));
+#pragma warning restore RS0030
         }
 
         public void OnBeforeSerialize()

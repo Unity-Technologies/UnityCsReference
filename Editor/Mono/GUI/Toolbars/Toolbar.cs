@@ -112,6 +112,8 @@ namespace UnityEditor
 
         internal static MainToolbarWindow instance;
 
+        MainToolbarAnalytics m_Analytics;
+
         OverlayCanvasMode ISupportsOverlaysCustomMode.overlayCanvasMode => OverlayCanvasMode.MainToolbar;
 
         string[] m_UniqueMenuCategories;
@@ -173,7 +175,7 @@ namespace UnityEditor
                 overlayCanvas.ApplySaveData(data.m_SaveData.ToArray(), data.m_DynamicPanelContainerData.ToArray());
             }
 
-            overlayCanvas.presetChanged += UpdateLatestSaveState;
+            overlayCanvas.presetChanged += OnPresetChanged;
 
             // Setup initial save state
             if (OverlayCanvasesData.instance.toolbarSaveState.overlays == null
@@ -181,6 +183,13 @@ namespace UnityEditor
             {
                 UpdateLatestSaveState();
             }
+
+            m_Analytics = new MainToolbarAnalytics(this);
+        }
+
+        void OnPresetChanged()
+        {
+            UpdateLatestSaveState();
         }
 
         void UpdateLatestSaveState()
@@ -190,8 +199,10 @@ namespace UnityEditor
 
         void OnDisable()
         {
+            overlayCanvas.presetChanged -= OnPresetChanged;
             EditorApplication.modifierKeysChanged -= OnModifierKeyChanged;
             OverlayCanvasesData.instance.SetLastActiveCanvasForWindowType(overlayCanvas);
+            m_Analytics.Dispose();
         }
 
         void CreateGUI()
@@ -233,6 +244,7 @@ namespace UnityEditor
             editModeActive = !editModeActive;
         }
 
+        static HashSet<string> s_UsedMenuCategoryPaths;
         void PopulateMenuWithOverlays(AbstractGenericMenu dropdown, bool includeUtilityFunctions = true)
         {
             var overlays = new List<(Overlay overlay, MainToolbarElementAttribute attrib)>();
@@ -241,6 +253,9 @@ namespace UnityEditor
             foreach (var overlay in overlayCanvas.overlays)
             {
                 var mto = overlay as MainToolbarOverlay;
+                if (!mto.IsAvailable())
+                    continue;
+                
                 overlays.Add((overlay, mto.createElementMethod.GetCustomAttribute<MainToolbarElementAttribute>()));
                 if (mto.createElementMethod.GetCustomAttribute<UnityOnlyMainToolbarPresetAttribute>() != null)
                     s_UnityOnlyOverlays.Add(overlay);
@@ -269,6 +284,8 @@ namespace UnityEditor
                     .CompareTo((int)b.attrib.defaultDockPosition * 100 + b.attrib.defaultDockIndex);
             });
 
+            s_UsedMenuCategoryPaths ??= new();
+            s_UsedMenuCategoryPaths.Clear();
             Overlay prevOverlay = null;
             foreach (var pair in overlays)
             {
@@ -281,6 +298,8 @@ namespace UnityEditor
                     {
                         pair.overlay.displayed = !pair.overlay.displayed;
                     });
+
+                    s_UsedMenuCategoryPaths.Add(Path.GetDirectoryName(pair.attrib.path));
                 }
                 prevOverlay = pair.overlay;
             }
@@ -290,6 +309,9 @@ namespace UnityEditor
                 // Add Show/Hide All to each unique category
                 foreach (var path in m_UniqueMenuCategories)
                 {
+                    if (!s_UsedMenuCategoryPaths.Contains(path))
+                        continue;
+                    
                     dropdown.AddSeparator($"{path}/");
                     dropdown.AddItem($"{path}/{showAllName}", false, () => MainToolbar.ShowAll(path));
                     dropdown.AddItem($"{path}/{hideAllName}", false, () => MainToolbar.HideAll(path));

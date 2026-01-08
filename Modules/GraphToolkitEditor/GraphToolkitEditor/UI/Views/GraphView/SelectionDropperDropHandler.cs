@@ -57,7 +57,9 @@ namespace Unity.GraphToolkit.Editor
         public virtual bool CanHandleDrop()
         {
             var dndContent = SelectionDropper.GetDraggedElements();
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return dndContent.OfType<VariableDeclarationModelBase>().HasAny();
+#pragma warning restore RS0030
         }
 
         /// <inheritdoc />
@@ -87,7 +89,9 @@ namespace Unity.GraphToolkit.Editor
                 m_DraggedElements.Sort(GroupItemOrderComparer.Default);
 
                 var contentViewContainer = GraphView.ContentViewContainer;
+                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 var variablesWithInfo = m_DraggedElements.Select(
+#pragma warning restore RS0030
                     (e1, i) =>
                         (
                             e1,
@@ -101,7 +105,9 @@ namespace Unity.GraphToolkit.Editor
                 var command = new CreateNodeCommand();
 
                 var portTarget = (e.target as VisualElement)?.GetFirstOfType<Port>();
+                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 var variablesCount = variablesWithInfo.Count();
+#pragma warning restore RS0030
                 foreach (var (model, position) in variablesWithInfo)
                 {
                     if (portTarget != null && variablesCount == 1 && portTarget.CanAcceptDrop(new List<GraphElementModel> { model }))

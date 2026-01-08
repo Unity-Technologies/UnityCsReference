@@ -8,6 +8,7 @@ using UnityEngine.Bindings;
 using UnityEngine.Internal;
 using UnityEngine.Playables;
 using UnityEngine.Scripting;
+using System.Runtime.InteropServices;
 
 namespace UnityEngine
 {
@@ -685,7 +686,7 @@ namespace UnityEngine
         }
 
         [FreeFunction(Name = "AnimatorBindings::GetAnimatorClipInfoInternal", HasExplicitThis = true)]
-        extern private void GetAnimatorClipInfoInternal(int layerIndex, bool isCurrent, object clips);
+        extern private void GetAnimatorClipInfoInternal(int layerIndex, bool isCurrent, [Out,NotNull] List<AnimatorClipInfo> clips);
 
         // Gets the list of AnimatorClipInfo currently played by the next state
         public void GetNextAnimatorClipInfo(int layerIndex, List<AnimatorClipInfo> clips)

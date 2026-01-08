@@ -41,9 +41,9 @@ namespace UnityEngine.Loading
     /// </summary>
     /// <remarks>
     /// In the Editor this is normally not used, because the content is available directly in the project using
-    /// <see cref="UnityEditor.AssetDatabase"/> and <see cref="UnityEditor.SceneManagement.EditorSceneManager"/> calls. However, it can be useful in Editor play mode
-    /// to run the same loading case as the runtime and to try out the output of your Content Directory build, directly inside
-    /// the Editor.
+    /// <see cref="UnityEditor.AssetDatabase"/> and <see cref="UnityEditor.SceneManagement.EditorSceneManager"/> calls.
+    /// However, it can be useful in Editor play mode to run the same loading case as the runtime and to try out the
+    /// output of your Content Directory build, directly inside the Editor.
     /// </remarks>
     /// <seealso cref="Loadable{T}"/>
     /// <seealso cref="LoadableScene"/>
@@ -72,7 +72,7 @@ namespace UnityEngine.Loading
         /// </summary>
         /// <remarks>
         /// In the runtime this is required when <see cref="BuildPipeline.BuildContentDirectory"/> has been used to build and
-        /// distribute addition content.
+        /// distribute additional content.
         ///
         /// This can be called multiple times, with different paths, to expose the contents of additional content directories to
         /// the editor/runtime. For a clean shutdown each call to RegisterContentDirectory should be matched with a call to
@@ -86,7 +86,17 @@ namespace UnityEngine.Loading
         /// </param>
         public static ContentDirectoryHandle RegisterContentDirectory(string contentDirectoryPath)
         {
-            var handle = RegisterInternal(contentDirectoryPath);
+            var handle = RegisterInternal(contentDirectoryPath, true);
+            if (!handle.IsValid)
+                throw new Exception($"Failed to register content directory at path {contentDirectoryPath}. See log for details.");
+            OnRegisterContentDirectory?.Invoke(handle);
+            return handle;
+        }
+
+        // Temporary function that we will migrate all tests to. See https://jira.unity3d.com/browse/CBD-1711
+        internal static ContentDirectoryHandle RegisterContentDirectory_DontLoadRoots(string contentDirectoryPath)
+        {
+            var handle = RegisterInternal(contentDirectoryPath, false);
             if (!handle.IsValid)
                 throw new Exception($"Failed to register content directory at path {contentDirectoryPath}. See log for details.");
             OnRegisterContentDirectory?.Invoke(handle);
@@ -94,7 +104,7 @@ namespace UnityEngine.Loading
         }
 
         [FreeFunction("ContentLoad::RegisterContentDirectory")]
-        static extern ContentDirectoryHandle RegisterInternal(string contentDirectoryPath);
+        static extern ContentDirectoryHandle RegisterInternal(string contentDirectoryPath, bool forceLoadRoots);
 
         /// <summary>
         /// Remove access to content that had been loaded from a content directory.
@@ -125,6 +135,8 @@ namespace UnityEngine.Loading
         /// Retrieve a Loadable by its key.
         /// </summary>
         /// <remarks>
+        /// This method is a somewhat lower-level equivalent to <see cref="RootAssetManager.GetRootAssetByKey"/>.
+        ///
         /// Certain loadables can be loaded by string, e.g. the root assets. Typically the string would be the project-relative
         /// path of the Asset, but the concept is more generalized at this layer to permit "addressing" an Asset by any string,
         /// so long as it is unique within a specific Content Directory.
@@ -136,9 +148,10 @@ namespace UnityEngine.Loading
         /// In the Editor the only content that can be retrieved through this API is previously built content that has been
         /// explicitly registered (by calling <see cref="ContentLoadManager.RegisterContentDirectory"/>). Certain
         /// platform-specific formats or features may not be compatible with the Editor.
+        ///
         /// </remarks>
         /// <typeparam name="T">
-        /// Expected type for the referenced object within the Asset. Typically this would be a class derived from
+        /// Expected type for the referenced object within the Asset. For root assets, this must be a class derived from
         /// <see cref="ScriptableObject"/>.
         /// </typeparam>
         /// <param name="assetKey">
@@ -164,6 +177,13 @@ namespace UnityEngine.Loading
         /// </remarks>
         /// <returns>List of all available roots.</returns>
         public static extern string[] GetLoadableKeys();
+
+        public static extern Object[] GetRootAssets();
+        extern private static Object[] GetRootAssetsFromRegisteredDirectory(ContentDirectoryHandle contentDirectory);
+        public static Object[] GetRootAssets(ContentDirectoryHandle contentDirectory)
+        {
+            return GetRootAssetsFromRegisteredDirectory(contentDirectory);
+        }
 
         /// <summary>
         /// Retrieves an ordered list of content directories.
@@ -252,9 +272,6 @@ namespace UnityEngine.Loading
             return uniqueRootAssetLoadables;
         }
 
-        internal static extern GUID GetLoadableSceneGUIDByPath(string path);
-        internal static extern LoadableReference GetLoadableReferenceByKey(string assetKey);
-
         /// <summary>
         /// Retrieve a LoadableScene from built content.
         /// </summary>
@@ -274,17 +291,11 @@ namespace UnityEngine.Loading
         /// <returns>
         /// The returned object can be used to Load the scene.
         /// </returns>
-        public static LoadableScene GetLoadableSceneByPath(string path)
-        {
-            return new LoadableScene(GetLoadableSceneGUIDByPath(path));
-        }
+        public static extern LoadableScene GetLoadableSceneByPath(string path);
+        internal static extern LoadableReference GetLoadableReferenceByKey(string assetKey);
 
         // Exposed state of the ContentLoadManager, for testing and debugging
-        internal static extern int GetRegisteredDirectoryCount();
-        internal static extern string GetVFSPath(LoadableReference loadableReference);
-        internal static extern int GetRefCount(string path);
         internal static extern int GetRefCountByKey(string key);
-        internal static extern int GetRefCountByLoadableReference(LoadableReference loadableReference);
 
         // For test and internal usage
         // This method loads the BuildManifest, which describe the content available inside a Content Directory.

@@ -11,7 +11,7 @@ namespace UnityEngine.Android
 {
     [NativeHeader("Modules/AndroidJNI/Public/AndroidApplication.bindings.h")]
     [StaticAccessor("AndroidApplication", StaticAccessorType.DoubleColon)]
-    public static class AndroidApplication
+    public static partial class AndroidApplication
     {
         private static SynchronizationContext m_MainThreadSynchronizationContext;
         private static AndroidJavaObjectUnityOwned m_Context = null;
@@ -54,7 +54,7 @@ namespace UnityEngine.Android
             }
         }
 
-        internal static AndroidWindowInsets currentWindowInsets => GetCurrentWindowInsets();
+        public static AndroidWindowInsets currentWindowInsets => GetCurrentWindowInsets();
 
         private static AndroidConfiguration m_CurrentConfiguration;
         private static AndroidWindowInsets m_CurrentWindowInsets;
@@ -100,7 +100,7 @@ namespace UnityEngine.Android
 
         public static event Action<AndroidConfiguration> onConfigurationChanged;
 
-        internal static event Action<AndroidWindowInsets> onWindowInsetsChanged;
+        public static event Action<AndroidWindowInsets> onWindowInsetsChanged;
 
         [RequiredByNativeCode(GenerateProxy = true)]
         private static void DispatchOnMultiWindowModeChanged(bool newValue)
@@ -111,7 +111,6 @@ namespace UnityEngine.Android
         public static event Action<bool> onMultiWindowModeChanged;
 
         public static extern bool isInMultiWindowMode { get; }
-
 
         public static void InvokeOnUIThread(Action action)
         {

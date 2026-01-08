@@ -54,7 +54,9 @@ namespace UnityEditor.UIElements
                 return m_EditorCache;
             }
         }
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
         public IEnumerable<Editor> Editors => m_Editors.AsEnumerable();
+#pragma warning restore RS0030
 
         Object m_EditorTarget;
         Editor m_EditorUsedInDecorators;

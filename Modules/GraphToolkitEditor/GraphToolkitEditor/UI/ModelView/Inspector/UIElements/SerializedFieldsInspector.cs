@@ -101,7 +101,9 @@ namespace Unity.GraphToolkit.Editor
         public IEnumerable<object> GetInspectedObjects()
         {
             // ReSharper disable once SuspiciousTypeConversion.Global : IHasInspectorSurrogate is for use by clients.
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return m_Models.Select(t => t is IHasInspectorSurrogate surrogate ? surrogate.Surrogate : t);
+#pragma warning restore RS0030
         }
 
         /// <summary>
@@ -116,7 +118,9 @@ namespace Unity.GraphToolkit.Editor
         protected override IReadOnlyList<BaseModelPropertyField> GetFields()
         {
             var fieldList = new List<BaseModelPropertyField>();
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var targets = GetInspectedObjects().ToList();
+#pragma warning restore RS0030
 
             var inspectorOrderFields = new SortedDictionary<int, List<BaseModelPropertyField>>();
 
@@ -157,14 +161,18 @@ namespace Unity.GraphToolkit.Editor
                         continue;
 
                     var overrideForFields = fieldInfo.GetCustomAttributes<OverrideForFieldAttribute>();
+                    #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     if (overrideForFields.Count() > 0)
+#pragma warning restore RS0030
                     {
                         if (fieldInfo.FieldType != typeof(bool))
                         {
                             Debug.LogWarning($"Field {fieldInfo.Name} of type {t.FullName} with OverrideForFieldAttribute must be of type bool");
                             continue;
                         }
+                        #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                         var overField = t.GetField(overrideForFields.First().FieldName, k_FieldFlags);
+#pragma warning restore RS0030
                         if (overField != null)
                         {
                             overrideFields.Add(overField, fieldInfo);
@@ -176,9 +184,13 @@ namespace Unity.GraphToolkit.Editor
             foreach (var t in typeList)
             {
                 var fields = t.GetFields(k_FieldFlags);
+                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 foreach (var fieldInfo in fields.Where(m_Filter))
+#pragma warning restore RS0030
                 {
+                    #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     if (fieldInfo.GetCustomAttributes<OverrideForFieldAttribute>().Count() > 0)
+#pragma warning restore RS0030
                         continue;
                     var moveAfter = fieldInfo.GetCustomAttribute<InspectorFieldOrderAttribute>();
 

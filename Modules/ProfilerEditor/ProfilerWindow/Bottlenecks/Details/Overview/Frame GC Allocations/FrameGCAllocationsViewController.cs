@@ -11,6 +11,8 @@ namespace Unity.Profiling.Editor.UI
     {
         // Model.
         readonly string m_Title;
+        readonly ProfilerWindow m_ProfilerWindow;
+        private readonly IDetailsElementBinder m_DetailsBinder;
 
         // View.
         Label m_TitleLabel;
@@ -19,9 +21,23 @@ namespace Unity.Profiling.Editor.UI
         Label m_NoDataLabel;
         ActivityIndicatorOverlay m_ActivityOverlay;
 
-        public FrameGCAllocationsViewController(string title)
+        public FrameGCAllocationsViewController(string title,
+            ProfilerWindow profilerWindow,
+            IDetailsElementBinder detailsBinder)
         {
             m_Title = title;
+            m_ProfilerWindow = profilerWindow;
+            m_DetailsBinder = detailsBinder;
+        }
+
+        protected override void Dispose(bool disposing)
+        {
+            if (disposing)
+            {
+                m_DetailsBinder.UnbindDetailsElement(m_TotalCountField);
+                m_DetailsBinder.UnbindDetailsElement(m_TotalSizeField);
+            }
+            base.Dispose(disposing);
         }
 
         public void RefreshView(FrameGCAllocationsModel model)
@@ -30,7 +46,9 @@ namespace Unity.Profiling.Editor.UI
             if (hasData)
             {
                 m_TotalCountField.ValueLabel.text = $"{model.TotalCount:N0}";
+                m_DetailsBinder.BindDetailsElement(m_TotalCountField, new GCAllocationsViewController.FrameWithHighestGcAllocationsDetailsProvider(m_ProfilerWindow, model.FrameIndex));
                 m_TotalSizeField.ValueLabel.text = EditorUtility.FormatBytes(model.TotalSize);
+                m_DetailsBinder.BindDetailsElement(m_TotalSizeField, new GCAllocationsViewController.FrameWithHighestGcAllocationsDetailsProvider(m_ProfilerWindow, model.FrameIndex));
             }
 
             SetNoDataLabelVisible(!hasData);

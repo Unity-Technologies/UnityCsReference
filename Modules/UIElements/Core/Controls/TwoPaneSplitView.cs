@@ -303,7 +303,7 @@ namespace UnityEngine.UIElements
 
         void OnUncollapsedPaneResized(GeometryChangedEvent evt)
         {
-            UpdateDragLineAnchorOffset();
+            UpdateLayout(true, true);
             evt.elementTarget.UnregisterCallback<GeometryChangedEvent>(OnUncollapsedPaneResized);
         }
 

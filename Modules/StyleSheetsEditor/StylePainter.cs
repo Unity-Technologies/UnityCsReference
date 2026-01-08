@@ -69,7 +69,9 @@ namespace UnityEditor.StyleSheets
             StyleState[] states;
             if (!s_StatesCache.TryGetValue(stateFlags, out states))
             {
+                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 states = new[] { stateFlags,
+#pragma warning restore RS0030
                                  stateFlags & StyleState.disabled,
                                  stateFlags & StyleState.active,
                                  stateFlags & StyleState.@checked,
@@ -99,7 +101,9 @@ namespace UnityEditor.StyleSheets
             if (s_Gradients.Count > 300)
             {
                 while (s_Gradients.Count > 250)
+                    #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     s_Gradients.Remove(s_Gradients.Keys.ToList().First());
+#pragma warning restore RS0030
             }
 
             var width = (int)rect.width;

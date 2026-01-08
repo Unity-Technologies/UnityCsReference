@@ -21,13 +21,13 @@ internal class VisualTreeAssetSelectionEditor : UnityEditor.Editor
     {
         var inspector = new VisualTreeAssetInspector
         {
-            VisualTreeAsset = Target.Document.visualTreeAsset
+            VisualTreeAsset = Target.panelComponent.visualTreeAsset
         };
 
         var binding = new DataBinding
         {
             dataSource = Target,
-            dataSourcePath = VisualTreeAssetSelection.DocumentProperty,
+            dataSourcePath = VisualTreeAssetSelection.PanelComponentProperty,
             updateTrigger = BindingUpdateTrigger.EveryUpdate,
             bindingMode = BindingMode.ToTarget
         };

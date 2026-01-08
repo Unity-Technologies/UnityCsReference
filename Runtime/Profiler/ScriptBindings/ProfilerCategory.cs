@@ -135,6 +135,11 @@ namespace Unity.Profiling
         internal static ProfilerCategory GPU => new ProfilerCategory(ProfilerUnsafeUtility.CategoryGPU);
 
         /// <summary>
+        /// 2D.
+        /// </summary>
+        public static ProfilerCategory U2D => new ProfilerCategory(ProfilerUnsafeUtility.CategoryU2D);
+
+        /// <summary>
         /// Utility operator that simplifies usage of the ProfilerCategory with ProfilerUnsafeUtility.
         /// </summary>
         /// <param name="category"></param>

@@ -61,7 +61,9 @@ namespace UnityEditor
             }
 
             var matchingPackages = UnityEditor.PackageManager.PackageInfo.GetForAssemblyFilePaths(managedLibraries);
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var packageIds = matchingPackages.Select(item => SanitizePackageId(item)).ToArray();
+#pragma warning restore RS0030
             if (packageIds.Length > 0)
                 EditorAnalytics.SendEventBuildPackageList(new BuildPackageIds() { package_ids = packageIds });
         }

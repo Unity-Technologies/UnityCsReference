@@ -145,7 +145,9 @@ namespace UnityEditor
         protected override void SelectionChanged(IList<int> selectedIds)
         {
             if (selectionChangedCallback != null)
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 selectionChangedCallback(selectedIds.ToList());
+#pragma warning restore RS0030
         }
 
         protected override bool CanMultiSelect(TreeViewItem item)
@@ -230,7 +232,9 @@ namespace UnityEditor
                     m_Positions.GetArrayElementAtIndex(i).vector3Value = newList[i];
                 }
 
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 SetSelection(Enumerable.Range(args.insertAtIndex - draggedRows.Count(o => o < args.insertAtIndex), draggedRows.Count).ToList());
+#pragma warning restore RS0030
             }
             return DragAndDropVisualMode.Move;
         }

@@ -2,9 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System;
 using System.Collections.Generic;
-using System.Linq;
 using Mono.Cecil;
 using UnityEngine;
 
@@ -18,7 +16,7 @@ namespace Unity.ProjectAuditor.Editor.CodeAnalysis
         // for reference https://github.com/Unity-Technologies/UnityCsReference/blob/master/Editor/Mono/MonoCecil/MonoCecilHelper.cs
         public static IEnumerable<TypeDefinition> AggregateAllTypeDefinitions(IEnumerable<TypeDefinition> types)
         {
-            var typeDefs = types.ToList();
+            var typeDefs = new List<TypeDefinition>(types);
             foreach (var typeDefinition in types)
                 if (typeDefinition.HasNestedTypes)
                     typeDefs.AddRange(AggregateAllTypeDefinitions(typeDefinition.NestedTypes));

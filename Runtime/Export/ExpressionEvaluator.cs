@@ -44,7 +44,11 @@ namespace UnityEngine
             public override bool Equals(object obj)
             {
                 if (obj is Expression other)
+                {
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     return rpnTokens.SequenceEqual(other.rpnTokens);
+#pragma warning restore RS0030
+                }
                 return false;
             }
 
@@ -366,7 +370,9 @@ namespace UnityEngine
             if (currentString.Length > 0)
                 result.Add(currentString);
 
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             hasVariables = result.Any(f => IsVariable(f) || IsDelayedFunction(f));
+#pragma warning restore RS0030
             return result.ToArray();
         }
 

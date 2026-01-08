@@ -574,14 +574,18 @@ namespace UnityEditor
 
             public override bool visible
             {
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 get { return s_Inspectors != null && s_Inspectors.Count > 0 && !EditorApplication.isPlaying && (s_Inspectors.Last().targets.Length == 1); }
+#pragma warning restore RS0030
             }
 
             public override void OnGUI()
             {
                 if (!visible)
                     return;
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 s_Inspectors.Last().PlayStopGUI();
+#pragma warning restore RS0030
             }
         }
 
@@ -596,7 +600,9 @@ namespace UnityEditor
             public override bool IsAvailable()
             {
                 // Check for count != 1
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 if (targets.Skip(1).Any())
+#pragma warning restore RS0030
                     return false;
                 if (s_Inspectors == null || s_Inspectors.Count == 0)
                     return false;
@@ -606,16 +612,22 @@ namespace UnityEditor
 
             public override void OnToolGUI(EditorWindow window)
             {
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 if (s_Inspectors == null || !s_Inspectors.Any())
+#pragma warning restore RS0030
                     return;
 
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 DrawHandles(s_Inspectors.Last(), true);
+#pragma warning restore RS0030
             }
 
             public void OnDrawHandles()
             {
                 if (!s_PreviewIsPlaying)
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     DrawHandles(s_Inspectors.Last(), false);
+#pragma warning restore RS0030
             }
 
             private void DrawHandles(TrailRendererInspector inspector, bool allowGizmoEditing)
@@ -627,7 +639,9 @@ namespace UnityEditor
 
                 Matrix4x4 orgMatrix = Handles.matrix;
 
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 foreach (var tr in targets.OfType<TrailRenderer>())
+#pragma warning restore RS0030
                 {
                     if (tr == null)
                         continue;

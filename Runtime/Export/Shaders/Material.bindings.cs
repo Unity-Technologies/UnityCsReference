@@ -211,10 +211,10 @@ namespace UnityEngine
         extern public int[] GetTexturePropertyNameIDs();
 
         [FreeFunction("MaterialScripting::GetTexturePropertyNamesInternal", HasExplicitThis = true)]
-        extern private void GetTexturePropertyNamesInternal(object outNames);
+        extern private void GetTexturePropertyNamesInternal([Out,NotNull] List<string> outNames);
 
         [FreeFunction("MaterialScripting::GetTexturePropertyNameIDsInternal", HasExplicitThis = true)]
-        extern private void GetTexturePropertyNameIDsInternal(object outNames);
+        extern private void GetTexturePropertyNameIDsInternal([Out,NotNull] List<int> outNames);
 
         public void GetTexturePropertyNames(List<string> outNames)
         {

@@ -103,7 +103,9 @@ namespace UnityEditor.PackageManager.UI.Internal
                 draft.SetModifiedAfterUndo();
                 // check if the old state makes sense- does it still exist in the list of registries
                 //  if not, put it into a new draft, since it was deleted at some point prior
+                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 if (!string.IsNullOrEmpty(draft.original?.name) && !m_SettingsProxy.scopedRegistries.Any(a => a.name == draft.original?.name))
+#pragma warning restore RS0030
                 {
                     draft.SetOriginalRegistryInfo(null, true);
                     m_SettingsProxy.isUserAddingNewScopedRegistry = true;
@@ -240,9 +242,13 @@ namespace UnityEditor.PackageManager.UI.Internal
                        return;
 
                    if (draft.original is not null)
+                       #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                        m_UpmRegistryClient.UpdateRegistry(draft.original.name, draft.name, draft.url, draft.sanitizedScopes.ToArray());
+#pragma warning restore RS0030
                    else
+                       #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                        m_UpmRegistryClient.AddRegistry(draft.name, draft.url, draft.sanitizedScopes.ToArray());
+#pragma warning restore RS0030
                },
                errorCallback: error =>
                {
@@ -255,9 +261,13 @@ namespace UnityEditor.PackageManager.UI.Internal
         private void CheckRegistryDraftCompliance(Action<RegistryInfo> successCallback = null, Action<UIError> errorCallback = null)
         {
             if (draft.original is not null)
+                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 m_UpmRegistryClient.UpdateRegistryDryRun(draft.original.name, draft.name, draft.url, draft.sanitizedScopes.ToArray(), successCallback, errorCallback);
+#pragma warning restore RS0030
             else
+                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 m_UpmRegistryClient.AddRegistryDryRun(draft.name, draft.url, draft.sanitizedScopes.ToArray(), successCallback, errorCallback);
+#pragma warning restore RS0030
         }
 
         private void RevertChanges()
@@ -266,7 +276,9 @@ namespace UnityEditor.PackageManager.UI.Internal
             RefreshDraftRegistryItem();
             if (draft.original is null)
             {
+                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 var lastScopedRegistry = m_SettingsProxy.scopedRegistries.LastOrDefault();
+#pragma warning restore RS0030
                 if (lastScopedRegistry != null)
                 {
                     m_SettingsProxy.SelectRegistry(lastScopedRegistry.name);
@@ -296,7 +308,9 @@ namespace UnityEditor.PackageManager.UI.Internal
         private void OnRegistryScopesChanged(ChangeEvent<string> evt = null)
         {
             draft.RegisterOnUndo(k_EditRegistryScopes);
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             draft.SetScopes(scopesList.Children().Cast<TextField>().Select(textField => textField.value));
+#pragma warning restore RS0030
             RefreshApplyAndRevertButtons();
             RefreshDraftRegistryItem();
         }

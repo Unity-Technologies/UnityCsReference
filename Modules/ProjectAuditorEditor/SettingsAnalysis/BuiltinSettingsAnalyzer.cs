@@ -22,8 +22,10 @@ namespace Unity.ProjectAuditor.Editor.SettingsAnalysis
         public override void Initialize(Action<Descriptor> registerDescriptor)
         {
             var assemblies = AppDomain.CurrentDomain.GetAssemblies();
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             m_Assemblies.Add(assemblies.First(a => a.Location.Contains("UnityEngine.dll")));
             m_Assemblies.Add(assemblies.First(a => a.Location.Contains("UnityEditor.dll")));
+#pragma warning restore RS0030
 
             // UnityEditor
             m_ProjectSettingsMapping.Add(new KeyValuePair<string, string>("UnityEditor.PlayerSettings",
@@ -53,7 +55,9 @@ namespace Unity.ProjectAuditor.Editor.SettingsAnalysis
             if (m_Descriptors == null)
                 throw new Exception("Descriptors Database not initialized.");
 
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             foreach (var descriptor in m_Descriptors.Where(d => d.IsApplicable(context.Params)))
+#pragma warning restore RS0030
             {
                 var issue = Evaluate(context, descriptor);
                 if (issue != null)
@@ -64,7 +68,9 @@ namespace Unity.ProjectAuditor.Editor.SettingsAnalysis
         ReportItem Evaluate(AnalysisContext context, Descriptor descriptor)
         {
             // evaluate a Unity API static method or property
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var assembly = m_Assemblies.First(a => a.GetType(descriptor.Type) != null);
+#pragma warning restore RS0030
             var type = assembly.GetType(descriptor.Type);
 
             var methodName = descriptor.Method;
@@ -94,9 +100,11 @@ namespace Unity.ProjectAuditor.Editor.SettingsAnalysis
         ReportItem NewIssue(AnalysisContext context, Descriptor descriptor, string description)
         {
             var projectWindowPath = string.Empty;
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var mappings = m_ProjectSettingsMapping.Where(p => descriptor.Type.StartsWith(p.Key)).ToArray();
-            if (mappings.Any())
-                projectWindowPath = mappings.First().Value;
+#pragma warning restore RS0030
+            if (mappings.Length > 0)
+                projectWindowPath = mappings[0].Value;
             return context.CreateIssue
                 (
                     IssueCategory.ProjectSetting,

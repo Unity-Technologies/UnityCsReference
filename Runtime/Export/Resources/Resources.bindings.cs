@@ -239,7 +239,7 @@ namespace UnityEngine
         }
 
         [FreeFunction("Resources_Bindings::InstanceIDToObjectList", IsThreadSafe = true)]
-        extern private static void EntityIdsToObjectList(IntPtr entityIds, int instanceCount, [Out] List<Object> objects);
+        extern private static void EntityIdsToObjectList(IntPtr entityIds, int instanceCount, [Out,NotNull] List<Object> objects);
 
         public static unsafe void EntityIdsToObjectList(NativeArray<EntityId> entityIds, List<Object> objects)
         {

@@ -196,7 +196,9 @@ namespace UnityEditor.MPE
             if (HasHandlers(eventType))
             {
                 var results = NotifyLocalListeners(eventType, args, false);
+                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 var exception = results.FirstOrDefault(r => r is Exception);
+#pragma warning restore RS0030
                 if (exception != null)
                 {
                     Reject(request, exception as Exception);
@@ -417,7 +419,9 @@ namespace UnityEditor.MPE
             if (s_Requests.Count > 0)
             {
                 var now = Stopwatch.GetTimestamp();
+                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 var pendingRequests = s_Requests.Values.ToArray();
+#pragma warning restore RS0030
                 foreach (var request in pendingRequests)
                 {
                     var elapsedTime = new TimeSpan(now - request.offerStartTime).TotalMilliseconds;
@@ -441,7 +445,9 @@ namespace UnityEditor.MPE
             {
                 try
                 {
+                    #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     result = handlers.Select(handler => handler(eventType, data)).ToArray();
+#pragma warning restore RS0030
                 }
                 catch (Exception e)
                 {

@@ -148,7 +148,9 @@ namespace UnityEditor
 
         internal PluginImporter[] importers
         {
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             get { return targets.Cast<PluginImporter>().ToArray(); }
+#pragma warning restore RS0030
         }
 
         private static bool IgnorePlatform(BuildTarget platform)
@@ -172,7 +174,9 @@ namespace UnityEditor
 
         private static bool IsStandaloneTarget(BuildTarget buildTarget)
         {
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return BuildTargetDiscovery.StandaloneBuildTargets.Contains(buildTarget);
+#pragma warning restore RS0030
         }
 
         private Compatibility compatibleWithStandalone
@@ -326,12 +330,16 @@ namespace UnityEditor
             // making sure we apply any serialized changes to the targets so accessing pluginImporter.DefineConstraints will have the updated values
             serializedObject.ApplyModifiedProperties();
 
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var minSizeOfDefines = importers.Min(x => x.DefineConstraints.Length);
+#pragma warning restore RS0030
             string[] baseImporterDefineConstraints = importer.DefineConstraints;
 
             foreach (var pluginImporter in importers)
             {
+                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 var importerDefineConstraints = pluginImporter.DefineConstraints.Take(minSizeOfDefines).ToList();
+#pragma warning restore RS0030
 
                 for (var i = 0; i < importerDefineConstraints.Count; i++)
                 {
@@ -417,7 +425,9 @@ namespace UnityEditor
         protected override void Apply()
         {
             serializedObject.ApplyModifiedProperties();
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var constraints = m_DefineConstraintState.Where(x => x.displayValue > Compatibility.Mixed).Select(x => x.name).ToArray();
+#pragma warning restore RS0030
             foreach (var imp in importers)
             {
                 imp.DefineConstraints = constraints;
@@ -740,7 +750,9 @@ namespace UnityEditor
             serializedObject.Update();
             using (new EditorGUI.DisabledScope(false))
             {
+                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 var isManagedPlugin = importers.All(x => x.dllType == DllType.ManagedNET35 || x.dllType == DllType.ManagedNET40);
+#pragma warning restore RS0030
                 if (isManagedPlugin)
                 {
                     ShowReferenceOptions();
@@ -793,7 +805,9 @@ namespace UnityEditor
                     m_DefineConstraints.DoLayoutList();
                 }
 
+                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 if (importers.All(imp => imp.isNativePlugin))
+#pragma warning restore RS0030
                 {
                     GUILayout.Space(10f);
                     GUILayout.Label(Styles.kLoadSettings, EditorStyles.boldLabel);

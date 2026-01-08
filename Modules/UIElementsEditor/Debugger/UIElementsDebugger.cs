@@ -1336,8 +1336,10 @@ namespace UnityEditor.UIElements.Debugger
                     if (baseRuntimePanel is not RuntimePanel runtimePanel || runtimePanel.targetDisplay != targetDisplay)
                         continue;
 
-                    foreach (var document in runtimePanel.documents)
+                    foreach (var panelComponent in runtimePanel.panelComponents)
                     {
+                        var document = panelComponent as UIDocument;
+
                         if (document == null) // The UIdocument might have been expliclty disposed.
                             continue;
 

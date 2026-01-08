@@ -88,7 +88,9 @@ namespace UnityEditor.Search.Providers
         {
             var searchQuery = context.searchQuery;
             if (string.IsNullOrEmpty(searchQuery) || searchQuery.Length < 2)
+                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 return Enumerable.Empty<SearchDocument>();
+#pragma warning restore RS0030
 
             return Search(searchQuery, null, context, provider, options);
         }
@@ -114,12 +116,16 @@ namespace UnityEditor.Search.Providers
                         subset = subsetList;
                     }
 
+                    #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     IEnumerable<SearchDocument> results = Enumerable.Empty<SearchDocument>();
+#pragma warning restore RS0030
                     if (args.name == null && args.value is string word && word.Length > 0)
                         results = SearchWord(args.exclude, word, options, subset);
 
                     if (args.orSet != null)
+                        #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                         results = results.Concat(args.orSet);
+#pragma warning restore RS0030
 
                     return FindFilesQuery.EvalResult.Combined(results);
                 }
@@ -127,7 +133,9 @@ namespace UnityEditor.Search.Providers
 
             if (!query.valid)
             {
+                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 context.AddSearchQueryErrors(query.errors.Select(e => new SearchQueryError(e, context, provider)));
+#pragma warning restore RS0030
                 yield break;
             }
 
@@ -135,7 +143,9 @@ namespace UnityEditor.Search.Providers
             {
                 options |= FindOptions.Packages;
             }
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             if (roots == null || roots.Count() == 0)
+#pragma warning restore RS0030
                 roots = GetRoots(options);
 
             var results = new ConcurrentBag<SearchDocument>();
@@ -348,7 +358,9 @@ namespace UnityEditor.Search.Providers
                 {
                     if (updated != null)
                     {
+                        #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                         foreach (var u in updated.Concat(moved))
+#pragma warning restore RS0030
                         {
                             if (!string.IsNullOrEmpty(u) && u.StartsWith(kvp.Key, StringComparison.Ordinal))
                                 kvp.Value.TryAdd(new SearchDocument(u), 0);
@@ -377,7 +389,9 @@ namespace UnityEditor.Search.Providers
             if (s_Roots.TryGetValue(options, out var roots))
                 return roots;
 
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var projectRoots = new List<string>(Utils.GetAssetRootFolders().Where(r => FilterRoot(r, options)));
+#pragma warning restore RS0030
             return (s_Roots[options] = projectRoots);
         }
 
@@ -397,7 +411,9 @@ namespace UnityEditor.Search.Providers
         {
             if (options.flags.HasAny(SearchPropositionFlags.QueryBuilder))
                 return FetchQueryBuilderPropositions();
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return Enumerable.Empty<SearchProposition>();
+#pragma warning restore RS0030
         }
 
         private static IEnumerable<SearchProposition> FetchQueryBuilderPropositions()

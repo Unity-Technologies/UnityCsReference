@@ -13,13 +13,13 @@ namespace UnityEditor.Build
     /// This mechanism is currently only used for ContentDirectory builds, not for AssetBundle or Player builds.
     ///
     /// By default, metadata is stored in the Library folder. For each build, a new folder is created in the BuildMetadata root
-    /// directory with a name based on the build timestamp. 
-    /// 
-    /// This folder is populated with files with information about various aspects of the build 
+    /// directory with a name based on the build timestamp.
+    ///
+    /// This folder is populated with files with information about various aspects of the build
     /// such as the BuildReport, profiling information, and type-usage (ScriptsOnlyCache.yaml).
     /// The precise content is influenced by flags passed through <see cref="BuildContentDirectoryParameters.options"/>
     /// and certain Editor Preference (e.g. Analysis -> Build Pipeline -> "Generate build performance profiling file").
-    /// 
+    ///
     /// The files in this folder are for development and debugging purposes only. They are not meant to be shipped along with
     /// the content and are not required by the runtime.
     /// </remarks>
@@ -67,8 +67,8 @@ namespace UnityEditor.Build
         /// Retrieves the metadata directory associated with the passed in build output folder
         /// </summary>
         /// <param name="buildOutputLocation"> The path of a player or content directory build. </param>
-        /// <returns> Returns an empty string if the BuildMetadata directory has been erased, or if there is no link to the
-        /// metadata directory found in the build output location.
+        /// <returns> Returns an empty string if the build type does not generate build metadata,
+        /// or if the build metadata folder has been erased.
         /// Otherwise returns the path of the build metadata directory associated with the build output location</returns>
         extern public static string GetDirectory(string buildOutputLocation);
 

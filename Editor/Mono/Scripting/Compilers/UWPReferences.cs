@@ -125,7 +125,9 @@ namespace UnityEditor.Scripting.Compilers
                 }
             }
 
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return references.ToArray();
+#pragma warning restore RS0030
         }
 
         public static IEnumerable<UWPExtensionSDK> GetExtensionSDKs(UWPSDK sdk)
@@ -155,16 +157,22 @@ namespace UnityEditor.Scripting.Compilers
         {
             var windowsKit10Directory = GetWindowsKit10();
             if (string.IsNullOrEmpty(windowsKit10Directory))
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 return Enumerable.Empty<UWPSDK>();
+#pragma warning restore RS0030
 
             var platformsUAP = CombinePaths(windowsKit10Directory, "Platforms", "UAP");
             if (!Directory.Exists(platformsUAP))
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 return Enumerable.Empty<UWPSDK>();
+#pragma warning restore RS0030
 
             var allSDKs = new List<UWPSDK>();
 
             var filesUnderPlatformsUAP = Directory.GetFiles(platformsUAP, "*", SearchOption.AllDirectories);
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var allPlatformXmlFiles = filesUnderPlatformsUAP.Where(f => string.Equals("Platform.xml", Path.GetFileName(f), StringComparison.OrdinalIgnoreCase));
+#pragma warning restore RS0030
 
             foreach (var platformXmlFile in allPlatformXmlFiles)
             {
@@ -187,7 +195,9 @@ namespace UnityEditor.Scripting.Compilers
                         if (version < kMinimumSupportedUWPVersion)
                             continue;
 
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                         var minVSVersionString = platformElement.Elements("MinimumVisualStudioVersion").Select(e => e.Value).FirstOrDefault();
+#pragma warning restore RS0030
 
                         // Get supported previous versionss
                         var previousVersionPath = Path.Combine(Path.GetDirectoryName(platformXmlFile), "PreviousPlatforms.xml");

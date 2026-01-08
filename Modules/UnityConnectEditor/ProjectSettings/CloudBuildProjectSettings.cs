@@ -206,7 +206,9 @@ namespace UnityEditor.Connect
                 if (!enable)
                 {
                     var notifications = NotificationManager.instance.GetNotificationsForTopics(Notification.Topic.BuildService);
+                    #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     if (notifications.Any(notification => notification.rawMessage == k_CloudBuildPermissionMessage))
+#pragma warning restore RS0030
                     {
                         return;
                     }

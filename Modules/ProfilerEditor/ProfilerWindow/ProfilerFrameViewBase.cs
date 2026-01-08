@@ -43,6 +43,7 @@ namespace UnityEditorInternal.Profiling
             public static readonly GUIContent showDetailsDropdownContent = EditorGUIUtility.TrTextContent("Show");
             public static readonly GUIContent showFullDetailsForCallStacks = EditorGUIUtility.TrTextContent("Full details for Call Stacks");
             public static readonly GUIContent showSelectedSampleStacks = EditorGUIUtility.TrTextContent("Selected Sample Stack ...");
+            public static readonly GUIContent askAssistantTooltip = EditorGUIUtility.TrTextContent("Ask Assistant", "Ask the Profiler Assistant for help understanding this sample");
             public static readonly GUIStyle viewTypeToolbarDropDown = new GUIStyle(EditorStyles.toolbarDropDownLeft);
             public static readonly GUIStyle threadSelectionToolbarDropDown = new GUIStyle(EditorStyles.toolbarDropDown);
             public static readonly GUIStyle detailedViewTypeToolbarDropDown = new GUIStyle(EditorStyles.toolbarDropDown);
@@ -249,14 +250,15 @@ namespace UnityEditorInternal.Profiling
                 sampleStackButtonSize = BaseStyles.tooltipButton.CalcSize(BaseStyles.showDetailsDropdownContent);
                 sampleStackButtonSize.x += BaseStyles.magicMarginValue;
             }
+            var askAssistantButtonSize = BaseStyles.tooltipButton.CalcSize(BaseStyles.askAssistantTooltip);
 
             const int k_ButtonBottomMargin = BaseStyles.magicMarginValue;
-            var requiredButtonHeight = Mathf.Max(copyButtonSize.y, sampleStackButtonSize.y) + k_ButtonBottomMargin;
+            var requiredButtonHeight = Mathf.Max(copyButtonSize.y, sampleStackButtonSize.y, askAssistantButtonSize.y) + k_ButtonBottomMargin;
             // report how big the zoomable area needs to be to be able to see the entire contents if the view is big enough
             downwardsZoomableAreaSpaceNeeded = arrowRect.height + size.y + requiredButtonHeight;
             size.y += requiredButtonHeight;
 
-            size.x = Mathf.Max(size.x, copyButtonSize.x + sampleStackButtonSize.x + k_ButtonBottomMargin * 3);
+            size.x = Mathf.Max(size.x, copyButtonSize.x + sampleStackButtonSize.x + askAssistantButtonSize.x + k_ButtonBottomMargin * 4);
 
             var heightAvailableDownwards = Mathf.Max(fullRect.yMax - arrowRect.yMax, 0);
             var heightAvailableUpwards = Mathf.Max(pos.y - lineHeight - arrowRect.height - fullRect.y, 0);
@@ -311,6 +313,7 @@ namespace UnityEditorInternal.Profiling
             GUI.EndClip();
 
             var copyButtonRect = new Rect(rect.x + k_ButtonBottomMargin, rect.yMax - copyButtonSize.y - k_ButtonBottomMargin, copyButtonSize.x, copyButtonSize.y);
+            var sampleStackRect = new Rect();
 
             var selectableLabelTextRect = rect;
             if (showButtons)
@@ -353,13 +356,13 @@ namespace UnityEditorInternal.Profiling
                 {
                     Clipboard.stringValue = content.text;
                 }
+                // Show button
                 if (selectedSampleStack != null && selectedSampleStack.Count > 0)
                 {
-                    var sampleStackRect = new Rect(copyButtonRect.xMax + k_ButtonBottomMargin, copyButtonRect.y, sampleStackButtonSize.x, sampleStackButtonSize.y);
+                    sampleStackRect = new Rect(copyButtonRect.xMax + k_ButtonBottomMargin, copyButtonRect.y, sampleStackButtonSize.x, sampleStackButtonSize.y);
                     if (EditorGUI.DropdownButton(sampleStackRect, BaseStyles.showDetailsDropdownContent, FocusType.Passive, BaseStyles.tooltipDropdown))
                     {
                         var menu = new GenericMenu();
-                        // The tooltip is already pointing to the what's currently selected, switching the view will Apply that selection in the other view
                         menu.AddItem(GetCPUProfilerViewTypeName(ProfilerViewType.Hierarchy), false, () => { viewTypeChanged(ProfilerViewType.Hierarchy); });
                         menu.AddItem(GetCPUProfilerViewTypeName(ProfilerViewType.InvertedHierarchy), false, () => { viewTypeChanged(ProfilerViewType.InvertedHierarchy); });
                         menu.AddItem(GetCPUProfilerViewTypeName(ProfilerViewType.RawHierarchy), false, () => { viewTypeChanged(ProfilerViewType.RawHierarchy); });
@@ -420,8 +423,56 @@ namespace UnityEditorInternal.Profiling
                         });
                         menu.DropDown(sampleStackRect);
                     }
+
+                    // Ask Assistant button
+                    var assistantButtonRect = sampleStackRect.width > 0
+                        ? new Rect(sampleStackRect.xMax + k_ButtonBottomMargin, sampleStackRect.y, askAssistantButtonSize.x, askAssistantButtonSize.y)
+                        : new Rect(copyButtonRect.xMax + k_ButtonBottomMargin, copyButtonRect.y, askAssistantButtonSize.x, askAssistantButtonSize.y);
+                    if (m_ProfilerWindow.CpuProfilerAssistantSupported && GUI.Button(assistantButtonRect, BaseStyles.askAssistantTooltip, BaseStyles.tooltipButton))
+                    {
+                        LaunchAssistant(assistantButtonRect, frameIndex, threadIndex, selectedSampleStack, selectedSampleIndexIfProxySelection);
+                    }
                 }
             }
+        }
+
+        private void LaunchAssistant(Rect assistantButtonRect, int frameIndex, int threadIndex, ReadOnlyCollection<string> selectedSampleStack, int selectedSampleIndexIfProxySelection)
+        {
+            string markerIdPathString;
+            string sampleName = null;
+            string threadName = null;
+            using (var frameData = ProfilerDriver.GetRawFrameDataView(frameIndex, threadIndex))
+            {
+                var markerIdPath = new List<int>();
+                if (selectedSampleIndexIfProxySelection >= 0)
+                {
+                    ProfilerTimelineGUI.GetItemMarkerIdPath(frameData, cpuModule, selectedSampleIndexIfProxySelection, ref sampleName, ref markerIdPath);
+                }
+                else
+                {
+                    for (int i = 0; i < selectedSampleStack.Count; i++)
+                        markerIdPath.Add(frameData.GetMarkerId(selectedSampleStack[i]));
+                    sampleName = selectedSampleStack[selectedSampleStack.Count - 1];
+                }
+                markerIdPathString = string.Join("/", markerIdPath);
+                threadName = frameData.threadName;
+            }
+
+            LaunchCpuProfilerAssistant(assistantButtonRect, frameIndex, threadName, markerIdPathString, sampleName);
+        }
+
+        internal bool CpuProfilerAssistantSupported => m_ProfilerWindow != null && m_ProfilerWindow.CpuProfilerAssistantSupported;
+
+        internal void LaunchCpuProfilerAssistant(Rect elementRect, int frameIndex, string threadName, string markerIdPath, string markerName)
+        {
+            if (string.IsNullOrEmpty(markerIdPath))
+                throw new ArgumentException("markerIdPath must be valid", nameof(markerIdPath));
+
+            var screenPos = GUIUtility.GUIToScreenPoint(elementRect.position);
+            var screenRect = new Rect(screenPos, elementRect.size);
+            var attachment = new CpuProfilerAssistantController.CpuProfilerContext(null, new Range(frameIndex, frameIndex), threadName, markerIdPath, markerName);
+            var prompt = "Why is the profiler sample slow and how to optimize it?";
+            m_ProfilerWindow.RequestCpuProfilerAssistance(screenRect, attachment, prompt);
         }
 
         internal void CompileCallStack(System.Text.StringBuilder sb, List<ulong> m_CachedCallstack, FrameDataView frameDataView)

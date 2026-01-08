@@ -47,7 +47,9 @@ namespace Unity.ProjectAuditor.Editor.Modules
                 if (progress != null)
                     progress.Advance();
 
+                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 var issues = analyzer.Analyze(context).ToArray();
+#pragma warning restore RS0030
                 if (issues.Length > 0)
                     analysisParams.OnIncomingIssues(issues);
             }

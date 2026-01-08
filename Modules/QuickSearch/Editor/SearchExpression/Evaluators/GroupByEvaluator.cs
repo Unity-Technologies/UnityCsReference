@@ -23,16 +23,22 @@ namespace UnityEditor.Search
             var outputValueFieldName = System.Guid.NewGuid().ToString("N");
             var dataSet = SelectorManager.SelectValues(c.search, c.args[0].Execute(c), selector, outputValueFieldName);
 
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             foreach (var _group in dataSet.GroupBy(item => item.GetValue(outputValueFieldName)))
+#pragma warning restore RS0030
             {
                 var group = _group;
+                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 var groupId = group.Key?.ToString() ?? $"group{++s_NextGroupId}";
+#pragma warning restore RS0030
 
                 if (c.HasFlag(SearchExpressionExecutionFlags.Expand))
                 {
                     var evaluator = new SearchExpressionEvaluator(groupId, _ => group, SearchExpressionEvaluationHints.Default);
                     var genExpr = new SearchExpression(SearchExpressionType.Group,
+                        #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                         groupId.GetStringView(), groupId.GetStringView(), (group.Key?.ToString() ?? groupId).GetStringView(),
+#pragma warning restore RS0030
                         evaluator);
 
                     yield return SearchExpression.CreateSearchExpressionItem(genExpr);

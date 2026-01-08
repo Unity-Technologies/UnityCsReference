@@ -16,13 +16,17 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         protected override Vector2 GetSize(IPage page)
         {
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var height = k_FoldOutHeight + page.supportedStatusFilters.Count() * k_ToggleHeight;
+#pragma warning restore RS0030
             return new Vector2(k_Width, Math.Min(height, k_MaxHeight));
         }
 
         protected override void ApplyFilters()
         {
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             foreach (var toggle in m_StatusFoldOut.Children().OfType<Toggle>())
+#pragma warning restore RS0030
                 toggle.SetValueWithoutNotify(toggle.name == m_Filters.status.ToString());
         }
 
@@ -36,7 +40,9 @@ namespace UnityEditor.PackageManager.UI.Internal
                 {
                     if (evt.newValue)
                     {
+                        #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                         foreach (var t in m_StatusFoldOut.Children().OfType<Toggle>())
+#pragma warning restore RS0030
                         {
                             if (t == toggle)
                                 continue;
@@ -55,7 +61,9 @@ namespace UnityEditor.PackageManager.UI.Internal
         private void UpdateFiltersIfNeeded()
         {
             var filters = m_Filters.Clone();
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var selectedStatus = m_StatusFoldOut.Children().OfType<Toggle>().Where(toggle => toggle.value).Select(toggle => toggle.name).FirstOrDefault();
+#pragma warning restore RS0030
             filters.status = !string.IsNullOrEmpty(selectedStatus) && Enum.TryParse(selectedStatus, out PageFilters.Status status) ? status : PageFilters.Status.None;
 
             if (!filters.Equals(m_Filters))

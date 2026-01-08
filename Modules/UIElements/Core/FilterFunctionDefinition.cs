@@ -53,6 +53,7 @@ namespace UnityEngine.UIElements
     /// <summary>
     /// Represents a filter function definition that holds the parameters and effects of a filter.
     /// </summary>
+    [HelpURL("ui-systems/custom-filters")]
     [Serializable]
     public sealed class FilterFunctionDefinition : ScriptableObject
     {

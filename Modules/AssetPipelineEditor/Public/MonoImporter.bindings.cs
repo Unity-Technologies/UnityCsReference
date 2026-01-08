@@ -17,7 +17,7 @@ namespace UnityEditor
         public extern void SetDefaultReferences(string[] name, Object[] target);
 
         [FreeFunction("MonoImporterBindings::GetDefaultReferencesInternal")]
-        internal static extern void GetDefaultReferencesInternal([NotNull] MonoScript script, [Out] List<string> names, [Out] List<Object> targets);
+        internal static extern void GetDefaultReferencesInternal([NotNull] MonoScript script, [Out,NotNull] List<string> names, [Out,NotNull] List<Object> targets);
 
         [FreeFunction("MonoImporterBindings::GetAllRuntimeMonoScripts")]
         public static extern MonoScript[] GetAllRuntimeMonoScripts();

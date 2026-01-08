@@ -727,8 +727,6 @@ namespace UnityEditor
         [PreventExecutionInState(AssetDatabasePreventExecution.kCodeReload, PreventExecutionSeverity.PreventExecution_ManagedException, kPreventExecutionDuringCodeReloadHowToFixMsg)]
         extern public static string[] GetAllAssetBundleNames();
 
-        [System.Obsolete("Method GetAssetBundleNames has been deprecated. Use GetAllAssetBundleNames instead.",true)] public string[] GetAssetBundleNames() { return GetAllAssetBundleNames(); } // TODO DELETE IN 2024
-
         [PreventExecutionInState(AssetDatabasePreventExecution.kCodeReload, PreventExecutionSeverity.PreventExecution_ManagedException, kPreventExecutionDuringCodeReloadHowToFixMsg)]
         extern internal static string[] GetAllAssetBundleNamesWithoutVariant();
 
@@ -1165,7 +1163,9 @@ namespace UnityEditor
             }
 
             var availableImporters = GetAvailableImporters(path);
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             if (availableImporters.Contains(typeof(T)))
+#pragma warning restore RS0030
             {
                 SetImporterOverrideInternal(path, typeof(T));
             }
@@ -1187,12 +1187,6 @@ namespace UnityEditor
         [FreeFunction("AssetDatabase::GetImporterOverride")]
         [PreventExecutionInState(AssetDatabasePreventExecution.kCodeReload, PreventExecutionSeverity.PreventExecution_ManagedException, kPreventExecutionDuringCodeReloadHowToFixMsg)]
         extern public static System.Type GetImporterOverride(string path);
-
-        [Obsolete("GetAvailableImporterTypes() has been deprecated. Use GetAvailableImporters() instead (UnityUpgradable) -> GetAvailableImporters(*)", true)]
-        public static Type[] GetAvailableImporterTypes(string path)
-        {
-            return GetAvailableImporters(path);
-        }
 
         [FreeFunction("AssetDatabase::GetAvailableImporters")]
         [PreventExecutionInState(AssetDatabasePreventExecution.kCodeReload, PreventExecutionSeverity.PreventExecution_ManagedException, kPreventExecutionDuringCodeReloadHowToFixMsg)]
@@ -1330,7 +1324,9 @@ namespace UnityEditor
                 assetPostprocessor.assetsReportedChanged = null;
             }
 
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return assetsReportedChanged.ToArray();
+#pragma warning restore RS0030
         }
 
         public enum RefreshImportMode

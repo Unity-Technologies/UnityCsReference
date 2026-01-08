@@ -993,19 +993,24 @@ namespace UnityEditor
             if (!match.Success)
                 return null;
 
-            var parameterStrings = match.Groups[match.Groups.Count - 1].Value.Split(',');
+            var parametersString = match.Groups[match.Groups.Count - 1].Value;
+                
+            if (parametersString == string.Empty)
+                parametersString = null;
+
+            var parametersArray = parametersString != null ? parametersString.Split(',') : Array.Empty<string>();
             var methodParameters = method.GetParameters();
-            if (parameterStrings == null || parameterStrings.Length != methodParameters.Length)
+            if (parametersArray.Length != methodParameters.Length)
                 return null;
 
             var dict = new Dictionary<string, string>();
             for (int i = 0; i < methodParameters.Length; i++)
             {
                 var param = methodParameters[i].ParameterType.ToString();
-                parameterStrings[i] = parameterStrings[i].Trim(' ');
+                parametersArray[i] = parametersArray[i].Trim(' ');
                 if (!dict.ContainsKey(param))
                 {
-                    dict.Add(param, parameterStrings[i]);
+                    dict.Add(param, parametersArray[i]);
                     continue;
                 }
 
@@ -1014,13 +1019,13 @@ namespace UnityEditor
                     var trimmedParam = param.Trim('&');
                     if (!dict.ContainsKey(trimmedParam))
                     {
-                        dict.Add(trimmedParam, parameterStrings[i].Trim('&'));
+                        dict.Add(trimmedParam, parametersArray[i].Trim('&'));
                         continue;
                     }
                 }
 
                 var nextParam = dict[param];
-                if (!nextParam.Equals(parameterStrings[i], StringComparison.Ordinal))
+                if (!nextParam.Equals(parametersArray[i], StringComparison.Ordinal))
                     return null;
             }
 
@@ -1068,7 +1073,9 @@ namespace UnityEditor
             if (methodsToHideInCallstack == null || methodSignatureRegex == null || lines == null)
                 return lines;
 
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var strippedLines = lines.ToList();
+#pragma warning restore RS0030
             var isException = HasMode((int)mode, Mode.ScriptingException);
             strippedLines.RemoveAll(line =>
             {
@@ -1220,7 +1227,7 @@ namespace UnityEditor
 
                     var ns = classType.Namespace;
                     var pattern = $"{(string.IsNullOrEmpty(ns) ? "" : $@"({ns})\.")}(" + classType.Name +
-                                  @")\:(" + method.Name + @")([^\(]*)\s*\(([^\)]+)\)";
+                                  @")\:(" + method.Name + @")([^\(]*)\s*\(([^\)]*)\)";
                     var regex = new Regex(pattern, RegexOptions.Compiled);
                     if (!genericMethodSignatureRegexes.TryAdd(method, regex))
                         continue;

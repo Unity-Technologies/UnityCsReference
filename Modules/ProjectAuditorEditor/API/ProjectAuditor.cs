@@ -97,9 +97,11 @@ namespace Unity.ProjectAuditor.Editor
 
             var categories = analysisParams.Categories != null
                 ? analysisParams.Categories.ToValuesArray()
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 : m_Modules
                     .SelectMany(m => m.Categories)
                     .ToArray();
+#pragma warning restore RS0030
             var report = analysisParams.ExistingReport;
             if (report == null)
                 report = new Report(analysisParams);
@@ -108,8 +110,10 @@ namespace Unity.ProjectAuditor.Editor
                 // incremental analysis
                 var reportCategories = report.SessionInfo.Categories.ToValuesList();
                 reportCategories.AddRange(categories);
-                
+
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 report.SessionInfo.Categories = reportCategories.Distinct().ToSerializableArray();
+#pragma warning restore RS0030
                 report.SessionInfo.UseRoslynAnalyzers = UserPreferences.UseRoslynAnalyzers;
                 report.SessionInfo.ProjectAreas |= analysisParams.ExistingReportProjectAreas;
 
@@ -134,8 +138,10 @@ namespace Unity.ProjectAuditor.Editor
                 return;
             }
 
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var requestedModules = categories.SelectMany(GetModules).Distinct().ToArray();
             var supportedModules = requestedModules.Where(m => m != null && CoreUtils.SupportsPlatform(m.GetType(), platform)).ToArray();
+#pragma warning restore RS0030
 
             var numModules = supportedModules.Length;
             if (numModules == 0)
@@ -156,7 +162,7 @@ namespace Unity.ProjectAuditor.Editor
                 {
                     OnIncomingIssues = results =>
                     {
-                        var resultsList = results.ToList();
+                        var resultsList = new List<ReportItem>(results);
                         report.AddIssues(resultsList);
                         analysisParams.OnIncomingIssues?.Invoke(resultsList);
                     },
@@ -258,7 +264,9 @@ namespace Unity.ProjectAuditor.Editor
 
         internal Module[] GetModules(IssueCategory category)
         {
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return m_Modules.Where(a => a.SupportedLayouts.FirstOrDefault(l => l.Category == category) != null).ToArray();
+#pragma warning restore RS0030
         }
 
         /// <summary>
@@ -306,13 +314,17 @@ namespace Unity.ProjectAuditor.Editor
         // Only used for testing
         internal DescriptorId[] GetDescriptorIDs()
         {
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return m_Modules.SelectMany(m => m.SupportedDescriptorIds).ToArray();
+#pragma warning restore RS0030
         }
 
         // Only used for testing
         internal bool IsModuleSupported(IssueCategory category)
         {
-            return m_Modules.Any(a => a.SupportedLayouts.FirstOrDefault(l => l.Category == category) != null);
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            return m_Modules.Exists(a => a.SupportedLayouts.FirstOrDefault(l => l.Category == category) != null);
+#pragma warning restore RS0030
         }
 
         // Only used for testing

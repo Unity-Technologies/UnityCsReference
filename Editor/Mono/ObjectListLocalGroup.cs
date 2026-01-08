@@ -64,7 +64,6 @@ namespace UnityEditor
             const float k_IconWidth = 16f;
             const float k_SpaceBetweenIconAndText = 2f;
 
-
             public SearchFilter searchFilter { get {return m_FilteredHierarchy.searchFilter; }}
             public override bool ListMode { get { return m_ListMode; } set { m_ListMode = value; } }
             public bool HasBuiltinResources { get {  return m_CurrentBuiltinResources.Length > 0; } }
@@ -672,11 +671,13 @@ namespace UnityEditor
                 EntityId assetEntityId = EntityId.None;
                 string assetGuid = null;
                 bool showFoldout = false;
+                bool isSubAssetAndFolderBrowsing = false;
                 if (filterItem != null)
                 {
                     assetEntityId = filterItem.entityId;
                     assetGuid = filterItem.guid;
                     showFoldout = filterItem.hasChildren && !filterItem.isFolder && isFolderBrowsing; // we do not want to be able to expand folders
+                    isSubAssetAndFolderBrowsing = !filterItem.isMainRepresentation && isFolderBrowsing;
                 }
                 else if (builtinResource != null)
                 {
@@ -770,7 +771,7 @@ namespace UnityEditor
                 if (ListMode)
                 {
                     itemRect.x = contentStartX;
-                    if (filterItem != null && !filterItem.isMainRepresentation && isFolderBrowsing)
+                    if (isSubAssetAndFolderBrowsing)
                     {
                         contentStartX = k_ListModeLeftPaddingForSubAssets;
                         itemRect.x = k_ListModeLeftPaddingForSubAssets + vcPadding * 0.5f;
@@ -844,7 +845,6 @@ namespace UnityEditor
                         Texture previewImage = null;
 
                         // Get icon
-                        bool drawDropShadow = false;
                         if (string.IsNullOrEmpty(assetGuid) && m_Owner.GetCreateAssetUtility().entityId == assetEntityId && m_Owner.GetCreateAssetUtility().icon != null)
                         {
                             // If we are creating a new asset we might have an icon to use
@@ -867,18 +867,12 @@ namespace UnityEditor
                             }
 
                             m_Content.image = previewImage;
-                            if (m_Content.image != null)
-                                drawDropShadow = true;
 
                             if (filterItem != null)
                             {
                                 // Otherwise use cached icon
                                 if (m_Content.image == null)
                                     m_Content.image = filterItem.icon;
-
-                                // When folder browsing sub assets are shown on a background slate and do not need rounded corner overlay
-                                if (isFolderBrowsing && !filterItem.isMainRepresentation)
-                                    drawDropShadow = false;
                             }
 
                             // If the icon is still hasn't been found, fall back to the default one
@@ -888,9 +882,8 @@ namespace UnityEditor
                             }
                         }
 
-                        float padding = (drawDropShadow) ? 2.0f : 0.0f; // the padding compensates for the drop shadow (so it doesn't get too close to the label text)
-                        position.height -= Styles.resultsGridLabel.fixedHeight + 2 * padding; // get icon rect (remove label height which is included in the position rect)
-                        position.y += padding;
+
+                        position.height -= Styles.resultsGridLabel.fixedHeight; // get icon rect (remove label height which is included in the position rect)
 
                         Rect actualImageDrawPosition = (m_Content.image == null) ? new Rect() : ActualImageDrawPosition(position, m_Content.image.width, m_Content.image.height);
                         m_Content.text = null;
@@ -900,12 +893,13 @@ namespace UnityEditor
                         {
                             AddDirtyStateFor(filterItem.entityId);
 
-                            if (!filterItem.isMainRepresentation && isFolderBrowsing)
+                            if (isSubAssetAndFolderBrowsing)
                             {
-                                position.x += 4f;
-                                position.y += 4f;
-                                position.width -= 8f;
-                                position.height -= 8f;
+                                // Adjust subasset size and position on the background slate
+                                position.x += 8;
+                                position.y += 8;
+                                position.width -= 16;
+                                position.height -= 16;
 
                                 actualImageDrawPosition = (m_Content.image == null) ? new Rect() : ActualImageDrawPosition(position, m_Content.image.width, m_Content.image.height);
 
@@ -913,10 +907,6 @@ namespace UnityEditor
                                 if (alpha < 1f)
                                     m_Owner.Repaint();
                             }
-
-                            // Draw static preview bg color as bg for small textures and non-square textures
-                            if (drawDropShadow && filterItem.iconDrawStyle == IconDrawStyle.NonTexture)
-                                Styles.previewBg.Draw(actualImageDrawPosition, GUIContent.none, false, false, false, false);
                         }
 
                         var color = ProjectBrowser.GetAssetItemColor(assetEntityId);
@@ -933,8 +923,10 @@ namespace UnityEditor
                                 if (alpha < 1f)
                                     GUI.color = new Color(GUI.color.r, GUI.color.g, GUI.color.b, alpha);
 
-                                Styles.resultsGrid.Draw(actualImageDrawPosition, m_Content, false, false, selected, m_Owner.HasFocus());
-                                DynamicHintUtility.DrawHint(position, evt.mousePosition, assetEntityId);
+                                // Render sub assets with rounded corners so they are visually different than the main representation when shown on the slate background
+                                float borderRadius = isSubAssetAndFolderBrowsing ? Mathf.Round(5f * position.width / m_Owner.maxGridSize) : 0f;
+                                GUI.DrawTexture(actualImageDrawPosition, m_Content.image, ScaleMode.ScaleToFit, true, 0f, GUI.color, 0f, borderRadius);
+
 
                                 if (alpha < 1f)
                                     GUI.color = orgColor2;
@@ -942,13 +934,6 @@ namespace UnityEditor
 
                             if (selected)
                                 GUI.color = orgColor;
-
-
-                            if (drawDropShadow)
-                            {
-                                Rect borderPosition = new RectOffset(1, 1, 1, 1).Remove(Styles.textureIconDropShadow.border.Add(actualImageDrawPosition));
-                                Styles.textureIconDropShadow.Draw(borderPosition, GUIContent.none, false, false, selected || isDropTarget, m_Owner.HasFocus() || isRenaming || isDropTarget);
-                            }
 
                             // Draw label
                             if (!isRenaming)
@@ -1557,11 +1542,6 @@ namespace UnityEditor
                 using (new GUI.ColorScope(color))
                 {
                     rect.xMin += Styles.resultsLabel.margin.left;
-
-                    if (filterItem != null)
-                    {
-                        DynamicHintUtility.DrawHint(rect, Event.current.mousePosition, filterItem.entityId);
-                    }
 
                     // Reduce the label width to allow delegate drawing on the right.
                     float delegateDrawWidth = (k_ListModeExternalIconPadding * 2) + k_IconWidth;

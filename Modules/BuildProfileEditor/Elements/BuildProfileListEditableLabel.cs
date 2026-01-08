@@ -25,8 +25,6 @@ namespace UnityEditor.Build.Profile.Elements
         {
             m_OnNameChanged = onNameChanged;
             m_TextField = this.Q<TextField>("profile-list-text-field");
-            m_TextField.RegisterCallback<FocusOutEvent>(OnEditTextFinished);
-            m_TextField.RegisterValueChangedCallback(OnTextFieldValueChange);
             m_TextField.Hide();
 
             m_RenameOverlay = new BuildProfileRenameOverlay(m_TextField);
@@ -46,6 +44,9 @@ namespace UnityEditor.Build.Profile.Elements
 
         internal void EditName()
         {
+            m_TextField.RegisterCallback<FocusOutEvent>(OnEditTextFinished);
+            m_TextField.RegisterValueChangedCallback(OnTextFieldValueChange);
+
             m_TextField.value = m_Text.text;
 
             m_Text.Hide();
@@ -72,6 +73,9 @@ namespace UnityEditor.Build.Profile.Elements
                 SetActiveIndicator(true);
 
             m_RenameOverlay.OnRenameEnd();
+
+            m_TextField.UnregisterCallback<FocusOutEvent>(OnEditTextFinished);
+            m_TextField.UnregisterValueChangedCallback(OnTextFieldValueChange);
         }
 
         void OnTextFieldValueChange(ChangeEvent<string> evt)

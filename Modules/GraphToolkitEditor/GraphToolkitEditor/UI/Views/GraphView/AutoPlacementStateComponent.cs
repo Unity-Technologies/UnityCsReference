@@ -235,9 +235,15 @@ namespace Unity.GraphToolkit.Editor
             /// <inheritdoc />
             public virtual void OnBeforeSerialize()
             {
+                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 m_ModelsToAutoAlignList = m_ModelsToAutoAlign.ToList();
+#pragma warning restore RS0030
+                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 m_ModelsToRepositionAtCreationList = m_ModelsToRepositionAtCreation.ToList();
+#pragma warning restore RS0030
+                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 m_ModelsToHideDuringAutoPlacementList = m_ModelsToHideDuringAutoPlacement.ToList();
+#pragma warning restore RS0030
             }
 
             /// <inheritdoc />

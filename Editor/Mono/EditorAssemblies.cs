@@ -68,7 +68,9 @@ namespace UnityEditor
 
         static internal IEnumerable<Type> loadedTypes
         {
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             get { return loadedAssemblies.SelectMany(assembly => AssemblyHelper.GetTypesFromAssembly(assembly)); }
+#pragma warning restore RS0030
         }
 
         private static bool IsSubclassOfGenericType(Type klass, Type genericType)
@@ -116,7 +118,9 @@ namespace UnityEditor
                 // Sort types according to topologically-sorted assemblies, such that we guarantee that
                 // [InitializeOnLoad] classes in assemblies referenced by a given assembly will have been
                 // initialized prior to that assembly's own [InitializeOnLoad] classes.
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 sortedTypes = types.OrderBy(x => Array.IndexOf(m_topologicallySortedAssemblies, x.Assembly));
+#pragma warning restore RS0030
             }
 
             using var scope = new ProgressScope("Running managed callbacks", "Initializing InitializeOnLoad Types", forceUpdate: true);

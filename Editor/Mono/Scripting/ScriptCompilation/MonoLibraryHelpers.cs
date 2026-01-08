@@ -27,17 +27,27 @@ namespace UnityEditor.Scripting.ScriptCompilation
             {
                 return Directory.GetFiles(NetStandardFinder.GetNetStandardEditorExtensionsDirectory(), "*.dll");
             }
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return Enumerable.Empty<string>();
+#pragma warning restore RS0030
         }
 
 
         static string[] FindReferencesInDirectories(this IEnumerable<string> references, string[] directories)
         {
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return (
+#pragma warning restore RS0030
                 from reference in references
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 from directory in directories
+#pragma warning restore RS0030
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 where File.Exists(Path.Combine(directory, reference))
+#pragma warning restore RS0030
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 select Path.Combine(directory, reference)
+#pragma warning restore RS0030
             ).ToArray();
         }
 
@@ -60,7 +70,9 @@ namespace UnityEditor.Scripting.ScriptCompilation
             else if (apiCompatibilityLevel == ApiCompatibilityLevel.NET_Unity_4_8)
             {
                 var monoAssemblyDirectories = GetSystemReferenceDirectories(apiCompatibilityLevel);
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 var referenceFileNames = GetSystemReferences().Concat(GetNet46SystemReferences()).Concat(GetMonoProfileNetstandardFacadeReferences()).Distinct();
+#pragma warning restore RS0030
                 references.AddRange(referenceFileNames.FindReferencesInDirectories(monoAssemblyDirectories));
                 references.AddRange(Directory.GetFiles(Path.Combine(GetUnityReferenceProfileDirectory(), "Facades"), "*.dll"));
             }

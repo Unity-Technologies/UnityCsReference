@@ -104,7 +104,9 @@ namespace UnityEditor.UIElements
         {
             if (m_Keys.Count == m_Values.Count)
             {
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 m_Dict = Enumerable.Range(0, m_Keys.Count).ToDictionary(i => m_Keys[i], i => m_Values[i] as object);
+#pragma warning restore RS0030
             }
 
             m_Keys.Clear();

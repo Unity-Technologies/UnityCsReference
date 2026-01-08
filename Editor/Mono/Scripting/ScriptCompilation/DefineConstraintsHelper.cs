@@ -30,13 +30,17 @@ namespace UnityEditor.Scripting.ScriptCompilation
         [RequiredByNativeCode]
         public static bool IsDefineConstraintsCompatible(string[] defines, string[] defineConstraints)
         {
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return IsDefineConstraintsCompatible_Enumerable(defines.AsEnumerable<string>(), defineConstraints.AsEnumerable<string>());
+#pragma warning restore RS0030
         }
 
         // This is not called IsDefineConstraintsCompatible because the bindings generator does not support overloads
         public static bool IsDefineConstraintsCompatible_Enumerable(IEnumerable<string> defines, IEnumerable<string> defineConstraints)
         {
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             if (defines == null && defineConstraints == null || defineConstraints == null || !defineConstraints.Any())
+#pragma warning restore RS0030
             {
                 return true;
             }
@@ -80,10 +84,16 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 }
             }
 
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var notExpectedDefines = new HashSet<string>(splitDefineConstraints.Where(x => x.StartsWith(Not, StringComparison.Ordinal) && x != Or).Select(x => x.Substring(1)));
+#pragma warning restore RS0030
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var expectedDefines = new HashSet<string>(splitDefineConstraints.Where(x => !x.StartsWith(Not, StringComparison.Ordinal) && x != Or));
+#pragma warning restore RS0030
 
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             if (defines == null || !defines.Any())
+#pragma warning restore RS0030
             {
                 if (expectedDefines.Count > 0)
                 {
@@ -124,7 +134,9 @@ namespace UnityEditor.Scripting.ScriptCompilation
             var expectedDefinesResult = DefineConstraintStatus.Incompatible;
             foreach (var define in expectedDefines)
             {
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 if (defines.Contains(define))
+#pragma warning restore RS0030
                 {
                     expectedDefinesResult = DefineConstraintStatus.Compatible;
                     break;
@@ -139,7 +151,9 @@ namespace UnityEditor.Scripting.ScriptCompilation
             var notExpectedDefinesResult = DefineConstraintStatus.Compatible;
             foreach (var define in notExpectedDefines)
             {
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 if (defines.Contains(define))
+#pragma warning restore RS0030
                 {
                     notExpectedDefinesResult = DefineConstraintStatus.Incompatible;
                     break;

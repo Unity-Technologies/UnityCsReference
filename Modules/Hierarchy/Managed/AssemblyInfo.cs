@@ -19,3 +19,6 @@ using System.Runtime.CompilerServices;
 // External
 [assembly: InternalsVisibleTo("Unity.Entities.Editor.Tests")]
 [assembly: InternalsVisibleTo("Unity.Modules.UIToolkitAuthoring.Tests.Editor")]
+
+//Core package
+[assembly: InternalsVisibleTo("Unity.Entities.Editor")]

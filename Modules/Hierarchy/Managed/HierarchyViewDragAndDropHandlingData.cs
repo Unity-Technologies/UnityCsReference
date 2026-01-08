@@ -33,6 +33,11 @@ namespace Unity.Hierarchy
         public int InsertAtIndex { get; }
 
         /// <summary>
+        /// The Child index in the <see cref="View"/>.
+        /// </summary>
+        public int ChildIndex { get; }
+
+        /// <summary>
         /// The <see cref="DragAndDropPosition"/>.
         /// </summary>
         public DragAndDropPosition DropPosition { get; }
@@ -70,11 +75,12 @@ namespace Unity.Hierarchy
             return m_DragAndDropData.GetGenericData(key);
         }
 
-        internal HierarchyViewDragAndDropHandlingData(in HierarchyNode parent, in HierarchyNode target, int insertAtIndex, DragAndDropPosition dropPosition, DragAndDropData dragAndDropData, HierarchyView view, EventModifiers eventModifiers)
+        internal HierarchyViewDragAndDropHandlingData(in HierarchyNode parent, in HierarchyNode target, int insertAtIndex, int childIndex, DragAndDropPosition dropPosition, DragAndDropData dragAndDropData, HierarchyView view, EventModifiers eventModifiers)
         {
             Parent = parent;
             Target = target;
             InsertAtIndex = insertAtIndex;
+            ChildIndex = childIndex;
             DropPosition = dropPosition;
             m_DragAndDropData = dragAndDropData;
             View = view;

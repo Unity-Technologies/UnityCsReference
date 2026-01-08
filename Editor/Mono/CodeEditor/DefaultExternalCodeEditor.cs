@@ -117,7 +117,9 @@ namespace UnityEditor
         }
 
         static string[] DefaultExtensions =>
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             EditorSettings.projectGenerationUserExtensions
+#pragma warning restore RS0030
                 .Concat(supportedExtensions)
                 .Distinct().ToArray();
 
@@ -126,7 +128,9 @@ namespace UnityEditor
             var extension = Path.GetExtension(path);
             if (string.IsNullOrEmpty(extension))
                 return false;
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return DefaultExtensions.Contains(extension.TrimStart('.'));
+#pragma warning restore RS0030
         }
 
         public bool OpenProject(string path, int line, int column)

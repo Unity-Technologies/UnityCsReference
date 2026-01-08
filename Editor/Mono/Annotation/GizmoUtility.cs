@@ -40,7 +40,9 @@ namespace UnityEditor
         public static GizmoInfo[] GetGizmoInfo()
         {
             var annotations = AnnotationUtility.GetAnnotations();
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return annotations.Select(x => new GizmoInfo(x)).ToArray();
+#pragma warning restore RS0030
         }
 
         public static void ApplyGizmoInfo(GizmoInfo info, bool addToRecentlyChanged = true)

@@ -86,6 +86,7 @@ internal sealed class DeserializeContext
                 var objectIds =  Array.Empty<UdmObjectId>();
                 var instanceIds = Array.Empty<EntityId>();
                 var nativeObjects = Array.Empty<UnityEngine.Object>();
+                
             }
             return m_Resolver;
         }

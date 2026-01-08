@@ -211,7 +211,9 @@ namespace UnityEditor
         {
             get
             {
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 return Internal_ProjectGenerationUserExtensions
+#pragma warning restore RS0030
                     .Split(new[] {';'}, StringSplitOptions.RemoveEmptyEntries).Select(s => s.TrimStart('.', '*'))
                     .ToArray();
             }

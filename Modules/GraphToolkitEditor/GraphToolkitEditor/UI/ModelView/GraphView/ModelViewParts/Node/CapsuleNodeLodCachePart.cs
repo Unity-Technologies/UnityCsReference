@@ -71,7 +71,9 @@ namespace Unity.GraphToolkit.Editor
         {
             if (m_Model is InputOutputPortsNodeModel node)
             {
+                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 var output = node.GetPorts().First();
+#pragma warning restore RS0030
 
                 Color color = output.GetView<Port>(m_OwnerElement.RootView)?.PortColor ?? Color.white;
 

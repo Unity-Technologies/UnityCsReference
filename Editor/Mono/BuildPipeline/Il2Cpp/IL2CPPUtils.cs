@@ -317,7 +317,9 @@ namespace UnityEditorInternal
             "UNICODE",
         };
 
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
         private static readonly string[] BaseDefines20 = new[]
+#pragma warning restore RS0030
         {
             "ALL_INTERIOR_POINTERS=1",
             "GC_GCJ_SUPPORT=1",
@@ -334,7 +336,9 @@ namespace UnityEditorInternal
             "USE_MUNMAP=1",
         }.ToArray();
 
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
         private static readonly string[] BaseDefines46 = BaseDefines20.Concat(new[]
+#pragma warning restore RS0030
         {
             "NET_4_0=1",
             "UNITY_AOT=1",
@@ -492,7 +496,9 @@ namespace UnityEditorInternal
                 // the most robust and maintainable approach.
 
                 var toolBinDirectory = Path.Combine(il2CppFolder, toolName, "bin").ToNPath();
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 var candidates = toolBinDirectory.Files($"*{expectedToolExecutableName}", recurse: true)
+#pragma warning restore RS0030
                     .OrderByDescending(f => f.GetLastWriteTimeUtc())
                     .ToArray();
 
@@ -549,7 +555,9 @@ namespace UnityEditorInternal
                     topLevel = Path.Combine(topLevel, customRoot);
 
                 var toolBinDirectory = Path.Combine(topLevel, name, "bin").ToNPath();
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 var candidates = toolBinDirectory.Files($"*{expectedToolExecutableName}", recurse: true)
+#pragma warning restore RS0030
                     .Where(f => f.Parent.FileName == tfm)
                     .OrderByDescending(f => f.GetLastWriteTimeUtc())
                     .ToArray();
@@ -579,7 +587,9 @@ namespace UnityEditorInternal
                 GetExePath("il2cpp-compile").ToNPath().Parent
             };
 
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return projectBinDirs.Aggregate(string.Empty, (accum, next) => $"{accum}{Path.PathSeparator}{next}");
+#pragma warning restore RS0030
         }
 
         internal static string GetAdditionalArguments()
@@ -601,7 +611,9 @@ namespace UnityEditorInternal
                 arguments.Add(additionalArgs.Trim('\''));
             }
 
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return arguments.Aggregate(String.Empty, (current, arg) => current + arg + " ");
+#pragma warning restore RS0030
         }
 
         private static string BinaryDirectoryForPlatform(RuntimePlatform platform)

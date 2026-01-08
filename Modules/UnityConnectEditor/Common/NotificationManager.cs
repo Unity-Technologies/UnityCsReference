@@ -67,7 +67,9 @@ namespace UnityEditor.Connect
             var notifications = new List<Notification>();
             foreach (var notificationBuilder in m_NotificationBuilders)
             {
+                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 if (topics.Contains(notificationBuilder.topic))
+#pragma warning restore RS0030
                 {
                     notifications.Add(notificationBuilder.BuildNotification());
                 }

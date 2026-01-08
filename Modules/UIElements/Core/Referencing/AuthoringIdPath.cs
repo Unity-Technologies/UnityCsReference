@@ -6,24 +6,38 @@ using System;
 
 namespace UnityEngine.UIElements;
 
+/// <summary>
+/// Struct representing a path of authoring IDs used to identify VisualElements.
+/// </summary>
 [Serializable]
-struct AuthoringIdPath : IEquatable<AuthoringIdPath>
+public struct AuthoringIdPath : IEquatable<AuthoringIdPath>
 {
     const int k_RootAuthoringId = 0;
 
     [SerializeField]
     int[] m_PathIds;
 
-    public int[] path => m_PathIds ?? Array.Empty<int>();
+    /// <summary>
+    /// The path of authoring IDs.
+    /// </summary>
+    public ReadOnlySpan<int> path => m_PathIds ?? Array.Empty<int>();
 
     internal bool isEmpty => path.Length == 0;
 
     internal bool isRootReference => path.Length == 1 && path[0] == 0;
 
+    /// <summary>
+    /// Creates an empty AuthoringIdPath.
+    /// </summary>
     public AuthoringIdPath()
     {
     }
 
+    /// <summary>
+    /// Creates an AuthoringIdPath from the given path IDs.
+    /// </summary>
+    /// <param name="pathIds">The list of authoring-IDs to locate the element.</param>
+    /// <exception cref="ArgumentNullException"></exception>
     public AuthoringIdPath(params int[] pathIds)
     {
         if (pathIds == null)
@@ -32,6 +46,11 @@ struct AuthoringIdPath : IEquatable<AuthoringIdPath>
         m_PathIds = pathIds;
     }
 
+    /// <summary>
+    /// Checks for equality between two AuthoringIdPath instances.
+    /// </summary>
+    /// <param name="other">The <see cref="AuthoringIdPath"/> to compare against.</param>
+    /// <returns><see langword="true"/> if <paramref name="other"/> has a matching <see cref="path"/>.</returns>
     public bool Equals(AuthoringIdPath other)
     {
         if (path.Length != other.path.Length)
@@ -43,6 +62,10 @@ struct AuthoringIdPath : IEquatable<AuthoringIdPath>
         return true;
     }
 
+    /// <summary>
+    /// Returns hash code for the AuthoringIdPath. The hash code is computed based on the path IDs.
+    /// </summary>
+    /// <returns>The hascode generated from the path.</returns>
     public override int GetHashCode()
     {
         return path.Length switch
@@ -60,7 +83,7 @@ struct AuthoringIdPath : IEquatable<AuthoringIdPath>
         };
     }
 
-    static int AggregateHashCode(int[] path)
+    static int AggregateHashCode(ReadOnlySpan<int> path)
     {
         var hash = new HashCode();
         foreach (var item in path)
@@ -70,10 +93,14 @@ struct AuthoringIdPath : IEquatable<AuthoringIdPath>
         return hash.ToHashCode();
     }
 
+    /// <summary>
+    /// Returns a string representation of the AuthoringIdPath.
+    /// </summary>
+    /// <returns>The string version of the path.</returns>
     public override string ToString()
     {
         if (path.Length == 0)
             return "AuthoringIdPath []";
-        return "AuthoringIdPath [" + string.Join(",", path) + "]";
+        return "AuthoringIdPath [" + string.Join(",", m_PathIds) + "]";
     }
 }

@@ -66,6 +66,11 @@ namespace UnityEngine.UIElements.UIR
             return m_NativeArray.Slice(start, length);
         }
 
+        public NativeArray<T> GetBuffer()
+        {
+            return m_NativeArray;
+        }
+
         public int Count => m_Count;
 
         #region Dispose Pattern

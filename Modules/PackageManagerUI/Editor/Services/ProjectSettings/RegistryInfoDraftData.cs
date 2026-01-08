@@ -42,7 +42,9 @@ namespace UnityEditor.PackageManager.UI.Internal
         [SerializeField]
         protected List<string> m_Scopes;
         public ReadOnlyCollection<string> scopes => m_Scopes.AsReadOnly();
+        #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
         public ReadOnlyCollection<string> sanitizedScopes => m_Scopes.Where(scope => !string.IsNullOrWhiteSpace(scope)).Select(s => s.Trim()).ToList().AsReadOnly();
+#pragma warning restore RS0030
         [SerializeField]
         private int m_SelectedScopeIndex;
         public int selectedScopeIndex
@@ -73,7 +75,9 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public void SetScopes(IEnumerable<string> scopes)
         {
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             m_Scopes = scopes?.Select(s => s ?? string.Empty).ToList() ?? new List<string>();
+#pragma warning restore RS0030
             if (m_Scopes.Count == 0)
                 m_Scopes.Add(string.Empty);
             m_SelectedScopeIndex = Math.Min(m_SelectedScopeIndex, m_Scopes.Count - 1);

@@ -24,14 +24,20 @@ namespace Unity.GraphToolkit.Editor
         public IItemLibraryData Data { get; }
 
         /// <summary>
+        /// The graph model for the item.
+        /// </summary>
+        public GraphModel GraphModel => ((TypeItemLibraryData)Data).GraphModel;
+
+        /// <summary>
         /// Initializes a new instance of the TypeLibraryItem class.
         /// </summary>
         /// <param name="name">The name used to search the item.</param>
         /// <param name="type">The type represented by the item.</param>
-        public TypeLibraryItem(string name, TypeHandle type)
+        /// <param name="graphModel">The graph model associated with the item.</param>
+        public TypeLibraryItem(string name, TypeHandle type, GraphModel graphModel)
             : base(name)
         {
-            Data = new TypeItemLibraryData(type);
+            Data = new TypeItemLibraryData(type, graphModel);
         }
     }
 }

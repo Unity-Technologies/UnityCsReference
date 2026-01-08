@@ -2653,13 +2653,11 @@ namespace UnityEngine
 
     public class PhysicsShapeGroup2D
     {
-        [StructLayout(LayoutKind.Sequential)]
-        [NativeHeader(Header = "Modules/Physics2D/Public/PhysicsScripting2D.h")]
         internal struct GroupState
         {
-            [NativeName("shapesList")] public List<PhysicsShape2D> m_Shapes;
-            [NativeName("verticesList")] public List<Vector2> m_Vertices;
-            [NativeName("localToWorld")] public Matrix4x4 m_LocalToWorld;
+            public List<PhysicsShape2D> m_Shapes;
+            public List<Vector2> m_Vertices;
+            public Matrix4x4 m_LocalToWorld;
 
             public void ClearGeometry()
             {
@@ -4062,7 +4060,7 @@ namespace UnityEngine
 
         public int GetShapes(PhysicsShapeGroup2D physicsShapeGroup)
         {
-            return GetShapes_Internal(ref physicsShapeGroup.m_GroupState);
+            return GetShapes_Internal(physicsShapeGroup.m_GroupState.m_Shapes, physicsShapeGroup.m_GroupState.m_Vertices, out physicsShapeGroup.m_GroupState.m_LocalToWorld);
         }
 
         // Returns the hits from casting all the rigidbody collider(s) along a ray.
@@ -4175,7 +4173,7 @@ namespace UnityEngine
         extern private PhysicsBuffer GetAttachedCollidersPhysicsBuffer_Internal(bool findTriggers, Allocator allocator);
 
         [NativeMethod("GetShapes_Binding")]
-        extern private int GetShapes_Internal(ref PhysicsShapeGroup2D.GroupState physicsShapeGroupState);
+        extern private int GetShapes_Internal([Out,NotNull] List<PhysicsShape2D> shapes, [Out,NotNull] List<Vector2> vertices, out Matrix4x4 localToWorld);
 
         [NativeMethod("CastArray_Binding")]
         extern private int CastArray_Internal(Vector2 direction, float distance, bool checkIgnoreColliders, [NotNull] RaycastHit2D[] results);
@@ -4274,7 +4272,7 @@ namespace UnityEngine
 
         public int GetShapes(PhysicsShapeGroup2D physicsShapeGroup)
         {
-            return GetShapes_Internal(ref physicsShapeGroup.m_GroupState, 0, shapeCount);
+            return GetShapes_Internal(physicsShapeGroup.m_GroupState.m_Shapes, physicsShapeGroup.m_GroupState.m_Vertices, out physicsShapeGroup.m_GroupState.m_LocalToWorld, 0, shapeCount);
         }
 
         public int GetShapes(PhysicsShapeGroup2D physicsShapeGroup, int shapeIndex, [DefaultValue("1")] int shapeCount = 1)
@@ -4288,11 +4286,11 @@ namespace UnityEngine
                 (shapeIndex + shapeCount) > colliderShapeCount)
                 throw new ArgumentOutOfRangeException(String.Format("Cannot get shape range from {0} to {1} as Collider2D only has {2} shape(s).", shapeIndex, shapeIndex + shapeCount - 1, colliderShapeCount));
 
-            return GetShapes_Internal(ref physicsShapeGroup.m_GroupState, shapeIndex, shapeCount);
+            return GetShapes_Internal(physicsShapeGroup.m_GroupState.m_Shapes, physicsShapeGroup.m_GroupState.m_Vertices, out physicsShapeGroup.m_GroupState.m_LocalToWorld, shapeIndex, shapeCount);
         }
 
         [NativeMethod("GetShapes_Binding")]
-        extern private int GetShapes_Internal(ref PhysicsShapeGroup2D.GroupState physicsShapeGroupState, int shapeIndex, int shapeCount);
+        extern private int GetShapes_Internal([Out,NotNull] List<PhysicsShape2D> shapes, [Out,NotNull] List<Vector2> vertices, out Matrix4x4 localToWorld, int shapeIndex, int shapeCount);
 
         [NativeMethod("GetShapeBounds_Binding")]
         extern public Bounds GetShapeBounds(List<Bounds> bounds, bool useRadii, bool useWorldSpace);
@@ -4720,7 +4718,7 @@ namespace UnityEngine
 
             // Get the custom shapes if there are any.
             if (colliderShapeCount > 0)
-                return GetCustomShapes_Internal(ref physicsShapeGroup.m_GroupState, 0, colliderShapeCount);
+                return GetCustomShapes_Internal(physicsShapeGroup.m_GroupState.m_Shapes, physicsShapeGroup.m_GroupState.m_Vertices, out physicsShapeGroup.m_GroupState.m_LocalToWorld, 0, colliderShapeCount);
 
             // No shapes so clear the group and finish.
             physicsShapeGroup.Clear();
@@ -4738,11 +4736,11 @@ namespace UnityEngine
                 (shapeIndex + shapeCount) > colliderShapeCount)
                 throw new ArgumentOutOfRangeException(String.Format("Cannot get shape range from {0} to {1} as CustomCollider2D only has {2} shape(s).", shapeIndex, shapeIndex + shapeCount - 1, colliderShapeCount));
 
-            return GetCustomShapes_Internal(ref physicsShapeGroup.m_GroupState, shapeIndex, shapeCount);
+            return GetCustomShapes_Internal(physicsShapeGroup.m_GroupState.m_Shapes, physicsShapeGroup.m_GroupState.m_Vertices, out physicsShapeGroup.m_GroupState.m_LocalToWorld, shapeIndex, shapeCount);
         }
 
         [NativeMethod("GetCustomShapes_Binding")]
-        extern private int GetCustomShapes_Internal(ref PhysicsShapeGroup2D.GroupState physicsShapeGroupState, int shapeIndex, int shapeCount);
+        extern private int GetCustomShapes_Internal([Out,NotNull] List<PhysicsShape2D> shapes, [Out,NotNull] List<Vector2> vertices, out Matrix4x4 localToWorld, int shapeIndex, int shapeCount);
 
         public unsafe int GetCustomShapes(NativeArray<PhysicsShape2D> shapes, NativeArray<Vector2> vertices)
         {

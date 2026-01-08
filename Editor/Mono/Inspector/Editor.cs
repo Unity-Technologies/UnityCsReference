@@ -734,7 +734,9 @@ namespace UnityEditor
             var allParents = new HashSet<string>();
             foreach (var fieldInfo in fields)
             {
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 var attribute = (CachePropertyAttribute)fieldInfo.GetCustomAttributes(typeof(CachePropertyAttribute), false).First();
+#pragma warning restore RS0030
                 var propertyName = string.IsNullOrEmpty(attribute.propertyPath) ? fieldInfo.Name : attribute.propertyPath;
                 properties.Add(propertyName, fieldInfo);
                 int dot = propertyName.LastIndexOf('.');
@@ -768,7 +770,9 @@ namespace UnityEditor
             iterator.Dispose();
             if (exitCount > 0)
             {
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 Debug.LogWarning("The following properties registered with CacheProperty where not found during the inspector creation: " + string.Join(", ", properties.Keys.ToArray()));
+#pragma warning restore RS0030
             }
         }
 
@@ -842,7 +846,9 @@ namespace UnityEditor
             {
                 expanded = false;
 
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 if (propertyToExclude.Contains(property.name))
+#pragma warning restore RS0030
                     continue;
 
                 EditorGUILayout.PropertyField(property, true);
@@ -1026,7 +1032,9 @@ namespace UnityEditor
                 bool openAssets = false;
 
                 // 'Check Out and Open' dialog
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 openAssets = AssetDatabase.MakeEditable(assets.Select(AssetDatabase.GetAssetPath).ToArray(),
+#pragma warning restore RS0030
                     "Do you want to check out " +
                     (assetCount > 1 ? String.Format("these {0} files?", assetCount) : "this file?"));
 

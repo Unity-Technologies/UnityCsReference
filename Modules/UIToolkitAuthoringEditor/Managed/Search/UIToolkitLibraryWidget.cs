@@ -1,0 +1,249 @@
+// Unity C# reference source
+// Copyright (c) Unity Technologies. For terms of use, see
+// https://unity3d.com/legal/licenses/Unity_Reference_Only_License
+
+using System;
+using System.Collections.Generic;
+using UnityEditor;
+using UnityEditor.Search;
+using UnityEditor.UIElements;
+using UnityEngine;
+using UnityEngine.Search;
+using UnityEngine.UIElements;
+
+namespace Unity.UIToolkit.Editor
+{
+    /// <summary>
+    /// Search provider for UI Toolkit elements - provides a picker window for browsing and searching UI controls.
+    /// </summary>
+    internal static class UIElementsSearchProvider
+    {
+        class ProviderConfig
+        {
+            public string id;
+            public string name;
+            public Func<LibraryTypeKey, bool> filter;
+
+            public ProviderConfig(string id, string name, Func<LibraryTypeKey, bool> filter)
+            {
+                this.id = id;
+                this.name = name;
+                this.filter = filter;
+            }
+
+            // Create the fetch function for this provider
+            public Func<SearchContext, SearchProvider, IEnumerable<SearchItem>> CreateFetchFunction()
+            {
+                return (context, provider) => FetchControlsByFilter(context, provider, id, filter);
+            }
+        }
+
+        static readonly ProviderConfig[] s_ProviderConfigs =
+        {
+            new("uieditorcontrols", "Editor", typeKey => typeKey.id.StartsWith("UnityEditor")),
+            new("uienginecontrols", "Engine", typeKey => typeKey.id.StartsWith("UnityEngine")),
+            new("uicustomcontrols", "Custom", typeKey => !typeKey.id.StartsWith("UnityEngine") && !typeKey.id.StartsWith("UnityEditor")),
+        };
+
+        // Cache for sorted and filtered library types per category
+        static readonly Dictionary<string, List<LibraryTypeKey>> s_CachedTypesByCategory = new();
+        static int s_CachedTypesHash;
+        static List<LibraryTypeKey> s_SortedTypes;
+
+        // [MenuItem("Window/Search/UI Elements", priority = 1270)]
+        internal static void OpenUIElementsPicker()
+        {
+            var searchContext = SearchService.CreateContext(CreateUIElementsProviders(), string.Empty);
+            var state = SearchViewState.CreatePickerState("UI Library", searchContext, OnElementSelected);
+            state.excludeClearItem = true;
+            state.windowTitle = new GUIContent("UI Library");
+
+            // Enable inspector and preview panels
+            state.flags |= SearchViewFlags.OpenInspectorPreview;
+
+            SearchService.ShowWindow(state);
+        }
+
+        /// <summary>
+        /// Creates the UI Elements search providers (Editor, Engine, and Custom controls).
+        /// </summary>
+        public static IEnumerable<SearchProvider> CreateUIElementsProviders()
+        {
+            foreach (var config in s_ProviderConfigs)
+            {
+                yield return new SearchProvider(config.id, config.name, config.CreateFetchFunction())
+                {
+                    fetchLabel = FetchElementLabel,
+                    fetchDescription = FetchElementDescription,
+                    fetchThumbnail = FetchElementThumbnail,
+                    startDrag = StartElementDrag,
+                    toObject = ToObject,
+                    showDetails = true,
+                    showDetailsOptions = ShowDetailsOptions.Preview | ShowDetailsOptions.Actions,
+                };
+            }
+        }
+
+        static string FetchElementLabel(SearchItem item, SearchContext context)
+        {
+            if (item.data is LibraryItem libItem)
+                return libItem.name;
+            return item.label;
+        }
+
+        static string FetchElementDescription(SearchItem item, SearchContext context)
+        {
+            if (item.data is LibraryItem libItem)
+            {
+                var parts = new List<string>();
+
+                if (libItem.libraryType.type != null)
+                    parts.Add($"Type: {libItem.name}");
+
+                return string.Join(" | ", parts);
+            }
+            return item.description;
+        }
+
+        static Texture2D FetchElementThumbnail(SearchItem item, SearchContext context)
+        {
+            if (item.data is LibraryItem libItem)
+            {
+                if (libItem.largeIcon.texture != null)
+                    return libItem.largeIcon.texture;
+                if (libItem.icon.texture != null)
+                    return libItem.icon.texture;
+            }
+            return item.thumbnail;
+        }
+
+        static void StartElementDrag(SearchItem item, SearchContext context)
+        {
+            if (item.data is LibraryItem libItem)
+            {
+                // Store the library item for drag-and-drop
+                DragAndDrop.PrepareStartDrag();
+                DragAndDrop.SetGenericData("LibraryItem", libItem);
+
+                DragAndDrop.StartDrag(libItem.name);
+            }
+        }
+
+        static UnityEngine.Object ToObject(SearchItem item, Type type)
+        {
+            if (item.data is LibraryItem libItem && libItem.libraryType.type != null)
+            {
+                // Create a VisualTreeAsset containing just this element
+                var vta = CreateVisualTreeAssetFromElement(libItem);
+                if (vta != null)
+                {
+                    return vta;
+                }
+            }
+            return null;
+        }
+
+        /// <summary>
+        /// Creates a VisualTreeAsset containing a single element of the specified type for preview.
+        /// </summary>
+        static VisualTreeAsset CreateVisualTreeAssetFromElement(LibraryItem libItem)
+        {
+            var elementType = libItem.libraryType.type;
+            if (elementType == null || !typeof(VisualElement).IsAssignableFrom(elementType))
+                return null;
+
+            try
+            {
+                // Create VTA using ScriptableObject
+                var vta = ScriptableObject.CreateInstance<VisualTreeAsset>();
+                vta.hideFlags = HideFlags.DontSaveInEditor | HideFlags.DontUnloadUnusedAsset;
+                vta.name = $"Preview_{libItem.name}";
+
+                // Add the element to the VTA using internal API
+                var fullTypeName = elementType.FullName;
+                var vea = vta.AddElementOfType(null, fullTypeName);
+
+                var description = UxmlSerializedDataRegistry.GetDescription(fullTypeName);
+                if (description != null)
+                {
+                    vea.serializedData = description.CreateDefaultSerializedData();
+                }
+
+                return vta;
+            }
+            catch (Exception e)
+            {
+                Debug.LogWarning($"Failed to create VisualTreeAsset for {libItem.name}: {e.Message}");
+                return null;
+            }
+        }
+
+        /// <summary>
+        /// Common method to fetch controls filtered by a predicate.
+        /// </summary>
+        static IEnumerable<SearchItem> FetchControlsByFilter(SearchContext context, SearchProvider provider,
+            string idPrefix, Func<LibraryTypeKey, bool> filter)
+        {
+            long score = 0;
+
+            var filteredTypes = GetCachedFilteredTypes(idPrefix, filter);
+            foreach (var typeKey in filteredTypes)
+            {
+                var searchText = $"{typeKey.name} {typeKey.type?.Name}";
+                if (string.IsNullOrEmpty(context.searchQuery) ||
+                    FuzzySearch.FuzzyMatch(context.searchQuery, searchText, ref score))
+                {
+                    var item = new LibraryItem(typeKey.name, typeKey);
+                    var searchItem = provider.CreateItem(
+                        context,
+                        id: $"{idPrefix}/{typeKey.name}/{typeKey.type?.FullName}",
+                        score: ~(int)score,
+                        label: typeKey.name,
+                        description: null, // TODO: Check types [tooltip] or [description] attribute
+                        thumbnail: item.icon.texture,
+                        data: item
+                    );
+                    yield return searchItem;
+                }
+                score++;
+            }
+        }
+
+        /// <summary>
+        /// Gets cached filtered and sorted types for a category. Cache is invalidated when library content changes.
+        /// </summary>
+        static List<LibraryTypeKey> GetCachedFilteredTypes(string categoryId, Func<LibraryTypeKey, bool> filter)
+        {
+            var libraryTypes = LibraryContent.GetAllLibraryTypes();
+            var currentHash = libraryTypes.GetHashCode();
+
+            // Invalidate all caches if library content changed
+            if (s_CachedTypesHash != currentHash)
+            {
+                s_CachedTypesByCategory.Clear();
+                s_CachedTypesHash = currentHash;
+
+                s_SortedTypes = new List<LibraryTypeKey>(libraryTypes.Keys);
+                s_SortedTypes.Sort((a, b) => string.Compare(a.id, b.id, StringComparison.Ordinal));
+            }
+
+            // Return cached result
+            if (s_CachedTypesByCategory.TryGetValue(categoryId, out var cached))
+                return cached;
+
+            var filtered = new List<LibraryTypeKey>();
+            foreach (var typeKey in s_SortedTypes)
+            {
+                if (filter(typeKey))
+                    filtered.Add(typeKey);
+            }
+
+            s_CachedTypesByCategory[categoryId] = filtered;
+            return filtered;
+        }
+
+        static void OnElementSelected(SearchItem item, bool canceled)
+        {
+        }
+    }
+}

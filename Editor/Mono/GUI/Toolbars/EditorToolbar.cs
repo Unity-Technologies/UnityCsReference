@@ -34,7 +34,9 @@ namespace UnityEditor.Toolbars
         public EditorToolbar(IEnumerable<string> toolbarElementIds, EditorWindow context = null)
         {
             m_Context = context;
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             m_ToolbarElements = toolbarElementIds.ToArray();
+#pragma warning restore RS0030
         }
 
         public static OverlayToolbar CreateOverlay(IEnumerable<string> toolbarElementIds, EditorWindow context = null)

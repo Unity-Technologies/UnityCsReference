@@ -109,11 +109,15 @@ namespace UnityEditor.PackageManager.UI.Internal
                         m_SupportedUnityVersions.Add(parsedSemVer.Value);
 
                 m_SupportedUnityVersions.Sort((left, right) => left.CompareTo(right));
+                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 m_SupportedUnityVersion = m_SupportedUnityVersions.LastOrDefault();
+#pragma warning restore RS0030
                 m_SupportedUnityVersionString = m_SupportedUnityVersion?.ToString();
             }
 
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             m_SizeInfos = new List<PackageSizeInfo>(productInfo?.sizeInfos ?? Enumerable.Empty<PackageSizeInfo>());
+#pragma warning restore RS0030
             m_SizeInfos.Sort((left, right) => left.supportedUnityVersion.CompareTo(right.supportedUnityVersion));
 
             var state = productInfo?.state ?? string.Empty;

@@ -198,7 +198,9 @@ namespace UnityEditor
             }
 
             // Selection.transform does not provide correct list order, so we have to do it manually
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             selected = selected.ToList().OrderBy(g => g.GetSiblingIndex()).ToArray();
+#pragma warning restore RS0030
 
             GameObject go = ObjectFactory.CreateGameObject("GameObject");
 

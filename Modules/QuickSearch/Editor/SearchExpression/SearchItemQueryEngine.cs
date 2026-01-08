@@ -762,7 +762,9 @@ namespace UnityEditor.Search
             var query = ParseQuery(queryStr, true);
             if (query.errors.Count != 0)
             {
+                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 var errorStr = string.Join("\n", query.errors.Select(err => $"Invalid where query expression at {err.index}: {err.reason}"));
+#pragma warning restore RS0030
                 context.ThrowError(errorStr);
             }
 
@@ -785,7 +787,9 @@ namespace UnityEditor.Search
             var query = ParseQuery(queryStr, true);
             if (query.errors.Count != 0)
             {
+                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 var errorStr = string.Join("\n", query.errors.Select(err => $"Invalid where query expression at {err.index}: {err.reason}"));
+#pragma warning restore RS0030
                 context.ThrowError(errorStr);
             }
 

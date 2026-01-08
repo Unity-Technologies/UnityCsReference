@@ -45,7 +45,9 @@ namespace UnityEditor.SceneTemplate
 
         public bool addToDefaults;
 
+        #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
         internal bool hasCloneableDependencies => dependencies.Any(dep => dep.instantiationMode == TemplateInstantiationMode.Clone);
+#pragma warning restore RS0030
 
         void OnEnable()
         {
@@ -88,9 +90,13 @@ namespace UnityEditor.SceneTemplate
 
             var newDependenciesAdded = false;
 
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             dependencies = depList.Select(d =>
+#pragma warning restore RS0030
             {
+                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 var oldDependencyInfo = dependencies.FirstOrDefault(di => di.dependency.GetEntityId() == d.GetEntityId());
+#pragma warning restore RS0030
                 if (oldDependencyInfo != null)
                     return oldDependencyInfo;
 
@@ -136,7 +142,9 @@ namespace UnityEditor.SceneTemplate
 
             var assetPath = AssetDatabase.GetAssetPath(this);
             var allAssets = AssetDatabase.LoadAllAssetsAtPath(assetPath);
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var oldTexture = allAssets.FirstOrDefault(obj => obj is Texture2D);
+#pragma warning restore RS0030
             if (oldTexture != null)
                 AssetDatabase.RemoveObjectFromAsset(oldTexture);
 

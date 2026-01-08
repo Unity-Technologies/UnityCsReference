@@ -50,15 +50,22 @@ namespace Unity.GraphToolkit.Editor
         public TypeHandle Type { get; }
 
         /// <summary>
+        /// The graph model associated with the item.
+        /// </summary>
+        public GraphModel GraphModel { get; }
+
+        /// <summary>
         /// Initializes a new instance of the <see cref="TypeItemLibraryData"/> class.
         /// </summary>
         /// <param name="type">The type associated with the item library data.</param>
+        /// <param name="graphModel">The graph model associated with the item.</param>
         /// <remarks>
         /// Use this constructor when you need to create a new instance of <see cref="TypeItemLibraryData"/> for a specific type. The type parameter links the data to a particular type.
         /// </remarks>
-        public TypeItemLibraryData(TypeHandle type)
+        public TypeItemLibraryData(TypeHandle type, GraphModel graphModel)
         {
             Type = type;
+            GraphModel = graphModel;
         }
     }
 

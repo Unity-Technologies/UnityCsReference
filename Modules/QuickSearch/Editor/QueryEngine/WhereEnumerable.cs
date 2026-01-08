@@ -33,7 +33,9 @@ namespace UnityEditor.Search
         {
             if (fastYielding)
                 return FastYieldingEnumerator();
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return m_Payload.Where(e => e != null && predicate(e)).GetEnumerator();
+#pragma warning restore RS0030
         }
 
         public IEnumerator<T> FastYieldingEnumerator()
@@ -132,7 +134,9 @@ namespace UnityEditor.Search
                         else
                             matchWordFunc = s => s != null && s.IndexOf(searchNode.searchValue, stringComparison) >= 0;
                     }
+                    #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     return o => engine.searchDataCallback(o).Any(data => matchWordFunc(data));
+#pragma warning restore RS0030
                 }
                 case QueryNodeType.FilterIn:
                 {

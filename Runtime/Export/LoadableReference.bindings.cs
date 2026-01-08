@@ -22,7 +22,7 @@ namespace UnityEngine
     /// In the Editor, use <see cref="UnityEditor.LoadableReferenceEditorUtility"/> to create LoadableReferences. Typically these
     /// will be serialized as part of Loadable<T> fields on ScriptableObject-derived classes. When those ScriptableObjects are
     /// built as part of a Content Directory, then the assets referenced by the LoadableReference will be recursively pulled into
-    /// the build output. At runtime, the <see cref="ContentLoadManager"/> takes care of resolving LoadableRefernces to the
+    /// the build output. At runtime, the <see cref="ContentLoadManager"/> takes care of resolving LoadableReferences to the
     /// correct built content so long as it is part of the currently registered content directories.
     ///
     /// Player and AssetBundle builds do not pull assets referenced by LoadableReference into the build, this is only supported

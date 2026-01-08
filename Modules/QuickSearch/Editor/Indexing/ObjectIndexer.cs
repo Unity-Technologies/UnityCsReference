@@ -78,7 +78,9 @@ namespace UnityEditor.Search
             {
                 if (m_IgnoredProperties == null)
                 {
+                    #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     m_IgnoredProperties = new HashSet<string>(SearchSettings.ignoredProperties.Split(new char[] { ';', '\n' },
+#pragma warning restore RS0030
                                             StringSplitOptions.RemoveEmptyEntries).Select(t =>
                     {
                         if (t.StartsWith("m_"))
@@ -113,7 +115,9 @@ namespace UnityEditor.Search
         public override IEnumerable<SearchResult> Search(string searchQuery, SearchContext context, SearchProvider provider, int maxScore = int.MaxValue, int patternMatchLimit = 2999)
         {
             if (settings.options.disabled)
+                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 return Enumerable.Empty<SearchResult>();
+#pragma warning restore RS0030
             return base.Search(searchQuery, context, provider, maxScore, patternMatchLimit);
         }
 
@@ -136,7 +140,9 @@ namespace UnityEditor.Search
                     if (m_DoFuzzyMatch)
                         options |= FindOptions.Fuzzy;
 
+                    #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     var documents = subset != null ? subset.Select(r => GetDocument(r.index)) : GetDocuments(ignoreNulls: true);
+#pragma warning restore RS0030
                     foreach (var r in FindProvider.SearchWord(false, word, options, documents))
                     {
                         var documentIndex = FindDocumentIndex(r.id);
@@ -165,12 +171,16 @@ namespace UnityEditor.Search
                 return true;
 
             // Skip files with ~ in their file path and built-in transient files
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             if (BuiltInTransientFilePatterns.Any(pattern => ShouldIgnorePattern(pattern, path)))
+#pragma warning restore RS0030
                 return true;
 
             if (checkRoots)
             {
+                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 if (!GetRoots().Any(r => path.StartsWith(r, StringComparison.OrdinalIgnoreCase)))
+#pragma warning restore RS0030
                     return true;
             }
 
@@ -185,10 +195,14 @@ namespace UnityEditor.Search
             {
                 var dir = Path.GetDirectoryName(path).Replace("\\", "/");
 
+                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 if (settings.includes?.Length > 0 && !settings.includes.Any(pattern => PatternChecks(pattern, ext, dir, path)))
+#pragma warning restore RS0030
                     return true;
 
+                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 if (settings.excludes?.Length > 0 && settings.excludes.Any(pattern => PatternChecks(pattern, ext, dir, path)))
+#pragma warning restore RS0030
                     return true;
             }
 

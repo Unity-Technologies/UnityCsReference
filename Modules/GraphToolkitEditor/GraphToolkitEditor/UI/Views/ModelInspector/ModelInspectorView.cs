@@ -52,7 +52,9 @@ namespace Unity.GraphToolkit.Editor
         /// <returns>True if a field should be displayed in the advanced settings section of the inspector. False otherwise.</returns>
         public static bool AdvancedSettingsFilter(FieldInfo f)
         {
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return SerializedFieldsInspector.CanBeInspected(f) && f.CustomAttributes.All(a => a.AttributeType != typeof(NodeOptionAttribute));
+#pragma warning restore RS0030
         }
 
         static readonly List<ChildView> k_UpdateAllUIs = new();
@@ -224,9 +226,13 @@ namespace Unity.GraphToolkit.Editor
         {
             if (m_SelectionObserver == null && GraphTool != null)
             {
+                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 var selectionStates = GraphTool.State.AllStateComponents.OfType<SelectionStateComponent>();
+#pragma warning restore RS0030
                 m_SelectionObserver = new InspectorSelectionObserver(GraphTool.ToolState, ModelInspectorViewModel.GraphModelState,
+                    #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     selectionStates.ToList(), ModelInspectorViewModel.ModelInspectorState);
+#pragma warning restore RS0030
 
                 GraphTool?.ObserverManager?.RegisterObserver(m_SelectionObserver);
             }

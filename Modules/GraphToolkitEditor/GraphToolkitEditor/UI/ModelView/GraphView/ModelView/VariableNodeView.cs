@@ -23,6 +23,7 @@ namespace Unity.GraphToolkit.Editor
         public static readonly string scopeImageUssClassName = ussClassName.WithUssElement("scope-image");
 
         VariableScopeImage m_ScopeImage;
+        ChildView m_LastUsedMainPort;
 
         /// <inheritdoc />
         public override void ActivateRename()
@@ -51,6 +52,35 @@ namespace Unity.GraphToolkit.Editor
         }
 
         /// <inheritdoc />
+        public override bool HasBackwardsDependenciesChanged()
+        {
+            if (NodeModel is not VariableNodeModel variableNode)
+                return false;
+
+            var mainPort = variableNode.InputPort ?? variableNode.OutputPort;
+            return m_LastUsedMainPort != mainPort.GetView(RootView);
+        }
+
+        /// <inheritdoc/>
+        public override void AddBackwardDependencies()
+        {
+            base.AddBackwardDependencies();
+
+            if (NodeModel is not VariableNodeModel variableNode)
+                return;
+
+            // When the port changes color, the scope image should be redrawn.
+            var mainPortModel = variableNode.InputPort ?? variableNode.OutputPort;
+            var mainPort = mainPortModel.GetView(RootView);
+            if (mainPort != null)
+            {
+                // Scope image color changes with port color.
+                Dependencies.AddBackwardDependency(mainPort, DependencyTypes.Style);
+                m_LastUsedMainPort = mainPort;
+            }
+        }
+
+        /// <inheritdoc />
         public override void UpdateUIFromModel(UpdateFromModelVisitor visitor)
         {
             base.UpdateUIFromModel(visitor);
@@ -71,11 +101,10 @@ namespace Unity.GraphToolkit.Editor
                 m_ScopeImage.Scope = variableDeclarationModel.Scope;
                 m_ScopeImage.ReadWriteModifiers = variableDeclarationModel.Modifiers;
 
-                // We have to wait for the style to be resolved to get the right Port Color.
-                m_ScopeImage.RegisterCallbackOnce<GeometryChangedEvent>(_ =>
+                schedule.Execute(_ =>
                 {
                     m_ScopeImage.Color = portContainer?.Port?.PortColor ?? Port.DefaultPortColor;
-                });
+                }).ExecuteLater(0);
             }
         }
     }

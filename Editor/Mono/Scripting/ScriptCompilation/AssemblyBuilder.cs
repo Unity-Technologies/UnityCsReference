@@ -100,7 +100,9 @@ namespace UnityEditor.Compilation
                 throw new Exception(string.Format("Cannot start AssemblyBuilder with status {0}. Expected {1}", status, AssemblyBuilderStatus.NotStarted));
 
             var assembly = editorCompilation.CreateScriptAssembly(this);
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var assemblies = assembly.AllRecursiveScripAssemblyReferencesIncludingSelf().ToArray();
+#pragma warning restore RS0030
 
             // Start clean everytime
             const string beeAssemblyBuilderDirectory = "Library/BeeAssemblyBuilder";
@@ -197,7 +199,9 @@ namespace UnityEditor.Compilation
             activeBeeBuild.editorCompilation.ProcessCompilationResult(activeBeeBuild.assemblies, result, false, this);
             try
             {
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 buildFinished?.Invoke(assemblyPath, EditorCompilation.ConvertCompilerMessages(BeeScriptCompilation
+#pragma warning restore RS0030
                     .ParseAllNodeResultsIntoCompilerMessages(result.BeeDriverMessages, result.NodeFinishedMessages, EditorCompilationInterface.Instance)
                     .SelectMany(a => a).ToArray()));
             }

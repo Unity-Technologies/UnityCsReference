@@ -38,7 +38,9 @@ namespace Unity.GraphToolkit.Editor
         {
             m_ToolState = toolState;
             m_GraphModelStateComponent = graphModelState;
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             m_SelectionStates = selectionStates.ToList();
+#pragma warning restore RS0030
             m_ModelInspectorState = modelInspectorState;
         }
 
@@ -59,8 +61,12 @@ namespace Unity.GraphToolkit.Editor
 
                     if (updateType != UpdateType.None || gvObservation.UpdateType == UpdateType.Complete)
                     {
+                        #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                         var selection = m_SelectionStates.SelectMany(s => s.GetSelection(graphModel));
+#pragma warning restore RS0030
+                        #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                         var selectedModels = m_ToolState.GraphModel.GetModelsDisplayableInInspector(selection).Distinct().ToList();
+#pragma warning restore RS0030
 
                         if (m_SelectionStates.HasAny(t => t.DisplayInInspector))
                         {

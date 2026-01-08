@@ -26,7 +26,9 @@ namespace Unity.GraphToolkit.Editor
         public override string Title => string.Empty;
 
         /// <inheritdoc />
+        #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
         public PortModel OutputPort => OutputsById.Values.FirstOrDefault();
+#pragma warning restore RS0030
 
         /// <summary>
         /// The value of the node.

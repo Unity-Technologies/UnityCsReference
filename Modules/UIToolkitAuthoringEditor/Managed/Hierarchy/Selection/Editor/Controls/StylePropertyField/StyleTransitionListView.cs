@@ -338,7 +338,7 @@ internal class StyleTransitionListView : VisualElement
         m_ListView.onAdd += OnTransitionAddedClicked;
         m_ListView.onRemove += OnTransitionsRemoved;
         Add(m_ListView);
-        RegisterCallback<TrackStylePropertyEvent>(Callback);
+        RegisterCallback<TrackPropertyEvent>(Callback);
     }
 
     TransitionChangeType m_Overrides;
@@ -363,7 +363,7 @@ internal class StyleTransitionListView : VisualElement
         EnableInClassList(delayOverriddenUssClassName, (m_Overrides & TransitionChangeType.Delay) == TransitionChangeType.Delay);
     }
 
-    private void Callback(TrackStylePropertyEvent evt)
+    private void Callback(TrackPropertyEvent evt)
     {
         Track(evt.provider);
     }

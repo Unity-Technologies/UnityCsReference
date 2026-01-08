@@ -125,10 +125,6 @@ namespace Unity.Multiplayer.PlayMode.Editor
             {
                 return CreateLocalInstance(localDescription, hasMainEditor);
             }
-            if (instanceDescription is RemoteInstanceDescription remoteDescription)
-            {
-                return CreateRemoteInstance(remoteDescription);
-            }
             throw new System.NotImplementedException();
         }
 
@@ -166,21 +162,10 @@ namespace Unity.Multiplayer.PlayMode.Editor
             return instance;
         }
 
-        private static Instance CreateRemoteInstance(RemoteInstanceDescription description)
-        {
-            var remoteController = MultiplayController.CreateInstance(description);
-            var instance = Instance.Create(description, remoteController);
-            var executionGraph = instance.GetExecutionGraph();
-
-            remoteController.SetupExecutionGraph(executionGraph);
-
-            return instance;
-        }
-
         internal static string GenerateBuildPath(BuildProfile profile)
         {
-            // It is important that all builds are in its own folder because when we upload the build to the Multiplay service,
-            // we upload the whole folder. If we have multiple builds in the same folder, we will upload all of them.
+            // It is important that all builds are in its own folder because we might want to deploy it or move it elsewhere,
+            // If we have multiple builds in the same folder, we will move all of them.
             var escapedProfileName = EscapeProfileName(profile.name);
             return $"Builds/PlayModeScenarios/{escapedProfileName}/{escapedProfileName}";
         }

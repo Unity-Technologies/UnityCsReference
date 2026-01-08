@@ -16,7 +16,9 @@ namespace UnityEditor.DeviceSimulation
 
         public PluginController(SimulatorState serializedState, DeviceSimulator deviceSimulator)
         {
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             foreach (var type in TypeCache.GetTypesDerivedFrom<DeviceSimulatorPlugin>().Where(type => !type.IsAbstract))
+#pragma warning restore RS0030
             {
                 try
                 {
@@ -94,7 +96,9 @@ namespace UnityEditor.DeviceSimulation
 
         public string[] GetPluginNames()
         {
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return plugins.Select(p => p.resolvedTitle).ToArray();
+#pragma warning restore RS0030
         }
 
         public void Dispose()

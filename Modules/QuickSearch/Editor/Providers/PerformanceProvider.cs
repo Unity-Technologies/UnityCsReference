@@ -33,7 +33,9 @@ namespace UnityEditor.Search.Providers
 
         protected override IEnumerable<SearchAction> GetActions()
         {
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return base.GetActions().Append(new SearchAction("log", "Callstack", item => EditorPerformanceTracker.GetCallstack(item.id, cs => CaptureCallstack(item, cs))));
+#pragma warning restore RS0030
         }
 
         protected override void ResetItems(SearchItem[] items)

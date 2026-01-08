@@ -66,7 +66,6 @@ namespace Unity.Multiplayer.PlayMode.Editor
 
             settingsContainer.Add(CreateNameField(instanceProp));
             settingsContainer.Add(CreateBuildProfileField(instanceProp, out var roleField));
-            settingsContainer.Add(CreateServerSettingsField(instanceProp, roleField));
             settingsContainer.Add(CreateAdvancedConfigurationField(instanceProp));
 
             DisableInstanceContainerIfFreeRunningActive(settingsContainer, instanceProp);
@@ -110,69 +109,12 @@ namespace Unity.Multiplayer.PlayMode.Editor
             logsColorField.Bind(instanceProperty.serializedObject);
             container.Add(logsColorField);
 
-            // Add Arguments based on current deploy mode
-            var argumentsContainer = new VisualElement();
-            var serverSettingsProp = instanceProperty.FindPropertyRelative("m_ServerSettings");
-            var deployModeProp = serverSettingsProp.FindPropertyRelative("DeployMode");
-
-            UpdateArgumentsBasedOnDeployMode(argumentsContainer, advancedConfigProp, deployModeProp, instanceProperty);
-
-            argumentsContainer.TrackPropertyValue(deployModeProp, _ => {
-                argumentsContainer.Clear();
-                UpdateArgumentsBasedOnDeployMode(argumentsContainer, advancedConfigProp, deployModeProp, instanceProperty);
-            });
-
-            container.Add(argumentsContainer);
-
-            return container;
-        }
-
-        private void UpdateArgumentsBasedOnDeployMode(VisualElement container, SerializedProperty advancedConfigProp, SerializedProperty deployModeProp, SerializedProperty instanceProperty)
-        {
-            var deployMode = (ServerSettings.ServerDeployMode)deployModeProp.enumValueIndex;
-            var argumentsProp = deployMode switch
-            {
-                ServerSettings.ServerDeployMode.Local => advancedConfigProp.FindPropertyRelative("m_LocalArguments"),
-                ServerSettings.ServerDeployMode.Simulated => advancedConfigProp.FindPropertyRelative("m_SimulatedArguments"),
-                _ => advancedConfigProp.FindPropertyRelative("m_LocalArguments")
-            };
-
-            if (argumentsProp == null) return;
+            var argumentsProp = advancedConfigProp.FindPropertyRelative("m_LocalArguments");
             var argumentsField = new PropertyField(argumentsProp) { label = "Arguments" };
             argumentsField.Bind(instanceProperty.serializedObject);
             container.Add(argumentsField);
-        }
-
-        private VisualElement CreateServerSettingsField(SerializedProperty instanceProperty, TextField roleField)
-        {
-            if (!LocalDeploymentUtility.IsLocalDeploymentAvailable())
-                return null;
-
-            var container = new VisualElement();
-            var buildProfileProperty = instanceProperty.FindPropertyRelative("m_BuildProfile");
-            container.TrackPropertyValue(buildProfileProperty, _ => RefreshServerSettings(container, instanceProperty, buildProfileProperty));
-            roleField.RegisterValueChangedCallback( _ => RefreshServerSettings(container, instanceProperty, buildProfileProperty));
-            RefreshServerSettings(container, instanceProperty, buildProfileProperty);
 
             return container;
-        }
-
-        private static void RefreshServerSettings(VisualElement container, SerializedProperty instanceProperty, SerializedProperty buildProfileProperty)
-        {
-            container.Clear();
-
-            var serverSettingsProp = instanceProperty.FindPropertyRelative("m_ServerSettings");
-            var serverSettingsField = new PropertyField(serverSettingsProp);
-            serverSettingsField.Bind(instanceProperty.serializedObject);
-            container.Add(serverSettingsField);
-
-            var buildProfile = buildProfileProperty.objectReferenceValue as BuildProfile;
-            serverSettingsField.style.display = LocalDeploymentUtility.IsServerProfileOrRole(buildProfile)
-                ? new StyleEnum<DisplayStyle>(DisplayStyle.Flex)
-                : new StyleEnum<DisplayStyle>(DisplayStyle.None);
-
-            if (buildProfile != null)
-                serverSettingsField.TrackSerializedObjectValue(new SerializedObject(buildProfile), _ => RefreshServerSettings(container, instanceProperty, buildProfileProperty));
         }
 
         private VisualElement CreateBuildProfileField(SerializedProperty instanceProperty, out TextField roleFieldOut)
@@ -345,12 +287,6 @@ namespace Unity.Multiplayer.PlayMode.Editor
                 return DropdownMenuAction.Status.Disabled;
             }
 
-            var remoteInstances = prop.serializedObject.FindProperty("m_RemoteInstances");
-            if (prop.boxedValue.GetType() == typeof(RemoteInstanceDescription) && remoteInstances.arraySize >= ScenarioConfigEditor.MaxServerCount)
-            {
-                return DropdownMenuAction.Status.Disabled;
-            }
-
             return DropdownMenuAction.Status.Normal;
         }
 
@@ -399,14 +335,6 @@ namespace Unity.Multiplayer.PlayMode.Editor
             {
                 var currenPlatform = Application.platform;
                 error = $"Build Profile is not supported on the current platform: {currenPlatform}.";
-                return false;
-            }
-
-            // Also ensure instance-type specific build target checks.
-            var isServerInstance = instance.GetType() == typeof(RemoteInstanceDescription);
-            if (isServerInstance && InternalUtilities.IsAndroidBuildTarget(newProfile))
-            {
-                error = "Build Profile is not supported or installed for this type of instance.";
                 return false;
             }
 

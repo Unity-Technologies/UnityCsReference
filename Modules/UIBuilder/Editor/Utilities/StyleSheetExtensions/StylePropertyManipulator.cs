@@ -633,7 +633,9 @@ namespace Unity.UI.Builder
             // To set an explicit value on top of a variable, we must first remove the variable. In the case where
             // the variable points to a list of values, we must remove all values of the list and set them as
             // explicit values of the same type.
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var list = styleProperty.values.ToList();
+#pragma warning restore RS0030
             list.RemoveRange(initialOffset, range);
 
             var currentOffset = initialOffset;
@@ -743,7 +745,9 @@ namespace Unity.UI.Builder
                 else
                 {
                     var initialOffset = part.offset;
+                    #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     var list = styleProperty.values.ToList();
+#pragma warning restore RS0030
                     list.RemoveAt(initialOffset);
                     var handle = AddTypedValue(value, valueType);
                     list.Insert(initialOffset, handle);
@@ -769,7 +773,9 @@ namespace Unity.UI.Builder
                 ? styleProperty.values.Length - initialOffset
                 : nextOffset - initialOffset;
 
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var list = styleProperty.values.ToList();
+#pragma warning restore RS0030
             list.RemoveRange(initialOffset, range);
             styleProperty.GetManipulator(styleSheet).AddVariableReference(variableName);
             var handles = styleProperty.values[^3..];
@@ -849,7 +855,9 @@ namespace Unity.UI.Builder
                         return;
                     }
 
+                    #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     var valueList = styleProperty.values.ToList();
+#pragma warning restore RS0030
 
                     if (indices.partIndex > 0)
                         initialOffset -= 1;
@@ -875,7 +883,9 @@ namespace Unity.UI.Builder
                 // To set an explicit value on top of a variable, we must first remove the variable. In the case where
                 // the variable points to a list of values, we must remove all values of the list and set them as
                 // explicit values of the same type.
+                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 var list = styleProperty.values.ToList();
+#pragma warning restore RS0030
                 list.RemoveRange(initialOffset, range);
 
                 var currentOffset = initialOffset;
@@ -925,7 +935,9 @@ namespace Unity.UI.Builder
                     return;
                 }
 
+                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 var list = styleProperty.values.ToList();
+#pragma warning restore RS0030
 
                 if (indices.partIndex > 0)
                     initialOffset -= 1;
@@ -1010,7 +1022,9 @@ namespace Unity.UI.Builder
                                     return part;
                                 }
 
+                                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                                 part.handles.AddRange(manipulator.stylePropertyParts.SelectMany(o => o.handles));
+#pragma warning restore RS0030
                                 part.isVariable = true;
                                 part.variableName = variable;
                                 return part;
@@ -1168,7 +1182,9 @@ namespace Unity.UI.Builder
 
         static StyleProperty GetStyleProperty(StyleRule rule, string propertyName)
         {
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return rule?.properties.LastOrDefault(property => property.name == propertyName);
+#pragma warning restore RS0030
         }
 
         static StylePropertyPart CreatePart(StyleSheet styleSheet, StyleValueHandle handle, int offset)

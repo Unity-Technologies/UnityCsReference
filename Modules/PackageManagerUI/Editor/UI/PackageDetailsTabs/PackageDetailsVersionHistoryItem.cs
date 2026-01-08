@@ -229,7 +229,9 @@ namespace UnityEditor.PackageManager.UI.Internal
                 return true;
 
             var comparer = new DependencyInfoComparer();
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return leftDependencies.Except(rightDependencies, comparer).Any() || rightDependencies.Except(leftDependencies, comparer).Any();
+#pragma warning restore RS0030
         }
 
         private void RefreshMetaDataChanges()

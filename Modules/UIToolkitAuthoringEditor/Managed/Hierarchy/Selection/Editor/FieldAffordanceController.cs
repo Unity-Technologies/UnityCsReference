@@ -16,9 +16,9 @@ internal static class FieldAffordanceController
     {
         fieldAffordanceData.type = FieldAffordanceDataType.USSProperty;
 
-        if (value.binding is DataBinding dataBinding)
+        if (value.binding != null)
         {
-            if (element.TryGetLastBindingToUIResult(dataBinding.property, out var bindingResult))
+            if (element.TryGetLastBindingToUIResult(value.binding.property, out var bindingResult))
             {
                 fieldAffordanceData.sourceTypeInfo = bindingResult.status switch
                 {
@@ -27,16 +27,12 @@ internal static class FieldAffordanceController
                     _ => FieldAffordanceSourceInfoType.UnresolvedBinding
                 };
                 fieldAffordanceData.targetElement = element;
-                fieldAffordanceData.binding = dataBinding;
+                fieldAffordanceData.binding = value.binding;
             }
             else
             {
                 fieldAffordanceData.sourceTypeInfo = FieldAffordanceSourceInfoType.UnresolvedBinding;
             }
-        }
-        else if (value.binding != null && value.binding is not DataBinding)
-        {
-            fieldAffordanceData.sourceTypeInfo = FieldAffordanceSourceInfoType.UnresolvedBinding;
         }
         else if (value.uxmlValue.isInlined && contextType == StyleDiff.ContextType.VisualElement)
         {
@@ -56,6 +52,38 @@ internal static class FieldAffordanceController
         {
             fieldAffordanceData.sourceTypeInfo = FieldAffordanceSourceInfoType.MatchingUSSSelector;
             fieldAffordanceData.selector = value.selector;
+        }
+        else
+        {
+            fieldAffordanceData.sourceTypeInfo = FieldAffordanceSourceInfoType.Default;
+        }
+    }
+
+    public static void UpdateFieldAffordanceData(in FieldAffordanceData fieldAffordanceData, VisualElement element, Binding binding, bool isInline)
+    {
+        fieldAffordanceData.type = FieldAffordanceDataType.UXMLAttribute;
+
+        if (binding != null)
+        {
+            if (element.TryGetLastBindingToUIResult(binding.property, out var bindingResult))
+            {
+                fieldAffordanceData.sourceTypeInfo = bindingResult.status switch
+                {
+                    BindingStatus.Success => FieldAffordanceSourceInfoType.ResolvedBinding,
+                    BindingStatus.Pending => FieldAffordanceSourceInfoType.UnhandledBinding,
+                    _ => FieldAffordanceSourceInfoType.UnresolvedBinding
+                };
+                fieldAffordanceData.targetElement = element;
+                fieldAffordanceData.binding = binding;
+            }
+            else
+            {
+                fieldAffordanceData.sourceTypeInfo = FieldAffordanceSourceInfoType.UnresolvedBinding;
+            }
+        }
+        else if (isInline)
+        {
+            fieldAffordanceData.sourceTypeInfo = FieldAffordanceSourceInfoType.Inline;
         }
         else
         {

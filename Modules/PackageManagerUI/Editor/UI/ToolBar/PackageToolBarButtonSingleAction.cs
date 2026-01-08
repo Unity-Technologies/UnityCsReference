@@ -42,7 +42,9 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public void Refresh(IEnumerable<IPackage> packages)
         {
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             SetPackageVersions(packages.Select(p => p.versions.primary));
+#pragma warning restore RS0030
             if (m_Versions.Count == 0)
                 return;
 
@@ -84,7 +86,9 @@ namespace UnityEditor.PackageManager.UI.Internal
                     m_Action.TriggerAction(m_Versions[0]);
                     break;
                 default:
+                    #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     m_Action.TriggerAction(m_Versions.Select(v => v.package).ToArray());
+#pragma warning restore RS0030
                     break;
             }
         }

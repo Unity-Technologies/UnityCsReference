@@ -47,7 +47,9 @@ namespace UnityEditor.Experimental.GraphView
 
                 if (dropTarget != null)
                 {
+                    #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     if (exclusionList.Contains(picked))
+#pragma warning restore RS0030
                     {
                         dropTarget = null;
                     }
@@ -232,9 +234,13 @@ namespace UnityEditor.Experimental.GraphView
 
                 m_OriginalPos = new Dictionary<GraphElement, OriginalPos>();
 
+                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 HashSet<GraphElement> elementsToMove = new HashSet<GraphElement>(m_GraphView.selection.OfType<GraphElement>());
+#pragma warning restore RS0030
 
+                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 var selectedPlacemats = new HashSet<Placemat>(elementsToMove.OfType<Placemat>());
+#pragma warning restore RS0030
                 foreach (var placemat in selectedPlacemats)
                     placemat.GetElementsToMove(e.shiftKey, elementsToMove);
 
@@ -425,7 +431,9 @@ namespace UnityEditor.Experimental.GraphView
             // TODO: Replace with a temp drawing or something...maybe manipulator could fake position
             // all this to let operation know which element sits under cursor...or is there another way to draw stuff that is being dragged?
 
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             IDropTarget dropTarget = GetDropTargetAt(e.mousePosition, selection.OfType<VisualElement>());
+#pragma warning restore RS0030
 
             if (m_PrevDropTarget != dropTarget)
             {
@@ -544,10 +552,16 @@ namespace UnityEditor.Experimental.GraphView
                 {
                     if (m_Dragging)
                     {
+                        #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                         foreach (IGrouping<StackNode, GraphElement> grouping in m_OriginalPos.GroupBy(v => v.Value.stack, v => v.Key))
+#pragma warning restore RS0030
                         {
+                            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                             if (grouping.Key != null && m_GraphView.elementsRemovedFromStackNode != null)
+#pragma warning restore RS0030
+                                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                                 m_GraphView.elementsRemovedFromStackNode(grouping.Key, grouping);
+#pragma warning restore RS0030
 
                             foreach (GraphElement ge in grouping)
                                 ge.UpdatePresenterPosition();
@@ -558,7 +572,9 @@ namespace UnityEditor.Experimental.GraphView
                         var graphView = target as GraphView;
                         if (graphView != null && graphView.graphViewChanged != null)
                         {
+                            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                             KeyValuePair<GraphElement, OriginalPos> firstPos = m_OriginalPos.First();
+#pragma warning restore RS0030
                             m_GraphViewChange.moveDelta = firstPos.Key.GetPosition().position - firstPos.Value.pos.position;
                             graphView.graphViewChanged(m_GraphViewChange);
                         }

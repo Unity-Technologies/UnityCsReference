@@ -21,7 +21,7 @@ namespace UnityEditor.Search
         int ISearchField.controlID => (int)m_SearchField.controlid;
         int ISearchField.cursorIndex => m_TextField?.cursorIndex ?? -1;
         string ISearchField.text => m_TextField?.text ?? context.searchText;
-        private bool m_UseSearchGlobalEventHandler;
+        SearchQueryBuilderViewFlags m_BuilderViewFlags;
 
         string INotifyValueChanged<string>.value
         {
@@ -52,17 +52,17 @@ namespace UnityEditor.Search
         internal QueryBuilder builder => m_QueryBuilder;
         internal TextField searchField => m_TextField;
 
-        public SearchQueryBuilderView(string name, ISearchView viewModel, SearchFieldBase<TextField, string> searchField, bool useSearchGlobalEventHandler)
+        public SearchQueryBuilderView(string name, ISearchView viewModel, SearchFieldBase<TextField, string> searchField, SearchQueryBuilderViewFlags builderViewFlags)
             : base(name, viewModel, ussClassName)
         {
             m_SearchField = searchField;
-            m_UseSearchGlobalEventHandler = useSearchGlobalEventHandler;
+            m_BuilderViewFlags = builderViewFlags;
         }
 
         protected override void OnAttachToPanel(AttachToPanelEvent evt)
         {
             base.OnAttachToPanel(evt);
-            if (m_UseSearchGlobalEventHandler)
+            if (m_BuilderViewFlags.HasFlag(SearchQueryBuilderViewFlags.UseSearchGlobalEventHandler))
             {
                 RegisterGlobalEventHandler<KeyDownEvent>(KeyEventHandler, 0);
             }
@@ -93,7 +93,7 @@ namespace UnityEditor.Search
 
             m_RefreshBuilderOff?.Invoke();
 
-            if (m_UseSearchGlobalEventHandler)
+            if (m_BuilderViewFlags.HasFlag(SearchQueryBuilderViewFlags.UseSearchGlobalEventHandler))
             {
                 UnregisterGlobalEventHandler<KeyDownEvent>(KeyEventHandler);
             }
@@ -194,7 +194,13 @@ namespace UnityEditor.Search
             if (m_QueryBuilder != null)
                 m_QueryBuilder.Build();
             else
-                m_QueryBuilder = new QueryBuilder(context, this);
+            {
+                m_QueryBuilder = new QueryBuilder(context, this)
+                {
+                    blocksSupportExclude =
+                        m_BuilderViewFlags.HasFlag(SearchQueryBuilderViewFlags.BlocksSupportExclude)
+                };
+            }
 
             foreach (var b in m_QueryBuilder.EnumerateBlocks())
                 Add(b.CreateGUI());

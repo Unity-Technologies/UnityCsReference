@@ -45,14 +45,17 @@ namespace Unity.ProjectAuditor.Editor.UI
             var header = m_Table.multiColumnHeader;
             header.canSort = true;
 
-            var list = m_Issues.GroupBy(i => i.GetCustomProperty(BuildReportFileProperty.RuntimeType)).Select(g => new GroupStats
-            {
-                assetGroup = g.Key,
-                count = g.Count(),
-                size = g.Sum(s => s.GetCustomPropertyInt64(BuildReportFileProperty.Size))
-            }).ToList();
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            var list = new List<GroupStats>(
+                m_Issues.GroupBy(i => i.GetCustomProperty(BuildReportFileProperty.RuntimeType)).Select(g => new GroupStats
+                {
+                    assetGroup = g.Key,
+                    count = g.Count(),
+                    size = g.Sum(s => s.GetCustomPropertyInt64(BuildReportFileProperty.Size))
+                }));
             list.Sort((a, b) => b.size.CompareTo(a.size));
             m_GroupStats = list.Take(k_MaxGroupCount).ToArray();
+#pragma warning restore RS0030
         }
 
         public override void Clear()
@@ -73,7 +76,9 @@ namespace Unity.ProjectAuditor.Editor.UI
                     EditorGUI.indentLevel++;
 
                     var width = 200;
+                    #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     var dataSize = m_GroupStats.Sum(g => g.size);
+#pragma warning restore RS0030
                     EditorGUILayout.BeginHorizontal();
                     EditorGUILayout.LabelField("Total Assets size (Uncompressed)", SharedStyles.Label, GUILayout.Width(width));
                     EditorGUILayout.LabelField(Formatting.FormatSize((ulong)dataSize), SharedStyles.Label);
@@ -83,7 +88,9 @@ namespace Unity.ProjectAuditor.Editor.UI
 
                     EditorGUILayout.BeginVertical();
 
+                    #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     var maxGroupSize = (float)m_GroupStats.Max(g => g.size);
+#pragma warning restore RS0030
                     foreach (var group in m_GroupStats)
                     {
                         var groupSize = group.size;

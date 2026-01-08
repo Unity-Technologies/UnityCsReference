@@ -82,15 +82,21 @@ namespace Unity.GraphToolkit.Editor
         {
             if (field is ConstantField constantField)
             {
+                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 if (!ports.SequenceEqual(constantField.Owners))
+#pragma warning restore RS0030
                     return true;
 
+                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 if (ports[0].EmbeddedValue.Type != constantField.ConstantModels.First().Type)
+#pragma warning restore RS0030
                     return true;
             }
             else if (field is ExpandablePortPropertyField expandablePortPropertyField)
             {
+                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 if (!ports.SequenceEqual(expandablePortPropertyField.ExpandablePorts))
+#pragma warning restore RS0030
                     return true;
 
                 if (expandablePortPropertyField.ShouldRebuildFields())
@@ -117,23 +123,33 @@ namespace Unity.GraphToolkit.Editor
         /// <returns>A list of lists of ports to display, each list of ports contains ports for the same property in case of a multi selection.</returns>
         protected virtual IReadOnlyList<List<PortModel>> GetPortsToDisplay()
         {
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var portNodeModel = m_Models.OfType<PortNodeModel>().FirstOrDefault();
+#pragma warning restore RS0030
 
             if (portNodeModel == null)
                 return Array.Empty<List<PortModel>>();
 
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var portList = portNodeModel.GetPorts().Where(p => p.Options != PortModelOptions.IsNodeOption && p.Direction == PortDirection.Input && p.EmbeddedValue != null && p.ParentPort == null)
+#pragma warning restore RS0030
                 .Select(t => new List<PortModel>(new[] { t })).ToList();
 
             for (int i = 0; i < portList.Count; ++i)
             {
                 var ports = portList[i];
+                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 var firstPort = ports.First();
+#pragma warning restore RS0030
 
                 // Only keep ports that are common to all the models.
+                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 foreach (var other in m_Models.OfType<PortNodeModel>().Skip(1))
+#pragma warning restore RS0030
                 {
+                    #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     var otherPort = other.GetPorts().FirstOrDefault(t => t.Direction == firstPort.Direction && t.UniqueName == firstPort.UniqueName && t.Orientation == firstPort.Orientation && t.DataTypeHandle == firstPort.DataTypeHandle);
+#pragma warning restore RS0030
                     if (otherPort == null)
                     {
                         portList.RemoveAt(i);

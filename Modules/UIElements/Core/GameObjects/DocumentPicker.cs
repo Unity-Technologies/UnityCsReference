@@ -9,40 +9,40 @@ namespace UnityEngine.UIElements;
 
 internal class PhysicsDocumentPicker
 {
-    private void Pick(Ray worldRay, float maxDistance, int layerMask, out Collider collider, out UIDocument document, out VisualElement pickedElement, out float distance)
+    private void Pick(Ray worldRay, float maxDistance, int layerMask, out Collider collider, out IPanelComponent panelComponent, out VisualElement pickedElement, out float distance)
     {
         var result = WorldSpaceInput.PickDocument3D(worldRay, maxDistance, layerMask);
         collider = result.collider;
-        document = result.document;
+        panelComponent = result.panelComponent;
         pickedElement = result.pickedElement;
         distance = result.distance;
     }
 
-    public bool TryPickWithCapture(int pointerId, Ray worldRay, float maxDistance, int layerMask, out Collider collider, out UIDocument document, out VisualElement elementUnderPointer, out float distance, out bool captured)
+    public bool TryPickWithCapture(int pointerId, Ray worldRay, float maxDistance, int layerMask, out Collider collider, out IPanelComponent panelComponent, out VisualElement elementUnderPointer, out float distance, out bool captured)
     {
         captured = GetCapturingDocument(pointerId, out var capturingDocument);
         if (!captured)
         {
-            Pick(worldRay, maxDistance, layerMask, out collider, out document, out elementUnderPointer, out distance);
+            Pick(worldRay, maxDistance, layerMask, out collider, out panelComponent, out elementUnderPointer, out distance);
             return !float.IsPositiveInfinity(distance);
         }
 
         if (capturingDocument != null && ((1 << capturingDocument.gameObject.layer) & layerMask) != 0)
         {
             collider = null; // This may not be the expected behaviour. We should consider returning a collider.
-            document = capturingDocument;
-            elementUnderPointer = WorldSpaceInput.Pick3D(document, worldRay, out distance);
+            panelComponent = capturingDocument;
+            elementUnderPointer = WorldSpaceInput.Pick3D(panelComponent, worldRay, out distance);
             return true;
         }
 
         collider = null;
-        document = null;
+        panelComponent = null;
         elementUnderPointer = null;
         distance = 0;
         return false;
     }
 
-    bool GetCapturingDocument(int pointerId, out UIDocument capturingDocument)
+    bool GetCapturingDocument(int pointerId, out IPanelComponent capturingComponent)
     {
         var capturingElement = RuntimePanel.s_EventDispatcher.pointerState.GetCapturingElement(pointerId);
         if (capturingElement is VisualElement capturingVE)
@@ -50,8 +50,8 @@ internal class PhysicsDocumentPicker
             var capturingElementPanel = capturingVE.elementPanel;
             if (capturingElementPanel != null && !capturingElementPanel.isFlat)
             {
-                capturingDocument = UIDocument.FindRootUIDocument(capturingVE);
-                if (capturingDocument != null) // UUM-117081: don't hang on to an invalid capture
+                capturingComponent = capturingVE.FindRootPanelComponent();
+                if (capturingComponent != null) // UUM-117081: don't hang on to an invalid capture
                     return true;
             }
         }
@@ -61,13 +61,13 @@ internal class PhysicsDocumentPicker
         {
             if (!capturingPanel.isFlat)
             {
-                capturingDocument = PointerDeviceState.GetWorldSpaceDocumentWithSoftPointerCapture(pointerId);
-                if (capturingDocument != null) // UUM-117081: don't hang on to an invalid capture
+                capturingComponent = PointerDeviceState.GetWorldSpaceDocumentWithSoftPointerCapture(pointerId);
+                if (capturingComponent != null) // UUM-117081: don't hang on to an invalid capture
                     return true;
             }
         }
 
-        capturingDocument = null;
+        capturingComponent = null;
         return false;
     }
 }

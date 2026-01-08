@@ -1027,7 +1027,9 @@ namespace UnityEditor.Search
                 return null;
             }
 
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             if (!validationOptions.validateSyntaxOnly && filter.supportedOperators.Any() && !filter.supportedOperators.Any(filterOp => filterOp.Equals(op.token)))
+#pragma warning restore RS0030
             {
                 args.errors.Add(new QueryError(args.filterOperatorIndex, args.filterOperator.length, $"The operator \"{op.token}\" is not supported for this filter."));
                 return null;
@@ -1191,7 +1193,9 @@ namespace UnityEditor.Search
                 }
 
                 var opToken = op.token;
+                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 if (!validationOptions.validateSyntaxOnly && filter.supportedOperators.Any() && !filter.supportedOperators.Any(filterOp => filterOp.Equals(opToken)))
+#pragma warning restore RS0030
                 {
                     args.errors.Add(new QueryError(args.filterOperatorIndex, args.filterOperator.length, $"The operator \"{op.token}\" is not supported for this filter."));
                     return null;
@@ -1267,7 +1271,9 @@ namespace UnityEditor.Search
             }
 
             // Check custom parsers first
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             foreach (var typeParser in filter.typeParsers.Concat(m_TypeParsers))
+#pragma warning restore RS0030
             {
                 parseResult = typeParser.Parse(filterValue);
                 if (parseResult.success)
@@ -1349,7 +1355,9 @@ namespace UnityEditor.Search
 
         IParseResult ParseSpecificType(string filterValue, Type type, IFilter filter)
         {
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             foreach (var typeParser in filter.typeParsers.Concat(m_TypeParsers))
+#pragma warning restore RS0030
             {
                 if (type != typeParser.type)
                     continue;
@@ -1734,7 +1742,9 @@ namespace UnityEditor.Search
             where TFilterAttribute : QueryEngineFilterAttribute
             where TTransformerAttribute : QueryEngineParameterTransformerAttribute
         {
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var filters = TypeCache.GetMethodsWithAttribute<TFilterAttribute>()
+#pragma warning restore RS0030
                 .Select(CreateFilterFromFilterAttribute<TFilterAttribute, TTransformerAttribute>)
                 .Where(filter => filter != null);
             foreach (var filter in filters)
@@ -1747,7 +1757,9 @@ namespace UnityEditor.Search
             where TFilterAttribute : QueryEngineFilterAttribute
             where TTransformerAttribute : QueryEngineParameterTransformerAttribute
         {
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var attr = mi.GetCustomAttributes(typeof(TFilterAttribute), false).Cast<TFilterAttribute>().First();
+#pragma warning restore RS0030
             var creationParams = new FilterCreationParams(
                 attr.token,
                 new Regex(attr.token),
@@ -1995,7 +2007,9 @@ namespace UnityEditor.Search
 
         static Func<string, TParam> GetParameterTransformerFunction<TParam>(MethodInfo mi, string functionName, Type transformerAttributeType)
         {
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var transformerMethod = TypeCache.GetMethodsWithAttribute(transformerAttributeType)
+#pragma warning restore RS0030
                 .Where(transformerMethodInfo =>
                 {
                     var sameType = transformerMethodInfo.ReturnType == typeof(TParam);
@@ -2054,7 +2068,9 @@ namespace UnityEditor.Search
             if (!FilterHasCustomTokenHandlers(filter))
                 return;
 
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var operators = m_FilterOperators.Keys.Concat(filter.operators.Keys);
+#pragma warning restore RS0030
 
             AddCustomFilterTokenHandler(filter, filterId, operators, false);
             AddCustomPartialFilterTokenHandler(filter, filterId, operators, false);
@@ -2076,7 +2092,9 @@ namespace UnityEditor.Search
 
         static bool FilterHasCustomTokenHandlers(IFilter filter)
         {
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return filter.usesRegularExpressionToken || filter.operators.Any();
+#pragma warning restore RS0030
         }
 
         void AddFilterQuoteTokenHandlers(IFilter filter, in QueryTextDelimiter textDelimiter, bool sort = true)
@@ -2085,7 +2103,9 @@ namespace UnityEditor.Search
                 return;
 
             var filterId = filter.GetHashCode();
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var operators = m_FilterOperators.Keys.Concat(filter.operators.Keys);
+#pragma warning restore RS0030
             AddFilterQuoteTokenHandlers(filter, filterId, operators, in textDelimiter, sort);
         }
 

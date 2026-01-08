@@ -45,12 +45,20 @@ readonly unsafe struct LayoutDataAccess
         => ref GetTypedNodeDataRef<LayoutComputedData>(handle, LayoutNodeDataType.Computed);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public LayoutComputedData* GetComputedDataPtr(UnmanagedDataHandle handle)
+        => (LayoutComputedData*) m_Nodes.GetComponentDataPtr(handle.Index, (int)LayoutNodeDataType.Computed);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public ref LayoutCacheData GetCacheData(UnmanagedDataHandle handle)
         => ref GetTypedNodeDataRef<LayoutCacheData>(handle, LayoutNodeDataType.Cache);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public ref ComputedStyle GetComputedStyle(UnmanagedDataHandle handle)
         => ref GetTypedNodeDataRef<ComputedStyle>(handle, LayoutNodeDataType.ComputedStyle);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public VisualElementTransformData* GetTransformDataPtr(UnmanagedDataHandle handle)
+        => (VisualElementTransformData*) m_Nodes.GetComponentDataPtr(handle.Index, (int)LayoutNodeDataType.Transform);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public ref LayoutConfigData GetConfigData(UnmanagedDataHandle handle)

@@ -90,7 +90,9 @@ namespace UnityEditor
 
                 if (m_EnvironmentSection == null)
                 {
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     var extensionType = RenderPipelineEditorUtility.GetDerivedTypesSupportedOnCurrentPipeline<LightingWindowEnvironmentSection>().FirstOrDefault() ?? typeof(DefaultEnvironmentSectionExtension);
+#pragma warning restore RS0030
                     LightingWindowEnvironmentSection extension = (LightingWindowEnvironmentSection)Activator.CreateInstance(extensionType);
                     m_EnvironmentSection = extension;
                     m_EnvironmentSection.OnEnable();

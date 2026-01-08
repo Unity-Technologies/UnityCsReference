@@ -177,7 +177,9 @@ namespace UnityEditor
                 if (prefix == "")
                     return m_ListElements;
                 else
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     return m_ListElements.Where(
+#pragma warning restore RS0030
                         element => element.m_Content.text.StartsWith(prefix, System.StringComparison.OrdinalIgnoreCase)
                     );
             }
@@ -186,9 +188,13 @@ namespace UnityEditor
             {
                 IEnumerable<ListElement> res = BuildQuery(prefix);
                 if (m_MaxCount > 0)
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     res = res.OrderByDescending(element => element.filterScore).Take(m_MaxCount);
+#pragma warning restore RS0030
                 if (m_SortAlphabetically)
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     return res.OrderBy(element => element.text.ToLower());
+#pragma warning restore RS0030
                 else
                     return res;
             }
@@ -197,8 +203,12 @@ namespace UnityEditor
             {
                 IEnumerable<ListElement> res = BuildQuery(prefix);
                 if (m_MaxCount > 0)
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     res = res.Take(m_MaxCount);
+#pragma warning restore RS0030
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 return res.Count();
+#pragma warning restore RS0030
             }
 
             public void AddElement(string label, string[] types)
@@ -436,11 +446,15 @@ namespace UnityEditor
         {
             if (!m_Data.m_EnableAutoCompletion)
                 return;
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             IEnumerable<string> query = m_Data.GetFilteredList(m_EnteredText).Select(element => element.text);
+#pragma warning restore RS0030
 
             if (m_EnteredTextCompletion != "" && m_EnteredTextCompletion.StartsWith(m_EnteredText, System.StringComparison.OrdinalIgnoreCase))
             {
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 m_SelectedCompletionIndex = query.TakeWhile(element => element != m_EnteredTextCompletion).Count();
+#pragma warning restore RS0030
                 // m_EnteredTextCompletion is already correct
             }
             else
@@ -448,10 +462,16 @@ namespace UnityEditor
                 // Clamp m_SelectedCompletionIndex to 0..query.Count () - 1
                 if (m_SelectedCompletionIndex < 0)
                     m_SelectedCompletionIndex = 0;
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 else if (m_SelectedCompletionIndex >= query.Count())
+#pragma warning restore RS0030
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     m_SelectedCompletionIndex = query.Count() - 1;
+#pragma warning restore RS0030
 
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 m_EnteredTextCompletion = query.Skip(m_SelectedCompletionIndex).DefaultIfEmpty("").FirstOrDefault();
+#pragma warning restore RS0030
             }
             AdjustRecycledEditorSelectionToCompletion();
         }

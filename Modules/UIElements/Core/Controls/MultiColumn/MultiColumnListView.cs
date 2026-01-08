@@ -115,7 +115,7 @@ namespace UnityEngine.UIElements
             private set
             {
                 if (m_Columns != null)
-                    m_Columns.propertyChanged -= ColumnsChanged;
+                    m_Columns.propertyChanged -= OnColumnsChanged;
 
                 if (value == null)
                 {
@@ -124,7 +124,7 @@ namespace UnityEngine.UIElements
                 }
 
                 m_Columns = value;
-                m_Columns.propertyChanged += ColumnsChanged;
+                m_Columns.propertyChanged += OnColumnsChanged;
 
                 if (m_Columns.Count > 0)
                 {
@@ -144,6 +144,9 @@ namespace UnityEngine.UIElements
             get => m_SortColumnDescriptions;
             private set
             {
+                if (m_SortColumnDescriptions != null)
+                    m_SortColumnDescriptions.propertyChanged -= OnSortColumnDescriptionsChanged;
+
                 if (value == null)
                 {
                     m_SortColumnDescriptions.Clear();
@@ -151,6 +154,7 @@ namespace UnityEngine.UIElements
                 }
 
                 m_SortColumnDescriptions = value;
+                m_SortColumnDescriptions.propertyChanged += OnSortColumnDescriptionsChanged;
 
                 if (viewController != null)
                 {
@@ -251,10 +255,16 @@ namespace UnityEngine.UIElements
             columnSortingChanged?.Invoke();
         }
 
-        void ColumnsChanged(object sender, BindablePropertyChangedEventArgs args)
+        void OnColumnsChanged(object sender, BindablePropertyChangedEventArgs args)
         {
             // Forward the event
-            NotifyPropertyChanged(args.propertyName);
+            NotifyPropertyChanged(columnsProperty + "." + args.propertyName);
+        }
+
+        void OnSortColumnDescriptionsChanged(object sender, BindablePropertyChangedEventArgs args)
+        {
+            // Forward the event
+            NotifyPropertyChanged(sortColumnDescriptionsProperty + "." + args.propertyName);
         }
 
         void RaiseHeaderContextMenuPopulate(ContextualMenuPopulateEvent evt, Column column)

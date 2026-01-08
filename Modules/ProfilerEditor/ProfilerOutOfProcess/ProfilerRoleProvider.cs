@@ -135,7 +135,9 @@ namespace UnityEditor
 
             static void SetupProfiledConnection(int connId)
             {
+                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 if (ProfilerDriver.GetAvailableProfilers().Any(id => id == connId))
+#pragma warning restore RS0030
                 {
                     ProfilerDriver.SetRemoteEditorConnection(connId);
                     Menu.SetChecked("Edit/Record", s_OOPProfilerWindow.IsSetToRecord());

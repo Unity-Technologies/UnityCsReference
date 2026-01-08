@@ -147,7 +147,12 @@ namespace Unity.Hierarchy.Editor
             // Instantiate the node type handlers for all hierarchy windows.
             var windows = Resources.FindObjectsOfTypeAll<HierarchyWindow>();
             foreach (var window in windows)
-                HierarchyWindowManager.InstantiateNodeTypeHandlers(window.m_Hierarchy);
+            {
+                // This static method can be called before the hierarchy window is enabled, ensure the hierarchy is valid.
+                var hierarchy = window.m_Hierarchy;
+                if (hierarchy != null && hierarchy.IsCreated)
+                    HierarchyWindowManager.InstantiateNodeTypeHandlers(hierarchy);
+            }
         }
 
         /// <summary>
@@ -267,7 +272,7 @@ namespace Unity.Hierarchy.Editor
 
             m_SearchView = new HierarchySearchView(this);
             m_SearchView.state.queryBuilderEnabled = HierarchyPreferences.UseQueryBuilder;
-            m_SearchField = new SearchFieldElement(nameof(SearchFieldElement), m_SearchView, false);
+            m_SearchField = new SearchFieldElement(nameof(SearchFieldElement), m_SearchView, SearchQueryBuilderViewFlags.None);
             var addNewBlockContent = EditorGUIUtility.IconContent("search_menu");
             m_SearchField.addNewBlockIcon = (Texture2D)addNewBlockContent.image;
             toolbar.Add(m_SearchField);

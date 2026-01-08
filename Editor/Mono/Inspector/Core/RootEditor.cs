@@ -81,7 +81,9 @@ namespace UnityEditor
 
             foreach (var e in editors)
             {
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 var fittingRootEditor = kSRootEditor.FirstOrDefault(rootEditor => rootEditor.rootEditorType == e.GetType());
+#pragma warning restore RS0030
                 if (fittingRootEditor == null)
                     continue;
                 return fittingRootEditor.supportsAddComponent;
@@ -142,7 +144,9 @@ namespace UnityEditor
                 {
                     var parameters = candidate.GetParameters();
                     var signature = parameters is { Length: > 0 }
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                         ? string.Join(", ", parameters.Select(p => p.ParameterType.FullName).ToArray())
+#pragma warning restore RS0030
                         : string.Empty;
                     throw new InvalidOperationException($"Could not create a valid delegate from method marked: [{nameof(RootEditorAttribute)}] with signature: ({signature})");
                 }

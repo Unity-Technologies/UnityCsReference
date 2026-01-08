@@ -114,7 +114,9 @@ namespace UnityEditor.Compilation
         public AssemblyFlags flags { get; private set; }
         public ScriptCompilerOptions compilerOptions { get; internal set; }
 
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
         public string[] allReferences { get { return assemblyReferences.Select(a => a.outputPath).Concat(compiledAssemblyReferences).ToArray(); } }
+#pragma warning restore RS0030
 
         public Assembly(string name,
                         string outputPath,
@@ -206,7 +208,7 @@ namespace UnityEditor.Compilation
 
     internal struct CompilationDoneResult
     {
-        internal CompilationDoneResult(bool isForEditor, bool isSuccessful, List<string> updatedFiles, List<string> deletedFiles, IReadOnlyDictionary<string, IReadOnlyList<string>> assemblyDefines)
+        internal CompilationDoneResult(bool isForEditor, bool isSuccessful, IReadOnlyList<string> updatedFiles, IReadOnlyList<string> deletedFiles, IReadOnlyDictionary<string, IReadOnlyList<string>> assemblyDefines)
         {
             IsForEditor = isForEditor;
             IsSuccessful = isSuccessful;
@@ -220,10 +222,10 @@ namespace UnityEditor.Compilation
         public bool IsSuccessful { get; private set; }
 
         // List of the files in the publish Directory that is new or has been updated since last time.
-        public List<string> UpdatedFiles { get; private set; }
+        public IReadOnlyList<string> UpdatedFiles { get; private set; }
 
         // List of files that has been deleted since last time.
-        public List<string> DeletedFiles { get; private set; }
+        public IReadOnlyList<string> DeletedFiles { get; private set; }
 
         public IReadOnlyDictionary<string, IReadOnlyList<string>> AssemblyDefines { get; private set; }
     }
@@ -449,7 +451,9 @@ namespace UnityEditor.Compilation
         {
             if (assemblyDefinitionPlatforms == null)
             {
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 assemblyDefinitionPlatforms = CustomScriptAssembly.Platforms.Select(p => new AssemblyDefinitionPlatform(p.Name, p.DisplayName, p.BuildTarget, p.HasSubTarget, p.SubTarget)).ToArray();
+#pragma warning restore RS0030
                 Array.Sort(assemblyDefinitionPlatforms, CompareAssemblyDefinitionPlatformByDisplayName);
             }
 
@@ -507,7 +511,9 @@ namespace UnityEditor.Compilation
 
         internal static string[] GetPrecompiledAssemblyNames(PrecompiledAssemblyProviderBase precompiledAssemblyProvider)
         {
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return precompiledAssemblyProvider.GetPrecompiledAssemblies(
+#pragma warning restore RS0030
                 EditorScriptCompilationOptions.BuildingForEditor|EditorScriptCompilationOptions.BuildingWithAsserts,
                 EditorUserBuildSettings.activeBuildTarget)
                 .Where(x => (x.Flags & sc.AssemblyFlags.UserAssembly) == sc.AssemblyFlags.UserAssembly)
@@ -534,7 +540,9 @@ namespace UnityEditor.Compilation
         public static string[] GetPrecompiledAssemblyPaths(PrecompiledAssemblySources precompiledAssemblySources)
         {
             var precompiledAssemblyProvider = EditorCompilationInterface.Instance.PrecompiledAssemblyProvider;
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return GetPrecompiledAssemblyPaths(precompiledAssemblySources, precompiledAssemblyProvider).Select(FileUtil.GetPhysicalPath).ToArray();
+#pragma warning restore RS0030
         }
 
         internal static string[] GetPrecompiledAssemblyPaths(PrecompiledAssemblySources precompiledAssemblySources, PrecompiledAssemblyProviderBase precompiledAssemblyProvider)
@@ -563,15 +571,21 @@ namespace UnityEditor.Compilation
             if ((precompiledAssemblySources & PrecompiledAssemblySources.UserAssembly) != 0)
                 flags |= sc.AssemblyFlags.UserAssembly;
 
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var precompiledAssemblies = precompiledAssemblyProvider.GetPrecompiledAssemblies(
+#pragma warning restore RS0030
                 EditorScriptCompilationOptions.BuildingForEditor | EditorScriptCompilationOptions.BuildingWithAsserts,
                 buildTarget)
                 .Concat(precompiledAssemblyProvider.GetUnityAssemblies(true, buildTarget));
 
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             foreach (var a in precompiledAssemblies.Where(x => (x.Flags & flags) != 0))
+#pragma warning restore RS0030
                 assemblyNames.Add(a.Path);
 
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return assemblyNames.ToArray();
+#pragma warning restore RS0030
         }
 
         public static string GetPrecompiledAssemblyPathFromAssemblyName(string assemblyName)
@@ -612,7 +626,9 @@ namespace UnityEditor.Compilation
                 var outputPath = scriptAssembly.FullPath;
                 var sourceFiles = scriptAssembly.Files;
                 var defines = scriptAssembly.Defines;
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 var compiledAssemblyReferences = scriptAssembly.References.Select(FileUtil.GetPhysicalPath).Concat(targetingPackFiles.referenceAssemblies.Select(p=>p.MakeAbsolute().ToString())).ToArray();
+#pragma warning restore RS0030
 
                 var flags = AssemblyFlags.None;
 
@@ -622,8 +638,12 @@ namespace UnityEditor.Compilation
                 var compilerOptions = scriptAssembly.CompilerOptions;
                 compilerOptions.ResponseFiles = scriptAssembly.GetResponseFiles();
                 // inject analyzers
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 compilerOptions.RoslynAnalyzerDllPaths = (compilerOptions.RoslynAnalyzerDllPaths ?? Array.Empty<string>()).Concat(
+#pragma warning restore RS0030
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     targetingPackFiles.analyzers.Select(p => p.MakeAbsolute().ToString())).ToArray();
+#pragma warning restore RS0030
 
                 assemblies[i] = new Assembly(name,
                     outputPath,
@@ -644,7 +664,9 @@ namespace UnityEditor.Compilation
             for (int i = 0; i < scriptAssemblies.Length; ++i)
             {
                 var scriptAssembly = scriptAssemblies[i];
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 var assemblyReferences = scriptAssembly.ScriptAssemblyReferences.Select(a => scriptAssemblyToAssembly[a]).Where(a => !IsInternalPlugin(a.outputPath)).ToArray();
+#pragma warning restore RS0030
 
                 assemblies[i].assemblyReferences = assemblyReferences;
             }
@@ -657,7 +679,9 @@ namespace UnityEditor.Compilation
         {
             if (AssemblyHelper.IsInternalAssembly(fullReference))
             {
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 if (!Modules.ModuleUtils.GetAdditionalReferencesForEditorCsharpProject().Contains(fullReference))
+#pragma warning restore RS0030
                     return true;
             }
             return false;

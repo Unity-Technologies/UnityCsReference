@@ -22,3 +22,6 @@ using System.Runtime.CompilerServices;
 [assembly: InternalsVisibleTo("Unity.Modules.InputForUI.Tests.Editor")]
 [assembly: InternalsVisibleTo("Unity.Modules.Core.InspectorFramework.Tests.Editor")]
 
+// Performance Tests Assemblies
+[assembly: InternalsVisibleTo("Unity.PerformanceTesting.IMGUI")]
+

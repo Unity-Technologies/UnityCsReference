@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Collections.Generic;
 using UnityEditor;
 using UnityEditor.Profiling;
 using UnityEngine;
@@ -15,8 +16,10 @@ namespace UnityEditorInternal.Profiling
 
         protected static class Styles
         {
-            public static GUIContent emptyText = new GUIContent("");
-            public static GUIContent selectLineText = EditorGUIUtility.TrTextContent("Select Line for the detailed information");
+            public static readonly GUIContent emptyText = new GUIContent("");
+            public static readonly GUIContent selectLineText = EditorGUIUtility.TrTextContent("Select Line for the detailed information");
+
+            public static readonly GUIContent askAssistantTooltip = EditorGUIUtility.TrTextContent("Ask Assistant", "Ask the Profiler Assistant for help understanding this sample");
 
             public static readonly GUIStyle expandedArea = new GUIStyle();
             public static readonly GUIStyle callstackScroll = new GUIStyle("CN Box");
@@ -60,6 +63,26 @@ namespace UnityEditorInternal.Profiling
             GUILayout.EndVertical();
             GUILayout.FlexibleSpace();
             GUILayout.EndHorizontal();
+        }
+
+        protected void DrawAssistantButton(int selectedId)
+        {
+            if (selectedId == HierarchyFrameDataView.invalidSampleId || !m_ProfilerFrameDataHierarchyView.CpuProfilerAssistantSupported)
+                return;
+
+            var rect = EditorGUILayout.BeginHorizontal();
+            if (GUILayout.Button(Styles.askAssistantTooltip))
+            {
+                var markerName = m_FrameDataView.GetItemName(selectedId);
+
+                var markerIdPath = new List<int>();
+                m_FrameDataView.GetItemMarkerIDPath(selectedId, markerIdPath);
+                var markerIdPathString = string.Join("/", markerIdPath);
+
+                m_ProfilerFrameDataHierarchyView.LaunchCpuProfilerAssistant(rect, m_FrameDataView.frameIndex, m_FrameDataView.threadName, markerIdPathString, markerName);
+            }
+            GUILayout.FlexibleSpace();
+            EditorGUILayout.EndHorizontal();
         }
 
         public abstract void SaveViewSettings();

@@ -264,7 +264,9 @@ namespace Unity.GraphToolkit.Editor
         /// <param name="modelGuid">The model GUID for which we're querying the UI.</param>
         public static IEnumerable<ModelView> GetModelDependencies(Hash128 modelGuid)
         {
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return s_ModelDependencies.TryGetValue(modelGuid, out var uiList) ? uiList : Enumerable.Empty<ModelView>();
+#pragma warning restore RS0030
         }
     }
 }

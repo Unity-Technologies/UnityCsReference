@@ -13,11 +13,22 @@ namespace Unity.UIToolkit.Editor;
 internal static class VisualElementHierarchyHandlerColumns
 {
     [HierarchyViewCellDescriptor(HierarchyWindowColumnActive.k_ColumnId, typeof(HierarchyVisualElementHandler))]
-    internal static void CreateTestNodeCellDesc(HierarchyViewCellDescriptor desc)
+    internal static void CreateActiveColumnMainStage(HierarchyViewCellDescriptor desc)
+    {
+        CreateActiveColumn(desc);
+    }
+
+    [HierarchyViewCellDescriptor(HierarchyWindowColumnActive.k_ColumnId, typeof(VisualElementEditingNodeHandler))]
+    internal static void CreateActiveColumnUIStage(HierarchyViewCellDescriptor desc)
+    {
+        CreateActiveColumn(desc);
+    }
+
+    internal static void CreateActiveColumn(HierarchyViewCellDescriptor desc)
     {
         desc.BindCell = cell =>
         {
-            var handler = cell.Handler as HierarchyVisualElementHandler;
+            var handler = cell.Handler as VisualElementNodeTypeHandler;
             if (handler == null)
                 return;
 
@@ -32,7 +43,7 @@ internal static class VisualElementHierarchyHandlerColumns
                     }
                 },
                 isDefaultValue: (ed, value) => value == true);
-            
+
             ed.Element.SetEnabled(false);
         };
         desc.UnbindCell = cell =>

@@ -317,7 +317,9 @@ namespace UnityEditor.VersionControl
                         return false;
                     }
 
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     paths = reservedPaths.Concat(assetList.Where(a => a != null).Select(a => a.path)).ToArray();
+#pragma warning restore RS0030
                 }
                 else
                 {

@@ -282,7 +282,9 @@ namespace UnityEditor
                 EditorGUI.BeginChangeCheck();
 
                 int type;
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 if (Styles.LightTypeValues.Contains(lightType.intValue))
+#pragma warning restore RS0030
                 {
                     // ^ The currently selected light type is supported in the
                     // current pipeline.
@@ -294,8 +296,12 @@ namespace UnityEditor
                     // the current pipeline. Add it to the dropdown, since it
                     // would show up as a blank entry.
                     string currentTitle = ((LightType)lightType.intValue).ToString();
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     GUIContent[] titles = Styles.LightTypeTitles.Append(EditorGUIUtility.TrTextContent(currentTitle)).ToArray();
+#pragma warning restore RS0030
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     int[] values = Styles.LightTypeValues.Append(lightType.intValue).ToArray();
+#pragma warning restore RS0030
                     type = EditorGUI.IntPopup(lightTypeRect, Styles.Type, selectedLightType, titles, values);
                 }
 
@@ -307,7 +313,9 @@ namespace UnityEditor
                 }
                 EditorGUI.EndProperty();
 
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 if (!Styles.LightTypeValues.Contains(lightType.intValue))
+#pragma warning restore RS0030
                 {
                     EditorGUILayout.HelpBox(
                         "This light type is not supported in the current active render pipeline. Change the light type or the active Render Pipeline to use this light.",

@@ -4,6 +4,7 @@
 
 using System;
 using System.Globalization;
+using System.Runtime.InteropServices;
 using UnityEngine.Bindings;
 
 namespace UnityEngine.UIElements
@@ -11,7 +12,7 @@ namespace UnityEngine.UIElements
     /// <summary>
     /// Represents the scale applied as element transformations. The center point that doesn't move when the scaling is applied is the <see cref="TransformOrigin"/>.
     /// </summary>
-    [Serializable]
+    [Serializable, StructLayout(LayoutKind.Sequential)]
     public partial struct Scale : IEquatable<Scale>
     {
         /// <summary>

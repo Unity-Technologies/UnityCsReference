@@ -90,7 +90,9 @@ namespace Unity.GraphToolkit.Editor
 
             var title = string.IsNullOrEmpty(command.Title) ? "New Group" : command.Title.Trim();
 
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var existingNames = command.ContainingGroup.Items.OfType<IHasTitle>().Select(t => t.Title).ToArray();
+#pragma warning restore RS0030
             title = ObjectNames.GetUniqueName(existingNames, title);
 
             foreach (var selectionUpdater in selectionUpdaters)
@@ -287,7 +289,9 @@ namespace Unity.GraphToolkit.Editor
         {
             bool duplicated = false;
             var sectionName = Group.GetSection().Title;
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             foreach (var item in original.ToList()) // duplicated originals list as it might be modified when removing a variable
+#pragma warning restore RS0030
             {
                 if (item is GroupModel group)
                 {
@@ -365,7 +369,9 @@ namespace Unity.GraphToolkit.Editor
 
                 command.Group.MoveItemsAfter(newItems, command.InsertAfter);
 
+                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 graphModelState.GraphModel.DeleteGroups(duplicatedGroups.Where(g => !g.Items.HasAny() && g.IsDeletable()).ToList());
+#pragma warning restore RS0030
                 graphModelState.GraphModel.UpdateSubGraphs();
 
                 graphUpdater.MarkUpdated(changeScope.ChangeDescription);

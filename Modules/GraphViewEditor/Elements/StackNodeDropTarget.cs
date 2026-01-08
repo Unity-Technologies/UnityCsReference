@@ -198,7 +198,9 @@ namespace UnityEditor.Experimental.GraphView
 
             int insertIndex = 0;
             Vector2 localMousePosition = graphView.ChangeCoordinatesTo(contentContainer, graphView.WorldToLocal(evt.mousePosition));
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             int previewIndex = m_CurrentPreviews?.FirstOrDefault()?.parent.IndexOf(m_CurrentPreviews.First()) ?? -1;
+#pragma warning restore RS0030
             int maxIndex = 0;
 
             // If there is no child then add at index 0
@@ -223,7 +225,9 @@ namespace UnityEditor.Experimental.GraphView
             }
 
             // Call AcceptsElement to get the first insert index
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             AcceptsElement(m_DraggedElements.First(), ref insertIndex, maxIndex);
+#pragma warning restore RS0030
 
             // Do nothing if the insert index has not changed
             if (previewIndex == insertIndex)
@@ -259,7 +263,9 @@ namespace UnityEditor.Experimental.GraphView
             // If there is already a preview being removed then adjust the insert index of the new preview
             if (m_RemovedPreviews != null)
             {
+                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 int removePreviewIndex = m_RemovedPreviews.FirstOrDefault()?.parent.IndexOf(m_RemovedPreviews.First()) ?? -1;
+#pragma warning restore RS0030
 
                 if (removePreviewIndex < previewIndex)
                 {
@@ -323,7 +329,9 @@ namespace UnityEditor.Experimental.GraphView
             int proposedIndex = -1;
             int maxIndex = 1;
             // We just want to know which elements are accepted. The actual index is not relevant to us at this point.
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             m_DraggedElements = selection
+#pragma warning restore RS0030
                 .OfType<GraphElement>()
                 .Where(e => e != this && AcceptsElementInternal(e, ref proposedIndex, maxIndex))
                 .ToList();

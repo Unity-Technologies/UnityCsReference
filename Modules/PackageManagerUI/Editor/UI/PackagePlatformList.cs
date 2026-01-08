@@ -39,14 +39,20 @@ namespace UnityEditor.PackageManager.UI.Internal
                 return;
 
             var upmReserved = m_UpmCache.ParseUpmReserved(packageInfo);
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var platformNames = upmReserved?.GetList<string>("supportedPlatforms") ?? Enumerable.Empty<string>();
+#pragma warning restore RS0030
 
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             if (!platformNames.Any())
+#pragma warning restore RS0030
                 return;
 
             UIUtils.SetElementDisplay(this, true);
 
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var listLabel = platformNames.Count() > 1 ? L10n.Tr("Supported Platforms:") : L10n.Tr("Supported Platform:");
+#pragma warning restore RS0030
             m_TagLabelList.Refresh(listLabel, platformNames);
         }
 

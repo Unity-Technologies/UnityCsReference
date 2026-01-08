@@ -40,10 +40,14 @@ namespace UnityEditor.Search
         static EnumerableCreator()
         {
             s_EnumerableFactories = new Dictionary<QueryNodeType, IQueryEnumerableFactory>();
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var factoryTypes = TypeCache.GetTypesWithAttribute<EnumerableCreatorAttribute>().Where(t => typeof(IQueryEnumerableFactory).IsAssignableFrom(t));
+#pragma warning restore RS0030
             foreach (var factoryType in factoryTypes)
             {
+                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 var enumerableCreatorAttribute = factoryType.GetCustomAttributes(typeof(EnumerableCreatorAttribute), false).Cast<EnumerableCreatorAttribute>().FirstOrDefault();
+#pragma warning restore RS0030
                 if (enumerableCreatorAttribute == null)
                     continue;
 

@@ -91,7 +91,9 @@ namespace UnityEditor
 
         static CommandService()
         {
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             s_Commands = ScanAttributes().ToDictionary(c => c.id, c => c);
+#pragma warning restore RS0030
         }
 
         public static string GetCommandLabel(string commandId)
@@ -165,7 +167,9 @@ namespace UnityEditor
 
                 foreach (var attr in mi.GetCustomAttributes<CommandHandlerAttribute>())
                 {
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     if (commands.Any(c => c.id == attr.id))
+#pragma warning restore RS0030
                     {
                         Debug.LogWarning($"There is already a command with the ID {attr.id}. " +
                             "Commands need to have a unique ID, i.e. \"Unity/Category/Command_42\".");

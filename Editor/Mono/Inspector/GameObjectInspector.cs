@@ -681,7 +681,9 @@ namespace UnityEditor
                                 var replaceTargets = new List<UnityObject>(targets);
                                 replaceTargets.Reverse();
                                 if (targets.Length > 1)
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                                     PrefabUtility.ReplacePrefabAssetOfPrefabInstances(replaceTargets.Select(e => (GameObject)e).ToArray(), newAsset, InteractionMode.UserAction);
+#pragma warning restore RS0030
                                 else
                                     PrefabUtility.ReplacePrefabAssetOfPrefabInstance((GameObject)target, newAsset, InteractionMode.UserAction);
                                 CalculatePrefabStatus(); // Updates the cached m_FirstPrefabInstanceOutermostRootAsset to the newly selected Prefab
@@ -761,7 +763,9 @@ namespace UnityEditor
                         if (EditorGUI.DropdownButton(rect, Styles.overridesContent, FocusType.Passive))
                         {
                             if (targets.Length > 1)
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                                 PopupWindow.Show(rect, new PrefabOverridesWindow(targets.Select(e => (GameObject)e).ToArray()));
+#pragma warning restore RS0030
                             else
                                 PopupWindow.Show(rect, new PrefabOverridesWindow((GameObject)target));
                             GUIUtility.ExitGUI();
@@ -798,7 +802,9 @@ namespace UnityEditor
                             }
                         }
 
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                         Selection.objects = selectedAssets.ToArray();
+#pragma warning restore RS0030
                         if (Selection.objects.Length != 0)
                             EditorGUIUtility.PingObject(Selection.activeObject);
                     }
@@ -1014,7 +1020,9 @@ namespace UnityEditor
             if (!go)
                 return false;
             go.GetComponentsInChildren(s_RendererComponentsList);
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return s_RendererComponentsList.Any(IsRendererUsableForPreview);
+#pragma warning restore RS0030
         }
 
         public static Bounds GetRenderableBounds(GameObject go)
@@ -1348,7 +1356,9 @@ namespace UnityEditor
                         if (HandleUtility.ignoreRaySnapObjects == null)
                             HandleUtility.ignoreRaySnapObjects = m_DragObject.GetComponentsInChildren<Transform>();
                         else
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                             HandleUtility.ignoreRaySnapObjects = HandleUtility.ignoreRaySnapObjects.Union(m_DragObject.GetComponentsInChildren<Transform>()).ToArray();
+#pragma warning restore RS0030
 
                         PrefabStage prefabStage = PrefabStageUtility.GetCurrentPrefabStage();
                         if (prefabStage != null)
@@ -1467,7 +1477,9 @@ namespace UnityEditor
             {
                 // Since this inspector code executes for each dragged GameObject we should retain
                 // selection to all of them by joining them to the previous selection list
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 Selection.objects = Selection.gameObjects.Union(new[] { draggedObject }).ToArray();
+#pragma warning restore RS0030
             }
 
             HandleUtility.ignoreRaySnapObjects = null;

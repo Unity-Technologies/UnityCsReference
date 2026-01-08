@@ -73,7 +73,9 @@ namespace UnityEditor.AssetImporters
                 {
                     if (m_TargetDirtyCount == null)
                     {
+                        #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                         m_TargetDirtyCount = new int[m_Editor.targets.Length].ToList();
+#pragma warning restore RS0030
                     }
 
                     for (int i = 0; i < m_Editor.targets.Length; i++)
@@ -206,7 +208,9 @@ namespace UnityEditor.AssetImporters
 
         void InitializeUnsavedChangesCache()
         {
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var editors = Resources.FindObjectsOfTypeAll(this.GetType()).Cast<AssetImporterEditor>().ToList();
+#pragma warning restore RS0030
 
             CheckExtraDataArray();
             var loadedIds = new List<EntityId>(targets.Length);
@@ -234,7 +238,9 @@ namespace UnityEditor.AssetImporters
                 // We are selecting all Editor instances already enabled and ourselves.
                 // This is because when coming back from an assembly reload,
                 // the Editors already exist but get removed from the cache in their OnDisable, so we don't count them until its their turn to be Enabled back.
+                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 var allEditors = editors.Where(e => e == this || (e.m_OnEnableCalled && e.targets.Contains(targets[i]))).Select(e => e.GetEntityId()).ToArray();
+#pragma warning restore RS0030
                 var instances = GetInspectorCopyCount(entityId);
                 if (allEditors.Length != instances)
                 {
@@ -379,7 +385,9 @@ namespace UnityEditor.AssetImporters
             InitializePostprocessors();
 
             saveChangesMessage = targets.Length == 1
+                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 ? string.Format(Styles.unappliedSettingSingleAsset, GetAssetPaths().First())
+#pragma warning restore RS0030
                 : string.Format(Styles.unappliedSettingMultipleAssets, targets.Length);
 
             m_OnEnableCalled = true;
@@ -453,7 +461,9 @@ namespace UnityEditor.AssetImporters
 
             int nbErrors = 0, nbWarnings = 0;
             var guids = new List<GUID>();
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             foreach (var importer in assetImporterEditor.targets.OfType<AssetImporter>())
+#pragma warning restore RS0030
             {
                 var guid = AssetDatabase.GUIDFromAssetPath(importer.assetPath);
                 AssetImporter.GetImportLogEntriesCount(guid, out int nbE, out int nbW);
@@ -494,7 +504,9 @@ namespace UnityEditor.AssetImporters
         {
             if (!m_AssetHasIssues.HasValue)
             {
+                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 m_AssetHasIssues = targets != null && targets.Length > 0 && targets.Any(t =>
+#pragma warning restore RS0030
                     t is AssetImporter importer
                     && AssetImporter.GetImportLogEntriesCount(AssetDatabase.GUIDFromAssetPath(importer.assetPath), out int nbErrors, out int nbWarnings)
                     && (nbErrors > 0 || nbWarnings > 0));
@@ -505,7 +517,9 @@ namespace UnityEditor.AssetImporters
 
         IEnumerable<string> GetAssetPaths()
         {
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return targets.OfType<AssetImporter>().Select(i => i.assetPath);
+#pragma warning restore RS0030
         }
 
         public virtual bool HasModified()
@@ -742,7 +756,9 @@ namespace UnityEditor.AssetImporters
              */
             SortedSet<AssetPostprocessor.PostprocessorInfo> allAssetImportProcessors = new SortedSet<AssetPostprocessor.PostprocessorInfo>(new AssetPostprocessingInternal.CompareAssetImportPriority());
             allAssetImportProcessors.UnionWith(((AssetImporter)target).GetDynamicPostprocessors());
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             allAssetImportProcessors.UnionWith(AssetImporter.GetStaticPostprocessors(target.GetType()).Where(t => t.Type.Assembly != typeof(AssetImporter).Assembly));
+#pragma warning restore RS0030
 
             m_Postprocessors = new List<PostprocessorInfo>();
             foreach (var processor in allAssetImportProcessors)
@@ -852,7 +868,9 @@ namespace UnityEditor.AssetImporters
                 }
 
                 AssetDatabase.StartAssetEditing();
+                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 foreach (var importer in targets.Cast<AssetImporter>())
+#pragma warning restore RS0030
                 {
                     Undo.RegisterImporterUndo(importer.assetPath, string.Empty);
                     //When selecting an override, set it as an override, when selecting the default importer, clear the override
@@ -873,34 +891,52 @@ namespace UnityEditor.AssetImporters
             if (assetTarget == null)
                 return;
 
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var targetsPaths = targets.OfType<AssetImporter>().Select(t => t.assetPath);
+#pragma warning restore RS0030
 
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var typeLists = targetsPaths.Select(AssetDatabase.GetAvailableImporters).ToList();
+#pragma warning restore RS0030
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             m_AvailableImporterTypes.AddRange(typeLists.Aggregate(
+#pragma warning restore RS0030
+                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 new HashSet<Type>(typeLists.First()),
+#pragma warning restore RS0030
                 (h, e) =>
                 {
                     h.IntersectWith(e);
                     return h;
                 }));
 
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var defaultImporter = targetsPaths.Select(AssetDatabase.GetDefaultImporter).First();
+#pragma warning restore RS0030
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             m_AvailableImporterTypesOptions = m_AvailableImporterTypes.Select(a => a == defaultImporter ? string.Format(Styles.defaultImporterName, defaultImporter.FullName) : a.FullName).ToArray();
+#pragma warning restore RS0030
 
 
             if (m_AvailableImporterTypes.Count > 0)
             {
+                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 var selection = targets
+#pragma warning restore RS0030
                     .Select(t => t.GetType())
                     .Select(t => m_AvailableImporterTypes.IndexOf(t))
                     .Distinct();
+                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 if (selection.Count() > 1)
+#pragma warning restore RS0030
                 {
                     m_SelectedImporterType = k_MultipleSelectedImporterTypes;
                 }
                 else
                 {
+                    #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     m_SelectedImporterType = selection.First();
+#pragma warning restore RS0030
                 }
             }
 

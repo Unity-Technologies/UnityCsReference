@@ -116,7 +116,9 @@ namespace UnityEditor
                         continue;
                     string[] line = curr.Split(new string[] { ": " }, StringSplitOptions.None);
                     if (line.Length > 1)
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                         ret.Add(line[0], string.Concat(line.Skip(1).ToArray()));
+#pragma warning restore RS0030
                     else
                         ret.Add(curr, "");
                 }
@@ -181,7 +183,9 @@ namespace UnityEditor
         {
             set
             {
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 postData = string.Join("&", value.Select(kv => EscapeLong(kv.Key) + "=" + EscapeLong(kv.Value)).ToArray());
+#pragma warning restore RS0030
             }
         }
 
@@ -238,7 +242,9 @@ namespace UnityEditor
             if (m_Method == "")
                 m_Method = "GET";
 
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             string[] headerFlattened = header.Select(kv => string.Format("{0}: {1}", kv.Key, kv.Value)).ToArray();
+#pragma warning restore RS0030
 
             m_Handle = SubmitClientRequest(tag, m_ToUrl, headerFlattened, m_Method, m_FromData, Done, Progress);
         }

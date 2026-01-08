@@ -34,12 +34,18 @@ namespace UnityEditor.Scripting.ScriptCompilation
             }
 
             scriptAssembly.CompilerOptions.RoslynAnalyzerDllPaths =
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 scriptAssembly.ScriptAssemblyReferences
+#pragma warning restore RS0030
                     .SelectMany(sa => SetAnalyzers(sa, allAnalyzers, scanPrecompiledReferences))
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     .Concat(allAnalyzers
+#pragma warning restore RS0030
                         .Where(a => a.scriptAssemblyFileName == null ||
                                     a.scriptAssemblyFileName == scriptAssembly.Filename ||
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                                     scanPrecompiledReferences && scriptAssembly.References.Select(Path.GetFileName).Contains(a.scriptAssemblyFileName))
+#pragma warning restore RS0030
                         .Select(a => a.analyzerDll))
                     .Distinct()
                     .ToArray();
@@ -57,7 +63,9 @@ namespace UnityEditor.Scripting.ScriptCompilation
                     scriptAssembly.CompilerOptions.RoslynAnalyzerRulesetPath = RuleSetFileCache.GetPathForAssembly(scriptAssembly.OriginPath);
                     scriptAssembly.CompilerOptions.AnalyzerConfigPath = RoslynAnalyzerConfigFiles.GetAnalyzerConfigForAssembly(scriptAssembly.OriginPath);
                 }
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 scriptAssembly.CompilerOptions.RoslynAdditionalFilePaths = scriptAssembly.CompilerOptions.RoslynAnalyzerDllPaths
+#pragma warning restore RS0030
                     .SelectMany(a=>RoslynAdditionalFiles.GetAnalyzerAdditionalFilesForTargetAssembly(a, scriptAssembly.OriginPath))
                     .Distinct()
                     .ToArray();
@@ -69,9 +77,13 @@ namespace UnityEditor.Scripting.ScriptCompilation
         internal static void SetAnalyzers(ScriptAssembly[] scriptAssemblies, TargetAssembly[] potentialAnalyzerOwners, string[] analyzerDlls, bool scanPrecompiledReferences)
         {
             // Figure out what assemblies own each analyzer
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var analyzerAssemblies = analyzerDlls.Select(analyzerDll =>
+#pragma warning restore RS0030
             {
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 var potentialAnalyzerOwner = potentialAnalyzerOwners
+#pragma warning restore RS0030
                     .Where(targetAssembly => targetAssembly.PathFilter(analyzerDll) > 0)
                     .OrderBy(targetAssembly => targetAssembly.PathFilter(analyzerDll))
                     .LastOrDefault();

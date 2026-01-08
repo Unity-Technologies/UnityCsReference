@@ -23,6 +23,7 @@ enum LayoutNodeDataType
     Computed = 1,
     Cache = 2,
     ComputedStyle = 3,
+    Transform = 4,
 }
 
 [RequiredByNativeCode]
@@ -170,7 +171,7 @@ internal class LayoutManager : IDisposable
     //    Since it is registered on the AppDomain unload event as part of Initialize().
     //    We also assume the AppDomain unload will not happen right in the middle of Initialize()'s execution.
     //    THEREFORE there shouldn't be any race condition for the transition between Initialized and Shutdown.
-    static void Initialize()
+    static unsafe void Initialize()
     {
         // If the SharedManager was already created, we're good
         // If it was shut down, we do not want to re-create it
@@ -193,6 +194,9 @@ internal class LayoutManager : IDisposable
         }
 
         s_SharedInstance = new LayoutManager(Allocator.Persistent);
+
+        fixed (UnmanagedDataStore* nodesPtr = &s_SharedInstance.m_Nodes)
+            NativeTransformUtils.SetDataAccess((IntPtr)nodesPtr);
     }
 
     static void Shutdown()
@@ -266,6 +270,7 @@ internal class LayoutManager : IDisposable
             UnmanagedComponentType.Create<LayoutComputedData>(),
             UnmanagedComponentType.Create<LayoutCacheData>(),
             UnmanagedComponentType.Create<ComputedStyle>(),
+            UnmanagedComponentType.Create<VisualElementTransformData>(),
         };
 
         const string areaName = nameof(UIElements);
@@ -275,6 +280,7 @@ internal class LayoutManager : IDisposable
             new MemoryLabel(areaName, $"Layout.ComponentData<{nameof(LayoutComputedData)}>"),
             new MemoryLabel(areaName, $"Layout.ComponentData<{nameof(LayoutCacheData)}>"),
             new MemoryLabel(areaName, $"Layout.ComponentData<{nameof(ComputedStyle)}>"),
+            new MemoryLabel(areaName, $"Layout.ComponentData<{nameof(VisualElementTransformData)}>"),
         };
 
         var configComponentTypes = new[]
@@ -385,7 +391,8 @@ internal class LayoutManager : IDisposable
             data,
             LayoutComputedData.Default,
             LayoutCacheData.Default,
-            computedStyle
+            computedStyle,
+            VisualElementTransformData.Default
         );
 
         if (handle.Index > m_HighMark)

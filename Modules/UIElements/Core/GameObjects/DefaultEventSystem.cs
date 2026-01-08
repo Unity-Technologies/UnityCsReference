@@ -420,24 +420,24 @@ namespace UnityEngine.UIElements
             {
                 var layerMask = worldRay.camera.cullingMask & worldSpaceLayers;
                 if (m_WorldSpacePicker.TryPickWithCapture(pointerId, worldRay.ray, worldSpaceMaxDistance, layerMask,
-                        out var collider, out var document, out elementUnderPointer, out var distance,
+                        out var collider, out var panelComponent, out elementUnderPointer, out var distance,
                         out var captured) && (worldRay.isInsideCameraRect || captured))
                 {
                     screenPointerState.hit = new PointerDeviceState.RuntimePointerState.RaycastHit
                     {
                         collider = collider,
-                        document = document,
+                        panelComponent = panelComponent,
                         distance = distance,
                         element = elementUnderPointer,
                     };
 
                     // We hit a non-UI GameObject
-                    if (document == null)
+                    if (panelComponent == null)
                         break;
                     var capturingElement = RuntimePanel.s_EventDispatcher.pointerState.GetCapturingElement(pointerId) as VisualElement;
-                    target = capturingElement ?? elementUnderPointer ?? document.rootVisualElement;
-                    targetPanel = document.containerPanel;
-                    targetPanelPosition = GetPanelPosition(target, document, worldRay.ray);
+                    target = capturingElement ?? elementUnderPointer ?? PanelComponentUtils.GetRootVisualElement(panelComponent);
+                    targetPanel = PanelComponentUtils.GetContainerPanel(panelComponent);
+                    targetPanelPosition = GetPanelPosition(target, panelComponent, worldRay.ray);
                     camera = worldRay.camera;
                     return;
                 }
@@ -454,7 +454,7 @@ namespace UnityEngine.UIElements
         {
             maxDistance = Mathf.Min(maxDistance, worldSpaceMaxDistance);
             var picked = m_WorldSpacePicker.TryPickWithCapture(pointerId, worldRay, maxDistance, worldSpaceLayers,
-                out var collider, out var document, out elementUnderPointer, out var distance, out _);
+                out var collider, out var panelComponent, out elementUnderPointer, out var distance, out _);
 
             var trackedState = PointerDeviceState.GetTrackedState(pointerId, true);
             trackedState.Reset();
@@ -464,18 +464,18 @@ namespace UnityEngine.UIElements
             trackedState.hit = new PointerDeviceState.TrackedPointerState.RaycastHit
             {
                 collider = collider,
-                document = document,
+                panelComponent = panelComponent,
                 distance = distance,
                 element = elementUnderPointer,
             };
             trackedState.updateFrameCount = m_UpdateFrameCount;
 
-            if (picked && document != null)
+            if (picked && panelComponent != null)
             {
                 var capturingElement = RuntimePanel.s_EventDispatcher.pointerState.GetCapturingElement(pointerId) as VisualElement;
-                target = capturingElement ?? elementUnderPointer ?? document.rootVisualElement;
-                targetPanel = document.containerPanel;
-                targetPanelPosition = GetPanelPosition(target, document, worldRay);
+                target = capturingElement ?? elementUnderPointer ?? PanelComponentUtils.GetRootVisualElement(panelComponent);
+                targetPanel = PanelComponentUtils.GetContainerPanel(panelComponent);
+                targetPanelPosition = GetPanelPosition(target, panelComponent, worldRay);
                 return;
             }
 
@@ -484,9 +484,9 @@ namespace UnityEngine.UIElements
             targetPanelPosition = s_InvalidPanelCoordinates;
         }
 
-        Vector3 GetPanelPosition(VisualElement pickedElement, UIDocument document, Ray worldRay)
+        Vector3 GetPanelPosition(VisualElement pickedElement, IPanelComponent panelComponent, Ray worldRay)
         {
-            var documentRay = document.transform.worldToLocalMatrix.TransformRay(worldRay);
+            var documentRay = panelComponent.gameObject.transform.worldToLocalMatrix.TransformRay(worldRay);
             pickedElement.IntersectWorldRay(documentRay, out var distanceWithinDocument, out _);
             var documentPoint = documentRay.origin + documentRay.direction * distanceWithinDocument;
             return documentPoint;

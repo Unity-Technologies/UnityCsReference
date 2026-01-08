@@ -47,11 +47,15 @@ namespace UnityEditor
         }
         internal static string[] FindAssets(SearchFilter searchFilter)
         {
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return FindAllAssets(searchFilter).Select(property => property.guid).Distinct().ToArray();
+#pragma warning restore RS0030
         }
         internal static GUID[] FindAssetGUIDs(SearchFilter searchFilter)
         {
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return FindAllAssets(searchFilter).Select(property => property.assetGUID).Distinct().ToArray();
+#pragma warning restore RS0030
         }
 
         [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.ShaderFoundryModule")]

@@ -15,10 +15,10 @@ using UnityEngine.UIElements;
 
 namespace UnityEditor.UIElements;
 
-[VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+[VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
 internal class VisualTreeAssetExporter
 {
-    [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+    [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
     internal class ExportOptions
     {
         private StyleSheetExporter m_Exporter;

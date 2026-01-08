@@ -60,12 +60,16 @@ namespace Unity.ProjectAuditor.Editor.AssemblyUtils
             var precompiledAssemblySources = (UnityEditor.Compilation.CompilationPipeline.PrecompiledAssemblySources)flags;
             assemblyPaths.AddRange(UnityEditor.Compilation.CompilationPipeline.GetPrecompiledAssemblyPaths(precompiledAssemblySources));
 
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return assemblyPaths.Select(PathUtils.ReplaceSeparators);
+#pragma warning restore RS0030
         }
 
         internal static IEnumerable<string> GetPrecompiledAssemblyDirectories(PrecompiledAssemblyTypes flags)
         {
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             foreach (var dir in GetPrecompiledAssemblyPaths(flags).Select(Path.GetDirectoryName).Distinct())
+#pragma warning restore RS0030
                 yield return dir;
         }
 
@@ -136,15 +140,15 @@ namespace Unity.ProjectAuditor.Editor.AssemblyUtils
 
                     if (data.optionalUnityReferences != null)
                     {
-                        if (data.optionalUnityReferences.Contains("TestAssemblies"))
+                        if (Array.IndexOf(data.optionalUnityReferences, "TestAssemblies") != -1)
                             assemblyInfo.IsTestAssembly = true;
+                    }
 
-                        if (editorAssembly == null)
-                        {
-                            bool targetsEditorPlatform = (data.includePlatforms == null || data.includePlatforms.Length == 0) || (data.includePlatforms != null && data.includePlatforms.Contains("Editor"));
-                            bool excludesEditorPlatform = data.excludePlatforms != null && data.excludePlatforms.Contains("Editor");
-                            assemblyInfo.IsEditorAssembly = targetsEditorPlatform && !excludesEditorPlatform;
-                        }
+                    if (editorAssembly == null)
+                    {
+                        bool targetsEditorPlatform = (data.includePlatforms == null || data.includePlatforms.Length == 0) || (data.includePlatforms != null && Array.IndexOf(data.includePlatforms, "Editor") != -1);
+                        bool excludesEditorPlatform = data.excludePlatforms != null && Array.IndexOf(data.excludePlatforms,"Editor") != -1;
+                        assemblyInfo.IsEditorAssembly = targetsEditorPlatform && !excludesEditorPlatform;
                     }
                 }
                 catch (Exception)

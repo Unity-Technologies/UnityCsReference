@@ -8,7 +8,7 @@ using UnityEngine.Bindings;
 using UnityEngine.UIElements;
 namespace UnityEditor.UIElements
 {
-    [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+    [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
     internal sealed class EditorPanel : Panel
     {
         readonly EditorCursorManager m_CursorManager = new EditorCursorManager();
@@ -100,16 +100,5 @@ namespace UnityEditor.UIElements
             visualTreeUpdater.UpdateForEditor();
             base.UpdateForRepaint();
         }
-
-
-        internal override Color HyperlinkColor
-        {
-            get
-            {
-                ColorUtility.TryParseHtmlString(EditorGUIUtility.GetHyperlinkColorForSkin(), out Color color);
-                return color;
-            }
-        }
-
     }
 }

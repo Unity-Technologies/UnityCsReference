@@ -37,7 +37,9 @@ namespace UnityEditor.StyleSheets
             });
 
             // CustomStyles
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var customStyleBlockNames = resolver.Rules.Select(r => r.Key)
+#pragma warning restore RS0030
                 .Where(ConverterUtils.IsCustomStyleSelector)
                 .Select(GUIStyleExtensions.RuleNameToBlockName)
                 .ToArray();
@@ -72,7 +74,9 @@ namespace UnityEditor.StyleSheets
                 PopulateStyle(catalog, customStyleBlockName, customStyle);
             }
 
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             skin.customStyles = blockNameToStyleDict.Values.ToArray();
+#pragma warning restore RS0030
             Array.Sort(skin.customStyles, (s1, s2) => s1.name.CompareTo(s2.name));
 
             // GUISettings

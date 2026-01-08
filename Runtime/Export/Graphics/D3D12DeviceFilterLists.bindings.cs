@@ -77,8 +77,9 @@ namespace UnityEngine
         {
             try
             {
+                // NOTE: C++ side regular expressions are ECMAScript.
                 // Try to create a regex from the input string to determine if it is a valid regex
-                Regex regex = new Regex(value);
+                Regex regex = new Regex(value, RegexOptions.ECMAScript);
             }
             catch (ArgumentException e)
             {

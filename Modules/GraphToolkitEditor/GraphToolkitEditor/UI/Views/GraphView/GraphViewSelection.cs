@@ -33,7 +33,9 @@ namespace Unity.GraphToolkit.Editor
 
         /// <inheritdoc />
         public override IEnumerable<GraphElementModel> SelectableModels =>
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             GraphModel.GetGraphElementModels().Where(t => t is not VariableDeclarationModelBase && t.IsSelectable());
+#pragma warning restore RS0030
 
         /// <inheritdoc cref="ViewSelection(SelectionStateComponent, ClipboardProvider)"/>
         public GraphViewSelection(SelectionStateComponent selectionState, GraphModelStateComponent graphModelState, ClipboardProvider clipboardProvider)
@@ -131,7 +133,9 @@ namespace Unity.GraphToolkit.Editor
         /// <inheritdoc />
         protected override CopyPasteData BuildCopyPasteData(HashSet<GraphElementModel> elementsToCopySet)
         {
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var copyPaste = new CopyPasteData(null, elementsToCopySet.ToList());
+#pragma warning restore RS0030
             return copyPaste;
         }
 
@@ -139,12 +143,16 @@ namespace Unity.GraphToolkit.Editor
         protected override HashSet<GraphElementModel> CollectCopyableGraphElements(IEnumerable<GraphElementModel> elements)
         {
             var elementsToCopySet = new HashSet<GraphElementModel>();
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var elementList = elements.ToList();
+#pragma warning restore RS0030
             FilterElements(elementList, elementsToCopySet, IsCopiable);
 
             var nodesInPlacemat = new HashSet<AbstractNodeModel>();
             // Also collect hovering list of nodes
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             foreach (var placemat in elementList.OfType<PlacematModel>())
+#pragma warning restore RS0030
             {
                 var placematUI = placemat.GetView<Placemat>(View);
                 placematUI?.ActOnGraphElementsInside(

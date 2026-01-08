@@ -578,12 +578,13 @@ namespace UnityEngine
                 throw new System.ArgumentException("Trying to access out-of-bounds terrain height information.");
             }
 
-            return Internal_GetHeights(xBase, yBase, width, height);
+            float[,] heights = new float[height, width];
+            Internal_GetHeights(xBase, yBase, width, height, heights);
+            return heights;
         }
 
         [FreeFunction(k_ScriptingInterfacePrefix + "GetHeights", HasExplicitThis = true)]
-        [return: UnityMarshalAs(NativeType.ScriptingObjectPtr)]
-        extern private float[,] Internal_GetHeights(int xBase, int yBase, int width, int height);
+        extern private void Internal_GetHeights(int xBase, int yBase, int width, int height, float[,] heights);
 
         public void SetHeights(int xBase, int yBase, float[,] heights)
         {
@@ -650,7 +651,9 @@ namespace UnityEngine
                 throw new ArgumentException("Trying to access out-of-bounds terrain holes information.");
             }
 
-            return Internal_GetHoles(xBase, yBase, width, height);
+            bool[,] holes = new bool[width, height];
+            Internal_GetHoles(xBase, yBase, width, height, holes);
+            return holes;
         }
 
         public void SetHoles(int xBase, int yBase, bool[,] holes)
@@ -689,8 +692,8 @@ namespace UnityEngine
         extern private void Internal_SetHoles(int xBase, int yBase, int width, int height, bool[,] holes);
 
         [FreeFunction(k_ScriptingInterfacePrefix + "GetHoles", HasExplicitThis = true)]
-        [return: UnityMarshalAs(NativeType.ScriptingObjectPtr)]
-        extern private bool[,] Internal_GetHoles(int xBase, int yBase, int width, int height);
+        extern private void Internal_GetHoles(int xBase, int yBase, int width, int height, bool[,] holes);
+
 
         [FreeFunction(k_ScriptingInterfacePrefix + "IsHole", HasExplicitThis = true)]
         extern private bool Internal_IsHole(int x, int y);
@@ -844,8 +847,14 @@ namespace UnityEngine
         }
 
         [FreeFunction(k_ScriptingInterfacePrefix + "GetDetailLayer", HasExplicitThis = true)]
-        [return:UnityMarshalAs(NativeType.ScriptingObjectPtr)]
-        extern public int[,] GetDetailLayer(int xBase, int yBase, int width, int height, int layer);
+        extern void GetDetailLayer(int xBase, int yBase, int width, int height, int layer, int[,] detailLayer);
+
+        public int[,] GetDetailLayer(int xBase, int yBase, int width, int height, int layer)
+        {
+            int[,] detailLayer = new int[width, height];
+            GetDetailLayer(xBase, yBase, width, height, layer, detailLayer);
+            return detailLayer;
+        }
 
         public int[,] GetDetailLayer(Vector2Int positionBase, Vector2Int size, int layer)
         {
@@ -947,12 +956,15 @@ namespace UnityEngine
             if (x < 0 || y < 0 || width < 0 || height < 0)
                 throw new ArgumentException("Invalid argument for GetAlphaMaps");
 
-            return Internal_GetAlphamaps(x, y, width, height);
+            OutArray3D<float> alphamaps = default;
+            Internal_GetAlphamaps(x, y, width, height, in alphamaps);
+            return alphamaps.Value;
+
         }
 
         [FreeFunction(k_ScriptingInterfacePrefix + "GetAlphamaps", HasExplicitThis = true)]
-        [return:UnityMarshalAs(NativeType.ScriptingObjectPtr)]
-        extern private float[,,] Internal_GetAlphamaps(int x, int y, int width, int height);
+        extern private void Internal_GetAlphamaps(int x, int y, int width, int height, in OutArray3D<float> alphamaps);
+
 
         public int alphamapResolution
         {

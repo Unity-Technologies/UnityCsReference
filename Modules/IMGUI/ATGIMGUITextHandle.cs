@@ -145,7 +145,7 @@ namespace UnityEngine
             {
                 TextSettings textSettings = s_EditorTextSettings;
 
-                CreateTextGenerationSettingsArray(ref nativeSettings, m_TempLinks, GetHyperlinkColor?.Invoke() ?? Color.blue, GUIUtility.pixelsPerPoint, textSettings);
+                CreateTextGenerationSettingsArray(ref nativeSettings, m_TempLinks, GUIUtility.pixelsPerPoint, textSettings, k_UnderlineAllLinksFlag);
             }
             else
                 nativeSettings.textSpans = null;
@@ -396,13 +396,13 @@ namespace UnityEngine
         private bool HasClickedOnLinkATG(Vector2 mousePosition, out string linkData)
         {
             linkData = "";
-            var link = ATGFindIntersectingLink(mousePosition);
-            if (link.Item1 == TagType.Unknown)
+            var (id, type, link) = ATGFindIntersectingLink(mousePosition);
+            if (type == TagType.Unknown)
                 return false;
 
-            if (link.Item1 == TagType.Link && link.Item2 != null && link.Item2.Length > 0)
+            if (type == TagType.Link && link != null && link.Length > 0)
             {
-                linkData = new string(link.Item2);
+                linkData = new string(link);
                 return true;
             }
             return false;
@@ -411,15 +411,15 @@ namespace UnityEngine
         private bool HasClickedOnHREFATG(Vector2 mousePosition, out string href)
         {
             href = "";
-            var link = ATGFindIntersectingLink(mousePosition);
-            if (link.Item1 == TagType.Unknown)
+            var (id, type, link) = ATGFindIntersectingLink(mousePosition);
+            if (type == TagType.Unknown)
                 return false;
 
-            if (link.Item1 == TagType.Hyperlink)
+            if (type == TagType.Hyperlink)
             {
-                if (link.Item2 != null && link.Item2.Length > 0)
+                if (link != null && link.Length > 0)
                 {
-                    href = link.Item2;
+                    href = link;
                     if (!href.StartsWith("href"))
                         return false;
                     // Removes href="..."

@@ -285,12 +285,7 @@ namespace UnityEngine.UIElements
             // We virtualize a number of items based on the smallest expected item height.
             var resolvedViewportHeight = m_CollectionView.ResolveItemHeight(size.y);
             var itemCountFromHeight = Mathf.CeilToInt(resolvedViewportHeight / defaultExpectedHeight);
-            var expectedItemCount = itemCountFromHeight;
-            if (expectedItemCount <= 0)
-                return;
-
-            expectedItemCount += k_ExtraVisibleItems;
-
+            var expectedItemCount = itemCountFromHeight + k_ExtraVisibleItems;
             var itemCount = Mathf.Min(expectedItemCount, itemsCount);
 
             if (m_ActiveItems.Count != itemCount)

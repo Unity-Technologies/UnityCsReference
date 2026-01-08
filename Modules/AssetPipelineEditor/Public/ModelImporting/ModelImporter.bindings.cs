@@ -130,7 +130,9 @@ namespace UnityEditor
 
         public AvatarMask maskSource { get { return m_MaskSource; } set { m_MaskSource = value; } }
 
+        #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
         public AnimationEvent[] events { get { return m_AnimationEventsBlittable.Select(AnimationEventBlittable.ToAnimationEvent).ToArray(); } set { m_AnimationEventsBlittable = value.Select(AnimationEventBlittable.FromAnimationEvent).ToArray(); } }
+#pragma warning restore RS0030
         public ClipAnimationInfoCurve[] curves { get { return m_AdditionnalCurves; } set { m_AdditionnalCurves = value; } }
 
         public bool maskNeedsUpdating { get { return m_MaskNeedsUpdating; } }
@@ -182,17 +184,6 @@ namespace UnityEditor
         }
     }
 
-    [System.Obsolete("Use ModelImporterMaterialName, ModelImporter.materialName and ModelImporter.materialImportMode instead", true)]
-    public enum ModelImporterGenerateMaterials
-    {
-        [System.Obsolete("Use ModelImporter.materialImportMode=None instead", true)]
-        None = 0,
-        [System.Obsolete("Use ModelImporter.materialImportMode=Import and ModelImporter.materialName=ModelImporterMaterialName.BasedOnTextureName instead", true)]
-        PerTexture = 1,
-        [System.Obsolete("Use ModelImporter.materialImportMode=Import and ModelImporter.materialName=ModelImporterMaterialName.BasedOnModelNameAndMaterialName instead", true)]
-        PerSourceMaterial = 2,
-    }
-
     [NativeType(Header = "Modules/AssetPipelineEditor/Public/ModelImporting/ModelImporter.h")]
     public enum ModelImporterMaterialName
     {
@@ -240,19 +231,19 @@ namespace UnityEditor
         [Tooltip("Use AssetPostprocessor.OnPreprocessMaterialDescription.")]
         ImportViaMaterialDescription = 2,
 
-        [System.Obsolete("Use ImportStandard (UnityUpgradable) -> ImportStandard")]
+        [System.Obsolete("Use ImportStandard (UnityUpgradable) -> ImportStandard",true)]
         LegacyImport = 1,
-        [System.Obsolete("Use ImportViaMaterialDescription (UnityUpgradable) -> ImportViaMaterialDescription")]
+        [System.Obsolete("Use ImportViaMaterialDescription (UnityUpgradable) -> ImportViaMaterialDescription",true)]
         Import = 2
     }
 
     public enum ModelImporterTangentSpaceMode
     {
-        [System.Obsolete("Use ModelImporterNormals.Import instead")]
+        [System.Obsolete("Use ModelImporterNormals.Import instead",true)]
         Import = 0,
-        [System.Obsolete("Use ModelImporterNormals.Calculate instead")]
+        [System.Obsolete("Use ModelImporterNormals.Calculate instead",true)]
         Calculate = 1,
-        [System.Obsolete("Use ModelImporterNormals.None instead")]
+        [System.Obsolete("Use ModelImporterNormals.None instead",true)]
         None = 2,
     }
 
@@ -430,14 +421,6 @@ namespace UnityEditor
     [NativeHeader("Modules/Animation/ScriptBindings/AvatarBuilder.bindings.h")]
     public partial class ModelImporter : AssetImporter
     {
-        const string obsoleteGenerateMaterials = "generateMaterials has been  removed. Use materialImportMode, materialName and materialSearch instead.";
-        [System.Obsolete(obsoleteGenerateMaterials, true)]
-        public ModelImporterGenerateMaterials generateMaterials => throw new NotSupportedException(obsoleteGenerateMaterials);
-
-        const string obsoleteImportMaterials = "importMaterials has been  removed. Use materialImportMode instead.";
-        [System.Obsolete(obsoleteImportMaterials, true)]
-        public bool importMaterials => throw new NotSupportedException(obsoleteImportMaterials);
-
         public extern ModelImporterMaterialName materialName
         {
             get;
@@ -494,7 +477,7 @@ namespace UnityEditor
             set;
         }
 
-        [System.Obsolete("Use useFileScale instead")]
+        [System.Obsolete("Use useFileScale instead",true)]
         public bool isFileScaleUsed
         {
             get { return useFileScale; }
@@ -538,7 +521,7 @@ namespace UnityEditor
             set;
         }
 
-        [System.Obsolete("Please use tangentImportMode instead")]
+        [System.Obsolete("Please use tangentImportMode instead",true)]
         public bool splitTangentsAcrossSeams
         {
             get
@@ -737,7 +720,7 @@ namespace UnityEditor
             }
         }
 
-        [System.Obsolete("optimizeMesh is deprecated. Use optimizeMeshPolygons and/or optimizeMeshVertices instead.  Note that optimizeMesh false equates to optimizeMeshPolygons true and optimizeMeshVertices false while optimizeMesh true equates to both true")]
+        [System.Obsolete("optimizeMesh is deprecated. Use optimizeMeshPolygons and/or optimizeMeshVertices instead.  Note that optimizeMesh false equates to optimizeMeshPolygons true and optimizeMeshVertices false while optimizeMesh true equates to both true",true)]
         public bool optimizeMesh
         {
             // Legacy property that has been replaced with 'optimizeMeshPolygons' and 'optimizeMeshVertices' to provide more granular mesh optimization control
@@ -799,14 +782,14 @@ namespace UnityEditor
         private extern float GetMinBoneWeight();
         private extern void SetMinBoneWeight(float value);
 
-        [System.Obsolete("normalImportMode is deprecated. Use importNormals instead")]
+        [System.Obsolete("normalImportMode is deprecated. Use importNormals instead",true)]
         public ModelImporterTangentSpaceMode normalImportMode
         {
             get { return (ModelImporterTangentSpaceMode)importNormals; }
             set { importNormals = (ModelImporterNormals)value; }
         }
 
-        [System.Obsolete("tangentImportMode is deprecated. Use importTangents instead")]
+        [System.Obsolete("tangentImportMode is deprecated. Use importTangents instead",true)]
         public ModelImporterTangentSpaceMode tangentImportMode
         {
             get { return (ModelImporterTangentSpaceMode)importTangents; }
@@ -867,7 +850,7 @@ namespace UnityEditor
             get;
         }
 
-        [System.Obsolete("use resampleCurves instead.")]
+        [System.Obsolete("use resampleCurves instead.",true)]
         public extern bool resampleRotations
         {
             [NativeMethod("GetResampleCurves")]
@@ -899,9 +882,6 @@ namespace UnityEditor
             get;
             set;
         }
-
-        [System.Obsolete("Use animationCompression instead", true)]
-        private bool reduceKeyframes { get { return false; } set {} }
 
         public ModelImporterMeshCompression meshCompression
         {
@@ -1041,13 +1021,6 @@ namespace UnityEditor
         private extern Avatar GetSourceAvatar();
         [FreeFunction("ModelImporterBindings::SetSourceAvatarInternal")]
         private extern static void SetSourceAvatarInternal(ModelImporter self, Avatar value);
-
-        [System.Obsolete("splitAnimations has been deprecated please use clipAnimations instead.", true)]
-        public bool splitAnimations
-        {
-            get { return clipAnimations.Length != 0; }
-            set {}
-        }
 
         public ModelImporterClipAnimation[] clipAnimations
         {

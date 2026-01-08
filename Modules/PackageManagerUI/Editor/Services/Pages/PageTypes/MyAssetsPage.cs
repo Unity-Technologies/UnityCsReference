@@ -147,7 +147,9 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public override void LoadExtraItems(IEnumerable<IPackage> packages)
         {
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var addedPackages = packages.Where(p => !visualStates.Contains(p.uniqueId)).ToArray();
+#pragma warning restore RS0030
             foreach (var package in addedPackages)
                 m_VisualStateList.AddExtraItem(package.uniqueId);
             TriggerOnListUpdate(added: addedPackages);
@@ -192,8 +194,12 @@ namespace UnityEditor.PackageManager.UI.Internal
                 return;
             }
 
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var oldPackageIds = new HashSet<string>(visualStates.Select(v => v.packageUniqueId));
+#pragma warning restore RS0030
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var newPackageIds = purchases.productIds.Select(i => i.ToString()).ToList();
+#pragma warning restore RS0030
             if (purchases.startIndex == 0)
             {
                 // override the result if the new list starts from index 0 (meaning it's a refresh)
@@ -236,8 +242,12 @@ namespace UnityEditor.PackageManager.UI.Internal
                     added = newPackageIds;
                 }
 
+                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 var addedPackages = added?.Select(i => m_PackageDatabase.GetPackage(i)).ToArray();
+#pragma warning restore RS0030
+                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 var removedPackages = removed?.Select(i => m_PackageDatabase.GetPackage(i)).ToArray();
+#pragma warning restore RS0030
                 TriggerOnListUpdate(added: addedPackages, removed: removedPackages);
             }
 

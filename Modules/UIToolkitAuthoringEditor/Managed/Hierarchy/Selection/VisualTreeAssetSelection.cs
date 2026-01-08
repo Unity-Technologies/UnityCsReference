@@ -9,20 +9,20 @@ namespace Unity.UIToolkit.Editor;
 
 internal class VisualTreeAssetSelection : UISelectionObject
 {
-    public static readonly BindingId DocumentProperty = nameof(Document);
+    public static readonly BindingId PanelComponentProperty = nameof(panelComponent);
 
-    private UIDocument m_Document;
+    private IPanelComponent m_PanelComponent;
 
     [CreateProperty]
-    public UIDocument Document
+    public IPanelComponent panelComponent
     {
-        get => m_Document;
+        get => m_PanelComponent;
         set
         {
-            if (m_Document == value)
+            if (m_PanelComponent == value)
                 return;
-            m_Document = value;
-            Notify(DocumentProperty);
+            m_PanelComponent = value;
+            Notify(PanelComponentProperty);
         }
     }
 }

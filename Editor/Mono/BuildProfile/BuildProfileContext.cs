@@ -79,6 +79,7 @@ namespace UnityEditor.Build.Profile
             set
             {
                 var prev = EditorUserBuildSettings.activeBuildProfile;
+                var prevDefines = BuildDefines.GetBuildProfileScriptDefines();
 
                 if (value == null || value.platformBuildProfile == null)
                 {
@@ -88,7 +89,11 @@ namespace UnityEditor.Build.Profile
                     activeProfileChanged?.Invoke(prev, null);
                     OnActiveProfileChangedForSettingExtension(prev, null);
                     EditorGraphicsSettings.activeProfileHasGraphicsSettings = false;
-                    BuildProfileModuleUtil.RequestScriptCompilation(null);
+
+                    var defines = BuildDefines.GetBuildProfileScriptDefines();
+                    if (!ArrayUtility.ArrayEquals(prevDefines, defines))
+                        BuildProfileModuleUtil.RequestScriptCompilation(null);
+
                     return;
                 }
 
@@ -113,7 +118,9 @@ namespace UnityEditor.Build.Profile
                 activeProfileChanged?.Invoke(prev, value);
                 EditorGraphicsSettings.activeProfileHasGraphicsSettings = ActiveProfileHasGraphicsSettings();
                 value.scriptingDefines = BuildProfileModuleUtil.RemoveInvalidScriptingDefines(value.scriptingDefines);
-                BuildProfileModuleUtil.RequestScriptCompilation(value);
+                
+                if (!ArrayUtility.ArrayEquals(prevDefines, value.scriptingDefines))
+                    BuildProfileModuleUtil.RequestScriptCompilation(value);
             }
         }
 

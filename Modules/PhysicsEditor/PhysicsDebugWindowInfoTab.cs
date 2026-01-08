@@ -366,8 +366,12 @@ namespace UnityEditor
                 if (!m_LockedObjects.ContainsKey(tr.Transform))
                     m_TemporarySelection.Add(tr.Transform);
 
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var addedTransforms = selection.Except(m_TemporarySelection);
+#pragma warning restore RS0030
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var removedTransforms = m_TemporarySelection.Except(selection);
+#pragma warning restore RS0030
 
             foreach (var tr in addedTransforms)
             {
@@ -394,7 +398,9 @@ namespace UnityEditor
 
         private bool IsSelected(Transform tr)
         {
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return Selection.GetTransforms(SelectionMode.Unfiltered).Contains(tr);
+#pragma warning restore RS0030
         }
 
         private VisualisationState ShouldDrawObject(Transform transform)

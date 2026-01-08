@@ -312,8 +312,8 @@ namespace UnityEngine
         extern public Vector3 GetRelativePointVelocity(Vector3 relativePoint);
         extern public Vector3 GetPointVelocity(Vector3 worldPoint);
 
-        [NativeMethod("GetDenseJacobian")]
-        extern private int GetDenseJacobian_Internal(ref ArticulationJacobian jacobian);
+        [NativeMethod("GetDenseJacobianFields")]
+        extern private int GetDenseJacobianFields_Internal(ref int jacobianRowsCount, ref int jacobianColsCount, [Out,NotNull] List<float> jacobianMatrixData);
 
         public int GetDenseJacobian(ref ArticulationJacobian jacobian)
         {
@@ -321,7 +321,14 @@ namespace UnityEngine
             if(jacobian.elements == null)
                 jacobian.elements = new List<float>();
 
-            return GetDenseJacobian_Internal(ref jacobian);
+            int rowsCount = jacobian.rows;
+            int colsCount = jacobian.columns;
+
+            int ret = GetDenseJacobianFields_Internal(ref rowsCount, ref colsCount, jacobian.elements);
+            jacobian.rows = rowsCount;
+            jacobian.columns = colsCount;
+
+            return ret;
         }
 
         extern public int GetJointPositions(List<float> positions);

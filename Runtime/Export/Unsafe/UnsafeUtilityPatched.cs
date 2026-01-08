@@ -159,5 +159,13 @@ namespace Unity.Collections.LowLevel.Unsafe
             // @patched at compile time
             throw new NotImplementedException("Patching this method failed");
         }
+
+        // A reference that is null
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static ref T NullRef<T>()
+        {
+            // @patched at compile time
+            throw new NotImplementedException("Patching this method failed");
+        }
     }
 }

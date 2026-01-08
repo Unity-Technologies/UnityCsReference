@@ -112,10 +112,16 @@ namespace UnityEditor.PackageManager.UI.Internal
                 return;
             var version = packageVersionField.value.Trim();
 
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var packageNameParts = packageName.Split('@').Where(s => !string.IsNullOrEmpty(s)).ToArray();
+#pragma warning restore RS0030
 
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var packageNameIsolated = packageNameParts.FirstOrDefault();
+#pragma warning restore RS0030
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var packageVersionIsolated = string.IsNullOrEmpty(version) ? packageNameParts.Length > 1 ? packageNameParts.Last() : null : version;
+#pragma warning restore RS0030
 
             if (packageNameParts.Length > 1 && !string.IsNullOrEmpty(version))
             {
@@ -124,7 +130,9 @@ namespace UnityEditor.PackageManager.UI.Internal
             }
 
             var package = m_PackageDatabase.GetPackage(packageNameIsolated);
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             if (package != null && (string.IsNullOrEmpty(packageVersionIsolated) || package.versions.Any(v => v.versionString == packageVersionIsolated)))
+#pragma warning restore RS0030
             {
                 CheckComplianceAndInstallPackage(package.compliance, packageNameIsolated, package.displayName,
                     packageVersionIsolated, package.product?.id.ToString());
@@ -136,7 +144,9 @@ namespace UnityEditor.PackageManager.UI.Internal
                 {
                     if (packageInfo != null)
                     {
+                        #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                         if (string.IsNullOrEmpty(packageVersionIsolated) || packageInfo.versions.all.Contains(packageVersionIsolated))
+#pragma warning restore RS0030
                             CheckComplianceAndInstallPackage(packageInfo.compliance, packageNameIsolated,
                                 packageInfo.displayName, packageVersionIsolated, packageInfo.assetStore?.productId);
                         else

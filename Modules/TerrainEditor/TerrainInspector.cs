@@ -795,7 +795,9 @@ namespace UnityEditor
                 if (m_ToolNameToType.TryGetValue(toolName, out var existingToolType))
                 {
                     // if this tool is a builtin tool
+                    #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     if (klass.Assembly.GetCustomAttributes(typeof(AssemblyIsEditorAssembly), false).Any())
+#pragma warning restore RS0030
                         continue;
                     // if existing tool is an override
                     if (existingToolType.Assembly.GetCustomAttributes(typeof(AssemblyIsEditorAssembly), false).Length == 0)
@@ -807,7 +809,9 @@ namespace UnityEditor
 
                 if (m_ToolsMap.TryGetValue(toolName, out var existingTool))
                 {
+                    #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     if (klass.Assembly.GetCustomAttributes(typeof(AssemblyIsEditorAssembly), false).Any()) continue;
+#pragma warning restore RS0030
 
                     if (existingTool.GetType().Assembly.GetCustomAttributes(typeof(AssemblyIsEditorAssembly), false).Length == 0)
                     {
@@ -2038,7 +2042,9 @@ namespace UnityEditor
             // Store texture versions of outdated detail map
             for (int i = 0; i < terrainData.detailPrototypes.Length; i++)
             {
+                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 byte[] detailArray = terrainData
+#pragma warning restore RS0030
                     .GetDetailLayer(0, 0, oldWidth, oldHeight, i)
                     .Cast<int>().Select<int, byte>(v =>
                         terrainData.detailScatterMode == DetailScatterMode.InstanceCountMode
@@ -2080,7 +2086,9 @@ namespace UnityEditor
                 resampleRatio *= resampleRatio;
 
                 // Get pixel data from resulting blit and copy to detail maps
+                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 int[] values = resizedTex.GetPixels()
+#pragma warning restore RS0030
                     .Select<Color, int>(c =>
                     {
                         int detailAmt = Mathf.CeilToInt(terrainData.maxDetailScatterPerRes * c.r);

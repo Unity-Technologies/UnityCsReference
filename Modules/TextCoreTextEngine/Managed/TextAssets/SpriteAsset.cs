@@ -506,7 +506,9 @@ namespace UnityEngine.TextCore.Text
         {
             if (m_SpriteGlyphTable == null || m_SpriteGlyphTable.Count == 0) return;
 
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             m_SpriteGlyphTable = m_SpriteGlyphTable.OrderBy(item => item.index).ToList();
+#pragma warning restore RS0030
         }
 
         /// <summary>
@@ -515,7 +517,11 @@ namespace UnityEngine.TextCore.Text
         internal void SortCharacterTable()
         {
             if (m_SpriteCharacterTable != null && m_SpriteCharacterTable.Count > 0)
+            {
+                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 m_SpriteCharacterTable = m_SpriteCharacterTable.OrderBy(c => c.unicode).ToList();
+#pragma warning restore RS0030
+            }
         }
 
         /// <summary>

@@ -36,12 +36,14 @@ namespace Unity.ProjectAuditor.Editor.UI
             public int NumSettingIssues;
             public int NumTotalAssemblies;
             public int NumAssetIssues;
+            public int NumGameObjectIssues;
             public int NumShaders;
             public int NumPackages;
 
             public long CodeAnalysisTime;
             public long AssetsAnalysisTime;
             public long SettingsAnalysisTime;
+            public long GameObjectAnalysisTime;
 
             public StatSeverities[] SeveritiesByCategory;
             public int IgnoredIssues;
@@ -60,7 +62,9 @@ namespace Unity.ProjectAuditor.Editor.UI
 
         public ProjectAuditorWindow m_ProjectAuditorWindow;
 
+        #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
         List<IGrouping<string, ReportItem>> m_TopTenIssues = new List<IGrouping<string, ReportItem>>();
+#pragma warning restore RS0030
 
         bool m_RefreshTopTenIssues;
 
@@ -97,24 +101,20 @@ namespace Unity.ProjectAuditor.Editor.UI
         {
         }
 
-        void AddSeverityStats(IReadOnlyCollection<ReportItem> newIssues,
-            ref StatSeverities codeSeverities)
+        void AddSeverityStats(ReportItem newIssue, ref StatSeverities codeSeverities)
         {
-            foreach (var i in newIssues)
-            {
-                if (i.Severity == Severity.None || i.Severity == Severity.Hidden || IsIgnored(i))
-                    codeSeverities.Ignored++;
-                else if (i.Severity == Severity.Error)
-                    codeSeverities.Error++;
-                else if (i.Severity == Severity.Critical)
-                    codeSeverities.Critical++;
-                else if (i.Severity == Severity.Major)
-                    codeSeverities.Major++;
-                else if (i.Severity == Severity.Moderate || i.Severity == Severity.Default)
-                    codeSeverities.Moderate++;
-                else if (i.Severity == Severity.Minor)
-                    codeSeverities.Minor++;
-            }
+            if (newIssue.Severity == Severity.None || newIssue.Severity == Severity.Hidden || IsIgnored(newIssue))
+                codeSeverities.Ignored++;
+            else if (newIssue.Severity == Severity.Error)
+                codeSeverities.Error++;
+            else if (newIssue.Severity == Severity.Critical)
+                codeSeverities.Critical++;
+            else if (newIssue.Severity == Severity.Major)
+                codeSeverities.Major++;
+            else if (newIssue.Severity == Severity.Moderate || newIssue.Severity == Severity.Default)
+                codeSeverities.Moderate++;
+            else if (newIssue.Severity == Severity.Minor)
+                codeSeverities.Minor++;
         }
 
         bool IsIgnored(ReportItem issue)
@@ -149,31 +149,34 @@ namespace Unity.ProjectAuditor.Editor.UI
             return false;
         }
 
-        public void AddDiagnosticStats(IssueCategory category, IEnumerable<ReportItem> newIssues)
+        void AddDiagnosticStats(IEnumerable<ReportItem> newIssues)
         {
             if (m_Stats.SeveritiesByCategory == null || m_Stats.SeveritiesByCategory.Length == 0)
                 m_Stats.SeveritiesByCategory = new StatSeverities[Enum.GetNames(typeof(IssueCategory)).Length];
 
-            var filteredIssues = newIssues.Where(i => i.Category == category).ToArray();
-            var thisCount = filteredIssues.Length;
-
-            switch (category)
+            foreach (var issue in newIssues)
             {
-                case IssueCategory.Code:
-                    m_Stats.NumCodeIssues += thisCount;
-                    AddSeverityStats(filteredIssues, ref m_Stats.SeveritiesByCategory[(int)category]);
-                    break;
-                case IssueCategory.ProjectSetting:
-                    m_Stats.NumSettingIssues += thisCount;
-                    AddSeverityStats(filteredIssues, ref m_Stats.SeveritiesByCategory[(int)category]);
-                    break;
-                case IssueCategory.AssetIssue:
-                    m_Stats.NumAssetIssues += thisCount;
-                    AddSeverityStats(filteredIssues, ref m_Stats.SeveritiesByCategory[(int)category]);
-                    break;
-
-                default:
-                    throw new ArgumentException($"AddDiagnosticStats doesn't support category {category}");
+                switch (issue.Category)
+                {
+                    case IssueCategory.Code:
+                        m_Stats.NumCodeIssues++;
+                        AddSeverityStats(issue, ref m_Stats.SeveritiesByCategory[(int)issue.Category]);
+                        break;
+                    case IssueCategory.ProjectSetting:
+                        m_Stats.NumSettingIssues++;
+                        AddSeverityStats(issue, ref m_Stats.SeveritiesByCategory[(int)issue.Category]);
+                        break;
+                    case IssueCategory.AssetIssue:
+                        m_Stats.NumAssetIssues++;
+                        AddSeverityStats(issue, ref m_Stats.SeveritiesByCategory[(int)issue.Category]);
+                        break;
+                    case IssueCategory.GameObject:
+                        m_Stats.NumGameObjectIssues++;
+                        AddSeverityStats(issue, ref m_Stats.SeveritiesByCategory[(int)issue.Category]);
+                        break;
+                    default:
+                        break;
+                }
             }
         }
 
@@ -182,15 +185,15 @@ namespace Unity.ProjectAuditor.Editor.UI
             var allIssues = report.GetAllIssues();
 
             // Stats that also count issues by severity
-            AddDiagnosticStats(IssueCategory.Code, allIssues);
-            AddDiagnosticStats(IssueCategory.ProjectSetting, allIssues);
-            AddDiagnosticStats(IssueCategory.AssetIssue, allIssues);
+            AddDiagnosticStats(allIssues);
 
             m_Stats.CodeAnalysisTime = report.CalculateIssueCategoryAnalysisDuration(IssueCategory.Code);
             m_Stats.AssetsAnalysisTime = report.CalculateIssueCategoryAnalysisDuration(IssueCategory.AssetIssue);
             m_Stats.SettingsAnalysisTime = report.CalculateIssueCategoryAnalysisDuration(IssueCategory.ProjectSetting);
+            m_Stats.GameObjectAnalysisTime = report.CalculateIssueCategoryAnalysisDuration(IssueCategory.GameObject);
 
             // Various stats
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             m_Stats.NumBuildSteps += allIssues.Count(i => i.Category == IssueCategory.BuildStep);
             m_Stats.NumShaders += allIssues.Count(i => i.Category == IssueCategory.Shader);
             m_Stats.NumPackages += allIssues.Count(i => i.Category == IssueCategory.Package);
@@ -200,6 +203,7 @@ namespace Unity.ProjectAuditor.Editor.UI
 
             m_Stats.NumCompiledAssemblies += allIssues.Count(i => i.Category == IssueCategory.Assembly && i.Severity != Severity.Error);
             m_Stats.NumTotalAssemblies += allIssues.Count(i => i.Category == IssueCategory.Assembly);
+#pragma warning restore RS0030
         }
 
         public override void Clear()
@@ -287,7 +291,9 @@ namespace Unity.ProjectAuditor.Editor.UI
             {
                 var errorString = LogLevel.Error.ToString();
 
+                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 m_AnyCompilationErrors = m_ViewManager.Report.GetAllIssues()
+#pragma warning restore RS0030
                     .Any(i => i.Category == IssueCategory.CodeCompilerMessage
                         && i.GetProperty(PropertyType.LogLevel) == errorString);
 
@@ -343,6 +349,8 @@ namespace Unity.ProjectAuditor.Editor.UI
                         GUILayout.Space(8);
                         DrawSummaryItem("Assets", m_Stats.NumAssetIssues, m_Stats.AssetsAnalysisTime, IssueCategory.AssetIssue);
                         GUILayout.Space(8);
+                        DrawSummaryItem("Game Objects", m_Stats.NumGameObjectIssues, m_Stats.GameObjectAnalysisTime, IssueCategory.GameObject);
+                        GUILayout.Space(8);
                         DrawSummaryItem("Project Settings", m_Stats.NumSettingIssues, m_Stats.SettingsAnalysisTime, IssueCategory.ProjectSetting);
                         GUILayout.Space(8);
                     }
@@ -389,6 +397,7 @@ namespace Unity.ProjectAuditor.Editor.UI
 
                 if (m_RefreshTopTenIssues)
                 {
+                    #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     m_TopTenIssues = m_ViewManager.Report.GetAllIssues()
                         .Where(i =>
                             !IsIssueIgnoredOrFiltered(i)
@@ -400,10 +409,13 @@ namespace Unity.ProjectAuditor.Editor.UI
                         .ThenBy(group => group.First().Id.GetDescriptor().Title)
                         .Take(10)
                         .ToList();
+#pragma warning restore RS0030
 
                     int oldSize = m_TopTenFoldoutStates.Count;
 
+                    #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     foreach (var key in m_TopTenFoldoutStates.Keys.ToArray().Where(key => !m_TopTenIssues.Any(group => group.First().DescriptorIdAsString == key)))
+#pragma warning restore RS0030
                         m_TopTenFoldoutStates.Remove(key);
 
                     if (oldSize != m_TopTenFoldoutStates.Count)
@@ -446,7 +458,9 @@ namespace Unity.ProjectAuditor.Editor.UI
 
         void DrawDiagnostic(IGrouping<string, ReportItem> issueGroup, int itemIndex)
         {
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var firstIssue = issueGroup.First();
+#pragma warning restore RS0030
             var descriptorIdString = firstIssue.DescriptorIdAsString;
 
             if (!m_TopTenFoldoutStates.ContainsKey(descriptorIdString))
@@ -471,7 +485,9 @@ namespace Unity.ProjectAuditor.Editor.UI
                     EditorGUILayout.LabelField(Utility.GetSeverityIcon(GetHighestGroupSeverity(issueGroup)), SharedStyles.Label,
                         GUILayout.Width(36));
 
+                    #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     DrawDiagnosticLabel(descriptor, issueGroup.Count());
+#pragma warning restore RS0030
                 }
 
                 if (Event.current.isMouse && Event.current.type == EventType.MouseDown && descriptor != null)
@@ -679,6 +695,9 @@ namespace Unity.ProjectAuditor.Editor.UI
                 case IssueCategory.AssetIssue:
                     SwitchTab(TabId.Assets);
                     break;
+                case IssueCategory.GameObject:
+                    SwitchTab(TabId.GameObjects);
+                    break;
                 default:
                     Debug.LogWarning($"SummaryView.SwitchTab has unhandled category: {category}");
                     break;
@@ -702,6 +721,8 @@ namespace Unity.ProjectAuditor.Editor.UI
                     return IssueCategory.ProjectSetting;
                 case TabId.Code:
                     return IssueCategory.Code;
+                case TabId.GameObjects:
+                    return IssueCategory.GameObject;
                 default:
                     return IssueCategory.AssetIssue;
             }
@@ -847,7 +868,7 @@ namespace Unity.ProjectAuditor.Editor.UI
                         GUILayout.Space(20);
 
                         if (m_ViewManager.Report.HasCategory(category))
-                            GUILayout.Label($"No {title} issues found in {time}.");
+                            GUILayout.Label($"No {title} issues {time}.");
                         else
                             GUILayout.Label($"{title} analysis is not yet included in this report.");
                     }

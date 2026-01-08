@@ -53,7 +53,9 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private void RefreshSupportedUnityVersions(IPackageVersion version)
         {
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var supportedVersion = version.supportedVersions?.Count > 0 ? version.supportedVersions.FirstOrDefault() : version.supportedVersion;
+#pragma warning restore RS0030
             var hasSupportedVersions = supportedVersion != null;
             if (hasSupportedVersions)
             {
@@ -62,7 +64,9 @@ namespace UnityEditor.PackageManager.UI.Internal
                 var tooltip = supportedVersion.ToString();
                 if (version.supportedVersions?.Count > 0)
                 {
+                    #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     var versions = version.supportedVersions.Select(version => version.ToString()).ToArray();
+#pragma warning restore RS0030
                     tooltip = versions.Length == 1 ? versions[0] :
                         string.Format(L10n.Tr("{0} and {1} to improve compatibility with the range of these versions of Unity"), string.Join(", ", versions, 0, versions.Length - 1), versions[versions.Length - 1]);
                 }
@@ -76,7 +80,9 @@ namespace UnityEditor.PackageManager.UI.Internal
             var showSizes = version.sizes.Count > 0;
             if (showSizes)
             {
+                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 var sizeInfo = version.sizes.FirstOrDefault(info => info.supportedUnityVersion == version.supportedVersion) ?? version.sizes.Last();
+#pragma warning restore RS0030
                 detailSizes.text = string.Format(L10n.Tr("Size: {0} (Number of files: {1})"), UIUtils.ConvertToHumanReadableSize(sizeInfo.downloadSize), sizeInfo.assetCount);
             }
             UIUtils.SetElementDisplay(detailSizesContainer, showSizes);

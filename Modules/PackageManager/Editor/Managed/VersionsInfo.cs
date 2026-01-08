@@ -42,10 +42,16 @@ namespace UnityEditor.PackageManager
             string recommended,
             IEnumerable<string> deprecated)
         {
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             m_All = (all ?? new string[] {}).ToArray();
+#pragma warning restore RS0030
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             m_Compatible = (compatible ?? new string[] {}).ToArray();
+#pragma warning restore RS0030
             m_Recommended = recommended ?? string.Empty;
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             m_Deprecated = (deprecated ?? new string[] {}).ToArray();
+#pragma warning restore RS0030
         }
 
         public string[] all { get { return m_All; } }
@@ -61,7 +67,9 @@ namespace UnityEditor.PackageManager
         {
             get
             {
+                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 return (all.LastOrDefault() ?? string.Empty);
+#pragma warning restore RS0030
             }
         }
 
@@ -69,7 +77,9 @@ namespace UnityEditor.PackageManager
         {
             get
             {
+                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 return (compatible.LastOrDefault() ?? string.Empty);
+#pragma warning restore RS0030
             }
         }
     }

@@ -1291,6 +1291,11 @@ namespace UnityEditor
         public static void SetIl2CppCodeGeneration(NamedBuildTarget buildTarget, Il2CppCodeGeneration value) =>
             SetIl2CppCodeGenerationInternal(buildTarget.TargetName, value);
 
+        [StaticAccessor("GetPlayerSettings().GetEditorOnly()")]
+        [NativeMethod("GetDefaultIl2CppCodeGeneration")]
+        private static extern Il2CppCodeGeneration GetDefaultIl2CppCodeGenerationInternal(string buildTargetName);
+        internal static Il2CppCodeGeneration GetDefaultIl2CppCodeGeneration(NamedBuildTarget buildTarget) => GetDefaultIl2CppCodeGenerationInternal(buildTarget.TargetName);
+
         [NativeThrows]
         [NativeMethod("SetMobileMTRendering")]
         private static extern void SetMobileMTRenderingInternal(string buildTargetName, bool enable);

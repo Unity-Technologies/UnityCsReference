@@ -60,7 +60,7 @@ namespace Unity.ProjectAuditor.Editor.Core
             // In both cases the list only really needs to contain the Descriptors that correspond to ProjectIssues
             // actually found in the report, so if we had the report object we could potentially do some filtering here.
             if (s_Descriptors != null)
-                m_SerializedDescriptors = s_Descriptors.Values.ToList();
+                m_SerializedDescriptors = new List<Descriptor>(s_Descriptors.Values);
         }
 
         public void OnAfterDeserialize()
@@ -71,7 +71,9 @@ namespace Unity.ProjectAuditor.Editor.Core
                 if (s_Descriptors == null)
                     s_Descriptors = new Dictionary<int, Descriptor>();
 
+                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 var deserializedDescriptors = m_SerializedDescriptors.ToDictionary(m => new DescriptorId(m.Id).AsInt(), m => m);
+#pragma warning restore RS0030
                 foreach (var deserializedDescriptor in deserializedDescriptors)
                     s_Descriptors.TryAdd(deserializedDescriptor.Key, deserializedDescriptor.Value); // Only add items that don't exist, otherwise we lose all the non-serialized data, eg Fixer
 

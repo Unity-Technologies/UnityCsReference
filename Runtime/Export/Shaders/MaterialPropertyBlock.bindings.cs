@@ -81,6 +81,7 @@ namespace UnityEngine
         extern private void Clear(bool keepMemory);
         public void Clear() { Clear(true); }
 
+        [VisibleToOtherModules("UnityEngine.UIElementsModule")]
         internal static class BindingsMarshaller
         {
             public static IntPtr ConvertToNative(MaterialPropertyBlock materialPropertyBlock) => materialPropertyBlock.m_Ptr;

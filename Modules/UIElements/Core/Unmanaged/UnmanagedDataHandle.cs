@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System.Runtime.InteropServices;
+using UnityEngine.Bindings;
 
 namespace UnityEngine.UIElements.Unmanaged;
 
@@ -12,6 +13,7 @@ namespace UnityEngine.UIElements.Unmanaged;
 /// * The index specifies the data index in the <see cref="UnmanagedDataStore"/>.
 /// * The version is used for tracking lifecycle and re-using indices.
 /// </summary>
+[NativeHeader("Modules/UIElements/Core/Native/Unmanaged/UnmanagedDataHandle.h")]
 [StructLayout(LayoutKind.Sequential)]
 readonly struct UnmanagedDataHandle
 {

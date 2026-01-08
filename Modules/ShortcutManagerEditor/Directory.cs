@@ -27,13 +27,21 @@ namespace UnityEditor.ShortcutManagement
 
         public void Initialize(IEnumerable<ShortcutEntry> entries)
         {
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             m_ShortcutEntries = new List<ShortcutEntry>(entries.Count());
+#pragma warning restore RS0030
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             m_IndexedShortcutEntries = new Dictionary<KeyCode, List<ShortcutEntry>>(entries.Count());
+#pragma warning restore RS0030
             foreach (ShortcutEntry entry in entries)
             {
                 m_ShortcutEntries.Add(entry);
+                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 if (entry.combinations.Any())
+#pragma warning restore RS0030
+                    #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     AddEntry(entry.combinations.First().keyCode, entry);
+#pragma warning restore RS0030
                 // TODO: Index unbound entries?
             }
         }
@@ -76,13 +84,17 @@ namespace UnityEditor.ShortcutManagement
             bool tagMatch = false;
 
             foreach (var entry in outputShortcuts)
+                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 tagMatch |= tags.Contains(entry.tag);
+#pragma warning restore RS0030
 
             if (tagMatch)
             {
                 for (int i = outputShortcuts.Count - 1; i >= 0; i--)
                 {
+                    #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     if (tags.Contains(outputShortcuts[i].tag)) continue;
+#pragma warning restore RS0030
                     outputShortcuts.RemoveAt(i);
                 }
             }
@@ -159,7 +171,9 @@ namespace UnityEditor.ShortcutManagement
 
         public ShortcutEntry FindShortcutEntry(Identifier identifier)
         {
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return m_ShortcutEntries.FirstOrDefault(s => s.identifier.Equals(identifier));
+#pragma warning restore RS0030
         }
 
         public ShortcutEntry FindShortcutEntry(string shortcutId)
@@ -171,13 +185,17 @@ namespace UnityEditor.ShortcutManagement
 
         public void FindPotentialConflicts(Type context, string tag, IList<KeyCombination> binding, IList<ShortcutEntry> output, IContextManager contextManager)
         {
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             if (!binding.Any())
+#pragma warning restore RS0030
                 return;
 
             var tempCombinations = new List<KeyCombination>(binding.Count);
             output.Clear();
             List<ShortcutEntry> entries = m_IndexedShortcutEntries.GetValueOrDefault(binding[0].keyCode);
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             if (entries == null || !entries.Any())
+#pragma warning restore RS0030
                 return;
 
             foreach (var shortcutEntry in entries)

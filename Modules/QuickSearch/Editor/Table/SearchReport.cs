@@ -210,8 +210,12 @@ namespace UnityEditor.Search
             return new SearchReport
             {
                 query = context?.searchText ?? string.Empty,
+                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 columns = columns.ToArray(),
+#pragma warning restore RS0030
+                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 items = items != null ? items.Select(e => CreateItem(e, context, columns)).ToArray() : (new Item[0])
+#pragma warning restore RS0030
             };
         }
 
@@ -229,7 +233,9 @@ namespace UnityEditor.Search
 
             foreach (var column in columns)
                 fields.Add(new Field(column.selector, column.ResolveValue(e, context)));
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             ri.fields = fields.ToArray();
+#pragma warning restore RS0030
             return ri;
         }
 
@@ -251,7 +257,9 @@ namespace UnityEditor.Search
 
         public static string ExportAsCsv(SearchContext context, IEnumerable<SearchColumn> columns, IEnumerable<SearchItem> items)
         {
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             if (!columns.Any())
+#pragma warning restore RS0030
                 return string.Empty;
 
             var sb = new StringBuilder();

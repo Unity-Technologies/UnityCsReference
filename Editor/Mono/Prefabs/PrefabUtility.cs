@@ -214,7 +214,9 @@ namespace UnityEditor
             {
                 var importer = t as AssetImporter;
 
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 var materials = AssetDatabase.LoadAllAssetsAtPath(importer.assetPath).Where(x => x.GetType() == typeof(Material)).ToArray();
+#pragma warning restore RS0030
 
                 foreach (var material in materials)
                 {
@@ -389,7 +391,9 @@ namespace UnityEditor
                 rootSet.Add(PrefabUtility.GetOutermostPrefabInstanceRoot(gameObject));
             }
 
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             InstanceOverridesInfo[] instanceOverridesInfos = rootSet.Select(PrefabUtility.GetPrefabInstanceOverridesInfo_Internal).ToArray();
+#pragma warning restore RS0030
             PrefabUtility.RemovePrefabInstanceUnusedOverrides(instanceOverridesInfos, action);
         }
 
@@ -651,9 +655,7 @@ namespace UnityEditor
             );
         }
 
-        // This method is called both from ApplyPropertyOverride and ApplyObjectOverride.
-        // In the former case, optionalSingleInstanceProperty is passed along as is the only property that should be processed.
-        // In the latter, all properties in the prefabInstanceObject are iterated.
+        // This method is called from ApplyPropertyOverride with a single instanceProperty to process.
         // An alternative approach was considered where the method takes an array of SerializedProperties,
         // but since there can be thousands of those in a component, and they would each have to be copied from the iterator,
         // it's better to handle properties inline as the iterator iterates over them.
@@ -662,10 +664,7 @@ namespace UnityEditor
         // all the way to the Prefab at the specified assetPath.
         // Since calling ApplyModifiedProperties on a SerializedObject can trigger a whole chain of imports,
         // we don't want to create and call ApplyModifiedProperties more than once for each SerializedObject, hence the caching.
-        // We also can't swap the inner and outer loop, iterating the chain of corresponding objects in the outer loop
-        // and the SerializedProperties in the inner loop, since we only process overridden properties, so it would
-        // again require storing information about that for each property in some kind of list, which we want to avoid.
-        static void ApplyPropertyOverrides(Object prefabInstanceObject, SerializedProperty optionalSingleInstanceProperty, string assetPath, bool allowApplyDefaultOverride, InteractionMode action)
+        static void ApplyPropertyOverrides(Object prefabInstanceObject, SerializedProperty instanceProperty, string assetPath, bool allowApplyDefaultOverride, InteractionMode action)
         {
             if (WarnIfInAnimationMode(OverrideOperation.Apply, action))
                 return;
@@ -680,7 +679,7 @@ namespace UnityEditor
             var serializedObjects = new List<SerializedObject>();
             var changedObjects = new HashSet<SerializedObject>();
 
-            HandleApplySingleProperties(prefabInstanceObject, optionalSingleInstanceProperty, assetPath, prefabSourceObject, prefabSourceSerializedObject, serializedObjects, changedObjects, allowApplyDefaultOverride, action);
+            HandleApplySingleProperties(prefabInstanceObject, instanceProperty, assetPath, prefabSourceObject, prefabSourceSerializedObject, serializedObjects, changedObjects, allowApplyDefaultOverride, action);
 
             // Ensure importing of saved Prefab Assets only kicks in after all Prefab Asset have been saved
             AssetDatabase.StartAssetEditing();
@@ -733,7 +732,7 @@ namespace UnityEditor
 
         static void HandleApplySingleProperties(
             Object prefabInstanceObject,
-            SerializedProperty optionalSingleInstanceProperty,
+            SerializedProperty instanceProperty,
             string assetPath, Object prefabSourceObject,
             SerializedObject prefabSourceSerializedObject,
             List<SerializedObject> serializedObjects,
@@ -744,34 +743,22 @@ namespace UnityEditor
         {
             bool isObjectOnRootInAsset = IsObjectOnRootInAsset(prefabInstanceObject, assetPath);
 
-            SerializedProperty property = null;
-            SerializedProperty endProperty = null;
-            if (optionalSingleInstanceProperty != null)
-            {
-                bool cancel;
-                property = GetArrayPropertyIfGivenPropertyIsPartOfArrayElementInInstanceWhichDoesNotExistInAsset(
-                    optionalSingleInstanceProperty,
-                    prefabSourceSerializedObject,
-                    action,
-                    out cancel);
+            bool cancel;
+            SerializedProperty property = GetArrayPropertyIfGivenPropertyIsPartOfArrayElementInInstanceWhichDoesNotExistInAsset(
+                instanceProperty,
+                prefabSourceSerializedObject,
+                action,
+                out cancel);
 
-                if (cancel)
-                    return;
+            if (cancel)
+                return;
 
-                if (property == null)
-                {
-                    // We didn't find any mismatching array so just use the property the user supplied.
-                    property = optionalSingleInstanceProperty.Copy();
-                }
-                endProperty = property.GetEndProperty();
-            }
-            else
+            if (property == null)
             {
-                // Note: Mismatching array sizes are not a problem when applying entire component,
-                // since array sizes will always be applied before array content.
-                SerializedObject so = new SerializedObject(prefabInstanceObject);
-                property = so.GetIterator();
+                // We didn't find any mismatching array so just use the property the user supplied.
+                property = instanceProperty.Copy();
             }
+            SerializedProperty endProperty = property.GetEndProperty();
 
             bool allowWarnAboutApplyingPartsOfManagedReferences = property.isReferencingAManagedReferenceField;
 
@@ -795,7 +782,7 @@ namespace UnityEditor
                 var visitedManagedReferenceProperties = new HashSet<long>();
                 bool visitChildren = property.hasVisibleChildren;
 
-                while (property.Next(visitChildren) && (endProperty == null || !SerializedProperty.EqualContents(property, endProperty)))
+                while (property.Next(visitChildren) && !SerializedProperty.EqualContents(property, endProperty))
                 {
                     // If we apply a property that has child properties that are object references, and if they
                     // reference non-asset objects, those references will get lost, since ApplySingleProperty
@@ -1401,20 +1388,28 @@ namespace UnityEditor
 
             ThrowExceptionIfNotValidPrefabInstanceObject(instanceComponentOrGameObject, true);
 
+            var obj = GetCorrespondingObjectFromSourceAtPath(instanceComponentOrGameObject, assetPath);
+            if (IsPartOfImmutablePrefab(obj))
+                throw new ArgumentException($"Cannot applyt to immutable prefab: {assetPath}");
+
             if (WarnIfInAnimationMode(OverrideOperation.Apply, action))
                 return;
 
-            ApplyPropertyOverrides(instanceComponentOrGameObject, null, assetPath, false, action);
-
             if (action == InteractionMode.UserAction)
             {
+                ApplyObjectOverride(instanceComponentOrGameObject, assetPath);
+
                 Component instanceComponent = instanceComponentOrGameObject as Component;
                 if (instanceComponent != null)
                 {
                     Component coupledComponent = instanceComponent.GetCoupledComponent();
                     if (coupledComponent != null)
-                        ApplyPropertyOverrides(coupledComponent, null, assetPath, false, action);
+                        ApplyObjectOverride(coupledComponent, assetPath);
                 }
+            }
+            else
+            {
+                ApplyObjectOverrideWithoutUndo(instanceComponentOrGameObject, assetPath);
             }
 
             Analytics.SendApplyEvent(
@@ -1492,7 +1487,9 @@ namespace UnityEditor
                 {
                     string dependentComponents = string.Join(
                         ", ",
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                         GetAddedComponentDependencies(component, OverrideOperation.Apply).Select(e => ObjectNames.GetInspectorTitle(e)).ToArray());
+#pragma warning restore RS0030
                     if (!string.IsNullOrEmpty(dependentComponents))
                     {
                         string error = String.Format(
@@ -1575,7 +1572,9 @@ namespace UnityEditor
             {
                 string dependentComponents = string.Join(
                     ", ",
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     GetAddedComponentDependencies(component, OverrideOperation.Revert).Select(e => ObjectNames.GetInspectorTitle(e)).ToArray());
+#pragma warning restore RS0030
                 if (!string.IsNullOrEmpty(dependentComponents))
                 {
                     string error = String.Format(
@@ -1669,7 +1668,9 @@ namespace UnityEditor
             {
                 string dependentComponents = string.Join(
                     ", ",
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     GetRemovedComponentDependencies(assetComponent, instanceGameObject, OverrideOperation.Apply).Select(e => ObjectNames.GetInspectorTitle(e)).ToArray());
+#pragma warning restore RS0030
                 if (!string.IsNullOrEmpty(dependentComponents))
                 {
                     string error = String.Format(
@@ -1773,7 +1774,9 @@ namespace UnityEditor
             }
             if (index != -1)
             {
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 var filteredRemovedComponents = (from c in removedComponents where c != removedComponents[index] select c).ToArray();
+#pragma warning restore RS0030
                 PrefabUtility.SetRemovedComponents(instanceObject, filteredRemovedComponents);
             }
         }
@@ -1785,7 +1788,9 @@ namespace UnityEditor
             // Check dependencies
             string dependentComponents = string.Join(
                 ", ",
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 GetRemovedComponentDependencies(assetComponent, instanceGameObject, OverrideOperation.Revert).Select(e => ObjectNames.GetInspectorTitle(e)).ToArray());
+#pragma warning restore RS0030
             if (!string.IsNullOrEmpty(dependentComponents))
             {
                 string error = String.Format(
@@ -1847,7 +1852,9 @@ namespace UnityEditor
         private static void RemoveRemovedGameObjectOverridesWhichAreNull(Object prefabInstanceObject)
         {
             var removedGameObjects = PrefabUtility.GetRemovedGameObjects(prefabInstanceObject);
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var filteredRemovedGameObjects = (from go in removedGameObjects where go != null select go).ToArray();
+#pragma warning restore RS0030
             PrefabUtility.SetRemovedGameObjects(prefabInstanceObject, filteredRemovedGameObjects);
         }
 
@@ -1941,7 +1948,9 @@ namespace UnityEditor
             if (gameObjects == null)
                 throw new ArgumentNullException(nameof(gameObjects), "Cannot apply added GameObjects. GameObjects array is null.");
 
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             if (!gameObjects.Any())
+#pragma warning restore RS0030
                 throw new ArgumentException(nameof(gameObjects), "No GameObjects in array.");
 
             foreach (GameObject go in gameObjects)
@@ -2026,7 +2035,9 @@ namespace UnityEditor
 
         internal static bool HasSameParent(GameObject[] gameObjects)
         {
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             if (gameObjects == null || !gameObjects.Any() || gameObjects[0] == null)
+#pragma warning restore RS0030
                 throw new ArgumentException(nameof(gameObjects), "Array is invalid.");
 
             Transform goParent = gameObjects[0].transform.parent;
@@ -2059,7 +2070,9 @@ namespace UnityEditor
 
             if (index != -1)
             {
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 var filteredRemovedGameObjects = (from go in removedGameObjects where go != removedGameObjects[index] select go).ToArray();
+#pragma warning restore RS0030
                 PrefabUtility.SetRemovedGameObjects(instanceObject, filteredRemovedGameObjects);
             }
         }
@@ -3651,7 +3664,9 @@ namespace UnityEditor
         {
             GameObject instanceGameObject = component.gameObject;
             List<Component> addedComponentsOnGO =
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 GetAddedComponents(instanceGameObject)
+#pragma warning restore RS0030
                     .Select(e => e.instanceComponent)
                     .Where(e => e.gameObject == instanceGameObject)
                     .ToList();
@@ -3669,7 +3684,9 @@ namespace UnityEditor
         {
             GameObject assetGameObject = assetComponent.gameObject;
             List<Component> removedComponentsOnAssetGO =
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 GetRemovedComponents(instanceGameObject)
+#pragma warning restore RS0030
                     .Select(e => e.assetComponent)
                     .Where(e => e.gameObject == assetGameObject)
                     .ToList();
@@ -3716,7 +3733,9 @@ namespace UnityEditor
         {
             var requiredComps = component.GetType().GetCustomAttributes(typeof(RequireComponent), inherit: true);
             List<Component> dependencies = new List<Component>();
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             if (requiredComps.Count() == 0)
+#pragma warning restore RS0030
                 return dependencies;
 
             // Iterate all components.
@@ -3768,7 +3787,9 @@ namespace UnityEditor
 
         internal static bool HavePrefabInstancesUnusedOverrides(GameObject[] gameObjects)
         {
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             if (gameObjects == null || !gameObjects.Any())
+#pragma warning restore RS0030
                 return false;
 
             foreach (GameObject go in gameObjects)
@@ -3818,7 +3839,9 @@ namespace UnityEditor
             string title = titleCheckForUnusedOverrides;
             string message = string.Empty;
 
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             if (instanceOverridesInfos == null || !instanceOverridesInfos.Any())
+#pragma warning restore RS0030
             {
                 title = titleCheckForUnusedOverrides;
                 message = msgNoOverridesWereFound;

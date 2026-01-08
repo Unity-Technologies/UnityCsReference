@@ -8,16 +8,35 @@ namespace UnityEditor.Multiplayer.Internal
 {
     class MultiplayerRoleDropdown : EditorToolbarDropdown
     {
+        const string k_ElementPath = "Multiplayer/Multiplayer Role";
+        
+        public MultiplayerRoleDropdown()
+        {
+            EditorMultiplayerManager.CreateMultiplayerRoleDropdown(this);
+        }
+        
         [UnityOnlyMainToolbarPreset]
-        [MainToolbarElement("Multiplayer/Multiplayer Role", defaultDockIndex = 5, defaultDockPosition = MainToolbarDockPosition.Right)]
+        [MainToolbarElement(k_ElementPath, defaultDockIndex = 5, defaultDockPosition = MainToolbarDockPosition.Right)]
         static MainToolbarElement Create()
         {
             return new MainToolbarCustom(() => new MultiplayerRoleDropdown());
         }
 
-        public MultiplayerRoleDropdown()
+        [InitializeOnLoadMethod]
+        static void InitializeCallbacks()
         {
-            EditorMultiplayerManager.CreateMultiplayerRoleDropdown(this);
+            EditorMultiplayerManager.enableMultiplayerRolesChanged += OnEnableMultiplayerRolesChanged;
         }
+
+        [MainToolbarElementAvailability(k_ElementPath)]
+        static bool IsAvailable()
+        {
+            return EditorMultiplayerManager.enableMultiplayerRoles;
+        }
+
+        static void OnEnableMultiplayerRolesChanged()
+        {
+            MainToolbar.Refresh(k_ElementPath);
+        }   
     }
 }

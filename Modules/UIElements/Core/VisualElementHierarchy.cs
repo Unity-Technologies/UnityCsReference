@@ -35,8 +35,8 @@ namespace UnityEngine.UIElements
 
         internal bool disableClipping
         {
-            get => (m_Flags & VisualElementFlags.DisableClipping) == VisualElementFlags.DisableClipping;
-            set => m_Flags = value ? m_Flags | VisualElementFlags.DisableClipping : m_Flags & ~VisualElementFlags.DisableClipping;
+            get => (transformFlags & VisualElementTransformFlags.DisableClipping) == VisualElementTransformFlags.DisableClipping;
+            set => transformFlags = value ? transformFlags | VisualElementTransformFlags.DisableClipping : transformFlags & ~VisualElementTransformFlags.DisableClipping;
         }
 
         internal bool ShouldClip()

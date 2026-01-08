@@ -275,7 +275,7 @@ namespace UnityEngine
 
         [FreeFunction("DisplayInfoScripting::GetLayout")]
         [NativeConditional("PLATFORM_SUPPORTS_DISPLAYINFO_API")]
-        extern static void GetLayoutImpl([Out] List<DisplayInfo> displayLayout);
+        extern static void GetLayoutImpl([Out,NotNull] List<DisplayInfo> displayLayout);
 
         [FreeFunction("DisplayInfoScripting::GetResolutions")]
         [NativeConditional("PLATFORM_SUPPORTS_DISPLAYINFO_API")]
@@ -430,7 +430,7 @@ namespace UnityEngine
         extern static DisplayInfo GetMainWindowDisplayInfo();
 
         [FreeFunction("GetDisplayLayout")]
-        extern static void GetDisplayLayoutImpl([Out] List<DisplayInfo> displayLayout);
+        extern static void GetDisplayLayoutImpl([Out,NotNull] List<DisplayInfo> displayLayout);
 
         [FreeFunction("MoveMainWindow")]
         extern static AsyncOperation MoveMainWindowImpl(in DisplayInfo display, Vector2Int position);

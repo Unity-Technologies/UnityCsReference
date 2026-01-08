@@ -145,7 +145,9 @@ namespace Unity.GraphToolkit.Editor
 
             // Deleted graphs have already been unloaded by WindowAssetModificationWatcher, just before they were deleted.
 
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var changedGuids = changedAssets.ToDictionary(path => path, AssetDatabase.GUIDFromAssetPath);
+#pragma warning restore RS0030
             foreach (var window in windows)
             {
                 if (window.GraphView != null)

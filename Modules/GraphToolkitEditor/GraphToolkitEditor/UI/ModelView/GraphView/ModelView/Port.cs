@@ -336,8 +336,11 @@ namespace Unity.GraphToolkit.Editor
             base.OnCustomStyleResolved(evt);
             var currentColor = PortColor;
 
-            if (evt.customStyle.TryGetValue(k_PortColorProperty, out var portColorValue))
+            if (!TrySetPortColorFromTypeStyle() // Try to set the port color from registered type style first.
+                && evt.customStyle.TryGetValue(k_PortColorProperty, out var portColorValue))
+            {
                 PortColor = portColorValue;
+            }
 
             if (currentColor != PortColor && PartList.GetPart(connectorPartName) is PortConnectorWithIconPart portConnector)
             {
@@ -354,67 +357,6 @@ namespace Unity.GraphToolkit.Editor
         static string GenerateClassNameForPortType(PortType t)
         {
             return portTypeUssClassNamePrefix + GetClassNameSuffixForType(t);
-        }
-
-        /// <summary>
-        /// Assigns an icon to a port item in the item library.
-        /// </summary>
-        /// <param name="itemIconContainer">The container of item's icon.</param>
-        public virtual void AssignIconToPortItemInLibrary(VisualElement itemIconContainer)
-        {
-            if (PortModel.DataTypeHandle == TypeHandle.ExecutionFlow)
-            {
-                GetTriangleConnectorForItemLibrary(itemIconContainer);
-                return;
-            }
-
-            var imageIcon = new Image();
-            imageIcon.AddPackageStylesheet("TypeIcons.uss");
-            imageIcon.tintColor = PortColor;
-
-            RegisterCallback<CustomStyleResolvedEvent>(evt =>
-            {
-                if (evt.customStyle.TryGetValue(new CustomStyleProperty<Color>("--port-color"), out var portColorValue))
-                    imageIcon.tintColor = portColorValue;
-            });
-
-            RootView.TypeHandleInfos.AddUssClasses(GraphElementHelper.iconDataTypeClassPrefix, imageIcon, PortModel.DataTypeHandle);
-
-            itemIconContainer.Add(imageIcon);
-        }
-
-        protected void GetTriangleConnectorForItemLibrary(VisualElement iconContainer)
-        {
-            iconContainer.AddPackageStylesheet("PortConnectorPart.uss");
-            iconContainer.AddPackageStylesheet("Port.uss");
-            iconContainer.AddToClassList(ussClassName);
-            iconContainer.AddToClassList(ussClassName.WithUssElement(connectorPartName));
-            iconContainer.AddToClassList(outputUssClassName);
-            iconContainer.AddToClassList(notConnectedUssClassName);
-            if (PortModel.Orientation == PortOrientation.Vertical)
-                iconContainer.AddToClassList(verticalUssClassName);
-
-            var connector = new VisualElement { name = PortConnectorPart.connectorUssName };
-            connector.AddToClassList(ussClassName.WithUssElement(PortConnectorPart.connectorUssName));
-            connector.AddToClassList(PortConnectorPart.ussClassName.WithUssElement(PortConnectorPart.connectorUssName));
-            iconContainer.Add(connector);
-            connector.RegisterCallbackOnce<GeometryChangedEvent>(_ =>
-            {
-                connector.generateVisualContent = OnGenerateTriangleConnectorVisualContent;
-            });
-            RegisterCallbackOnce<CustomStyleResolvedEvent>(evt =>
-            {
-                if (evt.customStyle.TryGetValue(new CustomStyleProperty<Color>("--port-color"), out var portColorValue))
-                {
-                    connector.style.borderBottomColor = portColorValue;
-                    connector.style.borderLeftColor = portColorValue;
-                    connector.style.borderRightColor = portColorValue;
-                    connector.style.borderTopColor = portColorValue;
-                }
-
-                if (evt.customStyle.TryGetValue(new CustomStyleProperty<Color>("--port-background"), out var portBackgroundValue))
-                    connector.style.backgroundColor = portBackgroundValue;
-            });
         }
 
         protected static string GetClassNameSuffixForType(PortType t)
@@ -950,6 +892,16 @@ namespace Unity.GraphToolkit.Editor
         public virtual void ClearCulling()
         {
             m_CullingReference = null;
+        }
+
+        bool TrySetPortColorFromTypeStyle()
+        {
+            var typeStyle = PortModel.GraphModel?.GetDataTypeStyle(PortModel.PortDataType);
+            if (!typeStyle.HasValue)
+                return false;
+
+            PortColor = typeStyle.Value.color;
+            return true;
         }
     }
 }

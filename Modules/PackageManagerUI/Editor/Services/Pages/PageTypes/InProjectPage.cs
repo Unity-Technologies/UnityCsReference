@@ -30,7 +30,9 @@ internal class InProjectPage : SimplePage
     public override bool ShouldInclude(IPackage package)
     {
         return package != null
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             && !package.versions.All(v => v.HasTag(PackageTag.BuiltIn))
+#pragma warning restore RS0030
             && (package.progress == PackageProgress.Installing || package.versions.installed != null || package.versions.imported != null);
     }
 
@@ -47,10 +49,14 @@ internal class InProjectPage : SimplePage
     public override bool RefreshSupportedStatusFiltersOnEntitlementPackageChange()
     {
         var oldSupportedStatusFilters = m_SupportedStatusFilters;
+        #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
         m_SupportedStatusFilters = m_PackageDatabase.allPackages.Any(p => ShouldInclude(p) && p.hasEntitlements)
+#pragma warning restore RS0030
             ? new[] { PageFilters.Status.SubscriptionBased }
             : Array.Empty<PageFilters.Status>();
 
+        #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
         return !m_SupportedStatusFilters.SequenceEqual(oldSupportedStatusFilters);
+#pragma warning restore RS0030
     }
 }

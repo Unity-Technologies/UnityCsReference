@@ -35,6 +35,9 @@ namespace Unity.Burst.LowLevel
 
         public static extern bool IsInitialized { get; }
 
+        public static extern bool DequeuePendingBurstLoad();
+        public static extern bool WasScriptDebugInfoEnabledAtDomainReload { get; }
+
         [ThreadSafe]
         public static extern void SetCurrentExecutionMode(uint environment);
 

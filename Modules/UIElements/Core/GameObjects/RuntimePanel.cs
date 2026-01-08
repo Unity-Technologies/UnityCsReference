@@ -31,10 +31,10 @@ namespace UnityEngine.UIElements
         private readonly PanelSettings m_PanelSettings;
         public PanelSettings panelSettings => m_PanelSettings;
 
-        private static readonly List<UIDocument> s_EmptyDocumentList = new();
+        private static readonly List<IPanelComponent> s_EmptyPanelComponentList = new();
 
-        internal List<UIDocument> documents =>
-            m_PanelSettings.m_AttachedUIDocumentsList?.m_AttachedUIDocuments ?? s_EmptyDocumentList;
+        internal List<IPanelComponent> panelComponents =>
+            m_PanelSettings.m_AttachedPanelComponentsList?.m_AttachedPanelComponents ?? s_EmptyPanelComponentList;
 
         public static RuntimePanel Create(ScriptableObject ownerObject)
         {

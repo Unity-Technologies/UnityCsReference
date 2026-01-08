@@ -253,12 +253,6 @@ namespace Unity.Multiplayer.PlayMode.Editor
                 return DropdownMenuAction.Status.Disabled;
             }
 
-            var remoteInstances = prop.serializedObject.FindProperty("m_RemoteInstances");
-            if (prop.boxedValue.GetType() == typeof(RemoteInstanceDescription) && remoteInstances.arraySize >= ScenarioConfigEditor.MaxServerCount)
-            {
-                return DropdownMenuAction.Status.Disabled;
-            }
-
             return DropdownMenuAction.Status.Normal;
         }
 
@@ -294,22 +288,6 @@ namespace Unity.Multiplayer.PlayMode.Editor
                 error = "BuildProfile cannot be run as local instance";
                 return false;
             }
-
-            // Also ensure instance-type specific build target checks.
-            var isServerInstance = instance.GetType() == typeof(RemoteInstanceDescription);
-            if (isServerInstance && InternalUtilities.IsAndroidBuildTarget(newProfile))
-            {
-                error = "Build Profile is not supported or installed for this type of instance.";
-                return false;
-            }
-
-            // Check that remote instances do not have a client role
-            if (isServerInstance && !LocalDeploymentUtility.IsServerProfileOrRole(newProfile))
-            {
-                error = "Build profile has a client profile or role, remote instances are intended for uploading a Dedicated Game Server to the cloud and is not compatible with a client instance";
-                return false;
-            }
-
 
             error = null;
             return true;
@@ -392,11 +370,6 @@ namespace Unity.Multiplayer.PlayMode.Editor
                     if (ScenarioFactory.GetRoleForInstance(inst) != MultiplayerRoleFlags.Client)
                         currentServerCount++;
                 }
-                foreach (var inst in config.RemoteInstances)
-                {
-                    if (ScenarioFactory.GetRoleForInstance(inst) != MultiplayerRoleFlags.Client)
-                        currentServerCount++;
-                }
 
                 if (currentServerCount + 1 > ScenarioConfigEditor.MaxServerCount)
                 {
@@ -406,110 +379,6 @@ namespace Unity.Multiplayer.PlayMode.Editor
             }
 
             return true;
-        }
-    }
-
-    [CustomPropertyDrawer(typeof(RemoteInstanceDescription.AdvancedConfig), true)]
-    class AdvancedConfigDrawer : PropertyDrawer
-    {
-        public override VisualElement CreatePropertyGUI(SerializedProperty property)
-        {
-            var container = new Foldout();
-            container.AddToClassList("unity-base-field__aligned");
-
-            container.text = "Advanced Configuration";
-            var instanceProp = property.Copy();
-            var enumerator = property.GetEnumerator();
-
-            container.AddManipulator(new ContextualMenuManipulator(evt =>
-            {
-                var scenario = PlayModeScenarioManager.ActiveScenario as OrchestratedScenario;
-                var instanceDescript = instanceProp.boxedValue as InstanceDescription;
-                var hasScenarioAndInstance = scenario != null && instanceDescript != null;
-                if (hasScenarioAndInstance && scenario.Scenario != null && !scenario.Scenario.HasActiveFreeRunInstanceOfType(instanceDescript.GetType()))
-                {
-                    evt.menu.AppendAction("Remove", action =>
-                    {
-                        instanceProp.serializedObject.Update();
-                        var so = instanceProp.serializedObject;
-                        instanceProp.DeleteCommand();
-                        so.ApplyModifiedProperties();
-                    });
-                }
-            }));
-
-            while (enumerator.MoveNext())
-            {
-                if (property.name == "m_Identifier")
-                {
-                    var nameField = new PropertyField(property);
-                    var remoteNameField = new TextField() { label = "Name In Unity Cloud Dashboard", tooltip = RemoteInstanceDescription.k_ServerNameTooltip };
-
-                    nameField.RegisterValueChangeCallback(evt => remoteNameField.value = RemoteInstanceDescription.ComputeMultiplayName(evt.changedProperty.stringValue));
-                    nameField.Bind(property.serializedObject);
-                    remoteNameField.SetEnabled(false);
-
-                    container.Add(nameField);
-                    container.Add(remoteNameField);
-                    continue;
-                }
-
-                if (property.name == "m_InstanceAmountOfMemoryMB")
-                {
-                    var slider = UIFactory.CreateStepSlider(property, "Instance Memory", 100, 7500);
-                    container.Add(slider);
-                    continue;
-                }
-
-                if (property.name == "m_InstanceCpuFrequencyMHz")
-                {
-                    var slider = UIFactory.CreateStepSlider(property, "Instance CPU Clockspeed", 100, 5500);
-                    container.Add(slider);
-                    continue;
-                }
-
-                if (property.name == "m_FleetRegion")
-                {
-                    // Todo: hook into GetAvailableFleetRegions() when test/multiplay-api lands
-                    var choices = new List<String>() { "North America", "Europe", "Asia", "Australia" };
-                    var dropDown = new DropdownField("Fleet Region", choices, 0);
-                    dropDown.tooltip = property.tooltip;
-                    dropDown.BindProperty(property);
-                    dropDown.Bind(property.serializedObject);
-                    container.Add(dropDown);
-                    continue;
-                }
-
-                if (property.name == "m_Arguments")
-                {
-                    var field = UIFactory.CreateTextfieldWithDefault(property, "Arguments");
-                    var linkIcon = new Image();
-                    linkIcon.AddToClassList("propertyfield-icon");
-                    linkIcon.AddToClassList("link-icon");
-                    linkIcon.image = Icons.GetImage(Icons.ImageName.Help);
-                    linkIcon.RegisterCallback<ClickEvent>(evt =>
-                    {
-                        Application.OpenURL("https://docs.unity.com/ugs/manual/game-server-hosting/manual/concepts/launch-parameters");
-                    });
-                    field.Insert(1, linkIcon);
-                    container.Add(field);
-                    continue;
-                }
-
-
-                var propField = new PropertyField(property);
-                propField.RegisterValueChangeCallback(evt => { });
-                propField.Bind(property.serializedObject);
-                container.Add(propField);
-
-            }
-
-            foreach (var child in container.Children())
-            {
-                child.AddToClassList("unity-base-field__aligned");
-            }
-
-            return container;
         }
     }
 }

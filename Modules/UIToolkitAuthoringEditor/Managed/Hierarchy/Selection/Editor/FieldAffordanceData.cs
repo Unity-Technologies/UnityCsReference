@@ -131,11 +131,11 @@ namespace Unity.UIToolkit.Editor
             }
         }
 
-        DataBinding m_Binding;
+        Binding m_Binding;
         /// <summary>
-        /// The data binding associated with the field, if any.
+        /// The binding associated with the field, if any.
         /// </summary>
-        public DataBinding binding
+        public Binding binding
         {
             get => m_Binding;
             set

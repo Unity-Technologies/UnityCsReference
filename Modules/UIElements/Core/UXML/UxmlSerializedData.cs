@@ -19,8 +19,8 @@ namespace UnityEngine.UIElements
     /// Controls how a serialized class instance is copied to a UxmlAttribute field.
     /// </summary>
     /// <remarks>
-    /// By default, Unity creates a deep copy of the class instance by serializing it into a JSON string using <see cref="JsonUtility.ToJson(object)"/> 
-    /// and then deserializing it back to an instance with <see cref="JsonUtility.FromJson{T}(string)"/>. 
+    /// By default, Unity creates a deep copy of the class instance by serializing it into a JSON string using <see cref="JsonUtility.ToJson(object)"/>
+    /// and then deserializing it back to an instance with <see cref="JsonUtility.FromJson{T}(string)"/>.
     /// The default process involves the Unity serializer and triggers callbacks such as <see cref="ISerializationCallbackReceiver"/>, which can be inefficient, especially for large objects or frequent copying.
     /// To optimize the process and performance, implement this interface which provides a more efficient copying mechanism.
     /// </remarks>
@@ -32,7 +32,7 @@ namespace UnityEngine.UIElements
         /// <remarks>
         /// You can define the type of copy based on your usage scenarios:
         ///- Deep Copy: Returns independent copies, ideal for scenarios where you need to modify the clone.
-        ///- Shallow Copy: For performance optimization when internal state changes are unnecessary. It creates a copy of some parts of an instance while sharing others. 
+        ///- Shallow Copy: For performance optimization when internal state changes are unnecessary. It creates a copy of some parts of an instance while sharing others.
         ///- Shared Instance: Returns the original instance for read-only scenarios with no modifications.
         /// </remarks>
         /// <returns>A clone of the instance.</returns>
@@ -77,7 +77,7 @@ namespace UnityEngine.UIElements
             DefaultValue = 2,
         }
 
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
         [SerializeField, UxmlIgnore, HideInInspector]
         internal int uxmlAssetId;
 
@@ -114,7 +114,7 @@ namespace UnityEngine.UIElements
         /// </summary>
         /// <param name="obj"></param>
         /// <param name="flags"></param>
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
         internal void Deserialize(object obj, UxmlAttributeFlags flags)
         {
             try

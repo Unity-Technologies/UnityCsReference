@@ -174,7 +174,9 @@ namespace UnityEditor.PackageManager.UI.Internal
 
             if (!registriesListResult.IsEquivalentTo(m_SettingsProxy.registries))
             {
+                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 var name = registriesListResult.FirstOrDefault(r => !m_SettingsProxy.registries.Any(r.IsEquivalentTo))?.name;
+#pragma warning restore RS0030
                 if (!string.IsNullOrEmpty(name))
                     m_SettingsProxy.SelectRegistry(name);
 

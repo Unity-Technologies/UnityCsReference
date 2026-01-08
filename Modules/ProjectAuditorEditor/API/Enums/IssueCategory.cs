@@ -139,6 +139,11 @@ namespace Unity.ProjectAuditor.Editor
         DomainReload,
 
         /// <summary>
+        /// Category for showing GameObjects
+        /// </summary>
+        GameObject,
+
+        /// <summary>
         /// Enum value indicating the first available custom category
         /// </summary>
         FirstCustomCategory

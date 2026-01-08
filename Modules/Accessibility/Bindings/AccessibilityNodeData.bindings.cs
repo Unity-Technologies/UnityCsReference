@@ -600,8 +600,6 @@ namespace UnityEngine.Accessibility
     /// </summary>
     [RequiredByNativeCode]
     [StructLayout(LayoutKind.Sequential)]
-    [NativeType(CodegenOptions.Custom, "MonoAccessibilityNodeData")]
-    [NativeHeader("Modules/Accessibility/Bindings/AccessibilityNodeData.bindings.h")]
     [NativeHeader("Modules/Accessibility/Native/AccessibilityNodeData.h")]
     internal struct AccessibilityNodeData
     {

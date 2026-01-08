@@ -43,7 +43,7 @@ namespace UnityEditor
         /// <summary>
         /// Clear all cached build results, resulting in a full rebuild of content.
         /// </summary>        
-        /// <seealso cref="BuildOptions.CleanBuildCachee"/>
+        /// <seealso cref="BuildOptions.CleanBuildCache"/>
         /// <seealso cref="BuildAssetBundleOptions.ForceRebuildAssetBundle"/>
         CleanBuildCache = 1 << 5,
 

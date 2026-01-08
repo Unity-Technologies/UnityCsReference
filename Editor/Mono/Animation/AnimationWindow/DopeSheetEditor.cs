@@ -841,7 +841,9 @@ namespace UnityEditorInternal
                 allBindings = state.selection.GetAnimatableBindings(selection.gameObject);
             }
 
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return allBindings
+#pragma warning restore RS0030
                 .Where(binding => state.selection.GetValueType(binding) == valueType)
                 .ToArray();
         }

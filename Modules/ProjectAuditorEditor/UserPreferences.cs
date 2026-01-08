@@ -20,6 +20,7 @@ namespace Unity.ProjectAuditor.Editor
         Assets = 1 << 2,
         Shaders = 1 << 3,
         Build = 1 << 4,
+        GameObjects = 1 << 5,
 
         // this is just helper enum to display All instead of Every
         All = ~None
@@ -157,18 +158,22 @@ namespace Unity.ProjectAuditor.Editor
 
         static UserPreferences()
         {
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var buildTargets = Enum.GetValues(typeof(BuildTarget)).Cast<BuildTarget>();
             var supportedBuildTargets = buildTargets.Where(bt =>
+#pragma warning restore RS0030
                 BuildPipeline.IsBuildTargetSupported(BuildPipeline.GetBuildTargetGroup(bt), bt)).ToList();
             supportedBuildTargets.Sort((t1, t2) =>
-                String.Compare(t1.ToString(), t2.ToString(), StringComparison.Ordinal));
+                string.Compare(t1.ToString(), t2.ToString(), StringComparison.Ordinal));
 
             // Add at the beginning of the list, after sorting the other options
             supportedBuildTargets.Insert(0, BuildTarget.NoTarget);
 
             s_SupportedBuildTargets = supportedBuildTargets.ToArray();
 
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             s_PlatformContents = s_SupportedBuildTargets
+#pragma warning restore RS0030
                 .Select(t => new GUIContent((t == BuildTarget.NoTarget) ? k_UseBuildSettings : Formatting.GetModernBuildTargetName(t))).ToArray();
         }
 
@@ -183,7 +188,7 @@ namespace Unity.ProjectAuditor.Editor
             var settings = new SettingsProvider(k_PreferencesKey, SettingsScope.User)
             {
                 guiHandler = PreferencesGUI,
-                keywords = new HashSet<string>(new[] { "performance", "static", "analysis" })
+                keywords = new HashSet<string>(["performance", "static", "analysis"])
             };
             return settings;
         }

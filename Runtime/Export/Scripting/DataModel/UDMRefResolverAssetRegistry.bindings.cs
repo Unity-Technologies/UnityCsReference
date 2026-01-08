@@ -13,6 +13,7 @@ namespace Unity.DataModel;
 [NativeHeader("Runtime/Export/Scripting/DataModel/UDMRefResolverAssetRegistry.bindings.h")]
 internal sealed class UDMRefResolverAssetRegistry : UDMRefResolver
 {
+    
     internal UDMRefResolverAssetRegistry() : base(IntPtr.Zero)
     {
 

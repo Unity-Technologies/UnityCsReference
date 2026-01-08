@@ -313,7 +313,9 @@ namespace UnityEditor.Overlays
             {
                 if (!Directory.Exists(parentLayoutFolder))
                     Directory.CreateDirectory(parentLayoutFolder);
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 InternalEditorUtility.SaveToSerializedFileAndForget(presets.Cast<Object>().ToArray(), path, true);
+#pragma warning restore RS0030
             }
         }
 
@@ -387,7 +389,8 @@ namespace UnityEditor.Overlays
                     {
                         onFailed?.Invoke();
                     }
-                });
+                },
+                windowWidth:390f);
         }
 
         static void ApplyPreset(OverlayCanvas canvas, IOverlayPreset preset, Func<OverlayCanvas, bool> canvasChangedCheck = null)

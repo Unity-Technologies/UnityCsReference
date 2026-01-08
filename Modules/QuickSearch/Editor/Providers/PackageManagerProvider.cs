@@ -73,7 +73,9 @@ namespace UnityEditor.Search.Providers
 
             foreach (var p in s_SearchRequest.Result)
             {
+                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 if (p.keywords.Contains(context.searchQuery) ||
+#pragma warning restore RS0030
                     SearchUtils.MatchSearchGroups(context, p.description.ToLowerInvariant(), true) ||
                     SearchUtils.MatchSearchGroups(context, p.name.ToLowerInvariant(), true))
                     yield return provider.CreateItem(context, p.packageId, String.IsNullOrEmpty(p.resolvedPath) ? 0 : 1, FormatLabel(p), FormatDescription(p), null, p);
@@ -89,7 +91,9 @@ namespace UnityEditor.Search.Providers
 
         private static string FormatLabel(PackageManager.PackageInfo pi)
         {
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var installedPackage = s_ListRequest.Result.FirstOrDefault(l => l.name == pi.name);
+#pragma warning restore RS0030
             var status = installedPackage != null ? (installedPackage.version == pi.version ?
                 " - <i>In Project</i>" : " - <b>Update Available</b>") : "";
             if (String.IsNullOrEmpty(pi.displayName))
@@ -100,7 +104,9 @@ namespace UnityEditor.Search.Providers
         private static bool IsPackageInstalled(PackageManager.PackageInfo pi, out string version)
         {
             version = null;
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var installedPackage = s_ListRequest.Result.FirstOrDefault(l => l.name == pi.name);
+#pragma warning restore RS0030
             if (installedPackage == null)
                 return false;
             version = installedPackage.version;

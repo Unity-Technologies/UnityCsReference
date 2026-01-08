@@ -143,7 +143,9 @@ namespace Unity.GraphToolkit.Editor
             if (dbProvider == null)
                 return;
 
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             ShowDatabases(view, worldPosition, callback, GetItemLibraryDatabasesForNodes(dbProvider, portModels), filter, adapter, Usage.CreateNode, portModels.FirstOrDefault());
+#pragma warning restore RS0030
         }
 
         /// <summary>
@@ -162,7 +164,9 @@ namespace Unity.GraphToolkit.Editor
             IReadOnlyList<PortModel> portModels, Vector2 worldPosition, Action<ItemLibraryItem> callback)
         {
             var toolName = view.GraphTool.Name;
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var adapterTitle = $"Choose an action for {portModels.First().DataTypeHandle.FriendlyName}";
+#pragma warning restore RS0030
             var adapter = view.GetItemLibraryHelper().GetItemLibraryAdapter(adapterTitle, toolName, portModels);
             var filter = view.GetItemLibraryHelper().GetLibraryFilterProvider()?.GetOutputToGraphFilter(portModels);
             var dbProvider = view.GetItemLibraryHelper().GetItemDatabaseProvider();
@@ -170,7 +174,9 @@ namespace Unity.GraphToolkit.Editor
             if (dbProvider == null)
                 return;
 
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             ShowDatabases(view, worldPosition, callback, GetItemLibraryDatabasesForNodes(dbProvider, portModels), filter, adapter, Usage.CreateNode, portModels.FirstOrDefault());
+#pragma warning restore RS0030
         }
 
         /// <summary>
@@ -195,7 +201,9 @@ namespace Unity.GraphToolkit.Editor
             if (dbProvider == null)
                 return;
 
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var dbs = dbProvider.GetGraphElementsDatabases(null).ToList();
+#pragma warning restore RS0030
             ShowDatabases(view, worldPosition, callback, dbs, filter, adapter, Usage.CreateNode);
         }
 
@@ -221,7 +229,9 @@ namespace Unity.GraphToolkit.Editor
 
             var blackboardModel = (view.Window as GraphViewEditorWindow)?.BlackboardView?.BlackboardRootViewModel?.BlackboardContentState?.BlackboardModel;
 
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var dbs = dbProvider.GetGraphElementsDatabases(blackboardModel)
+#pragma warning restore RS0030
                 .Concat(dbProvider.GetDynamicDatabases((PortModel)null))
                 .ToList();
 
@@ -235,7 +245,9 @@ namespace Unity.GraphToolkit.Editor
             Action<FindInGraphAdapter.FindItem> selectionDelegate
         )
         {
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var items = graphView.GraphModel.NodeModels
+#pragma warning restore RS0030
                 .Where(x => x is IHasTitle titled && !string.IsNullOrEmpty(titled.Title))
                 .Select(x => MakeFindItems(x, x.Title))
                 .ToList();
@@ -262,7 +274,9 @@ namespace Unity.GraphToolkit.Editor
             Vector2 position,
             Action<Enum, int> callback)
         {
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var items = Enum.GetValues(enumType)
+#pragma warning restore RS0030
                 .Cast<Enum>()
                 .Select(v => new EnumValuesAdapter.EnumValueItem(v) as ItemLibraryItem)
                 .ToList();
@@ -292,7 +306,9 @@ namespace Unity.GraphToolkit.Editor
         public static ItemLibraryWindow ShowValues(RootView rootView, Preferences preferences, string title, IEnumerable<string> values, Vector2 position,
             Action<string> callback)
         {
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var items = values.Select(v => new ItemLibraryItem(v)).ToList();
+#pragma warning restore RS0030
             return ShowValues(EditorWindow.focusedWindow, rootView, preferences, title, items, position, callback);
         }
 
@@ -382,7 +398,7 @@ namespace Unity.GraphToolkit.Editor
 
             var databases = itemDatabaseProvider.GetVariableDatabases();
 
-            var addGroupItem = new TypeLibraryItem(k_GroupName, default) { StyleName = "group" };
+            var addGroupItem = new TypeLibraryItem(k_GroupName, default, null) { StyleName = "group" };
 
             var addGroupDB = new ItemLibraryDatabase(new[] { addGroupItem });
 
@@ -490,7 +506,9 @@ namespace Unity.GraphToolkit.Editor
             var dynamicDatabases = dbProvider.GetDynamicDatabases(portModels);
             var variableDatabaseBases = dbProvider.GetGraphVariablesDatabases();
 
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return graphElementDatabases.Concat(dynamicDatabases).Concat(variableDatabaseBases);
+#pragma warning restore RS0030
         }
     }
 }

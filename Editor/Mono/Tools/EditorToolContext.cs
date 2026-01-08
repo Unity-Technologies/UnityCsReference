@@ -126,6 +126,8 @@ namespace UnityEditor.EditorTools
             }
         }
 
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
         public virtual IEnumerable<Type> GetAdditionalToolTypes() => Enumerable.Empty<Type>();
+#pragma warning restore RS0030
     }
 }

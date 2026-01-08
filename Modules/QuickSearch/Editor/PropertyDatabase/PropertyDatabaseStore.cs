@@ -420,7 +420,9 @@ namespace UnityEditor.Search
 
         public MemoryDataStore(IEnumerable<T> initialData)
         {
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             m_Data = initialData.ToList();
+#pragma warning restore RS0030
         }
 
         public void Add(T item)
@@ -674,14 +676,18 @@ namespace UnityEditor.Search
 
         public IEnumerable<IPropertyDatabaseRecord> EnumerateAll(bool enumerateInvalid = false)
         {
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return EnumerateAllSerializableRecords(enumerateInvalid).Cast<IPropertyDatabaseRecord>();
+#pragma warning restore RS0030
         }
 
         public IEnumerable<PropertyDatabaseRecord> EnumerateAllSerializableRecords(bool enumerateInvalid = false)
         {
             using (LockRead())
             {
+                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 return m_MemoryDataStore.Where(p => p.IsValid() || enumerateInvalid).ToList();
+#pragma warning restore RS0030
             }
         }
 
@@ -710,7 +716,9 @@ namespace UnityEditor.Search
 
         public void MergeWith(IEnumerable<PropertyDatabaseRecord> records, bool overrideWithInvalid)
         {
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var newRecordsList = records.ToList();
+#pragma warning restore RS0030
             var newRecordsCount = newRecordsList.Count;
 
             using (LockWrite())
@@ -1154,7 +1162,9 @@ namespace UnityEditor.Search
 
         public IEnumerable<IPropertyDatabaseRecord> EnumerateAll(bool enumerateInvalid = false)
         {
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return EnumerateAllSerializableRecords(enumerateInvalid).Cast<IPropertyDatabaseRecord>();
+#pragma warning restore RS0030
         }
 
         public IEnumerable<PropertyDatabaseRecord> EnumerateAllSerializableRecords(bool enumerateInvalid = false)
@@ -1301,7 +1311,9 @@ namespace UnityEditor.Search
             var documentKeyHiWord = PropertyDatabaseDocumentKeyHiWordRange.ToHiWord(documentKey);
             if (m_InvalidatedDocumentKeyHiWords.Contains(documentKeyHiWord))
                 return false;
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             if (m_InvalidatedDocumentKeyMasks.Any(mask => PropertyDatabaseDocumentKeyMaskRange.DocumentKeyMatchesMask(documentKey, mask)))
+#pragma warning restore RS0030
                 return false;
             return true;
         }
@@ -1626,7 +1638,9 @@ namespace UnityEditor.Search
         {
             using (LockRead())
             {
+                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 return m_MemoryDataStore.Where(p => p.valid || enumerateInvalid).Cast<IPropertyDatabaseRecord>().ToList();
+#pragma warning restore RS0030
             }
         }
 

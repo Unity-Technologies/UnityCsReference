@@ -92,7 +92,9 @@ namespace UnityEditor
                     if (resource.m_Name == defaultFieldName)
                     {
                         gm.AddItem(new GUIContent(resource.m_Name), resource.m_EntityId == selectedEntityId, AssetPopupMenuCallback, new object[] { resource.m_EntityId, serializedProperty });
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                         resourceList = resourceList.Where(x => x != resource).ToArray();
+#pragma warning restore RS0030
                         foundDefaultAsset = true;
                         break;
                     }

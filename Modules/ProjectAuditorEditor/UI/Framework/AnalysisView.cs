@@ -53,9 +53,11 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
         public virtual string Description => $"A list of {m_Desc.DisplayName} found in the project.";
         public virtual bool OnlyCriticalIssues() { return false; }
 
+        #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
         public string DocumentationUrl => Documentation.GetPageUrl(new string(m_Desc.DisplayName.Where(char.IsLetterOrDigit).ToArray()));
+#pragma warning restore RS0030
 
-        public int NumIssues => m_Issues.Count();
+        public int NumIssues => m_Issues.Count;
 
         public int NumFilteredIssues => m_Table.GetNumMatchingIssues();
 
@@ -96,7 +98,9 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
             if (layout.Properties == null || layout.Properties.Length == 0)
                 return;
 
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             m_GroupDropdownItems = m_Layout.Properties.Select(p => new Utility.DropdownItem
+#pragma warning restore RS0030
             {
                 Content = new GUIContent(p.IsDefaultGroup ? p.Name + " (default)" : p.Name),
                 SelectionContent = new GUIContent("Group By: " + p.Name),
@@ -168,7 +172,9 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
 
         public virtual void AddIssues(IEnumerable<ReportItem> allIssues)
         {
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var issues = allIssues.Where(i => i.Category == m_Desc.Category).ToArray();
+#pragma warning restore RS0030
             if (issues.Length == 0)
                 return;
 
@@ -373,7 +379,7 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
         {
             if (cacheDiagnosticProperty)
             {
-                diagnosticResult = m_Layout.Properties.Any(p => p.Type == PropertyType.Severity);
+                diagnosticResult = Array.Exists(m_Layout.Properties, p => p.Type == PropertyType.Severity);
                 cacheDiagnosticProperty = false;
             }
 
@@ -586,7 +592,7 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
                             var selectedItems = m_Table.GetSelectedItems();
                             Export(issue =>
                             {
-                                return selectedItems.Any(item => item.Find(issue));
+                                return selectedItems.Exists(item => item.Find(issue));
                             });
                             return;
                     }
@@ -645,7 +651,7 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
         public int GetSelectionCount()
         {
             var selectedItems = m_Table.GetSelectedItems();
-            return selectedItems.Count();
+            return selectedItems.Count;
         }
 
         public ReportItem[] GetSelection()
@@ -661,7 +667,9 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
             SetRowsExpanded(true);
 
             var rows = m_Table.GetRows();
-            var selectedIDs = rows.Select(item => item as IssueTableItem).Where(i => i != null && i.ReportItem != null && predicate(i.ReportItem)).Select(i => i.id).ToList();
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            var selectedIDs = new List<int>(rows.Select(item => item as IssueTableItem).Where(i => i != null && i.ReportItem != null && predicate(i.ReportItem)).Select(i => i.id));
+#pragma warning restore RS0030
 
             m_Table.SetSelection(selectedIDs);
         }
@@ -687,7 +695,9 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
             {
                 var rows = m_Table.GetRows();
 
+                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 m_Table.SetExpanded(rows.Select(r => r.id).ToList());
+#pragma warning restore RS0030
             }
             else
             {

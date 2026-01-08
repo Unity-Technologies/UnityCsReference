@@ -21,7 +21,9 @@ namespace UnityEditor.Search
                 skipCount++;
 
             var outputValueFieldName = System.Guid.NewGuid().ToString("N");
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             foreach (var expr in c.args.Skip(skipCount))
+#pragma warning restore RS0030
             {
                 if (expr == null)
                 {

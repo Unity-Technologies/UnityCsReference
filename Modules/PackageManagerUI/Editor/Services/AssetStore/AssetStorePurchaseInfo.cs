@@ -25,7 +25,9 @@ namespace UnityEditor.PackageManager.UI.Internal
                 other.displayName == displayName &&
                 other.isHidden == isHidden &&
                 other.tags?.Count == tags?.Count &&
+                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 other.tags?.SequenceEqual(tags) != false;
+#pragma warning restore RS0030
         }
     }
 
@@ -43,7 +45,9 @@ namespace UnityEditor.PackageManager.UI.Internal
                     productId = (long)rawInfo["packageId"],
                     purchasedTime = rawInfo.GetString("grantTime"),
                     displayName = rawInfo.GetString("displayName"),
+                    #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     tags = rawInfo.GetList<string>("tagging")?.ToList(),
+#pragma warning restore RS0030
                     isHidden = rawInfo.Get("isHidden", false)
                 };
             }

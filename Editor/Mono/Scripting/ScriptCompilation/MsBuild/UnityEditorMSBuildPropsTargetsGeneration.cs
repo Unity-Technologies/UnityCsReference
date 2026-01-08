@@ -19,8 +19,8 @@ class UnityEditorMSBuildPropsTargetsGeneration
     public static void UpdateGeneratedMSBuildFileIfNeeded(BuildTarget buildTarget, MSBuildCompilationOptions compilationOptions)
     {
         ProjectGenerator.Instance.GenerateEntryPointProjectIfMissing("Main");
-        var unityNugetLocalFeed = Path.Combine(EditorApplication.applicationContentsPath, "Tools/UnityMSBuildSDK");
-        ProjectGenerator.Instance.MaintainGlobalJson(UnitySDKProperties.Version, "global.json");
+        var unityNugetLocalFeed = Path.Combine(EditorApplication.applicationContentsPath, "MSBuild/sdk-nugets");
+        ProjectGenerator.Instance.MaintainGlobalJson("1.0.0", "global.json");
         ProjectGenerator.Instance.MaintainNugetConfig(unityNugetLocalFeed, "NuGet.config");
 
         UpdateInstallPathFile();
@@ -197,7 +197,7 @@ class UnityEditorMSBuildPropsTargetsGeneration
         var modulePaths = new List<string>();
         foreach (var assembly in precompiledAssemblyProvider.GetUnityAssemblies(isEditor, buildTarget))
         {
-            if ((assembly.Flags & AssemblyFlags.UnityModule) == AssemblyFlags.UnityModule)
+            if ((assembly.Flags & AssemblyFlags.UnityModule) == AssemblyFlags.UnityModule && !string.IsNullOrEmpty(assembly.Path))
             {
                 modulePaths.Add(assembly.Path);
             }
@@ -209,7 +209,7 @@ class UnityEditorMSBuildPropsTargetsGeneration
         {
             foreach (var assembly in precompiledAssemblyProvider.GetAllPrecompiledAssemblies())
             {
-                if ((assembly.Flags & AssemblyFlags.UserAssembly) != AssemblyFlags.UserAssembly && assembly.Path != string.Empty)
+                if ((assembly.Flags & AssemblyFlags.UserAssembly) != AssemblyFlags.UserAssembly && !string.IsNullOrEmpty(assembly.Path))
                 {
                     modulePaths.Add(assembly.Path);
                 }

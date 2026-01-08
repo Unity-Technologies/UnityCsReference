@@ -654,18 +654,31 @@ namespace UnityEngine.UIElements
 
             onOpen?.Invoke();
 
+            bool isAttachedRegistered = false;
+
             if (m_TargetElement.panel != null && m_TargetElement.panel.contextType == ContextType.Player)
             {
-                var uiDocument = UIDocument.FindRootUIDocument(m_TargetElement);
-                if (uiDocument != null &&
-                    uiDocument.panelSettings != null &&
-                    uiDocument.panelSettings.renderMode == PanelRenderMode.WorldSpace)
+                var panelComponent = m_TargetElement.FindRootPanelComponent();
+                if (panelComponent != null &&
+                    panelComponent.panelSettings != null &&
+                    panelComponent.panelSettings.renderMode == PanelRenderMode.WorldSpace)
                 {
-                    m_PanelRootVisualContainer = uiDocument.rootVisualElement;
+                    if (panelComponent is UIDocument uiDoc)
+                    {
+                        m_PanelRootVisualContainer = uiDoc.rootVisualElement;
+                    }
+                    else if (panelComponent is PanelRenderer panelRenderer)
+                    {
+                        panelRenderer.RegisterUIReloadCallback((pr, root) =>
+                        {
+                            m_PanelRootVisualContainer = root;
+                            OnAttachToPanelInternal(position, anchored);
+                        });
+                        isAttachedRegistered = true;
+                    }
                 }
                 else
                 {
-
                     m_PanelRootVisualContainer = m_TargetElement.GetRootVisualContainer();
                 }
             }
@@ -674,6 +687,12 @@ namespace UnityEngine.UIElements
                 m_PanelRootVisualContainer = m_TargetElement.GetRootVisualContainer();
             }
 
+            if (!isAttachedRegistered)
+                OnAttachToPanelInternal(position, anchored);
+        }
+
+        void OnAttachToPanelInternal(Rect position, bool anchored)
+        {
             if (m_PanelRootVisualContainer == null)
             {
                 Debug.LogError("Could not find rootVisualContainer...");

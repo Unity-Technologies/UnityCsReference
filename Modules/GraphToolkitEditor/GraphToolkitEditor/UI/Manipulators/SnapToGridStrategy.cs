@@ -107,7 +107,9 @@ namespace Unity.GraphToolkit.Editor
         List<SnapToGridResult> GetClosestGridLines(Rect sourceRect)
         {
             List<SnapToGridResult> results = GetClosestGridLines(sourceRect, PortOrientation.Horizontal);
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return results.Union(GetClosestGridLines(sourceRect, PortOrientation.Vertical)).ToList();
+#pragma warning restore RS0030
         }
 
         static void ApplySnapToGridResult(ref SnapDirection snapDirection, Vector2 sourcePosition, ref Vector2 r1, SnapToGridResult result)

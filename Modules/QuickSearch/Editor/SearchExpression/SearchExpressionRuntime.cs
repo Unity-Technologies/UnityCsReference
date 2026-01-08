@@ -82,7 +82,9 @@ namespace UnityEditor.Search
         internal IDisposable Push(SearchExpression searchExpression, IEnumerable<SearchExpression> args, SearchExpressionExecutionFlags flags)
         {
             flags |= frames.Peek().flags & SearchExpressionExecutionFlags.TransferedFlags;
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             frames.Push(new SearchExpressionContext(this, searchExpression, args.ToArray(), flags));
+#pragma warning restore RS0030
             return new PushPopScope<SearchExpressionContext>(frames);
         }
 

@@ -228,7 +228,10 @@ namespace UnityEngine
         public static RenderPipelineAsset renderPipeline
         {
             get { return INTERNAL_renderPipeline as RenderPipelineAsset; }
-            set { INTERNAL_renderPipeline = value; }
+            set
+            {
+                INTERNAL_renderPipeline = value;
+            }
         }
 
         [NativeName("GetRenderPipelineAssetAt")]
@@ -364,7 +367,9 @@ namespace UnityEngine
             s_RenderPipelineAssets.Clear();
 
             GetAllRenderPipelineAssetsForPlatform(buildTargetGroupName, ref s_RenderPipelineAssets);
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             if (!s_RenderPipelineAssets.Any())
+#pragma warning restore RS0030
                 return true;
 
             for (int i = 0; i < s_RenderPipelineAssets.Count; i++)

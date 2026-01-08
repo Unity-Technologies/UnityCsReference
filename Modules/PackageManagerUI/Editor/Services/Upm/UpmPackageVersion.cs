@@ -275,7 +275,9 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private void ProcessErrors(PackageInfo info)
         {
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             m_HasErrorWithEntitlementMessage = info.errors.Any(error
+#pragma warning restore RS0030
                 => error.errorCode == ErrorCode.Forbidden
                 && error.message.IndexOf(k_NoSubscriptionUpmErrorMessage, StringComparison.InvariantCultureIgnoreCase) >= 0);
 

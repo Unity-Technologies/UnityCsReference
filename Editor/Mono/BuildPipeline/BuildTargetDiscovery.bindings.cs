@@ -813,6 +813,17 @@ namespace UnityEditor
                     new("4e3c793746204150860bf175a9a41a05"), // Windows
                     new("0d2129357eac403d8b359c2dcbf82502"), // MacOS
                     new("cb423bfea44b4d658edb8bc5d91a3024"), // Linux
+                    new("32e92b6f4db44fadb869cafb8184d021"), // UWP
+                }
+            },
+            new PlatformGroup
+            {
+                groupName = L10n.Tr("XR"),
+                platforms = new GUID []
+                {
+                    new("80657fe557de4d17822398b3a01b8c9e"), // Meta Quest
+                    new("a71389c8cc8e4edc99d30db86d62ee8f"), // Android XR
+                    new("53916e6f1f7240d992977ffa2322b047"), // visionOS
                 }
             },
             new PlatformGroup
@@ -834,29 +845,18 @@ namespace UnityEditor
                     new("25a09d2ed10c42f789b61d99b4d9bf83"), // Switch 2
                     new("5d4f9b64eeb74b18a2de0de6f0c36931"), // PS4
                     new("e30a9c34166844499a56eaa4ed115c44"), // PS5
+                    new("81e4f4c492fd4311bbf5b0b88a28c737"), // tvOS
                 }
             },
             new PlatformGroup
             {
-                groupName = L10n.Tr("XR"),
-                platforms = new GUID []
-                {
-                    new("80657fe557de4d17822398b3a01b8c9e"), // Meta Quest
-                    new("a71389c8cc8e4edc99d30db86d62ee8f"), // Android XR
-                    new("53916e6f1f7240d992977ffa2322b047"), // visionOS
-                }
-            },
-            new PlatformGroup
-            {
-                groupName = L10n.Tr("Development Platforms"),
+                groupName = L10n.Tr("Industry"),
                 platforms = new GUID []
                 {
                     new("f1d7bec2fd7f42f481c66ef512f47845"), // EmbeddedLinux
                     new("f188349a68c441ec9e3eb4c6f59abd41"), // LinuxHeadlessSimulation
                     new("99ef95e1e9b048fa9628d7eed27a8646"), // QNX
                     // new("1e09bd9b55c8d45e9a11b4727bf18e88"), // Android Render Service will come here, but is hidden until entitlements are available.
-                    new("32e92b6f4db44fadb869cafb8184d021"), // UWP
-                    new("81e4f4c492fd4311bbf5b0b88a28c737"), // tvOS
                     new("f8c7649c24f344129a97cf9854e2d582"), // Kepler
                 }
             },

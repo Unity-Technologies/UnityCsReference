@@ -118,7 +118,9 @@ namespace UnityEditor
         internal const string k_MenuKeyShortcut = "shortcut";
         internal const string k_MenuKeyValidateCommandId = "validate_command_id";
 
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
         public static string[] modeNames => modes.Select(m => m.name).ToArray();
+#pragma warning restore RS0030
         public static int modeCount => modes.Length;
 
         public static string currentId => currentIndex == -1 || modes.Length == 0 ? k_DefaultModeId : modes[currentIndex].id;
@@ -305,7 +307,9 @@ namespace UnityEditor
             var list = GetModeDataSection(modeIndex, sectionName) as IList<object>;
             if (list == null)
                 return null;
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return list.Cast<T>();
+#pragma warning restore RS0030
         }
 
         [CommandHandler("ModeService/Refresh")]
@@ -325,7 +329,9 @@ namespace UnityEditor
 
         internal static bool IsValidModeId(string id)
         {
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return !string.IsNullOrEmpty(id) && id.All(c => char.IsLetterOrDigit(c) || c == '_' || c == '-' || c == '.');
+#pragma warning restore RS0030
         }
 
         internal static string GetDefaultModeLayout(string modeId = null)

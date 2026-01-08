@@ -156,11 +156,18 @@ namespace UnityEditor.UIElements.Debugger
 
             m_CustomPropertyFieldsContainer.Clear();
             var customProperties = m_SelectedElement.computedStyle.customProperties;
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             if (customProperties != null && customProperties.Any())
+#pragma warning restore RS0030
             {
                 foreach (KeyValuePair<string, StylePropertyValue> customProperty in customProperties)
                 {
                     var styleName = customProperty.Key;
+
+                    if (!string.IsNullOrEmpty(m_SearchFilter) &&
+                        styleName.IndexOf(m_SearchFilter, StringComparison.InvariantCultureIgnoreCase) == -1)
+                        continue;
+
                     var propValue = customProperty.Value;
                     TextField textField = new TextField(styleName) { isReadOnly = true };
                     textField.AddToClassList("unity-style-field");

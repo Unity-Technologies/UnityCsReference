@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using Unity.GraphToolkit.CSO;
+using UnityEditor;
 using UnityEngine;
 using UnityEngine.Pool;
 using UnityEngine.UIElements;
@@ -54,7 +55,9 @@ namespace Unity.GraphToolkit.Editor
         {
             ConstantModels = new List<Constant>(constantModels);
             Owners = owners == null ? Array.Empty<GraphElementModel>() : new List<GraphElementModel>(owners);
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             m_CommonConstantType = ModelHelpers.GetCommonBaseType(ConstantModels.Select(
+#pragma warning restore RS0030
                 t => t.ObjectValue != null ? t.ObjectValue.GetType() : t.Type));
 
             CreateField();
@@ -110,7 +113,9 @@ namespace Unity.GraphToolkit.Editor
         {
             // PF TODO when this is a module, submit modifications to UIToolkit to avoid having to do reflection.
 
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var registerCallbackMethod = typeof(CallbackEventHandler)
+#pragma warning restore RS0030
                 .GetMethods(BindingFlags.Public | BindingFlags.DeclaredOnly | BindingFlags.Instance)
                 .SingleOrDefault(m => m.Name == nameof(RegisterCallback) && m.GetGenericArguments().Length == 2);
 
@@ -137,6 +142,13 @@ namespace Unity.GraphToolkit.Editor
             if (Field == null)
                 return;
 
+            // If the field is a string and has a TextAreaAttribute, adjust its height accordingly.
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            if (Field is TextField textField && m_Attributes?.First(a => a is TextAreaAttribute) is TextAreaAttribute textAreaAttribute)
+#pragma warning restore RS0030
+            {
+                TextAreaFieldHelper.UpdateTextAreaHeight(textAreaAttribute, textField, ConstantModels[0].ObjectValue as string ?? string.Empty);
+            }
 
             bool isConnected = false;
             if (Owners != null)
@@ -261,12 +273,14 @@ namespace Unity.GraphToolkit.Editor
             setValueMethod?.Invoke(field, new[] { value });
         }
 
+        IReadOnlyList<Attribute> m_Attributes;
+
         void CreateField()
         {
             var fieldType = ConstantModels[0].GetTypeHandle().Resolve();
 
             string tooltipString = null;
-            IReadOnlyList<Attribute> attributes = null;
+            m_Attributes = null;
 
             if (Owners != null)
             {
@@ -281,7 +295,7 @@ namespace Unity.GraphToolkit.Editor
                     {
                         firstPortModel = port;
                         tooltipString = firstPortModel.ToolTip;
-                        attributes = firstPortModel.Attributes;
+                        m_Attributes = firstPortModel.Attributes;
                         continue;
                     }
 
@@ -290,14 +304,14 @@ namespace Unity.GraphToolkit.Editor
                         tooltipString = "";
                     }
 
-                    if (port.Attributes != null && attributes != null)
+                    if (port.Attributes != null && m_Attributes != null)
                     {
                         for (var index = 0; index < port.Attributes.Count; index++)
                         {
                             var portAttribute = port.Attributes[index];
-                            if (!attributes.Contains(portAttribute))
+                            if (!m_Attributes.Contains(portAttribute))
                             {
-                                attributes = null;
+                                m_Attributes = null;
                                 break;
                             }
                         }
@@ -335,7 +349,7 @@ namespace Unity.GraphToolkit.Editor
 
             if (Field == null)
             {
-                CreateDefaultFieldForType(fieldType, tooltipString, attributes);
+                CreateDefaultFieldForType(fieldType, tooltipString, m_Attributes);
             }
         }
 
@@ -356,7 +370,9 @@ namespace Unity.GraphToolkit.Editor
         /// <returns>Whether the type was supported and this method could enable or disable sub-fields.</returns>
         public virtual bool HandleEnabledStateWithWiredSubPorts()
         {
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             if (Owners.Count() != 1 || Owners[0] is not PortModel portModel)
+#pragma warning restore RS0030
                 return false;
             bool markConnectedPortSubFieldMixed = (Owners[0].GraphModel?.HideConnectedPortsEditor ?? true);
 

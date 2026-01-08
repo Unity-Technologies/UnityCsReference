@@ -28,7 +28,9 @@ namespace Unity.GraphToolkit.Editor
             base.BuildUI();
 
             // move title in from of selection border
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var selectionBorder = hierarchy.Children().FirstOrDefault(t => t.ClassListContains(selectionBorderUssClassName));
+#pragma warning restore RS0030
             selectionBorder?.SendToBack();
         }
     }

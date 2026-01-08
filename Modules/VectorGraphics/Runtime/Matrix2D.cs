@@ -8,7 +8,7 @@ using UnityEngine;
 namespace Unity.VectorGraphics
 {
     /// <summary>A 2x3 transformation matrix used for 2D operations.</summary>
-    public struct Matrix2D : IEquatable<Matrix2D>
+    public struct Matrix2D : IEquatable<Matrix2D>, IFormattable
     {
         // memory layout:
         //
@@ -367,6 +367,8 @@ namespace Unity.VectorGraphics
                 m00.ToString(format), m01.ToString(format), m02.ToString(format),
                 m10.ToString(format), m11.ToString(format), m12.ToString(format));
         }
+
+        string IFormattable.ToString(string format, IFormatProvider formatProvider) => ToString(format);
 
         // IEquatable
         /// <summary>

@@ -54,7 +54,9 @@ namespace UnityEditor.Search.Providers
                 filterId = "m:",
                 showDetailsOptions = ShowDetailsOptions.ListView | ShowDetailsOptions.Actions,
 
+                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 onEnable = () => shortcutIds = ShortcutManager.instance.GetAvailableShortcutIds().ToArray(),
+#pragma warning restore RS0030
                 onDisable = () => shortcutIds = new string[0],
 
                 fetchItems = FetchItems,
@@ -105,7 +107,9 @@ namespace UnityEditor.Search.Providers
                 localMenus.Add(new MenuData
                 {
                     path = menuItem,
+                    #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     words = SplitMenuPath(menuItem).Select(w => Utils.FastToLower(w)).ToArray()
+#pragma warning restore RS0030
                 });
             }
 
@@ -114,10 +118,14 @@ namespace UnityEditor.Search.Providers
 
         private static IEnumerable<SearchItem> FetchItems(SearchContext context, List<SearchItem> items, SearchProvider provider)
         {
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var query = (string.IsNullOrEmpty(context.searchQuery) && context.providers.Count() == 1) ? null : queryEngine.ParseQuery(context.searchQuery);
+#pragma warning restore RS0030
             if (query != null && !query.valid)
             {
+                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 context.AddSearchQueryErrors(query.errors.Select(e => new SearchQueryError(e, context, provider)));
+#pragma warning restore RS0030
                 yield break;
             }
 
@@ -132,7 +140,9 @@ namespace UnityEditor.Search.Providers
         private static IEnumerable<string> SplitMenuPath(string menuPath)
         {
             yield return menuPath;
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             foreach (var m in menuPath.Split(new char[] { '/', ' ' }, StringSplitOptions.RemoveEmptyEntries).Reverse())
+#pragma warning restore RS0030
                 yield return m;
         }
 
@@ -143,14 +153,20 @@ namespace UnityEditor.Search.Providers
                 return menuName;
 
             var shortcutId = menuName;
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             if (!shortcutIds.Contains(shortcutId))
+#pragma warning restore RS0030
             {
                 shortcutId = "Main Menu/" + menuName;
+                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 if (!shortcutIds.Contains(shortcutId))
+#pragma warning restore RS0030
                     return menuName;
             }
             var shortcutBinding = ShortcutManager.instance.GetShortcutBinding(shortcutId);
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             if (!shortcutBinding.keyCombinationSequence.Any())
+#pragma warning restore RS0030
                 return menuName;
 
             return $"{menuName} ({shortcutBinding})";

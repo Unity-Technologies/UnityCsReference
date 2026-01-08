@@ -68,7 +68,9 @@ namespace UnityEditor.UIElements
             DragAndDrop.PrepareStartDrag();
 
             if (args.entityIds != null)
+                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 DragAndDrop.entityIds = args.entityIds.ToArray();
+#pragma warning restore RS0030
 
             paths = args.assetPaths;
             SetVisualMode(args.visualMode);

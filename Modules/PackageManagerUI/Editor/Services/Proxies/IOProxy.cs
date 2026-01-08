@@ -81,7 +81,9 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public ulong DirectorySizeInBytes(string path)
         {
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return DirectoryGetFiles(path, "*", SearchOption.AllDirectories).
+#pragma warning restore RS0030
                 Aggregate<string, ulong>(0, (current, file) => current + GetFileSize(file));
         }
 
@@ -109,7 +111,9 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public string PathsCombine(params string[] components)
         {
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return components.Where(s => !string.IsNullOrEmpty(s)).
+#pragma warning restore RS0030
                 Aggregate((path1, path2) => new NPath(path1).Combine(path2).ToString(SlashMode.Native));
         }
 
@@ -122,10 +126,14 @@ namespace UnityEditor.PackageManager.UI.Internal
         public bool DirectoryExists(string directoryPath) => new NPath(directoryPath).DirectoryExists();
 
         public string[] DirectoryGetDirectories(string directoryPath, string searchPattern = "*", SearchOption searchOption = SearchOption.TopDirectoryOnly)
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             => new NPath(directoryPath).Directories(searchPattern, searchOption == SearchOption.AllDirectories).Select(p => p.ToString(SlashMode.Native)).ToArray();
+#pragma warning restore RS0030
 
         public string[] DirectoryGetFiles(string directoryPath, string searchPattern = "*", SearchOption searchOption = SearchOption.TopDirectoryOnly)
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             => new NPath(directoryPath).Files(searchPattern, searchOption == SearchOption.AllDirectories).Select(p => p.ToString(SlashMode.Native)).ToArray();
+#pragma warning restore RS0030
 
         public void CreateDirectory(string directoryPath) => new NPath(directoryPath).CreateDirectory();
 

@@ -185,7 +185,9 @@ namespace UnityEditor
             if (!sceneView.drawGizmos || !EditorGUIUtility.IsGizmosAllowedForObject(target))
                 return;
 
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             if (SceneView.activeEditors.Contains(this) || SceneView.activeEditors.Contains(target))
+#pragma warning restore RS0030
                 return;
 
             RectTransform gui = target as RectTransform;
@@ -289,17 +291,27 @@ namespace UnityEditor
             EditorGUILayout.Space();
 
             // Rotation
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             m_RotationGUI.RotationField(targets.Any(x => ((x as RectTransform).drivenProperties & DrivenTransformProperties.Rotation) != 0));
+#pragma warning restore RS0030
 
             // Scale
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             s_ScaleDisabledMask[0] = targets.Any(x => ((x as RectTransform).drivenProperties & DrivenTransformProperties.ScaleX) != 0);
+#pragma warning restore RS0030
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             s_ScaleDisabledMask[1] = targets.Any(x => ((x as RectTransform).drivenProperties & DrivenTransformProperties.ScaleY) != 0);
+#pragma warning restore RS0030
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             s_ScaleDisabledMask[2] = targets.Any(x => ((x as RectTransform).drivenProperties & DrivenTransformProperties.ScaleZ) != 0);
+#pragma warning restore RS0030
 
             Transform t = target as Transform;
             if (t != null)
             {
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 if (m_ConstrainProportionsScale.Initialize(serializedObject.targetObjects) && !s_ScaleDisabledMask.All(x => x))
+#pragma warning restore RS0030
                 {
                     //AxisModified values [-1;2] : [none, x, y, z]
                     int axisModified = -1;
@@ -403,10 +415,18 @@ namespace UnityEditor
             rect.height = EditorGUIUtility.singleLineHeight * 2;
             Rect rect2;
 
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             bool anyStretchX = targets.Any(x => (x as RectTransform).anchorMin.x != (x as RectTransform).anchorMax.x);
+#pragma warning restore RS0030
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             bool anyStretchY = targets.Any(x => (x as RectTransform).anchorMin.y != (x as RectTransform).anchorMax.y);
+#pragma warning restore RS0030
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             bool anyNonStretchX = targets.Any(x => (x as RectTransform).anchorMin.x == (x as RectTransform).anchorMax.x);
+#pragma warning restore RS0030
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             bool anyNonStretchY = targets.Any(x => (x as RectTransform).anchorMin.y == (x as RectTransform).anchorMax.y);
+#pragma warning restore RS0030
 
             rect2 = GetColumnRect(rect, 0);
             if (anyNonStretchX || anyWithoutParent || anyDrivenX)
@@ -619,10 +639,14 @@ namespace UnityEditor
 
         void FloatFieldLabelAbove(Rect position, FloatGetter getter, FloatSetter setter, DrivenTransformProperties driven, GUIContent label)
         {
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             using (new EditorGUI.DisabledScope(targets.Any(x => ((x as RectTransform).drivenProperties & driven) != 0)))
+#pragma warning restore RS0030
             {
                 float value = getter(target as RectTransform);
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 EditorGUI.showMixedValue = targets.Select(x => getter(x as RectTransform)).Distinct().Count() >= 2;
+#pragma warning restore RS0030
 
                 EditorGUI.BeginChangeCheck();
 
@@ -676,10 +700,14 @@ namespace UnityEditor
 
         void FloatField(Rect position, FloatGetter getter, FloatSetter setter, DrivenTransformProperties driven, GUIContent label)
         {
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             using (new EditorGUI.DisabledScope(targets.Any(x => ((x as RectTransform).drivenProperties & driven) != 0)))
+#pragma warning restore RS0030
             {
                 float value = getter(target as RectTransform);
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 EditorGUI.showMixedValue = targets.Select(x => getter(x as RectTransform)).Distinct().Count() >= 2;
+#pragma warning restore RS0030
 
                 EditorGUI.BeginChangeCheck();
                 float newValue = EditorGUI.FloatField(position, label, value);

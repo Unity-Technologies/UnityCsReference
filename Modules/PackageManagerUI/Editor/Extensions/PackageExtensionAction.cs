@@ -14,7 +14,9 @@ namespace UnityEditor.PackageManager.UI.Internal
     {
         private IWindow m_Window;
         private bool m_NeedRefresh;
+        #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
         public IEnumerable<PackageActionDropdownItem> visibleDropdownItems => m_DropdownItems.Where(item => item.visible);
+#pragma warning restore RS0030
         private List<PackageActionDropdownItem> m_DropdownItems;
         public DropdownButton dropdownButton { get; }
 
@@ -119,7 +121,9 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private void RefreshDropdownIcon()
         {
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var anyDropdownItemsVisible = visibleDropdownItems.Any();
+#pragma warning restore RS0030
             if (anyDropdownItemsVisible && dropdownButton.menu == null)
                 dropdownButton.menu = new DropdownMenu();
             else if (!anyDropdownItemsVisible && dropdownButton.menu != null)

@@ -29,7 +29,9 @@ namespace UnityEditor.Search
         {
             if (fastYielding)
                 return FastYieldingEnumerator();
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return m_First.Intersect(m_Second).GetEnumerator();
+#pragma warning restore RS0030
         }
 
         public IEnumerator<T> FastYieldingEnumerator()

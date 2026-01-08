@@ -60,6 +60,10 @@ namespace UnityEditor.UIElements
         void SetMultilineOfValueField(bool multiline, VisualElement visualElement)
         {
             var inspector = visualElement.GetFirstAncestorOfType<BuilderInspector>();
+
+            if (inspector == null)
+                return;
+
             var valueFieldInInspector = inspector.Query<TextField>().Where(x => x.label is "Value").First();
             if (valueFieldInInspector == null)
             {

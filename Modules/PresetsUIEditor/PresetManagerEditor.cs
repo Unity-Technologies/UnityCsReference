@@ -173,7 +173,9 @@ namespace UnityEditor.Presets
 
                     EventCallback<DragPerformEvent> dragPerformCallback = evt =>
                     {
+                        #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                         var draggedObject = DragAndDrop.objectReferences.FirstOrDefault();
+#pragma warning restore RS0030
                         if (draggedObject is Preset preset && preset.GetPresetType() == data.presetType)
                         {
                             presetField.value = preset;
@@ -188,7 +190,9 @@ namespace UnityEditor.Presets
 
                     EventCallback<DragUpdatedEvent> dragUpdatedCallback = evt =>
                     {
+                        #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                         var draggedObject = DragAndDrop.objectReferences.FirstOrDefault();
+#pragma warning restore RS0030
                         if (draggedObject is Preset preset && preset.GetPresetType() == data.presetType)
                         {
                             DragAndDrop.visualMode = DragAndDropVisualMode.Generic;
@@ -278,7 +282,9 @@ namespace UnityEditor.Presets
         void OnPresetTypeWindowSelection(PresetType type)
         {
             Undo.RecordObjects(targets, "Preset Manager");
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             foreach (var manager in targets.Cast<PresetManager>())
+#pragma warning restore RS0030
             {
                 manager.AddPresetType(type);
             }

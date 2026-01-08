@@ -42,7 +42,9 @@ namespace UnityEditor.PackageManager.UI.Internal
         private void OnImportButtonClicked()
         {
             var previousImports = m_Sample.previousImports;
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var previousImportPaths = previousImports.Aggregate(string.Empty,
+#pragma warning restore RS0030
                 (current, next) => current + next.Replace(@"\", "/").Replace(Application.dataPath, "Assets") + "\n");
 
             var warningMessage = string.Empty;
@@ -112,7 +114,9 @@ namespace UnityEditor.PackageManager.UI.Internal
             var importRelativePath = GetRelativePath(m_Sample.importPath);
             if (m_Application.PingObjectInProjectBrowser(importRelativePath))
                 return;
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             importRelativePath = GetRelativePath(m_Sample.previousImports?.Last());
+#pragma warning restore RS0030
             m_Application.PingObjectInProjectBrowser(importRelativePath);
         }
 

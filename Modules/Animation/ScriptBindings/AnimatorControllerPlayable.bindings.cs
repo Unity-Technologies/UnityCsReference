@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using UnityEngine.Bindings;
 using UnityEngine.Scripting;
 using UnityEngine.Playables;
+using System.Runtime.InteropServices;
 
 namespace UnityEngine.Animations
 {
@@ -251,7 +252,7 @@ namespace UnityEngine.Animations
         }
 
         [NativeThrows]
-        extern private static void GetAnimatorClipInfoInternal(ref PlayableHandle handle, int layerIndex, bool isCurrent, object clips);
+        extern private static void GetAnimatorClipInfoInternal(ref PlayableHandle handle, int layerIndex, bool isCurrent, [Out,NotNull] List<AnimatorClipInfo> clips);
 
         // Gets the number of AnimatorClipInfo currently played by the current state
         public int GetCurrentAnimatorClipInfoCount(int layerIndex)

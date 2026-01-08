@@ -57,7 +57,7 @@ namespace UnityEditor
         internal static extern bool GetEnabledWithContext(string menuPath, UnityEngine.Object[] context);
 
         [FreeFunction("MenuController::GetMenuItemDefaultShortcuts")]
-        internal static extern void GetMenuItemDefaultShortcuts([Out] List<string> outItemNames, [Out] List<string> outItemDefaultShortcuts);
+        internal static extern void GetMenuItemDefaultShortcuts([Out,NotNull] List<string> outItemNames, [Out,NotNull] List<string> outItemDefaultShortcuts);
 
         [FreeFunction("MenuController::SetMenuItemHotkey")]
         internal static extern void SetHotkey(string menuPath, string hotkey);
@@ -74,11 +74,11 @@ namespace UnityEditor
         internal static extern ScriptingMenuItem[] GetMenuItems(string menuPath, bool includeSeparators, bool localized);
 
         [FreeFunction("MenuController::AddMenuItem")]
-        [VisibleToOtherModules("UnityEditor.ShaderFoundryModule")]
+        [VisibleToOtherModules("UnityEditor.ShaderFoundryModule", "UnityEditor.UIToolkitAuthoringModule")]
         internal static extern void AddMenuItem(string name, string shortcut, bool @checked, int priority, System.Action execute, System.Func<bool> validate);
 
         [FreeFunction("MenuController::RemoveMenuItem")]
-        [VisibleToOtherModules("UnityEditor.ShaderFoundryModule")]
+        [VisibleToOtherModules("UnityEditor.ShaderFoundryModule", "UnityEditor.UIToolkitAuthoringModule")]
         internal static extern void RemoveMenuItem(string name);
 
         [FreeFunction("MenuController::AddSeparator")]

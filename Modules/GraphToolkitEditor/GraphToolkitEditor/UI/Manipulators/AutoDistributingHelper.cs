@@ -35,7 +35,9 @@ namespace Unity.GraphToolkit.Editor
             var results = GetElementDeltaResults();
 
             // Dispatch command
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             SendPlacementCommand(results.Keys.ToList(), results.Values.ToList());
+#pragma warning restore RS0030
         }
 
         float GetStartingPosition(Rect firstRect)
@@ -128,7 +130,9 @@ namespace Unity.GraphToolkit.Editor
             }
 
             // The rects need to be placed in order
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return boundingRects.OrderBy(rect => orientation == PortOrientation.Horizontal ? rect.Item1.x : rect.Item1.y);
+#pragma warning restore RS0030
         }
     }
 }

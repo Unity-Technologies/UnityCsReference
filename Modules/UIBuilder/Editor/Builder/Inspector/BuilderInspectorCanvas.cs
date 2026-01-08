@@ -154,7 +154,9 @@ namespace Unity.UI.Builder
             m_ImageField.RegisterValueChangedCallback(OnBackgroundImageChange);
             m_ImageScaleModeField = root.Q<ToggleButtonGroup>("background-image-scale-mode-field");
             m_ImageScaleModeField.userData = typeof(ScaleMode);
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var backgroundScaleModeValues = Enum.GetValues(typeof(ScaleMode))
+#pragma warning restore RS0030
                 .OfType<ScaleMode>().Select((v) => StyleSheetUtility.ConvertCamelToDash(v.ToString())).ToList();
             foreach (var value in backgroundScaleModeValues)
             {
@@ -299,7 +301,9 @@ namespace Unity.UI.Builder
             if (string.IsNullOrEmpty(cameraName))
                 return null;
 
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var camera = Camera.allCameras.FirstOrDefault((c) => c.name == cameraName);
+#pragma warning restore RS0030
             return camera;
         }
 

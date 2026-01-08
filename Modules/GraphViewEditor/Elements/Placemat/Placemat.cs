@@ -147,7 +147,9 @@ namespace UnityEditor.Experimental.GraphView
 
         internal void HideCollapsedEdges()
         {
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var nodes = new HashSet<Node>(AllCollapsedElements.OfType<Node>());
+#pragma warning restore RS0030
             foreach (var edge in m_GraphView.edges.ToList())
                 if (AnyNodeIsConnectedToPort(nodes, edge.input) && AnyNodeIsConnectedToPort(nodes, edge.output))
                 {
@@ -215,14 +217,18 @@ namespace UnityEditor.Experimental.GraphView
         {
             m_CollapsedElements.Clear();
 
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var graphElements = m_GraphView.graphElements.ToList()
+#pragma warning restore RS0030
                 .Where(e => !(e is Edge) && (e.parent is GraphView.Layer) && (e.capabilities & Capabilities.Selectable) != 0)
                 .ToList();
 
             var collapsedElementsElsewhere = new List<GraphElement>();
             RecurseRebuildCollapsedElements_LocalFunc(this, graphElements, collapsedElementsElsewhere);
 
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var nodes = new HashSet<Node>(AllCollapsedElements.OfType<Node>());
+#pragma warning restore RS0030
 
             foreach (var edge in m_GraphView.edges.ToList())
                 if (AnyNodeIsConnectedToPort(nodes, edge.input) && AnyNodeIsConnectedToPort(nodes, edge.output))
@@ -292,7 +298,9 @@ namespace UnityEditor.Experimental.GraphView
             foreach (var node in nodes)
             {
                 var stackNode = node as StackNode;
+                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 if (stackNode != null && stackNode.contentContainer.Children().Any(n => n == port.node))
+#pragma warning restore RS0030
                     return true;
 
                 if (node == port.node)
@@ -310,7 +318,9 @@ namespace UnityEditor.Experimental.GraphView
             //We need to update all the edges whose either port is in the placemat
             var touchedEdges = new HashSet<Edge>();
 
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var nodes = new HashSet<Node>(AllCollapsedElements.OfType<Node>());
+#pragma warning restore RS0030
             foreach (var edge in m_GraphView.edges.ToList())
                 if (AnyNodeIsConnectedToPort(nodes, edge.input) || AnyNodeIsConnectedToPort(nodes, edge.output))
                     touchedEdges.Add(edge);
@@ -345,7 +355,9 @@ namespace UnityEditor.Experimental.GraphView
 
         void ActOnGraphElementsOver(Action<GraphElement> act)
         {
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var graphElements = m_GraphView.graphElements.ToList()
+#pragma warning restore RS0030
                 .Where(e => !(e is Edge) && (e.parent is GraphView.Layer) && (e.capabilities & Capabilities.Selectable) != 0);
 
             foreach (var elem in graphElements)
@@ -357,7 +369,9 @@ namespace UnityEditor.Experimental.GraphView
 
         internal bool ActOnGraphElementsOver(Func<GraphElement, bool> act, bool includePlacemats)
         {
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var graphElements = m_GraphView.graphElements.ToList()
+#pragma warning restore RS0030
                 .Where(e => !(e is Edge) && e.parent is GraphView.Layer && (e.capabilities & Capabilities.Selectable) != 0).ToList();
 
             return RecurseActOnGraphElementsOver_LocalFunc(this, graphElements, act, includePlacemats);
@@ -417,7 +431,9 @@ namespace UnityEditor.Experimental.GraphView
         internal bool WillDragNode(Node node)
         {
             if (Collapsed)
+                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 return AllCollapsedElements.Contains(node);
+#pragma warning restore RS0030
 
             return ActOnGraphElementsOver(t => node == t, true);
         }
@@ -461,7 +477,9 @@ namespace UnityEditor.Experimental.GraphView
 
         void ResizeToIncludeSelectedNodes()
         {
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             List<GraphElement> nodes = m_GraphView.selection.OfType<GraphElement>().Where(e => e is Node).ToList();
+#pragma warning restore RS0030
 
             // Now include the selected nodes
             var pos = new Rect();
@@ -550,7 +568,9 @@ namespace UnityEditor.Experimental.GraphView
                         return DropdownMenuAction.Status.Disabled;
                     });
 
+                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 var status = placemat.Container.Placemats.Any() ? DropdownMenuAction.Status.Normal : DropdownMenuAction.Status.Disabled;
+#pragma warning restore RS0030
 
                 evt.menu.AppendAction("Order/Bring To Front", a => Container.BringToFront(placemat), status);
                 evt.menu.AppendAction("Order/Bring Forward", a => Container.CyclePlacemat(placemat, PlacematContainer.CycleDirection.Up), status);
@@ -564,7 +584,9 @@ namespace UnityEditor.Experimental.GraphView
             var potentialElements = new List<GraphElement>();
             ActOnGraphElementsOver(e => potentialElements.Add(e));
 
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return potentialElements.Where(e => e is Node).ToList();
+#pragma warning restore RS0030
         }
 
         public void StartEditTitle()
@@ -623,7 +645,9 @@ namespace UnityEditor.Experimental.GraphView
             float minY =  Mathf.Infinity;
             float maxY = -Mathf.Infinity;
 
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             foreach (var r in elements.Select(n => n.GetPosition()))
+#pragma warning restore RS0030
             {
                 if (r.xMin < minX)
                     minX = r.xMin;

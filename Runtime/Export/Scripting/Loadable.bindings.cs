@@ -15,5 +15,14 @@ namespace UnityEngine
         internal extern static ContentLoadOperation LoadObjectAsyncFromRef(in LoadableReference loadableReference);
         internal extern static void ReleaseObjectFromRef(in LoadableReference loadableReference);
         internal extern static void SyncAllOperations();
+
+        // This is needed because the Release function is async but doesn't return any type of operation.
+        // https://jira.unity3d.com/browse/CBD-1579
+        // Mostly used in tests so that we can assert behavior after releasing
+        internal static void ReleaseObjectFromRefSync(in LoadableReference loadableReference)
+        {
+            ReleaseObjectFromRef(loadableReference);
+            SyncAllOperations();
+        }
     }
 }

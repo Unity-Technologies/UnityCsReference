@@ -73,7 +73,9 @@ namespace UnityEditorInternal
             var sb = new StringBuilder();
             sb.Append(" (");
 
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var types = methodInfo.GetParameters().Select(x => x.ParameterType).ToArray();
+#pragma warning restore RS0030
             for (int i = 0; i < types.Length; i++)
             {
                 sb.Append(types[i].Name);
@@ -580,11 +582,19 @@ namespace UnityEditorInternal
 
             // find the methods on the behaviour that match the signature
             Type componentType = target.GetType();
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var componentMethods = componentType.GetMethods().Where(x => !x.IsSpecialName).ToList();
+#pragma warning restore RS0030
 
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var wantedProperties = componentType.GetProperties().AsEnumerable();
+#pragma warning restore RS0030
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             wantedProperties = wantedProperties.Where(x => x.GetCustomAttributes(typeof(ObsoleteAttribute), true).Length == 0 && x.GetSetMethod() != null);
+#pragma warning restore RS0030
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             componentMethods.AddRange(wantedProperties.Select(x => x.GetSetMethod()));
+#pragma warning restore RS0030
 
             foreach (var componentMethod in componentMethods)
             {
@@ -661,7 +671,9 @@ namespace UnityEditorInternal
 
             // check out the signature of invoke as this is the callback!
             MethodInfo delegateMethod = delegateType.GetMethod("Invoke");
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var delegateArgumentsTypes = delegateMethod.GetParameters().Select(x => x.ParameterType).ToArray();
+#pragma warning restore RS0030
 
             var duplicateNames = DictionaryPool<string, int>.Get();
             var duplicateFullNames = DictionaryPool<string, int>.Get();
@@ -722,7 +734,9 @@ namespace UnityEditorInternal
                 GetMethodsForTargetAndMode(target, delegateArgumentsTypes, methods, PersistentListenerMode.EventDefined);
                 if (methods.Count > 0)
                 {
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     menu.AddDisabledItem(new GUIContent(targetName + "/Dynamic " + string.Join(", ", delegateArgumentsTypes.Select(e => GetTypeName(e)).ToArray())));
+#pragma warning restore RS0030
                     AddMethodsToMenu(menu, listener, methods, targetName);
                     didAddDynamic = true;
                 }
@@ -749,7 +763,9 @@ namespace UnityEditorInternal
         private static void AddMethodsToMenu(GenericMenu menu, SerializedProperty listener, List<ValidMethodMap> methods, string targetName)
         {
             // Note: sorting by a bool in OrderBy doesn't seem to work for some reason, so using numbers explicitly.
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             IEnumerable<ValidMethodMap> orderedMethods = methods.OrderBy(e => e.methodInfo.Name.StartsWith("set_") ? 0 : 1).ThenBy(e => e.methodInfo.Name);
+#pragma warning restore RS0030
             foreach (var validMethod in orderedMethods)
                 AddFunctionsForScript(menu, listener, validMethod, targetName);
         }

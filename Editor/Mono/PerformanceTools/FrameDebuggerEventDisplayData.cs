@@ -781,7 +781,7 @@ namespace UnityEditorInternal.FrameDebuggerInternal
             string rayTracingCallableShaderCount   = $"{curEventData.m_RayTracingShaderCallableShaderCount}";
             string rayTracingPassName              = $"{curEventData.m_RayTracingShaderPassName}";
             m_RayTracingShaderName                 = $"{curEventData.m_RayTracingShaderName}";
-            m_RayTracingGenerationShaderName       = $"{curEventData.m_RayTracingShaderRayGenShaderName}";
+            m_RayTracingGenerationShaderName       = $"{curEventData.m_RayTracingShaderRayGenName}";
 
             m_DetailsStringBuilder.AppendFormat(k_TwoColumnFormat, "Max. Recursion Depth", rayTracingMaxRecursionDepth).AppendLine();
             m_DetailsStringBuilder.AppendFormat(k_TwoColumnFormat, "Dispatch Size", rayTracingDispatchSize).AppendLine();

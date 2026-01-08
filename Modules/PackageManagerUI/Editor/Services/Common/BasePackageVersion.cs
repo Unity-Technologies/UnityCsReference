@@ -169,7 +169,9 @@ namespace UnityEditor.PackageManager.UI.Internal
             {
                 var words = searchText.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
                 var categories =  category.Split('/');
+                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 if (words.All(word => word.Length >= 2 && categories.Any(c => c.StartsWith(word, StringComparison.CurrentCultureIgnoreCase))))
+#pragma warning restore RS0030
                     return true;
             }
             return false;

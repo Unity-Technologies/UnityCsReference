@@ -27,7 +27,9 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private Label m_EntitlementsErrorLabel;
 
+        #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
         public IEnumerable<PackageDetailsTabElement> orderedTabs => m_BodyContainer.Children().OfType<PackageDetailsTabElement>();
+#pragma warning restore RS0030
 
         private IPackageVersion m_Version = null;
         private HashSet<PackageDetailsTabElement> m_DeferredRefreshTracker = new HashSet<PackageDetailsTabElement>();
@@ -63,13 +65,17 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public void RefreshTabs(IEnumerable<string> tabIds, IPackageVersion version)
         {
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var tabs = tabIds.Select(id => GetTab(id)).Where(tab => tab != null);
+#pragma warning restore RS0030
             RefreshTabs(tabs, version);
         }
 
         public void RefreshTab(string tabId, IPackageVersion version)
         {
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var tabs = new[] { GetTab<PackageDetailsTabElement>(tabId) }.Where(tab => tab != null);
+#pragma warning restore RS0030
             RefreshTabs(tabs, version);
         }
 
@@ -102,7 +108,9 @@ namespace UnityEditor.PackageManager.UI.Internal
             if (UIUtils.IsElementVisible(GetTab(selectedTabId)))
                 return;
 
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var firstValidTab = orderedTabs.FirstOrDefault(tab => tab.IsValid(m_Version));
+#pragma warning restore RS0030
             SelectTab(firstValidTab);
         }
 

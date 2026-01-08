@@ -74,6 +74,7 @@ namespace UnityEditor.Toolbars
         {
             public MainToolbarElementAttribute attr;
             public MethodInfo method;
+            public MethodInfo availabilityMethod;
         }
 
         static MainToolbarWindow window => (MainToolbarWindow)Toolbar.instance.actualView;
@@ -120,10 +121,42 @@ namespace UnityEditor.Toolbars
             return window.TryGetOverlay(path, out overlay);
         }
 
+        static Dictionary<string, MethodInfo> s_PathToAvailabilityMethods;
         internal static List<ElementDefinition> GetAllElementDefinitions()
         {
             List<ElementDefinition> m_Definitions = new List<ElementDefinition>();
             var mainToolbarElementDataMethods = TypeCache.GetMethodsWithAttribute<MainToolbarElementAttribute>();
+            
+            s_PathToAvailabilityMethods ??= new();
+            s_PathToAvailabilityMethods.Clear();
+            var mainToolbarElementAvailabilityMethods = TypeCache.GetMethodsWithAttribute<MainToolbarElementAvailabilityAttribute>();
+
+            foreach (var method in mainToolbarElementAvailabilityMethods)
+            {
+                MainToolbarElementAvailabilityAttribute mteAttrib = method.GetCustomAttribute<MainToolbarElementAvailabilityAttribute>(false);
+
+                if (mteAttrib == null)
+                    continue;
+                
+                if (method.GetParameters().Length > 0)
+                {
+                    Debug.LogWarning("Methods with MainToolbarElementAvailability attribute should take zero parameters.");
+                    continue;
+                }
+                if (method.IsStatic == false)
+                {
+                    Debug.LogWarning("Methods with MainToolbarElementAvailability attribute must be static.");
+                    continue;
+                }
+                if (method.ReturnType != typeof(bool))
+                {
+                    Debug.LogWarning("Methods with MainToolbarElementAvailability attribute must return bool value.");
+                    continue;
+                }
+                
+                s_PathToAvailabilityMethods.Add(mteAttrib.path, method);
+            }
+            
             foreach (var method in mainToolbarElementDataMethods)
             {
                 MainToolbarElementAttribute mteAttrib = method.GetCustomAttribute<MainToolbarElementAttribute>(false);
@@ -148,10 +181,13 @@ namespace UnityEditor.Toolbars
                     continue;
                 }
 
+                s_PathToAvailabilityMethods.TryGetValue(mteAttrib.path, out var methodAvailability);
+
                 m_Definitions.Add(new ElementDefinition()
                 {
                     attr = mteAttrib,
                     method = method,
+                    availabilityMethod = methodAvailability
                 });
             }
 

@@ -134,7 +134,9 @@ namespace Unity.GraphToolkit.Editor
             try
             {
                 if (CanPerformConnection(e.localMousePosition))
+                    #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     WireDragHelper.HandleMouseUp(e, true, Enumerable.Empty<Wire>(), Enumerable.Empty<PortModel>());
+#pragma warning restore RS0030
                 else
                     Abort();
             }

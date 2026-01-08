@@ -63,12 +63,16 @@ namespace UnityEditor
                 guids = new HashSet<string>(AssetDatabase.CollectAllChildren(AssetDatabase.assetFolderGUID, temp));
             }
 
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var guidsArray = includeScripts ? guids.Union(UnityEditorInternal.InternalEditorUtility.GetAllScriptGUIDs()).ToArray() : guids.ToArray();
+#pragma warning restore RS0030
             var assets = PackageUtility.BuildExportPackageItemsListWithPackageManagerWarning(guidsArray, includeDependencies, true);
 
             // If the user exports the root Assets folder, we need to remove it from the list
             // explicitly, as it doesn't make sense
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             assets = assets.Where(val => val.assetPath != "Assets").ToArray();
+#pragma warning restore RS0030
 
             return assets;
         }
@@ -214,7 +218,9 @@ namespace UnityEditor
             if (GUILayout.Button(EditorGUIUtility.TrTextContent("Export...")))
             {
                 string invalidChars = EditorUtility.GetInvalidFilenameChars();
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 var selectedItemWithInvalidChar = m_ExportPackageItems.FirstOrDefault(item => Path.GetFileNameWithoutExtension(item.assetPath).IndexOfAny(invalidChars.ToCharArray()) != -1 && item.enabledStatus > 0);
+#pragma warning restore RS0030
                 if (selectedItemWithInvalidChar != null && !EditorUtility.DisplayDialog(L10n.Tr("Cross platform incompatibility"), L10n.Tr($"The asset “{Path.GetFileNameWithoutExtension(selectedItemWithInvalidChar.assetPath)}” contains one or more characters that are not compatible across platforms: {invalidChars}"), L10n.Tr("I understand"), L10n.Tr("Cancel")))
                 {
                     GUIUtility.ExitGUI();
@@ -304,7 +310,9 @@ namespace UnityEditor
             UnscheduleBuildAssetList();
 
             m_ProjectBrowserSelection ??= Selection.assetGUIDsDeepSelection;
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             m_ExportPackageItems = GetAssetItemsForExport(m_ProjectBrowserSelection, m_IncludeDependencies, m_IncludeScripts).ToArray();
+#pragma warning restore RS0030
 
             // GUI is reconstructed in OnGUI (when needed)
             m_Tree = null;

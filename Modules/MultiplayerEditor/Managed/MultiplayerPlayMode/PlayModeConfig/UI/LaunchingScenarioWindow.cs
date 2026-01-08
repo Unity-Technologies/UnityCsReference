@@ -71,7 +71,6 @@ namespace Unity.Multiplayer.PlayMode.Editor
         private Label m_MainEditorMessage;
         private Label m_EditorInstanceMessage;
         private Label m_LocalInstanceMessage;
-        private Label m_RemoteInstanceMessage;
         private Button m_CancelButton;
 
         private void SetupAndShow(OrchestratedScenario scenarioConfig)
@@ -129,9 +128,6 @@ namespace Unity.Multiplayer.PlayMode.Editor
             var localInstanceCount = GetInstanceCount<LocalInstanceDescription>(m_ScenarioConfig);
             m_LocalInstanceMessage.text = localInstanceCount > 0 ? $"Building {localInstanceCount} local instance(s)..." : string.Empty;
 
-            var remoteInstanceCount = GetInstanceCount<RemoteInstanceDescription>(m_ScenarioConfig);
-            m_RemoteInstanceMessage.text = remoteInstanceCount > 0 ? $"Deploying {remoteInstanceCount} remote instance(s)..." : string.Empty;
-
             UpdateProgressBar(m_ProgressBar, status.OverallStatus.Progress);
         }
 
@@ -184,12 +180,10 @@ namespace Unity.Multiplayer.PlayMode.Editor
             m_MainEditorMessage = new Label();
             m_EditorInstanceMessage = new Label();
             m_LocalInstanceMessage = new Label();
-            m_RemoteInstanceMessage = new Label();
 
             instanceMessageContainer.Add(m_MainEditorMessage);
             instanceMessageContainer.Add(m_EditorInstanceMessage);
             instanceMessageContainer.Add(m_LocalInstanceMessage);
-            instanceMessageContainer.Add(m_RemoteInstanceMessage);
 
             m_CancelButton = new Button()
             {

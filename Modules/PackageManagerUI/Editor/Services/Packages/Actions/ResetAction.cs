@@ -33,7 +33,9 @@ internal class ResetAction : PackageAction
             return false;
 
         var packageNameAndVersions = string.Join("\n\u2022 ",
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             packagesToUninstall.Select(package => $"{package.displayName} - {package.versions.recommended.version}").ToArray());
+#pragma warning restore RS0030
 
         var title = string.Format(L10n.Tr("Resetting {0}"), version.GetDescriptor());
         var message = packagesToUninstall.Length == 1 ?
@@ -47,7 +49,9 @@ internal class ResetAction : PackageAction
         if (!m_Application.DisplayDialog("resetPackage", title, message, L10n.Tr("Continue"), L10n.Tr("Cancel")))
             return false;
 
+        #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
         m_PageManager.activePage.SetPackagesUserUnlockedState(packagesToUninstall.Select(p => p.uniqueId), false);
+#pragma warning restore RS0030
         m_OperationDispatcher.ResetDependencies(version, packagesToUninstall);
 
         PackageManagerWindowAnalytics.SendEvent("reset", version?.uniqueId);

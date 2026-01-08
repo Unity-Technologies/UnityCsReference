@@ -4,10 +4,11 @@
 
 using System;
 using UnityEditor.Profiling;
+using static UnityEditor.Profiling.HierarchyFrameDataView;
 
 namespace Unity.Profiling.Editor
 {
-    interface IProfilerCaptureDataService : IDisposable
+    internal interface IProfilerCaptureDataService : IDisposable
     {
         // The number of frames stored in the capture data.
         int FrameCount { get; }
@@ -17,6 +18,9 @@ namespace Unity.Profiling.Editor
 
         // Obtain the frame data for the specified frame and thread.
         RawFrameDataView GetRawFrameDataView(int frameIndex, int threadIndex);
+
+        // Obtain the frame data for the specified frame and thread.
+        HierarchyFrameDataView GetHierarchyFrameDataView(int frameIndex, int threadIndex, ViewModes viewMode, int sortColumn, bool sortAscending);
 
         // Obtain the specified counter's values, as floats, over a range of frames beginning at firstFrameIndex to firstFrameIndex + buffer.Length.
         void GetCounterValues(

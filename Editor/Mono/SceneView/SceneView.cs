@@ -1394,7 +1394,9 @@ namespace UnityEditor
             rootVisualElement.RegisterCallback<MouseEnterWindowEvent>(e => m_SceneViewMotion.viewportsUnderMouse = true);
             rootVisualElement.RegisterCallback<MouseLeaveWindowEvent>(e => m_SceneViewMotion.viewportsUnderMouse = false);
 
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             m_OrientationGizmo = overlayCanvas.overlays.FirstOrDefault(x => x is SceneOrientationGizmo) as SceneOrientationGizmo;
+#pragma warning restore RS0030
 
             titleContent = GetLocalizedTitleContent();
 
@@ -2176,7 +2178,9 @@ namespace UnityEditor
             if (!Handles.IsCameraDrawModeSupported(m_Camera, mode.drawMode))
                 return false;
             return (onValidateCameraMode == null ||
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 onValidateCameraMode.GetInvocationList().All(validate => ((Func<CameraMode, bool>)validate)(mode)));
+#pragma warning restore RS0030
         }
 
         public bool IsCameraDrawModeEnabled(CameraMode mode)
@@ -2184,7 +2188,9 @@ namespace UnityEditor
             if (!Handles.IsCameraDrawModeEnabled(m_Camera, mode.drawMode))
                 return false;
             return (onValidateCameraMode == null ||
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 onValidateCameraMode.GetInvocationList().All(validate => ((Func<CameraMode, bool>)validate)(mode)));
+#pragma warning restore RS0030
         }
 
         internal bool IsSceneCameraDeferred()
@@ -3868,7 +3874,9 @@ namespace UnityEditor
                 case EventCommandNames.InvertSelection:
                     if (execute)
                     {
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                         Selection.objects = FindObjectsByType<GameObject>(FindObjectsSortMode.InstanceID).Except(Selection.gameObjects).Where(SceneVisibilityManager.instance.IsSelectable).ToArray();
+#pragma warning restore RS0030
                     }
                     Event.current.Use();
                     break;
@@ -3878,9 +3886,13 @@ namespace UnityEditor
                         List<GameObject> gameObjects = new List<GameObject>(Selection.gameObjects);
                         foreach (var gameObject in Selection.gameObjects)
                         {
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                             gameObjects.AddRange(gameObject.transform.GetComponentsInChildren<Transform>(true).Select(t => t.gameObject));
+#pragma warning restore RS0030
                         }
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                         Selection.objects = gameObjects.Distinct().Cast<Object>().ToArray();
+#pragma warning restore RS0030
                     }
                     Event.current.Use();
                     break;
@@ -3896,7 +3908,9 @@ namespace UnityEditor
                                 gameObjects.Add(root);
                             }
                         }
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                         Selection.objects = gameObjects.Distinct().Cast<Object>().ToArray();
+#pragma warning restore RS0030
                     }
                     Event.current.Use();
                     break;
@@ -4105,9 +4119,15 @@ namespace UnityEditor
                         m_Cache[type] = null;
                     else
                     {
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                         var param = Expression.Parameter(typeof(Editor), "a");
+#pragma warning restore RS0030
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                         onSceneGui = m_Cache[type] = Expression.Lambda<Action<Editor>>(
+#pragma warning restore RS0030
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                             Expression.Call(Expression.Convert(param, type), method),
+#pragma warning restore RS0030
                             param
                         ).Compile();
                     }

@@ -31,7 +31,9 @@ namespace UnityEditor
 
         public static bool IsUnityEngineModule(AssemblyDefinition assembly)
         {
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return assembly.CustomAttributes.Any(a => a.AttributeType.FullName == typeof(UnityEngineModuleAssembly).FullName);
+#pragma warning restore RS0030
         }
 
         public static bool IsUnityEngineModule(Assembly assembly)
@@ -59,7 +61,9 @@ namespace UnityEditor
             // compiled in a package.
             searchPaths.Add(InternalEditorUtility.GetEditorScriptAssembliesPath());
 
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return searchPaths.ToArray();
+#pragma warning restore RS0030
         }
 
         [RequiredByNativeCode]
@@ -70,14 +74,28 @@ namespace UnityEditor
             var typesDerivedFromScriptedImporter = TypeCache.GetTypesDerivedFrom<ScriptedImporter>();
 
             var fileName = Path.GetFileName(path);
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             IEnumerable<Type> userTypes = typesDerivedFromMonoBehaviour.Where(x => Path.GetFileName(x.Assembly.GetLoadedAssemblyPath()) == fileName);
+#pragma warning restore RS0030
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             userTypes = userTypes
+#pragma warning restore RS0030
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 .Concat(typesDerivedFromScriptableObject.Where(x => Path.GetFileName(x.Assembly.GetLoadedAssemblyPath()) == fileName))
+#pragma warning restore RS0030
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 .Concat(typesDerivedFromScriptedImporter.Where(x => Path.GetFileName(x.Assembly.GetLoadedAssemblyPath()) == fileName)).ToList();
+#pragma warning restore RS0030
 
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             List<string> classNames = new List<string>(userTypes.Count());
+#pragma warning restore RS0030
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             List<string> nameSpaces = new List<string>(userTypes.Count());
+#pragma warning restore RS0030
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             List<string> originalNamespaces = new List<string>(userTypes.Count());
+#pragma warning restore RS0030
 
             string pathToAssembly = null;
             foreach (var userType in userTypes)
@@ -160,7 +178,9 @@ namespace UnityEditor
 
         public static bool IsInternalAssembly(string file)
         {
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return ModuleUtils.GetAdditionalReferencesForUserScripts().Any(p => p.Equals(file));
+#pragma warning restore RS0030
         }
 
         /// <summary>

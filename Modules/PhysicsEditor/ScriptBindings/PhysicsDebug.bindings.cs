@@ -10,6 +10,7 @@ using UnityEngine;
 using UnityEngine.Scripting;
 using Unity.Collections.LowLevel.Unsafe;
 using Unity.Collections;
+using System.Collections.Generic;
 
 namespace UnityEditor
 {
@@ -121,7 +122,7 @@ namespace UnityEditor
         public extern static GameObject PickClosestGameObject([NotNull] Camera cam, int layers, Vector2 position, GameObject[] ignore, GameObject[] filter, out int materialIndex);
 
         [NativeName("CollectCollidersForDebugDraw")]
-        private extern static void Internal_CollectCollidersForDebugDraw([NotNull] Camera cam, [NotNull] object colliderList);
+        private extern static void Internal_CollectCollidersForDebugDraw([NotNull] Camera cam, [NotNull, Out] List<Collider> colliderList);
 
         public static void SetShowForAllFilters(bool selected)
         {

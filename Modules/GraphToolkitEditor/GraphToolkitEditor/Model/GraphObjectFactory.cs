@@ -144,7 +144,9 @@ namespace Unity.GraphToolkit.Editor
 
         public static MethodInfo GetMethodInfo(Expression<GraphObjectDefinitionAttribute.LoadGraphObjectLoader> expression)
         {
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return ((MethodCallExpression)expression.Body).Method;
+#pragma warning restore RS0030
         }
 
         static GraphObjectDefinitionAttribute.LoadGraphObjectLoader MakeLoaderDelegate(Type graphObjectType)

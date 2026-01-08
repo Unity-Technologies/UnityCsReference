@@ -106,7 +106,9 @@ namespace UnityEditor.Search
                 return string.Empty;
             }
 
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var tokens = Regex.Split(s, @"-+|_+|\s+|(?<!^)(?=[A-Z0-9])")
+#pragma warning restore RS0030
                 .Where(t => !string.IsNullOrWhiteSpace(t))
                 .Select((word, index) =>
                 {
@@ -173,14 +175,18 @@ namespace UnityEditor.Search
 
             if (splitCamelCase)
             {
+                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 var camelCaseSplitTokens = strValue.Split(entrySeparators).SelectMany(s => UnityEditor.Search.SearchUtils.SplitCamelCase(s)).Where(s => s.Length > 0).Select(s => s.ToLowerInvariant());
+#pragma warning restore RS0030
                 k_EntryComponents.UnionWith(camelCaseSplitTokens);
                 nameTokensLowered = camelCaseSplitTokens;
             }
 
             if (splitFuzzy)
             {
+                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 var fcc = nameTokensLowered.Aggregate(string.Empty, (current, s) => current + s[0]);
+#pragma warning restore RS0030
                 var shiftVariations = SearchUtils.FindShiftLeftVariations(fcc);
                 k_EntryComponents.UnionWith(shiftVariations);
             }
@@ -337,10 +343,14 @@ namespace UnityEditor.Search
         /// <param name="pingSelection">If true, will ping the selected objects.</param>
         public static void SelectMultipleItems(IEnumerable<SearchItem> items, bool focusProjectBrowser = false, bool pingSelection = true)
         {
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             Selection.objects = items.Select(i => i.ToObject()).Where(o => o).ToArray();
+#pragma warning restore RS0030
             if (Selection.objects.Length == 0)
             {
+                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 var firstItem = items.FirstOrDefault();
+#pragma warning restore RS0030
                 if (firstItem != null)
                     EditorUtility.OpenWithDefaultApp(firstItem.id);
                 return;
@@ -350,7 +360,9 @@ namespace UnityEditor.Search
                 if (focusProjectBrowser)
                     EditorWindow.FocusWindowIfItsOpen(Utils.GetProjectBrowserWindowType());
                 if (pingSelection)
+                    #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     EditorApplication.delayCall += () => EditorGUIUtility.PingObject(Selection.objects.LastOrDefault());
+#pragma warning restore RS0030
             };
         }
 
@@ -479,7 +491,9 @@ namespace UnityEditor.Search
                     goRoots.AddRange(sceneRootObjects);
             }
 
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return SceneModeUtility.GetObjects(goRoots.ToArray(), true)
+#pragma warning restore RS0030
                 .Where(o => (o.hideFlags & HideFlags.HideInHierarchy) != HideFlags.HideInHierarchy);
         }
 
@@ -582,9 +596,13 @@ namespace UnityEditor.Search
 
             if (!s_BaseTypes.TryGetValue(typeof(T), out var types))
             {
+                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 types = TypeCache.GetTypesDerivedFrom<T>()
+#pragma warning restore RS0030
                 .Where(TypePredicate)
+                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 .SelectMany(t => t.GetInterfaces().Where(TypePredicate).Append(t))
+#pragma warning restore RS0030
                 .Distinct().ToList();
                 s_BaseTypes[typeof(T)] = types;
             }
@@ -611,7 +629,9 @@ namespace UnityEditor.Search
         static bool TypePredicate(Type t)
         {
             return !t.IsGenericType &&
+                     #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                      !s_IgnoredAssemblies.Contains(t.Assembly) &&
+#pragma warning restore RS0030
                      !typeof(Editor).IsAssignableFrom(t) &&
                      !typeof(EditorWindow).IsAssignableFrom(t) &&
                      t.Assembly.GetName().Name.IndexOf("Editor", StringComparison.Ordinal) == -1;
@@ -688,7 +708,9 @@ namespace UnityEditor.Search
 
             var replacementBase = $"{replacementId}{replacementOp}";
 
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var enumNames = Enum.GetNames(enumType).Select(n => Utils.FastToLower(n)).ToList();
+#pragma warning restore RS0030
             var fields = enumType.GetFields(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static | BindingFlags.Instance);
             foreach (var fieldInfo in fields)
             {
@@ -755,7 +777,9 @@ namespace UnityEditor.Search
 
         internal static IEnumerable<SearchProposition> EnumeratePropertyPropositions(IEnumerable<UnityEngine.Object> objs, Func<SerializedObject, IEnumerable<SerializedProperty>> nonVisiblePropertyIterator = null)
         {
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return EnumeratePropertyKeywords(objs, nonVisiblePropertyIterator).Select(k => CreateKeywordProposition(k));
+#pragma warning restore RS0030
         }
 
         internal static void IterateSupportedProperties(SerializedObject so, Action<SerializedProperty> handler)
@@ -1198,7 +1222,9 @@ namespace UnityEditor.Search
 
         public static ISearchQuery FindQuery(string guid)
         {
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return SearchQuery.searchQueries.FirstOrDefault(sq => sq.guid == guid);
+#pragma warning restore RS0030
         }
 
         public static ISearchView OpenQuery(ISearchQuery sq, SearchFlags flags)
@@ -1208,7 +1234,9 @@ namespace UnityEditor.Search
 
         public static IEnumerable<ISearchQuery> EnumerateAllQueries()
         {
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return SearchQuery.searchQueries.Cast<ISearchQuery>().Concat(SearchQueryAsset.savedQueries);
+#pragma warning restore RS0030
         }
 
         public static SearchItem CreateSceneResult(SearchContext context, SearchProvider sceneProvider, GameObject go)
@@ -1315,12 +1343,16 @@ namespace UnityEditor.Search
 
         internal static IEnumerable<SearchProvider> GetActiveProviders(IEnumerable<SearchProvider> providers)
         {
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return providers.Where(p => p.active);
+#pragma warning restore RS0030
         }
 
         internal static IEnumerable<SearchProvider> SortProvider(IEnumerable<SearchProvider> providers)
         {
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return providers.OrderBy(p => p.priority + (p.isExplicitProvider ? 100000 : 0));
+#pragma warning restore RS0030
         }
 
         internal static IEnumerable<SearchProvider> GetMergedProviders(IEnumerable<SearchProvider> initialProviders, IEnumerable<string> providerIds)
@@ -1329,7 +1361,9 @@ namespace UnityEditor.Search
             if (initialProviders == null)
                 return providers;
 
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return initialProviders.Concat(providers).Distinct();
+#pragma warning restore RS0030
         }
 
         internal static bool SearchViewSyncEnabled(string groupId)
@@ -1347,13 +1381,17 @@ namespace UnityEditor.Search
 
         internal static string FormatStatusMessage(SearchContext context, int totalCount)
         {
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var providers = context.providers.ToList();
+#pragma warning restore RS0030
             if (providers.Count == 0)
                 return L10n.Tr("There is no activated search provider");
 
             var msg = "Searching ";
             if (providers.Count > 1)
+                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 msg += Utils.FormatProviderList(providers.Where(p => !p.isExplicitProvider), showFetchTime: !context.searchInProgress);
+#pragma warning restore RS0030
             else
                 msg += Utils.FormatProviderList(providers);
 
@@ -1396,8 +1434,12 @@ namespace UnityEditor.Search
 
             if (expression.evaluator.name == nameof(Evaluators.Select))
             {
+                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 var selectors = expression.parameters.Skip(1).Where(e => Evaluators.IsSelectorLiteral(e));
+#pragma warning restore RS0030
+                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 var tableViewFields = new List<SearchField>(selectors.Select(s => new SearchField(s.innerText.ToString(), s.alias.ToString())));
+#pragma warning restore RS0030
                 context.searchView.SetupColumns(tableViewFields);
             }
         }
@@ -1620,7 +1662,9 @@ namespace UnityEditor.Search
 
         internal static SearchProvider[] GetProviderForContextualSearch(IEnumerable<SearchProvider> providers)
         {
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return providers.Where(p => p.isEnabledForContextualSearch?.Invoke() ?? false).ToArray();
+#pragma warning restore RS0030
         }
 
         internal static ISearchView OpenNewWindow()
@@ -1661,7 +1705,9 @@ namespace UnityEditor.Search
         {
             if (EditorWindow.HasOpenInstances<SearchWindow>())
             {
+                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 return Resources.FindObjectsOfTypeAll<SearchWindow>()
+#pragma warning restore RS0030
                     .Where(w => w.state.searchFlags.HasAny(SearchFlags.ReuseExistingWindow)
                         || (w.context?.options.HasAny(SearchFlags.ReuseExistingWindow) ?? false))
                     .FirstOrDefault();
@@ -1689,13 +1735,19 @@ namespace UnityEditor.Search
             SearchAnalytics.GenericEventType eventType = SearchAnalytics.GenericEventType.QuickSearchOpen, string eventContext = "Contextual")
         {
             var contextualProviders = SearchService.GetProviders(providerIds);
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             if (contextualProviders.Count() == 0)
+#pragma warning restore RS0030
             {
                 return OpenDefaultQuickSearch();
             }
 
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             title = title ?? string.Join(", ", contextualProviders.Select(p => p.name.ToLower()));
+#pragma warning restore RS0030
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var mainProvider = contextualProviders.First();
+#pragma warning restore RS0030
 
             if (flags.HasFlag(SearchFlags.GeneralSearchWindow))
             {
@@ -1713,7 +1765,9 @@ namespace UnityEditor.Search
             var providers = contextualProviders;
             if (contextualFlags.HasFlag(OpenWithContextualProvidersFlags.AddActiveProvidersToContext))
             {
+                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 providers = providers.Concat(SearchService.GetActiveProviders()).Distinct();
+#pragma warning restore RS0030
             }
 
             var context = SearchService.CreateContext(providers, query);
@@ -1752,7 +1806,9 @@ namespace UnityEditor.Search
 
         internal static ISearchView OpenFromContextWindow(string query, string sourceContext)
         {
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var contextualProviders = GetProviderForContextualSearch(SearchService.Providers).Select(p => p.id).ToArray();
+#pragma warning restore RS0030
             return OpenWithContextualProviders(query, contextualProviders, kWithProviderDefaultFlags,
                 contextualFlags: OpenWithContextualProvidersFlags.AddActiveProvidersToContext | OpenWithContextualProvidersFlags.AddContextualFilterIdToQuery | OpenWithContextualProvidersFlags.SyncSearch,
                 eventType: SearchAnalytics.GenericEventType.QuickSearchJumpToSearch, eventContext: sourceContext);
@@ -1762,8 +1818,12 @@ namespace UnityEditor.Search
         {
             var isGroupInvalid = groupId == null ||
                                  (groupId == GroupedSearchList.allGroupId && viewState.hideAllGroup) ||
+                                 #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                                  (groupId == GroupedSearchList.allGroupId && viewState.context.providers.Count() == 1) ||
+#pragma warning restore RS0030
+                                 #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                                  (groupId != GroupedSearchList.allGroupId && viewState.context.providers.FirstOrDefault(provider => provider.id == groupId) == null);
+#pragma warning restore RS0030
             return !isGroupInvalid;
         }
 
@@ -1777,12 +1837,16 @@ namespace UnityEditor.Search
                     var id = viewState.selectedIds[0];
                     groupId = SearchUtils.GetGroupFromId(id);
                 }
+                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 else if (groupId != GroupedSearchList.allGroupId && viewState.context.providers.FirstOrDefault(provider => provider.id == groupId) == null)
+#pragma warning restore RS0030
                 {
                     // If we have an invalid group, default to all if we can.
                     if (viewState.hideAllGroup)
                     {
+                        #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                         groupId = viewState.context.providers.First().id;
+#pragma warning restore RS0030
                     }
                     else
                     {
@@ -1796,9 +1860,13 @@ namespace UnityEditor.Search
             if (!IsGroupValid(viewState, groupId))
             {
                 var providers = viewState.context.providers;
+                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 if (viewState.hideAllGroup || providers.Count() == 1)
+#pragma warning restore RS0030
                 {
+                    #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     groupId = viewState.context.providers.First().id;
+#pragma warning restore RS0030
                 }
                 else
                 {
@@ -1916,15 +1984,23 @@ namespace UnityEditor.Search
             if (dbs == null)
                 return false;
 
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             if (dbs.Count() == 0)
+#pragma warning restore RS0030
                 return false;
 
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             if (dbs.Count() == 1)
+#pragma warning restore RS0030
             {
+                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 return predicate(dbs.First());
+#pragma warning restore RS0030
             }
 
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var defaultDb = dbs.FirstOrDefault(db => db.path == "UserSettings/Search.index");
+#pragma warning restore RS0030
             if (defaultDb != null && predicate(defaultDb))
             {
                 return true;

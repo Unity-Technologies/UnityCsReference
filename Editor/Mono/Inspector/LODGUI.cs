@@ -240,13 +240,17 @@ namespace UnityEditor
         {
             // Find the lower detail lod... clamp value to stop overlapping slider
             var minimum = 0.0f;
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var lowerLOD = lods.FirstOrDefault(x => x.LODIndex == lods[lod].LODIndex + 1);
+#pragma warning restore RS0030
             if (lowerLOD != null)
                 minimum = lowerLOD.RawScreenPercent;
 
             // Find the higher detail lod... clamp value to stop overlapping slider
             var maximum = 1.0f;
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var higherLOD = lods.FirstOrDefault(x => x.LODIndex == lods[lod].LODIndex - 1);
+#pragma warning restore RS0030
             if (higherLOD != null)
                 maximum = higherLOD.RawScreenPercent;
 
@@ -260,7 +264,9 @@ namespace UnityEditor
         // Find the given sceen space rectangular bounds from a list of vector 3 points.
         private static Rect CalculateScreenRect(IEnumerable<Vector3> points)
         {
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var points2 = points.Select(p => HandleUtility.WorldToGUIPoint(p)).ToList();
+#pragma warning restore RS0030
 
             var min = new Vector2(float.MaxValue, float.MaxValue);
             var max = new Vector2(float.MinValue, float.MinValue);

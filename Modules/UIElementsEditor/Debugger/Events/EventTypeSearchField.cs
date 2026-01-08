@@ -60,7 +60,9 @@ namespace UnityEditor.UIElements.Debugger
         Dictionary<long, int> m_EventCountLog;
         bool m_IsFocused;
 
+        #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
         public int GetSelectedCount() => m_Choices.Count(c => c.TypeId > 0 && m_State[c.TypeId]);
+#pragma warning restore RS0030
 
         public new static readonly string ussClassName = "event-debugger-filter";
         public static readonly string ussContainerClassName = ussClassName + "__container";
@@ -98,7 +100,9 @@ namespace UnityEditor.UIElements.Debugger
             {
                 isMatch = IsGenericTypeOf(t.BaseType, genericDefinition, out genericParameters);
             }
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             if (!isMatch && genericDefinition.IsInterface && t.GetInterfaces().Any())
+#pragma warning restore RS0030
             {
                 foreach (var i in t.GetInterfaces())
                 {
@@ -110,7 +114,9 @@ namespace UnityEditor.UIElements.Debugger
                 }
             }
 
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             if (isMatch && !genericParameters.Any())
+#pragma warning restore RS0030
             {
                 genericParameters = t.GetGenericArguments();
             }
@@ -131,14 +137,18 @@ namespace UnityEditor.UIElements.Debugger
 
                 try
                 {
+                    #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     foreach (var type in assembly.GetTypes().Where(t => typeof(EventBase).IsAssignableFrom(t) && !t.ContainsGenericParameters))
+#pragma warning restore RS0030
                     {
                         // Only select Pointer events on startup
                         AddType(type, IsGenericTypeOf(type, typeof(PointerEventBase<>)));
                     }
 
                     // Special case for ChangeEvent<>.
+                    #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     var implementingTypes = GetAllTypesImplementingOpenGenericType(typeof(INotifyValueChanged<>), assembly).ToList();
+#pragma warning restore RS0030
                     foreach (var valueChangedType in implementingTypes)
                     {
                         var baseType = valueChangedType.BaseType;
@@ -172,7 +182,9 @@ namespace UnityEditor.UIElements.Debugger
 
             // Add groups, with negative ids.
             var keyIndex = -1;
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             foreach (var key in m_GroupedEvents.Keys.OrderBy(k => k))
+#pragma warning restore RS0030
             {
                 m_Choices.Add(new EventTypeChoice() { Name = key, Group = key, TypeId = keyIndex });
                 m_State.Add(keyIndex--, key.Contains("IPointerEvent"));
@@ -180,7 +192,9 @@ namespace UnityEditor.UIElements.Debugger
 
             m_Choices.Sort();
             m_Choices.Insert(0, new EventTypeChoice() { Name = "IAll", Group = "IAll", TypeId = 0 });
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             m_FilteredChoices = m_Choices.ToList();
+#pragma warning restore RS0030
 
             m_MenuContainer = new VisualElement();
             m_MenuContainer.AddToClassList(ussClassName);
@@ -263,11 +277,19 @@ namespace UnityEditor.UIElements.Debugger
         static IEnumerable<Type> GetAllTypesImplementingOpenGenericType(Type openGenericType, Assembly assembly)
         {
             return from x in assembly.GetTypes()
+                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 from z in x.GetInterfaces()
+#pragma warning restore RS0030
+                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 let y = x.BaseType
+#pragma warning restore RS0030
+                    #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     where (y != null && y.IsGenericType && openGenericType.IsAssignableFrom(y.GetGenericTypeDefinition())) ||
+#pragma warning restore RS0030
                     (z.IsGenericType && openGenericType.IsAssignableFrom(z.GetGenericTypeDefinition()))
+                    #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     select x;
+#pragma warning restore RS0030
         }
 
         void AddType(Type type, bool value)
@@ -291,7 +313,9 @@ namespace UnityEditor.UIElements.Debugger
             {
                 var previousType = nextType;
                 nextType = previousType.BaseType;
+                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 interfaceType = previousType.GetInterfaces().Where(InterfacePredicate).Except(nextType.GetInterfaces().Where(InterfacePredicate)).FirstOrDefault();
+#pragma warning restore RS0030
             }
             while (interfaceType == null && nextType != typeof(EventBase));
 
@@ -339,11 +363,15 @@ namespace UnityEditor.UIElements.Debugger
             }
 
             // All toggling
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             if (m_State.Where(s => s.Key > 0).All(s => s.Value))
+#pragma warning restore RS0030
             {
                 m_State[0] = true;
             }
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             else if (m_State.Where(s => s.Key > 0).Any(s => !s.Value))
+#pragma warning restore RS0030
             {
                 m_State[0] = false;
             }
@@ -351,14 +379,20 @@ namespace UnityEditor.UIElements.Debugger
             // Group toggling
             if (choice.TypeId != 0)
             {
+                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 if (m_GroupedEvents[choice.Group].All(id => m_State[id]))
+#pragma warning restore RS0030
                 {
+                    #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     var group = m_Choices.First(c => c.TypeId < 0 && c.Group == choice.Group);
+#pragma warning restore RS0030
                     m_State[group.TypeId] = true;
                 }
                 else if (m_GroupedEvents[choice.Group].Any(id => !m_State[id]))
                 {
+                    #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     var group = m_Choices.First(c => c.TypeId < 0 && c.Group == choice.Group);
+#pragma warning restore RS0030
                     m_State[group.TypeId] = false;
                 }
             }
@@ -404,7 +438,9 @@ namespace UnityEditor.UIElements.Debugger
         {
             if (!m_IsFocused)
             {
+                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 m_FilteredChoices = m_Choices.ToList();
+#pragma warning restore RS0030
                 m_ListView.itemsSource = m_FilteredChoices;
                 RefreshLayout();
                 SetValueWithoutNotify("");
@@ -455,9 +491,13 @@ namespace UnityEditor.UIElements.Debugger
             if (checkIsParameter)
             {
                 var parameter = filter.Substring(k_IsKeyword.Length);
+                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 if (k_OnKeywords.Contains(parameter))
+#pragma warning restore RS0030
                     isOn = true;
+                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 else if (k_OffKeywords.Contains(parameter))
+#pragma warning restore RS0030
                     isOn = false;
             }
 
@@ -527,7 +567,9 @@ namespace UnityEditor.UIElements.Debugger
         {
             var tooltipStr = new StringBuilder();
             var lineCount = 0;
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             foreach (var selectedChoice in m_Choices.Where(c => c.TypeId > 0 && m_State[c.TypeId]))
+#pragma warning restore RS0030
             {
                 if (lineCount++ >= k_MaxTooltipLines)
                 {

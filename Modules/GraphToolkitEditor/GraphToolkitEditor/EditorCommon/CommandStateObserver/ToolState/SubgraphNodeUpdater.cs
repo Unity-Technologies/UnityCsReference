@@ -31,7 +31,9 @@ namespace Unity.GraphToolkit.Editor
 
         static bool IsGraphReferencingGraphAsset(GraphModel graphModel, GUID graphGuid)
         {
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return graphModel?.NodeModels != null && graphModel.NodeModels.OfType<SubgraphNodeModel>().HasAny(n => n.SubgraphReference.AssetGuid == graphGuid);
+#pragma warning restore RS0030
         }
 
         /// <inheritdoc />
@@ -50,14 +52,20 @@ namespace Unity.GraphToolkit.Editor
                 using var changeScope = graphModel.ChangeDescriptionScope;
 
                 var changedAssets = new HashSet<string>(m_ExternalAssetsState.ImportedAssets);
+                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 changedAssets.UnionWith(m_ExternalAssetsState.MovedAssets.Select(t => t.currentPath));
+#pragma warning restore RS0030
                 changedAssets.UnionWith(m_ExternalAssetsState.DeletedAssets);
 
                 // Deleted graphs have already been unloaded by WindowAssetModificationWatcher, just before they were deleted.
 
+                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 var changedGuids = changedAssets.ToDictionary(path => path, AssetDatabase.GUIDFromAssetPath);
+#pragma warning restore RS0030
 
+                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 var referencedSubGraphsGuids = changedGuids
+#pragma warning restore RS0030
                     .Where(kvp => IsGraphReferencingGraphAsset(graphModel, kvp.Value))
                     .Select(kvp => kvp.Value);
 

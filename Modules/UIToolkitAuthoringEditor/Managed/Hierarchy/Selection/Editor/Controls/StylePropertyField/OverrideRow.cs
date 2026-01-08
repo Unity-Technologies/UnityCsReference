@@ -41,7 +41,7 @@ namespace Unity.UIToolkit.Editor
 
         public OverrideRow()
         {
-            RegisterCallback<TrackStylePropertyEvent>(Callback, TrickleDown.NoTrickleDown);
+            RegisterCallback<TrackPropertyEvent>(Callback, TrickleDown.NoTrickleDown);
             m_OverrideBarManipulator = new OverrideBarManipulator();
             overrideContainer = this;
         }
@@ -57,11 +57,11 @@ namespace Unity.UIToolkit.Editor
             provider.OnTrackedPropertyChanged -= OnTrackedPropertyChanged;
         }
 
-        protected virtual void ForwardDependentPropertiesTracking(TrackStylePropertyEvent evt)
+        protected virtual void ForwardDependentPropertiesTracking(TrackPropertyEvent evt)
         {
         }
 
-        private void Callback(TrackStylePropertyEvent evt)
+        private void Callback(TrackPropertyEvent evt)
         {
             if (evt.target == this)
                 ForwardDependentPropertiesTracking(evt);

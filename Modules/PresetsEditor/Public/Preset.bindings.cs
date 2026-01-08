@@ -120,9 +120,15 @@ namespace UnityEditor.Presets
         {
             var type = preset.GetPresetType();
             var list = GetDefaultPresetsForType(type);
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var newList = list.Where(d => d.preset != preset);
+#pragma warning restore RS0030
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             if (newList.Count() != list.Length)
+#pragma warning restore RS0030
+                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 SetDefaultPresetsForType(type, newList.ToArray());
+#pragma warning restore RS0030
         }
 
         [Obsolete("Use PresetType.IsValidDefault instead.")]

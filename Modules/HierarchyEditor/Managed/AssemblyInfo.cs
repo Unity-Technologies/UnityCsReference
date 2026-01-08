@@ -12,3 +12,4 @@ using System.Runtime.CompilerServices;
 // External
 [assembly: InternalsVisibleTo("UnityEditor.UIToolkitAuthoringModule")]
 [assembly: InternalsVisibleTo("Unity.Modules.UIToolkitAuthoring.Tests.Editor")]
+[assembly: InternalsVisibleTo("Unity.Entities.Editor")]

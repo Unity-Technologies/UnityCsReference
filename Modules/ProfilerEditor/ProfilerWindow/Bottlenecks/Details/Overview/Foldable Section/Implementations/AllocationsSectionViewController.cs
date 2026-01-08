@@ -20,15 +20,19 @@ namespace Unity.Profiling.Editor.UI
         public AllocationsSectionViewController(
             ProfilerWindow profilerWindow,
             string rangeDescriptor,
-            TopMarkersViewController.IResponder topMarkersResponder) : base(k_Title)
+            TopMarkersViewController.IResponder topMarkersResponder,
+            IDetailsElementBinder detailsBinder) : base(k_Title)
         {
             m_GCAllocationsViewController = new GCAllocationsViewController(
                 $"GC allocations across {rangeDescriptor}",
-                profilerWindow);
+                profilerWindow,
+                detailsBinder);
             m_TopGCMarkersViewController = new TopMarkersViewController(
                 $"Top contributors to GC allocations across {rangeDescriptor}",
+                profilerWindow,
                 TopMarkersViewController.Action.ChangeSelectedFrame,
-                topMarkersResponder);
+                topMarkersResponder,
+                detailsBinder);
             m_GCCollectViewController = new BoxPlotViewController(
                 "GC Collect (ms)",
                 profilerWindow);

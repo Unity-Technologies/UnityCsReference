@@ -87,7 +87,9 @@ namespace UnityEditor.ShortcutManagement
 
         public void UpdateBaseProfile(IEnumerable<ShortcutEntry> baseProfile)
         {
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             m_Entries = baseProfile.ToList();
+#pragma warning restore RS0030
             if (activeProfile != null)
                 SwitchActiveProfileTo(activeProfile);
         }
@@ -134,7 +136,9 @@ namespace UnityEditor.ShortcutManagement
 
         public IEnumerable<ShortcutProfile> GetProfiles()
         {
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return m_LoadedProfiles.Values.OrderBy(profile => profile.id);
+#pragma warning restore RS0030
         }
 
         public ShortcutProfile GetProfileById(string profileId)
@@ -151,7 +155,9 @@ namespace UnityEditor.ShortcutManagement
                 return CanCreateProfileResult.InvalidProfileId;
 
             // Profile id must be unique (case-insensitive)
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             if (m_LoadedProfiles.Any(pair => pair.Key.Equals(profileId, StringComparison.OrdinalIgnoreCase)))
+#pragma warning restore RS0030
                 return CanCreateProfileResult.DuplicateProfileId;
 
             // Parent profile must exist, if given
@@ -194,7 +200,9 @@ namespace UnityEditor.ShortcutManagement
                 return CanDeleteProfileResult.ProfileNotFound;
 
             // Profile cannot have any dependent profiles
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             if (m_LoadedProfiles.Values.Any(p => p.parentId == profile.id))
+#pragma warning restore RS0030
                 return CanDeleteProfileResult.ProfileHasDependencies;
 
             return CanDeleteProfileResult.Success;
@@ -250,7 +258,9 @@ namespace UnityEditor.ShortcutManagement
                     var newProfile = new ShortcutProfile(newProfileId, profile.entries, profile.parentId);
                     m_LoadedProfiles.Add(newProfile.id, newProfile);
                     SaveShortcutProfile(newProfile);
+                    #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     foreach (var childProfile in m_LoadedProfiles.Values.Where(childProfile => childProfile.parent == profile))
+#pragma warning restore RS0030
                     {
                         childProfile.parent = newProfile;
                         childProfile.parentId = newProfile.id;
@@ -301,7 +311,9 @@ namespace UnityEditor.ShortcutManagement
                 return;
             }
 
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var shortcutEntry = m_Entries.FirstOrDefault(e => e.identifier.Equals(identifier));
+#pragma warning restore RS0030
             var wasOverridden = shortcutEntry.overridden;
             var oldBinding = new ShortcutBinding(shortcutEntry.combinations);
 
@@ -431,7 +443,9 @@ namespace UnityEditor.ShortcutManagement
         {
             foreach (var shortcutOverride in shortcutProfile.entries)
             {
+                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 var entry = m_Entries.FirstOrDefault(e => e.identifier.Equals(shortcutOverride.identifier));
+#pragma warning restore RS0030
                 if (entry != null)
                 {
                     if (!m_BindingValidator.IsCombinationValid(shortcutOverride.combinations, out string invalidBindingMessage))

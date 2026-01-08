@@ -3,7 +3,6 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using System.Linq;
 using Mono.Cecil;
 using UnityEngine;
 
@@ -54,12 +53,12 @@ namespace Unity.ProjectAuditor.Editor.CodeAnalysis
 
         public static bool IsMonoBehaviourEvent(MethodDefinition methodDefinition)
         {
-            return k_EventNames.Contains(methodDefinition.Name);
+            return Array.IndexOf(k_EventNames, methodDefinition.Name) != -1;
         }
 
         public static bool IsMonoBehaviourUpdateMethod(MethodDefinition methodDefinition)
         {
-            return k_UpdateMethodNames.Contains(methodDefinition.Name);
+            return Array.IndexOf(k_UpdateMethodNames, methodDefinition.Name) != -1;
         }
     }
 }

@@ -7,6 +7,7 @@ using UnityEngine.Rendering;
 using System;
 using Unity.Collections;
 using System.Collections.Generic;
+using System.Runtime.InteropServices;
 
 namespace UnityEngine.Rendering
 {
@@ -51,7 +52,7 @@ namespace UnityEngine.Rendering
         extern private void Submit_Internal();
         extern private bool SubmitForRenderPassValidation_Internal();
 
-        extern private void GetCameras_Internal(Type listType, object resultList);
+        extern private void GetCameras_Internal([Out] List<Camera> resultList);
 
         extern private unsafe void DrawRenderers_Internal(IntPtr cullResults, ref DrawingSettings drawingSettings, ref FilteringSettings filteringSettings, ShaderTagId tagName, bool isPassTagName, IntPtr tagValues, IntPtr stateBlocks, int stateCount);
 

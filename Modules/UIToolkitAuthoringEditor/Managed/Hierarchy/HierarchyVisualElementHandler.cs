@@ -10,6 +10,7 @@ using UnityEditor;
 using UnityEngine.Pool;
 using UnityEngine.UIElements;
 using System.IO;
+using Unity.Scripting.LifecycleManagement;
 using UnityEditor.SceneManagement;
 
 namespace Unity.UIToolkit.Editor;
@@ -20,10 +21,8 @@ internal sealed class HierarchyVisualElementHandler : VisualElementNodeTypeHandl
     [InitializeOnLoadMethod, UsedImplicitly]
     private static void RegisterHierarchyHandlers()
     {
-        EditorApplication.delayCall += () =>
-        {
-            HierarchyWindow.RegisterNodeTypeHandler<HierarchyVisualElementHandler>();
-        };
+        HierarchyWindow.RegisterNodeTypeHandler<HierarchyVisualElementHandler>();
+        HierarchyWindow.RegisterNodeTypeHandler<VisualElementEditingNodeHandler>();
     }
 
     [InitializeOnLoadMethod, UsedImplicitly]
@@ -32,13 +31,14 @@ internal sealed class HierarchyVisualElementHandler : VisualElementNodeTypeHandl
         StageNavigationManager.instance.stageChanging += OnStageWillChange;
     }
 
-    [/*FIX: BeforeCodeUnloading,*/ UsedImplicitly]
+    [/*BeforeCodeUnloading,*/ UsedImplicitly]
     private static void UnregisterHierarchyHandlers()
     {
         HierarchyWindow.UnregisterNodeTypeHandler<HierarchyVisualElementHandler>();
+        HierarchyWindow.UnregisterNodeTypeHandler<VisualElementEditingNodeHandler>();
     }
 
-    [/*FIX BeforeManagedObjectsDisabled,*/ UsedImplicitly]
+    [/*BeforeManagedObjectsDisabled,*/ UsedImplicitly]
     private static void UnregisterStageHandlers()
     {
         StageNavigationManager.instance.stageChanging -= OnStageWillChange;
@@ -53,13 +53,13 @@ internal sealed class HierarchyVisualElementHandler : VisualElementNodeTypeHandl
         UIElementsRuntimeUtility.onWillDestroyPanel += UnregisterPanelIfEnabled;
 
         UIToolkitAuthoringSettings.HierarchyIntegrationChanged += EnableHierarchyIntegration;
-        EnableHierarchyIntegration(UIToolkitAuthoringSettings.EnableHierarchyIntegration);
     }
 
     protected override void Initialize()
     {
         base.Initialize();
         m_GameObjectHandler = Hierarchy.GetNodeTypeHandler<HierarchyGameObjectHandler>();
+        EnableHierarchyIntegration(UIToolkitAuthoringSettings.EnableHierarchyIntegration);
     }
 
     protected override void Dispose(bool disposing)
@@ -79,9 +79,9 @@ internal sealed class HierarchyVisualElementHandler : VisualElementNodeTypeHandl
 
     protected override string GetDisplayName(HierarchyView view, in HierarchyNode node, VisualElement target)
     {
-        if (target is UIDocumentRootElement uiDocumentRootElement)
+        if (target is IPanelComponentRootElement rootElement)
         {
-            var vta = uiDocumentRootElement.document.visualTreeAsset;
+            var vta = rootElement.panelComponent.visualTreeAsset;
             if (!vta)
             {
                 return "<none>.uxml";
@@ -104,7 +104,7 @@ internal sealed class HierarchyVisualElementHandler : VisualElementNodeTypeHandl
 
     protected override void Bind(HierarchyViewItem item, VisualElement element)
     {
-        if (element is UIDocumentRootElement)
+        if (element is IPanelComponentRootElement)
         {
             // We just want to display the name of the file.
             return;
@@ -113,21 +113,32 @@ internal sealed class HierarchyVisualElementHandler : VisualElementNodeTypeHandl
         base.Bind(item, element);
     }
 
+    protected override void BindNavigation(HierarchyViewItem item, VisualElement container)
+    {
+        SetStageNodeNavigation(item, container);
+    }
+
+    protected override void UnbindNavigation(HierarchyViewItem item, VisualElement container)
+    {
+        UnsetStageNodeNavigation(item);
+    }
+
     protected override void PopulateContextMenu(in HierarchyNode node, VisualElement element, DropdownMenu menu)
     {
-        UIDocument uiDoc;
+        IPanelComponent panelComponent;
         VisualTreeAsset vtaSource;
         VisualElementAsset vea;
-        if (element is UIDocumentRootElement documentRootElement)
+
+        if (element is IPanelComponentRootElement rootElement)
         {
-            uiDoc = documentRootElement.document;
-            vtaSource = uiDoc.visualTreeAsset;
+            panelComponent = rootElement.panelComponent;
+            vtaSource = panelComponent.visualTreeAsset;
             vea = vtaSource?.visualTree;
         }
         else
         {
-            uiDoc = element.GetFirstAncestorOfType<UIDocumentRootElement>().document;
-            vtaSource = uiDoc.visualTreeAsset;
+            panelComponent = element.GetFirstAncestorOfType<IPanelComponentRootElement>().panelComponent;
+            vtaSource = panelComponent.visualTreeAsset;
             vea = element.visualElementAsset;
 
             if (vea == null)
@@ -135,11 +146,12 @@ internal sealed class HierarchyVisualElementHandler : VisualElementNodeTypeHandl
                 vea = element.GetFirstAncestorWhere(ve => ve.visualElementAsset != null).visualElementAsset;
             }
         }
-        bool isUIDocumentRootElement = element is UIDocumentRootElement;
+
+        bool isPanelComponentRootElement = element is IPanelComponentRootElement;
 
         var (ancestorVTAs, ancestorInstances) = GetTemplateChain(element);
 
-        if (isUIDocumentRootElement)
+        if (isPanelComponentRootElement)
         {
             menu.AppendAction(
                 "Select VisualTreeAsset Asset",
@@ -161,7 +173,7 @@ internal sealed class HierarchyVisualElementHandler : VisualElementNodeTypeHandl
                 });
         }
 
-        if (vtaSource != null && ancestorVTAs.Count > 0 && ancestorInstances.Count > 0 && !isUIDocumentRootElement)
+        if (vtaSource != null && ancestorVTAs.Count > 0 && ancestorInstances.Count > 0 && !isPanelComponentRootElement)
         {
             menu.AppendAction(
                 "Open Instance in UI Builder/in Isolation",
@@ -195,11 +207,11 @@ internal sealed class HierarchyVisualElementHandler : VisualElementNodeTypeHandl
     }
     protected override bool TryGetParentNode(VisualElement element, out HierarchyNode parentNode)
     {
-        if (element is not UIDocumentRootElement uiDocumentRootElement)
+        if (element is not IPanelComponentRootElement rootElement)
             return base.TryGetParentNode(element, out parentNode);
 
-        var uiDocumentGameObject = uiDocumentRootElement.document.gameObject;
-        parentNode = m_GameObjectHandler.GetOrCreateNode(uiDocumentGameObject);
+        var panelComponentGameObject = rootElement.panelComponent.gameObject;
+        parentNode = m_GameObjectHandler.GetOrCreateNode(panelComponentGameObject);
         return parentNode != HierarchyNode.Null;
     }
 
@@ -219,7 +231,7 @@ internal sealed class HierarchyVisualElementHandler : VisualElementNodeTypeHandl
         while (leafElement?.GetFirstAncestorOfType<TemplateContainer>() != null)
         {
             var templateContainer = leafElement.GetFirstAncestorOfType<TemplateContainer>();
-            if (templateContainer is UIDocumentRootElement) break;
+            if (templateContainer is IPanelComponentRootElement) break;
 
             if (templateContainer != null && templateContainer.templateSource != null)
                 vtAssets.Add(templateContainer.templateSource);
@@ -259,15 +271,26 @@ internal sealed class HierarchyVisualElementHandler : VisualElementNodeTypeHandl
         for (var i = 0; i < panels.Count; ++i)
         {
             if (panels[i] is BaseRuntimePanel panel)
+            {
+                // Although the Panel Element can create a runtime panel, we don't want them showing
+                // up in the main stage for now.
+                if (panel.ownerObject is PanelElement.PanelOwner)
+                    continue;
                 RegisterPanel(panel);
+            }
         }
     }
 
     private static void OnStageWillChange(Stage previousStage, Stage nextStage)
     {
-        if (nextStage is MainStage mainStage)
-            HierarchyWindow.RegisterNodeTypeHandler<HierarchyVisualElementHandler>();
-        else
-            HierarchyWindow.UnregisterNodeTypeHandler<HierarchyVisualElementHandler>();
+        switch (nextStage)
+        {
+            case MainStage:
+                HierarchyWindow.RegisterNodeTypeHandler<HierarchyVisualElementHandler>();
+                break;
+            default:
+                HierarchyWindow.UnregisterNodeTypeHandler<HierarchyVisualElementHandler>();
+                break;
+        }
     }
 }

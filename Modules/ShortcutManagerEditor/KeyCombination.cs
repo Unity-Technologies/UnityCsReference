@@ -182,14 +182,20 @@ namespace UnityEditor.ShortcutManagement
 
         internal static string SequenceToString(IEnumerable<KeyCombination> keyCombinations)
         {
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             if (!keyCombinations.Any())
+#pragma warning restore RS0030
                 return "";
 
             var builder = new StringBuilder();
 
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             builder.Append(keyCombinations.First());
+#pragma warning restore RS0030
 
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             foreach (var keyCombination in keyCombinations.Skip(1))
+#pragma warning restore RS0030
             {
                 builder.Append(", ");
                 builder.Append(keyCombination);
@@ -334,11 +340,15 @@ namespace UnityEditor.ShortcutManagement
         [VisibleToOtherModules("UnityEditor.GraphToolkitModule")]
         internal static string SequenceToMenuString(IEnumerable<KeyCombination> keyCombinations)
         {
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             if (!keyCombinations.Any())
+#pragma warning restore RS0030
                 return "";
 
             //TODO: once we start supporting chords we need to figure out how to represent that for menus.
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return keyCombinations.Single().ToMenuShortcutString();
+#pragma warning restore RS0030
         }
 
         internal static void VisualizeModifiers(ShortcutModifiers modifiers, StringBuilder builder)

@@ -37,7 +37,9 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
                 MultiColumnHeaderState.Column column = this.state.columns[userData];
                 string text = !string.IsNullOrEmpty(column.contextMenuText) ? column.contextMenuText : column.headerContent.text;
                 if (column.allowToggleVisibility)
+                    #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     menu.AddItem(new GUIContent(text), ((IEnumerable<int>) this.state.visibleColumns).Contains<int>(userData), new GenericMenu.MenuFunction2(this.MyToggleVisibility), (object) userData);
+#pragma warning restore RS0030
             }
         }
     }
@@ -117,7 +119,9 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
         public void AddIssues(IReadOnlyCollection<ReportItem> issues)
         {
             // update groups
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var groupNames = issues.Select(i => i.GetPropertyGroup(m_Layout.Properties[groupPropertyIndex])).Distinct().ToArray();
+#pragma warning restore RS0030
             foreach (var name in groupNames)
             {
                 // if necessary, create a group
@@ -184,8 +188,10 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
             m_Rows.Clear();
 
             // find all issues matching the filters and make an array out of them
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var allIssues = m_TreeViewItemIssues.Values.ToArray();
             var filteredItems = allIssues.Where(item => m_View.Match(item.ReportItem)).ToArray();
+#pragma warning restore RS0030
 
             m_NumMatchingIssues = filteredItems.Length;
             if (m_NumMatchingIssues == 0)
@@ -202,7 +208,9 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
 
             if (!hasSearch && !m_FlatView)
             {
+                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 var groupedItemQuery = allIssues.GroupBy(i => i.ReportItem.GetPropertyGroup(m_Layout.Properties[groupPropertyIndex]));
+#pragma warning restore RS0030
 
                 groupNameItemLookup.Clear();
                 groupNameItemLookupIgnored.Clear();
@@ -232,19 +240,19 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
 
                 foreach (var groupedItems in groupedItemQuery)
                 {
+                    #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     var groupName = groupedItems.Key;
+#pragma warning restore RS0030
                     var group = m_TreeViewItemGroupsLookup[groupName];
 
-                    List<IssueTableItem> children = null;
-                    if (!groupNameItemLookup.TryGetValue(groupName, out children))
+                    if (!groupNameItemLookup.TryGetValue(groupName, out var children))
                         children = new List<IssueTableItem>();
 
-                    List<IssueTableItem> ignored_children = null;
                     int ignoredChildrenCount = 0;
-                    if (groupNameItemLookupIgnored.TryGetValue(groupName, out ignored_children))
-                        ignoredChildrenCount = ignored_children.Count();
+                    if (groupNameItemLookupIgnored.TryGetValue(groupName, out var ignored_children))
+                        ignoredChildrenCount = ignored_children.Count;
 
-                    int childrenCount = children.Count();
+                    int childrenCount = children.Count;
 
                     if (childrenCount == 0 && ignoredChildrenCount == 0)
                         continue;
@@ -548,7 +556,9 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
                 return;
 
             var rows = FindRows(new[] { id });
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var item = rows.FirstOrDefault();
+#pragma warning restore RS0030
 
             if (item == null)
                 return;
@@ -570,7 +580,9 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
             // auto-expand groups containing selected items
             foreach (var id in state.selectedIDs)
             {
+                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 var item = m_TreeViewItemIssues.FirstOrDefault(issue => issue.Value.id == id && issue.Value.parent != null);
+#pragma warning restore RS0030
                 if (item.Value != null && !state.expandedIDs.Contains(item.Value.parent.id))
                 {
                     state.expandedIDs.Add(item.Value.parent.id);
@@ -585,9 +597,11 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
 
         public int GetNumIgnoredIssues()
         {
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var allIssues = m_TreeViewItemIssues.ToArray();
             var ignored_children = allIssues.Where(item => item.Value.ReportItem.IsIgnored);
             return ignored_children.Count();
+#pragma warning restore RS0030
         }
 
         public ReportItem[] GetSelectedReportItems()
@@ -600,7 +614,9 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
             m_SelectionChangedReportItems = false;
 
             var selectedItems = GetSelectedItems();
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             m_SelectedReportItems = selectedItems.Where(item => item.parent != null).Select(i => i.ReportItem).ToArray();
+#pragma warning restore RS0030
 
             return m_SelectedReportItems;
         }
@@ -618,7 +634,7 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
 
             m_SelectedIssues.Clear();
 
-            var count = ids.Count();
+            var count = ids.Count;
             if (count > 0)
             {
                 for (int i = 0; i < count; ++i)

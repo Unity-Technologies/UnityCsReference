@@ -92,7 +92,9 @@ namespace Unity.ProjectAuditor.Editor.InstructionAnalyzers
             }
 
             // If we find the ConditionalAttribute, we assume this is intended to be compiled out on release
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             if (context.MethodDefinition.HasCustomAttributes && context.MethodDefinition.CustomAttributes.Any(a =>
+#pragma warning restore RS0030
                 a.AttributeType.FullName.GetHashCode() == k_ConditionalAttributeHashCode))
             {
                 return null;

@@ -174,7 +174,9 @@ namespace UnityEditor.Experimental
                     s_CurrentFontName = EditorPrefs.GetString(k_PrefsUserFontKey, GetDefaultFont());
 
                     // If the current is not available then fallback to the default font
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     if (!supportedFontNames.Contains(s_CurrentFontName))
+#pragma warning restore RS0030
                     {
                         s_CurrentFontName = GetDefaultFont();
                         EditorPrefs.DeleteKey(k_PrefsUserFontKey);
@@ -275,7 +277,9 @@ namespace UnityEditor.Experimental
                 {
                     paths = GetDefaultStyleCatalogPaths();
 
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     foreach (var editorUssPath in AssetDatabase.GetAllAssetPaths().Where(IsEditorStyleSheet))
+#pragma warning restore RS0030
                     {
                         var artifactKey = AssetDatabaseExperimental.CreateArtifactKey(AssetDatabase.GUIDFromAssetPath(editorUssPath));
                         var importResultID = AssetDatabaseExperimental.LookupArtifact(artifactKey);
@@ -457,7 +461,9 @@ namespace UnityEditor.Experimental
                 if (styleCatalog == null)
                     return;
 
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 if (importedAssets.Concat(deletedAssets).Any(path => IsEditorStyleSheet(path)))
+#pragma warning restore RS0030
                     s_RefreshGlobalStyleCatalog = true;
             }
         }

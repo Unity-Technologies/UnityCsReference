@@ -191,8 +191,12 @@ namespace UnityEditor.ShortcutManagement
 
             var nameElement = (TextElement)shortcutElementTemplate[0];
             var contextElement = shortcutElementTemplate[1];
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var contextType = (TextElement)contextElement.Children().ElementAt(0);
+#pragma warning restore RS0030
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var tag = (TextElement)contextElement.Children().ElementAt(1);
+#pragma warning restore RS0030
             var shortcutTypeElement = (TextElement)shortcutElementTemplate[2];
             var bindingContainer = shortcutElementTemplate[3];
             var bindingTextElement = bindingContainer.Q<TextElement>();
@@ -215,7 +219,9 @@ namespace UnityEditor.ShortcutManagement
 
             if (!string.IsNullOrWhiteSpace(tag.text)) contextElement.tooltip += $" ({tag.text})";
             bindingTextElement.text = KeyCombination.SequenceToString(shortcutEntry.combinations);
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             bindingField.SetValueWithoutNotify(shortcutEntry.combinations.ToList());
+#pragma warning restore RS0030
             bindingField.RegisterValueChangedCallback(EditingShortcutEntryBindingChanged);
             bindingField.RegisterCallback<WheelEvent>(EditingShortcutEntryBindingChangedToScrollWheel);
 
@@ -295,14 +301,20 @@ namespace UnityEditor.ShortcutManagement
 
         void CategorySelectionChanged(IEnumerable<object> selection)
         {
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             Assert.AreEqual(1, selection.Count());
+#pragma warning restore RS0030
 
             m_ShortcutsTable.selectedIndex = -1;
 
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             if (!selection.Any())
+#pragma warning restore RS0030
                 m_ViewController.SetCategorySelected(null);
             else
+                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 m_ViewController.SetCategorySelected((string)selection.First());
+#pragma warning restore RS0030
         }
 
         void BuildSearchField(VisualElement root)
@@ -653,7 +665,9 @@ namespace UnityEditor.ShortcutManagement
 
         GenericMenu GetContextMenuForEntries(IEnumerable<ShortcutEntry> entries)
         {
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             if (entries == null || !entries.Any() || m_IgnoreContext)
+#pragma warning restore RS0030
             {
                 m_IgnoreContext = false;
                 return null;
@@ -666,7 +680,9 @@ namespace UnityEditor.ShortcutManagement
                 // Change / to : here to avoid deep submenu nesting
                 var mangledPath = entry.displayName.Replace('/', ':');
                 // Replace "/" with "Slash" in binding name to avoid submenu nesting
+                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 var mangledBinding = entry.combinations.FirstOrDefault().ToString().Replace("/", "Slash");
+#pragma warning restore RS0030
                 var rootItemLabel = $"{mangledPath} ({mangledBinding})";
                 if (entry.overridden)
                     menu.AddItem(new GUIContent($"{rootItemLabel}/{L10n.Tr("Reset to default")}"), false, (x) =>
@@ -715,7 +731,9 @@ namespace UnityEditor.ShortcutManagement
 
         void ShortcutTableEntryChosen(IEnumerable<object> objects)
         {
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var entry = (ShortcutEntry)objects.First();
+#pragma warning restore RS0030
             var row = m_ShortcutsTable.Query<VisualElement>().Checked().First();
             StartRebind(entry, row);
         }
@@ -794,9 +812,13 @@ namespace UnityEditor.ShortcutManagement
 
         void ShortcutSelectionChanged(IEnumerable<object> selection)
         {
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             if (selection.Any())
+#pragma warning restore RS0030
             {
+                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 var newSelection = (ShortcutEntry)selection.First();
+#pragma warning restore RS0030
                 if (newSelection != m_ViewController.selectedEntry)
                 {
                     m_ViewController.ShortcutEntrySelected(newSelection);
@@ -1456,12 +1478,16 @@ namespace UnityEditor.ShortcutManagement
                     }
                 }
 
+                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 keyRow.Children().Last().AddToClassList(k_LastClass);
+#pragma warning restore RS0030
 
                 container.Add(keyRow);
             }
 
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             container.Children().First().AddToClassList(k_FirstClass);
+#pragma warning restore RS0030
 
             foreach (var child in container.Children())
             {
@@ -1481,6 +1507,8 @@ namespace UnityEditor.ShortcutManagement
 
         const int maxChordLength = 1;
         HashSet<KeyCode> m_KeyDown = new HashSet<KeyCode>();
+        
+        Focusable m_PreviousFocusable;
 
         class ShortcutInput : TextInputBase { }
 
@@ -1488,17 +1516,20 @@ namespace UnityEditor.ShortcutManagement
         {
             rawValue = new List<KeyCombination>();
             isPasswordField = false;
+            m_PreviousFocusable = null;
 
             RegisterEvents(visualInput);
         }
-
+        
         private void RegisterEvents(VisualElement input)
         {
             input.RegisterCallback<KeyDownEvent>(OnKeyDown, TrickleDown.TrickleDown);
             input.RegisterCallback<KeyUpEvent>(OnKeyUp, TrickleDown.TrickleDown);
             input.RegisterCallback<MouseDownEvent>(OnMouse, TrickleDown.TrickleDown);
             input.RegisterCallback<MouseUpEvent>(OnMouse, TrickleDown.TrickleDown);
-            input.RegisterCallback<FocusEvent>((evt) => {
+            input.RegisterCallback<FocusEvent>((evt) =>
+            {
+                m_PreviousFocusable = evt.relatedTarget;
                 StartNewCombination();
                 evt.StopPropagation();
                 textSelection.MoveTextEnd();
@@ -1590,8 +1621,9 @@ namespace UnityEditor.ShortcutManagement
         {
             m_KeyDown.Clear();
             value = m_WorkingValue;
+            
             if (hasFocus)
-                focusController.SwitchFocus(null);
+                focusController.SwitchFocus(m_PreviousFocusable);
         }
 
         void Revert()
@@ -1679,7 +1711,9 @@ namespace UnityEditor.ShortcutManagement
 
         protected override bool FieldIsEmpty(List<KeyCombination> fieldValue)
         {
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return value == null || !value.Any();
+#pragma warning restore RS0030
         }
     }
 

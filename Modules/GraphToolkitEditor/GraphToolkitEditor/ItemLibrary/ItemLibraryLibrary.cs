@@ -72,7 +72,9 @@ namespace Unity.GraphToolkit.ItemLibrary.Editor
         /// <param name="adapter">An adapter specifying several preferences for the search.</param>
         /// <param name="context">The name of the context using the library. Used to separate preferences.</param>
         public ItemLibraryLibrary(IEnumerable<ItemLibraryItem> items, IItemLibraryAdapter adapter, string context = null)
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             : this(new List<ItemLibraryDatabaseBase> { new ItemLibraryDatabase(items.ToList()) }, adapter, context: context)
+#pragma warning restore RS0030
         { }
 
         /// <summary>
@@ -264,7 +266,9 @@ namespace Unity.GraphToolkit.ItemLibrary.Editor
                         // replace it with the new best result
                         results[0] = localResults[0];
                         // add remaining results at the end
+                        #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                         results.AddRange(localResults.Skip(1));
+#pragma warning restore RS0030
                     }
                     else // best result will be the first item
                         results.AddRange(localResults);
@@ -304,7 +308,9 @@ namespace Unity.GraphToolkit.ItemLibrary.Editor
                     }
                 }
 
+                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 m_CachedFavorites = Preferences.GetFavorites()
+#pragma warning restore RS0030
                     .Select(path => m_ItemsByPath.TryGetValue(path, out var item) ? item : null)
                     .Where(i => i != null)
                     .ToList();

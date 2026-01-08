@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using Unity.Collections.LowLevel.Unsafe;
 
 namespace UnityEngine.UIElements.UIR
 {
@@ -24,7 +25,9 @@ namespace UnityEngine.UIElements.UIR
         CommandList m_DefaultCommandList = new CommandList(IntPtr.Zero, IntPtr.Zero);
         List<CommandList>[] m_CommandListsArray; // Each index represents a frame
         List<CommandList> m_CurrentFrameCommandLists; // For the current frame
+
         List<UIRenderer> m_UIRenderersWithDrawCallData = new();
+        List<PanelRenderer> m_PanelRenderersWithDrawCallData = new();
 
         TextureSlotCount m_TextureSlotCount;
 
@@ -71,7 +74,9 @@ namespace UnityEngine.UIElements.UIR
                 CommandList cmdList = m_CurrentFrameCommandLists[i];
                 cmdList.Reset();
                 m_CommandListPool.Push(cmdList);
+
             }
+
             m_CurrentFrameCommandLists.Clear();
 
             ResetUIRendererDrawCallData();
@@ -84,24 +89,38 @@ namespace UnityEngine.UIElements.UIR
             m_DefaultCommandList.Init(null, null, 0);
         }
 
-        public void EndSerialize()
+        List<SerializedCommand> m_SerializedCommands = new();
+
+        public unsafe void EndSerialize()
         {
-            // Assign the command lists to the UIRenderer components.
+            // Assign the command lists to the UIRenderer/PanelRenderer components.
             // Note that the device may be null at this point (e.g., EvaluateChain may had to
             // dispose of the RenderChain when evaluating an immediate element that closed a window).
             for (int i = 0; i < m_CurrentFrameCommandLists.Count; ++i)
             {
                 var cmdList = m_CurrentFrameCommandLists[i];
-                var renderer = cmdList.m_Renderer;
-                if (renderer != null)
+                var uiRenderer = cmdList.m_UIRenderer;
+                if (uiRenderer != null)
                 {
-                    renderer.commandLists = m_CommandListsArray;
+                    uiRenderer.commandLists = m_CommandListsArray;
                     bool forceSingleTexture = (cmdList.flags & CommandFlags.ForceSingleTextureSlot) != 0;
                     uint forceRenderType = (uint)(cmdList.flags & CommandFlags.ForceRenderTypeBits) >> (int)CommandFlags.ForceRenderTypeBitOffset;
-                    renderer.AddDrawCallData((int)m_CurrentIndex, i, cmdList.m_Material, forceSingleTexture ? 1 : (uint)m_TextureSlotCount, forceRenderType);
+                    uiRenderer.AddDrawCallData((int)m_CurrentIndex, i, cmdList.m_Material, forceSingleTexture ? 1 : (uint)m_TextureSlotCount, forceRenderType);
+                    if (m_UIRenderersWithDrawCallData.Count == 0 || m_UIRenderersWithDrawCallData[m_UIRenderersWithDrawCallData.Count - 1] != uiRenderer)
+                        m_UIRenderersWithDrawCallData.Add(uiRenderer);
+                }
 
-                    if (m_UIRenderersWithDrawCallData.Count == 0 || m_UIRenderersWithDrawCallData[m_UIRenderersWithDrawCallData.Count - 1] != renderer)
-                        m_UIRenderersWithDrawCallData.Add(renderer);
+                var panelRenderer = cmdList.m_PanelRenderer;
+                if (panelRenderer != null)
+                {
+                    panelRenderer.commandLists = m_CommandListsArray;
+                    bool forceSingleTexture = (cmdList.flags & CommandFlags.ForceSingleTextureSlot) != 0;
+                    uint forceRenderType = (uint)(cmdList.flags & CommandFlags.ForceRenderTypeBits) >> (int)CommandFlags.ForceRenderTypeBitOffset;
+
+
+                    panelRenderer.AddDrawCallData((int)m_CurrentIndex, i, cmdList.m_Material, forceSingleTexture ? 1 : (uint)m_TextureSlotCount, forceRenderType);
+                    if (m_PanelRenderersWithDrawCallData.Count == 0 || m_PanelRenderersWithDrawCallData[m_PanelRenderersWithDrawCallData.Count - 1] != panelRenderer)
+                        m_PanelRenderersWithDrawCallData.Add(panelRenderer);
                 }
             }
 
@@ -130,8 +149,16 @@ namespace UnityEngine.UIElements.UIR
                 if (renderer != null)
                     renderer.ResetDrawCallData();
             }
-
             m_UIRenderersWithDrawCallData.Clear();
+
+            foreach (var renderer in m_PanelRenderersWithDrawCallData)
+            {
+                // The renderer may become (fake-)null if the managed part has been destroyed,
+                // so it's important to do the null test.
+                if (renderer != null)
+                    renderer.ResetDrawCallData();
+            }
+            m_PanelRenderersWithDrawCallData.Clear();
         }
 
         protected void Dispose(bool disposing)

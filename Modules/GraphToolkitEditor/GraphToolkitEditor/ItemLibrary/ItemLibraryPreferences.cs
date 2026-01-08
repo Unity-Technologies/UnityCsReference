@@ -63,7 +63,9 @@ namespace Unity.GraphToolkit.ItemLibrary.Editor
 
             public void SetFavorite(string context, string itemPath, bool setFavorite = true)
             {
+                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 var favorites = GetFavorites(context).ToList();
+#pragma warning restore RS0030
                 if (setFavorite)
                     favorites.Add(itemPath);
                 else
@@ -73,7 +75,9 @@ namespace Unity.GraphToolkit.ItemLibrary.Editor
 
             public void SetCollapsed(string context, string itemPath, bool setCollapsed = true)
             {
+                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 var collapsedItems = GetCollapsedItems(context).ToList();
+#pragma warning restore RS0030
                 if (setCollapsed)
                     collapsedItems.Add(itemPath);
                 else

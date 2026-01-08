@@ -140,7 +140,7 @@ namespace UnityEditor.Overlays
 
         void UpdateDynamicPanelOverlayContainerBorderStyle()
         {
-            if (canvas.dynamicPanelBehavior == OverlayCanvas.DynamicPanelBehavior.None || isHorizontal)
+            if (canvas.dynamicPanelBehavior == DynamicPanelBehavior.None || isHorizontal)
                 return;
 
             var isRight = name == k_RightToolbarName;

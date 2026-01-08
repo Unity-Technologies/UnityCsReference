@@ -149,7 +149,9 @@ namespace Unity.ProjectAuditor.Editor.Modules
         {
             base.Initialize();
 
-            m_OpCodes = GetAnalyzers().Select(a => a.opCodes).SelectMany(c => c).Distinct().ToList();
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            m_OpCodes = new List<OpCode>(GetAnalyzers().Select(a => a.opCodes).SelectMany(c => c).Distinct());
+#pragma warning restore RS0030
 
             ProjectIssueExtensions.AddCustomComparer(IssueCategory.Assembly, PropertyTypeUtil.FromCustom(AssemblyProperty.CompileTime),
                 (a, b) =>
@@ -188,27 +190,35 @@ namespace Unity.ProjectAuditor.Editor.Modules
                 var opCodeAnalyzers = new List<int>();
                 for (int analyzerIndex = 0; analyzerIndex < m_CompatibleAnalyzers.Length; analyzerIndex++)
                 {
+                    #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     if (m_CompatibleAnalyzers[analyzerIndex].opCodes.Contains(opCode))
+#pragma warning restore RS0030
                         opCodeAnalyzers.Add(analyzerIndex);
                 }
                 m_OpCodeAnalyzers[(ushort)opCode.Value] = opCodeAnalyzers;
             }
 
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var precompiledAssemblies = AssemblyInfoProvider.GetPrecompiledAssemblyPaths(PrecompiledAssemblyTypes.All)
                 .Select(assemblyPath => (ReportItem)context.CreateInsight(IssueCategory.PrecompiledAssembly, Path.GetFileNameWithoutExtension(assemblyPath))
                     .WithCustomProperties([false])
                     .WithLocation(assemblyPath))
                 .ToArray();
+#pragma warning restore RS0030
             if (precompiledAssemblies.Length > 0)
                 analysisParams.OnIncomingIssues(precompiledAssemblies);
 
             // find all roslyn analyzer DLLs by label
-            var roslynAnalyzerAssets = AssetDatabase.FindAssets("l:RoslynAnalyzer").Select(AssetDatabase.GUIDToAssetPath).ToList();
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            var roslynAnalyzerAssets = new List<string>(AssetDatabase.FindAssets("l:RoslynAnalyzer").Select(AssetDatabase.GUIDToAssetPath));
+#pragma warning restore RS0030
 
             // find all roslyn analyzers packaged with Project Auditor
             if (Directory.Exists(ProjectAuditor.s_RoslynAnalyzersDataPath))
             {
+                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 var assetPaths = AssetDatabase.FindAssets("", [ProjectAuditor.s_RoslynAnalyzersDataPath]).Select(AssetDatabase.GUIDToAssetPath);
+#pragma warning restore RS0030
                 foreach (var assetPath in assetPaths)
                 {
                     if (assetPath.EndsWith(".dll"))
@@ -217,7 +227,9 @@ namespace Unity.ProjectAuditor.Editor.Modules
             }
 
             // report all roslyn analyzers as PrecompiledAssembly issues
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var roslynAnalyzerIssues = roslynAnalyzerAssets
+#pragma warning restore RS0030
                 .Distinct()
                 .Select(roslynAnalyzerDllPath => (ReportItem)context.CreateInsight(
                 IssueCategory.PrecompiledAssembly,
@@ -256,13 +268,17 @@ namespace Unity.ProjectAuditor.Editor.Modules
 
             if (analysisParams.AssemblyNames != null)
             {
-                compiledEditorAssemblyPaths = compiledEditorAssemblyPaths.Where(a => analysisParams.AssemblyNames.Contains(a.Name)).ToList();
-                compiledPlayerAssemblyPaths = compiledPlayerAssemblyPaths.Where(a => analysisParams.AssemblyNames.Contains(a.Name)).ToList();
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                compiledEditorAssemblyPaths = new List<AssemblyInfo>(compiledEditorAssemblyPaths.Where(a => Array.IndexOf(analysisParams.AssemblyNames, a.Name) != -1));
+                compiledPlayerAssemblyPaths = new List<AssemblyInfo>(compiledPlayerAssemblyPaths.Where(a => Array.IndexOf(analysisParams.AssemblyNames, a.Name) != -1));
+#pragma warning restore RS0030
             }
 
             if (compiledEditorAssemblyPaths.Count > 0)
             {
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 var issues = compiledEditorAssemblyPaths.Select(assemblyInfo => (ReportItem)context.CreateInsight(IssueCategory.Assembly, assemblyInfo.Name)
+#pragma warning restore RS0030
                     .WithCustomProperties(
                     [
                         assemblyInfo.IsReadOnly,
@@ -278,6 +294,7 @@ namespace Unity.ProjectAuditor.Editor.Modules
             // Add these manually because they aren't actually compiled, even though they are part of the player (they are pre-compiled)
             if (compiledPlayerAssemblyPaths.Count > 0)
             {
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 var issues = compiledPlayerAssemblyPaths
                     .Where(assemblyInfo => assemblyInfo.IsUnityInternalAssembly)
                     .Select(assemblyInfo => (ReportItem)context.CreateInsight(IssueCategory.Assembly, assemblyInfo.Name)
@@ -289,16 +306,19 @@ namespace Unity.ProjectAuditor.Editor.Modules
                     ])
                     .WithLocation(assemblyInfo.AsmDefPath))
                     .ToArray();
+#pragma warning restore RS0030
                 if (issues.Length > 0)
                     analysisParams.OnIncomingIssues(issues);
             }
 
             // process successfully compiled assemblies
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var assemblyInfos = compiledEditorAssemblyPaths.Concat(compiledPlayerAssemblyPaths);
             assemblyInfos = assemblyInfos.Where(a => AssemblyPackageFilter(a, analysisParams));
 
             var localAssemblyInfos = assemblyInfos.Where(info => !info.IsReadOnly).ToArray();
             var readOnlyAssemblyInfos = assemblyInfos.Where(info => info.IsReadOnly).ToArray();
+#pragma warning restore RS0030
             var foundIssues = new List<ReportItem>();
             var callCrawler = new CallCrawler();
             var onIssueFoundInternal = new Action<ReportItem>(foundIssues.Add);
@@ -417,11 +437,13 @@ namespace Unity.ProjectAuditor.Editor.Modules
                 foreach (var path in assemblyDirectories)
                     assemblyResolver.AddSearchDirectory(path);
 
+                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 foreach (var dir in assemblyInfos.Select(info => Path.GetDirectoryName(info.Path)).Distinct())
+#pragma warning restore RS0030
                     assemblyResolver.AddSearchDirectory(dir);
 
                 if (progress != null)
-                    progress.Start("Analyzing Assemblies", string.Empty, assemblyInfos.Count());
+                    progress.Start("Analyzing Assemblies", string.Empty, assemblyInfos.Count);
 
                 // Analyze all assemblies
                 foreach (var assemblyInfo in assemblyInfos)
@@ -439,7 +461,7 @@ namespace Unity.ProjectAuditor.Editor.Modules
                         continue;
                     }
 
-                    var onIssueFoundFiltered = (analysisParams.AssemblyNames == null) || analysisParams.AssemblyNames.Contains(assemblyInfo.Name) ? onIssueFound : null;
+                    var onIssueFoundFiltered = (analysisParams.AssemblyNames == null) || (Array.IndexOf(analysisParams.AssemblyNames, assemblyInfo.Name) != -1) ? onIssueFound : null;
                     AnalyzeAssembly(assemblyInfo, analysisParams, assemblyResolver, callCrawler, onIssueFoundFiltered);
                 }
             }
@@ -600,7 +622,7 @@ namespace Unity.ProjectAuditor.Editor.Modules
             var severity = Severity.None;
             if (compilationResult.Status == CompilationStatus.MissingDependency)
                 severity = Severity.Warning;
-            else if (compilerMessages.Any(m => m.Type == CompilerMessageType.Error))
+            else if (Array.Exists(compilerMessages, m => m.Type == CompilerMessageType.Error))
                 severity = Severity.Error;
 
             var assemblyInfo = AssemblyInfoProvider.GetAssemblyInfoFromAssemblyPath(compilationResult.AssemblyPath, compilationResult.EditorAssembly);

@@ -53,7 +53,9 @@ namespace UnityEditor.PackageManager.UI.Internal
             foreach (var tagName in tagNames)
                 m_TagsList.Add(new Label { text = tagName, classList = { PackageBaseTagLabel.ussClassName } });
 
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             if (tagNames.Count() < 5)
+#pragma warning restore RS0030
                 return;
 
             m_TagsList.Add(m_ShowAllButton);
@@ -77,8 +79,12 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private void RefreshTagsList(bool showMore)
         {
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var tagLabelEnumerable = m_TagsList.Children().OfType<Label>();
+#pragma warning restore RS0030
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             foreach (var (tagLabel, i) in tagLabelEnumerable.Select((tagLabel, i) => ( tagLabel, i )))
+#pragma warning restore RS0030
             {
                 // We skip the first 3 because we want them to be always visible.
                 if (i < 3)

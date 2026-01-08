@@ -44,7 +44,9 @@ namespace UnityEditor
                 if (property != null)
                 {
                     string boneName = property.FindPropertyRelative(sBoneName).stringValue;
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     bone = bones.Keys.FirstOrDefault(b => (b != null && b.name == boneName));
+#pragma warning restore RS0030
                 }
                 state = BoneState.Valid;
             }
@@ -531,7 +533,9 @@ namespace UnityEditor
                 if (existingMappings?.ContainsKey(humanBoneName) == true)
                 {
                     string boneName = existingMappings[humanBoneName];
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     bone = actualBones.Keys.FirstOrDefault(b => (b?.name == boneName));
+#pragma warning restore RS0030
                 }
 
                 bones[i] = new BoneWrapper(humanBoneName, bone);

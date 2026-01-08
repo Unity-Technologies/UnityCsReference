@@ -116,7 +116,9 @@ namespace UnityEditor.Search
 
         public static IEnumerable<SearchColumn> Enumerate(IEnumerable<SearchItem> items)
         {
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return PropertySelectors.Enumerate(items).Concat(new[]
+#pragma warning restore RS0030
             {
                 new SearchColumn("GameObject/Enabled", "enabled", "GameObject/Enabled", options: SearchColumnFlags.TextAlignmentCenter)
             });

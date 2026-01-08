@@ -14,7 +14,9 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public CheckUpdateInfoArgs(IEnumerable<long> productIds)
         {
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             this.productIds = productIds.ToArray();
+#pragma warning restore RS0030
         }
 
         public override string ToString()

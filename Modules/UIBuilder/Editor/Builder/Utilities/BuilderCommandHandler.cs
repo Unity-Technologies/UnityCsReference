@@ -143,7 +143,9 @@ namespace Unity.UI.Builder
             // to remove the special selection objects because it won't be able
             // to query parent information of selected elements (they have already
             // been removed from the hierarchy).
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var selectionCopy = m_Selection.selection.ToList();
+#pragma warning restore RS0030
             m_Selection.ClearSelection(null, true);
 
             foreach (var element in selectionCopy)
@@ -244,7 +246,9 @@ namespace Unity.UI.Builder
             if (m_Selection.isEmpty)
                 return;
 
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var element = m_Selection.selection.First();
+#pragma warning restore RS0030
             var explorerItemElement = element.GetProperty(BuilderConstants.ElementLinkedExplorerItemVEPropertyName) as BuilderExplorerItem;
             explorerItemElement?.ActivateRenameElementMode();
         }
@@ -263,7 +267,9 @@ namespace Unity.UI.Builder
             VisualElementAsset parent = null;
             if (!m_Selection.isEmpty)
             {
+                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 var selectionParent = m_Selection.selection.First().parent;
+#pragma warning restore RS0030
                 parent = selectionParent?.GetVisualElementAsset();
 
                 if (selectionParent?.GetVisualTreeAsset() == m_PaneWindow.document.visualTreeAsset)

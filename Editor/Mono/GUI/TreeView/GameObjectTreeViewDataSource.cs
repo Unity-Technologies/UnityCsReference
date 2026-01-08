@@ -121,7 +121,9 @@ namespace UnityEditor
             int orgSize = expandedSet.Count;
 
             var propertyIterator = CreateHierarchyProperty();
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             EntityId[] ancestors = propertyIterator.FindAllAncestors(validItemIDs.ToArray());
+#pragma warning restore RS0030
 
             // Add all parents above id
             foreach (var itemID in ancestors)
@@ -132,7 +134,9 @@ namespace UnityEditor
             if (orgSize != expandedSet.Count)
             {
                 // Bulk set expanded ids (is sorted in SetExpandedIDs)
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 SetExpandedIDs(expandedSet.ToArray());
+#pragma warning restore RS0030
 
                 // Refresh immediately if any Item was expanded
                 if (m_NeedRefreshRows)
@@ -360,7 +364,9 @@ namespace UnityEditor
             {
                 if (count > list.Capacity) // this bit is purely an optimisation, to avoid multiple automatic capacity changes.
                     list.Capacity = count + 20; // add some extra to prevent alloc'ing when adding to list
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 list.AddRange(Enumerable.Repeat(default(TreeViewItem<EntityId>), count - cur)); // add range is nulls
+#pragma warning restore RS0030
             }
         }
 

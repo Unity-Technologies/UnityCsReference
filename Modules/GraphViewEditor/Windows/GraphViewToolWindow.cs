@@ -43,7 +43,9 @@ namespace UnityEditor.Experimental.GraphView
 
         public override IEnumerable<Type> GetExtraPaneTypes()
         {
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return Assembly
+#pragma warning restore RS0030
                 .GetAssembly(typeof(GraphViewToolWindow))
                 .GetTypes()
                 .Where(myType => myType.IsClass && !myType.IsAbstract && myType.IsSubclassOf(typeof(GraphViewToolWindow)));
@@ -103,7 +105,9 @@ namespace UnityEditor.Experimental.GraphView
                     var graphViewEditor = m_SelectedWindow as GraphViewEditorWindow;
                     if (graphViewEditor != null && m_SelectedGraphViewIdx >= 0 && m_SelectedGraphView == null)
                     {
+                        #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                         m_SelectedGraphView = graphViewEditor.graphViews.ElementAt(m_SelectedGraphViewIdx);
+#pragma warning restore RS0030
                         m_SelectorMenu.text = m_SelectedGraphView.name;
                         OnGraphViewChanged();
                     }
@@ -132,11 +136,15 @@ namespace UnityEditor.Experimental.GraphView
                 var currentWindowType = GetType();
                 while (it.MoveNext())
                 {
+                    #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     var dockArea = guiViews.FirstOrDefault(v => v.GetEntityId() == it.Current.Key) as DockArea;
+#pragma warning restore RS0030
                     if (dockArea == null)
                         continue;
 
+                    #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     foreach (var graphViewTool in dockArea.m_Panes.Where(p => p.GetType() == currentWindowType).Cast<GraphViewToolWindow>())
+#pragma warning restore RS0030
                     {
                         if (graphViewTool.m_SelectedGraphView != null)
                         {
@@ -152,14 +160,20 @@ namespace UnityEditor.Experimental.GraphView
             {
                 while (it.MoveNext())
                 {
+                    #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     var dockArea = guiViews.FirstOrDefault(v => v.GetEntityId() == it.Current.Key) as DockArea;
+#pragma warning restore RS0030
                     if (dockArea == null)
                         continue;
 
+                    #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     foreach (var graphViewWindow in dockArea.m_Panes.OfType<GraphViewEditorWindow>())
+#pragma warning restore RS0030
                     {
                         int idx = 0;
+                        #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                         foreach (var graphView in graphViewWindow.graphViews.Where(IsGraphViewSupported))
+#pragma warning restore RS0030
                         {
                             m_GraphViewChoices.Add(new GraphViewChoice {window = graphViewWindow, idx = idx++, graphView = graphView, canUse = !usedGraphViews.Contains(graphView)});
                         }

@@ -26,11 +26,15 @@ namespace UnityEditor.Presets
             AdvancedDropdownItem root = new PresetTypeDropdownItem(L10n.Tr("Add Default Type"));
 
             var type = UnityType.FindTypeByName("AssetImporter");
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var presetTypes = UnityType.GetTypes()
+#pragma warning restore RS0030
                 .Where(t => t.IsDerivedFrom(type) && !t.isAbstract)
                 .Select(t => new PresetType(t.persistentTypeID))
                 .Union(
+                    #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     TypeCache.GetTypesDerivedFrom<ScriptedImporter>()
+#pragma warning restore RS0030
                         .Where(t => !t.IsAbstract)
                         .Select(t => new PresetType(t))
                 )
@@ -43,7 +47,9 @@ namespace UnityEditor.Presets
             foreach (var presetType in presetTypes)
             {
                 var menuPath = presetType.GetManagedTypeName();
+                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 var paths = menuPath.Split('.').Last();
+#pragma warning restore RS0030
                 var element = new PresetTypeDropdownItem(paths, presetType);
                 importersRoot.AddChild(element);
                 m_SearchableElements.Add(element);
@@ -74,7 +80,9 @@ namespace UnityEditor.Presets
                         m_SearchableElements.Add(element);
                         continue;
                     }
+                    #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     var group = (PresetTypeDropdownItem)parent.children.SingleOrDefault(c => c.name == path);
+#pragma warning restore RS0030
                     if (group == null)
                     {
                         group = new PresetTypeDropdownItem(path);
@@ -104,7 +112,9 @@ namespace UnityEditor.Presets
                         m_SearchableElements.Add(element);
                         continue;
                     }
+                    #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     var group = parent.children.SingleOrDefault(c => c.name == path);
+#pragma warning restore RS0030
                     if (group == null)
                     {
                         group = new PresetTypeDropdownItem(path);
@@ -121,7 +131,9 @@ namespace UnityEditor.Presets
         {
             foreach (var type in TypeCache.GetTypesWithAttribute<CreateAssetMenuAttribute>())
             {
+                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 var attr = type.GetCustomAttributes(typeof(CreateAssetMenuAttribute), false).FirstOrDefault() as CreateAssetMenuAttribute;
+#pragma warning restore RS0030
                 if (attr == null)
                     continue;
 
@@ -147,7 +159,9 @@ namespace UnityEditor.Presets
             {
                 menuDictionary.Add(menus[i], commands[i]);
             }
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return menuDictionary.ToList();
+#pragma warning restore RS0030
         }
 
         private int CompareItems(KeyValuePair<string, string> x, KeyValuePair<string, string> y)

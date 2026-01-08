@@ -119,7 +119,9 @@ namespace UnityEditor.PackageManager.UI
                     }
                 }
 
+                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 return samples?.Select(sample =>
+#pragma warning restore RS0030
                 {
                     var displayName = sample.GetString("displayName");
                     var path = sample.GetString("path");
@@ -162,7 +164,9 @@ namespace UnityEditor.PackageManager.UI
         public static IEnumerable<Sample> FindByPackage(string packageName, string packageVersion)
         {
             var upmCache = ServicesContainer.instance.Resolve<IUpmCache>();
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var packageInfo = upmCache.installedPackageInfosReady ? upmCache.GetInstalledPackageInfo(packageName) : PackageInfo.GetAllRegisteredPackages().FirstOrDefault(p => p.name == packageName);
+#pragma warning restore RS0030
 
             if (packageInfo?.version == packageVersion || string.IsNullOrEmpty(packageVersion))
             {
@@ -170,7 +174,9 @@ namespace UnityEditor.PackageManager.UI
                 var assetDatabaseProxy = ServicesContainer.instance.Resolve<IAssetDatabaseProxy>();
                 return FindByPackage(packageInfo, upmCache, ioProxy, assetDatabaseProxy);
             }
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return Enumerable.Empty<Sample>();
+#pragma warning restore RS0030
         }
 
         /// <summary>

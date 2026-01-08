@@ -168,7 +168,9 @@ namespace Unity.GraphToolkit.Editor
                 k_OnMouseUpAllUIs.Clear();
             }
 
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var selectedModels = newSelection.OfType<ModelView>().Select(elem => elem.Model).OfType<GraphElementModel>().ToList();
+#pragma warning restore RS0030
             return selectedModels;
         }
 

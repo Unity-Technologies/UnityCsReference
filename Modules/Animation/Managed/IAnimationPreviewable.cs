@@ -7,7 +7,7 @@ using UnityEngine.Scripting;
 namespace UnityEngine.Animations
 {
     [UsedByNativeCode]
-    internal interface IAnimationPreviewable
+    public interface IAnimationPreviewable
     {
         void OnPreviewUpdate();
     }

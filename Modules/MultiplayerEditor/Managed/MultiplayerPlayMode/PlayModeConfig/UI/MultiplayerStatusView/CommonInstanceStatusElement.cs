@@ -27,7 +27,6 @@ internal class CommonInstanceStatusElement : VisualElement
     private InstanceDescription m_Instance;
     private Label m_ConnectedLabel;
     private FreeRunningStatusElement m_FreeRunningElement;
-    private MultiplaySimulatorStatusElement m_SimulatorStatusElement;
 
     internal Label LogInfoText;
     internal Label LogWarningText;
@@ -224,73 +223,6 @@ internal class CommonInstanceStatusElement : VisualElement
                 freeRunButtonContainer,
                 this);
             freeRunButtonContainer.style.marginTop = -6;
-
-            if (LocalDeploymentUtility.ShouldEnableLocalDeployment(localInstanceDescription))
-            {
-                m_SimulatorStatusElement = new MultiplaySimulatorStatusElement(localInstanceDescription);
-                m_SimulatorStatusElement.BindSimulatedFoldOutElement(
-                    instanceRunModeContainer,
-                    statusRunmodeContainer,
-                    instanceSimulatorContainer);
-                instanceSimulatorContainer.style.marginTop = 10;
-            }
-        }
-
-        if (instance is RemoteInstanceDescription remoteInstanceDescription)
-        {
-            IpAddress = new TextField();
-            Port = new TextField();
-            IpAddress.isReadOnly = true;
-            Port.isReadOnly = true;
-            IpAddress.style.display = DisplayStyle.None;
-            Port.style.display = DisplayStyle.None;
-            IpCopyButton = new Button();
-            PortCopyButton = new Button();
-            IpCopyButton.tooltip = "Copy IP Address To ClipBoard";
-            PortCopyButton.tooltip = "Copy Port To ClipBoard";
-            IpCopyButton.RegisterCallback<ClickEvent>(evt => CopyTextToClipboard(IpAddress.value));
-            PortCopyButton.RegisterCallback<ClickEvent>(evt => CopyTextToClipboard(Port.value));
-            IpCopyButton.iconImage = EditorGUIUtility.FindTexture("Clipboard");
-            PortCopyButton.iconImage = EditorGUIUtility.FindTexture("Clipboard");
-            IpCopyButton.style.display = DisplayStyle.None;
-            PortCopyButton.style.display = DisplayStyle.None;
-            logInfoIcon.style.display = DisplayStyle.None;
-            logWarningIcon.style.display = DisplayStyle.None;
-            logErrorIcon.style.display = DisplayStyle.None;
-            LogInfoText.style.display = DisplayStyle.None;
-            LogWarningText.style.display = DisplayStyle.None;
-            LogErrorText.style.display = DisplayStyle.None;
-            roleLabel.text = "no role";
-            if (remoteInstanceDescription.BuildProfile != null)
-                roleLabel.text = MultiplayerRolesSettings.instance
-                    .GetMultiplayerRoleForBuildProfile(remoteInstanceDescription.BuildProfile).ToString();
-            var linkToDashboard = new VisualElement();
-            linkToDashboard.RegisterCallback<MouseDownEvent>(evt =>
-            {
-                var orgId = CloudProjectSettings.organizationKey;
-                var projectId = CloudProjectSettings.projectId;
-
-                Application.OpenURL(
-                    $"https://cloud.unity.com/home/organizations/{orgId}/projects/{projectId}/multiplay/overview");
-            });
-
-
-            linkToDashboard.AddToClassList("dashboard-link");
-            linkToDashboard.AddToClassList("icon");
-            statusFocusBtnContainer.style.marginTop = -14;
-            statusFocusBtnContainer.style.marginBottom = 4;
-            statusFocusBtnContainer.Add(linkToDashboard);
-            statusContentContainer.Add(IpAddress);
-            statusContentContainer.Add(IpCopyButton);
-            statusContentContainer.Add(Port);
-            statusContentContainer.Add(PortCopyButton);
-
-            m_FreeRunningElement = new FreeRunningStatusElement(remoteInstanceDescription);
-            m_FreeRunningElement.BindRunModeDropDownElement(
-                instanceRunModeContainer,
-                statusRunmodeContainer,
-                freeRunButtonContainer,
-                this);
         }
 
         statusContainer.Add(statusFocusBtnContainer);
@@ -338,14 +270,6 @@ internal class CommonInstanceStatusElement : VisualElement
     private void CleanUpStatus()
     {
         m_ConnectedLabel.text = string.Empty;
-
-        if (m_Instance is RemoteInstanceDescription)
-        {
-            Port.style.display = DisplayStyle.None;
-            IpAddress.style.display = DisplayStyle.None;
-            PortCopyButton.style.display = DisplayStyle.None;
-            IpCopyButton.style.display = DisplayStyle.None;
-        }
     }
 
     private void AssignLogs(ExecutionState state)
@@ -386,48 +310,6 @@ internal class CommonInstanceStatusElement : VisualElement
         return null;
     }
 
-    private void AssignIpAddress(ExecutionState state)
-    {
-        if (m_Instance is not RemoteInstanceDescription) return; // only Remote Instance have Ip info
-        var nodes = m_Instance.GetCorrespondingNodes();
-
-        Node connectableRemoteNode = null;
-        foreach (var nodeName in nodes)
-        {
-            var node = GetConnectableNode(nodeName);
-            if (node != null)
-            {
-                connectableRemoteNode = node;
-                break;
-            }
-        }
-        switch (state)
-        {
-            case ExecutionState.Active:
-                if (IpAddress != null)
-                {
-                    if (connectableRemoteNode is IConnectableNode connectableNode)
-                    {
-                        var ipAddress = connectableNode?.ConnectionDataOut?.GetValue<ConnectionData>()
-                            ?.IpAddress;
-                        var port = connectableNode?.ConnectionDataOut?.GetValue<ConnectionData>()?.Port;
-
-                        if (ipAddress != null)
-                            IpAddress.value = connectableNode?.ConnectionDataOut?.GetValue<ConnectionData>()
-                                .IpAddress;
-                        Port.value = connectableNode?.ConnectionDataOut?.GetValue<ConnectionData>()?.Port
-                            .ToString();
-                        IpAddress.style.display = DisplayStyle.Flex;
-                        IpCopyButton.style.display = DisplayStyle.Flex;
-                        Port.style.display = DisplayStyle.Flex;
-                        PortCopyButton.style.display = DisplayStyle.Flex;
-                    }
-                }
-
-                break;
-        }
-    }
-
     internal void RefreshStatusUI()
     {
         CleanUpStatus();
@@ -435,7 +317,6 @@ internal class CommonInstanceStatusElement : VisualElement
         var instanceExecutionState = GetInstanceForThisElement().StatusData.OverallStatus.State;
 
         AssignLogs(instanceExecutionState);
-        AssignIpAddress(instanceExecutionState);
     }
 
     private Instance GetInstanceForThisElement()

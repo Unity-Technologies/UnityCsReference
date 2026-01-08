@@ -200,7 +200,7 @@ namespace UnityEditor.Connect
                 AuthCodeResponse response = new AuthCodeResponse();
                 if (!c.IsSuccess())
                 {
-                    response.Exception = new InvalidOperationException("Failed to call Unity ID to get auth code.");
+                    response.Exception = new InvalidOperationException(string.Format("Failed to call Unity ID to get auth code. State={0}, ResponseCode={1}, URL={2}", c.state, c.responseCode, url));
                 }
                 else
                 {

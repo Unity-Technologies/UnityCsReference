@@ -253,7 +253,9 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
 
             if (sortedColumns.Length == 0) return;
 
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var myTypes = rootItem.children.Cast<SelectionWindowTreeViewItem>();
+#pragma warning restore RS0030
             var orderedQuery = InitialOrder(myTypes, sortedColumns);
             for (var i = 1; i < sortedColumns.Length; i++)
             {
@@ -271,7 +273,9 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
                 }
             }
 
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             rootItem.children = orderedQuery.Cast<TreeViewItem>().ToList();
+#pragma warning restore RS0030
         }
 
         IOrderedEnumerable<SelectionWindowTreeViewItem> InitialOrder(
@@ -613,16 +617,20 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
             bool ascending)
         {
             if (ascending)
+                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 return source.OrderBy(selector);
             return source.OrderByDescending(selector);
+#pragma warning restore RS0030
         }
 
         public static IOrderedEnumerable<T> ThenBy<T, TKey>(this IOrderedEnumerable<T> source, Func<T, TKey> selector,
             bool ascending)
         {
             if (ascending)
+                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 return source.ThenBy(selector);
             return source.ThenByDescending(selector);
+#pragma warning restore RS0030
         }
     }
 }

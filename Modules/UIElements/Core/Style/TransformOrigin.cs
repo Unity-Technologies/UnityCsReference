@@ -4,6 +4,7 @@
 
 using System;
 using System.Globalization;
+using System.Runtime.InteropServices;
 
 namespace UnityEngine.UIElements
 {
@@ -19,7 +20,7 @@ namespace UnityEngine.UIElements
     /// regardless of whether you use percentages or pixels.
     /// Negative values and values larger than 100% are valid and move the transform-origin outside the element.
     /// </remarks>
-    [Serializable]
+    [Serializable, StructLayout(LayoutKind.Sequential)]
     public partial struct TransformOrigin : IEquatable<TransformOrigin>
     {
         /// <undoc/>

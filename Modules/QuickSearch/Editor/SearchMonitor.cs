@@ -34,18 +34,26 @@ namespace UnityEditor.Search
         }
 
         public AssetIndexChangeSet(IEnumerable<string> updated, IEnumerable<string> removed, IEnumerable<string> moved, Func<string, bool> predicate)
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             : this(updated?.Concat(moved).Distinct(), removed, predicate)
+#pragma warning restore RS0030
         {
         }
 
         public AssetIndexChangeSet(IEnumerable<string> updated, IEnumerable<string> removed, Func<string, bool> predicate)
         {
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             this.updated = updated?.Except(removed).Where(predicate).ToArray() ?? s_EmptyStrings;
+#pragma warning restore RS0030
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             this.removed = removed?.Distinct().Where(predicate).ToArray() ?? s_EmptyStrings;
+#pragma warning restore RS0030
         }
 
         public bool empty => updated == null || removed == null || (updated.Length == 0 && removed.Length == 0);
+        #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
         public IEnumerable<string> all => updated?.Concat(removed ?? new string[0]).Distinct() ?? Enumerable.Empty<string>();
+#pragma warning restore RS0030
     }
 
     class AssetChangedListener : AssetPostprocessor
@@ -55,7 +63,9 @@ namespace UnityEditor.Search
             if (!Utils.IsMainProcess())
                 return;
 
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             SearchMonitor.RaiseContentRefreshed(imported, deleted?.Concat(movedFrom).Distinct().ToArray(), movedTo);
+#pragma warning restore RS0030
         }
     }
 
@@ -431,7 +441,9 @@ namespace UnityEditor.Search
                 return;
 
             Log("Content refreshed", (ulong)(s_UpdatedItems.Count + s_RemovedItems.Count + s_MovedItems.Count));
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             s_ContentRefreshed?.Invoke(s_UpdatedItems.ToArray(), s_RemovedItems.ToArray(), s_MovedItems.ToArray());
+#pragma warning restore RS0030
             s_UpdatedItems.Clear();
             s_RemovedItems.Clear();
             s_MovedItems.Clear();
@@ -442,16 +454,24 @@ namespace UnityEditor.Search
             if (s_TransactionManager != null && s_TransactionManager.Initialized)
             {
                 var timestamp = DateTime.UtcNow.ToBinary();
+                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 var transactions = updated.Select(path => new Transaction(AssetDatabase.AssetPathToGUID(path), AssetModification.Updated, timestamp))
+#pragma warning restore RS0030
+                    #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     .Concat(removed.Select(path => new Transaction(AssetDatabase.AssetPathToGUID(path), AssetModification.Removed, timestamp)))
+#pragma warning restore RS0030
+                    #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     .Concat(moved.Select(path => new Transaction(AssetDatabase.AssetPathToGUID(path), AssetModification.Moved, timestamp))).ToList();
+#pragma warning restore RS0030
                 s_TransactionManager.Write(transactions);
             }
         }
 
         static void InvalidatePropertyDatabase(string[] updated, string[] removed, string[] moved)
         {
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             foreach (var assetPath in updated.Concat(removed).Concat(moved))
+#pragma warning restore RS0030
                 InvalidateDocument(AssetDatabase.AssetPathToGUID(assetPath));
         }
 

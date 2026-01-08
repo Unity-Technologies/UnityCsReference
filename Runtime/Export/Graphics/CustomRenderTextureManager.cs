@@ -26,7 +26,7 @@ namespace UnityEngine
             => textureUnloaded?.Invoke(source);
 
         [FreeFunction(Name = "CustomRenderTextureManagerScripting::GetAllCustomRenderTextures", HasExplicitThis = false)]
-        public extern static void GetAllCustomRenderTextures([Out] List<CustomRenderTexture> currentCustomRenderTextures);
+        public extern static void GetAllCustomRenderTextures([Out,NotNull] List<CustomRenderTexture> currentCustomRenderTextures);
 
         public static event Action<CustomRenderTexture, int> updateTriggered;
 

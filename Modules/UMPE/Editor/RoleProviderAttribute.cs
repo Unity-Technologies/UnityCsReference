@@ -9,7 +9,7 @@ using UnityEngine.Scripting.APIUpdating;
 namespace UnityEditor.MPE
 {
     [MovedFrom("Unity.MPE")]
-    [RequiredByNativeCode, AttributeUsage(AttributeTargets.Method, AllowMultiple = true)]
+    [AttributeUsage(AttributeTargets.Method, AllowMultiple = true)]
     public sealed class RoleProviderAttribute : Attribute
     {
         public RoleProviderAttribute(string name, ProcessEvent eventType)

@@ -227,7 +227,9 @@ namespace UnityEditor
         // Don't add duplicate platform groups even if there are multiple platforms in the group
         // Case 1360821
         static IEnumerable<BuildPlatform> ValidPlatforms =>
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             BuildPlatforms.instance.GetValidPlatforms().Distinct(s_BuildPlatformGroupComparer);
+#pragma warning restore RS0030
 
         protected override void InitializeExtraDataInstance(Object extraData, int targetIndex)
         {
@@ -236,7 +238,9 @@ namespace UnityEditor
             if (targetSettings != null && currentTarget != null)
             {
                 var validPlatforms = ValidPlatforms;
+                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 targetSettings.allSettings = new List<InspectorTargetSettings>(validPlatforms.Count() + 1);
+#pragma warning restore RS0030
 
                 var defaultSetting = new InspectorTargetSettings();
                 defaultSetting.target = BuildTargetGroup.Unknown;
@@ -561,7 +565,9 @@ namespace UnityEditor
 
         private void OnTargetsInspectorGUI()
         {
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             BuildPlatform[] validPlatforms = ValidPlatforms.ToArray();
+#pragma warning restore RS0030
             int shownSettingsPage = EditorGUILayout.BeginPlatformGrouping(validPlatforms, GUIContent.Temp("Default"));
 
             string platformName = (shownSettingsPage == -1) ? "Default" : validPlatforms[shownSettingsPage].name;

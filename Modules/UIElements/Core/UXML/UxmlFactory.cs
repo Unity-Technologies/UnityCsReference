@@ -61,8 +61,10 @@ namespace UnityEngine.UIElements
                 }
             }
 
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             foreach (FieldInfo fieldInfo in t.GetFields(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.DeclaredOnly)
                      .Where(f => typeof(UxmlAttributeDescription).IsAssignableFrom(f.FieldType)))
+#pragma warning restore RS0030
             {
                 yield return (UxmlAttributeDescription)fieldInfo.GetValue(this);
             }

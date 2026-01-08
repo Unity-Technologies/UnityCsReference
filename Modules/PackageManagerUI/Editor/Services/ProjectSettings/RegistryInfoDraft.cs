@@ -139,16 +139,22 @@ namespace UnityEditor.PackageManager.UI.Internal
                 if (!m_Modified)
                     return false;
                 if (original is null)
+                    #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     return !string.IsNullOrEmpty(m_UserModifications.name) || !string.IsNullOrEmpty(m_UserModifications.url) || !(m_UserModifications.scopes.Count == 0 || m_UserModifications.scopes.All(string.IsNullOrEmpty));
+#pragma warning restore RS0030
 
+                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 return !original.IsEqualTo(new RegistryInfo(original.id, m_UserModifications.name, m_UserModifications.url, m_UserModifications.sanitizedScopes.ToArray(), original.isDefault, original.capabilities, original.configSource));
+#pragma warning restore RS0030
             }
         }
 
         public bool isUrlOrScopesUpdated
         {
             get => m_Modified && original is not null &&
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             !original.IsEqualTo(new RegistryInfo(original.id, original.name, m_UserModifications.url, m_UserModifications.sanitizedScopes.ToArray(), original.isDefault, original.capabilities, original.configSource));
+#pragma warning restore RS0030
         }
 
         public void RevertChanges()

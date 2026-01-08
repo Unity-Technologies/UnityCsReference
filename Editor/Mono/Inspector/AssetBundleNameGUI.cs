@@ -119,12 +119,16 @@ namespace UnityEditor
                 removeUnusedIndex = displayedOptions.Count;
                 displayedOptions.Add("Remove Unused Names");
                 filterSelectedIndex = displayedOptions.Count;
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 if (assetBundleFromAssets.Count() != 0)
+#pragma warning restore RS0030
                     displayedOptions.Add("Filter Selected Name" + (mixedValue ? "s" : ""));
             }
 
             int selectedIndex = 0;
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             string firstAssetBundle = assetBundleFromAssets.FirstOrDefault();
+#pragma warning restore RS0030
             if (!String.IsNullOrEmpty(firstAssetBundle))
                 selectedIndex = displayedOptions.IndexOf(firstAssetBundle);
 
@@ -150,7 +154,9 @@ namespace UnityEditor
         private void FilterSelected(IEnumerable<string> assetBundleNames)
         {
             var searchFilter = new SearchFilter();
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             searchFilter.assetBundleNames = assetBundleNames.Where(name => !String.IsNullOrEmpty(name)).ToArray();
+#pragma warning restore RS0030
 
             if (ProjectBrowser.s_LastInteractedProjectBrowser != null)
                 ProjectBrowser.s_LastInteractedProjectBrowser.SetSearch(searchFilter);

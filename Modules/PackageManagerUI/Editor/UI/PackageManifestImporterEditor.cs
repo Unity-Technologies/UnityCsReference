@@ -598,7 +598,9 @@ namespace UnityEditor.PackageManager.UI.Internal
                     packageState.info.packageName.completeName = info[k_ManifestFieldName] as string;
 
                     var packageNameSplit = packageState.info.packageName.completeName.Split('.');
+                    #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     var packageNameSplitCount = packageNameSplit.Count();
+#pragma warning restore RS0030
 
                     if (packageNameSplitCount > 2)
                     {

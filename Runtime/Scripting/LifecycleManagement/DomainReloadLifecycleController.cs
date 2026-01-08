@@ -76,9 +76,6 @@ namespace UnityEngine
             // AttributeUsageLocatorWithTypeCache: TypeCache-based - best performance, unfortunately currently only available in Editor.     "UnityEditor.AttributeUsageLocatorWithTypeCache, UnityEditor.CoreModule";
             // AttributeUsageLocatorWithTypeDB: until we get TypeCache in player, temporary TypeDB-based implementation for lifecycle attributes, similar to RuntimeInitializeOnLoad
             //                                                                                                                               "UnityEngine.AttributeUsageLocatorWithTypeDB, UnityEngine.CoreModule";
-            // AttributeUsageLocatorWithReflection: fallback one, in Unity.Scripting.dll - very slow.                                    "Unity.Scripting.LifecycleManagement.AttributeUsageLocatorWithReflection, Unity.Scripting.LifecycleManagement";
-            // AttributeUsageLocatorWithHeavyVerification: combines AttributeUsageLocatorWithReflection with another one and compares query results
-            //                                                    in Unity.Scripting.dll - very slow.                                    "Unity.Scripting.LifecycleManagement.AttributeUsageLocatorWithHeavyVerification, Unity.Scripting.LifecycleManagement";
             string kAttributeUsageLocatorTypeName = "UnityEditor.AttributeUsageLocatorWithTypeCache, UnityEditor";
             try
             {

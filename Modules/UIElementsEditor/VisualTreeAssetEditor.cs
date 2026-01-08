@@ -2,6 +2,8 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UIElements;
 
@@ -17,6 +19,16 @@ namespace UnityEditor.UIElements
         private Event m_evt = new Event();//Dummy event to fake rendering, cached to reduce memory allocation.
         private int m_LastDirtyCount;
         private int m_LastContentHash;
+        private CanvasTheme m_PreviewThemeOverride = CanvasTheme.ProjectSettings;
+        private ThemeStyleSheet m_CustomThemeOverride;
+        string m_SelectedThemeDisplayName;
+
+        // Cached dropdown data to avoid allocations every frame
+        private List<string> m_CachedThemeChoices;
+        private Dictionary<string, (CanvasTheme, ThemeStyleSheet)> m_CachedThemeData;
+
+        private const string k_ThemeDropdownTooltip = "Preview this asset using a specific theme from your project. Actual theme used at runtime is defined by PanelSettings.";
+        private const string k_Separator = "|";
 
         // Used by tests
         internal VisualElement visualTree => m_VisualTree;
@@ -28,12 +40,16 @@ namespace UnityEditor.UIElements
         {
             m_FileTypeIcon = EditorGUIUtility.FindTexture(typeof(VisualTreeAsset));
             EditorApplication.update += Update;
+            UIToolkitProjectSettings.onThemeChanged += OnProjectThemeChanged;
+            ThemeUtility.themeFilesChanged += OnThemeFilesChanged;
             m_VTA = null;//Force redraw;
         }
 
         protected void OnDisable()
         {
             EditorApplication.update -= Update;
+            UIToolkitProjectSettings.onThemeChanged -= OnProjectThemeChanged;
+            ThemeUtility.themeFilesChanged -= OnThemeFilesChanged;
 
             if (m_VisualTree != null)
             {
@@ -47,6 +63,155 @@ namespace UnityEditor.UIElements
             EditorGUI.BeginDisabled(true);
             base.OnInspectorGUI();
             EditorGUI.EndDisabled();
+        }
+
+        void OnProjectThemeChanged()
+        {
+            // Force refresh the preview when project theme settings change
+            // Reset the override to ProjectSettings so the new project theme is applied
+            if (m_PreviewThemeOverride == CanvasTheme.ProjectSettings)
+            {
+                m_VTA = null;
+                Repaint();
+            }
+        }
+
+        void OnThemeFilesChanged()
+        {
+            // Invalidate cached dropdown data when theme files change
+            m_CachedThemeChoices = null;
+            m_CachedThemeData = null;
+            Repaint();
+        }
+
+        void DrawPreviewThemeDropdown()
+        {
+            if (m_VTA == null)
+                return; // Can't show dropdown without a valid asset
+
+            bool isEditorExtensionMode = m_VTA.IsEditorExtensionMode();
+
+            // Get project default theme for marking with suffix
+            var (projectTheme, projectThemeSheet) = ThemeUtility.GetProjectDefaultTheme(isEditorExtensionMode);
+
+            // Build menu options
+            if (m_CachedThemeChoices == null || m_CachedThemeData == null)
+            {
+                m_CachedThemeChoices = new List<string>();
+                m_CachedThemeData = new Dictionary<string, (CanvasTheme, ThemeStyleSheet)>();
+
+                var editorThemes = ThemeUtility.GetEditorThemesToDisplayName();
+                foreach (var themeKvp in editorThemes)
+                {
+                    var canvasTheme = themeKvp.Key;
+                    var displayName = themeKvp.Value;
+
+                    // Insert project default theme to front
+                    if (canvasTheme == projectTheme)
+                    {
+                        displayName += ThemeUtility.ProjectThemeSuffix;
+                        m_CachedThemeChoices.Insert(0, displayName);
+                        m_CachedThemeChoices.Insert(1, k_Separator);
+                    }
+                    else
+                        m_CachedThemeChoices.Add(displayName);
+
+                    m_CachedThemeData[displayName] = (canvasTheme, null);
+                }
+
+                // Add separator between editor and runtime themes
+                m_CachedThemeChoices.Add(k_Separator);
+
+                var runtimeThemes = ThemeUtility.GetRuntimeThemesToDisplayName();
+                foreach (var themeKvp in runtimeThemes)
+                {
+                    var themeSheet = themeKvp.Key;
+                    var displayName = themeKvp.Value;
+
+                    // Insert project default to front
+                    if (themeSheet == projectThemeSheet)
+                    {
+                        displayName += ThemeUtility.ProjectThemeSuffix;
+                        m_CachedThemeChoices.Insert(0, displayName);
+                        m_CachedThemeChoices.Insert(1, k_Separator);
+                    }
+                    else
+                        m_CachedThemeChoices.Add(displayName);
+
+                    m_CachedThemeData[displayName] = (CanvasTheme.Custom, themeSheet);
+                }
+
+                // Add separator before settings
+                m_CachedThemeChoices.Add(k_Separator);
+            }
+
+            // Initialize selection to effective theme if not yet set
+            if (m_SelectedThemeDisplayName == null)
+            {
+                var (effectiveTheme, effectiveThemeSheet) = ThemeUtility.GetEffectiveTheme(isEditorExtensionMode);
+                m_SelectedThemeDisplayName = FindDisplayNameForTheme(effectiveTheme, effectiveThemeSheet);
+            }
+
+            // Show dropdown in toolbar
+            GUILayout.Label(new GUIContent("Theme:", k_ThemeDropdownTooltip), GUILayout.Width(50));
+            var dropdownRect = GUILayoutUtility.GetRect(new GUIContent(m_SelectedThemeDisplayName), EditorStyles.popup, GUILayout.MinWidth(150));
+
+            if (EditorGUI.DropdownButton(dropdownRect, new GUIContent(m_SelectedThemeDisplayName, k_ThemeDropdownTooltip), FocusType.Keyboard, EditorStyles.popup))
+            {
+                var menu = new GenericMenu();
+
+                foreach (var choice in m_CachedThemeChoices)
+                {
+                    if (choice == k_Separator)
+                    {
+                        menu.AddSeparator("");
+                        continue;
+                    }
+
+                    var (theme, sheet) = m_CachedThemeData[choice];
+                    bool isSelected = choice == m_SelectedThemeDisplayName;
+
+                    if (sheet == null)
+                        menu.AddItem(new GUIContent(choice), isSelected, () => OnThemeSelected(choice, theme, null));
+                    else
+                    {
+                        var capturedSheet = sheet;
+                        menu.AddItem(new GUIContent(choice), isSelected, () => OnThemeSelected(choice, CanvasTheme.Custom, capturedSheet));
+                    }
+                }
+
+                menu.AddItem(new GUIContent("Preview Theme Settings..."), false, ShowSettingsWindow);
+
+                menu.DropDown(dropdownRect);
+            }
+        }
+
+        void ShowSettingsWindow()
+        {
+            var projectSettingsWindow = EditorWindow.GetWindow<ProjectSettingsWindow>();
+            projectSettingsWindow.Show();
+            projectSettingsWindow.SelectProviderByName(UIToolkitSettingsProvider.name);
+        }
+
+        void OnThemeSelected(string themeName, CanvasTheme theme, ThemeStyleSheet sheet)
+        {
+            m_SelectedThemeDisplayName = themeName;
+            m_PreviewThemeOverride = theme;
+            m_CustomThemeOverride = sheet;
+            m_VTA = null; // Force refresh the preview
+            Repaint();
+        }
+
+        string FindDisplayNameForTheme(CanvasTheme theme, ThemeStyleSheet sheet)
+        {
+            foreach (var kvp in m_CachedThemeData)
+            {
+                var (cachedTheme, cachedSheet) = kvp.Value;
+                if (cachedTheme == theme && cachedSheet == sheet)
+                    return kvp.Key;
+            }
+            // Fallback to first item
+            return m_CachedThemeChoices.Count > 0 ? m_CachedThemeChoices[0] : string.Empty;
         }
 
         void Update()
@@ -90,7 +255,7 @@ namespace UnityEditor.UIElements
             visualTree.Add(m_VisualTree);
 
             Binding.SetPanelLogLevel(panel, BindingLogLevel.None); // We don't want preview to log errors.
-            UIElementsEditorUtility.AddDefaultEditorStyleSheets(visualTree);
+            ApplyThemeToPreview(m_VisualTree);
 
             var r = new Rect(0, 0, width, height);
             var viewportRect = GUIClip.UnclipToWindow(r); // Still in points, not pixels
@@ -205,6 +370,41 @@ namespace UnityEditor.UIElements
             else
             {
                 RenderIcon(r);
+            }
+        }
+
+        public override void OnPreviewSettings()
+        {
+            DrawPreviewThemeDropdown();
+        }
+
+        void ApplyThemeToPreview(VisualElement previewRoot)
+        {
+            if (m_VTA == null || previewRoot == null)
+                return;
+
+            bool isEditorExtensionMode = m_VTA.IsEditorExtensionMode();
+            CanvasTheme canvasTheme;
+            ThemeStyleSheet themeSheet;
+
+            // Check if user has overridden the theme
+            if (m_PreviewThemeOverride != CanvasTheme.ProjectSettings)
+            {
+                canvasTheme = m_PreviewThemeOverride;
+                themeSheet = m_CustomThemeOverride;
+            }
+            else
+            {
+                // Use project settings
+                (canvasTheme, themeSheet) = ThemeUtility.GetEffectiveTheme(isEditorExtensionMode);
+            }
+
+            // Apply the appropriate stylesheet
+            StyleSheet activeThemeStyleSheet = ThemeUtility.GetStyleSheetForTheme(canvasTheme, themeSheet);
+
+            if (activeThemeStyleSheet != null)
+            {
+                previewRoot.styleSheets.Add(activeThemeStyleSheet);
             }
         }
     }

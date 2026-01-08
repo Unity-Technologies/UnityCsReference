@@ -169,9 +169,9 @@ namespace UnityEditor
         [FreeFunction("UnityEditor::StateMachineTransitionCopyPaste::HasParametersInPasteboard")]
         public static extern bool HasStateMachineTransitionDataInPasteboard();
 
-        public static extern bool AreAllParametersInDestination(UnityEngine.Object transition, AnimatorController controller, [Out] List<string> missingParameters);
+        public static extern bool AreAllParametersInDestination(UnityEngine.Object transition, AnimatorController controller, [Out,NotNull] List<string> missingParameters);
 
-        public static extern bool DestinationHasCompatibleParameterTypes(UnityEngine.Object transition, AnimatorController controller, [Out] List<string> mismatchedParameters);
+        public static extern bool DestinationHasCompatibleParameterTypes(UnityEngine.Object transition, AnimatorController controller, [Out,NotNull] List<string> mismatchedParameters);
 
         public static extern bool CanPasteParametersToTransition(UnityEngine.Object transition, AnimatorController controller);
 

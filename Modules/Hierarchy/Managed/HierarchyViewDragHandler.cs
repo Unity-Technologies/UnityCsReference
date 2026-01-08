@@ -284,7 +284,7 @@ class HierarchyViewDragHandler
     HierarchyViewDragAndDropTargets HandleNodeHandlersDrop(HierarchyViewDragAndDropTargets dragAndDropTargets, DragAndDropData dragAndDropData, in HierarchyNode parentNode, bool perform)
     {
         var targetNode = (dragAndDropTargets.targetIndex == k_InvalidIndex) || (dragAndDropTargets.targetIndex >= HierarchyViewModel.Count) ? HierarchyNode.Null : HierarchyViewModel[dragAndDropTargets.targetIndex];
-        var handlingData = new HierarchyViewDragAndDropHandlingData(parentNode, targetNode, dragAndDropTargets.insertAtIndex, dragAndDropTargets.dropPosition, dragAndDropData, m_HierarchyView, m_CurrentEventModifiers);
+        var handlingData = new HierarchyViewDragAndDropHandlingData(parentNode, targetNode, dragAndDropTargets.insertAtIndex, dragAndDropTargets.childIndex, dragAndDropTargets.dropPosition, dragAndDropData, m_HierarchyView, m_CurrentEventModifiers);
 
         foreach (var handler in Hierarchy.EnumerateNodeTypeHandlers())
         {

@@ -811,9 +811,13 @@ namespace UnityEngine.UIElements
                 m_PreviewDesiredWidths[column] = column.desiredWidth;
             }
 
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             for (var i = index + 1; i < m_Columns.visibleList.Count(); ++i)
+#pragma warning restore RS0030
             {
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 var otherColumn = m_Columns.visibleList.ElementAt(i);
+#pragma warning restore RS0030
 
                 if (!otherColumn.visible)
                     continue;
@@ -843,7 +847,9 @@ namespace UnityEngine.UIElements
 
             for (var i = 0; i < column.visibleIndex; ++i)
             {
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 var otherColumn = m_Columns.visibleList.ElementAt(i);
+#pragma warning restore RS0030
                 var width = GetDesiredWidth(otherColumn);
 
                 if (float.IsNaN(width))

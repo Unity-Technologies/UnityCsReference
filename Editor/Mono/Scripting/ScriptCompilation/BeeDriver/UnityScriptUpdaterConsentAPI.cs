@@ -40,7 +40,9 @@ namespace UnityEditor.ScriptUpdater
 
         private static UnitySourceFileUpdatersResultHandler.ScriptUpdaterConsentType AskThroughDialog(string[] filesToOverWrite)
         {
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var selection = filesToOverWrite.Take(30).ToArray();
+#pragma warning restore RS0030
             var displayedFiles = selection.SeparateWith(Environment.NewLine);
             var omitted = filesToOverWrite.Length - selection.Length;
             if (omitted > 0)

@@ -660,6 +660,7 @@ namespace UnityEditor.Build.Profile
             buildProfile.graphicsSettings.Instantiate();
             AssetDatabase.AddObjectToAsset(buildProfile.graphicsSettings, buildProfile);
             EditorUtility.SetDirty(buildProfile);
+            UpdateActiveEditors(buildProfile);
         }
 
         /// <summary>
@@ -673,6 +674,7 @@ namespace UnityEditor.Build.Profile
             AssetDatabase.RemoveObjectFromAsset(buildProfile.graphicsSettings);
             buildProfile.graphicsSettings = null;
             EditorUtility.SetDirty(buildProfile);
+            UpdateActiveEditors(buildProfile);
         }
 
         /// <summary>
@@ -680,7 +682,6 @@ namespace UnityEditor.Build.Profile
         /// </summary>
         public static void CreateQualitySettings(BuildProfile buildProfile)
         {
-
             if (buildProfile.qualitySettings != null)
                 return;
 
@@ -688,6 +689,7 @@ namespace UnityEditor.Build.Profile
             buildProfile.qualitySettings.Instantiate();
             AssetDatabase.AddObjectToAsset(buildProfile.qualitySettings, buildProfile);
             EditorUtility.SetDirty(buildProfile);
+            UpdateActiveEditors(buildProfile);
         }
 
         /// <summary>
@@ -701,6 +703,7 @@ namespace UnityEditor.Build.Profile
             AssetDatabase.RemoveObjectFromAsset(buildProfile.qualitySettings);
             buildProfile.qualitySettings = null;
             EditorUtility.SetDirty(buildProfile);
+            UpdateActiveEditors(buildProfile);
         }
 
         public static void NotifyBuildProfileExtensionOfCreation(BuildProfile buildProfile, int preconfiguredSettingsVariant)

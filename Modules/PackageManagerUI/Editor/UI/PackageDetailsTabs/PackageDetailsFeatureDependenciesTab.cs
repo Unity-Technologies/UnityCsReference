@@ -152,7 +152,9 @@ namespace UnityEditor.PackageManager.UI.Internal
                 if (dependencies == null || dependencies.Length == 0)
                     return;
 
+                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 if (string.IsNullOrEmpty(selectedDependencyPackageName) || !dependencies.Any(d => d.name == selectedDependencyPackageName))
+#pragma warning restore RS0030
                 {
                     selectedDependencyPackageName = dependencies[0].name;
                     m_PackageManagerPrefs.selectedFeatureDependency = selectedDependencyPackageName;
@@ -169,7 +171,9 @@ namespace UnityEditor.PackageManager.UI.Internal
             UIUtils.SetElementDisplay(dependencyLink, showElementsInDetailsView);
             UIUtils.SetElementDisplay(dependencyInfoBox, showElementsInDetailsView);
 
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             foreach (var item in dependencyList.Children().OfType<FeatureDependencyItem>())
+#pragma warning restore RS0030
                 item.EnableInClassList(k_SelectedClassName, item.packageName == selectedDependencyPackageName);
 
             dependencyTitle.text = version?.displayName ?? selectedDependencyPackageName;

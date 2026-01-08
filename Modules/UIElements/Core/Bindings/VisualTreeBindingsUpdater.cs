@@ -258,7 +258,9 @@ namespace UnityEngine.UIElements
                     long startTime = CurrentTime();
                     while (m_ElementsToBind.Count > 0 && ShouldProcessBindings(startTime))
                     {
+                        #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                         var element = m_ElementsToBind.FirstOrDefault();
+#pragma warning restore RS0030
 
                         if (element != null)
                         {

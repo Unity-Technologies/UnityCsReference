@@ -133,7 +133,9 @@ namespace UnityEditor.UIElements.Debugger
             var it = UIElementsUtility.GetPanelsIterator();
             while (it.MoveNext())
             {
+                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 HostView view = guiViews.FirstOrDefault(v => v.GetEntityId() == it.Current.Key) as HostView;
+#pragma warning restore RS0030
 
                 // Skip this window
                 if (view != null && view.actualView == this)

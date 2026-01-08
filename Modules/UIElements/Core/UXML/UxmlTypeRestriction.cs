@@ -105,7 +105,9 @@ namespace UnityEngine.UIElements
         public IEnumerable<string> values
         {
             get { return m_Values; }
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             set { m_Values = value.ToList(); }
+#pragma warning restore RS0030
         }
 
         /// <summary>
@@ -122,7 +124,9 @@ namespace UnityEngine.UIElements
                 return false;
             }
 
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return values.All(otherE.values.Contains) && values.Count() == otherE.values.Count();
+#pragma warning restore RS0030
         }
     }
 }

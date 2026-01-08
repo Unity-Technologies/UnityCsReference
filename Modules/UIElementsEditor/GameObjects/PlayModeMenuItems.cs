@@ -58,7 +58,7 @@ namespace UnityEditor.UIElements.GameObjects
             // Creates new asset and upon successful rename will create the UIDoc & link asset
             UIElementsTemplate.CreateUXMLAssetWithCallback((instanceID =>
             {
-                var uiDocument = AddUIDocumentHelper(menuCommand);
+                var uiDocument = AddPanelComponentHelper<UIDocument>(menuCommand);
                 uiDocument.visualTreeAsset = EditorUtility.EntityIdToObject(instanceID) as VisualTreeAsset;
             }));
         }
@@ -66,16 +66,22 @@ namespace UnityEditor.UIElements.GameObjects
         [MenuItem("GameObject/UI Toolkit/UI Document", false, 9)]
         public static void AddUIDocument(MenuCommand menuCommand)
         {
-            AddUIDocumentHelper(menuCommand);
+            AddPanelComponentHelper<UIDocument>(menuCommand);
         }
 
-        internal static UIDocument AddUIDocumentHelper(MenuCommand menuCommand)
+        [MenuItem("GameObject/UI Toolkit/Panel Renderer", false, 8)]
+        public static void AddPanelRenderer(MenuCommand menuCommand)
+        {
+            AddPanelComponentHelper<PanelRenderer>(menuCommand);
+        }
+
+        internal static T AddPanelComponentHelper<T>(MenuCommand menuCommand) where T: IPanelComponent
         {
             GameObject parent = menuCommand.context as GameObject;
-            Type type = typeof(UIDocument);
+            Type type = typeof(T);
             var root = ObjectFactory.CreateGameObject(type.Name, type);
             GameObjectUtility.EnsureUniqueNameForSibling(root);
-            UIDocument uiDocument = root.GetComponent<UIDocument>();
+            var panelComponent = root.GetComponent<T>();
 
             // Works for all stages.
             StageUtility.PlaceGameObjectInCurrentStage(root);
@@ -90,7 +96,8 @@ namespace UnityEditor.UIElements.GameObjects
             if (parent != null)
             {
                 SetParentAndAlign(root, parent);
-                uiDocument.ReactToHierarchyChanged();
+                if (panelComponent is UIDocument panelComponentAsUIDocument)
+                    panelComponentAsUIDocument.ReactToHierarchyChanged();
             }
             else
             {
@@ -99,10 +106,9 @@ namespace UnityEditor.UIElements.GameObjects
 
             Selection.activeGameObject = root;
 
-
             // Set a PanelSettings instance so that the UI appears immediately on selecting the UXML.
-            // If the UIDocument was created as a child of another UIDocument, this step is not necessary.
-            if (uiDocument.parentUI == null)
+            // If the Panel Component was created as a child of another Panel Component, this step is not necessary.
+            if (panelComponent.parentUI == null)
             {
                 var panelSettingsInProject = AssetDatabase.FindAssets(k_AssetSearchByTypePanelSettings, k_AssetsFolderFilter);
                 if (panelSettingsInProject != null && panelSettingsInProject.Length > 0)
@@ -111,7 +117,7 @@ namespace UnityEditor.UIElements.GameObjects
                     PanelSettings panelSettings =
                         AssetDatabase.LoadAssetAtPath<PanelSettings>(
                             AssetDatabase.GUIDToAssetPath(panelSettingsInProject[0]));
-                    uiDocument.panelSettings = panelSettings;
+                    panelComponent.panelSettings = panelSettings;
                 }
                 else
                 {
@@ -131,11 +137,11 @@ namespace UnityEditor.UIElements.GameObjects
                     panelSettings =
                         AssetDatabase.LoadAssetAtPath<PanelSettings>(
                             AssetDatabase.GUIDToAssetPath(panelSettingsInProject[0]));
-                    uiDocument.panelSettings = panelSettings;
+                    panelComponent.panelSettings = panelSettings;
                 }
             }
 
-            return uiDocument;
+            return panelComponent;
         }
 
         private static void SetParentAndAlign(GameObject child, GameObject parent)

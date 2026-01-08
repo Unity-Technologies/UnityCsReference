@@ -107,6 +107,7 @@ namespace Unity.GraphToolkit.Editor
 
         Color m_SelectionBorderColor;
 
+        bool m_IconIsInline;
         bool m_WasSelected;
         bool m_WasHighlighted;
         bool m_WasExpanded;
@@ -189,6 +190,10 @@ namespace Unity.GraphToolkit.Editor
 
         void ScopeImageStyleResolved(CustomStyleResolvedEvent e)
         {
+            // First try to get registered type style. If none found, use custom style or default color set by USS.
+            if (TrySetIconAndScopeFromTypeStyle())
+                return;
+
             if (!e.customStyle.TryGetValue(k_ScopeImageColorProperty, out var tintColor))
                 if (!e.customStyle.TryGetValue(k_IconColorProperty, out tintColor))
                     e.customStyle.TryGetValue(k_DefaultIconColorProperty, out tintColor);
@@ -373,8 +378,28 @@ namespace Unity.GraphToolkit.Editor
                         RootView.TypeHandleInfos.RemoveUssClasses(VariableScopeImage.scopeImageDataTypeClassNamePrefix, m_ScopeImage, m_CurrentTypeHandle);
                         RootView.TypeHandleInfos.RemoveUssClasses(GraphElementHelper.iconDataTypeClassPrefix, m_Icon, m_CurrentTypeHandle);
                         m_CurrentTypeHandle = variableDeclarationModel.DataType;
-                        RootView.TypeHandleInfos.AddUssClasses(VariableScopeImage.scopeImageDataTypeClassNamePrefix, m_ScopeImage, m_CurrentTypeHandle);
-                        RootView.TypeHandleInfos.AddUssClasses(GraphElementHelper.iconDataTypeClassPrefix, m_Icon, m_CurrentTypeHandle);
+
+                        // Try to get registered type style. If none found, use default color and icon set by USS.
+                        if (!TrySetIconAndScopeFromTypeStyle())
+                        {
+                            // If the icon was previously set inline by a registered type style, we need to remove it and create a new Image so that Image.m_TintColorIsInline and Image.m_ImageIsInline are reset to enable USS styling.
+                            if (m_IconIsInline)
+                            {
+                                // Remove old icon
+                                var index = m_Capsule.IndexOf(m_Icon);
+                                m_Capsule.Remove(m_Icon);
+
+                                // Create and assign new icon
+                                m_Icon = new Image();
+                                m_Icon.AddToClassList(iconUssClassName);
+                                m_Icon.pickingMode = PickingMode.Ignore;
+                                m_Capsule.Insert(index, m_Icon);
+                                m_IconIsInline = false;
+                            }
+
+                            RootView.TypeHandleInfos.AddUssClasses(VariableScopeImage.scopeImageDataTypeClassNamePrefix, m_ScopeImage, m_CurrentTypeHandle);
+                            RootView.TypeHandleInfos.AddUssClasses(GraphElementHelper.iconDataTypeClassPrefix, m_Icon, m_CurrentTypeHandle);
+                        }
                     }
 
                     switch (NameLabel)
@@ -483,6 +508,30 @@ namespace Unity.GraphToolkit.Editor
             {
                 RootView.Dispatch(new ExpandVariableDeclarationCommand(vdm, !e.newValue));
             }
+        }
+
+        bool TrySetIconAndScopeFromTypeStyle()
+        {
+            if (Model is not VariableDeclarationModelBase vdm)
+                return false;
+
+            var typeStyle = vdm.GraphModel?.GetDataTypeStyle(vdm.DataType.Resolve());
+            if (!typeStyle.HasValue)
+                return false;
+
+            m_IconIsInline = true;
+
+            // Color for the type.
+            m_ScopeImage.Color = typeStyle.Value.color;
+            m_Icon.tintColor = typeStyle.Value.color;
+
+            // Icon
+            if (typeStyle.Value.icon != null)
+                m_Icon.image = typeStyle.Value.icon;
+            else
+                return false;
+
+            return true;
         }
     }
 }

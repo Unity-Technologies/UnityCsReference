@@ -4,6 +4,7 @@
 
 using System;
 using System.Globalization;
+using System.Runtime.InteropServices;
 using UnityEngine.Bindings;
 
 namespace UnityEngine.UIElements
@@ -11,7 +12,7 @@ namespace UnityEngine.UIElements
     /// <summary>
     /// Provides rotation information for visual elements that rotates around the <see cref="TransformOrigin"/>. Positive values represent clockwise rotation.
     /// </summary>
-    [Serializable]
+    [Serializable, StructLayout(LayoutKind.Sequential)]
     public partial struct Rotate : IEquatable<Rotate>
     {
         /// <summary>

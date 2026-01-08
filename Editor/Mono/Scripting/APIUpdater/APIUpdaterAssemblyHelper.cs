@@ -57,7 +57,9 @@ namespace UnityEditor.Scripting
                 + assemblyFullPath
                 + " --output " + CommandLineFormatter.PrepareFileName(tempOutputPath)
                 + APIVersionArgument()
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 + AssemblySearchPathArgument(updateConfigSourcePaths.Select(Path.GetDirectoryName).Distinct())
+#pragma warning restore RS0030
                 + ConfigurationProviderAssembliesPathArgument(updateConfigSourcePaths);
         }
 
@@ -117,7 +119,9 @@ namespace UnityEditor.Scripting
 
             if (configurationSourceDirectories != null)
             {
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 var searchPathFromConfigSources = configurationSourceDirectories.Aggregate("", (acc, curr) =>  acc + $"{Path.PathSeparator}+" + curr.Escape(Path.PathSeparator));
+#pragma warning restore RS0030
                 searchPath += searchPathFromConfigSources;
             }
 

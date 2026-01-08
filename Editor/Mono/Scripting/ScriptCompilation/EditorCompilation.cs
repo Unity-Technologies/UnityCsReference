@@ -142,7 +142,9 @@ namespace UnityEditor.Scripting.ScriptCompilation
             var versionMetaDataComparer = new VersionMetaDataComparer();
 
             m_VersionMetaDatas = assetPathMetaDatas?
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 .Where(x => x.VersionMetaData != null)
+#pragma warning restore RS0030
                 .Select(x => x.VersionMetaData)
                 .Distinct(versionMetaDataComparer)
                 .ToDictionary(x => x.Name, x => x);
@@ -216,7 +218,9 @@ namespace UnityEditor.Scripting.ScriptCompilation
             NPath beeFolder = "Library/Bee";
             if (beeFolder.DirectoryExists())
             {
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 foreach (var path in beeFolder.Contents()
+#pragma warning restore RS0030
                              .Where(p =>
                                  // We should not delete the tundra build state file, as we then lose any information on which files we built.
                                  // This information is used to delete stale output files which are no longer needed. If we delete this file,
@@ -264,7 +268,9 @@ namespace UnityEditor.Scripting.ScriptCompilation
 
         public void GetAssemblyDefinitionReferencesWithMissingAssemblies(out List<CustomScriptAssemblyReference> referencesWithMissingAssemblies)
         {
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var nameLookup = loadingAssemblyDefinition.CustomScriptAssemblies.ToDictionary(x => x.Name);
+#pragma warning restore RS0030
             referencesWithMissingAssemblies = new List<CustomScriptAssemblyReference>();
             foreach (var asmref in loadingAssemblyDefinition.CustomScriptAssemblyReferences)
             {
@@ -419,7 +425,9 @@ namespace UnityEditor.Scripting.ScriptCompilation
             AssetPathMetaData[] assetPathsMetaData,
             ResponseFileProvider responseFileProvider)
         {
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var asmrefLookup = customScriptAssemblyReferences.ToLookup(x => x.Reference);
+#pragma warning restore RS0030
 
             AddAdditionalPrefixes(customScriptAssemblies, asmrefLookup);
             UpdateCustomTargetAssembliesResponseFileData(customScriptAssemblies, responseFileProvider);
@@ -434,9 +442,13 @@ namespace UnityEditor.Scripting.ScriptCompilation
         {
             foreach (var assembly in customScriptAssemblies)
             {
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 var foundAsmRefs = asmrefLookup[assembly.Name];
+#pragma warning restore RS0030
 
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 assembly.AdditionalPrefixes = foundAsmRefs.Any() ? foundAsmRefs.Select(ar => ar.PathPrefix).ToArray() : null;
+#pragma warning restore RS0030
             }
         }
 
@@ -444,7 +456,9 @@ namespace UnityEditor.Scripting.ScriptCompilation
         {
             foreach (var assembly in customScriptAssemblies)
             {
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 string rspFile = responseFileProvider.Get(assembly.PathPrefix)
+#pragma warning restore RS0030
                     .SingleOrDefault();
                 if (!string.IsNullOrEmpty(rspFile))
                 {
@@ -542,7 +556,9 @@ namespace UnityEditor.Scripting.ScriptCompilation
             RefreshLoadingAssemblyDefinition();
             loadingAssemblyDefinition.SetAllCustomScriptAssemblyReferenceJsonsContents(paths, contents);
             var updateExceptions = UpdateCustomTargetAssemblies();
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return loadingAssemblyDefinition.Exceptions.Concat(updateExceptions);
+#pragma warning restore RS0030
         }
 
         public IEnumerable<Exception> SetAllCustomScriptAssemblyJsons(string[] paths, string[] guids)
@@ -555,7 +571,9 @@ namespace UnityEditor.Scripting.ScriptCompilation
             RefreshLoadingAssemblyDefinition();
             loadingAssemblyDefinition.SetAllCustomScriptAssemblyJsonContents(paths, contents, guids);
             var updateExceptions = UpdateCustomTargetAssemblies();
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return loadingAssemblyDefinition.Exceptions.Concat(updateExceptions);
+#pragma warning restore RS0030
         }
 
         void RefreshLoadingAssemblyDefinition()
@@ -577,7 +595,9 @@ namespace UnityEditor.Scripting.ScriptCompilation
             {
                 return false;
             }
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return m_AssetPathsMetaData.Any(p => path.StartsWith(p.DirectoryPath, StringComparison.OrdinalIgnoreCase));
+#pragma warning restore RS0030
         }
 
         public void DeleteScriptAssemblies()
@@ -620,7 +640,9 @@ namespace UnityEditor.Scripting.ScriptCompilation
 
             assemblyName = AssetPath.GetAssemblyNameWithoutExtension(assemblyName);
 
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var result = loadingAssemblyDefinition.CustomScriptAssemblies?.FirstOrDefault(a => a.Name == assemblyName);
+#pragma warning restore RS0030
             if (result != null)
             {
                 return result;
@@ -634,7 +656,9 @@ namespace UnityEditor.Scripting.ScriptCompilation
             }
             else
             {
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 var assemblyNames = loadingAssemblyDefinition.CustomScriptAssemblies.Select(a => a.Name);
+#pragma warning restore RS0030
                 var assemblyNamesString = string.Join(", ", assemblyNames);
                 exceptionMessage += " Assembly names: " + assemblyNamesString;
             }
@@ -651,7 +675,9 @@ namespace UnityEditor.Scripting.ScriptCompilation
             var assemblyGraphBuilder = GetAssemblyGraphBuilder();
             var dictionary = assemblyGraphBuilder.Match(new []{fullPath});
 
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             customScriptAssembly = dictionary.Keys.SingleOrDefault();;
+#pragma warning restore RS0030
 
             if (customScriptAssembly is {IsPredefined: true})
                 customScriptAssembly = null;
@@ -666,7 +692,9 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 : AssetPath.Combine(projectDirectory, scriptPath);
 
             var foundCustomScriptAssemblies = GetAssemblyGraphBuilder().Match(new []{fullPath});
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return foundCustomScriptAssemblies.SingleOrDefault().Key;
+#pragma warning restore RS0030
         }
 
         public CustomScriptAssembly FindCustomTargetAssemblyFromTargetAssembly(TargetAssembly assembly)
@@ -685,7 +713,9 @@ namespace UnityEditor.Scripting.ScriptCompilation
             if (loadingAssemblyDefinition.CustomScriptAssemblies != null)
             {
                 var guid = GUIDReference.GUIDReferenceToGUID(reference);
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 var result = loadingAssemblyDefinition.CustomScriptAssemblies.FirstOrDefault(a => string.Equals(a.GUID, guid, StringComparison.OrdinalIgnoreCase));
+#pragma warning restore RS0030
 
                 if (result != null)
                 {
@@ -746,7 +776,9 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 return;
             }
 
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var deleteFiles = Directory.GetFiles(fullEditorAssemblyPath).Select(AssetPath.ReplaceSeparators).ToList();
+#pragma warning restore RS0030
 
             var targetAssemblies = GetTargetAssembliesWithScripts(settings);
 
@@ -778,7 +810,9 @@ namespace UnityEditor.Scripting.ScriptCompilation
                     continue;
                 }
 
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 if (scriptAssemblies.Any(s => s.Filename == targetAssembly.Filename))
+#pragma warning restore RS0030
                 {
                     continue;
                 }
@@ -792,14 +826,18 @@ namespace UnityEditor.Scripting.ScriptCompilation
 
         public IEnumerable<string> GetScriptsThatDoNotBelongToAnyAssembly()
         {
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return allScripts
+#pragma warning restore RS0030
                 .Where(e => EditorBuildRules.GetTargetAssembly(e.Key, e.Value, projectDirectory, customTargetAssemblies) == null)
                 .Select(e => e.Key);
         }
 
         static TargetAssembly[] GetPredefinedAssemblyReferences(IDictionary<string, TargetAssembly> targetAssemblies)
         {
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var targetAssembliesResult = targetAssemblies.Values
+#pragma warning restore RS0030
                 .Where(x => (x.Flags & AssemblyFlags.ExplicitlyReferenced) == AssemblyFlags.None)
                 .ToArray();
             return targetAssembliesResult;
@@ -975,7 +1013,9 @@ namespace UnityEditor.Scripting.ScriptCompilation
 
             var tempCompilationExtension = ModuleManager.FindPlatformSupportModule(ModuleManager.GetTargetStringFromBuildTarget(buildTarget))?.CreateCompilationExtension();
             ICompilationExtension compilationExtension =
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 ((options & EditorScriptCompilationOptions.BuildingForEditor) == 0 || tempCompilationExtension?.GetAdditionalEditorDefines().Count() > 0) ?
+#pragma warning restore RS0030
                     tempCompilationExtension : null;
 
             List<string> additionalCompilationArguments = new List<string>(PlayerSettings.GetAdditionalCompilerArguments(namedBuildTarget));
@@ -991,7 +1031,9 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 additionalCompilationArguments.Add("/nowarn:1702");
             }
 
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var additionalCompilationArgumentsArray = additionalCompilationArguments.Where(s => !string.IsNullOrEmpty(s)).Distinct().ToArray();
+#pragma warning restore RS0030
 
             var settings = new ScriptAssemblySettings
             {
@@ -1160,7 +1202,9 @@ namespace UnityEditor.Scripting.ScriptCompilation
             }
 
             var messagesForNodeResults = ProcessCompilationResult(scriptCompilationState.ScriptAssemblies, result, scriptCompilationState.Settings.BuildingForEditor, scriptCompilationState.ActiveBuild);
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var compilerMessages = messagesForNodeResults.SelectMany(a => a).ToArray();
+#pragma warning restore RS0030
 
             int logIdentifier = scriptCompilationState.Settings.BuildingForEditor
                 //these numbers are "randomly picked". they are used to so that when you log a message with a certain identifier, later all messages with that identifier can be cleared.
@@ -1319,9 +1363,13 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 if (relatedMessages.TryGetValue(fileName, out var nodeResultIndices))
                     nodeResultIndicesRelatedToAssembly = nodeResultIndices;
                 else
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     nodeResultIndicesRelatedToAssembly = Enumerable.Empty<int>();
+#pragma warning restore RS0030
 
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 var messagesForAssembly = nodeResultIndicesRelatedToAssembly.SelectMany(index => compilerMessagesForNodeResults[index]).ToArray();
+#pragma warning restore RS0030
                 scriptAssembly.HasCompileErrors = !beeDriverResult.Success;
                 assemblyCompilationFinished?.Invoke(scriptAssembly, ConvertCompilerMessages(messagesForAssembly));
             }
@@ -1431,7 +1479,9 @@ namespace UnityEditor.Scripting.ScriptCompilation
 
         public TargetAssembly[] GetCustomTargetAssemblies()
         {
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return customTargetAssemblies.Values.ToArray();
+#pragma warning restore RS0030
         }
 
         public CustomScriptAssembly[] GetCustomScriptAssemblies()
@@ -1459,7 +1509,9 @@ namespace UnityEditor.Scripting.ScriptCompilation
             }
 
             TargetAssembly targetAssembly;
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var scriptAssembly = matchedAssembly.Single().Key;
+#pragma warning restore RS0030
 
             customTargetAssemblies.TryGetValue(scriptAssembly.Name + ".dll", out targetAssembly);
 
@@ -1477,7 +1529,9 @@ namespace UnityEditor.Scripting.ScriptCompilation
         public TargetAssembly GetTargetAssemblyDetails(string scriptPath)
         {
             var matchedAssembly = GetAssemblyGraphBuilder().Match(new []{scriptPath});
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return customTargetAssemblies[matchedAssembly.Single().Key.Name];
+#pragma warning restore RS0030
         }
 
         public ScriptAssembly[] GetAllEditorScriptAssemblies(EditorScriptCompilationOptions additionalOptions)
@@ -1562,7 +1616,9 @@ namespace UnityEditor.Scripting.ScriptCompilation
         void UpdateAllTargetAssemblyDefines(IDictionary<string, TargetAssembly> customScriptAssemblies, TargetAssembly[] predefinedTargetAssemblies,
             Dictionary<string, VersionMetaData> versionMetaDatas, ScriptAssemblySettings settings)
         {
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var allTargetAssemblies = customScriptAssemblies.Values.ToArray()
+#pragma warning restore RS0030
                 .Concat(predefinedTargetAssemblies ?? new TargetAssembly[0]);
 
 
@@ -1717,12 +1773,16 @@ namespace UnityEditor.Scripting.ScriptCompilation
 
             var predefinedAssemblyTargets = EditorBuildRules.GetPredefinedTargetAssemblies();
 
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             if (predefinedAssemblyTargets.Any(a => ((a.Flags & AssemblyFlags.EditorOnly) != AssemblyFlags.EditorOnly) && a.Filename == assemblyFilename))
+#pragma warning restore RS0030
             {
                 return true;
             }
 
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             if (customTargetAssemblies != null && customTargetAssemblies.Any(a => ((a.Value.Flags & AssemblyFlags.EditorOnly) != AssemblyFlags.EditorOnly) && a.Value.Filename == assemblyFilename))
+#pragma warning restore RS0030
             {
                 return true;
             }
@@ -1792,7 +1852,9 @@ namespace UnityEditor.Scripting.ScriptCompilation
         [Obsolete]
         ScriptAssembly InitializeScriptAssemblyWithoutReferencesAndDefines(AssemblyBuilder assemblyBuilder)
         {
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var scriptFiles = assemblyBuilder.scriptPaths.Select(p => AssetPath.Combine(projectDirectory, p)).ToArray();
+#pragma warning restore RS0030
             var assemblyPath = AssetPath.Combine(projectDirectory, assemblyBuilder.assemblyPath);
 
             var scriptAssembly = new ScriptAssembly
@@ -1823,33 +1885,47 @@ namespace UnityEditor.Scripting.ScriptCompilation
 
             if (assemblyBuilder.additionalReferences != null && assemblyBuilder.additionalReferences.Length > 0)
             {
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 references = references.Concat(assemblyBuilder.additionalReferences).ToArray();
+#pragma warning restore RS0030
             }
 
             if (assemblyBuilder.excludeReferences != null && assemblyBuilder.excludeReferences.Length > 0)
             {
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 references = references.Where(r => !assemblyBuilder.excludeReferences.Contains(r)).ToArray();
+#pragma warning restore RS0030
             }
 
             var defines = GetAssemblyBuilderDefaultDefines(assemblyBuilder);
 
             if (assemblyBuilder.additionalDefines != null)
             {
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 defines = defines.Concat(assemblyBuilder.additionalDefines).ToArray();
+#pragma warning restore RS0030
             }
 
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             scriptAssembly.References = references.ToArray();
+#pragma warning restore RS0030
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             scriptAssembly.Defines = defines.ToArray();
+#pragma warning restore RS0030
 
             RoslynAnalyzers.SetAnalyzers(
                 new[] { scriptAssembly },
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 customTargetAssemblies.Values.ToArray(),
+#pragma warning restore RS0030
                 PrecompiledAssemblyProvider.GetRoslynAnalyzerPaths(),
                 true);
 
             // AssemblyBuilder can explicitly set analyzers and rule set
             if (assemblyBuilder.compilerOptions.RoslynAnalyzerDllPaths != null)
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 scriptAssembly.CompilerOptions.RoslynAnalyzerDllPaths = assemblyBuilder.compilerOptions.RoslynAnalyzerDllPaths
+#pragma warning restore RS0030
                     .Concat(scriptAssembly.CompilerOptions.RoslynAnalyzerDllPaths)
                     .Distinct()
                     .ToArray();
@@ -1884,7 +1960,9 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 references.Add(monolithicEngineAssemblyPath);
             }
 
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             references.AddRange(unityReferences.Select(a => a.Path)); // unity references paths
+#pragma warning restore RS0030
             references.AddRange(customReferences);
             references.AddRange(precompiledReferences);
             references.AddRange(editorReferences);
@@ -1946,7 +2024,9 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 }
             }
 
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return messages.Select(message => new UnityEditor.Compilation.CompilerMessage
+#pragma warning restore RS0030
             {
                 message = message.message,
                 file = message.file,

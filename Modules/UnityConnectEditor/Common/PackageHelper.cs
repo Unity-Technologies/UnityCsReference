@@ -24,7 +24,9 @@ namespace UnityEditor.Connect
 
         static bool HasDependencyToPackage(PackageManager.PackageInfo packageInfo, string dependencyPackageName)
         {
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return packageInfo.dependencies.Any(dependencyInfo => dependencyInfo.name.Equals(dependencyPackageName));
+#pragma warning restore RS0030
         }
 
         public static bool IsInstalledPackageAtMinimumVersionOrHigher(string packageName, string minimumVersionString)

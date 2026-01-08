@@ -29,7 +29,9 @@ namespace UnityEditor.Presets
         internal void Init(Object[] targets)
         {
             m_Targets = targets;
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             m_InitialValues = targets.Select(a => new Preset(a)).ToArray();
+#pragma warning restore RS0030
         }
 
         public override void OnSelectionChanged(Preset selection)
@@ -363,10 +365,14 @@ namespace UnityEditor.Presets
                     AssetDatabase.SaveAssetIfDirty(oldPreset);
 
                     // If the preset is opened in any inspectors/property windows, rebuild them since the preset has been overwritten
+                    #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     var propertyEditors = Resources.FindObjectsOfTypeAll<PropertyEditor>().Where(pe =>
+#pragma warning restore RS0030
                     {
                         var editor = InspectorWindowUtils.GetFirstNonImportInspectorEditor(pe.tracker.activeEditors);
+                        #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                         return editor != null && editor.targets.Any(o => o == oldPreset);
+#pragma warning restore RS0030
                     });
                     foreach (var pe in propertyEditors)
                         pe.tracker.ForceRebuild();
@@ -402,7 +408,9 @@ namespace UnityEditor.Presets
             if (PresetEditorHelper.InspectedObjects != null && PresetEditorHelper.InspectedObjects.Length == 1 && PresetEditorHelper.InspectedObjects[0] is Preset preset)
                 inspectedPreset = preset;
 
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return AssetDatabase.FindAssets("t:Preset")
+#pragma warning restore RS0030
                 .Select(a => AssetDatabase.LoadAssetAtPath<Preset>(AssetDatabase.GUIDToAssetPath(a)))
                 .Where(preset => preset.GetPresetType() == presetType && preset != inspectedPreset);
         }
@@ -429,7 +437,9 @@ namespace UnityEditor.Presets
 
         void UpdateSearchResult(EntityId currentSelection)
         {
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var searchResult = m_Presets
+#pragma warning restore RS0030
                 .Where(p => p.name.ToLower().Contains(m_SearchField.ToLower()))
                 .Select(p => p.GetEntityId())
                 .ToArray();

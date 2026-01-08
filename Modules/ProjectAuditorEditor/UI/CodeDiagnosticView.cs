@@ -24,8 +24,10 @@ namespace Unity.ProjectAuditor.Editor.UI
 
             if (m_Desc.Category == IssueCategory.Code)
             {
+                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 var compilerMessages = allIssues.Where(i => i.Category == IssueCategory.CodeCompilerMessage);
                 m_NumCompilerErrors += compilerMessages.Count(i => i.Severity == Severity.Error);
+#pragma warning restore RS0030
             }
         }
 

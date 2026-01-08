@@ -35,7 +35,9 @@ namespace UnityEditor.PackageManager.UI.Internal
                 menu.AddDisabledItem(itemName, isChecked);
             if (string.IsNullOrEmpty(tooltip))
                 return;
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var lastItem = menu.items.LastOrDefault(x => x.name == itemName);
+#pragma warning restore RS0030
             if (lastItem != null)
                 lastItem.element.tooltip = tooltip;
         }
@@ -114,7 +116,9 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public static T GetParentOfType<T>(VisualElement element) where T : VisualElement
         {
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return GetParentsOfType<T>(element).FirstOrDefault();
+#pragma warning restore RS0030
         }
 
         public static string ConvertToHumanReadableSize(ulong sizeInBytes)

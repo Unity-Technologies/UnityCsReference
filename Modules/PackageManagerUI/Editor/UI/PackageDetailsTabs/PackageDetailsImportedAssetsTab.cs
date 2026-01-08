@@ -151,16 +151,24 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private void OnColumnSortingChanged()
         {
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             m_PackageManagerPrefs.importedAssetsSortedColumns = m_ListView.sortedColumns.Select(c => new SortedColumn(c)).ToArray();
+#pragma warning restore RS0030
             SortAssetsAndRefreshItems(assets);
         }
 
         private void SortAssetsAndRefreshItems(IEnumerable<Asset> assets)
         {
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             if (m_ListView.sortedColumns?.Any() != true)
+#pragma warning restore RS0030
+                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 m_ListView.itemsSource = assets != null ? assets.ToArray() : Array.Empty<Asset>();
+#pragma warning restore RS0030
             else
+                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 m_ListView.itemsSource = assets.OrderBy(a => a, new AssetComparer(m_IOProxy, m_ListView.sortedColumns)).ToArray();
+#pragma warning restore RS0030
 
             m_ListView.RefreshItems();
         }
@@ -185,7 +193,9 @@ namespace UnityEditor.PackageManager.UI.Internal
 
             public int Compare(Asset x, Asset y)
             {
+                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 return m_SortColumnDescriptions.Select(c => CompareByColumn(c, x, y)).FirstOrDefault(result => result != 0);
+#pragma warning restore RS0030
             }
 
             private int CompareByColumn(SortColumnDescription description, Asset x, Asset y)

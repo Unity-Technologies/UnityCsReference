@@ -103,7 +103,9 @@ namespace UnityEditor.Toolbars
 
             var nameElements = Regex.Replace(name, @"/\s+/g", " ", RegexOptions.IgnoreCase).Trim().Split(' ');
 
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             nameElements = nameElements.Where(element => !string.IsNullOrEmpty(element) &&
+#pragma warning restore RS0030
             Regex.IsMatch(element[0].ToString(), @"[A-Za-z\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF]")).ToArray() ?? new string[0];
 
             if (nameElements.Length > 1)

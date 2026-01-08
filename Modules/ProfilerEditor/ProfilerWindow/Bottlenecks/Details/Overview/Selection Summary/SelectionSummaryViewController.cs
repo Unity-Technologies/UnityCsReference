@@ -16,6 +16,7 @@ namespace Unity.Profiling.Editor.UI
         readonly IProfilerPersistentSettingsService m_SettingsService;
         readonly ProfilerWindow m_ProfilerWindow;
         readonly SummaryViewController.IResponder m_Responder;
+        readonly IDetailsElementBinder m_DetailsBinder;
 
         // Children.
         FrameSummaryViewController m_FrameSummaryViewController;
@@ -25,12 +26,14 @@ namespace Unity.Profiling.Editor.UI
             IProfilerCaptureDataService dataService,
             IProfilerPersistentSettingsService settingsService,
             ProfilerWindow profilerWindow,
-            SummaryViewController.IResponder responder)
+            SummaryViewController.IResponder responder,
+            IDetailsElementBinder detailsBinder)
         {
             m_DataService = dataService;
             m_SettingsService = settingsService;
             m_ProfilerWindow = profilerWindow;
             m_Responder = responder;
+            m_DetailsBinder = detailsBinder;
         }
 
         public void ReloadData(Range frameRange)
@@ -45,7 +48,7 @@ namespace Unity.Profiling.Editor.UI
                 DisposeChildViewControllerIfNotNull(ref m_RangeSummaryViewController);
                 m_FrameSummaryViewController ??= CreateAndEmbedChildViewController(() =>
                 {
-                    return new FrameSummaryViewController(m_DataService, m_SettingsService, m_ProfilerWindow, m_Responder);
+                    return new FrameSummaryViewController(m_DataService, m_SettingsService, m_ProfilerWindow, m_Responder, m_DetailsBinder);
                 });
 
                 m_FrameSummaryViewController.ReloadData(frameRange.Start.Value);
@@ -55,7 +58,7 @@ namespace Unity.Profiling.Editor.UI
                 DisposeChildViewControllerIfNotNull(ref m_FrameSummaryViewController);
                 m_RangeSummaryViewController ??= CreateAndEmbedChildViewController(() =>
                 {
-                    return new RangeSummaryViewController(m_DataService, m_SettingsService, m_ProfilerWindow, m_Responder);
+                    return new RangeSummaryViewController(m_DataService, m_SettingsService, m_ProfilerWindow, m_Responder, m_DetailsBinder);
                 });
 
                 m_RangeSummaryViewController.ReloadData(frameRange);

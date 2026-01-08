@@ -102,7 +102,9 @@ namespace UnityEditor.PackageManager.UI.Internal
                 m_PackageManagerPrefs.packageDisplayedInVersionHistoryTab = m_Version?.uniqueId;
             }
 
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             foreach (var historyItem in m_VersionHistoryList.Children().OfType<PackageDetailsVersionHistoryItem>())
+#pragma warning restore RS0030
                 historyItem.StopSpinner();
             m_VersionHistoryList.Clear();
 
@@ -124,7 +126,9 @@ namespace UnityEditor.PackageManager.UI.Internal
             UIUtils.SetElementDisplay(m_LoadingLabel, false);
 
             var primaryVersion = m_Version.package?.versions.primary;
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             foreach (var v in versions.Reverse())
+#pragma warning restore RS0030
             {
                 PackageAction action;
                 if (primaryVersion?.isInstalled ?? false)

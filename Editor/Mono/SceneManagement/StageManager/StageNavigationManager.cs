@@ -34,6 +34,7 @@ namespace UnityEditor.SceneManagement
 
         internal Stage currentStage
         {
+            [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
             get { return m_NavigationHistory.currentStage; }
             // No setter since invoking code should explicitly specify desired effect on history.
         }
@@ -45,6 +46,7 @@ namespace UnityEditor.SceneManagement
 
         internal List<Stage> stageHistory
         {
+            [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
             get { return m_NavigationHistory.GetHistory(); }
         }
 

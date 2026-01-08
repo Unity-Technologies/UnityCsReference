@@ -124,8 +124,12 @@ namespace UnityEditor.PackageManager.UI.Internal
                     else
                     {
                         var mdFiles = m_IOProxy.DirectoryGetFiles(docsFolder, "*.md", System.IO.SearchOption.TopDirectoryOnly);
+                        #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                         var docsMd = mdFiles.FirstOrDefault(d => m_IOProxy.GetFileName(d).ToLower() == "index.md")
+#pragma warning restore RS0030
+                            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                             ?? mdFiles.FirstOrDefault(d => m_IOProxy.GetFileName(d).ToLower() == "tableofcontents.md") ?? mdFiles.FirstOrDefault();
+#pragma warning restore RS0030
                         if (!string.IsNullOrEmpty(docsMd))
                             return docsMd;
                     }

@@ -64,7 +64,9 @@ namespace UnityEditor.ShortcutManagement
 
         public string[] LoadAllShortcutProfilesJsonFromDisk()
         {
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             string[] profilePaths = GetAllShortcutProfilePaths().ToArray();
+#pragma warning restore RS0030
             string[] filesJson = new string[profilePaths.Length];
             for (int i = 0; i < profilePaths.Length; ++i)
             {
@@ -77,7 +79,9 @@ namespace UnityEditor.ShortcutManagement
         public IEnumerable<string> GetAllProfileIds()
         {
             var profilePaths = GetAllShortcutProfilePaths();
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var profileIds = new List<string>(profilePaths.Count());
+#pragma warning restore RS0030
             foreach (var profilePath in profilePaths)
             {
                 profileIds.Add(Path.GetFileNameWithoutExtension(profilePath));
@@ -108,7 +112,9 @@ namespace UnityEditor.ShortcutManagement
                 var legacyShortcutFolder = Paths.Combine(InternalEditorUtility.unityPreferencesFolder, "shortcuts");
                 if (System.IO.Directory.Exists(legacyShortcutFolder))
                 {
+                    #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     var legacyShortcutFiles = System.IO.Directory.GetFiles(legacyShortcutFolder, "*.shortcut", System.IO.SearchOption.TopDirectoryOnly).ToArray();
+#pragma warning restore RS0030
                     if (legacyShortcutFiles.Length > 0 && !System.IO.Directory.Exists(shortcutsFolderPath))
                         System.IO.Directory.CreateDirectory(shortcutsFolderPath);
                     foreach (var shortcutPath in legacyShortcutFiles)
@@ -124,7 +130,9 @@ namespace UnityEditor.ShortcutManagement
             }
 
             if (!System.IO.Directory.Exists(shortcutsFolderPath))
+                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 return Enumerable.Empty<string>();
+#pragma warning restore RS0030
 
             return System.IO.Directory.GetFiles(shortcutsFolderPath, "*.shortcut", System.IO.SearchOption.TopDirectoryOnly);
         }

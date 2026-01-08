@@ -28,7 +28,9 @@ namespace UnityEditor.Build.Reporting
         public IEnumerable<string> GetReasonsForIncluding(string entityName)
         {
             HashSet<string> deps;
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return dependencies.TryGetValue(entityName, out deps) ? deps : Enumerable.Empty<string>();
+#pragma warning restore RS0030
         }
 
         internal const string RequiredByScripts = "Required by Scripts";

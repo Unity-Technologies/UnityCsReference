@@ -64,7 +64,9 @@ namespace UnityEditor
                         handlePos = points.GetPosition(selection[0]);
                         break;
                     case PivotMode.Center:
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                         handlePos = selection.Aggregate(handlePos, (current, index) => current + points.GetPosition(index)) / selection.Count;
+#pragma warning restore RS0030
                         break;
                     default: // PivotMode.Custom
                         handlePos = Tools.GetHandlePosition();
@@ -115,8 +117,12 @@ namespace UnityEditor
 
             if (found.Count <= 0) return -1;
 
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var sorted = found.OrderBy(x => x.Value);
+#pragma warning restore RS0030
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return sorted.First().Key;
+#pragma warning restore RS0030
         }
 
         private static List<int> s_SelectionStart;
@@ -271,7 +277,9 @@ namespace UnityEditor
                     break;
             }
             if (selectionChanged)
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 selection = selection.Distinct().ToList();
+#pragma warning restore RS0030
             return selectionChanged;
         }
 

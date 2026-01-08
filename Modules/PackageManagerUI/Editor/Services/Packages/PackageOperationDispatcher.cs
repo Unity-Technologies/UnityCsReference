@@ -97,10 +97,14 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public bool Install(IEnumerable<IPackageVersion> versions)
         {
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             if (versions == null || !versions.Any())
+#pragma warning restore RS0030
                 return false;
 
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             m_UpmClient.AddByIds(versions.Select(v => v.packageId));
+#pragma warning restore RS0030
             return true;
         }
 
@@ -148,17 +152,23 @@ namespace UnityEditor.PackageManager.UI.Internal
         {
             if (packages == null || packages.Count == 0)
                 return;
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             m_UpmClient.RemoveByNames(packages.Select(p => p.name));
+#pragma warning restore RS0030
         }
 
         public void InstallAndResetDependencies(IPackageVersion version, IEnumerable<IPackage> dependenciesToReset)
         {
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             m_UpmClient.AddAndResetDependencies(version.packageId, dependenciesToReset?.Select(package => package.name) ?? Enumerable.Empty<string>());
+#pragma warning restore RS0030
         }
 
         public void ResetDependencies(IPackageVersion version, IEnumerable<IPackage> dependenciesToReset)
         {
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             m_UpmClient.ResetDependencies(version.packageId, dependenciesToReset?.Select(package => package.name) ?? Enumerable.Empty<string>());
+#pragma warning restore RS0030
         }
 
         public bool Embed(IPackage package)
@@ -219,7 +229,9 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public bool Download(IEnumerable<IPackage> packages)
         {
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return PlayModeDownload.CanBeginDownload() && m_AssetStoreDownloadManager.Download(packages.Select(p => p.product?.id ?? 0).Where(id => id > 0));
+#pragma warning restore RS0030
         }
 
         public void AbortDownload(IPackage package)
@@ -231,7 +243,9 @@ namespace UnityEditor.PackageManager.UI.Internal
         {
             // We need to figure out why the IEnumerable is being altered instead of using ToArray.
             // It will be addressed in https://jira.unity3d.com/browse/PAX-1995.
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             foreach (var package in packages.ToArray())
+#pragma warning restore RS0030
                 m_AssetStoreDownloadManager.AbortDownload(package.product?.id);
         }
 
@@ -277,7 +291,9 @@ namespace UnityEditor.PackageManager.UI.Internal
             if (packages == null || packages.Count == 0)
                 return;
 
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             m_AssetStorePackageInstaller.Uninstall(packages.Select(p => p.product.id));
+#pragma warning restore RS0030
         }
     }
 }

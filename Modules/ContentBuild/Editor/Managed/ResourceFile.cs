@@ -29,13 +29,13 @@ namespace UnityEditor.Build.Content
         internal string m_FileAlias;
         ///<summary>Internal name used by the loading system for a resource file.</summary>
         ///<remarks>Internal use only. See <see cref="Build.Content.ResourceFile" />.</remarks>
-        public string fileAlias { get { return m_FileAlias; }  set { m_FileAlias = value; } }
+        public string fileAlias { get { return m_FileAlias; } set { m_FileAlias = value; } }
 
         [SerializeField]
         [NativeName("serializedFile")]
         internal bool m_SerializedFile;
         ///<summary>Bool to determine if this resource file represents serialized Unity objects (serialized file) or binary resource data.</summary>
         ///<remarks>Internal use only. See <see cref="Build.Content.ResourceFile" />.</remarks>
-        public bool serializedFile { get { return m_SerializedFile; }  set { m_SerializedFile = value; } }
+        public bool serializedFile { get { return m_SerializedFile; } set { m_SerializedFile = value; } }
     }
 }

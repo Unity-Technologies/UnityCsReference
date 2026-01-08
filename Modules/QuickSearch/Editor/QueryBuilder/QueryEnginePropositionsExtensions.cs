@@ -184,7 +184,9 @@ namespace UnityEditor.Search
         public static IEnumerable<SearchProposition> GetPropositions<TData>(this QueryEngine<TData> queryEngine, CombiningOperatorPropositions props = CombiningOperatorPropositions.Default)
         {
             var filters = queryEngine.GetAllFilters();
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return GetCombiningOperatorPropositions(props).Concat(filters.SelectMany(f => f.GetPropositions()));
+#pragma warning restore RS0030
         }
 
         public static IEnumerable<SearchProposition> GetPropositions(this IQueryEngineFilter filter)
@@ -193,23 +195,33 @@ namespace UnityEditor.Search
             // 1. Global proposition
             // 2. Custom propositions
             if (filter.metaInfo == null || filter.metaInfo.Count == 0)
+                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 return Enumerable.Empty<SearchProposition>();
+#pragma warning restore RS0030
 
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var propositionKeys = filter.metaInfo.Keys.Where(key => key.StartsWith(k_BaseSearchPropositionDataKey, StringComparison.Ordinal)).ToList();
+#pragma warning restore RS0030
             if (propositionKeys.Count == 0)
+                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 return Enumerable.Empty<SearchProposition>();
+#pragma warning restore RS0030
 
             var globalProposition = GetGlobalProposition(filter);
             if (!globalProposition.valid)
                 globalProposition = GetDefaultValidProposition();
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var validPropositions = propositionKeys.Select(key => filter.GetPropositionFromKey(key)).Where(p => p.valid);
+#pragma warning restore RS0030
             var customPropositions = MergePropositions(globalProposition, validPropositions);
             return MergePropositions(globalProposition, customPropositions);
         }
 
         static IEnumerable<SearchProposition> MergePropositions(IEnumerable<SearchProposition> basePropositions, IEnumerable<SearchProposition> overridePropositions)
         {
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var overrideMap = overridePropositions.ToDictionary(p => p.label);
+#pragma warning restore RS0030
             foreach (var baseProposition in basePropositions)
             {
                 if (!overrideMap.TryGetValue(baseProposition.label, out var overrideProposition))
@@ -262,11 +274,15 @@ namespace UnityEditor.Search
         static IEnumerable<SearchProposition> GetPropositionsFromType(IQueryEngineFilter filter, Type type, string category = null, Type blockType = null, int priority = 0, Texture2D icon = null, Color color = default)
         {
             var filterId = filter.token;
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var defaultOperator = filter.supportedOperators?.FirstOrDefault() ?? ":";
+#pragma warning restore RS0030
             if (type.IsEnum)
                 return SearchUtils.FetchEnumPropositions(type, category, filterId, defaultOperator, blockType, priority, icon, color);
 
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return Enumerable.Empty<SearchProposition>();
+#pragma warning restore RS0030
         }
 
         static string GetPropositionKey(string label)

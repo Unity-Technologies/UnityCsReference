@@ -45,10 +45,14 @@ internal class SelectionWindowData : ISerializationCallbackReceiver
     [SerializeField]
     private int[] m_SerializedSelectedIndexes = Array.Empty<int>();
 
+    #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
     public IReadOnlyList<Asset> selectedAssets => m_SelectedIndexes
+#pragma warning restore RS0030
         .Where(index => !nodes[index].isFolder)
         .Select(index => nodes[index].asset).ToArray();
+    #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
     public IReadOnlyList<Asset> assets => nodes.Where(n => !n.isFolder).Select(n => n.asset).ToArray();
+#pragma warning restore RS0030
 
     public int selectedNodesCount => m_SelectedIndexes.Count;
 
@@ -59,7 +63,9 @@ internal class SelectionWindowData : ISerializationCallbackReceiver
         headerDescription = description;
         actionLabel = k_RemoveText;
 
+        #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
         foreach (var asset in assetsList.OrderBy(a => a.importedPath))
+#pragma warning restore RS0030
         {
             var normalizedPath = asset.importedPath.Replace('\\', '/');
             // We don't support removing assets that are outside of the "Assets" folder.
@@ -73,14 +79,18 @@ internal class SelectionWindowData : ISerializationCallbackReceiver
 
             // Every imported assets with an AssetOrigin should be in the "Assets/" folder.
             // We skip 1 because we don't want to show "Assets/" as the root node in the selection window.
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var pathParts = normalizedPath.Split('/').Skip(1).ToArray();
+#pragma warning restore RS0030
 
             var currentNode = hiddenRootNode;
             for (var i = 0; i < pathParts.Length; ++i)
             {
                 var isLeafNode = i == pathParts.Length - 1;
                 var nodeToCreate = pathParts[i];
+                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 var matchingChildNode = GetChildren(currentNode).FirstOrDefault(c => c.name == nodeToCreate);
+#pragma warning restore RS0030
 
                 if (matchingChildNode == null)
                 {
@@ -137,12 +147,16 @@ internal class SelectionWindowData : ISerializationCallbackReceiver
     {
         if (id < 0 || id >= nodes.Count)
             return false;
+        #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
         return nodes[id].childIndexes.All(childId => !IsSelected(childId));
+#pragma warning restore RS0030
     }
 
     public bool IsSelected(int id) => m_SelectedIndexes.Contains(id);
     public void ClearSelection() => m_SelectedIndexes.Clear();
+    #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
     public void SelectAll() => m_SelectedIndexes = nodes.Select(n => n.index).ToHashSet();
+#pragma warning restore RS0030
 
     private Node AddNode(Node parentNode, string name)
     {
@@ -188,11 +202,15 @@ internal class SelectionWindowData : ISerializationCallbackReceiver
 
     public void OnBeforeSerialize()
     {
+        #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
         m_SerializedSelectedIndexes = m_SelectedIndexes.ToArray();
+#pragma warning restore RS0030
     }
 
     public void OnAfterDeserialize()
     {
+        #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
         m_SelectedIndexes = m_SerializedSelectedIndexes.ToHashSet();
+#pragma warning restore RS0030
     }
 }

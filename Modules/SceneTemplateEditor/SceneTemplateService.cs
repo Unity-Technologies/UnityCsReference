@@ -205,7 +205,9 @@ namespace UnityEditor.SceneTemplate
                 s_CurrentInMemorySceneState.rootFolder = rootFolder;
                 s_CurrentInMemorySceneState.hasCloneableDependencies = hasAnyCloneableDependencies;
                 s_CurrentInMemorySceneState.dependencyFolderName = Path.GetFileNameWithoutExtension(newSceneOutputPath);
+                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 s_CurrentInMemorySceneState.hasSubScene = sceneTemplate.dependencies.Any(dep => dep.dependency is SceneAsset);
+#pragma warning restore RS0030
             }
 
             SceneTemplateAnalytics.SendSceneInstantiationEvent(instantiateEvent);
@@ -449,11 +451,15 @@ namespace UnityEditor.SceneTemplate
             try
             {
                 AssetDatabase.StartAssetEditing();
+                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 var dependencyPaths = sceneTemplate.dependencies
+#pragma warning restore RS0030
                     .Where(d => d.instantiationMode == TemplateInstantiationMode.Clone)
                     .Select(d => new ClonePathInfo(d, AssetDatabase.GetAssetPath(d.dependency))).ToArray();
 
+                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 var nullPath = dependencyPaths.FirstOrDefault(d => string.IsNullOrEmpty(d.dependencyPath));
+#pragma warning restore RS0030
                 if (nullPath != null && nullPath.dependency != null)
                 {
                     Debug.LogError("Cannot find dependency path for: " + nullPath.dependency);
@@ -464,9 +470,13 @@ namespace UnityEditor.SceneTemplate
 
                 // Gather all dependencies. Extract their name. For duplicate clone paths format a new name including the former path (without Assets/).
                 var clonePathToInfos = SetupClonePathInfos(dependencyFolder, dependencyPaths);
+                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 refPathMap = clonePathToInfos.ToDictionary(d => d.dependencyPath, d => d.clonePath);
+#pragma warning restore RS0030
 
+                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 if (!AssetDatabase.CopyAssets(refPathMap.Keys.ToArray(), refPathMap.Values.ToArray()))
+#pragma warning restore RS0030
                 {
                     Debug.LogError("Failed to copy dependencies");
                     needsCleanup = true;
@@ -481,7 +491,9 @@ namespace UnityEditor.SceneTemplate
             if (needsCleanup)
             {
                 var failedPaths = new List<string>();
+                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 if (!AssetDatabase.DeleteAssets(refPathMap.Values.Where(path => File.Exists(path)).ToArray(), failedPaths))
+#pragma warning restore RS0030
                     Debug.LogError("Failed to clean copied dependencies: \n" + string.Join('\n', failedPaths));
                 if (createdDirectory)
                     Directory.Delete(dependencyFolder);
@@ -525,7 +537,9 @@ namespace UnityEditor.SceneTemplate
         internal static string CreateUniqueAssetName(string folder, string path)
         {
             var tokens = path.Split('/');
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var uniqueName = string.Join("_", tokens.Skip(1));
+#pragma warning restore RS0030
             return Path.Combine(folder, uniqueName).Replace("\\", "/");
         }
 
@@ -639,9 +653,13 @@ namespace UnityEditor.SceneTemplate
             }
 
             var templateInfos = SceneTemplateUtils.GetSceneTemplateInfos();
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var templateInfo = templateInfos.FirstOrDefault(info => info.isPinned && !info.IsInMemoryScene);
+#pragma warning restore RS0030
             if (templateInfo == null)
+                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 templateInfo = templateInfos.FirstOrDefault(info => !info.isPinned && !info.IsInMemoryScene);
+#pragma warning restore RS0030
 
             if (templateInfo != null && templateInfo.sceneTemplate)
             {

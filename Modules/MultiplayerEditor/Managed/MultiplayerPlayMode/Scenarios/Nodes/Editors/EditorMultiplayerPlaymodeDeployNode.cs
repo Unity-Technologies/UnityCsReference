@@ -143,7 +143,7 @@ namespace Unity.Multiplayer.PlayMode.Editor
 
         protected override async Task MonitorAsync(CancellationToken cancellationToken)
         {
-            while (!cancellationToken.IsCancellationRequested && IsRunning())
+            while (!cancellationToken.IsCancellationRequested || IsRunning())
             {
                 await Task.Delay(100);
             }

@@ -16,6 +16,8 @@ namespace UnityEngine.UIElements
     [UxmlObject]
     public partial class SortColumnDescriptions : ICollection<SortColumnDescription>
     {
+        static readonly BindingId sortColumnDescriptionsProperty = nameof(sortColumnDescriptions);
+
         [ExcludeFromDocs, Serializable]
         public class UxmlSerializedData : UIElements.UxmlSerializedData
         {
@@ -59,6 +61,11 @@ namespace UnityEngine.UIElements
         /// Event sent when the descriptions changed.
         /// </summary>
         internal event Action changed;
+
+        /// <summary>
+        /// Called when a property has changed.
+        /// </summary>
+        internal event EventHandler<BindablePropertyChangedEventArgs> propertyChanged;
 
         /// <summary>
         /// Returns an enumerator that iterates through the collection.
@@ -131,8 +138,10 @@ namespace UnityEngine.UIElements
             if (m_Descriptions.Remove(desc))
             {
                 desc.column = null;
+                desc.propertyChanged -= OnDescriptionPropertyChanged;
                 desc.changed -= OnDescriptionChanged;
                 changed?.Invoke();
+                NotifyPropertyChanged(sortColumnDescriptionsProperty);
                 return true;
             }
             return false;
@@ -141,6 +150,17 @@ namespace UnityEngine.UIElements
         void OnDescriptionChanged(SortColumnDescription  desc)
         {
             changed?.Invoke();
+        }
+
+        void OnDescriptionPropertyChanged(object sender, BindablePropertyChangedEventArgs args)
+        {
+            var desc = (SortColumnDescription)sender;
+            var index = m_Descriptions.IndexOf(desc);
+            if (index >= 0)
+            {
+                var fullPath = $"{sortColumnDescriptionsProperty}[{index}].{args.propertyName}";
+                NotifyPropertyChanged(fullPath);
+            }
         }
 
         /// <summary>
@@ -177,8 +197,10 @@ namespace UnityEngine.UIElements
                 throw new ArgumentException("Already contains this description");
 
             m_Descriptions.Insert(index, desc);
+            desc.propertyChanged += OnDescriptionPropertyChanged;
             desc.changed += OnDescriptionChanged;
             changed?.Invoke();
+            NotifyPropertyChanged(sortColumnDescriptionsProperty);
         }
 
         /// <summary>
@@ -198,6 +220,11 @@ namespace UnityEngine.UIElements
         public SortColumnDescription this[int index]
         {
             get { return m_Descriptions[index]; }
+        }
+
+        void NotifyPropertyChanged(in BindingId property)
+        {
+            propertyChanged?.Invoke(this, new BindablePropertyChangedEventArgs(property));
         }
     }
 }

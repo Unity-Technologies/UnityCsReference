@@ -245,7 +245,9 @@ namespace Unity.UI.Builder
 
         protected bool TryParseValue(string val, out float value)
         {
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var num = new string(val.Where((c) => Char.IsDigit(c) || c == '.' || c == '-').ToArray());
+#pragma warning restore RS0030
             return float.TryParse(num, NumberStyles.Any, CultureInfo.InvariantCulture.NumberFormat, out value);
         }
 
@@ -269,7 +271,9 @@ namespace Unity.UI.Builder
             if (base.SetOptionFromValue(val))
                 return true;
 
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var unit = new string(val.Where((c) => !Char.IsDigit(c) && c != '.' && c != '-').ToArray());
+#pragma warning restore RS0030
             if (string.IsNullOrEmpty(unit) || !m_Units.Contains(unit))
                 return false;
 

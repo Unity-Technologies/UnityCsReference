@@ -206,8 +206,8 @@ namespace UnityEngine
         }
 
         [FreeFunction(Name = "GameObjectBindings::FindGameObjectsWithTagForListInternal", ThrowsException = true)]
-        private static extern void FindGameObjectsWithTagForListInternal(string tag, object results);
-
+        private static extern void FindGameObjectsWithTagForListInternal(string tag, [Out, NotNull] List<GameObject> results);
+ 
         public static void FindGameObjectsWithTag(string tag, List<GameObject> results)
         {
             FindGameObjectsWithTagForListInternal(tag, results);

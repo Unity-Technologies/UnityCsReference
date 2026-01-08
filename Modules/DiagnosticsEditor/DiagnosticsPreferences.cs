@@ -30,8 +30,12 @@ namespace UnityEditor
             public string name;
             public DiagnosticSwitch[] switches;
             public bool foldout;
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             public bool HasAnyChangedValues => switches.Any(s => !s.isSetToDefault);
+#pragma warning restore RS0030
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             public bool HasAnyUnappliedValues => switches.Any(s => s.needsRestart);
+#pragma warning restore RS0030
         }
 
         private const uint kMaxRangeForSlider = 10;
@@ -44,7 +48,9 @@ namespace UnityEditor
             : base("Preferences/Editor Diagnostics", SettingsScope.User, GetKeywords())
         {
             var switches = Debug.diagnosticSwitches;
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             m_HasAcceptedWarning = switches.Any(s => !s.isSetToDefault);
+#pragma warning restore RS0030
         }
 
         public override bool HasSearchInterest(string searchContext)
@@ -59,13 +65,21 @@ namespace UnityEditor
 
         public override void OnActivate(string searchContext, VisualElement rootElement)
         {
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             m_Switches = Debug.diagnosticSwitches
+#pragma warning restore RS0030
                 .GroupBy(s => s.owningModule)
                 .Select(group => new SwitchGroup
                 {
+                    #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     name = group.Key,
+#pragma warning restore RS0030
+                    #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     switches = group.OrderBy(s => s.name).ToArray(),
+#pragma warning restore RS0030
+                    #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     foldout = group.Any(s => !s.isSetToDefault)
+#pragma warning restore RS0030
                 })
                 .OrderBy(group => group.name)
                 .ToList();
@@ -86,11 +100,15 @@ namespace UnityEditor
 
         public override void OnTitleBarGUI()
         {
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             using (new EditorGUI.DisabledGroupScope(m_Switches.All(group => !group.HasAnyChangedValues)))
+#pragma warning restore RS0030
             {
                 if (GUILayout.Button("Reset all"))
                 {
+                    #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     foreach (var diagnosticSwitch in m_Switches.SelectMany(group => group.switches))
+#pragma warning restore RS0030
                         diagnosticSwitch.persistentValue = diagnosticSwitch.defaultValue;
                     DiagnosticSwitchesConsoleMessage.instance.Update();
                 }
@@ -124,7 +142,9 @@ namespace UnityEditor
         public override void OnFooterBarGUI()
         {
             var helpBox = GUILayoutUtility.GetRect(Styles.restartNeededWarning, EditorStyles.helpBox, GUILayout.MinHeight(40));
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             if (m_Switches.Any(group => group.HasAnyUnappliedValues))
+#pragma warning restore RS0030
                 EditorGUI.HelpBox(helpBox, Styles.restartNeededWarning.text, MessageType.Warning);
         }
 

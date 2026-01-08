@@ -25,7 +25,7 @@ internal readonly struct VisualElementRemap
 
 internal static class VisualElementRemapper
 {
-    internal static readonly PropertyName k_UIDocumentId = "unity-ui-document-global-id";
+    internal static readonly PropertyName k_PanelComponentId = "unity-panel-component-global-id";
 
     private readonly struct RemapContext : IEquatable<RemapContext>
     {
@@ -59,9 +59,9 @@ internal static class VisualElementRemapper
 
         static GlobalObjectId ExtractGlobalObjectID(VisualElement element)
         {
-            if (!element.HasProperty(k_UIDocumentId))
+            if (!element.HasProperty(k_PanelComponentId))
                 return default;
-            return (GlobalObjectId)element.GetProperty(k_UIDocumentId);
+            return (GlobalObjectId)element.GetProperty(k_PanelComponentId);
         }
     }
 
@@ -96,9 +96,9 @@ internal static class VisualElementRemapper
 
         foreach (var element in addedOrMoved)
         {
-            if (element is UIDocumentRootElement uiDocumentRootElement)
+            if (element is IPanelComponentRootElement rootElement)
             {
-                element.SetProperty(k_UIDocumentId, GlobalObjectId.GetGlobalObjectIdSlow(uiDocumentRootElement.document));
+                element.SetProperty(k_PanelComponentId, GlobalObjectId.GetGlobalObjectIdSlow(rootElement.panelComponent as UnityEngine.Object));
             }
 
             var context = new RemapContext(element);

@@ -564,6 +564,19 @@ namespace UnityEngine.UIElements
         {
             return new Ray(m.MultiplyPoint3x4(ray.origin), m.MultiplyVector(ray.direction));
         }
+
+        /// <summary>
+        /// Finds the root IPanelComponent for the given VisualElement.
+        /// </summary>
+        /// <param name="element">The element to start the search from.</param>
+        /// <returns>The root IPanelComponent, or null if none is found.</returns>
+        public static IPanelComponent FindRootPanelComponent(this VisualElement element)
+        {
+            var pr = element.GetFirstOfType<IPanelComponentRootElement>().panelComponent;
+            while (pr?.parentUI != null)
+                pr = pr.parentUI;
+            return pr;
+        }
     }
 
     static class MathUtils

@@ -38,7 +38,9 @@ namespace Unity.GraphToolkit.Editor
                     return window.GetToolbarDefinition(this)?.ElementIds;
                 }
 
+                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 return Enumerable.Empty<string>();
+#pragma warning restore RS0030
             }
         }
 

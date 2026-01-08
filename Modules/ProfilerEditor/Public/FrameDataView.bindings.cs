@@ -249,8 +249,18 @@ namespace UnityEditor.Profiling
 
         public unsafe NativeArray<T> GetFrameMetaData<T>(Guid id, int tag, int index) where T : struct
         {
+            return GetFrameMetaData<T>(id.ToByteArray(), tag, index);
+        }
+
+        internal NativeArray<T> GetFrameMetaData<T>(byte[] statsId, int tag) where T : struct
+        {
+            return GetFrameMetaData<T>(statsId, tag, 0);
+        }
+
+        internal unsafe NativeArray<T> GetFrameMetaData<T>(byte[] statsId, int tag, int index) where T : struct
+        {
             var stride = UnsafeUtility.SizeOf<T>();
-            var data = GetFrameMetaData(id.ToByteArray(), tag, index);
+            var data = GetFrameMetaData(statsId, tag, index);
             var array = NativeArrayUnsafeUtility.ConvertExistingDataToNativeArray<T>(data.ptr.ToPointer(), data.size / stride, Allocator.None);
             NativeArrayUnsafeUtility.SetAtomicSafetyHandle(ref array, GetSafetyHandle());
             return array;

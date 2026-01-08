@@ -24,7 +24,9 @@ internal class CancelDownloadAction : PackageAction
     protected override bool TriggerActionImplementation(IReadOnlyCollection<IPackage> packages)
     {
         m_OperationDispatcher.AbortDownload(packages);
+        #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
         PackageManagerWindowAnalytics.SendEvent("abortDownload", packages.Select(p => p.versions.primary));
+#pragma warning restore RS0030
         return true;
     }
 

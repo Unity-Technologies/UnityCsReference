@@ -79,19 +79,13 @@ namespace UnityEditor.TextCore.Text
         {
             // Register to the appropriate callback for the given render pipeline.
             if (RenderPipelineManager.currentPipeline == null)
-                Camera.onPostRender += OnCameraPostRender;
+                EditorApplication.update += OnEditorUpdate;
             else
                 RenderPipelineManager.endContextRendering += OnEndOfFrame;
-
-            Canvas.willRenderCanvases += OnPreRenderCanvases;
         }
 
-        void OnCameraPostRender(Camera cam)
+        void OnEditorUpdate()
         {
-            // Exclude the PreRenderCamera
-            if (cam.cameraType != CameraType.SceneView)
-                return;
-
             DoPostRenderUpdates();
         }
 
@@ -239,7 +233,7 @@ namespace UnityEditor.TextCore.Text
 
                     // Exclude Assets not located in the project
                     if (assetPath.StartsWith("Assets/", System.StringComparison.OrdinalIgnoreCase))
-                        AssetDatabase.ImportAsset(assetPath);
+                        AssetDatabase.SaveAssetIfDirty(obj);
                 }
             }
 

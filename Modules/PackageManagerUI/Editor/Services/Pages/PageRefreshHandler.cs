@@ -83,10 +83,18 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public void OnBeforeSerialize()
         {
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             m_SerializedRefreshTimestampsKeys = m_RefreshTimestamps.Keys.ToArray();
+#pragma warning restore RS0030
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             m_SerializedRefreshTimestampsValues = m_RefreshTimestamps.Values.ToArray();
+#pragma warning restore RS0030
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             m_SerializedRefreshErrorsKeys = m_RefreshErrors.Keys.ToArray();
+#pragma warning restore RS0030
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             m_SerializedRefreshErrorsValues = m_RefreshErrors.Values.ToArray();
+#pragma warning restore RS0030
         }
 
         public void OnAfterDeserialize()
@@ -270,13 +278,17 @@ namespace UnityEditor.PackageManager.UI.Internal
         // The virtual keyword is needed for unit tests
         public virtual bool IsRefreshInProgress(RefreshOptions options)
         {
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return m_RefreshOperationsInProgress.Any(i => options.Contains(i.refreshOptions));
+#pragma warning restore RS0030
         }
 
         // The virtual keyword is needed for unit tests
         public virtual bool IsInitialFetchingDone(RefreshOptions options)
         {
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return options.Split().All(o => GetRefreshTimestampSingleFlag(o) != 0 || m_RefreshErrors.ContainsKey(o));
+#pragma warning restore RS0030
         }
 
         public void SetRefreshTimestampSingleFlag(RefreshOptions option, long timestamp)
@@ -287,7 +299,9 @@ namespace UnityEditor.PackageManager.UI.Internal
         // The virtual keyword is needed for unit tests
         public virtual long GetRefreshTimestamp(RefreshOptions options)
         {
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return options == RefreshOptions.None ? 0 : options.Split().Min(GetRefreshTimestampSingleFlag);
+#pragma warning restore RS0030
         }
 
         // This function only work with single flag (e.g. `RefreshOption.UpmList`) refresh option.
@@ -306,7 +320,9 @@ namespace UnityEditor.PackageManager.UI.Internal
         // The virtual keyword is needed for unit tests
         public virtual UIError GetRefreshError(RefreshOptions options)
         {
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return options.Split()
+#pragma warning restore RS0030
                 .Select(o => m_RefreshErrors.GetValueOrDefault(o))
                 .FirstOrDefault(e => e != null);
         }

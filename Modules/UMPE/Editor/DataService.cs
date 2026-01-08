@@ -29,7 +29,9 @@ namespace UnityEditor.MPE
                 if (!s_ImportRefreshEnabled)
                     return;
 
+                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 s_ImportedAssets = s_ImportedAssets.Concat(importedAssets).Concat(deletedAssets).Concat(movedAssets).Concat(movedFromAssetPaths).Distinct()
+#pragma warning restore RS0030
                     .ToArray();
 
                 if (s_AboutToRefresh)
@@ -61,10 +63,14 @@ namespace UnityEditor.MPE
         {
             EventService.RegisterEventHandler(nameof(DataServiceEvent.AUTO_REFRESH), (eventType, data) =>
             {
+                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 string[] paths = data.Cast<string>().ToArray();
+#pragma warning restore RS0030
                 Console.WriteLine($"Secondary process need to refresh the following assets: {String.Join(", ", paths)}");
                 AssetDatabase.Refresh();
+                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 if (paths.Any(p => p.EndsWith(".cs")))
+#pragma warning restore RS0030
                     EditorUtility.RequestScriptReload();
                 InternalEditorUtility.RepaintAllViews();
                 return paths;

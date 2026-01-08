@@ -60,7 +60,7 @@ namespace UnityEditor.Search
 
             if (items != null)
             {
-                yield return CreateColumn("ID");
+                yield return CreateColumn("Id");
                 yield return CreateColumn("Name", null, "Name");
                 yield return CreateColumn("Value");
                 yield return CreateColumn("Thumbnail", "thumbnail", "Texture2D");
@@ -71,7 +71,9 @@ namespace UnityEditor.Search
                 yield return CreateColumn("Default/Options", "options");
                 yield return CreateColumn("Default/Data", "data");
 
+                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 var firstItem = items.FirstOrDefault();
+#pragma warning restore RS0030
                 if (firstItem != null && firstItem.GetFieldCount() > 0)
                 {
                     foreach (var f in firstItem.GetFields())

@@ -192,7 +192,9 @@ namespace UnityEditor
                 if (!EditorUserSettings.overwriteFailedCheckoutAssets)
                 {
                     assetsThatShouldBeReverted = notEditableAssets.ToArray();
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     assetsThatShouldBeSaved = assetsThatShouldBeSaved.Except(assetsThatShouldBeReverted).ToArray();
+#pragma warning restore RS0030
                 }
             }
         }

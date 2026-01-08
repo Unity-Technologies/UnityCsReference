@@ -5,15 +5,17 @@
 using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
-using UnityEngine.Bindings;
 
 namespace UnityEngine.UIElements;
 
 /// <summary>
 /// A reference table to map authoring id paths to VisualElements.
 /// </summary>
-[VisibleToOtherModules("UnityEditor.UIBuilderModule")]
-sealed class VisualElementAssetReferenceTable : IDisposable
+/// <example>
+/// This example shows how to use the <see cref="VisualElementAssetReferenceTable"/> to resolve references to VisualElements after calling CloneTree./>.
+/// <code source="../../../../Modules/UIElements/Tests/UIElementsExamples/Assets/Examples/VisualElementAssetReferenceTable_CloneTreeExample.cs"/>
+/// </example>
+public sealed class VisualElementAssetReferenceTable : IDisposable
 {
     internal static readonly Pool.ObjectPool<ElementNode> s_ElementNodePool = new(
         createFunc: () => new ElementNode(),
@@ -34,6 +36,12 @@ sealed class VisualElementAssetReferenceTable : IDisposable
     {
         internal GCHandle m_VisualElementHandle;
 
+        /// <summary>
+        /// The referenced VisualElement.
+        /// </summary>
+        /// <remarks>
+        /// This is stored as a weak reference, which might be null if the element has been destroyed.
+        /// </remarks>
         public VisualElement visualElement
         {
             get
@@ -55,6 +63,9 @@ sealed class VisualElementAssetReferenceTable : IDisposable
 
         ~ElementNode() => Dispose(false);
 
+        /// <summary>
+        /// Disposes the ElementNode and releases its handle.
+        /// </summary>
         public void Dispose()
         {
             Dispose(true);
@@ -73,6 +84,10 @@ sealed class VisualElementAssetReferenceTable : IDisposable
                 m_VisualElementHandle.Free();
         }
 
+        /// <summary>
+        /// Disposes the ElementNode.
+        /// </summary>
+        /// <param name="disposing"></param>
         protected virtual void Dispose(bool disposing)
         {
             ReleaseHandle();
@@ -80,7 +95,7 @@ sealed class VisualElementAssetReferenceTable : IDisposable
     }
 
     /// <summary>
-    /// Holds a reference to either the root element of a UIDocument or a template instance. This node can have children.
+    /// Holds a reference to either the root element of a PanelRenderer or a template instance. This node can have children.
     /// </summary>
     public class DocumentNode : ElementNode
     {
@@ -106,6 +121,12 @@ sealed class VisualElementAssetReferenceTable : IDisposable
             return child;
         }
 
+        /// <summary>
+        /// Tries to get a child <see cref="ElementNode"/> by its authoring ID.
+        /// </summary>
+        /// <param name="id">The authoring-id to find in the document.</param>
+        /// <param name="elementNode">The found element node matching <paramref name="id"/>.</param>
+        /// <returns><see langword="true"/> if an element with a matching authroing-id could be found; otherwise <see langword="false"/>.</returns>
         public bool TryGetChild(int id, out ElementNode elementNode) => m_Children.TryGetValue(id, out elementNode);
 
         internal override void ReleaseToPool()
@@ -121,8 +142,11 @@ sealed class VisualElementAssetReferenceTable : IDisposable
     internal readonly Dictionary<(ElementNode root, AuthoringIdPath path), GCHandle> m_CachedReferences = new();
 
     /// <summary>
-    /// The root represents the root element of the UIDocument and may not have an authoring id.
+    /// The root represents the root element of the PanelRenderer and may not have an authoring ID.
     /// </summary>
+    /// <remarks>
+    /// You can reference the root with an <see cref="AuthoringIdPath"/> that contains a single ID of 0.
+    /// </remarks>
     public DocumentNode root { get; private set; }
 
     private VisualElementAssetReferenceTable()
@@ -149,7 +173,11 @@ sealed class VisualElementAssetReferenceTable : IDisposable
         return table;
     }
 
-    internal void ReleaseToPool()
+    /// <summary>
+    /// Releases the <see cref="VisualElementAssetReferenceTable"/> and all its associated nodes back to the pool,
+    /// making them available for reuse and reducing allocation overhead.
+    /// </summary>
+    public void ReleaseToPool()
     {
         if (root != null)
         {
@@ -162,24 +190,33 @@ sealed class VisualElementAssetReferenceTable : IDisposable
     }
 
     /// <summary>
-    /// Returns the VisualElement referenced by the given authoring id path.
+    /// Retrieves the <see cref="VisualElement"/> associated with the specified authoring ID path.
     /// </summary>
-    /// <typeparam name="T">The expected type.</typeparam>
-    /// <param name="idPath">The path to search.</param>
-    /// <param name="element">The found element.</param>
-    /// <returns></returns>
+    /// <typeparam name="T">The expected type of the element.</typeparam>
+    /// <param name="idPath">The authoring ID path to search for.</param>
+    /// <param name="element">
+    /// The element found at the given path. It's <see langword="null"/> if the element is no longer
+    /// part of the hierarchy and has been destroyed.
+    /// </param>
+    /// <returns><see langword="true"/> if the path was found; otherwise <see langword="false"/>.</returns>
     public bool TryGetReference<T>(AuthoringIdPath idPath, out T element) where T : VisualElement => TryGetReference(root, idPath, out element);
 
     /// <summary>
-    /// Returns the VisualElement referenced by the given authoring id path.
+    /// Retrieves the <see cref="VisualElement"/> associated with the specified authoring Id path.
     /// </summary>
-    /// <typeparam name="T">The expected type.</typeparam>
-    /// <param name="root"></param>
-    /// <param name="idPath">The path to search.</param>
-    /// <param name="element">The found element.</param>
-    /// <returns></returns>
+    /// <typeparam name="T">The expected type of the element.</typeparam>
+    /// <param name="documentNode">The document node to search within. This allows searching for a path that is not based on the root.</param>
+    /// <param name="idPath">The authoring ID path to search for.</param>
+    /// <param name="element">
+    /// The element found at the given path. It's <see langword="null"/> if the element is no longer
+    /// part of the hierarchy and has been destroyed.
+    /// </param>
+    /// <returns><see langword="true"/> if the path was found; otherwise <see langword="false"/>.</returns>
     public bool TryGetReference<T>(DocumentNode documentNode, AuthoringIdPath idPath, out T element) where T : VisualElement
     {
+        if (documentNode == null)
+            throw new ArgumentNullException(nameof(documentNode));
+
         if (idPath.isEmpty)
         {
             element = null;
@@ -263,6 +300,10 @@ sealed class VisualElementAssetReferenceTable : IDisposable
         m_CachedReferences.Clear();
     }
 
+    /// <summary>
+    /// Disposes the VisualElementAssetReferenceTable.
+    /// Releases all cached references and disposes all nodes.
+    /// </summary>
     public void Dispose()
     {
         Dispose(true);

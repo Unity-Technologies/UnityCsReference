@@ -2,10 +2,10 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System.CodeDom;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEditor.IMGUI.Controls;
+using UnityEngine.Pool;
 
 namespace UnityEditor.AddComponent
 {
@@ -41,7 +41,7 @@ namespace UnityEditor.AddComponent
             AdvancedDropdownItem root = new ComponentDropdownItem("ROOT");
             List<MenuItemData> menuItems = GetSortedMenuItems(m_Targets);
 
-            Dictionary<string, int> pathHashCodeMap = new Dictionary<string, int>();
+            var pathHashCodeMap = DictionaryPool<string, int>.Get();
 
             for (var i = 0; i < menuItems.Count; i++)
             {
@@ -68,11 +68,13 @@ namespace UnityEditor.AddComponent
 
                     if (!pathHashCodeMap.TryGetValue(path, out int pathHashCode))
                     {
-                        pathHashCode = path.GetHashCode();
+                        pathHashCode = AdvancedDropdownItem.GenerateChildId(parent.id, path);
                         pathHashCodeMap[path] = pathHashCode;
                     }
 
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     var group = (ComponentDropdownItem)parent.children.SingleOrDefault(c => c.id == pathHashCode);
+#pragma warning restore RS0030
                     if (group == null)
                     {
                         group = new ComponentDropdownItem(path, L10n.Tr(path));
@@ -81,10 +83,13 @@ namespace UnityEditor.AddComponent
                     parent = group;
                 }
             }
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             root = root.children.Single();
+#pragma warning restore RS0030
             var newScript = new ComponentDropdownItem("New script", L10n.Tr("New script"));
             newScript.AddChild(new NewScriptDropdownItem());
             root.AddChild(newScript);
+            DictionaryPool<string, int>.Release(pathHashCodeMap);
             return root;
         }
 

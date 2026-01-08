@@ -835,8 +835,9 @@ namespace UnityEngine.TextCore.Text
         [VisibleToOtherModules("UnityEngine.IMGUIModule", "UnityEngine.UIElementsModule")]
         internal List<(int, TagType, string)> m_Links;//Not clearing links would result in a leak of strings and enum, but no class, so no consideration for clearing the list at the moment
         internal protected List<(int, TagType, string)> Links => m_Links ??= new();
+
         [VisibleToOtherModules("UnityEngine.IMGUIModule", "UnityEngine.UIElementsModule")]
-        internal Color atgHyperlinkColor = Color.blue;
+        internal int m_HoveredTag = -1;
 
         [VisibleToOtherModules("UnityEngine.IMGUIModule", "UnityEngine.UIElementsModule")]
         internal virtual UnityEngine.TextAsset GetICUAsset() { return null; }
@@ -886,22 +887,22 @@ namespace UnityEngine.TextCore.Text
         }
 
         [VisibleToOtherModules("UnityEngine.IMGUIModule", "UnityEngine.UIElementsModule")]
-        internal (TagType, string) ATGFindIntersectingLink(Vector2 point)
+        internal (int, TagType, string) ATGFindIntersectingLink(Vector2 point)
         {
             //This should probably be public, but it would require exposing TagType
             Debug.Assert(useAdvancedText);
             if (textGenerationInfo == IntPtr.Zero)
             {
                 Debug.LogError("TextGenerationInfo pointer is null.");
-                return (TagType.Unknown, null);
+                return (-1, TagType.Unknown, null);
             }
 
             int id = TextLib.FindIntersectingLink(point * GetPixelsPerPoint(), textGenerationInfo);
 
             if (id == -1)
-                return (TagType.Unknown, null);
+                return (-1, TagType.Unknown, null);
 
-            return (m_Links[id].Item2, m_Links[id].Item3);
+            return m_Links[id];
         }
 
         [VisibleToOtherModules("UnityEngine.IMGUIModule", "UnityEngine.UIElementsModule")]

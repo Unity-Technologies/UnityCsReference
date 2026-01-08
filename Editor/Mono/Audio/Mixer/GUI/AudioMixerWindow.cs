@@ -123,10 +123,18 @@ namespace UnityEditor
             {
                 if (s_Instance != null)
                 {
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     bool anyMixers = importedAssets.Any(val => val.EndsWith(".mixer"));
+#pragma warning restore RS0030
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     anyMixers |= deletedAssets.Any(val => val.EndsWith(".mixer"));
+#pragma warning restore RS0030
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     anyMixers |= movedAssets.Any(val => val.EndsWith(".mixer"));
+#pragma warning restore RS0030
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     anyMixers |= movedFromPath.Any(val => val.EndsWith(".mixer"));
+#pragma warning restore RS0030
 
                     if (anyMixers)
                         s_Instance.UpdateAfterAssetChange();
@@ -528,7 +536,9 @@ namespace UnityEditor
                 sectionRects[i].x += margin;
                 sectionRects[i].width -= margin * 2;
             }
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             Rect contentRect = new Rect(0, 0, 1, sectionRects.Last().yMax);
+#pragma warning restore RS0030
 
             // Adjust for scrollbar
             if (contentRect.height > column1Rect.height)
@@ -754,8 +764,12 @@ namespace UnityEditor
         {
             var menu = new GenericMenu();
 
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var objs = AssetDatabase.FindAllAssets(new SearchFilter() { classNames = classNames }).Select(property => property.pptrValue).ToList();
+#pragma warning restore RS0030
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             if (objs.Any())
+#pragma warning restore RS0030
             {
                 objs.Sort((result1, result2) => EditorUtility.NaturalCompare(result1.name, result2.name));
                 foreach (var obj in objs)

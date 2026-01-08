@@ -69,12 +69,16 @@ namespace UnityEditor
 
         internal IEnumerable<SpeedTreeImporter> importers
         {
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             get { return targets.Cast<SpeedTreeImporter>(); }
+#pragma warning restore RS0030
         }
 
         internal bool upgradeMaterials
         {
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             get { return importers.Any(i => i.materialsShouldBeRegenerated); }
+#pragma warning restore RS0030
         }
 
         internal GUIContent GetGenButtonText(bool modified, bool upgrade)
@@ -141,15 +145,23 @@ namespace UnityEditor
 
         private void GenerateMaterials()
         {
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var matFolders = importers.Where(im => im.materialLocation == SpeedTreeImporter.MaterialLocation.External).Select(im => im.materialFolderPath).ToList();
+#pragma warning restore RS0030
             var guids = AssetDatabase.FindAssets("t:Material", matFolders.ToArray());
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var paths = guids.Select(guid => AssetDatabase.GUIDToAssetPath(guid)).ToList();
+#pragma warning restore RS0030
 
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var importersWithEmbeddedMaterials = importers.Where(im => im.materialLocation == SpeedTreeImporter.MaterialLocation.InPrefab);
+#pragma warning restore RS0030
             foreach (var importer in importersWithEmbeddedMaterials)
             {
                 var remappedAssets = importer.GetExternalObjectMap();
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 var materials = remappedAssets.Where(kv => kv.Value is Material && kv.Value != null).Select(kv => kv.Value);
+#pragma warning restore RS0030
                 foreach (var material in materials)
                 {
                     var path = AssetDatabase.GetAssetPath(material);

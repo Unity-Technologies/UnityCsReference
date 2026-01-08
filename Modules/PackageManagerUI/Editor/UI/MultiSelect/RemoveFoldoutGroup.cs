@@ -19,12 +19,16 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public override void Refresh()
         {
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             if (mainFoldout.packages.FirstOrDefault()?.versions.primary.HasTag(PackageTag.BuiltIn) == true)
+#pragma warning restore RS0030
                 mainFoldout.headerTextTemplate = L10n.Tr("Disable {0}");
             else
                 mainFoldout.headerTextTemplate = L10n.Tr("Remove {0}");
 
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             if (inProgressFoldout.packages.FirstOrDefault()?.versions.primary.HasTag(PackageTag.BuiltIn) == true)
+#pragma warning restore RS0030
                 inProgressFoldout.headerTextTemplate = L10n.Tr("Disabling {0}");
             else
                 inProgressFoldout.headerTextTemplate = L10n.Tr("Removing {0}");

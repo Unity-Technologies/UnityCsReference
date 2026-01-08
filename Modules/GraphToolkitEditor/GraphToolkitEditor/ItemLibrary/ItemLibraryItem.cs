@@ -132,9 +132,15 @@ namespace Unity.GraphToolkit.ItemLibrary.Editor
 
         static (Func<ItemLibraryItem, IEnumerable<string>> getSearchData, float ratio)[] s_SearchKeysRatios =
         {
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             (si => Enumerable.Repeat(si.Name, 1), 1f),
+#pragma warning restore RS0030
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             (si => Enumerable.Repeat(si.SearchableFullName, 1), 0.5f),
+#pragma warning restore RS0030
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             (si => si.Synonyms ?? Enumerable.Empty<string>(), 0.5f),
+#pragma warning restore RS0030
         };
 
         /// <summary>
@@ -142,7 +148,9 @@ namespace Unity.GraphToolkit.ItemLibrary.Editor
         /// </summary>
         public virtual IEnumerable<ItemLibraryItemTermsCategory> GetSearchData()
         {
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return s_SearchKeysRatios
+#pragma warning restore RS0030
                 .Select(tu => new ItemLibraryItemTermsCategory
                 { Terms = tu.getSearchData(this), Multiplier = tu.ratio }
                 );

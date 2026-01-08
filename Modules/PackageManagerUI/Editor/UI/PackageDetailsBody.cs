@@ -132,7 +132,9 @@ namespace UnityEditor.PackageManager.UI.Internal
             if (!args.page.isActivePage)
                 return;
 
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var newVisualState = args.visualStates.FirstOrDefault(state => state.packageUniqueId == m_Version?.package.uniqueId);
+#pragma warning restore RS0030
             if (newVisualState?.userUnlocked == true && m_PageManager.activePage.GetSelection()?.Count == 1)
                 m_TabView.RefreshTab(PackageDetailsVersionsTab.k_Id, m_Version);
         }

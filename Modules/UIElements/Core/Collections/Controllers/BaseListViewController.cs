@@ -122,7 +122,9 @@ namespace UnityEngine.UIElements
 
             public void ClearItems()
             {
+                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 var itemsSourceIndices = Enumerable.Range(0, GetItemsMinCount() - 1);
+#pragma warning restore RS0030
                 serializedObjectList.arraySize = 0;
                 serializedObjectList.ApplyChanges();
                 m_BaseListViewController.RaiseItemsRemoved(itemsSourceIndices);
@@ -238,7 +240,9 @@ namespace UnityEngine.UIElements
                 {
                     var sourceType = itemsSource.GetType();
                     bool IsGenericList(Type t) => t.IsGenericType && t.GetGenericTypeDefinition() == typeof(IList<>);
+                    #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     var listType = sourceType.GetInterfaces().FirstOrDefault(IsGenericList);
+#pragma warning restore RS0030
                     if (listType != null && listType.GetGenericArguments()[0].IsValueType)
                     {
                         var elementValueType = listType.GetGenericArguments()[0];
@@ -373,7 +377,9 @@ namespace UnityEngine.UIElements
                 return;
 
             EnsureItemSourceCanBeResized();
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var itemsSourceIndices = Enumerable.Range(0, itemsSource.Count - 1);
+#pragma warning restore RS0030
             itemsSource.Clear();
             RaiseItemsRemoved(itemsSourceIndices);
             RaiseOnSizeChanged();

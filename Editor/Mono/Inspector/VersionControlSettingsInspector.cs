@@ -206,7 +206,9 @@ namespace UnityEditor
             var arr = GetVCConfigFieldRecentValues(fieldName);
             var newVal = new[] {value};
             // put newly used value in front
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             arr = newVal.Concat(arr.Except(newVal)).Take(kVCFieldRecentCount).ToArray();
+#pragma warning restore RS0030
             m_VCConfigFieldsRecentValues[fieldName] = arr;
 
             for (var i = 0; i < arr.Length; ++i)
@@ -222,8 +224,12 @@ namespace UnityEditor
 
             var popupArray = new List<EditorSettingsInspector.PopupElement>(vcDefaultPopupList);
             var descriptors = VersionControlManager.versionControlDescriptors;
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             popupArray.AddRange(descriptors.OrderBy(d => d.displayName).Select(d => new EditorSettingsInspector.PopupElement(d.name, d.displayName)));
+#pragma warning restore RS0030
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             availvc = availvc.Where(p => !descriptors.Any(d => string.Equals(d.name, p.name, StringComparison.Ordinal)));
+#pragma warning restore RS0030
             foreach (var plugin in availvc)
             {
                 popupArray.Add(new EditorSettingsInspector.PopupElement(plugin.name));

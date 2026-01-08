@@ -138,7 +138,9 @@ namespace Unity.GraphToolkit.Editor
             var data = new SubgraphFromSelectionActionData()
             {
                 IsValid = true,
+                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 elementsToInclude = transferredModels.ToList(),
+#pragma warning restore RS0030
                 defaultName = shouldConvertToPlacemat ? encompassingPlacemat?.Title : SubgraphCreationHelper.defaultLocalSubgraphName,
                 elementsToDelete = shouldConvertToPlacemat ? new List<GraphElementModel> { encompassingPlacemat } : null,
                 assetSubgraphNodes = assetSubgraphNodes,

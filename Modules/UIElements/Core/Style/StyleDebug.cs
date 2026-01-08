@@ -20,7 +20,9 @@ namespace UnityEngine.UIElements
 
         public static string[] GetStylePropertyNames()
         {
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var list = StylePropertyUtil.s_NameToId.Keys.ToList();
+#pragma warning restore RS0030
             list.Sort();
             return list.ToArray();
         }

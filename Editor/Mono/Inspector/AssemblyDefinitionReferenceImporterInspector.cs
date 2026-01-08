@@ -98,7 +98,9 @@ namespace UnityEditor
         protected override void Apply()
         {
             base.Apply();
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             SaveAndUpdateAssemblyDefinitionReferenceStates(extraDataTargets.Cast<AssemblyDefinitionReferenceState>().ToArray());
+#pragma warning restore RS0030
         }
 
         void ShowLoadErrorExceptionGUI(Exception e)

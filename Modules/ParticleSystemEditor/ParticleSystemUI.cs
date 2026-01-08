@@ -52,7 +52,9 @@ namespace UnityEditor
 
             m_Modules = CreateUIModules(this, m_ParticleSystemSerializedObject);
 
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             bool anyWithoutRenderers = m_ParticleSystems.FirstOrDefault(o => o.GetComponent<ParticleSystemRenderer>() == null) != null;
+#pragma warning restore RS0030
             if (!anyWithoutRenderers)
                 InitRendererUI();
 
@@ -61,7 +63,9 @@ namespace UnityEditor
 
         internal ModuleUI GetParticleSystemRendererModuleUI()
         {
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return m_Modules.Last();
+#pragma warning restore RS0030
         }
 
         internal Bounds GetBounds()
@@ -99,10 +103,14 @@ namespace UnityEditor
             // Create RendererModuleUI
             if (renderers.Count > 0)
             {
+                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 System.Diagnostics.Debug.Assert(m_Modules.Last() == null); // If hitting this assert we have either not cleaned up the previous renderer or hitting another module
+#pragma warning restore RS0030
 
                 m_RendererSerializedObject = new SerializedObject(renderers.ToArray());
+                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 m_Modules[m_Modules.Length - 1] = new RendererModuleUI(this, m_RendererSerializedObject, s_ModuleNames.Last());
+#pragma warning restore RS0030
             }
         }
 
@@ -432,7 +440,9 @@ namespace UnityEditor
                 {
                     if (child != ps)
                     {
+                        #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                         bool alreadySelected = m_ParticleSystems.FirstOrDefault(o => ParticleSystemEditorUtils.GetRoot(o) == child) != null;
+#pragma warning restore RS0030
                         if (!alreadySelected)
                             ShowBounds(child);
                     }
@@ -511,7 +521,9 @@ namespace UnityEditor
                 }
 
             // Default setup has a renderer
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             if (m_Modules.Last() == null)
+#pragma warning restore RS0030
                 InitRendererUI();
 
             // Default setup has shape, emission and renderer

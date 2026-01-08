@@ -27,7 +27,8 @@ class VisualElementSelectionEditor : UnityEditor.Editor
     {
         var inspector = new VisualElementInspector
         {
-            Element = Target.Element
+            Element = Target.Element,
+            EditFlags = Target.EditFlags
         };
         inspector.SetBinding(VisualElementInspector.ElementProperty, new DataBinding
         {

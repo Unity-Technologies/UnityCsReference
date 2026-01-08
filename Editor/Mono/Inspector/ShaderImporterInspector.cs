@@ -173,12 +173,20 @@ namespace UnityEditor
                 return;
 
             var properties = (ShaderProperties)extraDataTarget;
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var defaultNames = properties.m_Properties.Where(x => x.modifiable).Select(x => x.propertyName).ToArray();
+#pragma warning restore RS0030
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var defaultTextures = properties.m_Properties.Where(x => x.modifiable).Select(x => x.texture).ToArray();
+#pragma warning restore RS0030
             importer.SetDefaultTextures(defaultNames, defaultTextures);
 
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var nonModNames = properties.m_Properties.Where(x => !x.modifiable).Select(x => x.propertyName).ToArray();
+#pragma warning restore RS0030
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var nonModTextures = properties.m_Properties.Where(x => !x.modifiable).Select(x => x.texture).ToArray();
+#pragma warning restore RS0030
             importer.SetNonModifiableTextures(nonModNames, nonModTextures);
 
             AssetDatabase.ImportAsset(AssetDatabase.GetAssetPath(importer));

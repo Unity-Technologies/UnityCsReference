@@ -75,7 +75,9 @@ namespace UnityEditor.Scripting.ScriptCompilation
             if (PathPrefix != null)
                 MaxPathLength = PathPrefix.Length;
             if (AdditionalPrefixes != null)
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 MaxPathLength = UnityEngine.Mathf.Max(MaxPathLength, AdditionalPrefixes.Max(am => am.Length));
+#pragma warning restore RS0030
         }
 
         public string FullPath(string outputDirectory)

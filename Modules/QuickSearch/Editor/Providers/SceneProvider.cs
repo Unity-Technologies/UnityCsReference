@@ -17,6 +17,9 @@ namespace UnityEditor.Search.Providers
         private bool m_HierarchyChanged = true;
         private SceneQueryEngine m_SceneQueryEngine;
 
+        internal static event Action<SceneProvider> s_QueueProviderRefresh;
+        static bool s_Init;
+
         readonly struct GameObjectData
         {
             public readonly GameObject go;
@@ -39,12 +42,18 @@ namespace UnityEditor.Search.Providers
 
             isEnabledForContextualSearch = () => EditorWindow.focusedWindow is ISearchableContainer searchable && searchable.HierarchyType == HierarchyType.GameObjects;
 
-            SearchMonitor.sceneChanged += InvalidateScene;
-            SearchMonitor.documentsInvalidated += Refresh;
-            SearchMonitor.objectChanged += OnObjectChanged;
-            SearchMonitor.gameObjectChanged += OnGameObjectChanged;
-
             supportsSyncViewSearch = true;
+
+            onEnable = () =>
+            {
+                if (!s_Init)
+                {
+                    SearchMonitor.sceneChanged += InvalidateScene;
+                    SearchMonitor.documentsInvalidated += Refresh;
+                    SearchMonitor.objectChanged += OnObjectChanged;
+                    s_Init = true;
+                }
+            };
 
             toObject = (item, type) => ObjectFromItem(item, type);
             toKey = (item) => ToKey(item);
@@ -122,7 +131,9 @@ namespace UnityEditor.Search.Providers
             startDrag = (item, context) =>
             {
                 if (context.selection.Count > 1)
+                    #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     Utils.StartDrag(context.selection.Select(i => ObjectFromItem(i)).ToArray(), item.GetLabel(context, true));
+#pragma warning restore RS0030
                 else
                     Utils.StartDrag(new[] { ObjectFromItem(item) }, item.GetLabel(context, true));
             };
@@ -156,6 +167,7 @@ namespace UnityEditor.Search.Providers
         {
             EditorApplication.delayCall -= SearchService.RefreshWindows;
             EditorApplication.delayCall += SearchService.RefreshWindows;
+            s_QueueProviderRefresh?.Invoke(this);
         }
 
         private ulong ToKey(SearchItem item)
@@ -170,7 +182,6 @@ namespace UnityEditor.Search.Providers
             m_HierarchyChanged = true;
             Refresh();
         }
-
 
         private void InvalidateObject(EntityId entityId)
         {
@@ -245,29 +256,6 @@ namespace UnityEditor.Search.Providers
             }
         }
 
-        void OnGameObjectChanged(in NativeArray<GameObjectChangeTrackerEvent> events)
-        {
-            if (m_SceneQueryEngine == null)
-                return;
-
-            for (var i = 0; i < events.Length; ++i)
-            {
-                var e = events[i];
-                switch (e.EventType)
-                {
-                    case GameObjectChangeTrackerEventType.CreatedOrChanged:
-                    case GameObjectChangeTrackerEventType.ChangedParent:
-                    case GameObjectChangeTrackerEventType.ChangedScene:
-                    case GameObjectChangeTrackerEventType.Destroyed:
-                        InvalidateObject(e.EntityId);
-                        InvalidateScene();
-                        break;
-
-                    // Other events are not relevant for us since they do not affect properties.
-                }
-            }
-        }
-
         public static IEnumerable<SearchAction> CreateActionHandlers(string providerId)
         {
             return new SearchAction[]
@@ -276,7 +264,9 @@ namespace UnityEditor.Search.Providers
                 {
                     execute = (items) =>
                     {
+                        #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                         FrameObjects(items.Select(i => i.provider.toObject(i, typeof(GameObject))).Where(i => i).ToArray());
+#pragma warning restore RS0030
                     }
                 },
 
@@ -300,20 +290,26 @@ namespace UnityEditor.Search.Providers
                 new SearchAction(providerId, "show", null, "Show selected object(s)")
                 {
                     enabled = (items) => IsHidden(items),
+                    #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     execute = (items) => SceneVisibilityManager.instance.Show(items.Select(i => i.ToObject<GameObject>()).Where(i => i).ToArray(), true)
+#pragma warning restore RS0030
                 },
 
                 new SearchAction(providerId, "hide", null, "Hide selected object(s)")
                 {
                     enabled = (items) => !IsHidden(items),
+                    #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     execute = (items) => SceneVisibilityManager.instance.Hide(items.Select(i => i.ToObject<GameObject>()).Where(i => i).ToArray(), true)
+#pragma warning restore RS0030
                 },
             };
         }
 
         private static bool IsHidden(IReadOnlyCollection<SearchItem> items)
         {
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var go = items.First().ToObject<GameObject>();
+#pragma warning restore RS0030
             if (!go)
                 return false;
             return SceneVisibilityManager.instance.IsHidden(go);
@@ -332,13 +328,17 @@ namespace UnityEditor.Search.Providers
 
                 using (SearchMonitor.GetView())
                 {
+                    #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     yield return queryEngine.Search(context, provider, null)
+#pragma warning restore RS0030
                         .Select(go => AddResult(context, provider, go));
                 }
             }
             else if (context.filterType != null && string.IsNullOrEmpty(context.searchQuery))
             {
+                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 yield return UnityEngine.Object.FindObjectsByType(context.filterType, UnityEngine.FindObjectsSortMode.None)
+#pragma warning restore RS0030
                     .Select(obj =>
                     {
                         if (obj is Component c)
@@ -385,7 +385,9 @@ namespace UnityEditor.Search.Providers
 
         private static void FrameObjects(UnityEngine.Object[] objects)
         {
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             Selection.entityIds = objects.Select(o => o.GetHashCode()).ToArray().ToEntityIdArray();
+#pragma warning restore RS0030
             if (SceneView.lastActiveSceneView != null)
                 SceneView.lastActiveSceneView.FrameSelected();
         }
@@ -450,7 +452,9 @@ namespace UnityEditor.Search.Providers
             IEnumerable<UnityEngine.Object> sceneObjects;
             if (context != null && context.searchView != null && context.searchView.results.Count > 0 && !context.searchInProgress)
             {
+                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 sceneObjects = context.searchView.results.Select(r => r.ToObject()).Where(o => o);
+#pragma warning restore RS0030
             }
             else
             {

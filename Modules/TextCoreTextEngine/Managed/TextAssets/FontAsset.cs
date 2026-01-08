@@ -1489,7 +1489,9 @@ namespace UnityEngine.TextCore.Text
         internal void SortCharacterTable()
         {
             if (m_CharacterTable != null && m_CharacterTable.Count > 0)
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 m_CharacterTable = m_CharacterTable.OrderBy(c => c.unicode).ToList();
+#pragma warning restore RS0030
         }
 
         /// <summary>
@@ -1498,7 +1500,9 @@ namespace UnityEngine.TextCore.Text
         internal void SortGlyphTable()
         {
             if (m_GlyphTable != null && m_GlyphTable.Count > 0)
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 m_GlyphTable = m_GlyphTable.OrderBy(c => c.index).ToList();
+#pragma warning restore RS0030
         }
 
         internal void SortFontFeatureTable()

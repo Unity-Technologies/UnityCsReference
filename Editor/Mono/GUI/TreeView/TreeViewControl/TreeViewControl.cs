@@ -275,7 +275,9 @@ namespace UnityEditor.IMGUI.Controls
 
         protected IList<TreeViewItem<TIdentifier>> FindRows(IList<TIdentifier> ids)
         {
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return GetRows().Where(item => ids.Contains(item.id)).ToList();
+#pragma warning restore RS0030
         }
 
         protected TreeViewItem<TIdentifier> FindItem(TIdentifier id, TreeViewItem<TIdentifier> searchFromThisItem)
@@ -316,7 +318,9 @@ namespace UnityEditor.IMGUI.Controls
 
         public void SetExpanded(IList<TIdentifier> ids)
         {
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             m_DataSource.SetExpandedIDs(ids.ToArray());
+#pragma warning restore RS0030
         }
 
         public IList<TIdentifier> GetExpanded()
@@ -358,7 +362,9 @@ namespace UnityEditor.IMGUI.Controls
             bool revealSelectionAndFrameLastSelected = (options & TreeViewSelectionOptions.RevealAndFrame) != 0;
             bool animatedFraming = false;
 
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             m_TreeView.SetSelection(selectedIDs.ToArray(), revealSelectionAndFrameLastSelected, animatedFraming);
+#pragma warning restore RS0030
             if (fireSelectionChanged)
                 m_TreeView.NotifyListenersThatSelectionChanged();
         }
@@ -465,7 +471,9 @@ namespace UnityEditor.IMGUI.Controls
         public void SelectAllRows()
         {
             var rows = GetRows();
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var allowedSelection = (from treeViewItem in rows where CanMultiSelect(treeViewItem) select treeViewItem.id).ToList();
+#pragma warning restore RS0030
             SetSelection(allowedSelection, TreeViewSelectionOptions.FireSelectionChanged);
         }
 
@@ -578,7 +586,9 @@ namespace UnityEditor.IMGUI.Controls
             // Default behavior assumes complete tree
             HashSet<TIdentifier> parentsAbove = new HashSet<TIdentifier>();
             TreeViewUtility<TIdentifier>.GetParentsAboveItem(item, parentsAbove);
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return parentsAbove.ToArray();
+#pragma warning restore RS0030
         }
 
         // Used to expand children recursively below an item
@@ -587,7 +597,9 @@ namespace UnityEditor.IMGUI.Controls
             // Default behavior assumes complete tree
             HashSet<TIdentifier> parentsBelow = new HashSet<TIdentifier>();
             TreeViewUtility<TIdentifier>.GetParentsBelowItem(FindItem(id), parentsBelow);
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return parentsBelow.ToArray();
+#pragma warning restore RS0030
         }
 
         TreeViewItem<TIdentifier> FindItem(TIdentifier id)

@@ -248,7 +248,7 @@ namespace UnityEditor.Overlays
                 var displaceWindowContent = EditorGUIUtility.TrTextContent($"Overlays/Displace Window");
                 var overlaySettingsContent = EditorGUIUtility.TrTextContent($"Overlays/Overlay Settings...");
 
-                var displaceWindow = targetWindow.overlayCanvas.dynamicPanelBehavior == OverlayCanvas.DynamicPanelBehavior.DisplaceWindow;
+                var displaceWindow = targetWindow.overlayCanvas.dynamicPanelBehavior == DynamicPanelBehavior.DisplaceWindow;
                 var overlaysEnabled = targetWindow.overlayCanvas.overlaysEnabled;
 
                 if (targetWindow.overlayCanvas.overlaysSupportEnabled)
@@ -259,10 +259,15 @@ namespace UnityEditor.Overlays
                     menu.AddSeparator("Overlays/");
                     menu.AddItem(enableOverlaysContent, overlaysEnabled,
                         () => targetWindow.overlayCanvas.overlaysEnabled = !overlaysEnabled);
-                    menu.AddItem(displaceWindowContent, displaceWindow,
-                        () => targetWindow.overlayCanvas.dynamicPanelBehavior = displaceWindow
-                            ? OverlayCanvas.DynamicPanelBehavior.None
-                            : OverlayCanvas.DynamicPanelBehavior.DisplaceWindow);
+
+                    if (OverlayPrefs.IsDynamicPanelBehaviorChangesAllowed(targetWindow.GetType()))
+                    {
+                        menu.AddItem(displaceWindowContent, displaceWindow,
+                            () => targetWindow.overlayCanvas.dynamicPanelBehavior = displaceWindow
+                                ? DynamicPanelBehavior.None
+                                : DynamicPanelBehavior.DisplaceWindow);
+                    }
+
                     menu.AddItem(overlaySettingsContent, false,
                         () => SettingsService.OpenUserPreferences("Preferences/Overlays") );
                 }
@@ -360,16 +365,19 @@ namespace UnityEditor.Overlays
                 });
                 m_EnableOverlaysToggle.SetValueWithoutNotify(canvas.overlaysEnabled);
 
-                content.Add(m_DynamicPanelBehaviorToggle = new Toggle(L10n.Tr("Displace Window")) { name = "overlay-toggle" });
-                m_DynamicPanelBehaviorToggle.tooltip = "This toggle determines whether panels docked as full-height dynamic panels " +
-                    "will be drawn on top of the window or displace the window content.";
-                m_DynamicPanelBehaviorToggle.RegisterCallback<ChangeEvent<bool>>((evt) =>
+                if (OverlayPrefs.IsDynamicPanelBehaviorChangesAllowed(containerWindow.GetType()))
                 {
-                    canvas.dynamicPanelBehavior = evt.newValue ? OverlayCanvas.DynamicPanelBehavior.DisplaceWindow : OverlayCanvas.DynamicPanelBehavior.None;
-                });
+                    content.Add(m_DynamicPanelBehaviorToggle = new Toggle(L10n.Tr("Displace Window")) { name = "overlay-toggle" });
+                    m_DynamicPanelBehaviorToggle.tooltip = "This toggle determines whether panels docked as full-height dynamic panels " +
+                        "will be drawn on top of the window or displace the window content.";
+                    m_DynamicPanelBehaviorToggle.RegisterCallback<ChangeEvent<bool>>((evt) =>
+                    {
+                        canvas.dynamicPanelBehavior = evt.newValue ? DynamicPanelBehavior.DisplaceWindow : DynamicPanelBehavior.None;
+                    });
 
-                var displaceWindow = canvas.dynamicPanelBehavior == OverlayCanvas.DynamicPanelBehavior.DisplaceWindow;
-                m_DynamicPanelBehaviorToggle.SetValueWithoutNotify(displaceWindow);
+                    var displaceWindow = canvas.dynamicPanelBehavior == DynamicPanelBehavior.DisplaceWindow;
+                    m_DynamicPanelBehaviorToggle.SetValueWithoutNotify(displaceWindow);
+                }
             }
 
             content.Add(m_Dropdown = new OverlayPresetDropdown(canvas.containerWindow));

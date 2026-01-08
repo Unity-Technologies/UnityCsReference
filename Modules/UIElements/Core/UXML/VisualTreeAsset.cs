@@ -216,7 +216,7 @@ namespace UnityEngine.UIElements
             }
         }
 
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
         [SerializeField] internal StyleSheet inlineSheet;
 
         [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
@@ -544,8 +544,12 @@ namespace UnityEngine.UIElements
         /// Builds a tree of VisualElements from the asset and fills a <see cref="VisualElementAssetReferenceTable"/>.
         /// </summary>
         /// <param name="target"></param>
-        /// <param name="referenceTable">A table that can be used to resolve references</param>
-        internal void CloneTree(VisualElement target, out VisualElementAssetReferenceTable referenceTable) => CloneTree(target, out _, out _, out referenceTable);
+        /// <param name="referenceTable">A table to use to resolve references.</param>
+        /// <example>
+        /// This example shows how to use the <see cref="VisualElementAssetReferenceTable"/> to resolve references to VisualElements after calling CloneTree.
+        /// <code source="../../../../Modules/UIElements/Tests/UIElementsExamples/Assets/Examples/VisualElementAssetReferenceTable_CloneTreeExample.cs"/>
+        /// </example>
+        public void CloneTree(VisualElement target, out VisualElementAssetReferenceTable referenceTable) => CloneTree(target, out _, out _, out referenceTable);
 
         public void CloneTree(VisualElement target, out int firstElementIndex, out int elementAddedCount)
         {
@@ -725,8 +729,10 @@ namespace UnityEngine.UIElements
                         Debug.LogErrorFormat("Slot '{0}' was not found. Existing slots: {1}", key,
                             context.slotInsertionPoints == null
                                 ? String.Empty
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                                 : String.Join(", ",
                                     System.Linq.Enumerable.ToArray(context.slotInsertionPoints.Keys)));
+#pragma warning restore RS0030
                         ve.Add(childVe);
                     }
                     else
@@ -1238,7 +1244,7 @@ namespace UnityEngine.UIElements
             toStyleSheet.RequestRebuild();
         }
 
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
         internal VisualElementAsset AddElementOfType(VisualElementAsset parent, string fullTypeName)
         {
             var xmlns = VisualTreeAssetUtilities.FindUxmlNamespaceDefinitionForTypeName(this, parent, fullTypeName);

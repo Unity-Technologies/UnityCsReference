@@ -314,7 +314,9 @@ namespace UnityEditor
                 var isFolder = asset.isFolder && !Provider.isVersioningFolders;
 
                 res.editors = assetEditors;
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 res.assets.AddRange(res.Editor.targets.Select(o => Provider.GetAssetByPath(AssetDatabase.GetAssetPath(o))));
+#pragma warning restore RS0030
                 res.assets = Provider.ConsolidateAssetList(res.assets, CheckoutMode.Both);
 
                 res.revert = Provider.RevertIsValid(res.assets, RevertMode.Normal);
@@ -550,7 +552,9 @@ namespace UnityEditor
 
         internal static IEnumerable<PropertyEditor> GetPropertyEditors()
         {
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return m_AllPropertyEditors.AsEnumerable();
+#pragma warning restore RS0030
         }
 
         protected void SetMode(InspectorMode mode)
@@ -1041,7 +1045,9 @@ namespace UnityEditor
             var removedComponentsList = PrefabOverridesUtility.GetRemovedComponentsForSingleGameObject(go);
             for (int i = 0; i < removedComponentsList.Count; i++)
             {
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 if (actuallyRemovedComponents.Contains(removedComponentsList[i].assetComponent))
+#pragma warning restore RS0030
                     m_RemovedComponents.Add(removedComponentsList[i].assetComponent);
                 else
                     m_SuppressedComponents.Add(removedComponentsList[i].assetComponent);
@@ -1096,12 +1102,16 @@ namespace UnityEditor
         {
             // Retrieve the type we are looking for.
             if (editor == null || editor.target == null)
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 return Enumerable.Empty<IPreviewable>();
+#pragma warning restore RS0030
 
             Type targetType = editor.target.GetType();
             var previewableTypes = GetPreviewableTypes();
             if (previewableTypes == null || !previewableTypes.TryGetValue(targetType, out var previewerList) || previewerList == null)
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 return Enumerable.Empty<IPreviewable>();
+#pragma warning restore RS0030
 
             List<IPreviewable> previews = new List<IPreviewable>();
             foreach (var previewerType in previewerList)
@@ -1197,7 +1207,9 @@ namespace UnityEditor
             foreach (var editor in editors)
                 m_EditorTargetTypes.Add(editor.target ? editor.target.GetType() : null);
 
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             if (editors.Any() && versionControlElement != null)
+#pragma warning restore RS0030
             {
                 versionControlElement.Add(CreateIMGUIContainer(
                     () => VersionControlBar(editors)));
@@ -1232,7 +1244,9 @@ namespace UnityEditor
                 m_MultiEditLabel.RemoveFromHierarchy();
             }
 
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             if (addComponentButton != null && editors.Any() && RootEditorUtils.SupportsAddComponent(editors))
+#pragma warning restore RS0030
             {
                 addComponentButton.Add(CreateIMGUIContainer(() =>
                 {
@@ -1251,7 +1265,9 @@ namespace UnityEditor
 
             ClearPreview();
 
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             if (m_PreviewResizer != null && editors.Any())
+#pragma warning restore RS0030
             {
                 if (previewAndLabelElement != null)
                 {
@@ -1306,7 +1322,9 @@ namespace UnityEditor
 
             k_CreateInspectorElements.Begin();
             // Only trigger the fixed count and viewport creation if this is the first build. Otherwise let the update method handle it.
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             if (m_EditorElementUpdater.Position == 0 && editors.Any())
+#pragma warning restore RS0030
             {
                 // Force create a certain number of inspector elements without invoking a layout pass.
                 // We always want a minimum number of elements to be added.
@@ -1506,7 +1524,9 @@ namespace UnityEditor
 
         private void DragOverBottomArea(DragUpdatedEvent dragUpdatedEvent)
         {
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             if (DragAndDrop.objectReferences.Any())
+#pragma warning restore RS0030
             {
                 if (editorsElement != null && editorsElement.ContainsPoint(editorsElement.WorldToLocal(dragUpdatedEvent.mousePosition)))
                 {
@@ -1516,7 +1536,9 @@ namespace UnityEditor
 
                 if (editorsElement != null)
                 {
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     var lastChild = editorsElement.Children().LastOrDefault();
+#pragma warning restore RS0030
                     if (lastChild == null)
                         return;
 
@@ -1533,7 +1555,9 @@ namespace UnityEditor
             if (editorsElement.ContainsPoint(editorsElement.WorldToLocal(dragPerformedEvent.mousePosition)))
                 return;
 
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var lastChild = editorsElement.Children().LastOrDefault();
+#pragma warning restore RS0030
             if (lastChild == null)
                 return;
 
@@ -1691,7 +1715,9 @@ namespace UnityEditor
 
             // This is used if more than one asset is selected
             // Ideally the tracker should be refactored to track not just editors but also the selection that caused them, so we wouldn't need this
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return Selection.objects.Where(EditorUtility.IsPersistent).ToArray();
+#pragma warning restore RS0030
         }
 
         protected virtual bool BeginDrawPreviewAndLabels() { return true; }
@@ -1717,7 +1743,9 @@ namespace UnityEditor
 
             Object[] assets = GetInspectedAssets();
             bool hasLabels = assets.Length > 0;
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             bool hasBundleName = assets.Any(a => !(a is MonoScript) && AssetDatabase.IsMainAsset(a));
+#pragma warning restore RS0030
 
             if (!m_HasPreview && !hasLabels)
                 return;
@@ -1888,7 +1916,9 @@ namespace UnityEditor
             if (assets == null || assets.Length == 0)
                 return;
 
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             bool hasBundleName = assets.Any(a => !(a is MonoScript) && AssetDatabase.IsMainAsset(a));
+#pragma warning restore RS0030
             IPreviewable previewEditor = GetEditorThatControlsPreview(tracker.activeEditors);
             if (previewEditor == null || !previewEditor.HasPreviewGUI())
             {
@@ -1898,14 +1928,18 @@ namespace UnityEditor
             }
 
             GUILayout.BeginVertical(Styles.footer);
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             using (new EditorGUI.DisabledScope(assets.Any(a => !IsOpenForEdit(a) || !Editor.IsAppropriateFileOpenForEdit(a))))
+#pragma warning restore RS0030
             {
                 m_LabelGUI.OnLabelGUI(assets);
             }
 
             if (hasBundleName)
             {
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 using (new EditorGUI.DisabledScope(assets.Any(a => !IsOpenForEdit(a))))
+#pragma warning restore RS0030
                 {
                     m_AssetBundleNameGUI.OnAssetBundleNameGUI(assets);
                 }
@@ -2202,7 +2236,9 @@ namespace UnityEditor
             var selection = new HashSet<int>(Selection.entityIds.ToIntArray());
             if (m_DrawnSelection.SetEquals(selection))
             {
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 if (editorsElement.childCount > 0 && m_DrawnSelection.Any()) // do we already have a hierarchy
+#pragma warning restore RS0030
                 {
                     mapping = ProcessEditorElementsToRebuild(editors);
                 }
@@ -2316,7 +2352,9 @@ namespace UnityEditor
             }
 
             // Make sure to display any remaining removed components that come after the last component on the GameObject.
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             if (m_AdditionalRemovedComponents != null && m_AdditionalRemovedComponents.Count() > 0)
+#pragma warning restore RS0030
             {
                 VisualElement prefabsComponentElement = new VisualElement() { name = "RemainingPrefabComponentElement" };
                 foreach(var sourceComponent in m_AdditionalRemovedComponents)
@@ -2608,7 +2646,9 @@ namespace UnityEditor
                         m_OpenAddComponentMenu && Event.current.type == EventType.Repaint)
                     {
                         m_OpenAddComponentMenu = false;
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                         if (AddComponentWindow.Show(rect, editor.targets.Cast<GameObject>().Where(o => o).ToArray()))
+#pragma warning restore RS0030
                         {
                             // Repaint the inspector window to ensure the AddComponentWindow.Show
                             // does not clear the inspector window gl buffer, which blacks out the inspector window.
@@ -2646,7 +2686,9 @@ namespace UnityEditor
         private Dictionary<EntityId, IEditorElement> ProcessEditorElementsToRebuild(Editor[] editors)
         {
             Dictionary<EntityId, IEditorElement> editorToElementMap = new Dictionary<EntityId, IEditorElement>();
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var currentElements = editorsElement.Children().OfType<IEditorElement>().ToList();
+#pragma warning restore RS0030
             if ((editors.Length == 0) || (rootVisualElement.panel == null && currentElements.Count == 0))
             {
                 return null;
@@ -2728,7 +2770,9 @@ namespace UnityEditor
             if (objs == null || objs.Count == 0)
                 return null;
 
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var firstPropertyEditor = OpenPropertyEditor(objs.First());
+#pragma warning restore RS0030
             EditorApplication.delayCall += () =>
             {
                 var dock = firstPropertyEditor.m_Parent as DockArea;

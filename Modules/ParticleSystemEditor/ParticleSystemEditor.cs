@@ -124,8 +124,12 @@ namespace UnityEditor
 
         private void Init(bool forceInit)
         {
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             IEnumerable<ParticleSystem> systems = from p in targets.OfType<ParticleSystem>() where (p != null) select p;
+#pragma warning restore RS0030
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             if (systems == null || !systems.Any())
+#pragma warning restore RS0030
             {
                 m_ParticleEffectUI = null;
                 return;
@@ -282,7 +286,9 @@ namespace UnityEditor
 
         void OnOwnersSelected(object owners)
         {
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             Selection.objects = ((List<ParticleSystem>)owners).Select(o => o.gameObject).ToArray();
+#pragma warning restore RS0030
         }
 
         public override bool UseDefaultMargins() { return false; }

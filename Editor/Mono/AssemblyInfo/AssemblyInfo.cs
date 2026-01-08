@@ -250,6 +250,9 @@ using UnityEngine;
 [assembly: InternalsVisibleTo("Unity.Core.UnityEvent.Tests.Editor")]
 [assembly: InternalsVisibleTo("Unity.Core.Scripting.AssemblyVersion.Tests.Editor")]
 
+// Performance Tests Assemblies
+[assembly: InternalsVisibleTo("Unity.PerformanceTesting.IMGUI")]
+
 // Tests\CrossModulePackages\ScriptableRenderPipeline
 [assembly: InternalsVisibleTo("Unity.CrossModule.ScriptableRenderPipeline.Tests.Runtime")]
 [assembly: InternalsVisibleTo("Unity.CrossModule.ScriptableRenderPipeline.Tests.Editor")]
@@ -265,4 +268,5 @@ using UnityEngine;
 [assembly: InternalsVisibleTo("Unity.Modules.GI.Analytics.Tests.Editor")]
 [assembly: InternalsVisibleTo("Unity.CrossModule.AssetLoading.Tests.Editor")]
 [assembly: InternalsVisibleTo("Unity.Modules.SceneTemplateEditor.Tests.Editor")]
+[assembly: InternalsVisibleTo("Unity.Modules.Core.InspectorWindow.Tests.Editor")]
 

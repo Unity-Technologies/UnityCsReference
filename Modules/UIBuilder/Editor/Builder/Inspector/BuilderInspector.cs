@@ -547,12 +547,15 @@ namespace Unity.UI.Builder
             if (target != currentVisualElement || !IsElementSelected())
                 return;
 
-            // Find field
-            var field = BuilderInspectorUtilities.FindInspectorField(this, bindingPath);
+            // Find fields
+            var fields = BuilderInspectorUtilities.FindInspectorFields(this, bindingPath);
 
-            if (field != null)
+            if (fields != null)
             {
-                UpdateFieldStatus(field, null);
+                foreach (var field in fields)
+                {
+                    UpdateFieldStatus(field, null);
+                }
             }
         }
 
@@ -760,9 +763,11 @@ namespace Unity.UI.Builder
                     {
                         var bindingProperty = BuilderInspectorUtilities.GetBindingProperty(x);
                         var bindingId = new BindingId(bindingProperty);
-                        if (DataBindingUtility.TryGetLastUIBindingResult(bindingId, currentVisualElement, out var bindingResult))
+                        if (currentVisualElement.GetBinding(bindingId) != null)
                         {
                             hasBindings = true;
+                            DataBindingUtility.TryGetLastUIBindingResult(bindingId, currentVisualElement,
+                                out var bindingResult);
                             hasResolvedBindings |= bindingResult.status == BindingStatus.Success;
                         }
                     });
@@ -1752,11 +1757,15 @@ namespace Unity.UI.Builder
                 if (fields.Count > 1)
                 {
                     // Skip the box model and fetch the desired field.
+                    #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     field = fields.First(f => f is not BoxModel && string.IsNullOrEmpty(((BindableElement)f).bindingPath));
+#pragma warning restore RS0030
                 }
                 else
                 {
+                    #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     field = fields.First();
+#pragma warning restore RS0030
                 }
             }
             if (expand)
@@ -1851,7 +1860,9 @@ namespace Unity.UI.Builder
         public T FindBoxModelRelatedStyleField<T>(string styleName, bool expand = true) where T : BindableElement
         {
             var fields = styleFields.m_StyleFields[styleName];
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var field = fields.OfType<T>().FirstOrDefault(s => string.IsNullOrEmpty(s.bindingPath));
+#pragma warning restore RS0030
             if (expand)
                 ExpandParentFoldouts(field);
             return field;

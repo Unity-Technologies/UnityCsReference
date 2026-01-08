@@ -25,17 +25,29 @@ namespace UnityEditor.DeviceSimulation
             {
                 if (device.deviceInfo.IsAndroidDevice())
                 {
+                    #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     m_GraphicsSystemInfo = (
+#pragma warning restore RS0030
                         from selected in playerSettings.androidGraphicsAPIs
+                        #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                         from gfxDevice in m_SystemInfo.graphicsDependentData
+#pragma warning restore RS0030
+                        #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                         where selected == gfxDevice.graphicsDeviceType select gfxDevice).FirstOrDefault();
+#pragma warning restore RS0030
                 }
                 else if (device.deviceInfo.IsiOSDevice())
                 {
+                    #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     m_GraphicsSystemInfo = (
+#pragma warning restore RS0030
                         from selected in playerSettings.iOSGraphicsAPIs
+                        #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                         from gfxDevice in m_SystemInfo.graphicsDependentData
+#pragma warning restore RS0030
+                        #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                         where selected == gfxDevice.graphicsDeviceType select gfxDevice).FirstOrDefault();
+#pragma warning restore RS0030
                 }
                 if (m_GraphicsSystemInfo == null)
                 {

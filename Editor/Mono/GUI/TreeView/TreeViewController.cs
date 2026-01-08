@@ -293,7 +293,9 @@ namespace UnityEditor.IMGUI.Controls
 
         public TIdentifier[] GetRowIDs()
         {
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return (from item in data.GetRows() select item.id).ToArray();
+#pragma warning restore RS0030
         }
 
         public void SetSelection(TIdentifier[] selectedIDs, bool revealSelectionAndFrameLastSelected)
@@ -322,7 +324,9 @@ namespace UnityEditor.IMGUI.Controls
                 if (!hasLastClicked)
                 {
                     // See if we can find a valid id, we check the last selected (selectedids might contain invalid ids e.g scene objects in project browser and vice versa)
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     TIdentifier lastSelectedID = selectedIDs.Last();
+#pragma warning restore RS0030
                     if (data.GetRow(lastSelectedID) != -1)
                     {
                         state.lastClickedID = lastSelectedID;
@@ -740,7 +744,7 @@ namespace UnityEditor.IMGUI.Controls
 
             // Keep inside clip region so callbacks that might want to get
             // rects of rows have correct context.
-            KeyboardGUI();
+            KeyboardGUI(true);
 
             if (m_UseScrollView)
                 GUI.EndScrollView(showingVerticalScrollBar || showingHorizontalScrollBar);
@@ -1001,7 +1005,9 @@ namespace UnityEditor.IMGUI.Controls
 
             foreach (TIdentifier id in state.selectedIDs)
             {
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 TreeViewItem<TIdentifier> item = visibleItems.FirstOrDefault(i => i.id.Equals(id));
+#pragma warning restore RS0030
                 if (visibleAndSelectedItem == null)
                     visibleAndSelectedItem = item;
                 else if (item != null)
@@ -1142,13 +1148,15 @@ namespace UnityEditor.IMGUI.Controls
                     expandedIDs.UnionWith(parents);
                 else
                     expandedIDs.ExceptWith(parents);
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 data.SetExpandedIDs(expandedIDs.ToArray());
+#pragma warning restore RS0030
             }
         }
 
-        void KeyboardGUI()
+        public void KeyboardGUI(bool checkKeyboardControl)
         {
-            if (m_KeyboardControlID != GUIUtility.keyboardControl || !GUI.enabled)
+            if (checkKeyboardControl && m_KeyboardControlID != GUIUtility.keyboardControl || !GUI.enabled)
                 return;
 
             // Let client handle keyboard first
@@ -1308,7 +1316,9 @@ namespace UnityEditor.IMGUI.Controls
         {
             state.lastClickedID = itemID;
 
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             bool selectionChanged = !state.selectedIDs.SequenceEqual(newSelection);
+#pragma warning restore RS0030
             if (selectionChanged)
             {
                 state.selectedIDs = newSelection;
@@ -1430,7 +1440,9 @@ namespace UnityEditor.IMGUI.Controls
         public List<TIdentifier> SortIDsInVisiblityOrder(IList<TIdentifier> ids)
         {
             if (ids.Count <= 1)
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 return ids.ToList(); // no sorting needed
+#pragma warning restore RS0030
 
             var visibleRows = data.GetRows();
             List<TIdentifier> sorted = new List<TIdentifier>();
@@ -1450,7 +1462,9 @@ namespace UnityEditor.IMGUI.Controls
             // Some rows with selection are collapsed (not visible) so add those to the end
             if (ids.Count != sorted.Count)
             {
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 sorted.AddRange(ids.Except(sorted));
+#pragma warning restore RS0030
                 if (ids.Count != sorted.Count)
                     Debug.LogError("SortIDsInVisiblityOrder failed: " + ids.Count + " != " + sorted.Count);
             }

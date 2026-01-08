@@ -45,7 +45,7 @@ namespace UnityEditor
         void OnCreate(IWindowModel model);
         void OnDestroy(IWindowModel model);
 
-        bool GetTooltip(Vector2 windowMouseCoordinates, out string tooltip, out Rect screenRectPosition);
+        bool GetTooltip(Vector2 windowMouseCoordinates, out string tooltip, out Rect windowRectPosition);
 
         object visualTree { get; }
 

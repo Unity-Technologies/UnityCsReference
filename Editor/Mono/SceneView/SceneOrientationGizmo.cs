@@ -563,6 +563,7 @@ sealed class SceneOrientationGizmo : IMGUIOverlay
             view.isRotationLocked ? BlendMode.One : BlendMode.SrcAlpha,
             view.isRotationLocked ? BlendMode.Zero : BlendMode.OneMinusSrcAlpha))
         {
+            var prevHandlesCamera = Handles.currentCamera;
             using (new GUI.GroupScope(gizmoRect))
             {
                 var temp = RenderTexture.active;
@@ -583,6 +584,9 @@ sealed class SceneOrientationGizmo : IMGUIOverlay
 
                 RenderTexture.active = temp;
             }
+
+            // Restore camera after gizmo rendering
+            Handles.currentCamera = prevHandlesCamera;
 
             GUI.Label(gizmoRect, m_RenderTexture);
 

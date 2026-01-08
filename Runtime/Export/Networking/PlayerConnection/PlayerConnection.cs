@@ -73,7 +73,9 @@ namespace UnityEngine.Networking.PlayerConnection
                 throw new ArgumentException("Cant be Guid.Empty", "messageId");
             }
 
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             if (!m_PlayerEditorConnectionEvents.messageTypeSubscribers.Any(x => x.MessageTypeId == messageId))
+#pragma warning restore RS0030
             {
                 GetConnectionNativeApi().RegisterInternal(messageId);
             }
@@ -85,7 +87,9 @@ namespace UnityEngine.Networking.PlayerConnection
         public void Unregister(Guid messageId, UnityAction<MessageEventArgs> callback)
         {
             m_PlayerEditorConnectionEvents.UnregisterManagedCallback(messageId, callback);
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             if (!m_PlayerEditorConnectionEvents.messageTypeSubscribers.Any(x => x.MessageTypeId == messageId))
+#pragma warning restore RS0030
             {
                 GetConnectionNativeApi().UnregisterInternal(messageId);
             }

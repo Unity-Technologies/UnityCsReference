@@ -11,6 +11,12 @@ using UnityEngine.Scripting;
 
 namespace UnityEngine
 {
+    enum LoadableSceneFlags : int
+    {
+        None = 0,
+        FromBuiltContent = 1 << 0,
+    }
+
     /// <summary>
     /// Reference to a Scene.
     /// </summary>
@@ -40,6 +46,9 @@ namespace UnityEngine
         [SerializeField]
         [NativeName("guid")]
         internal GUID m_SceneGUID;
+
+        [SerializeField]
+        private LoadableSceneFlags m_Flags;
 
         /// <summary>
         /// Construct a LoadableScene.  Typically this is called in the Editor, during content authoring.

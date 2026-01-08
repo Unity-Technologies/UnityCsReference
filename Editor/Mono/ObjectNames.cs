@@ -26,7 +26,9 @@ namespace UnityEditor
 
                 foreach (var type in addComponentMenuTypes)
                 {
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     var attr = type.GetCustomAttributes(typeof(AddComponentMenu), false).FirstOrDefault()
+#pragma warning restore RS0030
                         as AddComponentMenu;
                     if (attr == null)
                         continue;

@@ -112,12 +112,16 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public bool IsAnyExperimentalPackagesInUse()
         {
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return PackageInfo.GetAllRegisteredPackages().Any(info => SemVersionParser.TryParse(info.version, out var parsedVersion) && parsedVersion?.GetExpOrPreOrReleaseTag() == PackageTag.Experimental);
+#pragma warning restore RS0030
         }
 
         public void OnBeforeSerialize()
         {
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             m_SerializedInProgressExtraFetchOperations = m_ExtraFetchOperations?.Values.Where(i => i.isInProgress).ToArray() ?? new UpmSearchOperation[0];
+#pragma warning restore RS0030
         }
 
         public void OnAfterDeserialize()
@@ -146,12 +150,16 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public bool IsRemoveInProgress(string packageName)
         {
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return m_AddAndRemoveOperation?.isInProgress == true && m_AddAndRemoveOperation.packagesNamesToRemove.Contains(packageName);
+#pragma warning restore RS0030
         }
 
         public bool IsAddInProgress(string packageId)
         {
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return m_AddAndRemoveOperation?.isInProgress == true && m_AddAndRemoveOperation.packageIdsToAdd.Contains(packageId);
+#pragma warning restore RS0030
         }
 
         public void AddById(string packageId)
@@ -243,9 +251,15 @@ namespace UnityEditor.PackageManager.UI.Internal
 
        private void SetupAddAndRemoveOperation()
         {
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var progressUpdates = addAndRemoveOperation.packageIdsToReset.Select(idOrName => (idOrName, PackageProgress.Resetting))
+#pragma warning restore RS0030
+                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 .Concat(addAndRemoveOperation.packageIdsToAdd.Select(idOrName => (idOrName, PackageProgress.Installing)))
+#pragma warning restore RS0030
+                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 .Concat(addAndRemoveOperation.packagesNamesToRemove.Select(name => (name, PackageProgress.Removing)));
+#pragma warning restore RS0030
             onPackagesProgressChange?.Invoke(progressUpdates);
 
             if (addAndRemoveOperation.isSpecialInstall)
@@ -271,8 +285,12 @@ namespace UnityEditor.PackageManager.UI.Internal
                 if (addAndRemoveOperation.isSpecialInstall)
                     onSpecialInstallFinalize?.Invoke(addAndRemoveOperation.packageIdOrName, mainPackageInfo?.name ?? string.Empty);
 
+                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 var allIdOrNames = addAndRemoveOperation.packageIdsToAdd.Concat(addAndRemoveOperation.packageIdsToReset).Concat(addAndRemoveOperation.packagesNamesToRemove);
+#pragma warning restore RS0030
+                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 onPackagesProgressChange?.Invoke(allIdOrNames.Select(idOrName => (idOrName, PackageProgress.None)));
+#pragma warning restore RS0030
             };
             addAndRemoveOperation.logErrorInConsole = true;
         }
@@ -442,7 +460,9 @@ namespace UnityEditor.PackageManager.UI.Internal
             }
 
             if (successCallback != null)
+                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 operation.onProcessResult += request => successCallback.Invoke(request.Result.FirstOrDefault());
+#pragma warning restore RS0030
             if (errorCallback != null)
                 operation.onOperationError += (_, error) => errorCallback.Invoke(error);
             if (doneCallback != null)
@@ -451,7 +471,9 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private void OnProcessExtraFetchResult(SearchRequest request, long timestamp, long productId = 0)
         {
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var packageInfo = request.Result.FirstOrDefault();
+#pragma warning restore RS0030
             if (productId > 0)
             {
                 m_UpmCache.SetProductSearchPackageInfo(productId, packageInfo, timestamp);

@@ -116,7 +116,9 @@ namespace UnityEditor.Search.Providers
 
         public ObjectQueryEngine(IEnumerable<T> objects)
         {
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             m_Objects = objects.ToList();
+#pragma warning restore RS0030
             var filter = m_QueryEngine.SetFilter<EntityId>("id", GetId);
             filter.AddTypeParser(EntityIdTypeParser);
 
@@ -168,7 +170,9 @@ namespace UnityEditor.Search.Providers
                     continue;
                 types.Add(o.GetType());
                 if (o is GameObject go)
+                    #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     types.UnionWith(go.GetComponents<Component>().Where(c => c).Select(c => c.GetType()));
+#pragma warning restore RS0030
             }
 
             return types;
@@ -179,10 +183,14 @@ namespace UnityEditor.Search.Providers
             if (m_TypePropositions == null && m_Objects != null)
             {
                 var types = FetchPropositionTypes();
+                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 m_TypePropositions = new HashSet<SearchProposition>(types.Select(t => CreateTypeProposition(t, prefixFilterId)));
+#pragma warning restore RS0030
             }
 
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return m_TypePropositions ?? Enumerable.Empty<SearchProposition>();
+#pragma warning restore RS0030
         }
 
         static SearchProposition CreateTypeProposition(in Type t, string prefixFilterId)
@@ -206,8 +214,12 @@ namespace UnityEditor.Search.Providers
             if (!query.valid)
             {
                 if (reportError)
+                    #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     context.AddSearchQueryErrors(query.errors.Select(e => new SearchQueryError(e, context, provider)));
+#pragma warning restore RS0030
+                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 return Enumerable.Empty<T>();
+#pragma warning restore RS0030
             }
 
             m_DoFuzzyMatch = query.HasToggle("fuzzy");
@@ -362,7 +374,9 @@ namespace UnityEditor.Search.Providers
                 }
 
                 IndexTypes(obj.GetType(), types, isPrefab);
+                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 god.types = types.ToArray();
+#pragma warning restore RS0030
             }
 
             return CompareWords(op, value.ToLowerInvariant(), god.types);
@@ -513,8 +527,12 @@ namespace UnityEditor.Search.Providers
         protected bool CompareWords(in QueryFilterOperator op, string value, in IEnumerable<string> words, StringComparison stringComparison = StringComparison.Ordinal)
         {
             if (op.type == FilterOperatorType.Equal)
+                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 return words.Any(t => t.Equals(value, stringComparison));
+#pragma warning restore RS0030
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return words.Any(t => t.IndexOf(value, stringComparison) != -1);
+#pragma warning restore RS0030
         }
 
         IEnumerable<string> OnSearchData(T go)
@@ -523,7 +541,9 @@ namespace UnityEditor.Search.Providers
 
             if (god.words == null)
             {
+                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 god.words = SplitName(go.name, s_EntrySeparators)
+#pragma warning restore RS0030
                     .Select(w => w.ToLowerInvariant())
                     .Where(w => w.Length > 1)
                     .ToArray();
@@ -550,8 +570,12 @@ namespace UnityEditor.Search.Providers
             yield return entry;
             var cleanName = CleanName(entry);
             var nameTokens = cleanName.Split(entrySeparators);
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var scc = nameTokens.SelectMany(s => SearchUtils.SplitCamelCase(s)).Where(s => s.Length > 0);
+#pragma warning restore RS0030
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var fcc = scc.Aggregate("", (current, s) => current + s[0]);
+#pragma warning restore RS0030
             yield return fcc;
         }
 

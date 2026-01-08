@@ -80,25 +80,37 @@ namespace Unity.ProjectAuditor.Editor.SettingsAnalysis
         internal static bool IsMixedStandardShaderQuality(BuildTarget platform)
         {
             var buildGroup = BuildPipeline.GetBuildTargetGroup(platform);
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var standardShaderQualities = k_GraphicsTiers.Select(tier => EditorGraphicsSettings.GetTierSettings(buildGroup, tier).standardShaderQuality);
+#pragma warning restore RS0030
 
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return standardShaderQualities.Distinct().Count() > 1;
+#pragma warning restore RS0030
         }
 
         internal static bool IsUsingForwardRendering(BuildTarget platform)
         {
             var buildGroup = BuildPipeline.GetBuildTargetGroup(platform);
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var renderingPaths = k_GraphicsTiers.Select(tier => EditorGraphicsSettings.GetTierSettings(buildGroup, tier).renderingPath);
+#pragma warning restore RS0030
 
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return renderingPaths.Any(path => path == RenderingPath.Forward);
+#pragma warning restore RS0030
         }
 
         internal static bool IsUsingDeferredRendering(BuildTarget platform)
         {
             var buildGroup = BuildPipeline.GetBuildTargetGroup(platform);
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var renderingPaths = k_GraphicsTiers.Select(tier => EditorGraphicsSettings.GetTierSettings(buildGroup, tier).renderingPath);
+#pragma warning restore RS0030
 
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return renderingPaths.Any(path => path == RenderingPath.DeferredShading);
+#pragma warning restore RS0030
         }
     }
 }

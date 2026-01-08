@@ -12,6 +12,7 @@ namespace Unity.UIToolkit.Editor;
 internal class UIToolkitAuthoringSettingsProvider : IUIToolkitSettingsProviderExtension
 {
     private const string k_EnableHierarchyIntegrationText = "Enable Hierarchy Integration";
+    private const string k_EnableUIStagesText = "Enable UI Stages";
     private const string k_DisplayOptionsText = "Display Options";
     private const string k_DisplayTypenameOptionsText = "Always Display Typename";
     private const string k_DisplayUssClassOptionsText = "Display USS classes";
@@ -50,6 +51,20 @@ internal class UIToolkitAuthoringSettingsProvider : IUIToolkitSettingsProviderEx
         });
 
         rootElement.Add(hierarchyIntegration);
+
+        var uiStagesIntegration = new Toggle()
+        {
+            text = k_EnableUIStagesText,
+            value = UIToolkitAuthoringSettings.EnableUIStages
+        };
+
+        uiStagesIntegration.RegisterValueChangedCallback(evt =>
+        {
+            UIToolkitAuthoringSettings.EnableUIStages = evt.newValue;
+        });
+
+        // [TODO]: Uncomment this line to expose the UI stages to users.
+        //rootElement.Add(uiStagesIntegration);
 
         var displayOptions = new Label(k_DisplayOptionsText);
         displayOptions.style.paddingTop = 20;

@@ -44,7 +44,9 @@ namespace UnityEditor.Scripting.ScriptCompilation
 
         public static IEnumerable<TargetAssembly> GetReferences(IEnumerable<TargetAssembly> assembliesCustomTargetAssemblies)
         {
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return assembliesCustomTargetAssemblies.Where(x =>
+#pragma warning restore RS0030
                 x.Filename == k_EditorTestRunnerAssemblyName ||
                 x.Filename == k_EngineTestRunnerAssemblyName);
         }

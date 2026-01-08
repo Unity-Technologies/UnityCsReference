@@ -63,7 +63,9 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private MultiSelectFoldoutGroup[] m_FoldoutGroups;
 
+        #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
         private IEnumerable<IMultiSelectFoldoutElement> allFoldoutElements => m_StandaloneFoldouts.Cast<IMultiSelectFoldoutElement>().Concat(m_FoldoutGroups);
+#pragma warning restore RS0030
 
         public MultiSelectDetails()
         {
@@ -147,7 +149,9 @@ namespace UnityEditor.PackageManager.UI.Internal
         private void OnUpdateChecked(IEnumerable<long> productIds)
         {
             var selection = m_PageManager.activePage.GetSelection();
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             if (productIds.Any(id => selection.Contains(id.ToString())))
+#pragma warning restore RS0030
                 Refresh(selection);
         }
 
@@ -159,7 +163,9 @@ namespace UnityEditor.PackageManager.UI.Internal
             title.text = string.Format(L10n.Tr("{0} {1} selected"), selections.Count, selections.Count > 1 ? L10n.Tr("items") : L10n.Tr("item"));
 
             // We get the versions from the visual states instead of directly from the selection to keep the ordering of packages
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var packages = m_PageManager.activePage.visualStates.Select(visualState =>
+#pragma warning restore RS0030
             {
                 if (!selections.Contains(visualState.packageUniqueId))
                     return null;
@@ -199,7 +205,9 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private void OnDeselectLockedSelectionsClicked()
         {
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var packageUniqueIds = m_UnlockFoldout.packages.Select(p => p.uniqueId).ToArray();
+#pragma warning restore RS0030
             m_PageManager.activePage.RemoveSelection(packageUniqueIds);
             PackageManagerWindowAnalytics.SendEvent("deselectLocked", packageIds: packageUniqueIds);
         }

@@ -20,6 +20,8 @@ namespace Unity.Properties
 
     /// <summary>
     /// Interface used to receive a visitation callbacks for property bags.
+    ///
+    /// For more information on how to implement a property visitor by implementing this interface, including an example, refer to [Create a property visitor with low-level APIs](/property-visitors-low-level-api.md)
     /// </summary>
     public interface IPropertyBagVisitor
     {
@@ -114,6 +116,8 @@ namespace Unity.Properties
 
     /// <summary>
     /// Interface for receiving strongly typed property callbacks.
+    ///
+    /// For more information on how to implement a property visitor by implementing this interface, including an example, refer to [Create a property visitor with low-level APIs](/property-visitors-low-level-api.md)
     /// </summary>
     public interface IPropertyVisitor
     {

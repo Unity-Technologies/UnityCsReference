@@ -10,6 +10,7 @@ using Bee.BeeDriver;
 using Bee.BinLog;
 using NiceIO;
 using ScriptCompilationBuildProgram.Data;
+using System.Text.RegularExpressions;
 using Unity.Profiling;
 using UnityEditor.Build.Player;
 using UnityEditor.Compilation;
@@ -24,6 +25,18 @@ namespace UnityEditor.Scripting.ScriptCompilation
     {
         internal static string ExecutableExtension => Application.platform == RuntimePlatform.WindowsEditor ? ".exe" : "";
         private static string projectPath = Path.GetDirectoryName(Application.dataPath);
+
+        private static Lazy<string> _RoslynPath = new(() => {
+            NPath sdkPath = new NPath(EditorApplication.applicationScriptingPath).Combine("DotNetSdk/sdk");
+            var dirs = sdkPath.Directories(recurse: false);
+            var re = new Regex(@"^[1-9]+[0-9]*\.[0-9]+\.[0-9]+$");
+            foreach (var dir in dirs)
+                if (re.IsMatch(dir.FileName))
+                    return dir.Combine("Roslyn/bincore").ToString(SlashMode.Native);
+
+            throw new Exception($"Error: unable to locate {EditorApplication.applicationScriptingPath}/sdk/*/Roslyn/bincore directory");
+        });
+        private static string RoslynPath => _RoslynPath.Value;
 
         public static ScriptCompilationData ScriptCompilationDataFor(
             EditorCompilation editorCompilation,
@@ -48,7 +61,6 @@ namespace UnityEditor.Scripting.ScriptCompilation
             }
 
             var movedFromExtractorPath = $"{EditorApplication.applicationBuildPipelinePath}/Compilation/ApiUpdater/ApiUpdater.MovedFromExtractor.dll";
-            var dotNetSdkRoslynPath = $"{EditorApplication.applicationScriptingPath}/DotNetSdkRoslyn";
 
             var localization = "en-US";
             if (LocalizationDatabase.currentEditorLanguage != SystemLanguage.English && EditorPrefs.GetBool("Editor.kEnableCompilerMessagesLocalization", false))
@@ -112,7 +124,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
             {
                 OutputDirectory = outputDirectory,
                 DotnetRuntimePath = NetCoreProgram.DotNetRuntimePath.ToString(),
-                DotnetRoslynPath = dotNetSdkRoslynPath,
+                DotnetRoslynPath = RoslynPath,
                 MovedFromExtractorPath = movedFromExtractorPath,
                 Assemblies = cachedAssemblies,
                 CodegenAssemblies = codeGenAssemblies,
@@ -122,9 +134,15 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 EnableDiagnostics = editorCompilation.EnableDiagnostics,
                 BuildPlayerDataOutput = $"Library/BuildPlayerData/{(buildingForEditor ? "Editor" : "Player")}",
                 ExtractRuntimeInitializeOnLoads = !buildingForEditor,
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 AssembliesToScanForTypeDB = assembliesToScanForTypeDB.OrderBy(p => p).ToArray(),
+#pragma warning restore RS0030
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 SearchPaths = searchPaths.OrderBy(p => p).ToArray(),
+#pragma warning restore RS0030
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 UnityAssembliesToScanForLifecycle = unityAssembliesToScanForLifecycle.ToArray(),
+#pragma warning restore RS0030
                 EmitInfoForScriptUpdater = enableScriptUpdater,
                 TargetingPacks = new[]
                 {
@@ -138,7 +156,9 @@ namespace UnityEditor.Scripting.ScriptCompilation
         }
 
         private static ScriptAssembly[] CodeGenAssemblies(ScriptAssembly[] assemblies) =>
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             assemblies
+#pragma warning restore RS0030
                 .Where(assembly => UnityCodeGenHelpers.IsCodeGen(FileUtil.GetPathWithoutExtension(assembly.Filename)))
                 .SelectMany(assembly => assembly.AllRecursiveScripAssemblyReferencesIncludingSelf())
                 .Distinct()
@@ -148,7 +168,9 @@ namespace UnityEditor.Scripting.ScriptCompilation
         private static AssemblyData[] AssemblyDataFrom(ScriptAssembly[] assemblies)
         {
             Array.Sort(assemblies, (a1, a2) => string.Compare(a1.Filename, a2.Filename, StringComparison.Ordinal));
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return assemblies.Select((scriptAssembly, index) =>
+#pragma warning restore RS0030
             {
                 using (new ProfilerMarker($"AssemblyDataFrom {scriptAssembly.Filename}").Auto())
                     return AssemblyDataFrom(scriptAssembly, assemblies, index);
@@ -158,7 +180,9 @@ namespace UnityEditor.Scripting.ScriptCompilation
         private static AssemblyData AssemblyDataFrom(ScriptAssembly a, ScriptAssembly[] allAssemblies, int index)
         {
             Array.Sort(a.Files, StringComparer.Ordinal);
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var references = a.ScriptAssemblyReferences.Select(r => Array.IndexOf(allAssemblies, r)).ToArray();
+#pragma warning restore RS0030
             Array.Sort(references);
             return new AssemblyData
             {
@@ -209,7 +233,9 @@ namespace UnityEditor.Scripting.ScriptCompilation
             int resultIndex = 0;
             if (hasBeeDriverMessages)
             {
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 result[resultIndex] = beeDriverMessages.Select(AsCompilerMessage).ToArray();
+#pragma warning restore RS0030
                 ++resultIndex;
             }
             for (int i = 0; i != nodeResults.Length; i++)
@@ -225,7 +251,9 @@ namespace UnityEditor.Scripting.ScriptCompilation
             while (totalErrors < 10 && nextResultToAugment < result.Length)
             {
                 UnitySpecificCompilerMessages.AugmentMessagesInCompilationErrorsWithUnitySpecificAdvice(result[nextResultToAugment], editorCompilation);
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 totalErrors += result[nextResultToAugment].Count(m => m.type == CompilerMessageType.Error);
+#pragma warning restore RS0030
                 ++nextResultToAugment;
             }
 
@@ -255,7 +283,9 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 ? (CompilerOutputParserBase) new PostProcessorOutputParser()
                 : (CompilerOutputParserBase) new MicrosoftCSharpCompilerOutputParser();
 
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return parser
+#pragma warning restore RS0030
                 .Parse(
                 (nodeResult.Output ?? string.Empty).Split(new[] {'\r', '\n'},
                     StringSplitOptions.RemoveEmptyEntries),

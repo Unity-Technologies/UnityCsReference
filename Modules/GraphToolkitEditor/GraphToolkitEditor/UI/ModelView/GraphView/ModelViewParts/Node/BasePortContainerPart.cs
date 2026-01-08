@@ -87,7 +87,9 @@ namespace Unity.GraphToolkit.Editor
         {
             if (m_Model is PortNodeModel portHolder)
             {
+                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 var ports = portHolder.GetPorts().Where(PortFilter);
+#pragma warning restore RS0030
                 PortContainer?.UpdatePorts(visitor, ports, m_OwnerElement.RootView);
             }
         }

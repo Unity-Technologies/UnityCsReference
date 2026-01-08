@@ -61,7 +61,9 @@ namespace UnityEditor.Search
 
             public override string ToString()
             {
+                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 return string.Join(", ", arguments.Select(a => a.types));
+#pragma warning restore RS0030
             }
         }
 
@@ -114,7 +116,9 @@ namespace UnityEditor.Search
             // Second pass to validate the argument types. The last error is kept (lowest number of arguments if no signature matches the number of argument, wrong type if there is at least one)
             var lastError = "";
             var errorPosition = StringView.nil;
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             if (signatures.Where(s => ValidateExpressionArgumentsCount(c.expression.evaluator.name, c.args, s, (msg, errorPos) => { lastError = msg; errorPosition = errorPos; })).ToList()
+#pragma warning restore RS0030
                 .Any(s => ValidateExpressionArguments(c.expression.evaluator.name, c.args, s, (msg, errorPos) => { lastError = msg; errorPosition = errorPos; })))
                 return;
 
@@ -129,7 +133,9 @@ namespace UnityEditor.Search
             // Second pass to validate the argument types. The last error is kept (lowest number of arguments if no signature matches the number of argument, wrong type if there is at least one)
             var lastError = "";
             var errorPosition = StringView.nil;
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             if (signatures.Where(s => ValidateExpressionArgumentsCount(evaluator.name, args, s, (msg, errorPos) => { lastError = msg; errorPosition = errorPos; })).ToList()
+#pragma warning restore RS0030
                 .Any(s => ValidateExpressionArguments(evaluator.name, args, s, (msg, errorPos) => { lastError = msg; errorPosition = errorPos; })))
                 return;
 
@@ -146,7 +152,9 @@ namespace UnityEditor.Search
                 return true;
 
             var mandatoryArgumentNumber = signature.mandatoryArgumentNumber;
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             if (actualArgsCount > expectedArgsCount && (expectedArgsCount == 0 || !signature.arguments.Last().variadic))
+#pragma warning restore RS0030
             {
                 errorHandler($"{name} takes a maximum of {expectedArgsCount} arguments and was passed: {actualArgsCount}.", StringView.nil);
                 return false;

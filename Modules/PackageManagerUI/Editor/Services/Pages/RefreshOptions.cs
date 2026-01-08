@@ -25,7 +25,9 @@ namespace UnityEditor.PackageManager.UI.Internal
     {
         public static RefreshOptions[] Split(this RefreshOptions value)
         {
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return Enum.GetValues(typeof(RefreshOptions)).Cast<RefreshOptions>()
+#pragma warning restore RS0030
                 .Where(r => (value & r) != 0).ToArray();
         }
 

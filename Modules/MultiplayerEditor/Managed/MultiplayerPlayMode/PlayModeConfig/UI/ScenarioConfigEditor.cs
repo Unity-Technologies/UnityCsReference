@@ -55,7 +55,6 @@ namespace Unity.Multiplayer.PlayMode.Editor
 
             container.Add(CreateEditorInstancesElement());
             container.Add(CreateLocalInstancesElement());
-            container.Add(CreateRemoteInstanceElement());
 
             return container;
         }
@@ -252,36 +251,6 @@ namespace Unity.Multiplayer.PlayMode.Editor
             });
 
             container.Add(localInstanceUI);
-            return container;
-        }
-
-        private VisualElement CreateRemoteInstanceElement()
-        {
-            if (!EditorMultiplayerManager.enablePlayModeRemoteDeployment)
-                return null;
-
-            var container = new VisualElement();
-            container.AddToClassList("instances-group");
-            var remoteInstancesProperty = serializedObject.FindProperty("m_RemoteInstances");
-
-            if (!OrchestratedScenario.PackagesForRemoteDeployInstalled(out var missingPacks))
-            {
-                container.Add(CreateMissingPackageHelpbox(missingPacks));
-                return container;
-            }
-
-            var remoteInstancesUI = new PropertyField(remoteInstancesProperty) { name = k_RemoteInstanceListName };
-            remoteInstancesUI.RegisterCallback<GeometryChangedEvent>(evt =>
-            {
-                var listView = remoteInstancesUI.Q<ListView>();
-
-                // Use the reorderable flag to check if the setup already happened.
-                if (listView == null || listView.reorderable == false)
-                    return;
-                SetupListView(listView, remoteInstancesProperty, typeof(RemoteInstanceDescription), MaxServerCount,
-                    "Remote Instances are builds that will get deployed to UGS and will run there.");
-            });
-            container.Add(remoteInstancesUI);
             return container;
         }
 

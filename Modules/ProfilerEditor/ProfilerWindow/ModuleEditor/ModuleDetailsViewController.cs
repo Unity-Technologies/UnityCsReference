@@ -271,7 +271,9 @@ namespace UnityEditor.Profiling.ModuleEditor
         void OnTreeViewSelectionChanged(IEnumerable<int> selectedIndices)
         {
             var selectedCounterItems = new List<int>();
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             foreach (var index in selectedIndices.ToList())
+#pragma warning restore RS0030
             {
                 var selectedItem = m_AllCountersTreeViewController.GetTreeViewItemDataForIndex(index);
                 // Only counters have no children.
@@ -341,7 +343,9 @@ namespace UnityEditor.Profiling.ModuleEditor
 
         void RemoveSelectedCountersFromModule()
         {
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var selectedIndices = m_ChartCountersListView.selectedIndices.ToList();
+#pragma warning restore RS0030
             selectedIndices.Sort((a, b) => b.CompareTo(a)); // Ensure indices are in reverse order as we are deleting.
             for (int i = 0; i < selectedIndices.Count; i++)
             {

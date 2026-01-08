@@ -653,7 +653,7 @@ namespace Unity.Hierarchy.Editor
             if (DragAndDropHelpers.IsDraggingScene(data) || DragAndDropHelpers.IsDraggingEntity(data))
                 return DragVisualMode.None;
 
-            if (StageNavigationManager.instance.currentStage is not MainStage)
+            if (StageNavigationManager.instance.currentStage is PrefabStage)
             {
                 var result = PrefabModeDraggingHandler(data, perform);
                 if (result != DragVisualMode.None)

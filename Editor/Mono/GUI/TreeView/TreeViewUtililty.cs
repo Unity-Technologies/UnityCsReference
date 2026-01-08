@@ -42,12 +42,16 @@ namespace UnityEditor.IMGUI.Controls
 
         internal static List<TreeViewItem<TIdentifier>> FindItemsInList(IEnumerable<TIdentifier> itemIDs, IList<TreeViewItem<TIdentifier>> treeViewItems)
         {
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return (from x in treeViewItems where itemIDs.Contains(x.id) select x).ToList();
+#pragma warning restore RS0030
         }
 
         internal static TreeViewItem<TIdentifier> FindItemInList<T>(TIdentifier id, IList<T> treeViewItems) where T : TreeViewItem<TIdentifier>
         {
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return treeViewItems.FirstOrDefault(t => t.id.Equals(id));
+#pragma warning restore RS0030
         }
 
         // Assumes full tree

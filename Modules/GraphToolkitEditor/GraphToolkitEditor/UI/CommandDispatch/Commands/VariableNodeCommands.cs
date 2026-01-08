@@ -107,7 +107,9 @@ namespace Unity.GraphToolkit.Editor
             using (var selectionUpdater = selectionState.UpdateScope)
             using (var changeScope = graphModel.ChangeDescriptionScope)
             {
+                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 foreach (var constantModel in command.ConstantNodeModels ?? Enumerable.Empty<ConstantNodeModel>())
+#pragma warning restore RS0030
                 {
                     var declarationModel = graphModel.CreateGraphVariableDeclaration(
                         constantModel.Type.GenerateTypeHandle(),
@@ -124,7 +126,9 @@ namespace Unity.GraphToolkit.Editor
                         if (constantModel.ElementColor.HasUserColor)
                             variableModel.SetColor(constantModel.ElementColor.Color);
 
+                        #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                         foreach (var wireModel in graphModel.GetWiresForPort(constantModel.OutputPort).ToList())
+#pragma warning restore RS0030
                         {
                             graphModel.CreateWire(wireModel.ToPort, variableModel.OutputPort);
                             graphModel.DeleteWire(wireModel);
@@ -134,7 +138,9 @@ namespace Unity.GraphToolkit.Editor
                     graphModel.DeleteNode(constantModel, deleteConnections: false);
                 }
 
+                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 foreach (var variableModel in command.VariableNodeModels ?? Enumerable.Empty<VariableNodeModel>())
+#pragma warning restore RS0030
                 {
                     if (graphModel.GetConstantType(variableModel.DataType) == null)
                         continue;
@@ -145,7 +151,9 @@ namespace Unity.GraphToolkit.Editor
                         constantModel.SetColor(variableModel.ElementColor.Color);
                     selectionUpdater.SelectElement(constantModel, true);
 
+                    #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     var wireModels = graphModel.GetWiresForPort(variableModel.OutputPort).ToList();
+#pragma warning restore RS0030
                     foreach (var wireModel in wireModels)
                     {
                         graphModel.CreateWire(wireModel.ToPort, constantModel.OutputPort);
@@ -207,9 +215,13 @@ namespace Unity.GraphToolkit.Editor
             using (var graphUpdater = graphModelState.UpdateScope)
             using (var changeScope = graphModel.ChangeDescriptionScope)
             {
+                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 foreach (var model in command.Models.Where(m => m is VariableNodeModel || m is ConstantNodeModel))
+#pragma warning restore RS0030
                 {
+                    #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     var wireModels = graphModel.GetWiresForPort(model.OutputPort).ToList();
+#pragma warning restore RS0030
 
                     for (var i = 1; i < wireModels.Count; i++)
                     {

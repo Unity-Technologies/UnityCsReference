@@ -30,7 +30,9 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public override bool ShouldInclude(IPackage package)
         {
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return package?.versions.All(v => v.HasTag(PackageTag.BuiltIn)) == true;
+#pragma warning restore RS0030
         }
     }
 }

@@ -66,7 +66,9 @@ internal class SelectionWindowRow : VisualElement
         RefreshInfoLabel(node);
 
         var removeIconVisible = (!node.isFolder && selected) || (node.isFolder && !isExpanded &&
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             windowData.GetChildren(node, true).Any(n => !n.isFolder && windowData.IsSelected(n.index)));
+#pragma warning restore RS0030
         UIUtils.SetElementDisplay(m_RemoveIcon, removeIconVisible);
     }
 

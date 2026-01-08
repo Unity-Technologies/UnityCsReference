@@ -17,8 +17,12 @@ namespace Unity.GraphToolkit.Editor
 
         protected void SendPlacementCommand(List<Model> updatedModels, List<Vector2> updatedDeltas)
         {
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var models = updatedModels.OfType<IMovable>();
+#pragma warning restore RS0030
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             m_GraphView.Dispatch(new AutoPlaceElementsCommand(updatedDeltas, models.ToList()));
+#pragma warning restore RS0030
         }
 
         protected Dictionary<Model, Vector2> GetElementDeltaResults()
@@ -40,7 +44,9 @@ namespace Unity.GraphToolkit.Editor
         void GetSelectedElementModels()
         {
             m_SelectedElementModels.Clear();
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             m_SelectedElementModels.UnionWith(m_GraphView.GetSelection().Where(element => !(element is WireModel) && element.IsMovable()));
+#pragma warning restore RS0030
             m_LeftOverElementModels = new HashSet<Model>(m_SelectedElementModels);
         }
 
@@ -56,8 +62,12 @@ namespace Unity.GraphToolkit.Editor
 
         void GetPlacematsBoundingRects(ref List<(Rect, List<Model>)> boundingRects)
         {
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             List<PlacematModel> selectedPlacemats = m_SelectedElementModels.OfType<PlacematModel>().ToList();
+#pragma warning restore RS0030
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             foreach (var placemat in selectedPlacemats.Where(placemat => m_LeftOverElementModels.Contains(placemat)))
+#pragma warning restore RS0030
             {
                 Placemat placematUI = placemat.GetView<Placemat>(m_GraphView);
                 if (placematUI != null)
@@ -89,7 +99,9 @@ namespace Unity.GraphToolkit.Editor
             // Adjust the bounding rect with elements overlapping any of the placemats on the bounding rect
             AdjustPlacematBoundingRect(ref boundingRect, ref elementsOnBoundingRect, placematsOnBoundingRect);
 
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             foreach (var otherRect in boundingRects.ToList())
+#pragma warning restore RS0030
             {
                 Rect otherBoundingRect = otherRect.Item1;
                 List<Model> otherBoundingRectElements = otherRect.Item2;
@@ -114,7 +126,9 @@ namespace Unity.GraphToolkit.Editor
                 var elements = tuple.Item2;
 
                 Vector2 delta = GetDelta(boundingRect, referencePosition);
+                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 foreach (var element in elements.Where(element => !deltas.ContainsKey(element)))
+#pragma warning restore RS0030
                 {
                     deltas[element] = delta;
                 }
@@ -128,7 +142,9 @@ namespace Unity.GraphToolkit.Editor
         {
             List<Placemat> placematsOnBoundingRect = new List<Placemat>();
 
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             foreach (PlacematModel placemat in selectedPlacemats.Where(placemat => m_LeftOverElementModels.Contains(placemat)))
+#pragma warning restore RS0030
             {
                 Placemat placematUI = placemat.GetView<Placemat>(m_GraphView);
                 if (placematUI != null && placematUI.layout.Overlaps(boundingRect))
@@ -147,10 +163,14 @@ namespace Unity.GraphToolkit.Editor
         static readonly List<ChildView> k_AdjustPlacematBoundingRectAllUIs = new();
         void AdjustPlacematBoundingRect(ref Rect boundingRect, ref List<Model> elementsOnBoundingRect, List<Placemat> placematsOnBoundingRect)
         {
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             m_GraphView.GraphModel.GetGraphElementModels()
+#pragma warning restore RS0030
                 .Where(e => e != null && !(e is PlacematModel))
                 .GetAllViews(m_GraphView, null, k_AdjustPlacematBoundingRectAllUIs);
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             foreach (var elementUI in k_AdjustPlacematBoundingRectAllUIs.OfType<GraphElement>())
+#pragma warning restore RS0030
             {
                 if (IsOnPlacemats(elementUI, placematsOnBoundingRect))
                 {

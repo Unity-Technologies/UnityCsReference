@@ -46,7 +46,9 @@ namespace UnityEditor.Search
                 return;
             }
 
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var providers = new[] { "Default" }.Concat(SearchColumnProvider.providers.Select(p => p.provider)).ToList();
+#pragma warning restore RS0030
             var selectedProvider = Math.Max(0, providers.IndexOf(sc.provider));
             var formatPopup = new PopupField<string>(providers, selectedProvider, ObjectNames.NicifyVariableName, ObjectNames.NicifyVariableName)
             {

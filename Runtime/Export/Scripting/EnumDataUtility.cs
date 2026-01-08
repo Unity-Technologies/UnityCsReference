@@ -65,7 +65,9 @@ namespace UnityEngine
             }
 
             // For Empty List Scenario
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             if (!enumfieldlist.Any())
+#pragma warning restore RS0030
             {
                 string[] defaultstr = { "" };
                 Enum[] defaultenum = {};
@@ -83,10 +85,14 @@ namespace UnityEngine
             // We can't order the enum from its MetadataToken if its Assembly Dynamic because of a bug in .NET
             try
             {
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 var location = enumfieldlist.First().Module.Assembly.GetLoadedAssemblyPath();
+#pragma warning restore RS0030
                 if (!string.IsNullOrEmpty(location))
                 {
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     enumfieldlist = enumfieldlist.OrderBy(f => f.MetadataToken).ToList();
+#pragma warning restore RS0030
                 }
             }
             catch
@@ -94,18 +100,24 @@ namespace UnityEngine
                 // ignored
             }
 
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             enumData.displayNames = enumfieldlist.Select(f => EnumNameFromEnumField(f, nicifyName)).ToArray();
+#pragma warning restore RS0030
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             if (enumData.displayNames.Distinct().Count() != enumData.displayNames.Length)
+#pragma warning restore RS0030
             {
                 Debug.LogWarning(
                     $"Enum {enumType.Name} has multiple entries with the same display name, this prevents selection in EnumPopup.");
             }
 
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             enumData.tooltip = enumfieldlist.Select(f => EnumTooltipFromEnumField(f)).ToArray();
             enumData.values = enumfieldlist.Select(f => (Enum)f.GetValue(null)).ToArray();
             enumData.flagValues = enumData.unsigned
                 ? enumData.values.Select(v => unchecked((int)Convert.ToUInt64(v))).ToArray()
                 : enumData.values.Select(v => unchecked((int)Convert.ToInt64(v))).ToArray();
+#pragma warning restore RS0030
 
             enumData.names = new string[enumData.values.Length];
             for (int i = 0; i < enumfieldlist.Count; ++i)
@@ -257,7 +269,9 @@ namespace UnityEngine
                 if (cachedType == CachedType.IncludeAllObsolete)
                     return true;
 
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 return !((ObsoleteAttribute)obsolete.First()).IsError;
+#pragma warning restore RS0030
             }
 
             return true;
@@ -268,7 +282,9 @@ namespace UnityEngine
             var tooltip = field.GetCustomAttributes(typeof(TooltipAttribute), false);
             if (tooltip.Length > 0)
             {
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 return ((TooltipAttribute)tooltip.First()).tooltip;
+#pragma warning restore RS0030
             }
 
             return string.Empty;
@@ -279,7 +295,9 @@ namespace UnityEngine
             var description = field.GetCustomAttributes(typeof(InspectorNameAttribute), false);
             if (description.Length > 0)
             {
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 return ((InspectorNameAttribute)description.First()).displayName;
+#pragma warning restore RS0030
             }
 
             string NicifyName()

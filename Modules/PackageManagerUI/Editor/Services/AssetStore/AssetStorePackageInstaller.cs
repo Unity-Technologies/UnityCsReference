@@ -79,15 +79,23 @@ namespace UnityEditor.PackageManager.UI.Internal
             }
             var searchInFoldersFilter = new SearchFilter
             {
+                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 folders = foldersToRemove.ToArray(),
+#pragma warning restore RS0030
                 searchArea = SearchFilter.SearchArea.SelectedFolders
             };
 
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var leftOverAssetsGuids = m_AssetDatabase.FindAssets(searchInFoldersFilter).ToHashSet();
+#pragma warning restore RS0030
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             foreach (var guid in assets.Select(i => i.guid).Concat(foldersToRemove.Select(i => m_AssetDatabase.AssetPathToGUID(i))))
+#pragma warning restore RS0030
                 leftOverAssetsGuids.Remove(guid);
 
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             foreach (var assetPath in leftOverAssetsGuids.Select(i => m_AssetDatabase.GUIDToAssetPath(i)))
+#pragma warning restore RS0030
             {
                 var path = m_IOProxy.GetParentDirectory(assetPath);
                 // If after the removal process, there will still be some assets left behind, we want to make sure the folders containing
@@ -101,8 +109,12 @@ namespace UnityEditor.PackageManager.UI.Internal
 
             // We order the folders to be removed so that child folders always come before their parent folders
             // This way m_AssetDatabase.DeleteAssets call won't try to remove parent folders first and fail to remove child folders
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var orderedFoldersToRemove = foldersToRemove.OrderByDescending(i => i);
+#pragma warning restore RS0030
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var assetAndFoldersToRemove = assets.Select(i => i.importedPath).Concat(orderedFoldersToRemove).ToArray();
+#pragma warning restore RS0030
             var pathsFailedToRemove = new List<string>();
             m_AssetDatabase.DeleteAssets(assetAndFoldersToRemove, pathsFailedToRemove);
 
@@ -138,7 +150,9 @@ namespace UnityEditor.PackageManager.UI.Internal
         public void Uninstall(IEnumerable<long> productIds)
         {
             var assetsToRemove = new List<Asset>();
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             foreach (var productId in productIds ?? Enumerable.Empty<long>())
+#pragma warning restore RS0030
             {
                 var importedPackage = m_AssetStoreCache.GetImportedPackage(productId);
                 if (importedPackage != null)

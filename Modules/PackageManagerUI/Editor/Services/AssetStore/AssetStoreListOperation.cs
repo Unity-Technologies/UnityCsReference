@@ -123,17 +123,27 @@ namespace UnityEditor.PackageManager.UI.Internal
             {
                 case PageFilters.Status.Downloaded:
                     m_AdjustedQueryArgs.status = PageFilters.Status.None;
+                    #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     m_AdjustedQueryArgs.productIds = m_AssetStoreCache.localInfos.Select(info => info.productId).ToList();
+#pragma warning restore RS0030
                     break;
                 case PageFilters.Status.Imported:
                     m_AdjustedQueryArgs.status = PageFilters.Status.None;
+                    #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     m_AdjustedQueryArgs.productIds = m_AssetStoreCache.importedPackages.Select(p => p.productId).ToList();
+#pragma warning restore RS0030
                     break;
                 case PageFilters.Status.UpdateAvailable:
                     m_AdjustedQueryArgs.status = PageFilters.Status.None;
+                    #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     var productIdsToCheck = m_AssetStoreCache.localInfos.Select(i => i.productId)
+#pragma warning restore RS0030
+                        #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                         .Concat(m_AssetStoreCache.importedPackages.Select(i => i.productId)).ToHashSet();
+#pragma warning restore RS0030
+                    #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     m_AdjustedQueryArgs.productIds = productIdsToCheck.Where(id =>
+#pragma warning restore RS0030
                     {
                         var updateInfo = m_AssetStoreCache.GetUpdateInfo(id);
                         if (updateInfo == null)

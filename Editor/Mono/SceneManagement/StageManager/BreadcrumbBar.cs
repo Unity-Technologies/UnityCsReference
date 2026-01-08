@@ -5,9 +5,11 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Bindings;
 
 namespace UnityEditor.IMGUI.Controls
 {
+    [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
     class BreadcrumbBar
     {
         List<Item> m_Breadcrumbs = new List<Item>();

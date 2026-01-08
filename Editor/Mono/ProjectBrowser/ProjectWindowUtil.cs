@@ -149,7 +149,9 @@ namespace UnityEditor
                 string basePath = UseCustomPath ? ResourcesTemplatePath :
                     Path.Combine(EditorApplication.applicationContentsPath, ResourcesTemplatePath);
 
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 foreach (var template in templates ?? Enumerable.Empty<string>())
+#pragma warning restore RS0030
                 {
                     var templateNameWithoutTxt = template.Replace(".txt", string.Empty);
                     var templateExtension = Path.GetExtension(templateNameWithoutTxt);
@@ -249,7 +251,9 @@ namespace UnityEditor
 
             private bool ActiveSelectionIsAudioClipList()
             {
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 return selection.Length > 0 && selection.All(obj => obj.GetType() == typeof(AudioClip));
+#pragma warning restore RS0030
             }
 
             private void CreateAudioRandomContainer(string path)
@@ -262,10 +266,14 @@ namespace UnityEditor
 
             private void CreateAudioRandomContainerFromSelectedClips(string path)
             {
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 var audioClips = selection.Select(obj => obj as AudioClip).ToArray();
+#pragma warning restore RS0030
                 var container = new AudioRandomContainer { name = Path.GetFileName(path) };
 
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 container.elements = audioClips.Select(audioClip =>
+#pragma warning restore RS0030
                 {
                     var element = new AudioContainerElement();
                     element.audioClip = audioClip;
@@ -495,7 +503,9 @@ namespace UnityEditor
             if (createdVariants.Count > 0)
             {
                 Selection.objects = createdVariants.ToArray();
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 FrameObjectInProjectWindow(createdVariants.Last().GetEntityId());
+#pragma warning restore RS0030
             }
 
             return createdVariants.ToArray();
@@ -893,7 +903,9 @@ namespace UnityEditor
         {
             var ancestors = new HashSet<EntityId>();
             GetAncestors(instanceID, ancestors);
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return ancestors.ToArray();
+#pragma warning restore RS0030
         }
 
         [Obsolete("GetAncestors is deprecated. Use GetAncestors(EntityId) instead.", true)]
@@ -1014,7 +1026,9 @@ namespace UnityEditor
 
         static bool AnyTargetMaterialHasChildren(string[] targetPaths)
         {
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             GUID[] guids = targetPaths.Select(path => AssetDatabase.GUIDFromAssetPath(path)).ToArray();
+#pragma warning restore RS0030
 
             Func<string, bool> HasChildrenInPath = (string rootPath) => {
                 var property = new HierarchyIterator(rootPath, false);
@@ -1106,7 +1120,9 @@ namespace UnityEditor
             }
 
             bool reparentMaterials = false;
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var paths = GetMainPathsOfAssets(instanceIDs).ToArray();
+#pragma warning restore RS0030
 
             if (paths.Length == 0)
                 return false;

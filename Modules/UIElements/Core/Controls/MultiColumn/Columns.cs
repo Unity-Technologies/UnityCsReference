@@ -49,6 +49,7 @@ namespace UnityEngine.UIElements
         static readonly BindingId resizableProperty = nameof(resizable);
         static readonly BindingId resizePreviewProperty = nameof(resizePreview);
         static readonly BindingId stretchModeProperty = nameof(stretchMode);
+        static readonly BindingId columnsProperty = nameof(columns);
 
         /// <summary>
         /// Indicates how the size of a stretchable column in this collection should get automatically adjusted as other columns or its containing view get resized.
@@ -138,6 +139,13 @@ namespace UnityEngine.UIElements
         bool m_ResizePreview;
         string m_PrimaryColumnName;
 
+        /// <summary>
+        /// Returns the list of columns.
+        /// </summary>
+        /// <remarks>
+        /// CreatePropertyAttribute is used to be able to bind to properties of the columns in the collection.
+        /// </remarks>
+        [CreateProperty]
         internal IList<Column> columns => m_Columns;
 
         /// <summary>
@@ -344,7 +352,7 @@ namespace UnityEngine.UIElements
         {
             while (m_Columns.Count > 0)
             {
-                Remove(m_Columns[m_Columns.Count - 1]);
+                Remove(m_Columns[^1]);
             }
         }
 
@@ -395,22 +403,23 @@ namespace UnityEngine.UIElements
                 m_VisibleColumns?.Remove(column);
 
                 column.collection = null;
-                column.propertyChanged -= OnColumnsPropertyChanged;
+                column.propertyChanged -= OnColumnPropertyChanged;
                 column.changed -= OnColumnChanged;
                 column.resized -= OnColumnResized;
                 columnRemoved?.Invoke(column);
+                NotifyPropertyChanged(columnsProperty);
                 return true;
             }
             return false;
         }
 
-        void OnColumnsPropertyChanged(object sender, BindablePropertyChangedEventArgs args)
+        void OnColumnPropertyChanged(object sender, BindablePropertyChangedEventArgs args)
         {
             var c = (Column)sender;
             var index = m_Columns.IndexOf(c);
-            if (index > 0)
+            if (index >= 0)
             {
-                var fullPath = $"columns[{index}].{args.propertyName}";
+                var fullPath = $"{columnsProperty}[{index}].{args.propertyName}";
                 NotifyPropertyChanged(fullPath);
             }
         }
@@ -471,10 +480,11 @@ namespace UnityEngine.UIElements
                 DirtyVisibleColumns();
             }
             column.collection = this;
-            column.propertyChanged += OnColumnsPropertyChanged;
+            column.propertyChanged += OnColumnPropertyChanged;
             column.changed += OnColumnChanged;
             column.resized += OnColumnResized;
             columnAdded?.Invoke(column, index);
+            NotifyPropertyChanged(columnsProperty);
         }
 
         /// <summary>

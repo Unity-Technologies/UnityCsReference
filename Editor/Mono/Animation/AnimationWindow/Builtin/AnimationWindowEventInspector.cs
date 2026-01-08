@@ -25,7 +25,9 @@ namespace UnityEditor.AnimationWindowBuiltin
 
         public override void OnInspectorGUI()
         {
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var awes = targets.Select(o => o as AnimationWindowEvent).ToArray();
+#pragma warning restore RS0030
             OnEditAnimationEvents(awes, m_State);
         }
 

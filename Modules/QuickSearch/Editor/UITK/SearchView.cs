@@ -232,8 +232,10 @@ namespace UnityEditor.Search
                     tempItems.Add(m_FetchRequestEnumerator.Current);
             }
 
-            if (tempItems.Count > 0)
-                OnIncomingItems(context, tempItems);
+            AddToFilteredItems(tempItems);
+            m_FilteredItems.SortAllGroups();
+            RefreshContent(RefreshFlags.ItemsChanged);
+
             m_FetchRequestEnumerator.Dispose();
             m_FetchRequestEnumerator = null;
             OnQueryRequestFinished(context);
@@ -254,6 +256,9 @@ namespace UnityEditor.Search
                 }
                 return true;
             }
+
+            m_FilteredItems.SortAllGroups();
+            RefreshContent(RefreshFlags.ItemsChanged);
 
             m_FetchRequestEnumerator.Dispose();
             m_FetchRequestEnumerator = null;
@@ -281,8 +286,9 @@ namespace UnityEditor.Search
                 }
             }
 
-            if (needsRefresh)
-                RefreshContent(RefreshFlags.ItemsChanged);
+            m_FilteredItems.SortAllGroups();
+            RefreshContent(RefreshFlags.ItemsChanged);
+
             m_FetchRequestEnumerator.Dispose();
             m_FetchRequestEnumerator = null;
             OnQueryRequestFinished(context);
@@ -461,13 +467,21 @@ namespace UnityEditor.Search
             }
         }
 
+        private void AddToFilteredItems(IEnumerable<SearchItem> items)
+        {
+            if (m_ViewState.filterHandler != null)
+            {
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                items = items.Where(item => m_ViewState.filterHandler(item));
+#pragma warning restore RS0030
+            }
+            m_FilteredItems.AddItems(items);
+        }
+
         private void OnIncomingItems(SearchContext context, IEnumerable<SearchItem> items)
         {
             var countBefore = m_FilteredItems.TotalCount;
-
-            if (m_ViewState.filterHandler != null)
-                items = items.Where(item => m_ViewState.filterHandler(item));
-            m_FilteredItems.AddItems(items);
+            AddToFilteredItems(items);
             if (m_FilteredItems.TotalCount != countBefore)
                 RefreshContent(RefreshFlags.ItemsChanged);
         }
@@ -483,7 +497,6 @@ namespace UnityEditor.Search
 
         private void OnQueryRequestFinished(SearchContext context)
         {
-            m_FilteredItems.SortAllGroups();
             UpdateSelectionFromIds();
             Utils.CallDelayed(() => RefreshContent(RefreshFlags.QueryCompleted));
         }
@@ -494,7 +507,9 @@ namespace UnityEditor.Search
             if (viewState.selectedIds.Length == 0 || selection.Count != 0)
             {
                 if (selectionSynced)
+                    #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     SetSelection(trackSelection: false, selection.indexes.ToArray());
+#pragma warning restore RS0030
                 return;
             }
 
@@ -580,7 +595,9 @@ namespace UnityEditor.Search
             m_FilteredItems.Clear();
             m_FilteredItems.AddItems(newItems);
             if (!string.IsNullOrEmpty(context.filterId))
+                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 m_FilteredItems.AddGroup(context.providers.First());
+#pragma warning restore RS0030
 
             var actualCount = 0;
             for (var i = 0; i < tempSelectedItems.Count; ++i)
@@ -623,9 +640,13 @@ namespace UnityEditor.Search
             var menu = new GenericMenu();
             var shortcutIndex = 0;
 
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var useSelection = context?.selection?.Any(e => string.Equals(e.id, item.id, StringComparison.OrdinalIgnoreCase)) ?? false;
+#pragma warning restore RS0030
             var currentSelection = useSelection ? context.selection : new SearchSelection(new[] { item });
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             foreach (var action in item.provider.actions.Where(a => a.enabled?.Invoke(currentSelection) ?? true))
+#pragma warning restore RS0030
             {
                 var itemName = !string.IsNullOrWhiteSpace(action.content.text) ? action.content.text : action.content.tooltip;
                 if (shortcutIndex == 0)
@@ -633,7 +654,9 @@ namespace UnityEditor.Search
                 else if (shortcutIndex == 1)
                     itemName += " _&enter";
 
+                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 menu.AddItem(new GUIContent(itemName, action.content.image), false, () => ExecuteAction(action, currentSelection.ToArray()));
+#pragma warning restore RS0030
                 ++shortcutIndex;
             }
 
@@ -651,8 +674,12 @@ namespace UnityEditor.Search
 
         internal static SearchAction GetSelectAction(SearchSelection selection, IEnumerable<SearchItem> items)
         {
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var provider = (items ?? selection).First().provider;
+#pragma warning restore RS0030
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var selectAction = provider.actions.FirstOrDefault(a => string.Equals(a.id, "select", StringComparison.Ordinal));
+#pragma warning restore RS0030
             if (selectAction == null)
             {
                 selectAction = GetDefaultAction(selection, items);
@@ -662,24 +689,34 @@ namespace UnityEditor.Search
 
         internal static SearchAction GetDefaultAction(SearchSelection selection, IEnumerable<SearchItem> items)
         {
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var provider = (items ?? selection).First().provider;
+#pragma warning restore RS0030
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return provider.actions.FirstOrDefault();
+#pragma warning restore RS0030
         }
 
         internal static SearchAction GetSecondaryAction(SearchSelection selection, IEnumerable<SearchItem> items)
         {
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var provider = (items ?? selection).First().provider;
+#pragma warning restore RS0030
             return provider.actions.Count > 1 ? provider.actions[1] : GetDefaultAction(selection, items);
         }
 
         void ISearchView.ExecuteSelection()
         {
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             ExecuteAction(GetDefaultAction(selection, selection), selection.ToArray(), endSearch: false);
+#pragma warning restore RS0030
         }
 
         public void ExecuteAction(SearchAction action, SearchItem[] items, bool endSearch = false)
         {
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var item = items.LastOrDefault();
+#pragma warning restore RS0030
             if (item == null)
                 return;
 
@@ -795,7 +832,9 @@ namespace UnityEditor.Search
         {
             var groups = m_FilteredItems.EnumerateGroups(showAll);
             if (showAll)
+                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 groups = groups.Where(g => !string.Equals(g.id, "default", StringComparison.Ordinal));
+#pragma warning restore RS0030
             return groups;
         }
 
@@ -820,9 +859,13 @@ namespace UnityEditor.Search
         IEnumerable<SearchQueryError> ISearchView.GetAllVisibleErrors() => GetAllVisibleErrors();
         internal IEnumerable<SearchQueryError> GetAllVisibleErrors()
         {
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var visibleProviders = EnumerateGroups().Select(g => g.id).ToArray();
+#pragma warning restore RS0030
             var defaultProvider = SearchService.GetDefaultProvider();
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return context.GetAllErrors().Where(e => visibleProviders.Contains(e.provider.type) || e.provider.type == defaultProvider.type);
+#pragma warning restore RS0030
         }
 
         public bool IsPicker()

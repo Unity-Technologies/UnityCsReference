@@ -76,7 +76,7 @@ namespace UnityEngine.UIElements
         void HyperlinkOnPointerUp(PointerUpEvent pue)
         {
             var pos = pue.localPosition - new Vector3(m_TextElement.contentRect.min.x, m_TextElement.contentRect.min.y);
-            var(type, link) = m_TextElement.uitkTextHandle.ATGFindIntersectingLink(pos);
+            var(id, type, link) = m_TextElement.uitkTextHandle.ATGFindIntersectingLink(pos);
             if (link == null || type!= TextCore.RichTextTagParser.TagType.Hyperlink)
                 return;
 
@@ -122,45 +122,58 @@ namespace UnityEngine.UIElements
         void HyperlinkOnPointerOver(PointerOverEvent _)
         {
             isOverridingCursor = false;
+            ResetHoveredTag();
         }
 
         void HyperlinkOnPointerMove(PointerMoveEvent pme)
         {
             var pos = pme.localPosition - new Vector3(m_TextElement.contentRect.min.x, m_TextElement.contentRect.min.y);
-            var (type, link) = m_TextElement.uitkTextHandle.ATGFindIntersectingLink(pos);
+            var (id, type, link) = m_TextElement.uitkTextHandle.ATGFindIntersectingLink(pos);
 
             var cursorManager = (m_TextElement.panel as BaseVisualElementPanel)?.cursorManager;
             if (link != null && type == TextCore.RichTextTagParser.TagType.Hyperlink)
             {
+                if (!isOverridingCursor)
+                {
+                    isOverridingCursor = true;
+                    // defaultCursorId maps to the UnityEditor.MouseCursor enum where 4 is the link cursor.
+                    cursorManager?.SetCursor(new Cursor { defaultCursorId = 4 });
 
-                    if (!isOverridingCursor)
-                    {
-                        isOverridingCursor = true;
+                    m_TextElement.uitkTextHandle.m_HoveredTag = id;
+                    m_TextElement.MarkDirtyText();
+                }
 
-                        // defaultCursorId maps to the UnityEditor.MouseCursor enum where 4 is the link cursor.
-                        cursorManager?.SetCursor(new Cursor { defaultCursorId = 4 });
-                    }
-
-                    return;
+                return;
             }
 
             if (isOverridingCursor)
             {
                 cursorManager?.SetCursor(m_TextElement.computedStyle.cursor);
                 isOverridingCursor = false;
+                ResetHoveredTag();
             }
         }
 
         void HyperlinkOnPointerOut(PointerOutEvent evt)
         {
             isOverridingCursor = false;
+            ResetHoveredTag();
+        }
+
+        private void ResetHoveredTag()
+        {
+            if (m_TextElement.uitkTextHandle.m_HoveredTag >= 0)
+            {
+                m_TextElement.uitkTextHandle.m_HoveredTag = -1;
+                m_TextElement.MarkDirtyText();
+            }
         }
 
         void LinkTagOnPointerDown(PointerDownEvent pde)
         {
             var pos = pde.localPosition - new Vector3(m_TextElement.contentRect.min.x, m_TextElement.contentRect.min.y);
             // Convert UITK pos to ATG pos
-            var (type, link) = m_TextElement.uitkTextHandle.ATGFindIntersectingLink(pos);
+            var (id, type, link) = m_TextElement.uitkTextHandle.ATGFindIntersectingLink(pos);
             if (link == null || type != TextCore.RichTextTagParser.TagType.Link)
                 return;
 
@@ -174,7 +187,7 @@ namespace UnityEngine.UIElements
         void LinkTagOnPointerUp(PointerUpEvent pue)
         {
             var pos = pue.localPosition - new Vector3(m_TextElement.contentRect.min.x, m_TextElement.contentRect.min.y);
-            var (type, link) = m_TextElement.uitkTextHandle.ATGFindIntersectingLink(pos);
+            var (id, type, link) = m_TextElement.uitkTextHandle.ATGFindIntersectingLink(pos);
             if (link == null || type != TextCore.RichTextTagParser.TagType.Link)
                 return;
 
@@ -192,7 +205,7 @@ namespace UnityEngine.UIElements
         {
             var pos = pme.localPosition - new Vector3(m_TextElement.contentRect.min.x, m_TextElement.contentRect.min.y);
             // Convert UITK pos to ATG pos
-            var (type, link) = m_TextElement.uitkTextHandle.ATGFindIntersectingLink(pos);
+            var (id, type, link) = m_TextElement.uitkTextHandle.ATGFindIntersectingLink(pos);
 
             if (link != null && type == TextCore.RichTextTagParser.TagType.Link)
             {

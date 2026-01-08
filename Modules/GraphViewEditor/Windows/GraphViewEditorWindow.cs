@@ -16,7 +16,9 @@ namespace UnityEditor.Experimental.GraphView
 
         public override IEnumerable<Type> GetExtraPaneTypes()
         {
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return Assembly
+#pragma warning restore RS0030
                 .GetAssembly(typeof(GraphViewToolWindow))
                 .GetTypes()
                 .Where(myType => myType.IsClass && !myType.IsAbstract && myType.IsSubclassOf(typeof(GraphViewToolWindow)));
@@ -53,7 +55,9 @@ namespace UnityEditor.Experimental.GraphView
             dockArea.position = new Rect(0, 0, width - toolsWidth, height);
             mainSplitView.AddChild(dockArea);
 
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var graphView = graphViewWindow.graphViews.FirstOrDefault();
+#pragma warning restore RS0030
             if (graphView != null)
             {
                 blackboardWindow.SelectGraphViewFromWindow(graphViewWindow, graphView);

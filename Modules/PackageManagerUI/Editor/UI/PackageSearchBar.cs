@@ -150,7 +150,9 @@ namespace UnityEditor.PackageManager.UI.Internal
         }
 
         private ToolbarSearchField m_SearchField;
+        #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
         public TextField searchTextField => m_SearchField.Children().OfType<TextField>().FirstOrDefault();
+#pragma warning restore RS0030
     }
 
     internal class SearchFieldDelayArgs

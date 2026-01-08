@@ -138,8 +138,10 @@ namespace UnityEngine.TestTools
             if (type == null)
                 throw new ArgumentNullException("type");
 
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return GetStatsFor(type.GetMembers(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance |
                 BindingFlags.Static | BindingFlags.DeclaredOnly).OfType<MethodBase>().ToArray());
+#pragma warning restore RS0030
         }
 
         [FreeFunction("ScriptingCoverageGetStatsForAllCoveredMethodsFromScripting", ThrowsException = true)]

@@ -17,10 +17,14 @@ namespace Unity.ProjectAuditor.Editor.Core
         // Otherwise we check to see if the attributes match the currently selected platform (passed in as platform)
         public static bool SupportsPlatform(Type type, BuildTarget platform)
         {
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             if (!type.CustomAttributes.Any())
+#pragma warning restore RS0030
                 return true;
             var analysisPlatformAttributes = type.GetCustomAttributes<AnalysisPlatformAttribute>();
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return !analysisPlatformAttributes.Any() || analysisPlatformAttributes.Any(a => a.Platform == platform);
+#pragma warning restore RS0030
         }
 
         public static Severity LogTypeToSeverity(LogType logType)

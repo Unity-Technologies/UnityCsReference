@@ -1003,7 +1003,7 @@ namespace UnityEngine
         extern public Texture initializationTexture { get; set; }
 
         [FreeFunction(Name = "CustomRenderTextureScripting::GetUpdateZonesInternal", HasExplicitThis = true)]
-        extern internal void GetUpdateZonesInternal([NotNull] object updateZones);
+        extern internal void GetUpdateZonesInternal([NotNull, Out] List<CustomRenderTextureUpdateZone> updateZones);
 
         public void GetUpdateZones(List<CustomRenderTextureUpdateZone> updateZones)
         {

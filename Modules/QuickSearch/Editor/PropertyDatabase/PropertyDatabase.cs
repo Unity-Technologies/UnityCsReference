@@ -581,7 +581,9 @@ namespace UnityEditor.Search
                 sb.AppendLine($"\t\tTop {longestStringsCount} longest strings:");
 
                 var strings = view.GetAllStrings();
+                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 foreach (var str in strings.OrderByDescending(s => s.Length).Take(longestStringsCount))
+#pragma warning restore RS0030
                 {
                     sb.AppendLine($"\t\t\t{str}");
                 }

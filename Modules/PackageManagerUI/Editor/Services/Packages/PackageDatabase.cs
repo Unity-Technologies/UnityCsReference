@@ -163,13 +163,17 @@ namespace UnityEditor.PackageManager.UI.Internal
                 package = GetPackage(packageUniqueId);
                 if (package != null)
                 {
+                    #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     version = package.versions.FirstOrDefault(v => v.uniqueId == idOrName);
+#pragma warning restore RS0030
                     return;
                 }
             }
 
             // If none of those find-by-index options work, we'll just have to find it the brute force way by matching the name & display name
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             package = bruteForceSearch ? m_Packages.Values.FirstOrDefault(p => p.name == idOrName || p.displayName == idOrName) : null;
+#pragma warning restore RS0030
             version = null;
         }
 
@@ -190,15 +194,21 @@ namespace UnityEditor.PackageManager.UI.Internal
 
             // the versionIdentifier could either be SemVersion or file, git or ssh reference
             // and the two cases are handled differently.
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             if (!string.IsNullOrEmpty(info.version) && char.IsDigit(info.version.First()))
+#pragma warning restore RS0030
             {
                 SemVersionParser.TryParse(info.version, out var parsedVersion);
+                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 version = package.versions.FirstOrDefault(v => v.version == parsedVersion);
+#pragma warning restore RS0030
             }
             else
             {
                 var packageId = UpmPackageVersion.FormatPackageId(info.name, info.version);
+                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 version = package.versions.FirstOrDefault(v => v.uniqueId == packageId);
+#pragma warning restore RS0030
             }
         }
 
@@ -206,22 +216,32 @@ namespace UnityEditor.PackageManager.UI.Internal
         {
             if (version == null)
                 return null;
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return allPackages.Select(p => p.versions.installed).Where(p => p?.dependencies?.Any(d =>d.name == version.name) ?? false);
+#pragma warning restore RS0030
         }
 
         public IEnumerable<IPackageVersion> GetFeaturesThatUseThisPackage(IPackageVersion version)
         {
             if (version?.dependencies == null)
+                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 return Enumerable.Empty<IPackageVersion>();
+#pragma warning restore RS0030
 
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var installedFeatures = m_Features.Values.Select(p => p.versions.installed)
+#pragma warning restore RS0030
                 .Where(p => p?.isDirectDependency ?? false);
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return installedFeatures.Where(f => f.dependencies?.Any(r => r.name == version.name) ?? false);
+#pragma warning restore RS0030
         }
 
         public IPackage[] GetCustomizedDependencies(IPackageVersion version, CustomizedDependencyType dependencyType)
         {
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return version?.dependencies?.Select(d => GetPackage(d.name)).Where(p =>
+#pragma warning restore RS0030
             {
                 var installed = p?.versions.installed;
                 var isCustomized = installed is { isDirectDependency: true } && p.versions.recommended?.isInstalled == false;
@@ -256,7 +276,9 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public void OnBeforeSerialize()
         {
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             m_SerializedPackages = m_Packages.Values.Cast<Package>().ToArray();
+#pragma warning restore RS0030
         }
 
         private void TriggerOnPackagesChanged(IList<IPackage> added = null, IList<IPackage> removed = null, IList<IPackage> updated = null, IList<IPackage> preUpdate = null, IList<IPackage> progressUpdated = null, PackagesChangedSource changedSource = PackagesChangedSource.Other)
@@ -318,7 +340,9 @@ namespace UnityEditor.PackageManager.UI.Internal
                     packagesAdded.Add(package);
             }
 
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             packagesUpdated.AddRange(featuresWithDependencyChange.Values.Where(p => !packagesUpdated.Contains(p)));
+#pragma warning restore RS0030
 
             foreach (var packageUniqueId in toRemove)
             {
@@ -354,7 +378,9 @@ namespace UnityEditor.PackageManager.UI.Internal
         private void AddPackage(string packageUniqueId, IPackage package)
         {
             m_Packages[packageUniqueId] = package;
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             if (package.versions.All(v => v.HasTag(PackageTag.Feature)))
+#pragma warning restore RS0030
                 m_Features[packageUniqueId] = package;
         }
 

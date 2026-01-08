@@ -147,7 +147,9 @@ namespace UnityEditor.Search
                 MethodSignature.FromDelegate<SearchExpressionParserHandlerStringView>(),
                 MethodSignature.FromDelegate<SearchExpressionParserWithStructHandler>()
             };
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             parsers = ReflectionUtils.LoadAllMethodsWithAttribute<SearchExpressionParserAttribute, SearchExpressionParser>(
+#pragma warning restore RS0030
                 (mi, attribute, handler) =>
                 {
                     if (handler is SearchExpressionParserWithStructHandler handlerWithStruct)
@@ -201,7 +203,9 @@ namespace UnityEditor.Search
                     paramStartIndex = i;
 
                 // In case of a string, we must find the end of the string before checking any nested levels or ,
+                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 if (k_Quotes.Any(c => c == paramsBlock[i]))
+#pragma warning restore RS0030
                 {
                     if (currentStringTokenIndex == -1)
                         currentStringTokenIndex = i;
@@ -210,13 +214,17 @@ namespace UnityEditor.Search
                 if (currentStringTokenIndex != -1) // is in string
                     continue;
 
+                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 if (k_Openers.Any(c => c == paramsBlock[i]) && !IsEscaped(paramsBlock, i))
+#pragma warning restore RS0030
                 {
                     openersStack.Push(paramsBlock[i]);
                     continue;
                 }
 
+                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 if (k_Closers.Any(c => c == paramsBlock[i]) && !IsEscaped(paramsBlock, i))
+#pragma warning restore RS0030
                 {
                     if (CharMatchOpener(openersStack.Peek(), paramsBlock[i]))
                     {
@@ -300,7 +308,9 @@ namespace UnityEditor.Search
             var c = sv[0];
             if (!IsQuote(c))
                 return false;
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return c == sv.Last();
+#pragma warning restore RS0030
         }
 
         public static StringView[] GetExpressionsStartAndLength(StringView text, out bool rootHasParameters, out bool rootHasEscapedOpenersAndClosers)
@@ -317,7 +327,9 @@ namespace UnityEditor.Search
                     continue;
 
                 // In case of a string, we must find the end of the string before checking any nested levels or ,
+                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 if (k_Quotes.Any(c => c == text[i]))
+#pragma warning restore RS0030
                 {
                     if (currentStringTokenIndex == -1)
                         currentStringTokenIndex = i;
@@ -328,7 +340,9 @@ namespace UnityEditor.Search
                 if (currentStringTokenIndex != -1) // is in string
                     continue;
 
+                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 if (k_Openers.Any(c => c == text[i]))
+#pragma warning restore RS0030
                 {
                     if (IsEscaped(text, i))
                     {
@@ -342,7 +356,9 @@ namespace UnityEditor.Search
                     continue;
                 }
 
+                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 if (k_Closers.Any(c => c == text[i]))
+#pragma warning restore RS0030
                 {
                     if (IsEscaped(text, i))
                     {
@@ -371,7 +387,9 @@ namespace UnityEditor.Search
             }
             if (currentStringTokenIndex != -1)
                 throw new SearchExpressionParseException($"The string \"{text.Substring(currentStringTokenIndex)}\" is not closed correctly", text.startIndex + currentStringTokenIndex, text.length - currentStringTokenIndex);
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             if (openersStack.Any())
+#pragma warning restore RS0030
                 throw new SearchExpressionParseException($"Missing \"{GetCorrespondingCloser(openersStack.Peek())}\" in \"{text}\"", text.startIndex + firstOpenerIndex, text.length - firstOpenerIndex);
             return expressions.ToArray();
         }
@@ -394,7 +412,9 @@ namespace UnityEditor.Search
             }
             // Then we parse the string to check how many we can trim
             bool hasTrimmedText = false;
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             if (nestedLevelsEnd.Any())
+#pragma warning restore RS0030
             {
                 bool inNonTrimmableText = false;
                 int nonTrimmableOpeners = 0;
@@ -403,7 +423,9 @@ namespace UnityEditor.Search
                 {
                     if (char.IsWhiteSpace(outerText[i]))
                         continue;
+                    #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     if (k_Quotes.Contains(outerText[i]))
+#pragma warning restore RS0030
                     {
                         isInString = !isInString;
                     }
@@ -417,7 +439,9 @@ namespace UnityEditor.Search
                             ++nonTrimmableOpeners;
                         continue;
                     }
+                    #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     if (!nestedLevelsStart.Any() || !nestedLevelsEnd.Any())
+#pragma warning restore RS0030
                         break;
                     if (outerText[i] == '}' && !IsEscaped(outerText, i))
                     {
@@ -430,7 +454,9 @@ namespace UnityEditor.Search
                         if (i == nestedLevelsEnd.Peek())
                             nestedLevelsEnd.Pop();
                         // In that case that means there was one expression that was closed and no more remaining so we should exit
+                        #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                         if (!nestedLevelsStart.Any())
+#pragma warning restore RS0030
                             break;
                         if (inNonTrimmableText && nonTrimmableOpeners > 0)
                             --nonTrimmableOpeners;

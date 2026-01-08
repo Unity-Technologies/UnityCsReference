@@ -65,7 +65,9 @@ internal class Sidebar : ScrollView
         m_PageManager.onActivePageChanged -= OnActivePageChanged;
         m_PackageDatabase.onPackagesChanged -= OnPackageChanged;
 
+        #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
         m_PackageManagerPrefs.orderedSidebarFoldoutsExpandedStatus = Children().OfType<Foldout>().Select(i => i.value).ToArray();
+#pragma warning restore RS0030
     }
 
     private void CreateRowsAndFoldouts()
@@ -87,7 +89,9 @@ internal class Sidebar : ScrollView
 
         m_RegistriesFoldout = CreateAndAddFoldout(L10n.Tr("My Registries"));
 
+        #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
         var foldouts = Children().OfType<Foldout>().ToArray();
+#pragma warning restore RS0030
         if (m_PackageManagerPrefs.orderedSidebarFoldoutsExpandedStatus?.Length == foldouts.Length)
             for (var i = 0; i < foldouts.Length; i++)
                 foldouts[i].value = m_PackageManagerPrefs.orderedSidebarFoldoutsExpandedStatus[i];
@@ -138,7 +142,9 @@ internal class Sidebar : ScrollView
     private void UpdateComplianceRelatedRow()
     {
         var nonCompliancePage = m_PageManager.GetPage(InProjectNonCompliancePage.k_Id);
+        #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
         var showNonCompliantPage = m_PackageDatabase.allPackages.Any(nonCompliancePage.ShouldInclude);
+#pragma warning restore RS0030
 
         UIUtils.SetElementDisplay(GetRow(InProjectNonCompliancePage.k_Id), showNonCompliantPage);
 
@@ -162,7 +168,9 @@ internal class Sidebar : ScrollView
 
     private void OnPackageChanged(PackagesChangeArgs args)
     {
+        #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
         var changedPackages = args.added.Concat(args.removed).Concat(args.updated).Concat(args.preUpdate).Concat(args.progressUpdated);
+#pragma warning restore RS0030
 
         var errorsAndWarningsPage = m_PageManager.GetPage(InProjectErrorsAndWarningsPage.k_Id);
         if (changedPackages.AnyMatches(p => errorsAndWarningsPage.ShouldInclude(p)))
@@ -175,9 +183,15 @@ internal class Sidebar : ScrollView
 
     private void UpdateScopedRegistryRelatedRows()
     {
+        #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
         var scopedRegistries = m_SettingsProxy.scopedRegistries.ToArray();
+#pragma warning restore RS0030
+        #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
         var newPages = scopedRegistries.Length > 0 ? new []{ m_PageManager.GetPage(MyRegistriesPage.k_Id) }.Concat(scopedRegistries.Select(r => m_PageManager.GetPage(r))).ToArray() : Array.Empty<IPage>();
+#pragma warning restore RS0030
+        #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
         var oldRows = m_RegistriesFoldout.Children().OfType<SidebarRow>().ToDictionary(r => r.pageId);
+#pragma warning restore RS0030
 
         m_RegistriesFoldout.Clear();
         foreach (var page in newPages)
@@ -186,12 +200,16 @@ internal class Sidebar : ScrollView
         UIUtils.SetElementDisplay(m_RegistriesFoldout, newPages.Length > 0);
 
         var activePageId = m_PageManager.activePage.id;
+        #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
         if (oldRows.ContainsKey(activePageId) && newPages.All(p => p.id != activePageId))
+#pragma warning restore RS0030
             m_PageManager.activePage = m_PageManager.GetPage(PageManager.k_DefaultPageId);
     }
 
     public SidebarRow GetRow(string pageId)
     {
+        #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
         return Children().OfType<Foldout>().SelectMany(f => f.Children().OfType<SidebarRow>()).FirstOrDefault(i => i.pageId == pageId);
+#pragma warning restore RS0030
     }
 }

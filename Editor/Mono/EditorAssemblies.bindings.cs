@@ -22,7 +22,9 @@ namespace UnityEditor
         internal static IEnumerable<MethodInfo> GetAllMethodsWithAttribute<T>(BindingFlags bindingFlags = k_DefaultMethodBindingFlags)
             where T : Attribute
         {
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return Internal_GetAllMethodsWithAttribute(typeof(T), bindingFlags).Cast<MethodInfo>();
+#pragma warning restore RS0030
         }
 
         [FreeFunction(Name = "GetAllMethodsWithAttribute")]

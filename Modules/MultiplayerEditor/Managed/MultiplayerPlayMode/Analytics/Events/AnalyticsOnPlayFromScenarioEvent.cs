@@ -24,7 +24,7 @@ namespace Unity.Multiplayer.PlayMode.Editor
         public long InstanceDeployStageDurationMs; // Duration in MS the instance has spent duration in deploy stage
         public long InstanceRunStageDurationMs; // Duration in MS the instance has spent duration in run stage
         public string MultiplayerRole; // Multiplayer role the instance selected, expected value : "Client", "Server", "ClientAndServer";
-        public string UseMultiplay; // Use Multiplay to determine whether the user is using Multiplay, expected values: MultiplaySimulated, Multiplay, or null.
+        public string UseMultiplay; // [Obsolete] Use Multiplay to determine whether the user is using Multiplay, expected values: MultiplaySimulated, Multiplay, or null.
     }
 
     /// <summary>

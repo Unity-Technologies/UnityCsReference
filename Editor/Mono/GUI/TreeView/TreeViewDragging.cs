@@ -481,9 +481,15 @@ namespace UnityEditor.IMGUI.Controls
         public List<TIdentifier> GetCurrentExpanded()
         {
             var visibleItems = m_TreeView.data.GetRows();
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             List<TIdentifier> expandedIDs = (from item in visibleItems
+#pragma warning restore RS0030
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 where m_TreeView.data.IsExpanded(item)
+#pragma warning restore RS0030
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 select item.id).ToList();
+#pragma warning restore RS0030
             return expandedIDs;
         }
 

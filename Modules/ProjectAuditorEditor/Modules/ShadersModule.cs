@@ -317,9 +317,11 @@ namespace Unity.ProjectAuditor.Editor.Modules
         static Dictionary<Shader, string> GetBuiltShaderPaths()
         {
             // note this will find hidden shaders too
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return s_ShaderVariantData.Select(variant => variant.Key)
                 .Where(shader => shader != null) // skip shader if it's been removed since the last build
                 .ToDictionary(s => s, AssetDatabase.GetAssetPath);
+#pragma warning restore RS0030
         }
 
         static HashSet<Shader> GetAlwaysIncludedShaders()
@@ -358,13 +360,17 @@ namespace Unity.ProjectAuditor.Editor.Modules
             var buildReport = BuildReportModule.BuildReportProvider.GetBuildReport(platform);
             if (buildReport != null)
             {
+                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 packetAssetInfos = buildReport.packedAssets.SelectMany(packedAsset => packedAsset.contents)
+#pragma warning restore RS0030
                     .Where(c => c.type == typeof(UnityEngine.Shader)).ToArray();
             }
 
             buildReportInfoAvailable = packetAssetInfos.Length > 0;
 
-            var sortedShaders = shaderPathMap.Keys.ToList().OrderBy(shader => shader.name);
+            var sortedShaders = new List<Shader>(shaderPathMap.Keys);
+            sortedShaders.Sort((s1, s2) => string.Compare(s1.name, s2.name));
+
             var analyzers = GetCompatibleAnalyzers(analysisParams);
             foreach (var shader in sortedShaders)
             {
@@ -373,7 +379,9 @@ namespace Unity.ProjectAuditor.Editor.Modules
 
                 if (!assetPath.Equals("Resources/unity_builtin_extra"))
                 {
+                    #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     var builtAssets = packetAssetInfos.Where(p => p.sourceAssetPath.Equals(assetPath)).ToArray();
+#pragma warning restore RS0030
                     if (builtAssets.Length > 0)
                     {
                         assetSize = builtAssets[0].packedSize.ToString();
@@ -443,8 +451,10 @@ namespace Unity.ProjectAuditor.Editor.Modules
             if (s_ShaderVariantData.ContainsKey(context.Shader))
             {
                 var variants = s_ShaderVariantData[context.Shader];
+                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 var numCompilerPlatforms = variants.Select(v => v.CompilerPlatform).Distinct().Count();
                 variantCountPerCompilerPlatform = variants.Count(v => ShaderTypeIsFragment(v.ShaderType, v.CompilerPlatform)) / numCompilerPlatforms;
+#pragma warning restore RS0030
             }
 
             var shaderName = context.Shader.name;
@@ -545,7 +555,9 @@ namespace Unity.ProjectAuditor.Editor.Modules
                             shaderVariantData.PassName,
                             CombineKeywords(shaderVariantData.Keywords),
                             CombineKeywords(shaderVariantData.PlatformKeywords),
+                            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                             CombineKeywords(shaderVariantData.Requirements.Select(r => r.ToString()).ToArray())
+#pragma warning restore RS0030
                         ]);
                 }
             }
@@ -729,12 +741,15 @@ namespace Unity.ProjectAuditor.Editor.Modules
                 });
             }
 
-            if (!compiledVariants.Any())
+            if (compiledVariants.Count == 0)
                 return ParseLogResult.NoCompiledVariants;
 
-            builtVariants = builtVariants.OrderBy(v => v.Description).ToArray();
+            var sortedBuiltVariants = new ReportItem[builtVariants.Length];
+            builtVariants.CopyTo(sortedBuiltVariants, 0);
+            Array.Sort(sortedBuiltVariants, (v1, v2) => string.Compare(v1.Description, v2.Description));
+
             var shader = (Shader)null;
-            foreach (var builtVariant in builtVariants)
+            foreach (var builtVariant in sortedBuiltVariants)
             {
                 if (shader == null || !shader.name.Equals(builtVariant.Description))
                 {
@@ -757,7 +772,9 @@ namespace Unity.ProjectAuditor.Editor.Modules
                 if (compiledVariants.ContainsKey(shaderName))
                 {
                     // note that we are not checking pass name since there is an inconsistency regarding "unnamed" passes between build vs compiled
+                    #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     var matchingVariants = compiledVariants[shaderName].Where(cv => ShaderVariantsMatch(cv, stage, passName, keywords)).ToArray();
+#pragma warning restore RS0030
                     isVariantCompiled = matchingVariants.Length > 0;
                 }
 
@@ -808,33 +825,36 @@ namespace Unity.ProjectAuditor.Editor.Modules
                 return false;
 
             var passMatch = cv.Pass.Equals(passName);
-            if (!passMatch)
-            {
-                var isUnnamed = k_NoPassNames.Contains(cv.Pass) || cv.Pass.StartsWith("<Unnamed Pass ");
-                passMatch = isUnnamed && string.IsNullOrEmpty(passName);
-            }
+            if (!passMatch && string.IsNullOrEmpty(passName))
+                passMatch = Array.IndexOf(k_NoPassNames, cv.Pass) != -1 || cv.Pass.StartsWith("<Unnamed Pass ");
 
             if (!passMatch)
                 return false;
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return cv.Keywords.OrderBy(e => e).SequenceEqual(secondSet.OrderBy(e => e));
+#pragma warning restore RS0030
         }
 
         static string[] GetShaderKeywords(Shader shader, ShaderKeyword[] shaderKeywords)
         {
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var keywords = shaderKeywords.Select(keyword => keyword.name);
             return keywords.ToArray();
+#pragma warning restore RS0030
         }
 
         static string[] GetShaderKeywords(ComputeShader shader, ShaderKeyword[] shaderKeywords)
         {
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var keywords = shaderKeywords.Select(keyword => keyword.name);
             return keywords.ToArray();
+#pragma warning restore RS0030
         }
 
         static string[] SplitKeywords(string keywordsString, string separator = null)
         {
             if (keywordsString.Equals(k_NoKeywords))
-                return new string[] {};
+                return Array.Empty<string>();
             return Formatting.SplitStrings(keywordsString, separator);
         }
 
@@ -853,7 +873,9 @@ namespace Unity.ProjectAuditor.Editor.Modules
                 if (platformKeywordSet.IsEnabled(value))
                     builtinShaderDefines.Add(value);
 
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return builtinShaderDefines.Select(d => d.ToString()).ToArray();
+#pragma warning restore RS0030
         }
 
         static bool ShaderTypeIsFragment(ShaderType shaderType, ShaderCompilerPlatform shaderCompilerPlatform)

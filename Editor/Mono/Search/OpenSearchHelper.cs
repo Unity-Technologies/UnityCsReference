@@ -53,26 +53,31 @@ namespace UnityEditor.SearchService
             Styles.gotoSearch.tooltip = L10n.Tr($"Open in Search ({s_ShortcutBinding})");
         }
 
-        public static void HandleSearchEvent(EditorWindow window, Event evt, string searchText)
+        public static object HandleSearchEvent(EditorWindow window, Event evt, string searchText)
         {
             if (evt.type != EventType.KeyDown)
-                return;
+                return null;
 
             var keyCombination = KeyCombination.FromKeyboardInput(evt);
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             if (shortcutBinding.keyCombinationSequence.Any(shortcutCombination => keyCombination.Equals(shortcutCombination)))
+#pragma warning restore RS0030
             {
                 evt.Use();
-                OpenSearchInContext(window, searchText, "jumpShortcut");
+                return OpenSearchInContext(window, searchText, "jumpShortcut");
             }
+
+            return null;
         }
 
-        public static void OpenSearchInContext(EditorWindow window, string searchText, string openContext)
+        public static object OpenSearchInContext(EditorWindow window, string searchText, string openContext)
         {
             if (!CommandService.Exists(k_OpenSearchInContextCommand))
-                return;
+                return null;
 
-            CommandService.Execute(k_OpenSearchInContextCommand, CommandHint.Any, searchText, openContext);
+            var result = CommandService.Execute(k_OpenSearchInContextCommand, CommandHint.Any, searchText, openContext);
             window?.Repaint();
+            return result;
         }
 
         public static void DrawOpenButton(EditorWindow window, string searchText)
@@ -87,7 +92,9 @@ namespace UnityEditor.SearchService
         public static bool IsShortcutAvailable()
         {
             var shortcutIds = ShortcutManager.instance.GetAvailableShortcutIds();
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return shortcutIds.Any(path => path == k_SearchAllShortcutName);
+#pragma warning restore RS0030
         }
     }
 }

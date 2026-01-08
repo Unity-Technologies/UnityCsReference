@@ -61,7 +61,9 @@ namespace UnityEditor.Scripting.ScriptCompilation
 
         public static BeeBuildProgramCommon.Data.PackageInfo[] GetPackageInfos(string projectDirectory)
         {
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return PackageManager.PackageInfo.GetAllRegisteredPackages().Select(p =>
+#pragma warning restore RS0030
             {
                 NPath resolvedPath = new NPath(p.resolvedPath);
                 if (resolvedPath.IsChildOf(projectDirectory))
@@ -249,7 +251,9 @@ namespace UnityEditor.Scripting.ScriptCompilation
             }
             Console.WriteLine($"Total cache size {cacheSize}");
 
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             foreach (var entry in cacheEntries.OrderBy(x => x.Timestamp))
+#pragma warning restore RS0030
             {
                 if (cacheSize <= targetCacheSize)
                     break;

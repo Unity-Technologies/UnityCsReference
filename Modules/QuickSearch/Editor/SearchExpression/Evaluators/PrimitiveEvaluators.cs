@@ -17,8 +17,12 @@ namespace UnityEditor.Search
         {
             if (c.expression.types.HasAny(SearchExpressionType.Function))
             {
+                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 using (c.runtime.Push(c.args[0], c.args.Skip(1)))
+#pragma warning restore RS0030
+                    #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     yield return Constant(c.runtime.current).First();
+#pragma warning restore RS0030
             }
             else if (c.expression.types.HasAny(SearchExpressionType.Number))
                 yield return SearchExpression.CreateItem(c.expression.GetNumberValue(), c.expression.alias.ToString());
@@ -34,7 +38,9 @@ namespace UnityEditor.Search
         [SearchExpressionEvaluator(SearchExpressionType.Iterable | SearchExpressionType.Variadic)]
         public static IEnumerable<SearchItem> Set(SearchExpressionContext c)
         {
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return c.args.SelectMany(e => e.Execute(c));
+#pragma warning restore RS0030
         }
 
         [Description("Convert the text of any expression to a literal string."), Category("Primitives")]
@@ -44,7 +50,9 @@ namespace UnityEditor.Search
             if (c.args.Length == 0)
                 c.ThrowError("Text needs 1 argument");
 
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return c.args.Select(e => SearchExpression.CreateItem(e.outerText.ToString()));
+#pragma warning restore RS0030
         }
 
         [SearchExpressionEvaluator(SearchExpressionType.Iterable | SearchExpressionType.Variadic)]

@@ -29,9 +29,11 @@ namespace UnityEditor
         /// Array of paths to the root Assets that should be included in the build.
         /// </summary>
         /// <remarks>
-        /// This property should contain project-relative paths to existing Assets (including support for Scenes). Each specified
+        /// This property should contain project-relative paths to existing ScriptableObject-derived Assets. Each specified
         /// Asset will be included in the build, and available for direct load. Any dependency referenced from the Asset will also
-        /// be included in the build.
+        /// be included in the build. Root assets are automatically loaded when a Content Directory is registered, so only
+        /// ScriptableObject-derived assets are permitted to prevent accidental misuse (such as attempting to use large assets
+        /// like Textures or Meshes as root assets).
         /// </remarks>
         public string[] rootAssetPaths { get; set; }
 
@@ -58,7 +60,7 @@ namespace UnityEditor
         /// It is strongly recommended to switch to the target platform prior to calling <see cref="BuildPipeline.BuildContentDirectory"/>,
         /// to ensure that the Editor assemblies have been compiled to match the target platform and a domain reload has been performed.
         /// BuildContentDirectory can build a different target platform than the one currently selected in the build settings, but it may not
-        /// work as expected becuase platform-specific conditional compilation will be applied and some build callbacks may not execute the expected code.
+        /// work as expected because platform-specific conditional compilation will be applied and some build callbacks may not execute the expected code.
         /// See the topic build-command-line in the Unity Manual for more details.
         /// </remarks>
         /// <seealso cref="EditorUserBuildSettings.activeBuildTarget"/>

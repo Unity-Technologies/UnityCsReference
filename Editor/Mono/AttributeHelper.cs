@@ -33,9 +33,13 @@ namespace UnityEditor
         {
             var commands = new List<MonoGizmoMethod>();
 
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             foreach (var mi in EditorAssemblies.GetAllMethodsWithAttribute<DrawGizmo>(BindingFlags.Static).Where(m => m.DeclaringType.Assembly == assembly))
+#pragma warning restore RS0030
             {
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 var attrs = mi.GetCustomAttributes(typeof(DrawGizmo), false).Cast<DrawGizmo>();
+#pragma warning restore RS0030
                 foreach (var gizmoAttr in attrs)
                 {
                     var parameters = mi.GetParameters();
@@ -151,7 +155,9 @@ namespace UnityEditor
 
             foreach (var type in TypeCache.GetTypesWithAttribute<CreateAssetMenuAttribute>())
             {
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 var attr = type.GetCustomAttributes(typeof(CreateAssetMenuAttribute), false).FirstOrDefault() as CreateAssetMenuAttribute;
+#pragma warning restore RS0030
                 if (attr == null)
                     continue;
 
@@ -253,7 +259,9 @@ namespace UnityEditor
             else if (validSignatures.Count == 1)
                 Debug.LogError(MethodToString(method) + " does not match " + attributeType + " expected signature.\n Use " + MethodToString(validSignatures[0]));
             else
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 Debug.LogError(MethodToString(method) + " does not match any of " + attributeType + " expected signatures.\n Valid signatures are: " + string.Join(" , ", validSignatures.Select((a) => MethodToString(a)).ToArray()));
+#pragma warning restore RS0030
             return false;
         }
 
@@ -272,7 +280,9 @@ namespace UnityEditor
 
             public IEnumerable<MethodInfo> FilterAndSortOnAttribute<T>(Func<T, bool> filter, Func<T, IComparable> sorter) where T : Attribute
             {
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 return methodsWithAttributes.Where(a => filter((T)a.attribute)).OrderBy(c => sorter((T)c.attribute)).Select(o => o.info);
+#pragma warning restore RS0030
             }
 
             public IEnumerable<MethodWithAttribute> methodsWithAttributes { get; }

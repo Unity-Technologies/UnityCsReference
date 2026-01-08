@@ -19,11 +19,12 @@ namespace UnityEngine.Accessibility
         [NativeThrows] internal static extern void Test_GetNodeDataToNativeViaProxy();
         internal static extern void Test_GetNodeDataFromNativeViaBinding(ref AccessibilityNodeData nodeData);
         internal static extern void Test_GetNodeDataFromNativeViaProxy();
+        internal static extern AccessibilityNodeData Test_GetNodeDataFromNativePtr(IntPtr nodeDataPtr);
 
         [RequiredByNativeCode]
-        internal static void Internal_GetNodeDataFromManaged(ref AccessibilityNodeData nodeData)
+        internal static void Internal_GetNodeDataFromManaged(IntPtr nodeDataPtr)
         {
-            nodeData = new AccessibilityNodeData
+            var nodeData = new AccessibilityNodeData
             {
                 childIds = new[] { 1, 2, 3 },
                 label = "Label",
@@ -40,12 +41,14 @@ namespace UnityEngine.Accessibility
                 implementsScrolled = true,
                 implementsDismissed = true,
             };
+
+            AccessibilityManager.SetAccessibilityNodeDataPtr(nodeDataPtr, nodeData);
         }
 
         [RequiredByNativeCode]
-        internal static void Internal_GetNodeDataToManaged(in AccessibilityNodeData nodeData)
+        internal static void Internal_GetNodeDataToManaged(IntPtr nodeDataPtr)
         {
-            nodeDataFromNative = nodeData;
+            nodeDataFromNative = Test_GetNodeDataFromNativePtr(nodeDataPtr);
         }
     }
 }

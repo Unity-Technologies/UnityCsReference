@@ -1377,7 +1377,9 @@ namespace UnityEditor
 
         public virtual IEnumerable<Type> GetExtraPaneTypes()
         {
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return Enumerable.Empty<Type>();
+#pragma warning restore RS0030
         }
 
         internal static void UpdateWindowMenuListing()
@@ -1400,13 +1402,17 @@ namespace UnityEditor
             Menu.AddMenuItem($"{k_RootMenuItemName}/Close all floating panels...", "", false, menuIdx++, () =>
             {
                 var windows = Resources.FindObjectsOfTypeAll<ContainerWindow>();
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 foreach (var win in windows.Where(w => !!w && w.showMode != ShowMode.MainWindow))
+#pragma warning restore RS0030
                     win.Close();
             }, null);
             Menu.AddSeparator($"{k_RootMenuItemName}/", menuIdx++);
 
             int menuIndex = 1;
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             foreach (var win in editorWindows.Where(e => !!e).OrderBy(e => e.titleContent.text))
+#pragma warning restore RS0030
             {
                 if (win is MainToolbarWindow)
                     continue;

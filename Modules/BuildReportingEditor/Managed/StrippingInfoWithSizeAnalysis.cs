@@ -39,7 +39,9 @@ namespace UnityEditor.Build.Reporting
 
         static private void OutputSizes(Dictionary<string, int> sizes, int totalLines)
         {
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var functionSizesList = sizes.ToList();
+#pragma warning restore RS0030
             functionSizesList.Sort((firstPair, nextPair) =>
             {
                 return nextPair.Value.CompareTo(firstPair.Value);
@@ -55,7 +57,9 @@ namespace UnityEditor.Build.Reporting
 
         static private void PrintSizesDictionary(Dictionary<string, int> sizes, int maxSize)
         {
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             List<KeyValuePair<string, int>> myList = sizes.ToList();
+#pragma warning restore RS0030
 
             myList.Sort(
                 delegate(KeyValuePair<string, int> pair1,

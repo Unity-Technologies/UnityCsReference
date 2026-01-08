@@ -326,8 +326,41 @@ namespace UnityEngine.UIElements
             if (customDefinition != null)
             {
                 int expectedParamCount = customDefinition.parameters?.Length ?? 0;
-                if (expectedParamCount != paramCount)
-                    Debug.LogError($"Invalid parameter count provided with custom filter function definition {customDefinition}: provided {paramCount} but expected {expectedParamCount}");
+
+                if (paramCount < expectedParamCount)
+                {
+                    Debug.LogWarning($"FilterFunction '{customDefinition.filterName}' expects {expectedParamCount} parameters but only {paramCount} were provided. Missing parameters will be set to their default values.");
+
+                    // The definition has more parameters than provided. We will pad with default values.
+                    for (int i = paramCount; i < expectedParamCount; ++i)
+                    {
+                        var pDef = customDefinition.parameters[i];
+                        m_Parameters[i] = pDef.interpolationDefaultValue;
+                    }
+                }
+
+                // Sanitize the types
+                for (int i = 0; i < expectedParamCount; ++i)
+                {
+                    var pDef = customDefinition.parameters[i];
+                    var pVal = m_Parameters[i];
+                    if (pDef.interpolationDefaultValue.type != pVal.type)
+                    {
+                        Debug.LogWarning($"FilterFunction '{customDefinition.filterName}' expects parameter {i} to be of type {pDef.interpolationDefaultValue.type} but got {pVal.type}. The parameter will be reset to its default value.");
+                        m_Parameters[i] = pDef.interpolationDefaultValue;
+                    }
+                }
+
+                if (paramCount > expectedParamCount)
+                {
+                    Debug.LogWarning($"FilterFunction '{customDefinition.filterName}' expects {expectedParamCount} parameters but {paramCount} were provided. Extra parameters will be ignored.");
+                }
+
+                m_ParameterCount = expectedParamCount;
+            }
+            else
+            {
+                m_ParameterCount = 0;
             }
         }
 

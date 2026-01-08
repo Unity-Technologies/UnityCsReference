@@ -226,11 +226,6 @@ By default, Windows will combine these under a single taskbar item.");
         private bool m_PlacementUsePrefabSerializedPositionOnHierarchyDrop = true;
         private float m_ProgressDialogDelay = 3.0f;
         private bool m_GraphSnapping;
-        private bool m_EnableExtendedDynamicHints
-        {
-            get { return TooltipView.s_EnableExtendedDynamicHints; }
-            set { TooltipView.s_EnableExtendedDynamicHints.value = value; }
-        }
 
         private string[] m_ScriptApps;
         private string[] m_ImageApps;
@@ -319,7 +314,9 @@ By default, Windows will combine these under a single taskbar item.");
         [SettingsProvider]
         internal static SettingsProvider CreateColorsProvider()
         {
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var settings = new PreferencesProvider("Preferences/Colors", GetSearchKeywordsFromGUIContentProperties<ColorsProperties>().Concat(OrderPrefs(PrefSettings.Prefs<PrefColor>()).Values.SelectMany(l => l).Select(pair => pair.Key)));
+#pragma warning restore RS0030
             settings.guiHandler = searchContext => { OnGUI(searchContext, settings.ShowColors); };
             return settings;
         }
@@ -647,7 +644,6 @@ By default, Windows will combine these under a single taskbar item.");
             DrawInteractionModeOptions();
 
             DrawPackageManagerOptions();
-            DrawDynamicHintsOptions();
 
             DrawEnableHelperBar();
             DrawEnableTooltipsInPlayMode();
@@ -770,11 +766,6 @@ By default, Windows will combine these under a single taskbar item.");
                     EditorApplication.UpdateInteractionModeSettings();
                 }
             }
-        }
-
-        private void DrawDynamicHintsOptions()
-        {
-            m_EnableExtendedDynamicHints = EditorGUILayout.Toggle(GeneralProperties.enableExtendedDynamicHints, m_EnableExtendedDynamicHints);
         }
 
         private void DrawLoggingOptions()
@@ -1300,8 +1291,12 @@ By default, Windows will combine these under a single taskbar item.");
                 foundScriptEditorPaths[apps] = CodeEditor.Editor.GetInstallationForPath(apps).Name;
             }
 
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             m_ScriptApps = new[] { "" }.Concat(foundScriptEditorPaths.Keys).ToArray();
+#pragma warning restore RS0030
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             m_ScriptAppDisplayNames = new[] { "Open by file extension" }.Concat(foundScriptEditorPaths.Values).ToArray();
+#pragma warning restore RS0030
 
             m_ImageApps = BuildAppPathList(m_ImageAppPath, kRecentImageAppsKey, "");
 
@@ -1493,7 +1488,9 @@ By default, Windows will combine these under a single taskbar item.");
             EditorGUILayout.PrefixLabel(label, style);
 
             int[] selected = new int[0];
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             if (paths.Contains(selectedString))
+#pragma warning restore RS0030
                 selected = new[] { Array.IndexOf(paths, selectedString) };
             GUIContent text = new GUIContent(selected.Length == 0 ? defaultString : names[selected[0]]);
             Rect r = GUILayoutUtility.GetRect(GUIContent.none, style);

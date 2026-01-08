@@ -231,7 +231,9 @@ namespace UnityEditor
                 var externalObjectMap = importer.GetExternalObjectMap();
                 var materialsList = importer.sourceMaterials;
 
+                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 int mappedMaterialCount = externalObjectMap.Count(x => x.Key.type == typeof(Material) && x.Value != null && Array.Exists(materialsList, y => y.name == x.Key.name));
+#pragma warning restore RS0030
                 if (mappedMaterialCount != materialsList.Length)
                 {
                     m_CanExtractEmbeddedMaterials = true;
@@ -424,17 +426,25 @@ namespace UnityEditor
             foreach (ModelImporter modelImporter in m_ExternalObjects.serializedObject.targetObjects)
             {
                 //Find the names of embedded materials - the source materials that are not re-mapped in the externalObjectsCache
+                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 IEnumerable<string> namesOfEmbeddedMaterials = modelImporter.sourceMaterials
+#pragma warning restore RS0030
+                    #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     .Where(x => !m_ExternalObjectsCache.Any(y => y.Key.Item1 == x.name && y.Value.property != null && y.Value.property.objectReferenceValue != null))
+#pragma warning restore RS0030
                     .Select(x => x.name);
 
                 //Find the names of embedded materials in the AssetDatabase
+                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 IEnumerable<string> namesOfMaterialsInAssetDatabase = AssetDatabase.LoadAllAssetsAtPath(modelImporter.assetPath)
+#pragma warning restore RS0030
                     .Where(x => x.GetType() == typeof(Material))
                     .Select(x => x.name);
 
                 //Are there any embedded materials that *arent* in the AssetDatabase?
+                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 if (namesOfEmbeddedMaterials.Except(namesOfMaterialsInAssetDatabase).Any())
+#pragma warning restore RS0030
                     return false;
             }
 
@@ -444,7 +454,9 @@ namespace UnityEditor
         public void ReimportEmbeddedMaterials()
         {
             //Select any material properties which are marked as "missing"
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             int[] missingMaterialIndexes = m_ExternalObjectsCache.Values.Select((extObj, index) => new { extObj, index })
+#pragma warning restore RS0030
                 .Where(x => x.extObj.property != null && x.extObj.property.objectReferenceValue == null && x.extObj.property.objectReferenceEntityIdValue != EntityId.None)
                 .Select(x => x.index)
                 .ToArray();
@@ -633,7 +645,9 @@ namespace UnityEditor
         void DoMaterialRemapList()
         {
             // OnEnabled is not called consistently when the asset gets reimported, we need to rebuild the cache here if it's outdated.
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             if (m_ExternalObjects.arraySize != m_ExternalObjectsCache.Count())
+#pragma warning restore RS0030
                 ResetValues();
             // The list of material names is immutable, whereas the map of external objects can change based on user actions.
             // For each material name, map the external object associated with it where one exists.

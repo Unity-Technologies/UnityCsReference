@@ -372,7 +372,9 @@ namespace Unity.UI.Builder
             CenterCanvas();
         }
 
+        #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
         public void FitViewport() => FitViewport(selection.selection.FirstOrDefault());
+#pragma warning restore RS0030
 
         public void FitViewport(VisualElement target)
         {
@@ -733,7 +735,9 @@ namespace Unity.UI.Builder
             if (m_Selection.isEmpty || m_Selection.selectionCount > 1)
                 ClearInnerSelection();
             else
+                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 SetInnerSelection(m_Selection.selection.First());
+#pragma warning restore RS0030
         }
 
         public void StylingChanged(List<string> styles, BuilderStylingChangeType changeType)
@@ -747,7 +751,9 @@ namespace Unity.UI.Builder
 
             if (styles.Contains("display"))
             {
+                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 SetInnerSelection(m_Selection.selection.First());
+#pragma warning restore RS0030
             }
 
             if (m_Selection.selectionType == BuilderSelectionType.Element ||

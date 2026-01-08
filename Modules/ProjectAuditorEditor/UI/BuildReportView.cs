@@ -36,7 +36,9 @@ If your project uses a custom build script, ensure that it passes the <b>BuildOp
         public override void AddIssues(IEnumerable<ReportItem> allIssues)
         {
             base.AddIssues(allIssues);
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             m_MetaData.AddRange(allIssues.Where(i => i.Category == IssueCategory.BuildSummary));
+#pragma warning restore RS0030
         }
 
         public override void Clear()

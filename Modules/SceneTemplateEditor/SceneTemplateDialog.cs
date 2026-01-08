@@ -317,7 +317,9 @@ namespace UnityEditor.SceneTemplate
 
             var items = CreateGridViewItems();
             m_GridView.SetItems(items);
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             m_GridView.SetPinned(m_SceneTemplateInfos.Where(template => template.isPinned).Select(template => template.GetHashCode()));
+#pragma warning restore RS0030
             m_GridView.SetSelection(m_LastSelectedTemplate.GetHashCode());
 
             if (m_GridView.filterString != null && !m_GridView.filterString.Equals(string.Empty))
@@ -338,27 +340,35 @@ namespace UnityEditor.SceneTemplate
             m_GridView.sizeLevel = EditorPrefs.GetFloat(GetKeyName(nameof(m_GridView.sizeLevel)), 128);
             rootContainer.Add(m_GridView);
 
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             m_GridView.SetPinned(m_SceneTemplateInfos.Where(template => template.isPinned).Select(template => template.GetHashCode()));
+#pragma warning restore RS0030
 
             m_GridView.onSelectionChanged += OnTemplateListViewSelectionChanged;
             m_GridView.onPinnedChanged += OnPinnedChanged;
             m_GridView.onItemsActivated += objects =>
             {
+                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 var sceneTemplateInfo = objects.First().userData as SceneTemplateInfo;
+#pragma warning restore RS0030
                 if (sceneTemplateInfo == null)
                     return;
                 if (m_SelectedButtonIndex != -1)
                     m_Buttons[m_SelectedButtonIndex].callback(sceneTemplateInfo);
             };
 
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var toSelect = templateItems.FirstOrDefault(item => item.userData.Equals(m_LastSelectedTemplate));
+#pragma warning restore RS0030
             if (toSelect != null)
             {
                 m_GridView.SetSelection(toSelect);
             }
             else
             {
+                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 m_GridView.SetSelection(templateItems.First());
+#pragma warning restore RS0030
             }
 
             m_NoUserTemplateHelpBox = new HelpBox(L10n.Tr("To begin using a template, create a template from an existing scene in your project. Click to see Scene template documentation."), HelpBoxMessageType.Info);
@@ -367,7 +377,9 @@ namespace UnityEditor.SceneTemplate
             {
                 SceneTemplateUtils.OpenDocumentationUrl();
             });
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             m_NoUserTemplateHelpBox.style.display = m_SceneTemplateInfos.All(t => t.IsInMemoryScene) ? DisplayStyle.Flex : DisplayStyle.None;
+#pragma warning restore RS0030
             m_GridView.Insert(2, m_NoUserTemplateHelpBox);
 
             EditorApplication.delayCall += () =>
@@ -384,7 +396,9 @@ namespace UnityEditor.SceneTemplate
         private IEnumerable<GridView.Item> CreateGridViewItems()
         {
             // What to do with defaults item? auto pin them?
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var templateItems = m_SceneTemplateInfos.Select(info =>
+#pragma warning restore RS0030
             {
                 var item = new GridView.Item(info.GetHashCode(), info.name, info.thumbnail ? info.thumbnail : m_DefaultThumbnail, info.badge, info);
                 return item;
@@ -564,7 +578,9 @@ namespace UnityEditor.SceneTemplate
 
         private void OnTemplateListViewSelectionChanged(IEnumerable<GridView.Item> oldSelection, IEnumerable<GridView.Item> newSelection)
         {
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var objList = newSelection.ToList();
+#pragma warning restore RS0030
             if (objList.Count == 0)
                 return;
 

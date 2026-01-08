@@ -103,7 +103,9 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public IList<RegistryInfo> registries => m_Registries;
 
+        #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
         public IEnumerable<RegistryInfo> scopedRegistries => m_Registries.Skip(1);
+#pragma warning restore RS0030
 
         // `m_UserSelectedRegistryName` and `m_UserAddingNewScopedRegistry` only reflect what scoped registry the user selected
         // by interacting with the settings window. registryInfoDraft.original is what's actually selected and displayed to the user
@@ -125,14 +127,18 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public void SelectRegistry(string name)
         {
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var registry = string.IsNullOrEmpty(name) ? null : scopedRegistries.FirstOrDefault(r => r.name == name);
+#pragma warning restore RS0030
             m_UserSelectedRegistryName = name;
             m_RegistryInfoDraft.SetOriginalRegistryInfo(registry);
         }
 
         public void SetRegistries(RegistryInfo[] newRegistries)
         {
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var sanitizedNewRegistries = newRegistries?.Where(r => r != null).ToArray();
+#pragma warning restore RS0030
 
             var oldSelectionIndex = Math.Max(0, m_Registries.FindIndex(r => r.name == m_UserSelectedRegistryName));
             m_Registries.Clear();
@@ -199,20 +205,26 @@ namespace UnityEditor.PackageManager.UI.Internal
         {
             if (!string.IsNullOrEmpty(m_UserSelectedRegistryName))
             {
+                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 var selectedRegistry = scopedRegistries.FirstOrDefault(r => r.name == m_UserSelectedRegistryName);
+#pragma warning restore RS0030
                 if (selectedRegistry == null)
                 {
                     // We use `m_Registries.Count - 2` because m_Registries always contains the main registry
                     // and scopedRegistries is always one element less than m_Registries
                     var newSelectionIndex = Math.Max(0, Math.Min(oldSelectionIndex, m_Registries.Count - 2));
+                    #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     selectedRegistry = scopedRegistries.Skip(newSelectionIndex).FirstOrDefault();
+#pragma warning restore RS0030
                 }
                 m_UserSelectedRegistryName = selectedRegistry?.name ?? string.Empty;
                 m_RegistryInfoDraft.SetOriginalRegistryInfo(selectedRegistry);
             }
             else
             {
+                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 var selectedRegistry = m_UserAddingNewScopedRegistry ? null : scopedRegistries.FirstOrDefault();
+#pragma warning restore RS0030
                 m_RegistryInfoDraft.SetOriginalRegistryInfo(selectedRegistry);
             }
         }
@@ -224,7 +236,9 @@ namespace UnityEditor.PackageManager.UI.Internal
 
             return !string.IsNullOrEmpty(info.id?.Trim()) && !string.IsNullOrEmpty(info.name?.Trim())
                 && !string.IsNullOrEmpty(info.url?.Trim()) && info.scopes.Length > 0
+                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 && info.scopes.All(s => !string.IsNullOrEmpty(s.Trim()));
+#pragma warning restore RS0030
         }
 
         void OnEnable()
@@ -233,7 +247,9 @@ namespace UnityEditor.PackageManager.UI.Internal
 
             if (m_RegistryInfoDraft.original is null && !m_RegistryInfoDraft.hasUnsavedChanges && !isUserAddingNewScopedRegistry)
             {
+                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 var firstScopedRegistry = scopedRegistries.FirstOrDefault();
+#pragma warning restore RS0030
                 if (firstScopedRegistry != null)
                     m_RegistryInfoDraft.SetOriginalRegistryInfo(firstScopedRegistry);
             }

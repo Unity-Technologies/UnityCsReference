@@ -60,7 +60,9 @@ namespace Unity.ProjectAuditor.Editor
             public void DoGUI()
             {
                 var diagnosticParams = ProjectAuditorSettings.instance.DiagnosticParams;
-                string[] keys = m_Params.Keys.ToArray();
+
+                string[] keys = new string[m_Params.Count];
+                m_Params.Keys.CopyTo(keys, 0);
 
                 float maxWidth = 0.0f;
                 foreach (var key in keys)
@@ -194,15 +196,17 @@ namespace Unity.ProjectAuditor.Editor
 
         private void InitPlatformParams()
         {
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var buildTargets = Enum.GetValues(typeof(BuildTarget)).Cast<BuildTarget>();
-            var supportedBuildTargets = buildTargets.Where(bt =>
-                BuildPipeline.IsBuildTargetSupported(BuildPipeline.GetBuildTargetGroup(bt), bt)).ToList();
+            var supportedBuildTargets = new List<BuildTarget>(buildTargets.Where(bt =>
+                BuildPipeline.IsBuildTargetSupported(BuildPipeline.GetBuildTargetGroup(bt), bt)));
+#pragma warning restore RS0030
             var supportedGroups  = new HashSet<BuildTargetGroup>();
             foreach (var buildTarget in supportedBuildTargets)
                 supportedGroups.Add(BuildPipeline.GetBuildTargetGroup(buildTarget));
-            var supportedBTGroups = supportedGroups.ToList();
+            var supportedBTGroups = new List<BuildTargetGroup>(supportedGroups);
             supportedBTGroups.Sort((t1, t2) =>
-                String.Compare(t1.ToString(), t2.ToString(), StringComparison.Ordinal));
+                string.Compare(t1.ToString(), t2.ToString(), StringComparison.Ordinal));
 
             // Add at the beginning of the list, after sorting the other options
             supportedBTGroups.Insert(0, BuildTargetGroup.Unknown);
@@ -470,8 +474,10 @@ namespace Unity.ProjectAuditor.Editor
                 var keysDefault = m_ParamsStack[0].GetKeys();
                 var keysFirstNonDefault = m_ParamsStack[1].GetKeys();
 
-                var keysThatNeedAdding = keysDefault.Except(keysFirstNonDefault).ToList();
-                if (keysThatNeedAdding.Any())
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                var keysThatNeedAdding = new List<string>(keysDefault.Except(keysFirstNonDefault));
+#pragma warning restore RS0030
+                if (keysThatNeedAdding.Count > 0)
                 {
                     for (var i = 1; i < m_ParamsStack.Count; ++i)
                     {
@@ -485,10 +491,12 @@ namespace Unity.ProjectAuditor.Editor
             // Make use of the fact that tooltips aren't serialized to see what should stay.
             if (m_ParameterData.Count > 0)
             {
-                var keysThatNeedRemoving = m_ParamsStack[0].GetKeys().Except(m_ParameterData.Keys).ToList();
-                var numKeysToRemove = keysThatNeedRemoving.Count;
+                var keysDefault = m_ParamsStack[0].GetKeys();
 
-                if (numKeysToRemove > 0)
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                var keysThatNeedRemoving = new List<string>(keysDefault.Except(m_ParameterData.Keys));
+#pragma warning restore RS0030
+                if (keysThatNeedRemoving.Count > 0)
                 {
                     foreach (var platformParams in m_ParamsStack)
                     {

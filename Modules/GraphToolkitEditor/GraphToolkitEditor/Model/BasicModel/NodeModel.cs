@@ -502,7 +502,9 @@ namespace Unity.GraphToolkit.Editor
         public int CurrentModeIndex
         {
             get => m_CurrentModeIndex;
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             set => m_CurrentModeIndex = Modes.ElementAtOrDefault(m_CurrentModeIndex) != null ? value : 0;
+#pragma warning restore RS0030
         }
 
         /// <summary>
@@ -544,10 +546,14 @@ namespace Unity.GraphToolkit.Editor
         /// <param name="newModeIndex">The index of the mode to change to.</param>
         public virtual void ChangeMode(int newModeIndex)
         {
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             if (Modes.ElementAtOrDefault(newModeIndex) == null)
+#pragma warning restore RS0030
                 return;
 
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var existingWires = GetConnectedWires().ToList();
+#pragma warning restore RS0030
             var oldInputConstants = m_InputConstantsById.ToList();
             m_InputConstantsById.Clear();
 
@@ -608,15 +614,21 @@ namespace Unity.GraphToolkit.Editor
                 if (oldPort.PortType != PortType.MissingPort)
                 {
                     // Second choice: Connect to the first compatible port that is not taken.
+                    #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     newPort = compatiblePorts.FirstOrDefault(p => !p.GetConnectedWires().HasAny());
+#pragma warning restore RS0030
                 }
                 else
                 {
                     // When the old port is a missing port, its unique name is most likely different from its title. Connect with the compatible port with the same title.
                     // When both ports are missing ports, the type cannot be retrieved. Connect with the port that has the same title.
                     newPort = otherPort.PortType == PortType.MissingPort ?
+                        #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                         newModePorts.FirstOrDefault(p => p.Title == oldPort.Title) :
+#pragma warning restore RS0030
+                        #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                         compatiblePorts.FirstOrDefault(p => p.Title == oldPort.Title);
+#pragma warning restore RS0030
                 }
 
                 // Last choice: Become a missing port
@@ -713,7 +725,9 @@ namespace Unity.GraphToolkit.Editor
 
             IReadOnlyList<PortModel> portModels = nextList;
 
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             while (portModels.Count() > 0)
+#pragma warning restore RS0030
             {
                 currentList.Clear();
                 m_SubPortDefinition.AddedPorts = currentList;
@@ -727,7 +741,9 @@ namespace Unity.GraphToolkit.Editor
                         port.ClearSubPorts();
                         GraphModel.OnDefineSubPorts(m_SubPortDefinition, port);
 
+                        #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                         if (m_SubPortDefinition.MustSpecifySubPorts && port.SubPorts.Count() == 0)
+#pragma warning restore RS0030
                         {
                             Debug.LogError($"After OnDefineSubPorts, {port.Direction} port {port.UniqueName} from node {Title}({GetType().Name}) is expanded but has no sub ports");
                         }
@@ -764,10 +780,14 @@ namespace Unity.GraphToolkit.Editor
             {
                 //note: this will add sub port recursively.
                 var port = portInfos.portsById[i];
+                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 if (port.SubPorts.Count() > 0)
+#pragma warning restore RS0030
                 {
                     portInfos.portsById.InsertRange(i + 1, port.SubPorts);
+                    #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     end += port.SubPorts.Count();
+#pragma warning restore RS0030
                 }
             }
         }
@@ -842,7 +862,9 @@ namespace Unity.GraphToolkit.Editor
         void RemoveObsoleteWiresAndConstants()
         {
             var removedPortModels = new List<PortModel>();
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             foreach (var kv in m_InputPortInfos.previousPorts
+#pragma warning restore RS0030
                      .Where<KeyValuePair<string, PortModel>>(kv => !m_InputPortInfos.portsById.ContainsKey(kv.Key)))
             {
                 if (!kv.Value.Options.HasFlag(PortModelOptions.IsNodeOption) && kv.Value.PortType != PortType.MissingPort)
@@ -858,7 +880,9 @@ namespace Unity.GraphToolkit.Editor
                 }
             }
 
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             foreach (var kv in m_OutputPortInfos.previousPorts
+#pragma warning restore RS0030
                      .Where<KeyValuePair<string, PortModel>>(kv => !m_OutputPortInfos.portsById.ContainsKey(kv.Key)))
             {
                 if (!kv.Value.Options.HasFlag(PortModelOptions.IsNodeOption) && kv.Value.PortType != PortType.MissingPort)
@@ -881,9 +905,13 @@ namespace Unity.GraphToolkit.Editor
             }
 
             // remove input constants that aren't used
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var idsToDeletes = m_InputConstantsById
+#pragma warning restore RS0030
                 .Select(kv => kv.Key)
+                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 .Where(id => !m_InputPortInfos.portsById.ContainsKey(id) && m_NodeOptions.All(o => o.PortModel.UniqueName != id)).ToList();
+#pragma warning restore RS0030
             foreach (var id in idsToDeletes)
             {
                 m_InputConstantsById.Remove(id);
@@ -896,7 +924,9 @@ namespace Unity.GraphToolkit.Editor
             void CleanupExpandedPortDictionary(ref PortInfos portInfos)
             {
                 var portsById = portInfos.portsById;
+                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 var idsToDelete = portInfos.expandedPortsById
+#pragma warning restore RS0030
                     .Select(kv => kv.Key)
                     .Where(id => !portsById.ContainsKey(id)).ToList();
                 foreach (var id in idsToDelete)
@@ -1330,10 +1360,14 @@ namespace Unity.GraphToolkit.Editor
         void CopyInputConstantValues(List<KeyValuePair<string, Constant>> otherInputConstants)
         {
             var index = 0;
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             foreach (var id in m_InputConstantsById.Keys.ToList())
+#pragma warning restore RS0030
             {
                 // First choice: constant with the same id
+                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 var constantWithSameId = otherInputConstants.FirstOrDefault(c => id == c.Key).Value;
+#pragma warning restore RS0030
                 if (constantWithSameId != null)
                 {
                     if (m_InputConstantsById[id].IsAssignableFrom(constantWithSameId.Type))
@@ -1342,7 +1376,9 @@ namespace Unity.GraphToolkit.Editor
                 else
                 {
                     // Second choice: constant at the same index
+                    #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     var constantAtSameIndex = otherInputConstants.ElementAtOrDefault(index).Value;
+#pragma warning restore RS0030
                     if (constantAtSameIndex != null && m_InputConstantsById[id].IsAssignableFrom(constantAtSameIndex.Type))
                         m_InputConstantsById[id] = constantAtSameIndex;
                 }

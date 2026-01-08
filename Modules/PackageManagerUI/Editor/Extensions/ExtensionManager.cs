@@ -215,11 +215,15 @@ namespace UnityEditor.PackageManager.UI.Internal
         private void CollapsedPackageActionsOnBeforeShowDropdown()
         {
             var newDropdownMenu = new DropdownMenu();
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             foreach (var extension in m_PackageExtensionActions.Where(a => a.visible))
+#pragma warning restore RS0030
             {
                 var packageActionTooltip = extension.tooltip ?? string.Empty;
                 var packageActionText = !string.IsNullOrEmpty(extension.text) ? extension.text : packageActionTooltip;
+                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 if (!extension.visibleDropdownItems.Any())
+#pragma warning restore RS0030
                     newDropdownMenu.AppendAction(packageActionText, a => { extension.action?.Invoke(m_Window.activeSelection); }, a =>
                     {
                         return extension.enabled ? DropdownMenuAction.Status.Normal : DropdownMenuAction.Status.Disabled;
@@ -240,7 +244,9 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private void RefreshPackageActionsBasedOnWidth()
         {
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var childrenWidth = m_PackageExtensionActions.Sum(a => a.visible ? a.dropdownButton.estimatedWidth : 0.0f);
+#pragma warning restore RS0030
             UIUtils.SetElementDisplay(m_ToolbarExtensionContainer, childrenWidth != 0);
             var showCollapsedButton = childrenWidth > m_ToolbarExtensionContainer.rect.width;
             if (showCollapsedButton == UIUtils.IsElementVisible(m_CollapsedPackageActions))

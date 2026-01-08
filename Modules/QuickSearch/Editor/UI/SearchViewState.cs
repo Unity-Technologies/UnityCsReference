@@ -43,8 +43,12 @@ namespace UnityEditor.Search
             {
                 if (m_ActiveQuery == null && !string.IsNullOrEmpty(m_ActiveQueryGuid))
                 {
+                    #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     ISearchQuery loadedActiveQuery = SearchQuery.searchQueries.FirstOrDefault(query => query.guid == m_ActiveQueryGuid)
+#pragma warning restore RS0030
+                        #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                         ?? (ISearchQuery)SearchQueryAsset.savedQueries.FirstOrDefault(query => query.guid == m_ActiveQueryGuid);
+#pragma warning restore RS0030
                     m_ActiveQuery = loadedActiveQuery;
                     m_ActiveQueryGuid = null;
                 }
@@ -354,7 +358,9 @@ namespace UnityEditor.Search
             }
             searchFlags = searchContext?.options ?? state.searchFlags;
             searchText = searchContext?.searchText ?? state.searchText;
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             providerIds = searchContext?.GetProviders().Select(p => p.id).ToArray() ?? state.providerIds.ToArray();
+#pragma warning restore RS0030
 
             if (tableConfig != null && state.tableConfig?.columns?.Length > 0)
             {
@@ -459,7 +465,9 @@ namespace UnityEditor.Search
                 return;
             searchFlags = context.options;
             searchText = context.searchText;
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             providerIds = GetProviderIds().ToArray();
+#pragma warning restore RS0030
             m_ActiveQueryGuid = m_ActiveQuery?.guid;
             m_ContextUseExplicitProvidersAsNormalProviders = context.useExplicitProvidersAsNormalProviders;
         }
@@ -475,21 +483,27 @@ namespace UnityEditor.Search
         public IEnumerable<string> GetProviderIds()
         {
             if (m_Context != null)
+                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 return m_Context.GetProviders().Select(p => p.id);
+#pragma warning restore RS0030
             return providerIds;
         }
 
         internal SearchProvider GetProviderById(string providerId)
         {
             if (m_Context != null)
+                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 return m_Context.GetProviders().FirstOrDefault(p => p.active && p.id == providerId);
+#pragma warning restore RS0030
             return null;
         }
 
         public IEnumerable<string> GetProviderTypes()
         {
             var providers = m_Context != null ? m_Context.GetProviders() : SearchService.GetProviders(providerIds);
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return providers.Select(p => p.type).Distinct();
+#pragma warning restore RS0030
         }
 
         public bool HasFlag(SearchViewFlags flags) => (this.flags & flags) != 0;

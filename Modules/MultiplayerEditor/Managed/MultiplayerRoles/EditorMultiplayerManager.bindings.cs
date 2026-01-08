@@ -19,8 +19,6 @@ namespace UnityEditor.Multiplayer.Internal
     internal static class EditorMultiplayerManager
     {
         public static extern bool enableMultiplayerRoles { get; set; }
-        internal static extern bool enablePlayModeLocalDeployment { get; set; }
-        internal static extern bool enablePlayModeRemoteDeployment { get; set; }
         public static extern MultiplayerRoleFlags activeMultiplayerRoleMask { get; set; }
 
         public static extern MultiplayerRoleFlags GetMultiplayerRoleMaskForGameObject(GameObject gameObject);

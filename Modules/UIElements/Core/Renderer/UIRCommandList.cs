@@ -7,9 +7,12 @@ using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
+using UnityEngine.Bindings;
+using UnityEngine.Scripting;
 
 namespace UnityEngine.UIElements.UIR
 {
+    // Keep in sync with native SerializedCommandType enum
     enum SerializedCommandType
     {
         DrawRanges,
@@ -17,7 +20,6 @@ namespace UnityEngine.UIElements.UIR
         ApplyBatchProps,
         ApplyUserProps
     }
-
 
     struct SerializedCommand
     {
@@ -41,13 +43,16 @@ namespace UnityEngine.UIElements.UIR
         static readonly MemoryLabel k_MemoryLabel = new (nameof(UIElements), $"Renderer.{nameof(CommandList)}");
 
         public VisualElement m_Owner; // Might be null if non-initialized or for the default command list.
-        public UIRenderer m_Renderer;
+        public UIRenderer m_UIRenderer;
+        public PanelRenderer m_PanelRenderer;
         readonly IntPtr m_VertexDecl;
         readonly IntPtr m_StencilState;
         public MaterialPropertyBlock constantProps = new();
         public GCHandle handle; // GCHandle for native-side interactions
         public Material m_Material;
         public CommandFlags flags;
+
+        public IntPtr stencilState => m_StencilState;
 
         List<SerializedCommand> m_Commands = new();
         Vector4[] m_GpuTextureData = new Vector4[TextureSlotManager.k_SlotSize * TextureSlotManager.k_MaxSlotCount];
@@ -62,11 +67,14 @@ namespace UnityEngine.UIElements.UIR
         }
 
         public int Count => m_Commands.Count;
+        public NativeList<DrawBufferRange> ActiveDrawRanges => m_DrawRanges;
+
+        public List<SerializedCommand> Commands => m_Commands;
 
         public void Reset()
         {
             m_Owner = null;
-            m_Renderer = null;
+            m_UIRenderer = null;
             m_Material = null;
             for (int i = 0; i < m_Commands.Count; i++)
             {
@@ -85,7 +93,8 @@ namespace UnityEngine.UIElements.UIR
         {
             Debug.Assert(m_Owner == null);
             m_Owner = owner;
-            m_Renderer = (owner as UIDocumentRootElement)?.uiRenderer;
+            m_UIRenderer = (owner as UIDocumentRootElement)?.uiRenderer;
+            m_PanelRenderer = (owner as PanelRendererRootElement)?.panelRenderer;
             m_Material = material;
             flags = commandFlags;
 

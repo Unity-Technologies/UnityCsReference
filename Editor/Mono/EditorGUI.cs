@@ -3264,7 +3264,9 @@ namespace UnityEditor
 
                                 ReorderableList.InvalidateExistingListCaches();
                             }
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                             else if (listView != null && listView.selectedIndices.Any())
+#pragma warning restore RS0030
                             {
                                 DuplicateListViewItems(listView, parentArrayProperty);
                             }
@@ -3307,7 +3309,9 @@ namespace UnityEditor
                             // ReorderableLists multi-selection features
                             else if (list != null && list.selectedIndices.Count > 0)
                             {
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                                 foreach (var selected in list.selectedIndices.Reverse<int>())
+#pragma warning restore RS0030
                                 {
                                     if (selected >= parentArrayProperty.arraySize) continue;
 
@@ -3324,7 +3328,9 @@ namespace UnityEditor
                                     list.onChangedCallback(list);
                                 ReorderableList.InvalidateExistingListCaches();
                             }
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                             else if (listView != null && listView.selectedIndices.Any())
+#pragma warning restore RS0030
                             {
                                 DeleteListViewItems(listView, parentArrayProperty);
                             }
@@ -3409,7 +3415,9 @@ namespace UnityEditor
 
             for (int i = previousSelectedIndices.Count - 1; i >= 0; i--)
             {
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 var index = previousSelectedIndices.ElementAt(i);
+#pragma warning restore RS0030
                 if (index >= baseListView.itemsSource.Count) continue;
 
                 SerializedProperty resolvedProperty = parentArrayProperty.GetArrayElementAtIndex(index);
@@ -3429,7 +3437,9 @@ namespace UnityEditor
 
             for (int i = previousSelectedIndices.Count - 1; i >= 0; i--)
             {
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 var index = previousSelectedIndices.ElementAt(i);
+#pragma warning restore RS0030
                 if (index >= baseListView.itemsSource.Count) continue;
 
                 SerializedProperty resolvedProperty = parentArrayProperty.GetArrayElementAtIndex(index);
@@ -7740,7 +7750,9 @@ namespace UnityEditor
                         var propertyFieldInfo = ScriptAttributeUtility.GetFieldInfoFromProperty(property, out var propertyType);
                         if (propertyFieldInfo != null)
                         {
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                             var attributes = propertyFieldInfo.GetCustomAttributes<ColorUsageAttribute>(false).ToArray();
+#pragma warning restore RS0030
                             if (attributes.Length > 0)
                             {
                                 var attribute = attributes[0];

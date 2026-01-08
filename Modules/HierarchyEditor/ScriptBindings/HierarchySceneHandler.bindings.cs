@@ -31,6 +31,7 @@ namespace Unity.Hierarchy.Editor
         const string k_SceneNodeUssClass = "hierarchy-item__scene-node";
         const string k_NonMainStageSceneNodeUssClass = "hierarchy-item__scene-node--stage";
         const string k_NonMainStageSceneNodeToggleUssClass = "hierarchy-item__scene-node__toggle--stage";
+        const string k_SceneNodeContainerUssClass = "hierarchy-item__scene-node-container";
         const string k_ActiveSceneNodeUssClass = "hierarchy-item__active-scene-node";
         const string k_SceneUnloadedUssClass = "unity-disabled";
 
@@ -108,14 +109,10 @@ namespace Unity.Hierarchy.Editor
 
         protected override void OnBindItem(HierarchyViewItem item)
         {
-            // Using inline style instead of USS class for performance
-            // Equivalent to: background-color: var(--unity-colors-default-background);
-            const float darkShade = 40f / 255f;
-            const float lightShade = 165f / 255f;
-
-            item.RowContainer.style.backgroundColor = EditorGUIUtility.isProSkin ?
-                new Color(darkShade, darkShade, darkShade):
-                new Color(lightShade , lightShade , lightShade );
+            // We unfortunately can't conditionally apply inline styles since the control's BindItem happens after. This
+            // means, any selected/checked state happens after. We should find a way to expose that method or element
+            // which will allow all this logic to take place when the control BindItem happens.
+            item.RowContainer?.AddToClassList(k_SceneNodeContainerUssClass);
             item.AddToClassList(k_SceneNodeUssClass);
 
             var isMainStage = m_IsMainStage;
@@ -130,7 +127,9 @@ namespace Unity.Hierarchy.Editor
 
         protected override void OnUnbindItem(HierarchyViewItem item)
         {
-            item.RowContainer.style.backgroundColor = StyleKeyword.Null;
+            // We have no choice but to remove this class from the row container, since there is no guarantee
+            // that the HierarchyViewItem will be reused in the same row container.
+            item.RowContainer?.RemoveFromClassList(k_SceneNodeContainerUssClass);
         }
 
         #region IHierarchyEditorNodeTypeHandler

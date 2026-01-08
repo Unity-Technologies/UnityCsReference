@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using UnityEditor.StyleSheets;
 using UnityEngine;
@@ -28,6 +29,8 @@ namespace UnityEditor.IMGUI.Controls
             public static SVC<Color> searchBackgroundColor = new SVC<Color>("--theme-toolbar-background-color", Color.black);
 
             public static GUIContent checkMarkContent = new GUIContent("✔");
+
+            public const float k_MaxWindowHeight = 250f;
 
             static Styles()
             {
@@ -89,7 +92,9 @@ namespace UnityEditor.IMGUI.Controls
                 return;
 
             lastContentImage = content.image;
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             if (m_DataSource.selectedIDs.Any() && m_DataSource.selectedIDs.Contains(item.id))
+#pragma warning restore RS0030
             {
                 var checkMarkRect = new Rect(rect);
                 checkMarkRect.width = iconSize.x + 1;
@@ -233,26 +238,12 @@ namespace UnityEditor.IMGUI.Controls
             bool includeArrow = false;
             float arrowWidth = Styles.rightArrow.fixedWidth;
 
-            foreach (var child in dataSource.mainTree.children)
-            {
-                var content = child.content;
-                var a = CalcItemSize(content);
-                a.x += iconSize.x + 1;
+            // Calculate size recursively starting from main tree children
+            CalculateTreeSize(dataSource.mainTree, ref maxWidth, ref maxHeight, ref includeArrow);
 
-                if (maxWidth < a.x)
-                {
-                    maxWidth = a.x + 1;
-                    includeArrow |= child.children.Any();
-                }
-                if (child.IsSeparator())
-                {
-                    maxHeight += Styles.lineSeparator.CalcHeight(content, maxWidth) + Styles.lineSeparator.margin.vertical;
-                }
-                else
-                {
-                    maxHeight += CalcItemHeight(content, maxWidth);
-                }
-            }
+            // Make sure that the height is aceptable in case there are a lot of elements
+            maxHeight = Mathf.Min(Styles.k_MaxWindowHeight, maxHeight);
+
             if (includeArrow)
             {
                 maxWidth += arrowWidth;
@@ -280,14 +271,74 @@ namespace UnityEditor.IMGUI.Controls
             return new Vector2(maxWidth, maxHeight);
         }
 
+        private void CalculateTreeSize(AdvancedDropdownItem root, ref float maxWidth, ref float maxHeight, ref bool includeArrow)
+        {
+            /// Recursively finds the node with the highest number of immediate children in the entire tree.
+            /// This searches through all branches to find the node that has the most direct children,
+            /// which helps determine the height needed for the dropdown. As for example the first level might have fewer items than
+            /// one of the deeper levels. Making sure we find the largest set of immediate children ensures we allocate enough height for any level.
+            AdvancedDropdownItem largestChild = FindLargestChild(root);
+
+            foreach (var child in largestChild.children)
+            {
+                var content = child.content;
+                var a = CalcItemSize(content);
+                a.x += iconSize.x + 1;
+
+                if (maxWidth < a.x)
+                {
+                    maxWidth = a.x + 1;
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                    includeArrow |= child.children.Count() > 0;
+#pragma warning restore RS0030
+                }
+
+                if (child.IsSeparator())
+                {
+                    maxHeight += Styles.lineSeparator.CalcHeight(content, maxWidth) + Styles.lineSeparator.margin.vertical;
+                }
+                else
+                {
+                    maxHeight += CalcItemHeight(content, maxWidth);
+                }
+            }
+        }
+
+        private AdvancedDropdownItem FindLargestChild(AdvancedDropdownItem item)
+        {
+            // Start by assuming the current node is the largest
+            AdvancedDropdownItem largest = item;
+
+            // Recursively search through all children
+            foreach (var child in item.children)
+            {
+                // Find the largest node in this child's branch
+                var largestChild = FindLargestChild(child);
+
+                // Compare immediate child counts - if this branch has more direct children, it becomes the new largest
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                if (largestChild.children.Count() > largest.children.Count())
+#pragma warning restore RS0030
+                {
+                    largest = largestChild;
+                }
+            }
+
+            return largest;
+        }
+
         internal float GetSelectionHeight(AdvancedDropdownDataSource dataSource, Rect buttonRect)
         {
             if (state.GetSelectedIndex(dataSource.mainTree) == -1)
                 return 0;
             float heigth = 0;
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             for (int i = 0; i < dataSource.mainTree.children.Count(); i++)
+#pragma warning restore RS0030
             {
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 var child = dataSource.mainTree.children.ElementAt(i);
+#pragma warning restore RS0030
                 var content = child.content;
                 if (state.GetSelectedIndex(dataSource.mainTree) == i)
                 {

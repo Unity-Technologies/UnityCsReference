@@ -33,7 +33,9 @@ namespace UnityEditor
 
                 int clipIndex = 0;
                 //The ModelImporter handles "ClipAnimations" and "DefaultClipAnimations" independently, where there are no user specified clips, this clip must be a default clip.
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 var clipAnimations = importer.clipAnimations.Any() ? importer.clipAnimations : importer.defaultClipAnimations;
+#pragma warning restore RS0030
                 for (int i = 0; i < clipAnimations.Length; i++)
                 {
                     if (clipAnimations[i].name == clip.name)
@@ -1961,7 +1963,9 @@ namespace UnityEditor
         {
             GenericMenu menu = new GenericMenu();
             var ctx = new EventModificationContextMenuObject(info, time, eventIndex, selectedEvents);
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var selectedCount = selectedEvents.Count(selected => selected);
+#pragma warning restore RS0030
 
             menu.AddItem(AnimationClipEditor.Styles.AddEvent, false, EventLineContextMenuAdd, ctx);
             if (selectedCount > 0 || eventIndex != -1)

@@ -8,6 +8,7 @@ using UnityEngine.TextCore.Text;
 using UnityEngine.Bindings;
 using UnityEngine.UIElements.Layout;
 using UnityEngine.UIElements.UIR;
+using Unity.Profiling;
 
 namespace UnityEngine.UIElements
 {
@@ -16,6 +17,12 @@ namespace UnityEngine.UIElements
     {
         public static event Action<BaseRuntimePanel> onCreatePanel;
         public static event Action<BaseRuntimePanel> onWillDestroyPanel;
+
+        public static event Action<Panel> onCreateAuthoringPanel;
+        public static event Action<Panel> onWillDestroyAuthoringPanel;
+
+        public static readonly ProfilerMarker s_PreUpdatePanelRenderersMarker = new ProfilerMarker("UIElements.PreUpdatePanelRenderers");
+        public static readonly ProfilerMarker s_UpdatePanelRenderersMarker = new ProfilerMarker("UIElements.UpdatePanelRenderers");
 
         static UIElementsRuntimeUtility()
         {
@@ -32,6 +39,7 @@ namespace UnityEngine.UIElements
         }
 
         public delegate BaseRuntimePanel CreateRuntimePanelDelegate(ScriptableObject ownerObject);
+        public delegate Panel CreateAuthoringPanelDelegate(ScriptableObject ownerObject);
 
         public static BaseRuntimePanel FindOrCreateRuntimePanel(ScriptableObject ownerObject,
             CreateRuntimePanelDelegate createDelegate)
@@ -55,6 +63,30 @@ namespace UnityEngine.UIElements
             if (UIElementsUtility.TryGetPanel(ownerObject.GetEntityId(), out var panel))
             {
                 onWillDestroyPanel?.Invoke((BaseRuntimePanel)panel);
+                panel.Dispose();
+                RemoveCachedPanelInternal(ownerObject.GetEntityId());
+            }
+        }
+
+        public static Panel FindOrCreateAuthoringPanel(ScriptableObject ownerObject, CreateAuthoringPanelDelegate createDelegate)
+        {
+            if (UIElementsUtility.TryGetPanel(ownerObject.GetEntityId(), out var cachedPanel))
+            {
+                return cachedPanel;
+            }
+
+            var panel = createDelegate(ownerObject);
+            panel.IMGUIEventInterests = new EventInterests {wantsMouseMove = true, wantsMouseEnterLeaveWindow = true};
+            RegisterCachedPanelInternal(ownerObject.GetEntityId(), panel);
+            onCreateAuthoringPanel?.Invoke(panel);
+            return panel;
+        }
+
+        public static void DisposeAuthoringPanel(ScriptableObject ownerObject)
+        {
+            if (UIElementsUtility.TryGetPanel(ownerObject.GetEntityId(), out var panel))
+            {
+                onWillDestroyAuthoringPanel?.Invoke(panel);
                 panel.Dispose();
                 RemoveCachedPanelInternal(ownerObject.GetEntityId());
             }
@@ -120,6 +152,9 @@ namespace UnityEngine.UIElements
         private static readonly List<BaseRuntimePanel> s_SortedPlayerPanels = new();
         private static bool s_PanelOrderingOrDrawInCameraDirty = true;
         internal static int s_ResolvedSortingIndexMax = 0;
+
+        private static readonly HashSet<PanelRenderer> s_AllPanelRenderers = new();
+        private static readonly HashSet<PanelRenderer> s_DirtyPanelRenderers = new();
 
         public static void RenderOffscreenPanels()
         {
@@ -247,6 +282,12 @@ namespace UnityEngine.UIElements
                 LayoutManager.SharedManager.Collect();
             }
 
+            using (s_PreUpdatePanelRenderersMarker.Auto())
+            {
+                // Pre-update the PanelRenderers to warm-up the visual tree and panels
+                PreUpdatePanelRenderers();
+            }
+
             List<BaseRuntimePanel> sortedPlayerPanels = GetSortedPlayerPanels();
 
             // Early out to skip the loop below, and to avoid an Input Update when there are no panels
@@ -254,9 +295,15 @@ namespace UnityEngine.UIElements
                 return;
 
             // Update panels from back to front. World space first, then screen overlay.
-			foreach (BaseRuntimePanel panel in sortedPlayerPanels)
+            foreach (BaseRuntimePanel panel in sortedPlayerPanels)
             {
                 panel.Update();
+            }
+
+            using (s_UpdatePanelRenderersMarker.Auto())
+            {
+                // Update the PanelRenderers after the panel update so that the layout is ready
+                UpdatePanelRenderers();
             }
 
             UpdateEventSystem();
@@ -288,13 +335,93 @@ namespace UnityEngine.UIElements
                 s_PotentiallyEmptyPanelSettings.Add(settings);
         }
 
+        internal static void MarkPanelRendererDirty(PanelRenderer panelRenderer)
+        {
+            s_DirtyPanelRenderers.Add(panelRenderer);
+            s_AllPanelRenderers.Add(panelRenderer);
+        }
+
+        internal static void RemovePanelRenderer(PanelRenderer panelRenderer)
+        {
+            var ps = panelRenderer.panelSettings as PanelSettings;
+            ps?.DetachPanelComponent(panelRenderer);
+
+            s_AllPanelRenderers.Remove(panelRenderer);
+            s_DirtyPanelRenderers.Remove(panelRenderer);
+        }
+
+        private static void PreUpdatePanelRenderers()
+        {
+            // Refresh enabled state
+            foreach (var panelRenderer in s_AllPanelRenderers)
+                UpdateEnabledState(panelRenderer);
+
+            // Process dirty assets
+            PanelRenderer.shouldCheckForRequiredReinsertions |= s_DirtyPanelRenderers.Count > 0;
+
+            foreach (var panelRenderer in s_DirtyPanelRenderers)
+            {
+                if (!panelRenderer.enabled)
+                    continue;
+
+                panelRenderer.RefreshAssets();
+            }
+            s_DirtyPanelRenderers.Clear();
+
+            // Process hierarchy changes and sorting orders
+            if (PanelRenderer.CheckHierarchyChanges() || PanelRenderer.shouldCheckForRequiredReinsertions)
+            {
+                PanelRenderer.shouldCheckForRequiredReinsertions = false;
+
+                // We need to re-sort the panel renderers
+                foreach (var panelRenderer in s_AllPanelRenderers)
+                {
+                    if (!panelRenderer.enabled)
+                        continue;
+
+                    if (panelRenderer.hasHierarchyChanged || panelRenderer.requiresReinsertion)
+                    {
+                        panelRenderer.SetupFromHierarchy();
+                        panelRenderer.SetupRootClassList();
+                        panelRenderer.AddRootVisualElementToTree();
+                        panelRenderer.hasHierarchyChanged = false;
+                        panelRenderer.requiresReinsertion = false;
+                    }
+                }
+            }
+        }
+
+        private static void UpdatePanelRenderers()
+        {
+            // Update all PanelRenderers now
+            foreach (var panelRenderer in s_AllPanelRenderers)
+            {
+                if (panelRenderer.enabled)
+                    ((IPanelComponent)panelRenderer).PerformUpdate();
+            }
+        }
+
+        private static void UpdateEnabledState(PanelRenderer panelRenderer)
+        {
+            if (panelRenderer.enabled == panelRenderer.previousEnabled)
+                return;
+
+            var ps = panelRenderer.panelSettings as PanelSettings;
+            if (panelRenderer.enabled)
+                panelRenderer.requiresReinsertion = true;
+            else
+                panelRenderer.RemoveFromHierarchy();
+
+            panelRenderer.previousEnabled = panelRenderer.enabled;
+        }
+
         private static List<PanelSettings> s_PotentiallyEmptyPanelSettings = new List<PanelSettings>();
         internal static void RemoveUnusedPanels()
         {
             foreach (PanelSettings psetting in s_PotentiallyEmptyPanelSettings)
             {
-                var m_AttachedUIDocumentsList = psetting.m_AttachedUIDocumentsList;
-                if (m_AttachedUIDocumentsList == null || m_AttachedUIDocumentsList.m_AttachedUIDocuments.Count == 0)
+                var attachedPanelComponents = psetting.m_AttachedPanelComponentsList;
+                if ((attachedPanelComponents == null || attachedPanelComponents.m_AttachedPanelComponents.Count == 0))
                 {
                     // The runtime panel is unused, dispose it immediately as we dont want any side effect of keeping the panel alive.
                     // It'll be recreated if it's used again.

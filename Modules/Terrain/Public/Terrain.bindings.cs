@@ -107,7 +107,7 @@ namespace UnityEngine
 
         extern public ReflectionProbeUsage reflectionProbeUsage { get; set; }
 
-        extern public void GetClosestReflectionProbes([Out] List<ReflectionProbeBlendInfo> result);
+        extern public void GetClosestReflectionProbes([Out,NotNull] List<ReflectionProbeBlendInfo> result);
 
         extern public Material materialTemplate { get; set; }
 
@@ -220,7 +220,7 @@ namespace UnityEngine
             Internal_FillActiveTerrainList(terrainList);
         }
 
-        extern private static void Internal_FillActiveTerrainList([NotNull] object terrainList);
+        extern private static void Internal_FillActiveTerrainList([NotNull] [Out] List<Terrain> terrainList);
 
         [UsedByNativeCode]
         extern public static GameObject CreateTerrainGameObject(TerrainData assignTerrain);

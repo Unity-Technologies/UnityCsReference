@@ -137,7 +137,9 @@ namespace Unity.GraphToolkit.Editor
 
             using (var undoStateUpdater = undoState.UpdateScope)
             {
+                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 var undoableStates = selectionHelper.SelectionStates.Append<IUndoableStateComponent>(graphModelState);
+#pragma warning restore RS0030
                 undoStateUpdater.SaveStates(undoableStates);
             }
 

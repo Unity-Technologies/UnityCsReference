@@ -228,7 +228,9 @@ namespace UnityEditor.Search.Providers
 
         protected virtual SearchTable GetDefaultTableConfig(SearchContext context)
         {
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return new SearchTable(id, new[] { new SearchColumn("Name", "label") }.Concat(FetchColumns(context, null)));
+#pragma warning restore RS0030
         }
 
         protected virtual IEnumerable<SearchColumn> FetchColumns(SearchContext context, IEnumerable<SearchItem> items)
@@ -434,20 +436,26 @@ namespace UnityEditor.Search.Providers
 
         protected void AddUnitPower(UnitPowerType powerType, params string[] symbols)
         {
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var sortedSymbols = symbols.Length == 0 ? symbols : symbols.OrderByDescending(s => s.Length).ToArray();
+#pragma warning restore RS0030
             var unitPower = new UnitPower(powerType, sortedSymbols);
             m_UnitPowers.TryAdd(powerType, unitPower);
         }
 
         protected UnitTypeHandle AddUnitType(string suffix, UnitTypeHandle unitTypeHandle, params UnitPowerType[] supportedPowers)
         {
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var sortedPowerTypes = supportedPowers.OrderByDescending(p =>
+#pragma warning restore RS0030
             {
                 var symbols = m_UnitPowers[p].symbols;
                 if (symbols == null || symbols.Length == 0) return 0;
                 return symbols[0].Length; // Already sorter in UnitPower.
             });
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var unitType = new UnitType(suffix?.ToLowerInvariant(), unitTypeHandle, sortedPowerTypes.ToArray());
+#pragma warning restore RS0030
             m_UnitTypes.TryAdd(unitType.handle, unitType);
             m_SortedUnitTypes = null;
             return unitType.handle;
@@ -493,7 +501,9 @@ namespace UnityEditor.Search.Providers
 
         protected void BuildSortedUnityTypesCache()
         {
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             m_SortedUnitTypes = m_UnitTypes.Values.OrderByDescending(converter => converter.suffix.Length).ToList();
+#pragma warning restore RS0030
         }
 
         protected static double ConvertToPower(double baseValue, UnitPowerType power)
@@ -550,7 +560,9 @@ namespace UnityEditor.Search.Providers
             fetchDescription = FetchDescription;
             fetchItems = (context, _, provider) => FetchItem(context, provider);
             tableConfig = GetDefaultTableConfig;
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             actions = GetActions().ToList();
+#pragma warning restore RS0030
             fetchPropositions = FetchPropositions;
         }
 
@@ -558,7 +570,9 @@ namespace UnityEditor.Search.Providers
         {
             if (options.HasAny(SearchPropositionFlags.QueryBuilder))
                 return FetchQueryBuilderPropositions(context, options);
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return Enumerable.Empty<SearchProposition>();
+#pragma warning restore RS0030
         }
 
         protected virtual IEnumerable<SearchProposition> FetchQueryBuilderPropositions(SearchContext context, SearchPropositionOptions options)
@@ -693,7 +707,9 @@ namespace UnityEditor.Search.Providers
         public static void OpenProvider()
         {
             var providerIds = new[] { PerformanceProvider.providerId, ProfilerMarkersProvider.providerId };
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var providers = SearchService.GetProviders(providerIds).ToArray();
+#pragma warning restore RS0030
             var context = SearchService.CreateContext(providers, "", SearchFlags.OpenContextual);
             context.useExplicitProvidersAsNormalProviders = true;
             var tableConfig = providers[1].tableConfig(context);

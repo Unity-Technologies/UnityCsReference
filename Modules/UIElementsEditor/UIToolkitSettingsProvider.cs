@@ -59,6 +59,9 @@ namespace UnityEditor.UIElements
 
         private readonly List<IUIToolkitSettingsProviderExtension> m_Extensions = new ();
 
+        private static EventCallback<ChangeEvent<string>> s_RuntimeThemeCallback;
+        private static EventCallback<ChangeEvent<string>> s_EditorThemeCallback;
+
         private VisualElement m_HelpVisualTree;
         private VisualTreeAsset m_UIToolkitTemplate;
         private VisualTreeAsset uiToolkitTemplate
@@ -185,9 +188,9 @@ namespace UnityEditor.UIElements
                 UIToolkitProjectSettings.defaultRuntimeTheme = themeAsset;
 
                 // Re-populate the menu to update ordering (selected theme moves to top)
-                PopulateThemeMenu(defaultRuntimeThemeMenu, true, onRuntimeThemeSelected);
+                PopulateThemeMenu(defaultRuntimeThemeMenu, false, onRuntimeThemeSelected);
             };
-            PopulateThemeMenu(defaultRuntimeThemeMenu, true, onRuntimeThemeSelected);
+            PopulateThemeMenu(defaultRuntimeThemeMenu, false, onRuntimeThemeSelected);
 
             var defaultEditorThemeMenu = rootElement.Q<ProjectSettingsThemeDropdown>(k_DefaultEditorTheme);
 
@@ -199,9 +202,9 @@ namespace UnityEditor.UIElements
                 UIToolkitProjectSettings.defaultEditorTheme = themeAsset;
 
                 // Re-populate the menu to update ordering (selected theme moves to top)
-                PopulateThemeMenu(defaultEditorThemeMenu, false, onEditorThemeSelected);
+                PopulateThemeMenu(defaultEditorThemeMenu, true, onEditorThemeSelected);
             };
-            PopulateThemeMenu(defaultEditorThemeMenu, false, onEditorThemeSelected);
+            PopulateThemeMenu(defaultEditorThemeMenu, true, onEditorThemeSelected);
 
             var localRoot = rootElement.Q<VisualElement>(className: "uitoolkit-settings-container");
 
@@ -218,153 +221,85 @@ namespace UnityEditor.UIElements
             base.OnDeactivate();
         }
 
-        /// Populates a Custom Dropdown with theme choices, showing selected theme first with separator.
-        private static void PopulateThemeMenu(ProjectSettingsThemeDropdown menu, bool isRuntimeTheme, Action<CanvasTheme, ThemeStyleSheet> onThemeSelected)
+        private static void PopulateThemeMenu(ProjectSettingsThemeDropdown menu, bool isEditorTheme, Action<CanvasTheme, ThemeStyleSheet> onThemeSelected)
         {
-            // Get theme files list
-            var themeFiles = new SortedSet<string>();
-            ThemeUtility.GetRuntimeThemeFiles(themeFiles);
-
-            var (selectedCanvasTheme, selectedTheme) = ThemeUtility.GetProjectDefaultTheme(!isRuntimeTheme, themeFiles);
-
-            // Build choices list and dictionary
             var choices = new List<string>();
             var themeData = new Dictionary<string, (CanvasTheme, ThemeStyleSheet)>();
+            var (selectedCanvasTheme, selectedTheme) = ThemeUtility.GetProjectDefaultTheme(isEditorTheme);
 
-            // Add selected theme first
-            string selectedDisplayName = null;
-            if (selectedTheme != null)
+            // Add all editor theme choices
+            if (isEditorTheme)
             {
-                selectedDisplayName = AddSelectedThemeToChoices(choices, themeData, selectedTheme, themeFiles, isRuntimeTheme);
-            }
-            else if (!isRuntimeTheme)
-            {
-                // For built-in editor themes without a custom asset
-                selectedDisplayName = AddSelectedEditorCanvasThemeToChoices(choices, themeData, selectedCanvasTheme);
+                var editorThemeNames = ThemeUtility.GetEditorThemesToDisplayName();
+                foreach (var themeKvp in editorThemeNames)
+                {
+                    var displayName =  themeKvp.Value;
+                    var canvasTheme = themeKvp.Key;
+
+                    if (canvasTheme == CanvasTheme.Default)
+                        displayName += ThemeUtility.DefaultThemeSuffix;
+
+                    // Add the currently selected theme as the first option
+                    if (canvasTheme == selectedCanvasTheme)
+                        choices.InsertRange(0, [displayName, ProjectSettingsThemeDropdown.k_Separator]);
+                    else
+                        choices.Add(displayName);
+
+                    themeData[displayName] = (canvasTheme, null);
+                }
+
+                choices.Add(ProjectSettingsThemeDropdown.k_Separator);
             }
 
-            // Add separator after selected theme
-            choices.Add(ProjectSettingsThemeDropdown.k_Separator);
-
-            // Add remaining themes
-            if (!isRuntimeTheme)
+            // Add remaining theme choices
+            var runtimeDefault = ThemeUtility.FindProjectDefaultRuntimeThemeAssetOrDefault();
+            var runtimeThemeNames = ThemeUtility.GetRuntimeThemesToDisplayName();
+            foreach (var themeKvp in runtimeThemeNames)
             {
-                AddEditorThemesToChoices(choices, themeData, selectedCanvasTheme);
+                var displayName = themeKvp.Value;
+                var themeAsset = themeKvp.Key;
+
+                if (!isEditorTheme && themeAsset == runtimeDefault)
+                    displayName += ThemeUtility.DefaultThemeSuffix;
+
+                // Add currently selected theme to the front
+                if (selectedTheme == themeAsset)
+                    choices.InsertRange(0, [displayName, ProjectSettingsThemeDropdown.k_Separator]);
+                else
+                    choices.Add(displayName);
+                themeData[displayName] = (CanvasTheme.Custom, themeAsset);
             }
-            AddRuntimeThemesToChoices(choices, themeData, themeFiles, selectedTheme, isRuntimeTheme);
 
             // Set choices and initial value
             menu.choices = choices;
-            menu.SetValueWithoutNotify(selectedDisplayName);
+            menu.SetValueWithoutNotify(choices[0]);
 
-            // Register single callback for all selections
-            menu.RegisterValueChangedCallback(evt =>
+            // Register new callback and store reference
+            EventCallback<ChangeEvent<string>> valueChangedCallback = evt =>
             {
-                if (evt.newValue == ProjectSettingsThemeDropdown.k_Separator)
-                    return; // Ignore separator
-
                 if (themeData.TryGetValue(evt.newValue, out var themeInfo))
                 {
                     var (canvasTheme, themeSheet) = themeInfo;
                     onThemeSelected?.Invoke(canvasTheme, themeSheet);
                 }
-            });
-        }
+            };
 
-        /// <summary>
-        /// Adds the currently selected theme to the choices list and returns its display name.
-        /// </summary>
-        private static string AddSelectedThemeToChoices(List<string> choices, Dictionary<string, (CanvasTheme, ThemeStyleSheet)> themeData,
-            ThemeStyleSheet selectedTheme, SortedSet<string> themeFiles, bool isRuntimeTheme)
-        {
-            string selectedDisplayName = ThemeUtility.NicifyThemeName(selectedTheme);
-
-            // Add "(Default)" suffix for runtime themes (runtime mode)
-            if (isRuntimeTheme)
+            // Unregister old callbacks
+            if (isEditorTheme)
             {
-                var runtimeDefault = ThemeUtility.FindProjectDefaultRuntimeThemeAssetOrDefault(themeFiles);
-                if (selectedTheme == runtimeDefault)
-                    selectedDisplayName += ThemeUtility.DefaultThemeSuffix;
+                if (s_EditorThemeCallback != null)
+                    menu.UnregisterValueChangedCallback(s_EditorThemeCallback);
+
+                menu.RegisterValueChangedCallback(valueChangedCallback);
+                s_EditorThemeCallback = valueChangedCallback;
             }
-
-            choices.Add(selectedDisplayName);
-            themeData[selectedDisplayName] = (CanvasTheme.Custom, selectedTheme);
-
-            return selectedDisplayName;
-        }
-
-        /// <summary>
-        /// Adds the selected editor canvas theme (when no custom asset is selected) and returns its display name.
-        /// </summary>
-        private static string AddSelectedEditorCanvasThemeToChoices(List<string> choices, Dictionary<string, (CanvasTheme, ThemeStyleSheet)> themeData,
-            CanvasTheme canvasTheme)
-        {
-            // Fallback to Default
-            if (canvasTheme == CanvasTheme.ProjectSettings)
-                canvasTheme = CanvasTheme.Default;
-
-            var themeText = ThemeUtility.GetEditorThemeText(canvasTheme);
-            var displayName = themeText;
-
-            if (canvasTheme == CanvasTheme.Default)
-                displayName += ThemeUtility.DefaultThemeSuffix;
-
-            choices.Add(displayName);
-            themeData[displayName] = (canvasTheme, null);
-
-            return displayName;
-        }
-
-        /// <summary>
-        /// Adds editor theme options (Default, Dark, Light) to the choices list.
-        /// </summary>
-        private static void AddEditorThemesToChoices(List<string> choices, Dictionary<string, (CanvasTheme, ThemeStyleSheet)> themeData,
-            CanvasTheme currentTheme)
-        {
-            CanvasTheme[] editorThemes = [CanvasTheme.Default, CanvasTheme.Dark, CanvasTheme.Light];
-
-            foreach (var editorTheme in editorThemes)
+            else
             {
-                // Skip the currently selected theme (already added)
-                if (editorTheme == currentTheme)
-                    continue;
+                if (s_RuntimeThemeCallback != null)
+                    menu.UnregisterValueChangedCallback(s_RuntimeThemeCallback);
 
-                var displayName = ThemeUtility.GetEditorThemeText(editorTheme);
-                if (editorTheme == CanvasTheme.Default)
-                {
-                    displayName += ThemeUtility.DefaultThemeSuffix;
-                }
-
-                choices.Add(displayName);
-                themeData[displayName] = (editorTheme, null);
-            }
-
-            choices.Add(ProjectSettingsThemeDropdown.k_Separator);
-        }
-
-        /// <summary>
-        /// Adds runtime theme options to the choices list.
-        /// </summary>
-        private static void AddRuntimeThemesToChoices(List<string> choices, Dictionary<string, (CanvasTheme, ThemeStyleSheet)> themeData,
-            SortedSet<string> themeFiles, ThemeStyleSheet selectedTheme, bool isRuntimeTheme)
-        {
-            var runtimeDefault = ThemeUtility.FindProjectDefaultRuntimeThemeAssetOrDefault(themeFiles);
-
-            foreach (var themeFile in themeFiles)
-            {
-                var themeAsset = AssetDatabase.LoadAssetAtPath<ThemeStyleSheet>(themeFile);
-                if (themeFile == ThemeRegistry.k_DefaultStyleSheetPath)
-                    themeAsset = ThemeUtility.builtInDefaultRuntimeTheme;
-
-                if (selectedTheme == themeAsset)
-                    continue;
-
-                string displayName = ThemeUtility.NicifyThemeName(themeAsset);
-                if (isRuntimeTheme && themeAsset == runtimeDefault)
-                    displayName += ThemeUtility.DefaultThemeSuffix;
-
-                choices.Add(displayName);
-                themeData[displayName] = (CanvasTheme.Custom, themeAsset);
+                menu.RegisterValueChangedCallback(valueChangedCallback);
+                s_RuntimeThemeCallback = valueChangedCallback;
             }
         }
     }

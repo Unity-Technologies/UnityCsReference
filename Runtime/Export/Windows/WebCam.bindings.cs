@@ -73,15 +73,19 @@ namespace UnityEngine.Windows.WebCam
 
             if (webCamMode == WebCamMode.PhotoMode)
             {
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 Resolution photoCaptureCameraResolution = PhotoCapture.SupportedResolutions.OrderByDescending((res) => res.width * res.height).First();
+#pragma warning restore RS0030
 
                 m_CameraResolutionWidth = photoCaptureCameraResolution.width;
                 m_CameraResolutionHeight = photoCaptureCameraResolution.height;
             }
             else if (webCamMode == WebCamMode.VideoMode)
             {
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 Resolution videoCaptureCameraResolution = VideoCapture.SupportedResolutions.OrderByDescending((res) => res.width * res.height).First();
                 float cameraFramerate = VideoCapture.GetSupportedFrameRatesForResolution(videoCaptureCameraResolution).OrderByDescending((fps) => fps).First();
+#pragma warning restore RS0030
 
                 m_CameraResolutionWidth = videoCaptureCameraResolution.width;
                 m_CameraResolutionHeight = videoCaptureCameraResolution.height;

@@ -56,7 +56,9 @@ namespace UnityEditor.PackageManager.UI.Internal
                 m_DropdownItems.Sort(ExtensionManager.CompareExtensions);
 
                 var newDropdownMenu = new DropdownMenu();
+                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 foreach (var item in m_BuiltInItems.Concat(m_DropdownItems))
+#pragma warning restore RS0030
                 {
                     if (item.insertSeparatorBefore)
                         newDropdownMenu.AppendSeparator();
@@ -73,14 +75,18 @@ namespace UnityEditor.PackageManager.UI.Internal
         {
             m_BuiltInItems.Add(new MenuDropdownItem());
             m_NeedRefresh = true;
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return m_BuiltInItems.Last();
+#pragma warning restore RS0030
         }
 
         public IMenuDropdownItem AddDropdownItem()
         {
             m_DropdownItems.Add(new MenuDropdownItem());
             m_NeedRefresh = true;
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return m_DropdownItems.Last();
+#pragma warning restore RS0030
         }
 
         public void Remove(MenuDropdownItem item)

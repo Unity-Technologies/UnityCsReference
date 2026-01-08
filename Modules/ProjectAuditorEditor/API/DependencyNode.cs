@@ -2,8 +2,8 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
 using System.Collections.Generic;
-using System.Linq;
 
 namespace Unity.ProjectAuditor.Editor
 {
@@ -77,7 +77,7 @@ namespace Unity.ProjectAuditor.Editor
         {
             // if any child is critical, make parent critical too
             // this is to propagate perfCriticalContext up to the root of the hierarchy
-            if (children.Any(c => c.PerfCriticalContext))
+            if (Array.Exists(children, c => c.PerfCriticalContext))
                 PerfCriticalContext = true;
             m_Children.AddRange(children);
         }
@@ -97,7 +97,7 @@ namespace Unity.ProjectAuditor.Editor
         /// </summary>
         public void SortChildren()
         {
-            m_Children = m_Children.OrderBy(c => c.PrettyName).ToList();
+            m_Children.Sort((p1, p2) => string.Compare(p1.PrettyName, p2.PrettyName));
         }
 
         /// <summary>

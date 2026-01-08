@@ -133,7 +133,9 @@ namespace UnityEditor
             LayoutViewInfo bottomViewInfo = new LayoutViewInfo(k_BottomViewClassName, MainView.kStatusbarHeight, true);
             LayoutViewInfo centerViewInfo = new LayoutViewInfo(k_CenterViewClassName, 0, true);
 
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var availableEditorWindowTypes = TypeCache.GetTypesDerivedFrom<EditorWindow>().ToArray();
+#pragma warning restore RS0030
 
             if (!GetLayoutViewInfo(layoutData, availableEditorWindowTypes, ref centerViewInfo))
                 return false;
@@ -262,7 +264,9 @@ namespace UnityEditor
 
         internal static ContainerWindow FindMainWindow()
         {
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return Resources.FindObjectsOfTypeAll<ContainerWindow>().FirstOrDefault(w => w.showMode == ShowMode.MainWindow);
+#pragma warning restore RS0030
         }
 
         internal static ContainerWindow ShowWindowWithDynamicLayout(string windowId, string layoutDataPath)
@@ -276,7 +280,9 @@ namespace UnityEditor
             var layoutDataJson = File.ReadAllText(layoutDataPath);
             var layoutData = SJSON.LoadString(layoutDataJson);
 
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var availableEditorWindowTypes = TypeCache.GetTypesDerivedFrom<EditorWindow>().ToArray();
+#pragma warning restore RS0030
 
             LayoutViewInfo topViewInfo = new LayoutViewInfo(k_TopViewClassName, MainView.kToolbarHeight, false);
             LayoutViewInfo bottomViewInfo = new LayoutViewInfo(k_BottomViewClassName, MainView.kStatusbarHeight, false);
@@ -297,7 +303,9 @@ namespace UnityEditor
             GetLayoutViewInfo(layoutData, availableEditorWindowTypes, ref topViewInfo);
             GetLayoutViewInfo(layoutData, availableEditorWindowTypes, ref bottomViewInfo);
 
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var window = Resources.FindObjectsOfTypeAll<ContainerWindow>().FirstOrDefault(w => w.windowID == windowId);
+#pragma warning restore RS0030
             InitContainerWindow(ref window, windowId, layoutData);
             GenerateLayout(window, ShowMode.Utility, availableEditorWindowTypes, centerViewInfo, topViewInfo, bottomViewInfo, layoutData);
             window.m_DontSaveToLayout = !Convert.ToBoolean(layoutData["restore_saved_layout"]);
@@ -424,7 +432,9 @@ namespace UnityEditor
 
             if (layouts is IList<object> modeLayoutPaths)
             {
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 foreach (var layoutPath in modeLayoutPaths.Cast<string>())
+#pragma warning restore RS0030
                 {
                     if (!File.Exists(layoutPath))
                         continue;
@@ -523,7 +533,9 @@ namespace UnityEditor
             // if that fails, fall back to layouts for this mode from other unity versions in descending order
             if (Directory.Exists(directory))
             {
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 var paths = Directory.GetFiles(directory, layoutSearchPattern)
+#pragma warning restore RS0030
                                      .Where(p => string.Compare(p, preferred, StringComparison.OrdinalIgnoreCase) != 0)
                                      .OrderByDescending(p => p, StringComparer.OrdinalIgnoreCase);
 
@@ -636,7 +648,9 @@ namespace UnityEditor
             string[] layoutPaths = new string[0];
             if (Directory.Exists(layoutsModePreferencesPath))
             {
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 layoutPaths = Directory.GetFiles(layoutsModePreferencesPath).Where(path => path.EndsWith(".wlt")).ToArray();
+#pragma warning restore RS0030
                 foreach (var layoutPath in layoutPaths)
                 {
                     var name = Path.GetFileNameWithoutExtension(layoutPath);
@@ -653,7 +667,9 @@ namespace UnityEditor
             var modeLayoutPaths = ModeService.GetModeDataSection(ModeService.currentIndex, ModeDescriptor.LayoutsKey) as IList<object>;
             if (modeLayoutPaths != null)
             {
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 foreach (var layoutPath in modeLayoutPaths.Cast<string>())
+#pragma warning restore RS0030
                 {
                     if (!File.Exists(layoutPath))
                         continue;
@@ -1615,8 +1631,12 @@ namespace UnityEditor
                 all.Add(w);
             }
 
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             if (all.Any())
+#pragma warning restore RS0030
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 InternalEditorUtility.SaveToSerializedFileAndForget(all.Where(o => o).ToArray(), path, true);
+#pragma warning restore RS0030
         }
 
         static string CanCreateLayout(string name)

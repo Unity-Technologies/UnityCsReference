@@ -264,7 +264,9 @@ namespace UnityEditor.UIElements
                 {
                     m_LastDirtyCount = dirtyCount,
                     m_LastElementCount = list.Count,
+                    #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     m_LastInlinePropertiesCount = asset.inlineSheet?.rules?.Sum(r => r.properties.Length) ?? 0,
+#pragma warning restore RS0030
                     m_LastAttributePropertiesDirtyCount = asset.GetAttributePropertiesDirtyCount(),
                     m_Trackers = new HashSet<ILiveReloadAssetTracker<VisualTreeAsset>>()
                 };
@@ -331,7 +333,9 @@ namespace UnityEditor.UIElements
             }
 
             if (m_RuntimeVisualTreeAssetTrackers.Count == 1)
+                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 return m_RuntimeVisualTreeAssetTrackers.Single().Value;
+#pragma warning restore RS0030
 
             if (m_RuntimeVisualTreeAssetTrackers.TryGetValue(ve, out var tracker))
                 return tracker;
@@ -428,7 +432,9 @@ namespace UnityEditor.UIElements
                 using var _ = ListPool<UxmlAsset>.Get(out var list);
                 list.AddRange(trackedAsset.DepthFirstTraversal());
                 var elementCount = list.Count;
+                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 var inlinePropertiesCount = trackedAsset.inlineSheet.rules.Sum(r => r.properties.Length);
+#pragma warning restore RS0030
                 var attributePropertiesDirtyCount = trackedAsset.GetAttributePropertiesDirtyCount();
 
                 if (dirtyCount != trackersEntry.m_LastDirtyCount)

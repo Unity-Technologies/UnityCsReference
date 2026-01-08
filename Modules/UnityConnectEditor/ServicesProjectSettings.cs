@@ -289,7 +289,9 @@ namespace UnityEditor.Connect
         {
             m_NotificationSubscriber = new UIElementsNotificationSubscriber(rootVisualElement);
             var topics = notificationTopicsToSubscribe;
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             if (!topics.Contains(Notification.Topic.ProjectBind))
+#pragma warning restore RS0030
             {
                 topics = new Notification.Topic[notificationTopicsToSubscribe.Length + 1];
                 for (var i = 0; i < notificationTopicsToSubscribe.Length; i++)

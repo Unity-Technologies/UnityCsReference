@@ -76,5 +76,26 @@ namespace UnityEditor.UIElements
 
             return Path.GetFileNameWithoutExtension(path);
         }
+
+        /// <summary>
+        /// Gets whether the UXML document is in editor extension mode.
+        /// </summary>
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+        internal static bool IsEditorExtensionMode(this VisualTreeAsset vta)
+        {
+            const string k_EditorExtensionModeAttributeName = "editor-extension-mode";
+
+            if (vta == null)
+                return false;
+
+            var rootElement = vta.visualTree;
+
+            if (rootElement != null && rootElement.HasAttribute(k_EditorExtensionModeAttributeName))
+            {
+                return System.Convert.ToBoolean(rootElement.GetAttributeValue(k_EditorExtensionModeAttributeName));
+            }
+
+            return false;
+        }
     }
 }

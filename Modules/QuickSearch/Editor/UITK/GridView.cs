@@ -134,13 +134,17 @@ namespace UnityEditor.Search
 
         public int selectedIndex
         {
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             get { return m_SelectedIndices.Count == 0 ? -1 : m_SelectedIndices.First(); }
+#pragma warning restore RS0030
             set { SetSelection(value); }
         }
 
         public IEnumerable<int> selectedIndices => m_SelectedIndices;
 
+        #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
         public object selectedItem => m_SelectedItems.Count == 0 ? null : m_SelectedItems.First();
+#pragma warning restore RS0030
 
         public IEnumerable<object> selectedItems => m_SelectedItems;
 
@@ -168,7 +172,9 @@ namespace UnityEditor.Search
                 {
                     if (m_SelectedIndices.Count > 1)
                     {
+                        #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                         SetSelection(m_SelectedIndices.First());
+#pragma warning restore RS0030
                     }
                 }
             }
@@ -390,7 +396,9 @@ namespace UnityEditor.Search
                     {
                         if (m_SelectedIndices.Count > 0)
                         {
+                            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                             m_RangeSelectionOrigin = m_IsRangeSelectionDirectionUp ? m_SelectedIndices.Min() : m_SelectedIndices.Max();
+#pragma warning restore RS0030
                             HandleSelectionAndScroll(Mathf.Min(m_ItemsSource.Count - 1, m_RangeSelectionOrigin + (m_VisibleItemCount - 1)));
                         }
                         return true;
@@ -399,7 +407,9 @@ namespace UnityEditor.Search
                     {
                         if (m_SelectedIndices.Count > 0)
                         {
+                            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                             m_RangeSelectionOrigin = m_IsRangeSelectionDirectionUp ? m_SelectedIndices.Min() : m_SelectedIndices.Max();
+#pragma warning restore RS0030
                             HandleSelectionAndScroll(Mathf.Max(0, m_RangeSelectionOrigin - (m_VisibleItemCount - 1)));
                         }
                         return true;
@@ -503,7 +513,9 @@ namespace UnityEditor.Search
 
         private void DoRangeSelection(int rangeSelectionFinalIndex)
         {
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             m_RangeSelectionOrigin = m_IsRangeSelectionDirectionUp ? m_SelectedIndices.Max() : m_SelectedIndices.Min();
+#pragma warning restore RS0030
             ClearSelectionWithoutValidation();
 
             var range = new List<int>();
@@ -590,7 +602,9 @@ namespace UnityEditor.Search
                     return;
                 case SelectionType.Single:
                     if (indices != null)
+                        #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                         indices = new[] { indices.Last() };
+#pragma warning restore RS0030
                     break;
                 case SelectionType.Multiple:
                     break;
@@ -726,7 +740,9 @@ namespace UnityEditor.Search
             }
             else if (selectionType == SelectionType.Multiple && shiftKey)
             {
+                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 if (m_RangeSelectionOrigin == -1 || !selectedItems.Any())
+#pragma warning restore RS0030
                 {
                     m_RangeSelectionOrigin = itemIndex;
                     SetSelection(itemIndex);
@@ -859,9 +875,13 @@ namespace UnityEditor.Search
             // When scrolling down, if the last item in the last row is already undefined
             // (because it is already outside the range of source items), then don't bind
             // items from the start.
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var lastIndex = m_RowPool.Last().GetLastItemInRow().index;
+#pragma warning restore RS0030
             var nextElementIndexToBind = lastIndex == ReusableGridViewItem.UndefinedIndex ? ReusableGridViewItem.UndefinedIndex : lastIndex + 1;
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var row = m_RowPool.First();
+#pragma warning restore RS0030
             for (int i = 0; i < m_ColumnCount; i++)
             {
                 var reusableItem = row.GetFirstItemInRow();
@@ -887,8 +907,12 @@ namespace UnityEditor.Search
             if (m_RowPool == null || m_RowPool.Count == 0)
                 return;
 
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var itemIndex = m_RowPool.First().GetFirstItemInRow().index - 1;
+#pragma warning restore RS0030
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var row = m_RowPool.Last();
+#pragma warning restore RS0030
             for (int i = 0; i < m_ColumnCount; i++)
             {
                 var reusableItem = row.GetLastItemInRow();
@@ -1050,7 +1074,9 @@ namespace UnityEditor.Search
                 var removeRowCount = Math.Clamp(previousRowCount - m_RowCount, 0, previousRowCount);
                 for (int i = 0; i < removeRowCount; i++)
                 {
+                    #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     var reusableRow = m_RowPool.Last();
+#pragma warning restore RS0030
                     for (int j = 0; j < m_ColumnCount; j++)
                     {
                         var reusableItem = reusableRow.GetLastItemInRow();
@@ -1470,7 +1496,9 @@ namespace UnityEditor.Search
                 if (m_Items == null || m_Items.Count == 0)
                     return null;
 
+                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 return m_Items.Last();
+#pragma warning restore RS0030
             }
 
             public ReusableGridViewItem GetFirstItemInRow()
@@ -1478,7 +1506,9 @@ namespace UnityEditor.Search
                 if (m_Items == null || m_Items.Count == 0)
                     return null;
 
+                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 return m_Items.First();
+#pragma warning restore RS0030
             }
         }
 

@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using UnityEngine;
 using UnityEngine.UIElements;
 using System.Collections.Generic;
 
@@ -37,24 +36,11 @@ namespace UnityEditor.Build.Profile.Elements
             int i = 0;
             foreach (var card in cards)
             {
-                var platformElement = new BuildProfilePlatformElement();
-
-                platformElement.Set(card.displayName, BuildProfileModuleUtil.GetPlatformIcon(card.platformId), card);
-                if (!BuildProfileModuleUtil.IsModuleInstalled(card.platformId))
-                    platformElement.style.opacity = 0.5f;
-                platformElement.RegisterCallback<ClickEvent>(OnBuildProfileClicked);
-
+                var platformElement = new BuildProfilePlatformElement(card, m_Parent.OnCardSelected);
                 m_Container.Insert(i, platformElement);
                 i++;
-
                 m_CardElements.Add(platformElement);
             }
-        }
-
-        void OnBuildProfileClicked(ClickEvent evt)
-        {
-            BuildProfilePlatformElement clickedElement = evt.currentTarget as BuildProfilePlatformElement;
-            m_Parent.OnCardSelected(clickedElement.GetBuildProfileCard());
         }
 
         internal void ClearSelection()
@@ -71,12 +57,11 @@ namespace UnityEditor.Build.Profile.Elements
                 if (el.GetBuildProfileCard().platformId == card.platformId)
                 {
                     VisualElement elementIcon = el.Q<VisualElement>("platform-icon");
-
                     m_selected = elementIcon;
                     m_selected.AddToClassList("build-profile-label-selected");
+                    el.Focus();
                 }
             }
         }
-
     }
 }

@@ -385,7 +385,7 @@ namespace UnityEditor
             return WriteTextFileToDisk(path, content, out string message);
         }
 
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
         internal static bool WriteTextFileToDisk(string path, string content, out string message)
         {
             if (AssetDatabase.IsOpenForEdit(path, out message) || AssetDatabase.MakeEditable(path))

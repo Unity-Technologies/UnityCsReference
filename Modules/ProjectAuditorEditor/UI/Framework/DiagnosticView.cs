@@ -5,7 +5,6 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using Unity.ProjectAuditor.Editor.Core;
 using Unity.ProjectAuditor.Editor.Utils;
 using UnityEditor;
@@ -35,11 +34,11 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
             {
                 dict[issue.Id] = true;
 
-                if (dict.Count() > 1)
+                if (dict.Count > 1)
                     break;
             }
 
-            var numSelectedIDs = dict.Count();
+            var numSelectedIDs = dict.Count;
             bool noSelectedIDs = numSelectedIDs == 0;
             bool oneSelectedID = numSelectedIDs == 1;
             bool anySelectedIDs = numSelectedIDs > 0;
@@ -135,7 +134,7 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
 
                 if (descriptor.Fixer != null)
                 {
-                    GUI.enabled = selectedIssues.Any(i => !i.WasFixed);
+                    GUI.enabled = Array.Exists(selectedIssues, i => !i.WasFixed);
 
                     var content = string.IsNullOrEmpty(descriptor.FixerLabel) ? Contents.QuickFix : EditorGUIUtility.TrTempContent(descriptor.FixerLabel);
                     DrawActionButton(GUI.enabled ? content : Contents.QuickFixDone, () =>

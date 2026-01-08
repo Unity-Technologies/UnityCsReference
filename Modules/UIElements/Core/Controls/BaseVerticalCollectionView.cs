@@ -743,7 +743,9 @@ namespace UnityEngine.UIElements
                 get
                 {
                     if (m_MinIndex == -1)
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                         m_MinIndex = indices.Min();
+#pragma warning restore RS0030
                     return m_MinIndex;
                 }
             }
@@ -753,7 +755,9 @@ namespace UnityEngine.UIElements
                 get
                 {
                     if (m_MaxIndex == -1)
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                         m_MaxIndex = indices.Max();
+#pragma warning restore RS0030
                     return m_MaxIndex;
                 }
             }
@@ -1178,7 +1182,9 @@ namespace UnityEngine.UIElements
         /// </remarks>
         public VisualElement GetRootElementForId(int id)
         {
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return activeItems.FirstOrDefault(t => t.id == id)?.rootElement;
+#pragma warning restore RS0030
         }
 
         /// <summary>
@@ -1974,7 +1980,9 @@ namespace UnityEngine.UIElements
             if (indices == null)
                 return;
 
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var count = indices.Count();
+#pragma warning restore RS0030
             if (count == 0)
             {
                 SetSelectionInternal(stackalloc int[0], sendNotification);

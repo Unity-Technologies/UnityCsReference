@@ -136,7 +136,9 @@ namespace Unity.UI.Builder
                             context.slotInsertionPoints == null
                                 ? String.Empty
                                 : String.Join(", ",
+                                    #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                                     System.Linq.Enumerable.ToArray(context.slotInsertionPoints.Keys)));
+#pragma warning restore RS0030
                         ve.Add(childVe);
                     }
                     else

@@ -10,6 +10,7 @@ using UnityEditorInternal;
 using UnityEngine.Multiplayer.Internal;
 using System;
 using Application = UnityEngine.Application;
+using UnityEditor.Multiplayer.Internal;
 
 namespace Unity.Multiplayer.PlayMode.Editor
 {
@@ -86,6 +87,17 @@ namespace Unity.Multiplayer.PlayMode.Editor
         {
             GetBuildProfileInternalData(buildProfile, out var buildSubtarget, out var buildTarget, out _);
             return buildSubtarget == StandaloneBuildSubtarget.Server && IsStandalonePlatform(buildTarget);
+        }
+
+        public static bool IsServerRole(BuildProfile buildProfile)
+        {
+            if (buildProfile == null)
+                return false;
+
+            if (MultiplayerRolesSettings.instance.GetMultiplayerRoleForBuildProfile(buildProfile) == MultiplayerRoleFlags.Server)
+                return true;
+
+            return false;
         }
 
         public static bool IsAndroidBuildTarget(BuildProfile buildProfile)

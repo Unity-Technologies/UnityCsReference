@@ -14,7 +14,9 @@ namespace Unity.ProjectAuditor.Editor.Core
         {
             m_Name = name;
             if (deps != null)
+                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 AddChildren(deps.Select(d => new AssemblyDependencyNode(d)).ToArray<DependencyNode>());
+#pragma warning restore RS0030
         }
 
         public override string GetName()

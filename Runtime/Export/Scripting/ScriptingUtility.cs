@@ -32,10 +32,27 @@ namespace UnityEngine
             return testClass.value == 42;
         }
 
-        [RequiredByNativeCode]
-        static unsafe void SetupCallbacks(IntPtr p)
+        class ObjectWrapper
         {
+            public byte Data;
         }
 
+        [RequiredByNativeCode]
+        static unsafe void GetValueAtOffsetObjectInstanceID(IntPtr handle, int offset, out EntityId instanceID)
+        {
+            int kObjectHeader = 2 * IntPtr.Size;
+            var gchandle = GCHandle.FromIntPtr(handle);
+            var o = gchandle.Target;
+
+            var value = UnsafeUtility.As<byte, UnityEngine.Object>(ref UnsafeUtility.Add(ref UnsafeUtility.As<object, ObjectWrapper>(ref o).Data, offset - kObjectHeader));
+
+            if (object.ReferenceEquals(value, null))
+            {
+                instanceID = EntityId.None;
+                return;
+            }
+
+            instanceID = value.GetEntityId();
+        }
     }
 }

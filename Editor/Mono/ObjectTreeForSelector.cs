@@ -3,9 +3,9 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-using UnityEditor.IMGUI.Controls;
 using UnityEngine;
 using UnityEngine.Events;
 using TreeViewController = UnityEditor.IMGUI.Controls.TreeViewController<UnityEngine.EntityId>;
@@ -47,6 +47,7 @@ namespace UnityEditor
         DoubleClickedEvent m_DoubleClickedEvent;
         Delayer m_Debounce;
         string m_SearchString;
+        HashSet<Event> m_PriorityKeyboardEvents;
 
         [Serializable] public class SelectionEvent : UnityEvent<TreeViewItem> {}
         [Serializable] public class TreeViewNeededEvent : UnityEvent<TreeSelectorData> {}
@@ -71,7 +72,8 @@ namespace UnityEditor
             UnityAction<TreeViewItem> selectionCallback,
             UnityAction doubleClickedCallback,
             EntityId initialSelectedTreeViewItemID,
-            int userData)
+            int userData,
+            HashSet<Event> priorityKeyboardEvents)
         {
             Clear();
 
@@ -88,6 +90,7 @@ namespace UnityEditor
 
             m_OriginalSelectedID = initialSelectedTreeViewItemID;
             m_UserData = userData;
+            m_PriorityKeyboardEvents = priorityKeyboardEvents;
 
             // Initial setup
             EnsureTreeViewIsValid(GetTreeViewRect(position));
@@ -204,7 +207,6 @@ namespace UnityEditor
                 s_Styles = new Styles();
 
             Rect rect = new Rect(0, 0, position.width, position.height);
-            Rect toolbarRect = new Rect(rect.x, rect.y, rect.width, kTopBarHeight);
             Rect bottomRect = new Rect(rect.x, rect.yMax - kBottomBarHeight, rect.width, kBottomBarHeight);
             Rect treeViewRect = GetTreeViewRect(position);
 
@@ -214,14 +216,16 @@ namespace UnityEditor
             int treeViewControlID = GUIUtility.GetControlID("Tree".GetHashCode(), FocusType.Keyboard);
 
             HandleCommandEvents();
-            HandleKeyboard(treeViewControlID);
+            HandlePriorityKeyboardEvents();
             TreeViewArea(treeViewRect, treeViewControlID);
             BottomBar(bottomRect);
         }
 
         void BottomBar(Rect bottomRect)
         {
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             EntityId currentID = m_TreeView.GetSelection().FirstOrDefault();   // 0 is none selected
+#pragma warning restore RS0030
 
             // Refresh cached string
             if (currentID != m_LastSelectedID)
@@ -268,35 +272,19 @@ namespace UnityEditor
             }
         }
 
-        void HandleKeyboard(int treeViewControlID)
+        void HandlePriorityKeyboardEvents()
         {
             if (Event.current.type != EventType.KeyDown)
                 return;
 
-            switch (Event.current.keyCode)
+            if (m_PriorityKeyboardEvents?.Contains(Event.current) ?? false)
             {
-                case KeyCode.DownArrow:
-                case KeyCode.UpArrow:
-                {
-                    // When searchfield has focus give keyboard focus to the tree view on Down/UpArrow
-                    bool hasSearchFilterFocus = GUI.GetNameOfFocusedControl() == kSearchFieldTag;
-                    if (hasSearchFilterFocus)
-                    {
-                        GUIUtility.keyboardControl = treeViewControlID;
-
-                        // If nothing is selected ensure first item is selected, otherwise ensure current
-                        // selection is visible (we just gave focus to the tree)
-                        if (m_TreeView.IsLastClickedPartOfRows())
-                            FrameSelectedTreeViewItem();
-                        else
-                            m_TreeView.OffsetSelection(1);      // Selects first item
-
-                        Event.current.Use();
-                    }
-                }
-                break;
-                default:
-                    return;
+                // For these priority events to work when called from the SearchField, we need to
+                // call "m_TreeView.KeyboardGUI(false);" to bypass the keyboard control check.
+                // We also cannot give keyboard control to the TreeView, otherwise the SearchField
+                // will lose keyboard focus. When the focus is on the TreeView, this call also works
+                // because it will be handled once here and not in the m_TreeView.OnGUI.
+                m_TreeView.KeyboardGUI(false);
             }
         }
 
@@ -343,6 +331,30 @@ namespace UnityEditor
         private void DoSearchFilter()
         {
             m_TreeView.searchString = m_SearchString;
+        }
+
+        internal void ChangeExpandedState(EntityId id, bool expand, bool includeChildren)
+        {
+            var item = m_TreeView.FindItem(id);
+            if (item != null)
+            {
+                m_TreeView.ChangeExpandedState(item, expand, includeChildren);
+            }
+        }
+
+        internal bool IsExpanded(EntityId id)
+        {
+            var item = m_TreeView.FindItem(id);
+            if (item != null)
+            {
+                return m_TreeView.data.IsExpanded(item);
+            }
+            return false;
+        }
+
+        internal void GrabKeyboardFocus()
+        {
+            m_TreeView.GrabKeyboardFocus();
         }
     }
 } // namespace

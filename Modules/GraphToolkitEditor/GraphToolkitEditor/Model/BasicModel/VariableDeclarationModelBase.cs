@@ -132,7 +132,9 @@ namespace Unity.GraphToolkit.Editor
         public virtual string Subtitle => string.Empty;
 
         /// <inheritdoc />
+        #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
         public virtual IEnumerable<GraphElementModel> ContainedModels => Enumerable.Repeat(this, 1);
+#pragma warning restore RS0030
 
         /// <summary>
         /// The type of the variable.
@@ -212,7 +214,9 @@ namespace Unity.GraphToolkit.Editor
         /// <returns>If this variable is used in the graph, it won't be selected when select unused is dispatched.</returns>
         public virtual bool IsUsed()
         {
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             foreach (var node in GraphModel.NodeModels.OfType<VariableNodeModel>())
+#pragma warning restore RS0030
             {
                 if (ReferenceEquals(node.VariableDeclarationModel, this) && node.GetPorts().HasAny(t => t.IsConnected()))
                     return true;

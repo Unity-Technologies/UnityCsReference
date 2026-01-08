@@ -9,110 +9,38 @@ using UnityEngine.Bindings;
 
 namespace UnityEngine.UIElements
 {
-    internal class UIDocumentList
-    {
-        internal List<UIDocument> m_AttachedUIDocuments = new List<UIDocument>();
-
-        internal void RemoveFromListAndFromVisualTree(UIDocument uiDocument)
-        {
-            m_AttachedUIDocuments.Remove(uiDocument);
-            uiDocument.rootVisualElement?.RemoveFromHierarchy();
-        }
-
-        internal void AddToListAndToVisualTree(UIDocument uiDocument, VisualElement visualTree, bool ignoreContentContainer, int firstInsertIndex = 0)
-        {
-            int index = 0;
-            foreach (var sibling in m_AttachedUIDocuments)
-            {
-                if (uiDocument.sortingOrder > sibling.sortingOrder)
-                {
-                    index++;
-                    continue;
-                }
-
-                if (uiDocument.sortingOrder < sibling.sortingOrder)
-                {
-                    break;
-                }
-
-                // They're the same value, compare their count (UIDocuments created first show up first).
-                if (uiDocument.m_UIDocumentCreationIndex > sibling.m_UIDocumentCreationIndex)
-                {
-                    index++;
-                    continue;
-                }
-
-                break;
-            }
-
-            if (index < m_AttachedUIDocuments.Count)
-            {
-                m_AttachedUIDocuments.Insert(index, uiDocument);
-
-                if (visualTree == null || uiDocument.rootVisualElement == null)
-                {
-                    return;
-                }
-
-                // Not every UIDocument is in the tree already (because their root is null, for example), so we need
-                // to figure out the insertion point.
-                if (index > 0)
-                {
-                    VisualElement previousInTree = null;
-                    int i = 1;
-                    while (previousInTree == null && index - i >= 0)
-                    {
-                        var previousUIDocument = m_AttachedUIDocuments[index - i++];
-                        previousInTree = previousUIDocument.rootVisualElement;
-                    }
-
-                    if (previousInTree != null)
-                    {
-                        index = visualTree.IndexOf(previousInTree, ignoreContentContainer) + 1;
-                    }
-                }
-
-                int childCount = visualTree.ChildCount(ignoreContentContainer);
-                if (index > childCount)
-                {
-                    index = childCount;
-                }
-            }
-            else
-            {
-                // Add in the end.
-                m_AttachedUIDocuments.Add(uiDocument);
-            }
-
-            if (visualTree == null || uiDocument.rootVisualElement == null)
-            {
-                return;
-            }
-
-            int insertionIndex = firstInsertIndex + index;
-            if (insertionIndex < visualTree.ChildCount(ignoreContentContainer))
-            {
-                visualTree.Insert(insertionIndex, uiDocument.rootVisualElement, ignoreContentContainer);
-            }
-            else
-            {
-                visualTree.Add(uiDocument.rootVisualElement, ignoreContentContainer);
-            }
-        }
-    }
-
     [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
     [Icon("UIToolkit/Icons/TemplateContainer.png")]
-    internal class UIDocumentRootElement : TemplateContainer
+    internal class UIDocumentRootElement : TemplateContainer, IPanelComponentRootElement
     {
         public readonly UIDocument document;
         internal UIRenderer uiRenderer { get; set; }
+
+        IPanelComponent IPanelComponentRootElement.panelComponent => document;
+
         public UIDocumentRootElement(UIDocument document, VisualTreeAsset sourceAsset) : base(sourceAsset?.name,
             sourceAsset)
         {
             this.document = document;
         }
     }
+
+    /// <summary>
+    /// An enum describing how the world-space UIDocument will be sized.
+    /// </summary>
+    public enum WorldSpaceSizeMode
+    {
+        /// <summary>
+        /// The size of the UIDocument will be determined from the layout size of the root element.
+        /// </summary>
+        Dynamic,
+
+        /// <summary>
+        /// The size of the UIDocument will be fixed to the values provided in <see cref="worldSpaceSize"/>.
+        /// </summary>
+        Fixed
+    }
+
 
     /// <summary>
     /// Enum value used to specify the size used to compute the <see cref="Pivot"/> position.
@@ -173,7 +101,7 @@ namespace UnityEngine.UIElements
     [HelpURL("UIE-get-started-with-runtime-ui")]
     [AddComponentMenu("UI Toolkit/UI Document"), ExecuteAlways, DisallowMultipleComponent]
     [DefaultExecutionOrder(-100)] // UIDocument's OnEnable should run before user's OnEnable
-    public sealed class UIDocument : MonoBehaviour
+    public sealed class UIDocument : MonoBehaviour, IPanelComponent
     {
         internal const string k_RootStyleClassName = "unity-ui-document__root";
 
@@ -227,14 +155,14 @@ namespace UnityEngine.UIElements
 
                     if (m_PanelSettings != null)
                     {
-                        m_PanelSettings.DetachUIDocument(this);
+                        m_PanelSettings.DetachPanelComponent(this);
                     }
                     m_PanelSettings = value;
 
                     if (m_PanelSettings != null)
                     {
                         SetupVisualTreeAssetTracker();
-                        m_PanelSettings.AttachAndInsertUIDocumentToVisualTree(this);
+                        m_PanelSettings.AttachAndInsertPanelComponentToVisualTree(this);
                     }
                 }
                 else
@@ -247,7 +175,7 @@ namespace UnityEngine.UIElements
                 if (m_ChildrenContent != null)
                 {
                     // Guarantee changes to panel settings trickles down the hierarchy.
-                    foreach (var child in m_ChildrenContent.m_AttachedUIDocuments)
+                    foreach (var child in m_ChildrenContent.m_AttachedPanelComponents)
                     {
                         child.panelSettings = m_PanelSettings;
                     }
@@ -277,14 +205,16 @@ namespace UnityEngine.UIElements
             private set => m_ParentUI = value;
         }
 
+        IPanelComponent IPanelComponent.parentUI => m_ParentUI;
+
         [SerializeField]
         private UIDocument m_ParentUI;
 
 
         // If this UIDocument has UIDocument children (1st level only, 2nd level would be the child's
         // children), they're added to this list instead of to the PanelSetting's list.
-        private UIDocumentList m_ChildrenContent = null;
-        private List<UIDocument> m_ChildrenContentCopy = null;
+        private PanelComponentList m_ChildrenContent = null;
+        private List<IPanelComponent> m_ChildrenContentCopy = null;
 
         [SerializeField]
         private VisualTreeAsset sourceAsset;
@@ -340,6 +270,7 @@ namespace UnityEngine.UIElements
         /// <summary>
         /// An enum describing how the world-space UIDocument will be sized.
         /// </summary>
+        [Obsolete("UIDocument.WorldSpaceSizeMode has been moved to WorldSpaceSizeMode . (UnityUpgradable) -> WorldSpaceSizeMode", true)]
         public enum WorldSpaceSizeMode
         {
             /// <summary>
@@ -372,12 +303,12 @@ namespace UnityEngine.UIElements
         }
 
         [SerializeField]
-        private WorldSpaceSizeMode m_WorldSpaceSizeMode = WorldSpaceSizeMode.Fixed;
+        private UIElements.WorldSpaceSizeMode m_WorldSpaceSizeMode = UIElements.WorldSpaceSizeMode.Fixed;
 
         /// <summary>
         /// Defines how the size of the root element is calculated for world space.
         /// </summary>
-        public WorldSpaceSizeMode worldSpaceSizeMode
+        public UIElements.WorldSpaceSizeMode worldSpaceSizeMode
         {
             get { return m_WorldSpaceSizeMode; }
             set
@@ -415,10 +346,9 @@ namespace UnityEngine.UIElements
         [SerializeField]
         private PivotReferenceSize m_PivotReferenceSize;
 
+        GameObject IPanelComponent.gameObject => this.gameObject;
+
         private bool isWorldSpace => (m_PanelSettings != null && m_PanelSettings.renderMode == PanelRenderMode.WorldSpace);
-
-        internal bool isTransformControlledByGameObject => isWorldSpace && (m_ParentUI == null || m_Position == Position.Absolute);
-
 
         /// <summary>
         /// Defines how the size of the container is calculated for pivot positioning.
@@ -441,7 +371,7 @@ namespace UnityEngine.UIElements
             set { m_Pivot = value; }
         }
 
-       [SerializeField, HideInInspector] private BoxCollider m_WorldSpaceCollider;
+        [SerializeField, HideInInspector] private BoxCollider m_WorldSpaceCollider;
 
         /// <summary>
         /// The order in which this UIDocument will show up on the hierarchy in relation to other UIDocuments either
@@ -469,19 +399,12 @@ namespace UnityEngine.UIElements
             }
         }
 
+        float IPanelComponent.sortingOrder => sortingOrder;
+
         internal void ApplySortingOrder()
         {
             AddRootVisualElementToTree();
         }
-
-        internal static UIDocument FindRootUIDocument(VisualElement element)
-        {
-            var doc = element.GetFirstOfType<UIDocumentRootElement>()?.document;
-            while (doc?.parentUI != null)
-                doc = doc.parentUI;
-            return doc;
-        }
-
 
         internal static Func<UIDocument, ILiveReloadAssetTracker<VisualTreeAsset>> CreateLiveReloadVisualTreeAssetTracker;
         private ILiveReloadAssetTracker<VisualTreeAsset> m_LiveReloadVisualTreeAssetTracker;
@@ -556,11 +479,11 @@ namespace UnityEngine.UIElements
 
         void LateUpdate()
         {
-            DoUpdate();
+            ((IPanelComponent) this).PerformUpdate();
         }
 
         // Used by unit tests.
-        internal void DoUpdate()
+        void IPanelComponent.PerformUpdate()
         {
             if (m_RootVisualElement == null || panelSettings == null || panelSettings.panel == null)
             {
@@ -572,7 +495,7 @@ namespace UnityEngine.UIElements
 
             if (isWorldSpace)
             {
-                if (isTransformControlledByGameObject)
+                if (PanelComponentUtils.IsTransformControlledByGameObject(this))
                     SetTransform();
                 else
                     ClearTransform();
@@ -624,7 +547,7 @@ namespace UnityEngine.UIElements
                 return;
 
             var bb = SanitizeRendererBounds(rootVisualElement.localBounds3D);
-            var toGameObject = TransformToGameObjectMatrix();
+            var toGameObject = PanelComponentUtils.TransformToGameObjectMatrix(PivotOffset(), pixelsPerUnit);
             VisualElement.TransformAlignedBounds(ref toGameObject, ref bb);
 
             renderer.localBounds = bb;
@@ -682,7 +605,7 @@ namespace UnityEngine.UIElements
                 bb = new Bounds(wb.center, wb.size);
             }
 
-            if (!IsValidBounds(bb))
+            if (!PanelComponentUtils.IsValidBounds(bb))
             {
                 RemoveWorldSpaceCollider();
                 return;
@@ -706,14 +629,6 @@ namespace UnityEngine.UIElements
         {
             UIRUtility.Destroy(m_WorldSpaceCollider);
             m_WorldSpaceCollider = null;
-        }
-
-        private static bool IsValidBounds(in Bounds b)
-        {
-            var e = b.extents;
-            var validDimensionCount = (e.x > 0 ? 1 : 0) + (e.y > 0 ? 1 : 0) + (e.z > 0 ? 1 : 0);
-            // Rays can intersect a plane or a volume, so we need at least 2 workable dimensions
-            return validDimensionCount >= 2;
         }
 
         void UpdateIsWorldSpaceRootFlag()
@@ -742,8 +657,12 @@ namespace UnityEngine.UIElements
 
         void SetTransform()
         {
+            float ppu = pixelsPerUnit;
             Matrix4x4 matrix;
-            ComputeTransform(transform, out matrix);
+            if (m_ParentUI == null)
+                PanelComponentUtils.ComputeParentTransform(PivotOffset(), ppu, out matrix);
+            else
+                PanelComponentUtils.ComputeNestedTransform(transform, m_ParentUI.transform, PivotOffset(), m_ParentUI.PivotOffset(), ppu, out matrix);
 
             m_RootVisualElement.style.transformOrigin = new TransformOrigin(Vector3.zero);
             m_RootVisualElement.style.translate = new Translate(matrix.GetPosition());
@@ -763,109 +682,12 @@ namespace UnityEngine.UIElements
 
         float pixelsPerUnit => containerPanel?.pixelsPerUnit ?? 1.0f;
 
-        Matrix4x4 ScaleAndFlipMatrix()
-        {
-            // This is the root, apply the pixels-per-unit scaling, and the y-flip.
-            float ppu = pixelsPerUnit;
-            if (ppu < Mathf.Epsilon)
-            {
-                // This isn't a valid PPU, return the identity here, but the skipRendering flag will be set on the renderer
-                return Matrix4x4.identity;
-            }
-
-            float ppuScale = 1.0f / ppu;
-
-            var scale = Vector3.one * ppuScale;
-            var flipRotation = Quaternion.AngleAxis(180.0f, Vector3.right); // Y-axis flip
-            return Matrix4x4.TRS(Vector3.zero, flipRotation, scale);
-        }
-
-        Bounds LocalBoundsFromPivotSource()
-        {
-            var localBounds = m_RootVisualElement.localBounds3DWithoutNested3D;
-
-            Bounds bb;
-            if (m_PivotReferenceSize == PivotReferenceSize.BoundingBox)
-            {
-                bb = localBounds;
-            }
-            else
-            {
-                // Take the x,y size from the layout, but the z size from the bounds depth
-                var layout = m_RootVisualElement.layout;
-                var c = layout.center;
-                var s = layout.size;
-                float depth = localBounds.size.z;
-                bb = new Bounds(new Vector3(c.x, c.y, localBounds.min.z + depth*0.5f), new Vector3(s.x, s.y, depth));
-            }
-
-            return SanitizeRendererBounds(bb);
-        }
-
         Vector2 PivotOffset()
         {
-            var pivotPercent = GetPivotAsPercent(m_Pivot);
-            var localBounds = LocalBoundsFromPivotSource();
+            var pivotPercent = PanelComponentUtils.GetPivotAsPercent(m_Pivot);
+            var localBounds = PanelComponentUtils.LocalBoundsFromPivotSource(rootVisualElement, pivotReferenceSize);
+
             return (-(Vector2)localBounds.min) + new Vector2(-localBounds.size.x * pivotPercent.x, -localBounds.size.y * pivotPercent.y);
-        }
-
-        Matrix4x4 TransformToGameObjectMatrix()
-        {
-            var m = ScaleAndFlipMatrix();
-            MathUtils.PostApply2DOffset(ref m, PivotOffset());
-            return m;
-        }
-
-        void ComputeTransform(Transform transform, out Matrix4x4 matrix)
-        {
-            if (parentUI == null)
-            {
-                matrix = TransformToGameObjectMatrix();
-            }
-            else
-            {
-                var ui2Go = parentUI.ScaleAndFlipMatrix();
-                var go2Ui = ui2Go.inverse;
-
-                var childGoToWorld = transform.localToWorldMatrix;
-                var worldToParentGo = parentUI.transform.worldToLocalMatrix;
-
-                //                     (VEa To World)*(VEb To VEa) =                             (VEb To World)
-                // (GOa To World)*(UI2GO)*(VEa Pivot)*(VEb To VEa) =                   (GOb To World)*(UI2GO)*(VEb Pivot)
-                //           (VEb To VEa) = (VEa Pivot)^1*(UI2GO)^-1*(GOa To World)^-1*(GOb To World)*(UI2GO)*(VEb Pivot)
-                matrix = go2Ui * worldToParentGo * childGoToWorld * ui2Go;
-
-                MathUtils.PreApply2DOffset(ref matrix, -parentUI.PivotOffset());
-
-                // Apply the nested pivot
-                MathUtils.PostApply2DOffset(ref matrix, PivotOffset());
-            }
-        }
-
-        static Vector2 GetPivotAsPercent(Pivot origin)
-        {
-            switch (origin)
-            {
-                case Pivot.Center:
-                    return new Vector2(0.5f, 0.5f);
-                case Pivot.TopLeft:
-                    return new Vector2(0, 0);
-                case Pivot.TopCenter:
-                    return new Vector2(0.5f, 0);
-                case Pivot.TopRight:
-                    return new Vector2(1, 0);
-                case Pivot.LeftCenter:
-                    return new Vector2(0, 0.5f);
-                case Pivot.RightCenter:
-                    return new Vector2(1, 0.5f);
-                case Pivot.BottomLeft:
-                    return new Vector2(0, 1);
-                case Pivot.BottomCenter:
-                    return new Vector2(0.5f, 1);
-                case Pivot.BottomRight:
-                    return new Vector2(1, 1);
-            }
-            return new Vector2(0.5f, 0.5f);
         }
 
         /// <summary>
@@ -905,7 +727,7 @@ namespace UnityEngine.UIElements
         {
             if (parentUI == null)
             {
-                m_PreviousPanelSettings?.DetachUIDocument(this);
+                m_PreviousPanelSettings?.DetachPanelComponent(this);
                 panelSettings = null;
             }
 
@@ -927,7 +749,7 @@ namespace UnityEngine.UIElements
         {
             if (m_ChildrenContent == null)
             {
-                m_ChildrenContent = new UIDocumentList();
+                m_ChildrenContent = new PanelComponentList();
             }
             else
             {
@@ -1010,15 +832,16 @@ namespace UnityEngine.UIElements
                 // We need a copy to iterate because in the process of creating the children UI we modify the list.
                 if (m_ChildrenContentCopy == null)
                 {
-                    m_ChildrenContentCopy = new List<UIDocument>(m_ChildrenContent.m_AttachedUIDocuments);
+                    m_ChildrenContentCopy = new List<IPanelComponent>(m_ChildrenContent.m_AttachedPanelComponents);
                 }
                 else
                 {
-                    m_ChildrenContentCopy.AddRange(m_ChildrenContent.m_AttachedUIDocuments);
+                    m_ChildrenContentCopy.AddRange(m_ChildrenContent.m_AttachedPanelComponents);
                 }
 
-                foreach (var child in m_ChildrenContentCopy)
+                foreach (var panelComponentChild in m_ChildrenContentCopy)
                 {
+                    var child = (UIDocument)panelComponentChild;
                     if (child.isActiveAndEnabled)
                     {
                         if (child.m_RootVisualElement == null)
@@ -1044,7 +867,7 @@ namespace UnityEngine.UIElements
             if (m_RootVisualElement == null || m_ParentUI == null)
                 return; // The position property is only relevant for nested UIDocuments
 
-            if (isTransformControlledByGameObject)
+            if (PanelComponentUtils.IsTransformControlledByGameObject(this))
                 m_RootVisualElement.style.position = Position.Absolute;
             else
                 m_RootVisualElement.style.position = m_Position;
@@ -1083,7 +906,7 @@ namespace UnityEngine.UIElements
             if (m_RootVisualElement == null)
                 return;
 
-            if (!isTransformControlledByGameObject)
+            if (!PanelComponentUtils.IsTransformControlledByGameObject(this))
             {
                 // Nested use-case. We shouldn't provide a fixed size.
                 m_RootVisualElement.style.width = StyleKeyword.Null;
@@ -1091,7 +914,7 @@ namespace UnityEngine.UIElements
                 return;
             }
 
-            if (m_WorldSpaceSizeMode == WorldSpaceSizeMode.Fixed)
+            if (m_WorldSpaceSizeMode == UIElements.WorldSpaceSizeMode.Fixed)
             {
                 m_RootVisualElement.style.position = Position.Absolute;
                 m_RootVisualElement.style.width = m_WorldSpaceWidth;
@@ -1117,7 +940,7 @@ namespace UnityEngine.UIElements
             }
             else if (m_PanelSettings != null)
             {
-                m_PanelSettings.AttachAndInsertUIDocumentToVisualTree(this);
+                m_PanelSettings.AttachAndInsertPanelComponentToVisualTree(this);
             }
         }
 
@@ -1129,7 +952,7 @@ namespace UnityEngine.UIElements
             }
             else if (m_PanelSettings != null)
             {
-                m_PanelSettings.DetachUIDocument(this);
+                m_PanelSettings.DetachPanelComponent(this);
             }
         }
 
@@ -1165,14 +988,15 @@ namespace UnityEngine.UIElements
                 // The list may change inside the call to ReactToHierarchyChanged so we need a copy.
                 if (m_ChildrenContentCopy == null)
                 {
-                    m_ChildrenContentCopy = new List<UIDocument>(m_ChildrenContent.m_AttachedUIDocuments);
+                    m_ChildrenContentCopy = new List<IPanelComponent>(m_ChildrenContent.m_AttachedPanelComponents);
                 }
                 else
                 {
-                    m_ChildrenContentCopy.AddRange(m_ChildrenContent.m_AttachedUIDocuments);
+                    m_ChildrenContentCopy.AddRange(m_ChildrenContent.m_AttachedPanelComponents);
                 }
-                foreach (var child in m_ChildrenContentCopy)
+                foreach (var panelComponentChild in m_ChildrenContentCopy)
                 {
+                    var child = (UIDocument)panelComponentChild;
                     child.ReactToHierarchyChanged();
                 }
                 m_ChildrenContentCopy.Clear();
@@ -1207,6 +1031,7 @@ namespace UnityEngine.UIElements
             SetupRootClassList();
         }
 
+
         private void SetupVisualTreeAssetTracker()
         {
             if (m_RootVisualElement == null)
@@ -1236,8 +1061,9 @@ namespace UnityEngine.UIElements
                 return;
             }
 
-            foreach (var child in m_ChildrenContent.m_AttachedUIDocuments)
+            foreach (var panelComponentChild in m_ChildrenContent.m_AttachedPanelComponents)
             {
+                var child = (UIDocument)panelComponentChild;
                 if (child.m_RootVisualElement != null)
                 {
                     child.m_RootVisualElement.RemoveFromHierarchy();
@@ -1304,10 +1130,10 @@ namespace UnityEngine.UIElements
         private void OnValidate()
         {
             s_OnValidateCalled++;
-            Validate(false);
+            ((IPanelComponent)this).PerformValidation(false);
         }
 
-        internal void Validate(bool forced)
+        void IPanelComponent.PerformValidation(bool forced)
         {
             // UUM-57741. Don't try to validate the UI Document if the panel isn't initialized. Otherwise,
             // the assignment of the visualTreeAsset below will indirectly create the panel. There are other
@@ -1372,16 +1198,16 @@ namespace UnityEngine.UIElements
 
             // Find the first UIDoc that's controlled by a GameObject
             var gameObjectDoc = this;
-            while (gameObjectDoc != null && !gameObjectDoc.isTransformControlledByGameObject)
+            while (gameObjectDoc != null && !(PanelComponentUtils.IsTransformControlledByGameObject(gameObjectDoc)))
                 gameObjectDoc = gameObjectDoc.parentUI;
 
             if (gameObjectDoc == null)
                 return;
 
             Bounds bb;
-            if (isTransformControlledByGameObject)
+            if (PanelComponentUtils.IsTransformControlledByGameObject(this))
             {
-                bb = LocalBoundsFromPivotSource();
+                bb = PanelComponentUtils.LocalBoundsFromPivotSource(m_RootVisualElement, pivotReferenceSize);
             }
             else
             {
@@ -1392,11 +1218,11 @@ namespace UnityEngine.UIElements
                 bb = new Bounds(bbox.center, bbox.size);
             }
 
-            if (!IsValidBounds(bb))
+            if (!PanelComponentUtils.IsValidBounds(bb))
                 return;
 
 
-            var toGameObject = gameObjectDoc.TransformToGameObjectMatrix();
+            var toGameObject = PanelComponentUtils.TransformToGameObjectMatrix(gameObjectDoc.PivotOffset(), gameObjectDoc.pixelsPerUnit);
             VisualElement.TransformAlignedBounds(ref toGameObject, ref bb);
 
             var matrixBackup = Gizmos.matrix;

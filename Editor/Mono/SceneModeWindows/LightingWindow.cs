@@ -480,8 +480,12 @@ namespace UnityEditor
                 DeviceAndPlatform[] devicesAndPlatforms = Lightmapping.GetLightmappingGpuDevices();
                 if (devicesAndPlatforms.Length > 0)
                 {
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     int[] lightmappingDeviceIndices = Enumerable.Range(0, devicesAndPlatforms.Length).ToArray();
+#pragma warning restore RS0030
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     GUIContent[] lightmappingDeviceStrings = devicesAndPlatforms.Select(x => new GUIContent(x.name)).ToArray();
+#pragma warning restore RS0030
 
                     int bakingDeviceAndPlatform = -1;
                     string configDeviceAndPlatform = EditorUserSettings.GetConfigValue(m_LightmappingDeviceIndexKey);

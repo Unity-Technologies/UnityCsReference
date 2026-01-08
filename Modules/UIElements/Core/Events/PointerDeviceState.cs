@@ -49,7 +49,8 @@ namespace UnityEngine.UIElements
             {
                 public float distance;
                 public Collider collider;
-                public UIDocument document;
+                public IPanelComponent panelComponent;
+                public UIDocument document => panelComponent as UIDocument;
                 public VisualElement element;
             }
 
@@ -296,7 +297,8 @@ namespace UnityEngine.UIElements
             if (document != null)
                 document.softPointerCaptures &= ~(1 << pointerId);
 
-            document = runtimePanel?.drawsInCameras == true ? UIDocument.FindRootUIDocument(element) : null;
+            // TODO: IPanelComponent
+            document = runtimePanel?.drawsInCameras == true ? (element.FindRootPanelComponent() as UIDocument) : null;
 
             if (document != null)
                 document.softPointerCaptures |= 1 << pointerId;

@@ -398,7 +398,9 @@ namespace UnityEditor.Search
                 return false;
             var startIndex = token[0] == '!' ? 1 : 0;
             var sv = token.GetStringView(startIndex);
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return m_QuoteDelimiters.Any(tokens => sv.StartsWith(tokens.openingToken) && sv.EndsWith(tokens.closingToken));
+#pragma warning restore RS0030
         }
 
         public StringView RemoveQuotes(in StringView token)
@@ -691,7 +693,9 @@ namespace UnityEditor.Search
             if (operators == null)
                 return QueryRegexValues.k_FilterOperatorsInnerPattern;
 
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var sortedOperators = operators.Select(Regex.Escape).ToList();
+#pragma warning restore RS0030
             sortedOperators.Sort((s, s1) => s1.Length.CompareTo(s.Length));
             return $"{string.Join("|", sortedOperators)}";
         }

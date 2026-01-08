@@ -75,7 +75,9 @@ namespace Unity.Properties.Internal
                 if (currentPropertyBag.GetType().Assembly == typeof(TContainer).Assembly)
                     return;
 
+                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 if (propertyBag.GetType().GetCustomAttributes<System.Runtime.CompilerServices.CompilerGeneratedAttribute>().Any())
+#pragma warning restore RS0030
                 {
                     // If there is already a property bag registered, only register the provided one
                     // if it is contained in the same assembly as its target type.

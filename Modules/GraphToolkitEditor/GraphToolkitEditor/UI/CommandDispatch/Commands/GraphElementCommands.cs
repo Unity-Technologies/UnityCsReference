@@ -108,7 +108,9 @@ namespace Unity.GraphToolkit.Editor
         /// <param name="color">The color to set</param>
         /// <param name="elementModels">Element models to affect</param>
         public ChangeElementColorCommand(Color color, IEnumerable<Model> elementModels)
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             : base(k_UndoStringSingular, k_UndoStringPlural, color, elementModels?.OfType<GraphElementModel>().ToList())
+#pragma warning restore RS0030
         {
         }
 
@@ -397,14 +399,18 @@ namespace Unity.GraphToolkit.Editor
                 switch (command.Mode)
                 {
                     case SelectionMode.Add:
+                        #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                         if (command.Models.All(mainSelectionState.IsSelected))
+#pragma warning restore RS0030
                         {
                             return;
                         }
                         break;
 
                     case SelectionMode.Remove:
+                        #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                         if (command.Models.All(m => !mainSelectionState.IsSelected(m)))
+#pragma warning restore RS0030
                         {
                             return;
                         }
@@ -427,7 +433,9 @@ namespace Unity.GraphToolkit.Editor
                             mainUpdater.SelectElements(command.Models, false, command.DisplayInInspector);
                             break;
                         case SelectionMode.Toggle:
+                            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                             var toSelect = command.Models.Where(m => !mainSelectionState.IsSelected(m)).ToList();
+#pragma warning restore RS0030
                             mainUpdater.SelectElements(command.Models, false, false);
                             mainUpdater.SelectElements(toSelect, true, command.DisplayInInspector);
                             break;
@@ -464,7 +472,9 @@ namespace Unity.GraphToolkit.Editor
         {
             var selectionHelper = new GlobalSelectionCommandHelper(selectionState);
 
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             if (selectionHelper.SelectionStates.All(s => s.IsSelectionEmpty))
+#pragma warning restore RS0030
                 return;
 
             using (var undoStateUpdater = undoState.UpdateScope)

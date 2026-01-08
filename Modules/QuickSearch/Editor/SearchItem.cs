@@ -581,13 +581,17 @@ namespace UnityEditor.Search
         {
             if (m_Fields == null)
                 return new string[0];
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return m_Fields.Keys.ToArray();
+#pragma warning restore RS0030
         }
 
         public IEnumerable<SearchField> GetFields()
         {
             if (m_Fields == null)
+                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 return Enumerable.Empty<SearchField>();
+#pragma warning restore RS0030
             return m_Fields.Values;
         }
     }

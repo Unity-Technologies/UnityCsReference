@@ -157,7 +157,9 @@ namespace Unity.GraphToolkit.Editor
 
             if (listSelectedItems.Count > 0)
             {
+                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 RootView.Dispatch(new DeleteConditionsCommand(listSelectedItems.Select(c => c.ConditionModel).ToList()));
+#pragma warning restore RS0030
             }
         }
 
@@ -167,7 +169,9 @@ namespace Unity.GraphToolkit.Editor
 
             if (listSelectedItems.Count > 0)
             {
+                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 RootView.Dispatch(new DuplicateConditionsCommand(listSelectedItems.Select(c => c.ConditionModel).ToList()));
+#pragma warning restore RS0030
             }
         }
 

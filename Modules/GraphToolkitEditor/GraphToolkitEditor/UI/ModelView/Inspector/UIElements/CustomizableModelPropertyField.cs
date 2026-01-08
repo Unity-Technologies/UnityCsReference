@@ -77,7 +77,9 @@ namespace Unity.GraphToolkit.Editor
                         continue;
 
                     var interfaces = customPropertyBuilderType.GetInterfaces();
+                    #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     var cpfInterface = interfaces.FirstOrDefault(i => i.IsGenericType && i.GetGenericTypeDefinition() == typeof(ICustomPropertyFieldBuilder<>));
+#pragma warning restore RS0030
 
                     if (cpfInterface != null)
                     {
@@ -155,6 +157,39 @@ namespace Unity.GraphToolkit.Editor
             typeof(BoundsInt)
         };
 
+        void CheckAttributesCompatibility(Type type, IReadOnlyList<Attribute> attributes)
+        {
+            if (attributes == null)
+                return;
+
+            foreach (var attribute in attributes)
+            {
+                switch (attribute)
+                {
+                    case TextAreaAttribute when type != typeof(string):
+                        Debug.LogWarning(InspectedField != null
+                            ? $"Attempted to use TextAreaAttribute on field '{InspectedField.Name}', which is not of type string. The attribute will be ignored."
+                            : "Attempted to use TextAreaAttribute on a non-string field. The attribute will be ignored.");
+                        break;
+                    case EnumAttribute when type != typeof(string):
+                        Debug.LogWarning(InspectedField != null
+                            ? $"Attempted to use EnumAttribute on field '{InspectedField.Name}', which is not of type string array. The attribute will be ignored."
+                            : "Attempted to use EnumAttribute on a non string array field. The attribute will be ignored.");
+                        break;
+                    case MultilineAttribute when type != typeof(string):
+                        Debug.LogWarning(InspectedField != null
+                            ? $"Attempted to use MultilineAttribute on field '{InspectedField.Name}', which is not of type string. The attribute will be ignored."
+                            : "Attempted to use MultilineAttribute on a non-string field. The attribute will be ignored.");
+                        break;
+                    case BoolDropDownAttribute when type != typeof(bool):
+                        Debug.LogWarning(InspectedField != null
+                            ? $"Attempted to use BoolDropDownAttribute on field '{InspectedField.Name}', which is not of type bool. The attribute will be ignored."
+                            : "Attempted to use BoolDropDownAttribute on a non-bool field. The attribute will be ignored.");
+                        break;
+                }
+            }
+        }
+
         /// <summary>
         /// Creates a default field for the specified type.
         /// </summary>
@@ -174,8 +209,11 @@ namespace Unity.GraphToolkit.Editor
 
             //m_ChildrenContainer = null;
 
+            CheckAttributesCompatibility(type, attributes);
 
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             bool isDelayed = attributes?.FirstOrDefault(t => t is DelayedAttribute) != null;
+#pragma warning restore RS0030
 
             if (type == typeof(long))
             {
@@ -207,28 +245,64 @@ namespace Unity.GraphToolkit.Editor
 
             if (type == typeof(string))
             {
-                var enumAttribute = attributes?.OfType<EnumAttribute>().SingleOrDefault();
-                if (enumAttribute != null)
+                TextAreaAttribute textAreaAttr = null;
+                EnumAttribute enumAttr = null;
+                MultilineAttribute multilineAttr = null;
+
+                if (attributes != null)
                 {
-                    var enumValues = enumAttribute.Values;
+                    foreach (var attribute in attributes)
+                    {
+                        if (attribute is TextAreaAttribute textAreaAttribute)
+                            textAreaAttr = textAreaAttribute;
+
+                        else if (attribute is EnumAttribute enumAttribute)
+                            enumAttr = enumAttribute;
+
+                        else if (attribute is MultilineAttribute multilineAttribute)
+                            multilineAttr = multilineAttribute;
+                    }
+                }
+
+                if (textAreaAttr != null && multilineAttr != null)
+                    Debug.LogWarning($"TextAreaAttribute and MultilineAttribute cannot be used together. MultilineAttribute will be ignored.");
+
+                // Handle text area attribute
+                if (textAreaAttr != null)
+                {
+                    var textAreaField = TextAreaFieldHelper.CreateTextAreaField(textAreaAttr, isDelayed);
+                    textAreaField.RegisterCallbackOnce<GeometryChangedEvent>(_ =>
+                    {
+                        TextAreaFieldHelper.UpdateTextAreaHeight(textAreaAttr, textAreaField, textAreaField.text);
+                    });
+                    Setup(textAreaField, fieldTooltip);
+                    return;
+                }
+
+                // Handle enum attribute
+                if (enumAttr != null)
+                {
+                    var enumValues = enumAttr.Values;
                     var defaultValue = enumValues.Length > 0 ? enumValues.GetValue(0).ToString() : null;
-                    var field = new DropdownField(new List<string>(enumValues), defaultValue) { tooltip = fieldTooltip };
-                    Setup(field, fieldTooltip);
+                    var dropDownField = new DropdownField(new List<string>(enumValues), defaultValue) { tooltip = fieldTooltip };
+                    Setup(dropDownField, fieldTooltip);
+                    return;
+                }
+
+                // Other cases
+                TextField textField;
+
+                // Handle multiline attribute
+                if (multilineAttr != null)
+                {
+                    AddToClassList(multilineUssClassName);
+                    textField = new TextField() { isDelayed = isDelayed, multiline = true };
                 }
                 else
                 {
-                    TextField field;
-                    if (InspectedField != null && InspectedField.FieldType == typeof(string) && InspectedField.GetCustomAttribute<MultilineAttribute>() != null)
-                    {
-                        AddToClassList(multilineUssClassName);
-                        field = new TextField() { isDelayed = isDelayed, multiline = true };
-                    }
-                    else
-                    {
-                        field = new TextField { isDelayed = isDelayed };
-                    }
-                    Setup(field, fieldTooltip);
+                    textField = new TextField { isDelayed = isDelayed };
                 }
+                Setup(textField, fieldTooltip);
             }
 
             if (type == typeof(Color))

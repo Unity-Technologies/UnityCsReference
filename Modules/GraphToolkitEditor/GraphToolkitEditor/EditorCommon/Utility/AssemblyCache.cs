@@ -34,7 +34,9 @@ namespace Unity.GraphToolkit.Editor
         {
             get
             {
+                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 return s_Assemblies ??= AppDomain.CurrentDomain.GetAssemblies()
+#pragma warning restore RS0030
                     .Where(a => !a.IsDynamic
                         && !k_BlackListedAssemblies.HasAny(b => a.GetName().Name.ToLower().Contains(b)))
                     .ToList();
@@ -48,12 +50,18 @@ namespace Unity.GraphToolkit.Editor
         {
             static Type GetMethodFirstParameterType(MethodInfo m) => m.GetParameters()[0].ParameterType.IsArray ? m.GetParameters()[0].ParameterType.GetElementType() : m.GetParameters()[0].ParameterType;
 
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return TypeCache.GetTypesWithAttribute<TAttribute>()
+#pragma warning restore RS0030
+                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 .Where(t => assemblies.Contains(t.Assembly) && t.IsClass)
+#pragma warning restore RS0030
                 .SelectMany(t => t.GetMethods(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static | BindingFlags.DeclaredOnly))
                 .Where(m => m.GetParameters().Length > 0)
                 .GroupBy(GetMethodFirstParameterType)
+                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 .ToDictionary(g => g.Key, g => g.ToList());
+#pragma warning restore RS0030
         }
     }
 }

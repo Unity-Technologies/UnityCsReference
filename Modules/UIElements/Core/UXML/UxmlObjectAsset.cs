@@ -129,7 +129,12 @@ namespace UnityEngine.UIElements
         [SerializeReference, HideInInspector] private UxmlAsset m_Parent;
         [SerializeReference] private List<UxmlAsset> m_Children;
         [SerializeField] private VisualTreeAsset m_VisualTreeAsset;
-        internal VisualTreeAsset visualTreeAsset => m_VisualTreeAsset;
+
+        internal VisualTreeAsset visualTreeAsset
+        {
+            [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
+            get => m_VisualTreeAsset;
+        }
 
         public int childCount => m_Children?.Count ?? 0;
 

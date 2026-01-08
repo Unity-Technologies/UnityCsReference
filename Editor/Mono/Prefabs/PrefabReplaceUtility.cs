@@ -226,7 +226,9 @@ namespace UnityEditor
             listOfPlainGameObjects = new List<GameObject>();
 
             // Dropping on single
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             if (droppedUponGameObject != null && !Selection.gameObjects.Contains(droppedUponGameObject))
+#pragma warning restore RS0030
             {
                 if (PrefabUtility.IsOutermostPrefabInstanceRoot(droppedUponGameObject))
                     listOfInstanceRoots.Add(droppedUponGameObject);

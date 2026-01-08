@@ -145,7 +145,9 @@ namespace UnityEditor
             EditorGUILayout.PropertyField(m_RenderMode);
             if (EditorGUI.EndChangeCheck())
             {
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 var rectTransforms = targets.Select(c => (c as Canvas).transform).ToArray();
+#pragma warning restore RS0030
                 Undo.RegisterCompleteObjectUndo(rectTransforms, "Modified RectTransform Values");
                 serializedObject.ApplyModifiedProperties();
                 foreach (Canvas canvas in targets)
@@ -323,7 +325,7 @@ namespace UnityEditor
                         ((newShaderChannelValue & (int)AdditionalCanvasShaderChannels.Normal) | (newShaderChannelValue & (int)AdditionalCanvasShaderChannels.Tangent)) != 0)
                     {
                         EditorGUILayout.HelpBox(
-                            "Shader channels Normal and Tangent are most often used with lighting, which an Overlay canvas does not support. Its likely these channels are not needed.",
+                            "Shader channels Normal and Tangent are most often used with lighting, which an Overlay canvas does not support. It's likely these channels are not needed.",
                             MessageType.Warning);
                     }
                 }

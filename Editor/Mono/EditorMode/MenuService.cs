@@ -315,12 +315,16 @@ namespace UnityEditor
             var menus = GetMenusFromModeFile(GetModeIndexById(id));
 
             if (menus == null) // If there is no mode menus in the mode file
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 return CombineMenuItemsFromAttributes(id, false).Values.ToArray();
+#pragma warning restore RS0030
 
             var menuItems = CombineMenuItemsFromAttributes(id, true);
             LoadMenuFromCommandId(menus, menuItems);
 
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return menuItems.Values.ToArray(); //In that case there is a .mode so menus will be filtered by the iterator
+#pragma warning restore RS0030
         }
 
         private static MenuItemsTree<MenuItemOrderingNative> GetMenusItemsFromModeFile(string modeName)
@@ -347,7 +351,9 @@ namespace UnityEditor
 
         private static void SortMenuItems(ref Dictionary<string, GroupingMenuItemScriptCommand> menuItemsPerMode)
         {
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             menuItemsPerMode = menuItemsPerMode
+#pragma warning restore RS0030
                 .OrderBy(m => m.Value.menuItem.Priority)
                 .ThenBy(m => m.Value.menuItem.SecondaryPriority)
                 .ThenBy(m => m.Value.menuItem.Name)
@@ -359,7 +365,9 @@ namespace UnityEditor
             s_MenuItemsPerMode = new Dictionary<string, MenuItemsTree<MenuItemScriptCommand>>();
             s_MenuItemsDefaultMode = new Dictionary<string, GroupingMenuItemScriptCommand>();
 
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var methodInfos = TypeCache.GetMethodsWithAttribute<MenuItem>()
+#pragma warning restore RS0030
                 .Where(m => ValidateMethodForMenuCommand(m))
                 // Order the menu items to start with Unity menus before projects menus. That way if there is a duplicate, the project one is flagged as duplicate
                 .OrderBy(m => !Utility.FastStartsWith(m.DeclaringType.Assembly.FullName, "UnityEditor", "unityeditor"))
@@ -436,7 +444,9 @@ namespace UnityEditor
                     menuItemsResult.Add(menuItem.name, menuItem);
             }
             // Always adding the default menu, which may be filtered later when using a custom mode file
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             AddMenuItemsFromMode(menuItemsResult, s_MenuItemsDefaultMode.Values.Select(x => x.menuItem));
+#pragma warning restore RS0030
 
             // If the menus depend on the .mode file, we also add the other modes menus because the mode file can reference them
             if (menusDependOnModeFile)
@@ -532,12 +542,16 @@ namespace UnityEditor
             {
                 if (result == null)
                     result = new List<T>();
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 if (m_Children.Any())
+#pragma warning restore RS0030
                 {
                     var children = m_Children;
                     if (sorted)
                     {
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                         children = m_Children.OrderBy(c => c.m_Priority)
+#pragma warning restore RS0030
                             .ThenBy(c => c.m_SecondaryPriority)
                             .ThenBy(c => c.key)
                             .ToList();

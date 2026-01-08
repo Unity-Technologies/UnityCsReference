@@ -94,7 +94,9 @@ namespace UnityEditor
             int currentFrame = m_ProfilerView.GetSelectedFrame();
             bool singleFrame = frameSetup == AssetLoadingFrameSetup.ThisFrame;
 
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var data = m_CaptureData.m_AssetLoadMarkers.OrderBy(s => s.startNs).ToList();
+#pragma warning restore RS0030
 
             // reset the states
             foreach (var item in data)
@@ -493,7 +495,9 @@ namespace UnityEditor
                 return;
             }
 
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var myTypes = parent.children.Cast<AssetMarkerTreeViewItem>();
+#pragma warning restore RS0030
             var orderedQuery = InitialOrder(myTypes, sortedColumns);
             for (int i = 1; i < sortedColumns.Length; i++)
             {
@@ -544,7 +548,9 @@ namespace UnityEditor
                 }
             }
 
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             parent.children = orderedQuery.Cast<TreeViewItem>().ToList();
+#pragma warning restore RS0030
         }
 
         IOrderedEnumerable<AssetMarkerTreeViewItem> InitialOrder(IEnumerable<AssetMarkerTreeViewItem> myTypes, int[] history)

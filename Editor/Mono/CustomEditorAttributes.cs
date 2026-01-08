@@ -59,7 +59,9 @@ namespace UnityEditor
                 if (!m_Cache.TryGet(inspected, multiEdit, out var foundEditors))
                     continue;
 
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 var filteredEditors = foundEditors
+#pragma warning restore RS0030
                     .Where(e => IsAppropriateEditor(e, type != inspected, pass == Pass.Fallback))
                     .ToList();
 
@@ -73,7 +75,9 @@ namespace UnityEditor
 
         Type FindEditors(List<MonoEditorType> editors)
         {
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             if (!editors.Any())
+#pragma warning restore RS0030
                 return null;
 
             var getEditorActions = m_CurrentGetEditorList;
@@ -124,7 +128,9 @@ namespace UnityEditor
 
         static Type UseNotSupportedOnInspector(List<MonoEditorType> editors)
         {
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             if (!editors.Any())
+#pragma warning restore RS0030
                 return null;
 
             var allEditorHaveSupportedOn = true;
@@ -201,7 +207,9 @@ namespace UnityEditor
                     return false;
                 }
 
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 var supportedPipelines = supportedOnAttribute.renderPipelineTypes
+#pragma warning restore RS0030
                     .Where(r => r != null)
                     .Distinct()
                     .ToArray();

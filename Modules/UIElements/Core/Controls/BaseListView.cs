@@ -744,9 +744,13 @@ namespace UnityEngine.UIElements
             {
                 onRemove.Invoke(this);
             }
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             else if (selectedIndices.Any())
+#pragma warning restore RS0030
             {
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 viewController.RemoveItems(selectedIndices.ToList());
+#pragma warning restore RS0030
                 ClearSelection();
             }
             else if (itemsSource?.Count > 0)

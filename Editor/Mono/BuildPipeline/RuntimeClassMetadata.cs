@@ -200,16 +200,22 @@ namespace UnityEditor
                 if (userAssembly.Key == "UnityEngine.dll" && !engineModuleTypesAdded)
                 {
                     engineModuleTypes.UnionWith(userAssembly.Value);
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     items.Add(userAssembly.Key, engineModuleTypes.ToArray());
+#pragma warning restore RS0030
                     engineModuleTypesAdded = true;
                     continue;
                 }
 
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 items.Add(userAssembly.Key, userAssembly.Value.ToArray());
+#pragma warning restore RS0030
             }
             if (!engineModuleTypesAdded)
             {
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 items.Add("UnityEngine.dll", engineModuleTypes.ToArray());
+#pragma warning restore RS0030
             }
             return items;
         }
@@ -222,14 +228,18 @@ namespace UnityEditor
         [RequiredByNativeCode]
         public int[] GetAllNativeClassIds()
         {
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return allNativeClasses.Keys.ToArray();
+#pragma warning restore RS0030
         }
 
         public IEnumerable<KeyValuePair<string, string[]>> GetAllSerializedClassesAsString()
         {
             foreach (var pair in serializedClassesPerAssembly)
             {
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 yield return new KeyValuePair<string, string[]>(pair.Key, pair.Value.ToArray());
+#pragma warning restore RS0030
             }
         }
 
@@ -242,25 +252,33 @@ namespace UnityEditor
         [RequiredByNativeCode]
         public string[] GetUsedTypesForAssembly(string assembly)
         {
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return m_UsedTypesPerUserAssembly[assembly].ToArray();
+#pragma warning restore RS0030
         }
 
         [RequiredByNativeCode]
         public string[] GetAllUserAssembliesReferencingTypes()
         {
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return m_UsedTypesPerUserAssembly.Keys.ToArray();
+#pragma warning restore RS0030
         }
 
         [RequiredByNativeCode]
         public string[] GetAllSerializedClassesAssemblies()
         {
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return serializedClassesPerAssembly.Keys.ToArray();
+#pragma warning restore RS0030
         }
 
         [RequiredByNativeCode]
         public string[] GetAllSerializedClassesForAssembly(string assembly)
         {
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return serializedClassesPerAssembly[assembly].ToArray();
+#pragma warning restore RS0030
         }
 
         [RequiredByNativeCode]
@@ -336,7 +354,9 @@ namespace UnityEditor
         internal string[] GetUsedUserAssemblies()
         {
             var userAssemblyNames = GetTargetUserAssemblyNames();
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return m_UserAssemblies.Where(s => IsAssemblyDLLUsed(s, userAssemblyNames)).ToArray();
+#pragma warning restore RS0030
         }
     }
 }

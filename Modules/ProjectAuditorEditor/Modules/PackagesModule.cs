@@ -81,7 +81,9 @@ namespace Unity.ProjectAuditor.Editor.Modules
         IEnumerable<ReportItem> EnumerateInstalledPackages(PackageAnalysisContext context)
         {
             var package = context.PackageInfo;
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var dependencies = package.dependencies.Select(d => d.name + " [" + d.version + "]").ToArray();
+#pragma warning restore RS0030
             var displayName = string.IsNullOrEmpty(package.displayName) ? package.name : package.displayName;
             var node = new PackageDependencyNode(displayName, dependencies);
             yield return context.CreateInsight(IssueCategory.Package, displayName)

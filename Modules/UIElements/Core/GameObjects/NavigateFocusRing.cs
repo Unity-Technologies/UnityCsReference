@@ -99,7 +99,8 @@ namespace UnityEngine.UIElements
             }
 
             // Find document root as a replacement for m_Root. Assume ve is in a document.
-            document = UIDocument.FindRootUIDocument(ve);
+            // TODO: IPanelComponent
+            document = (ve.FindRootPanelComponent() as UIDocument);
             if (document == null || document.rootVisualElement == null)
                 return false;
 

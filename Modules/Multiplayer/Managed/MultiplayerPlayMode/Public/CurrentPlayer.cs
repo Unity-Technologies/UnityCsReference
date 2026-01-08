@@ -5,7 +5,6 @@
 using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
-using UnityEngine;
 using UnityEngine.Assertions;
 using UnityEngine.Scripting.APIUpdating;
 
@@ -84,15 +83,6 @@ namespace Unity.Multiplayer.PlayMode
                 EnsureInitialized();
                 return s_CurrentPlayerApi.ReadOnlyTags();
             }
-        }
-
-
-#pragma warning disable RS0030 // This [RuntimeInitializeOnLoadMethod] usage be addressed by https://jira.unity3d.com/browse/UUM-128407
-        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
-#pragma warning restore RS0030
-        static void ReloadLatestTagsOnEnterPlaymode()
-        {
-            s_CurrentPlayerApi = null;
         }
 
         /// <summary>

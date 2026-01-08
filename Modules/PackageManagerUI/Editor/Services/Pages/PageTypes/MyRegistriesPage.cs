@@ -23,7 +23,9 @@ namespace UnityEditor.PackageManager.UI.Internal
         public override bool ShouldInclude(IPackage package)
         {
             return package is { compliance.status: PackageComplianceStatus.Compliant }
+                   #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                    && package.versions.Any(v => v.availableRegistry == RegistryType.MyRegistries);
+#pragma warning restore RS0030
         }
 
         public override string GetGroupName(IPackage package)

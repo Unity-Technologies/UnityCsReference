@@ -38,6 +38,7 @@ namespace Unity.GraphToolkit.Editor
         protected Image m_Icon;
 
         TypeHandle m_CurrentTypeHandle;
+        bool m_IconIsInline;
 
         /// <summary>
         /// The icon of the <see cref="PortConnectorWithIconPart"/>.
@@ -77,12 +78,35 @@ namespace Unity.GraphToolkit.Editor
         {
             base.UpdateUIFromModel(visitor);
 
-            if (m_Model is PortModel portModel)
+            if (m_Model is PortModel portModel && m_CurrentTypeHandle != portModel.DataTypeHandle)
             {
-                if (m_CurrentTypeHandle != portModel.DataTypeHandle)
+                m_OwnerElement.RootView.TypeHandleInfos.RemoveUssClasses(GraphElementHelper.iconDataTypeClassPrefix, m_Icon, m_CurrentTypeHandle);
+                m_CurrentTypeHandle = portModel.DataTypeHandle;
+
+                // Use registered style for the type if any.
+                var typeStyle = portModel.GraphModel?.GetDataTypeStyle(portModel.PortDataType);
+                if (typeStyle.HasValue)
                 {
-                    m_OwnerElement.RootView.TypeHandleInfos.RemoveUssClasses(GraphElementHelper.iconDataTypeClassPrefix, m_Icon, m_CurrentTypeHandle);
-                    m_CurrentTypeHandle = portModel.DataTypeHandle;
+                    m_IconIsInline = true;
+                    m_Icon.tintColor = typeStyle.Value.color;
+                    m_Icon.image = typeStyle.Value.icon;
+                }
+                else
+                {
+                    // If the icon was previously set inline by a registered type style, we need to remove it and create a new Image so that Image.m_TintColorIsInline and Image.m_ImageIsInline are reset to enable USS styling.
+                    if (m_IconIsInline)
+                    {
+                        // Remove old icon
+                        var index = Root.IndexOf(m_Icon);
+                        Root.Remove(m_Icon);
+
+                        // Create and assign new icon
+                        m_Icon = new Image();
+                        m_Icon.AddToClassList(m_ParentClassName.WithUssElement(GraphElementHelper.iconName));
+                        Root.Insert(index, m_Icon);
+                        m_IconIsInline = false;
+                    }
+
                     m_OwnerElement.RootView.TypeHandleInfos.AddUssClasses(GraphElementHelper.iconDataTypeClassPrefix, m_Icon, m_CurrentTypeHandle);
                 }
             }

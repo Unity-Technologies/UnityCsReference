@@ -62,7 +62,9 @@ namespace UnityEditor.Search
 
         internal static List<AdvancedObjectSelector> ObjectSelectors { get; private set; }
 
+        #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
         internal static IEnumerable<AdvancedObjectSelector> OrderedObjectSelectors => ObjectSelectors.OrderBy(p => p.priority);
+#pragma warning restore RS0030
 
         static SearchService()
         {
@@ -121,7 +123,9 @@ namespace UnityEditor.Search
         /// <param name="active">Activation state</param>
         public static void SetActive(string providerId, bool active = true)
         {
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var provider = Providers.FirstOrDefault(p => p.id == providerId);
+#pragma warning restore RS0030
             if (provider == null)
                 return;
             SearchSettings.GetProviderSettings(providerId).active = active;
@@ -163,13 +167,17 @@ namespace UnityEditor.Search
 
         internal static void RefreshObjectSelectors()
         {
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var validators = ReflectionUtils.LoadAllMethodsWithAttribute<AdvancedObjectSelectorValidatorAttribute, AdvancedObjectSelectorValidator>(
+#pragma warning restore RS0030
                 (loaded, mi, attribute, handler) =>
                     LoadAdvancedObjectSelectorAttribute<AdvancedObjectSelectorValidatorAttribute, AdvancedObjectSelectorValidator, AdvancedObjectSelectorValidatorHandler>(
                     loaded, mi, attribute, handler, "Advanced Object Selector Validator", (a, h) => GenerateAdvancedObjectSelectorValidatorWrapper(a, h)),
                 MethodSignature.FromDelegate<AdvancedObjectSelectorValidatorHandler>(), ReflectionUtils.AttributeLoaderBehavior.DoNotThrowOnValidation).ToDictionary(validator => validator.id.GetHashCode());
 
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             ObjectSelectors = ReflectionUtils.LoadAllMethodsWithAttribute<AdvancedObjectSelectorAttribute, AdvancedObjectSelector>(
+#pragma warning restore RS0030
                 (loaded, mi, attribute, handler) =>
                     LoadAdvancedObjectSelectorAttribute<AdvancedObjectSelectorAttribute, AdvancedObjectSelector, AdvancedObjectSelectorHandler>(
                     loaded, mi, attribute, handler, "Advanced Object Selector", (a, h) => GenerateAdvancedObjectSelectorWrapper(validators, a, h)),
@@ -185,7 +193,9 @@ namespace UnityEditor.Search
 
             if (handler is TDelegate selectorHandler)
             {
+                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 if (loaded.Any(p => p.id.Equals(attribute.id, StringComparison.Ordinal)))
+#pragma warning restore RS0030
                     throw new CustomAttributeFormatException($"{attributeName} id \"{attribute.id}\" for \"{ReflectionUtils.GetMethodFullName(mi)}\" is already used by another handler.");
                 return wrapperGenerator(attribute, selectorHandler);
             }
@@ -543,7 +553,9 @@ namespace UnityEditor.Search
             {
                 if (context.options.HasAny(SearchFlags.Debug))
                     Debug.Log($"{requestId} #{batchCount++} Request incoming batch {context.searchText}");
+                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 onIncomingItems?.Invoke(c, items.Where(e => e != null));
+#pragma warning restore RS0030
             }
 
             void OnSessionStarted(SearchContext c)
@@ -599,7 +611,9 @@ namespace UnityEditor.Search
 
         private static void RefreshProviders()
         {
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             Providers = SearchUtils.SortProvider(TypeCache.GetMethodsWithAttribute<SearchItemProviderAttribute>()
+#pragma warning restore RS0030
                 .Select(LoadProvider)
                 .Where(provider => provider != null))
                 .ToList();
@@ -637,7 +651,9 @@ namespace UnityEditor.Search
 
         private static void RefreshProviderActions()
         {
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             foreach (var action in TypeCache.GetMethodsWithAttribute<SearchActionsProviderAttribute>()
+#pragma warning restore RS0030
                      .Select(methodInfo => {
                          try
                          {
@@ -758,12 +774,16 @@ namespace UnityEditor.Search
 
         internal static IEnumerable<SearchProvider> GetProviders(params string[] providerIds)
         {
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return providerIds.Select(GetProvider).Where(p => p != null);
+#pragma warning restore RS0030
         }
 
         internal static IEnumerable<SearchProvider> GetProviders(IEnumerable<string> providerIds)
         {
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return providerIds.Select(GetProvider).Where(p => p != null);
+#pragma warning restore RS0030
         }
 
         internal static IEnumerable<SearchProvider> GetObjectProviders()
@@ -800,7 +820,9 @@ namespace UnityEditor.Search
         internal static bool IsPackageIndexingEnabled()
         {
             var db = SearchDatabase.GetDefaultSearchDatabase();
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return db.settings.roots.Any(r => r == "Packages");
+#pragma warning restore RS0030
         }
 
         internal static void ChangeIndexingSettings(bool deepIndexing, bool packageIndexing, Action indexingReady)
@@ -816,10 +838,14 @@ namespace UnityEditor.Search
             if (IsPackageIndexingEnabled() != packageIndexing)
             {
                 if (packageIndexing)
+                    #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     db.settings.roots = db.settings.roots.Concat(new [] {"Packages"}).ToArray();
+#pragma warning restore RS0030
                 else
                 {
+                    #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     db.settings.roots = db.settings.roots.Where(r => !r.Equals("Packages", StringComparison.InvariantCultureIgnoreCase)).ToArray();
+#pragma warning restore RS0030
                 }
                 settingsDirty = true;
             }
@@ -856,7 +882,9 @@ namespace UnityEditor.Search
         /// <returns></returns>
         public static bool IsIndexReady(string name)
         {
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return SearchDatabase.EnumerateAll().Where(db =>
+#pragma warning restore RS0030
             {
                 if (string.IsNullOrEmpty(name))
                     return true;

@@ -16,7 +16,9 @@ namespace Unity.GraphToolkit.Editor
 
         ModelView m_TransitionSupportEditor;
 
+        #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
         TransitionSupportModel TransitionSupportModel => Models.First() as TransitionSupportModel;
+#pragma warning restore RS0030
 
         protected override void BuildUI()
         {

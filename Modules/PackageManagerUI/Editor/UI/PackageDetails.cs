@@ -151,7 +151,9 @@ namespace UnityEditor.PackageManager.UI.Internal
 
             if (selections.Count == 1)
             {
+                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 var selection = selections.FirstOrDefault();
+#pragma warning restore RS0030
                 var package = m_PackageDatabase.GetPackage(selection);
                 RefreshUI(package);
             }
@@ -224,8 +226,12 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private void RefreshDetailError(IPackage package, IPackageVersion version)
         {
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var error = version?.errors?.FirstOrDefault(e => !e.HasAttribute(UIError.Attribute.Clearable | UIError.Attribute.HiddenFromUI))
+#pragma warning restore RS0030
+                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 ?? package?.errors?.FirstOrDefault(e => !e.HasAttribute(UIError.Attribute.Clearable | UIError.Attribute.HiddenFromUI));
+#pragma warning restore RS0030
             detailError.RefreshError(error, version);
         }
 

@@ -127,9 +127,14 @@ namespace UnityEditor
         readonly string k_OverscanScaleTooltip = L10n.Tr("Configure size of overscan view guides.");
         readonly string k_OverscanOpacityTooltip = L10n.Tr("Configure overscan opacity.");
 
+        internal static readonly Vector2 s_Size  = new Vector2(300, 46);
+
         protected override void OnEnable()
         {
             base.OnEnable();
+
+            //Constraining pop-up window size
+            minSize = maxSize = s_Size;
 
             var sceneView = SceneView.lastActiveSceneView;
             var settings = sceneView.viewpoint.cameraOverscanSettings;
@@ -155,6 +160,7 @@ namespace UnityEditor
                 sceneView.Repaint();
             });
             rootVisualElement.Add(opacity);
+            rootVisualElement.style.justifyContent = Justify.SpaceAround;
         }
     }
 
@@ -252,7 +258,7 @@ namespace UnityEditor
 
         void OnDropdownClicked()
         {
-            OverlayPopupWindow.Show<CameraOverscanSettingsWindow>(this, new Vector2(300, 40));
+            OverlayPopupWindow.Show<CameraOverscanSettingsWindow>(this, CameraOverscanSettingsWindow.s_Size);
         }
 
         void EnableCameraViewTool()

@@ -49,8 +49,10 @@ namespace UnityEngine.Accessibility
             new Color32(82, 205, 242, 255),   // CPU Timeline: "Input"
         };
 
+        #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
         static readonly float[] s_ColorBlindSafePaletteLuminanceValues =
             s_ColorBlindSafePalette.Select(c => ComputePerceivedLuminance(c)).ToArray();
+#pragma warning restore RS0030
 
         // https://en.wikipedia.org/wiki/Relative_luminance
         internal static float ComputePerceivedLuminance(Color color)
@@ -271,10 +273,12 @@ namespace UnityEngine.Accessibility
             if (palette == null)
                 throw new ArgumentNullException("palette");
 
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var acceptableColors = Enumerable.Range(0, s_ColorBlindSafePalette.Length).Where(
                 i => s_ColorBlindSafePaletteLuminanceValues[i] >= minimumLuminance && s_ColorBlindSafePaletteLuminanceValues[i] <= maximumLuminance
                 ).Select(i => s_ColorBlindSafePalette[i]
                 ).ToArray();
+#pragma warning restore RS0030
 
             int numUniqueColors = Mathf.Min(paletteLength, acceptableColors.Length);
 

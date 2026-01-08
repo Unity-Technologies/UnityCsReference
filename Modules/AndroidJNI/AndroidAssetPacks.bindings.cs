@@ -208,7 +208,9 @@ namespace UnityEngine.Android
 
         internal DownloadAssetPackAsyncOperation(string[] assetPackNames)
         {
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             m_AssetPackInfos = assetPackNames.ToDictionary<string, string, AndroidAssetPackInfo>(name => name, name => null);
+#pragma warning restore RS0030
         }
 
         internal void OnUpdate(AndroidAssetPackInfo info)

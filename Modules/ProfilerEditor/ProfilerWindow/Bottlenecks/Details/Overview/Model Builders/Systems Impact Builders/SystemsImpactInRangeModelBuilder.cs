@@ -79,7 +79,7 @@ namespace Unity.Profiling.Editor.UI
                 // Check for cancellation.
                 cancellationToken.ThrowIfCancellationRequested();
 
-                return BuildModelFromSystemImpacts(systemImpacts);
+                return BuildModelFromSystemImpacts(m_FrameRange, systemImpacts);
             });
 
             return await task;

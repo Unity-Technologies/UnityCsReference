@@ -93,7 +93,6 @@ sealed partial class StylePropertyBinding : CustomBinding, ITrackablePropertyPro
     {
         None = 0,
         IgnoreChanges = 1,
-        Readonly = 2
     }
 
     readonly struct IgnoreChangeScope : IDisposable
@@ -118,7 +117,7 @@ sealed partial class StylePropertyBinding : CustomBinding, ITrackablePropertyPro
     {
         public readonly StylePropertyBinding binding = binding;
         public readonly VisualElement element = element;
-        public readonly StyleDiff styleDiff = (StyleDiff)element.GetHierarchicalDataSourceContext().dataSource;
+        public readonly StyleInspectorElement.AuthoringContext authoringContext = (StyleInspectorElement.AuthoringContext)element.GetHierarchicalDataSourceContext().dataSource;
         public readonly BindingId bindingId = bindingId;
     }
 
@@ -147,7 +146,7 @@ sealed partial class StylePropertyBinding : CustomBinding, ITrackablePropertyPro
         public StylePropertyBinding binding;
         public BindingId bindingId;
         public VisualElement element;
-        public StyleDiff diff;
+        public StyleInspectorElement.AuthoringContext authoringContext;
 
         public override void Reset()
         {
@@ -155,7 +154,7 @@ sealed partial class StylePropertyBinding : CustomBinding, ITrackablePropertyPro
             binding = null;
             bindingId = default;
             element = null;
-            diff = null;
+            authoringContext = null;
         }
 
         protected override void VisitPath<TContainer, TValue>(Property<TContainer, TValue> property, ref TContainer container, ref TValue value)
@@ -168,9 +167,9 @@ sealed partial class StylePropertyBinding : CustomBinding, ITrackablePropertyPro
 
         private bool ShouldProcessChange()
         {
-            if (binding.isReadonly)
+            if (authoringContext.IsReadOnly)
             {
-                binding.Update(bindingId, binding.stylePropertyId, diff, element);
+                binding.Update(bindingId, binding.stylePropertyId, authoringContext.StyleDiff, element);
                 return false;
             }
 
@@ -268,18 +267,6 @@ sealed partial class StylePropertyBinding : CustomBinding, ITrackablePropertyPro
         }
     }
 
-    public bool isReadonly
-    {
-        get => (m_UpdateFlags & UpdateFlags.Readonly) == UpdateFlags.Readonly;
-        set
-        {
-            if (value)
-                m_UpdateFlags |= UpdateFlags.Readonly;
-            else
-                m_UpdateFlags &= ~UpdateFlags.Readonly;
-        }
-    }
-
     private StylePropertyBinding()
         :this(null)
     {
@@ -288,14 +275,13 @@ sealed partial class StylePropertyBinding : CustomBinding, ITrackablePropertyPro
     public StylePropertyBinding(string styleProperty)
     {
         updateTrigger = BindingUpdateTrigger.OnSourceChanged;
-        isReadonly = true;
         this.styleProperty = styleProperty;
     }
 
     protected internal override void OnActivated(in BindingActivationContext context)
     {
         base.OnActivated(in context);
-        SendTrackPropertyEvent(this, context.targetElement, styleProperty, StylePropertyTrackingType.Register);
+        SendTrackPropertyEvent(this, context.targetElement, styleProperty, PropertyTrackingType.Register);
         RegisterCallbacks(this, context.bindingId, stylePropertyId, context.targetElement);
     }
 
@@ -309,18 +295,18 @@ sealed partial class StylePropertyBinding : CustomBinding, ITrackablePropertyPro
 
     protected internal override BindingResult Update(in BindingContext context)
     {
-        if (context.dataSource is not StyleDiff diff)
+        if (context.dataSource is not StyleInspectorElement.AuthoringContext ctx)
             return new BindingResult(BindingStatus.Failure, "Expected a StyleDiff as the data source");
 
         // StyleDiff has not been run yet.
-        if (diff.currentContextType == StyleDiff.ContextType.None)
+        if (ctx.StyleDiff.currentContextType == StyleDiff.ContextType.None)
             return new BindingResult(BindingStatus.Pending);
 
         if (!IsStylePropertySupported(stylePropertyId))
             return new BindingResult(BindingStatus.Failure, "Expected a style property as the target. Shorthand and custom properties are not supported.");
 
         var targetElement = context.targetElement;
-        return Update(context.bindingId, stylePropertyId, diff, targetElement);
+        return Update(context.bindingId, stylePropertyId, ctx.StyleDiff, targetElement);
     }
 
     static void ProcessChange<T>(T value, StyleDiff styleDiff, StylePropertyBinding binding, Action<StyleProperty, StyleSheet, T> setter)
@@ -351,7 +337,7 @@ sealed partial class StylePropertyBinding : CustomBinding, ITrackablePropertyPro
             return;
 
         if (ShouldProcessChange(evt, ctx))
-            ProcessChange(evt.newValue, ctx.styleDiff, ctx.binding, setter);
+            ProcessChange(evt.newValue, ctx.authoringContext.StyleDiff, ctx.binding, setter);
     }
 
     static void ProcessChange<T>(CompositeStylePropertyChangeEvent<T> evt, CallbackContext ctx, Action<StyleProperty, StyleSheet, T> setter)
@@ -360,7 +346,7 @@ sealed partial class StylePropertyBinding : CustomBinding, ITrackablePropertyPro
             return;
 
         if (ShouldProcessChange(evt, ctx))
-            ProcessChange(evt.NewValue, ctx.styleDiff, ctx.binding, setter);
+            ProcessChange(evt.NewValue, ctx.authoringContext.StyleDiff, ctx.binding, setter);
     }
 
     BindingResult Update<TInline, TComputed>(in BindingId id, StylePropertyData<TInline, TComputed> value, StyleDiff diff, VisualElement targetElement)
@@ -433,9 +419,9 @@ sealed partial class StylePropertyBinding : CustomBinding, ITrackablePropertyPro
         return default;
     }
 
-    private static void SendTrackPropertyEvent(ITrackablePropertyProvider provider, VisualElement target, string styleProperty, StylePropertyTrackingType type)
+    private static void SendTrackPropertyEvent(ITrackablePropertyProvider provider, VisualElement target, string styleProperty, PropertyTrackingType type)
     {
-        using var evt = TrackStylePropertyEvent.GetPooled(provider, styleProperty);
+        using var evt = TrackPropertyEvent.GetPooled(provider, styleProperty);
         evt.target = target;
         target.SendEvent(evt);
     }
@@ -538,7 +524,7 @@ sealed partial class StylePropertyBinding : CustomBinding, ITrackablePropertyPro
         if (evt.target != ctx.element)
             return false;
 
-        if (!ctx.binding.isReadonly)
+        if (!ctx.authoringContext.IsReadOnly)
             return true;
 
         // Write back the previous value so that it looks like it's readonly.
@@ -552,7 +538,7 @@ sealed partial class StylePropertyBinding : CustomBinding, ITrackablePropertyPro
         if (evt.target != ctx.element)
             return false;
 
-        if (!ctx.binding.isReadonly)
+        if (!ctx.authoringContext.IsReadOnly)
             return true;
 
         // Write back the previous value so that it looks like it's readonly.

@@ -32,9 +32,13 @@ namespace UnityEditor
             m_EdgeRadius = serializedObject.FindProperty("m_EdgeRadius");
             m_OffsetDistance = serializedObject.FindProperty("m_OffsetDistance");
             m_UseDelaunayMesh = serializedObject.FindProperty("m_UseDelaunayMesh");
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             m_ShowEdgeRadius.value = targets.Count(x => (x as CompositeCollider2D).geometryType == CompositeCollider2D.GeometryType.Polygons) == 0;
+#pragma warning restore RS0030
             m_ShowEdgeRadius.valueChanged.AddListener(Repaint);
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             m_ShowManualGenerationButton.value = targets.Count(x => (x as CompositeCollider2D).generationType != CompositeCollider2D.GenerationType.Manual) == 0;
+#pragma warning restore RS0030
             m_ShowManualGenerationButton.valueChanged.AddListener(Repaint);
         }
 
@@ -53,7 +57,9 @@ namespace UnityEditor
             EditorGUILayout.PropertyField(m_GeometryType);
 
             // Only show the ability to select the Delaunay mesh if polygon geometry type is selected.
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             if (targets.All(x => (x as CompositeCollider2D).geometryType == CompositeCollider2D.GeometryType.Polygons))
+#pragma warning restore RS0030
             {
                 EditorGUILayout.PropertyField(m_UseDelaunayMesh);
             }
@@ -62,7 +68,9 @@ namespace UnityEditor
             EditorGUILayout.PropertyField(m_VertexDistance);
             EditorGUILayout.PropertyField(m_OffsetDistance);
 
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             m_ShowManualGenerationButton.target = targets.Count(x => (x as CompositeCollider2D).generationType != CompositeCollider2D.GenerationType.Manual) == 0;
+#pragma warning restore RS0030
             if (EditorGUILayout.BeginFadeGroup(m_ShowManualGenerationButton.faded))
             {
                 if (GUILayout.Button("Regenerate Collider"))
@@ -77,12 +85,16 @@ namespace UnityEditor
             }
             EditorGUILayout.EndFadeGroup();
 
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             m_ShowEdgeRadius.target = targets.All(x => (x as CompositeCollider2D).geometryType != CompositeCollider2D.GeometryType.Polygons);
+#pragma warning restore RS0030
             if (EditorGUILayout.BeginFadeGroup(m_ShowEdgeRadius.faded))
                 EditorGUILayout.PropertyField(m_EdgeRadius);
             EditorGUILayout.EndFadeGroup();
 
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             if (targets.Count(x => (x as CompositeCollider2D).geometryType == CompositeCollider2D.GeometryType.Outlines &&
+#pragma warning restore RS0030
                 (x as CompositeCollider2D).attachedRigidbody != null &&
                 (x as CompositeCollider2D).attachedRigidbody.bodyType == RigidbodyType2D.Dynamic) > 0)
                 EditorGUILayout.HelpBox("Outline geometry is composed of edges and will not preserve the original collider's center-of-mass or rotational inertia.  The CompositeCollider2D is attached to a Dynamic Rigidbody2D so you may need to explicitly set these if they are required.", MessageType.Info);

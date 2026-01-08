@@ -52,6 +52,9 @@ partial struct LayoutNode : IEquatable<LayoutNode>
     /// </summary>
     internal ref LayoutCacheData Cache => ref m_Access.GetCacheData(m_Handle);
 
+    internal unsafe VisualElementTransformData* VisualElementTransformDataPtr => m_Access.GetTransformDataPtr(m_Handle);
+    internal unsafe LayoutComputedData* ComputedDataPtr => m_Access.GetComputedDataPtr(m_Handle);
+
     /// <summary>
     /// Gets the ComputedStyle data for this node.
     /// </summary>

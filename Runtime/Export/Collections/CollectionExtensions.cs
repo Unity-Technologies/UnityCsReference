@@ -194,7 +194,9 @@ namespace Unity.Collections
             if (serializeElement == null)
                 throw new ArgumentNullException($"Argument {nameof(serializeElement)} must not be null.");
 
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return "[" + string.Join(",", collection.Select(t => t == null ? "null" : serializeElement.Invoke(t))) + "]";
+#pragma warning restore RS0030
         }
 
         /// <summary>

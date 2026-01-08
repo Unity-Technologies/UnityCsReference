@@ -222,7 +222,7 @@ namespace UnityEngine
             {
                 if (bufferSize % 4 != 0)
                 {
-                    throw new ArgumentException("Vertex and index buffers also used as compute buffers sizes must be a multiple of 4.");
+                    throw new ArgumentException("Vertex and index buffers also used as compute buffers sizes must be a multiple of 4 bytes.");
                 }
             }
 

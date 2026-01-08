@@ -10,9 +10,15 @@ namespace Unity.UIToolkit.Editor;
 
 internal interface IVisualElementSelectionHandler
 {
+    void SetEditingManager(IVisualElementEditingManager manager);
     EntityId AcquireInstanceId(VisualElement element);
     void ReleaseInstanceId(VisualElement element);
 
     void Remap(List<VisualElementRemap> candidates);
+}
+
+internal interface IVisualElementEditingManager
+{
+    VisualElementEditFlags GetEditFlags(VisualElement element);
 }
 

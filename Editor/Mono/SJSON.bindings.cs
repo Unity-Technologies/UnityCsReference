@@ -93,7 +93,9 @@ namespace UnityEditor
         [RequiredByNativeCode]
         internal static string[] GetKeys(JSONObject ht)
         {
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return ht.Keys.Cast<string>().ToArray();
+#pragma warning restore RS0030
         }
 
         [RequiredByNativeCode]
@@ -134,7 +136,9 @@ namespace UnityEditor
             if (enumerable == null)
                 return null;
 
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return Enumerable.ElementAt(enumerable.Cast<object>(), index);
+#pragma warning restore RS0030
         }
 
         internal static bool TryGetValue(JSONObject data, string key, out object value)

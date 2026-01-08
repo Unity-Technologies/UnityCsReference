@@ -65,7 +65,9 @@ namespace UnityEditor.TextCore.Text
                 return;
 
             // Get all the sprites defined in the sprite sheet texture referenced by this sprite asset.
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             Sprite[] sprites = AssetDatabase.LoadAllAssetsAtPath(filePath).Select(x => x as Sprite).Where(x => x != null).ToArray();
+#pragma warning restore RS0030
 
             // Return if sprite sheet texture does not have any sprites defined in it.
             if (sprites.Length == 0)
@@ -77,10 +79,14 @@ namespace UnityEditor.TextCore.Text
             List<SpriteGlyph> spriteGlyphTable = spriteAsset.spriteGlyphTable;
 
             // Find available glpyh indexes
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             uint[] existingGlyphIndexes = spriteGlyphTable.Select(x => x.index).ToArray();
+#pragma warning restore RS0030
             List<uint> availableGlyphIndexes = new List<uint>();
 
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             uint lastGlyphIndex = existingGlyphIndexes.Length > 0 ? existingGlyphIndexes.Last() : 0;
+#pragma warning restore RS0030
             int elementIndex = 0;
             for (uint i = 0; i < lastGlyphIndex; i++)
             {
@@ -98,7 +104,9 @@ namespace UnityEditor.TextCore.Text
                 Sprite sprite = sprites[i];
 
                 // Check if current sprites is already contained in the sprite glyph table of the sprite asset.
+                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 SpriteGlyph spriteGlyph = spriteGlyphTable.FirstOrDefault(x => x.sprite == sprite);
+#pragma warning restore RS0030
 
                 if (spriteGlyph != null)
                 {
@@ -113,7 +121,9 @@ namespace UnityEditor.TextCore.Text
                     // Check if this sprite potentially exists under the same name in the sprite character table.
                     if (spriteAsset.spriteCharacterTable != null && spriteAsset.spriteCharacterTable.Count > 0)
                     {
+                        #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                         spriteCharacter = spriteAsset.spriteCharacterTable.FirstOrDefault(x => x.name == sprite.name);
+#pragma warning restore RS0030
                         spriteGlyph = spriteCharacter != null ? spriteGlyphTable[(int)spriteCharacter.glyphIndex] : null;
 
                         if (spriteGlyph != null)
@@ -288,7 +298,9 @@ namespace UnityEditor.TextCore.Text
             string filePath = AssetDatabase.GetAssetPath(source);
 
             // Get all the Sprites sorted by Index
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             Sprite[] sprites = AssetDatabase.LoadAllAssetsAtPath(filePath).Select(x => x as Sprite).Where(x => x != null).OrderByDescending(x => x.rect.y).ThenBy(x => x.rect.x).ToArray();
+#pragma warning restore RS0030
 
             for (int i = 0; i < sprites.Length; i++)
             {

@@ -55,13 +55,17 @@ namespace UnityEditor.Search
 
         public static IEnumerable<SearchColumn> Enumerate(IEnumerable<SearchItem> items)
         {
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return PropertySelectors.Enumerate(FilterItems(items, 5))
+#pragma warning restore RS0030
                 .Concat(MaterialSelectors.Enumerate(FilterItems(items, 20)));
         }
 
         static IEnumerable<SearchItem> FilterItems(IEnumerable<SearchItem> items, int count)
         {
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return items.Where(e => e.provider.type == type).Take(count);
+#pragma warning restore RS0030
         }
     }
 }

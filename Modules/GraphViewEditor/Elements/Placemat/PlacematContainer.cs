@@ -50,7 +50,9 @@ namespace UnityEditor.Experimental.GraphView
         GraphViewChange OnGraphViewChange(GraphViewChange graphViewChange)
         {
             if (graphViewChange.elementsToRemove != null)
+                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 foreach (Placemat placemat in graphViewChange.elementsToRemove.OfType<Placemat>())
+#pragma warning restore RS0030
                     RemovePlacemat(placemat);
 
             return graphViewChange;
@@ -80,7 +82,9 @@ namespace UnityEditor.Experimental.GraphView
                     rootNode = currNode;
 
                 //Find the furthest placemat containing the rootNode and that is collapsed (if any)
+                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 Placemat placemat = m_Placemats.FirstOrDefault(p => p.Collapsed && p.WillDragNode(rootNode));
+#pragma warning restore RS0030
 
                 if (placemat != null)
                     return placemat.GetPortCenterOverride(port, out overriddenPosition);
@@ -169,7 +173,9 @@ namespace UnityEditor.Experimental.GraphView
         public void HideCollapsedEdges()
         {
             // We need to hide edges in the reverse zOrder (topmost mats are collapsed first)
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             foreach (var p in Placemats.OrderByDescending(p => p.ZOrder))
+#pragma warning restore RS0030
             {
                 p.HideCollapsedEdges();
             }

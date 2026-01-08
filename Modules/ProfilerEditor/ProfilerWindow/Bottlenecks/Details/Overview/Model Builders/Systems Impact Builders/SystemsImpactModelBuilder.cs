@@ -68,7 +68,7 @@ namespace Unity.Profiling.Editor.UI
             return legacyStatisticValue;
         }
 
-        protected SystemsImpactModel BuildModelFromSystemImpacts(SystemImpact[] systemImpacts)
+        protected SystemsImpactModel BuildModelFromSystemImpacts(Range frameRange, SystemImpact[] systemImpacts)
         {
             // Sort descending.
             Array.Sort(systemImpacts, (a, b) =>
@@ -81,7 +81,7 @@ namespace Unity.Profiling.Editor.UI
             Array.Copy(systemImpacts, topSystemImpacts, k_NumberOfTopSystems);
 
             // Build model.
-            return new SystemsImpactModel(topSystemImpacts);
+            return new SystemsImpactModel(frameRange, topSystemImpacts);
         }
     }
 }

@@ -58,7 +58,9 @@ namespace Unity.GraphToolkit.Editor
         /// <param name="duplicate">If true the blocks will be duplicated before being inserted.</param>
         /// <param name="undoText">The undo string.</param>
         public InsertBlocksInContextCommand(ContextNodeModel context, int index, IEnumerable<BlockNodeModel> blocks, bool correctForPlaceholders, bool duplicate = false, string undoText = null) :
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             this(new[] { new ContextData { Context = context, Index = index, Blocks = blocks?.ToList() ?? Enumerable.Empty<BlockNodeModel>().ToList() } }, correctForPlaceholders, duplicate, undoText)
+#pragma warning restore RS0030
         {
         }
 
@@ -79,7 +81,9 @@ namespace Unity.GraphToolkit.Editor
 
             if (undoText != null)
                 UndoString = undoText;
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             else if (data.Length > 1 || data.Length == 1 && data[0].Blocks.Count() > 1)
+#pragma warning restore RS0030
                 UndoString = duplicate ? k_UndoStringDuplicatePlural : k_UndoStringPlural;
             else
                 UndoString = duplicate ? k_UndoStringDuplicate : k_UndoString;

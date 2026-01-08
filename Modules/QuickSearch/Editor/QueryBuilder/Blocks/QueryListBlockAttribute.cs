@@ -115,7 +115,9 @@ namespace UnityEditor.Search
             {
                 try
                 {
+                    #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     var attr = ti.GetCustomAttributes(typeof(QueryListBlockAttribute), false).Cast<QueryListBlockAttribute>().First();
+#pragma warning restore RS0030
                     attr.type = ti;
                     if (!typeof(QueryListBlock).IsAssignableFrom(ti))
                         continue;

@@ -39,7 +39,9 @@ namespace UnityEngine.UIElements.Experimental
 
         public static void CleanListeners(IPanel panel)
         {
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var listeners = s_Listeners.ToList();
+#pragma warning restore RS0030
             foreach (var eventRegistrationListener in listeners)
             {
                 var key = eventRegistrationListener.Key as VisualElement; // VE that sends events

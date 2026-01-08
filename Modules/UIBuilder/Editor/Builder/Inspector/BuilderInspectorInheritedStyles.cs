@@ -255,7 +255,9 @@ namespace Unity.UI.Builder
         bool IsClassInUXMLDoc(string className)
         {
             var vea = currentVisualElement?.GetVisualElementAsset();
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return vea != null && vea.classes != null && vea.classes.Contains(className);
+#pragma warning restore RS0030
         }
 
         void RefreshClassListContainer()

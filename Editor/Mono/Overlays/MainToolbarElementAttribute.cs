@@ -72,4 +72,21 @@ namespace UnityEditor.Toolbars
             this.path = path;
         }
     }
+
+    [AttributeUsage(AttributeTargets.Method)]
+    sealed class MainToolbarElementAvailabilityAttribute : Attribute
+    {
+        string m_Path;
+
+        public string path
+        {
+            get => m_Path;
+            set => m_Path = value;
+        }
+
+        public MainToolbarElementAvailabilityAttribute(string path)
+        {
+            this.path = path;
+        }
+    }
 }

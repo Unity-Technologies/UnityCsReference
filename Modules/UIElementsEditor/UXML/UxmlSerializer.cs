@@ -16,7 +16,7 @@ using Object = UnityEngine.Object;
 
 namespace UnityEditor.UIElements
 {
-    [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+    [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
     #pragma warning disable CS0618 // Type or member is obsolete.
     internal class UxmlSerializedAttributeDescription : UxmlAttributeDescription
     #pragma warning restore CS0618 // Type or member is obsolete

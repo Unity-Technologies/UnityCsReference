@@ -3,8 +3,11 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 using UnityEngine;
 using UnityEngine.UIElements;
+
+[assembly: InternalsVisibleTo("UnityEditor.Rendering.ShaderBuildSettings.Tests")]
 
 namespace UnityEditor.Shaders
 {
@@ -131,27 +134,36 @@ namespace UnityEditor.Shaders
             m_NumKeywordsLabel.text = numIncludedKeywords + "/" + keywords.Length;
         }
 
-        private void OnKeywordListChanged(ChangeEvent<string> evt)
+        internal ShaderBuildSettings.KeywordOverrideInfo[] BuildKeywordOverrideInfoArray(string keywordList, ShaderBuildSettings.KeywordDeclarationOverride previousData)
         {
-            var dataItem = DataSource[DataIndex];
-            string[] keywords = evt.newValue.Trim().Split(' ');
-            var kwInfoList = new ShaderBuildSettings.KeywordOverrideInfo[keywords.Length];
-            
+            string[] keywords = keywordList.Trim().Split(' ');
+            var kwInfoList = new List<ShaderBuildSettings.KeywordOverrideInfo>(keywords.Length);
+
             int i = 0;
             foreach (string keyword in keywords)
             {
+                // Ignore empty strings (can happen due to consecutive whitespaces)
+                if (keyword.Length == 0)
+                    continue;
+
+                // Preserve the previous selection state if possible by searching for a matching item
                 bool keepKw = true;
-                if (dataItem.keywords != null && dataItem.keywords.Length > i
-                    && keyword == dataItem.keywords[i].name)
+                ShaderBuildSettings.KeywordOverrideInfo foundMatch ;
+                if (previousData.FindMatchingKeyword(keyword, out foundMatch))
                 {
-                    keepKw = dataItem.keywords[i].keepInBuild;
+                    keepKw = foundMatch.keepInBuild;
                 }
 
-                kwInfoList[i] = new ShaderBuildSettings.KeywordOverrideInfo(keyword, keepKw);
+                kwInfoList.Add(new ShaderBuildSettings.KeywordOverrideInfo(keyword, keepKw));
                 i++;
             }
 
-            SetKeywords(kwInfoList);
+            return kwInfoList.ToArray();
+        }
+
+        private void OnKeywordListChanged(ChangeEvent<string> evt)
+        {
+            SetKeywords(BuildKeywordOverrideInfoArray(evt.newValue, DataSource[DataIndex]));
             ParentShaderBuildSettingsUI.SettingsChanged();
         }
 

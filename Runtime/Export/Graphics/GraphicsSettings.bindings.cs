@@ -92,7 +92,10 @@ namespace UnityEngine.Rendering
         public static RenderPipelineAsset defaultRenderPipeline
         {
             get { return INTERNAL_defaultRenderPipeline as RenderPipelineAsset; }
-            set { INTERNAL_defaultRenderPipeline = value; }
+            set
+            {
+                INTERNAL_defaultRenderPipeline = value;
+            }
         }
 
         [NativeName("GetAllConfiguredRenderPipelinesForScript")] extern static private ScriptableObject[] GetAllConfiguredRenderPipelines();
@@ -101,7 +104,9 @@ namespace UnityEngine.Rendering
         {
             get
             {
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 return GetAllConfiguredRenderPipelines().Cast<RenderPipelineAsset>().ToArray();
+#pragma warning restore RS0030
             }
         }
 

@@ -112,8 +112,10 @@ namespace Unity.ProjectAuditor.Editor.InstructionAnalyzers
                 var callee = (MethodReference)context.Instruction.Operand;
                 if (callee.HasParameters)
                 {
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     var lastParam = callee.Parameters.Last();
                     if (lastParam.HasCustomAttributes && lastParam.CustomAttributes.Any(a => a.AttributeType.FastFullName().GetHashCode() == k_ParamArrayAtributeHashCode))
+#pragma warning restore RS0030
                     {
                         // If the previous instruction is loading Array.Empty<T>, we know that the method is being called with no `params`, and we are not actually allocating a managed array for the params array
                         // This looks like:

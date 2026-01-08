@@ -114,7 +114,9 @@ namespace Unity.GraphToolkit.Editor
                 rectToFit = graphElement.parent.ChangeCoordinatesTo(self.ContentViewContainer, graphElement.layout);
             }
 
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             rectToFit = graphElements.Aggregate(rectToFit, (current, currentGraphElement) =>
+#pragma warning restore RS0030
             {
                 VisualElement currentElement = currentGraphElement.SizeElement;
 
@@ -149,7 +151,9 @@ namespace Unity.GraphToolkit.Editor
             self.CalculateFrameTransformToFitElements(graphElements, out var frameTranslation, out var frameScaling);
 
             self.Dispatch(new ReframeGraphViewCommand(frameTranslation, frameScaling,
+                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 select ? graphElements.Select(e => e.GraphElementModel).ToList() : null));
+#pragma warning restore RS0030
         }
 
         /// <summary>

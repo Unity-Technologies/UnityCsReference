@@ -551,7 +551,9 @@ namespace UnityEditor
                 return false;
 
             // Make sure assets are checked out in version control.
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             if (!PrefabUtility.PromptAndCheckoutPrefabIfNeeded(prefabAssetPaths.ToArray(), PrefabUtility.SaveVerb.Apply))
+#pragma warning restore RS0030
                 return false;
 
             PrefabUtility.ApplyPrefabInstances(m_SelectedGameObjects, InteractionMode.UserAction);
@@ -814,7 +816,9 @@ namespace UnityEditor
         void CalculateStatistics()
         {
             m_SingleInstanceWithUnusedMods = m_InstanceOverridesInfos[0];
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             m_SelectedInstanceCount = m_InstanceOverridesInfos.Count();
+#pragma warning restore RS0030
 
             if (m_SelectedInstanceCount > 1)
             {

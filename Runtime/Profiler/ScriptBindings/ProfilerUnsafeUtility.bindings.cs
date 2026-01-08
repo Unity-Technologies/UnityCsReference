@@ -68,6 +68,7 @@ namespace Unity.Profiling.LowLevel.Unsafe
         public const ushort CategoryVirtualTexturing = 31;
         internal const ushort CategoryGPU = 32;
         public const ushort CategoryPhysics2D = 33;
+        public const ushort CategoryU2D = 39;
         internal const ushort CategoryAny = 0xFFFF;
 
         [ThreadSafe]

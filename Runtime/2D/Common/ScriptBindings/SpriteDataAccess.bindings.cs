@@ -224,19 +224,6 @@ namespace UnityEngine.U2D
             SetBatchDeformableBufferAndLocalAABBArray(spriteRenderers, buffers.GetUnsafeReadOnlyPtr(), bufferSizes.GetUnsafeReadOnlyPtr(), bounds.GetUnsafeReadOnlyPtr(), count);
         }
 
-        internal unsafe static void SetBoneTransformsArray(SpriteRenderer[] spriteRenderers, NativeArray<IntPtr> buffers, NativeArray<int> bufferSizes, NativeArray<Bounds> bounds)
-        {
-            int count = spriteRenderers.Length;
-            if (count != buffers.Length
-                || count != bufferSizes.Length
-                || count != bounds.Length)
-            {
-                throw new ArgumentException("Input array sizes are not the same.");
-            }
-
-            SetBoneTransformsArray(spriteRenderers, buffers.GetUnsafeReadOnlyPtr(), bufferSizes.GetUnsafeReadOnlyPtr(), bounds.GetUnsafeReadOnlyPtr(), count);
-        }
-
         /// <summary>
         /// Performs a batch update of boneTransformIndex and AABB for the specified SpriteRenderers.
         /// </summary>
@@ -257,11 +244,6 @@ namespace UnityEngine.U2D
             return IsUsingDeformableBuffer(spriteRenderer, (void*)buffer);
         }
 
-        internal unsafe static void SetBoneTransforms(this SpriteRenderer spriteRenderer, NativeArray<Matrix4x4> src)
-        {
-            SetBoneTransforms(spriteRenderer, src.GetUnsafeReadOnlyPtr(), src.Length);
-        }
-
         internal static bool IsGPUSkinningEnabled()
         {
             return IsGPUSkinningEnabled(null);
@@ -276,10 +258,6 @@ namespace UnityEngine.U2D
         extern private unsafe static void SetBatchDeformableBufferAndLocalAABBArray(SpriteRenderer[] spriteRenderers, void* buffers, void* bufferSizes, void* bounds, int count);
 
         extern private unsafe static bool IsUsingDeformableBuffer([NotNull] SpriteRenderer spriteRenderer, void* buffer);
-
-        extern private unsafe static void SetBoneTransforms([NotNull] SpriteRenderer spriteRenderer, void* src, int count);
-
-        extern private unsafe static void SetBoneTransformsArray(SpriteRenderer[] spriteRenderers, void* buffers, void* bufferSizes, void* bounds, int count);
 
         extern private unsafe static void SetBatchBoneTransformIndexAndLocalAABBArray(SpriteRenderer[] spriteRenderers, void* boneTransformIndices, void* bounds, int count);
 

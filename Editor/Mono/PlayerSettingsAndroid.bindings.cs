@@ -257,6 +257,41 @@ namespace UnityEditor
         GameActivity = 1 << 1
     }
 
+    [Flags]
+    public enum AndroidWindowInsetsType : uint
+    {
+        None = 0,
+        /// <summary>
+        /// https://developer.android.com/reference/android/view/WindowInsets.Type#statusBars()
+        /// </summary>
+        StatusBars = 1 << 0,
+        /// <summary>
+        /// https://developer.android.com/reference/android/view/WindowInsets.Type#navigationBars()
+        /// </summary>
+        NavigationBars = 1 << 1,
+
+        // Currently we don't expose the other ones, leave them for reference
+        //CaptionBar = 1 << 2,
+        //IME = 1 << 3,
+        //SystemGestures = 1 << 4,
+        //MandatorySystemGestures = 1 << 5,
+        //TappableElement = 1 << 6,
+        //DisplayCutout = 1 << 7
+    }
+
+    public enum AndroidSystemBarsBehavior : uint
+    {
+        /// <summary>
+        /// https://developer.android.com/reference/android/view/WindowInsetsController#BEHAVIOR_DEFAULT
+        /// </summary>
+        Default = 1,
+
+        /// <summary>
+        /// https://developer.android.com/reference/android/view/WindowInsetsController#BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+        /// </summary>
+        ShowTransientBarsBySwipe = 2
+    }
+
     [Obsolete("AndroidDeviceFilterData is obsolete. Use UnityEngine.VulkanDeviceFilterData instead.")]
     public struct AndroidDeviceFilterData
     {
@@ -335,6 +370,14 @@ namespace UnityEditor
                 [NativeMethod("GetAndroidMinimumWindowHeight")]
                 get;
                 [NativeMethod("SetAndroidMinimumWindowHeight")]
+                set;
+            }
+
+            public static extern bool filterTouchesWhenObscured
+            {
+                [NativeMethod("GetAndroidFilterTouchesWhenObscured")]
+                get;
+                [NativeMethod("SetAndroidFilterTouchesWhenObscured")]
                 set;
             }
 
@@ -797,13 +840,17 @@ namespace UnityEditor
             [NativeMethod("GetAndroidMinTargetAPILevel")]
             internal static extern int GetMinTargetAPILevel();
 
-            // Start application in fullscreen mode
-            public static extern bool startInFullscreen
+            [Obsolete($"startInFullscreen is deprecated, use requestedVisibleInsets together with AndroidWindowInsetsType.{nameof(AndroidWindowInsetsType.NavigationBars)}.")]
+            public static bool startInFullscreen
             {
-                [NativeMethod("GetAndroidStartInFullscreen")]
-                get;
-                [NativeMethod("SetAndroidStartInFullscreen")]
-                set;
+                get => !requestedVisibleInsets.HasFlag(AndroidWindowInsetsType.NavigationBars);
+                set
+                {
+                    if (value)
+                        requestedVisibleInsets &= ~AndroidWindowInsetsType.NavigationBars;
+                    else
+                        requestedVisibleInsets |= AndroidWindowInsetsType.NavigationBars;
+                }
             }
 
             // Allow the application to render outside the safe area.
@@ -868,6 +915,23 @@ namespace UnityEditor
                 [NativeMethod("GetAndroidApplicationEntry")]
                 get;
                 [NativeMethod("SetAndroidApplicationEntry")]
+                set;
+            }
+
+            // The property name is similator to WindowInsetsController.getRequestedVisibleTypes https://android.googlesource.com/platform/frameworks/base/+/master/core/java/android/view/WindowInsetsController.java#328
+            public static extern AndroidWindowInsetsType requestedVisibleInsets
+            {
+                [NativeMethod("GetAndroidRequestedVisibleInsets")]
+                get;
+                [NativeMethod("SetAndroidRequestedVisibleInsets")]
+                set;
+            }
+
+            public static extern AndroidSystemBarsBehavior systemBarsBehavior
+            {
+                [NativeMethod("GetAndroidSystemBarsBehavior")]
+                get;
+                [NativeMethod("SetAndroidSystemBarsBehavior")]
                 set;
             }
 

@@ -1576,8 +1576,6 @@ namespace UnityEngine.UIElements
         {
             return m_VisualTreeUpdater.GetUpdater(phase);
         }
-
-        internal virtual Color HyperlinkColor => Color.blue;
     }
 
     [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule", "UnityEngine.VectorGraphicsModule")]

@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using UnityEditor;
 using UnityEngine;
@@ -11,6 +12,8 @@ namespace Unity.Multiplayer.PlayMode.Editor
     class CurrentPlayerEditor : CurrentPlayerApi
     {
         static SystemDataStore m_SystemDataStore;
+
+        bool m_Loaded = false;
 
         override public bool IsMainEditor => !VirtualProjectsEditor.IsClone;
 
@@ -24,6 +27,27 @@ namespace Unity.Multiplayer.PlayMode.Editor
         }
 
         public CurrentPlayerEditor()
+        {
+            EditorApplication.playModeStateChanged += OnPlayModeChanged;
+        }
+
+        private void OnPlayModeChanged(PlayModeStateChange state)
+        {
+            if (state == PlayModeStateChange.ExitingEditMode)
+            {
+                m_Loaded = false;
+            }
+        }
+
+        public override IReadOnlyList<string> ReadOnlyTags()
+        {
+            if (!m_Loaded)
+                ReloadData();
+
+            return base.ReadOnlyTags();
+        }
+
+        private void ReloadData()
         {
             m_SystemDataStore = VirtualProjectsEditor.IsClone
                 ? SystemDataStore.GetClone()
@@ -44,6 +68,7 @@ namespace Unity.Multiplayer.PlayMode.Editor
             }
 
             SetTags(player.Tags);
+            m_Loaded = true;
         }
 
         override public void ReportResult(

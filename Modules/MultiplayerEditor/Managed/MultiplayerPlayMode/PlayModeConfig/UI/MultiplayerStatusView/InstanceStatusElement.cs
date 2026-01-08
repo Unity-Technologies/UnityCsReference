@@ -94,8 +94,6 @@ internal class InstanceStatusElement : VisualElement
             iconTexture = EditorGUIUtility.FindTexture("UnityLogo");
         else if (instanceDescription is LocalInstanceDescription localInstanceDescription)
             iconTexture = InternalUtilities.GetBuildProfileTypeIcon(localInstanceDescription.BuildProfile);
-        else if (instanceDescription is RemoteInstanceDescription remoteInstanceDescription)
-            iconTexture = InternalUtilities.GetBuildProfileTypeIcon(remoteInstanceDescription.BuildProfile);
         return iconTexture;
     }
 

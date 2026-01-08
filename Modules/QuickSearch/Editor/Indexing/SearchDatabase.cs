@@ -141,7 +141,9 @@ namespace UnityEditor.Search
 
             public bool IsPackagesIndexingEnabled()
             {
+                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 return roots != null && roots.Any(r => IsPackages(r));
+#pragma warning restore RS0030
             }
 
             public void EnablePackagesIndexing(bool enable)
@@ -405,7 +407,9 @@ namespace UnityEditor.Search
 
         public static IEnumerable<SearchDatabase> Enumerate(IndexLocation location, params string[] types)
         {
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return EnumerateAll().Where(db =>
+#pragma warning restore RS0030
             {
                 if (types != null && types.Length > 0 && Array.IndexOf(types, db.settings.type) == -1)
                     return false;
@@ -421,7 +425,9 @@ namespace UnityEditor.Search
 
         public static SearchDatabase GetDefaultSearchDatabase()
         {
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return EnumerateAll().First();
+#pragma warning restore RS0030
         }
 
         public static IEnumerable<SearchDatabase> EnumerateAll()
@@ -537,7 +543,9 @@ namespace UnityEditor.Search
 
         private static IEnumerable<string> FilterIndexes(IEnumerable<string> paths)
         {
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return paths.Where(u => u == defaultSearchDatabaseIndexPath);
+#pragma warning restore RS0030
         }
 
         public static Settings LoadSettings(string settingsPath)
@@ -589,7 +597,9 @@ namespace UnityEditor.Search
         {
             if (s_DBs == null)
                 return null;
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return s_DBs.Where(db => string.Equals(db.path, path, StringComparison.OrdinalIgnoreCase)).FirstOrDefault();
+#pragma warning restore RS0030
         }
 
         public static SearchDatabase ImportAsset(string settingsPath, bool forceUpdate = false)
@@ -796,7 +806,9 @@ namespace UnityEditor.Search
                 // Simply mark artifact as unresolved and we will resume later.
                 if (inProductionCount > m_ProductionLimit || sw.ElapsedMilliseconds > 250)
                 {
+                    #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     unresolvedArtifacts.AddRange(artifacts.Skip(i));
+#pragma warning restore RS0030
                     break;
                 }
 
@@ -828,7 +840,9 @@ namespace UnityEditor.Search
                 else if (GetArtifactPaths(a.value, out var paths))
                 {
                     var artifactIndexSuffix = "." + GetIndexTypeSuffix(settings, a.source);
+                    #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     a.path = paths.LastOrDefault(p => p.EndsWith(artifactIndexSuffix, StringComparison.Ordinal));
+#pragma warning restore RS0030
                     if (a.path == null)
                         ReportWarning(a, artifactIndexSuffix, paths);
                 }

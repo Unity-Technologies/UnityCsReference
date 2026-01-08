@@ -15,8 +15,12 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public bool Refresh(IPackage package, IPackageVersion version)
         {
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var operationError = version?.errors?.FirstOrDefault(e => e.HasAttribute(UIError.Attribute.Clearable))
+#pragma warning restore RS0030
+                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 ?? package?.errors?.FirstOrDefault(e => e.HasAttribute(UIError.Attribute.Clearable));
+#pragma warning restore RS0030
             if (operationError == null)
             {
                 ClearError();

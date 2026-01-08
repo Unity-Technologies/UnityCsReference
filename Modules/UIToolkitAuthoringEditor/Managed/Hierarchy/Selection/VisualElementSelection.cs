@@ -10,6 +10,7 @@ namespace Unity.UIToolkit.Editor;
 internal class VisualElementSelection : UISelectionObject
 {
     public static readonly BindingId ElementProperty = nameof(Element);
+    public static readonly BindingId EditFlagsProperty = nameof(EditFlags);
 
     private VisualElement m_Element;
 
@@ -23,6 +24,21 @@ internal class VisualElementSelection : UISelectionObject
                 return;
             m_Element = value;
             Notify(ElementProperty);
+        }
+    }
+
+    private VisualElementEditFlags m_EditFlags;
+
+    [CreateProperty]
+    public VisualElementEditFlags EditFlags
+    {
+        get => m_EditFlags;
+        set
+        {
+            if (m_EditFlags == value)
+                return;
+            m_EditFlags = value;
+            Notify(EditFlagsProperty);
         }
     }
 }

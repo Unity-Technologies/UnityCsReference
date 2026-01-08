@@ -44,6 +44,8 @@ namespace Unity.ProjectAuditor.Editor.Core
 
             foreach (var assetPath in allAssetPaths)
             {
+                progress?.Advance();
+
                 if (assetPath.IndexOf("/editor/", StringComparison.OrdinalIgnoreCase) >= 0)
                 {
                     continue;
@@ -62,8 +64,6 @@ namespace Unity.ProjectAuditor.Editor.Core
                 {
                     analysisParams.OnIncomingIssues(analyzer.Analyze(assetAnalysisContext));
                 }
-
-                progress?.Advance();
             }
 
             progress?.Clear();

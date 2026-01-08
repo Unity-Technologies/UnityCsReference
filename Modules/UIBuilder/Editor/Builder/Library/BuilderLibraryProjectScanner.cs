@@ -58,7 +58,9 @@ namespace Unity.UI.Builder
 
             var shownTypes = new HashSet<Type>();
 
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var sortedEntries = UxmlSerializedDataRegistry.SerializedDataTypes.Values.OrderBy(o => o.FullName);
+#pragma warning restore RS0030
             foreach (var type in sortedEntries)
             {
                 try
@@ -145,7 +147,9 @@ namespace Unity.UI.Builder
                         if (categoryStack.Count == 0)
                             sourceCategory.AddChild(newItem);
                         else
+                            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                             categoryStack.Last().AddChild(newItem);
+#pragma warning restore RS0030
                     }
                 }
                 catch (Exception e)
@@ -309,7 +313,9 @@ namespace Unity.UI.Builder
                 if (categoryStack.Count == 0)
                     projectCategory.AddChild(newItem);
                 else
+                    #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     categoryStack.Last().AddChild(newItem);
+#pragma warning restore RS0030
             }
         }
 
@@ -324,7 +330,9 @@ namespace Unity.UI.Builder
             }
 
             // If an asset is deleted, we need to remove it from the cache.
+            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             if (m_AssetIDAndPathPair.Count > m_Assets.Count())
+#pragma warning restore RS0030
             {
                 var keyToRemove = "";
                 var removeKey = false;
