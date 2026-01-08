@@ -1320,9 +1320,6 @@
     <Compile Include="..\..\Editor\Mono\GUI\AssetSaveDialog.cs">
       <Link>Editor\Mono\GUI\AssetSaveDialog.cs</Link>
     </Compile>
-    <Compile Include="..\..\Editor\Mono\GUI\BumpMapSettingsFixingWindow.cs">
-      <Link>Editor\Mono\GUI\BumpMapSettingsFixingWindow.cs</Link>
-    </Compile>
     <Compile Include="..\..\Editor\Mono\GUI\ButtonWithAnimatedIcon.cs">
       <Link>Editor\Mono\GUI\ButtonWithAnimatedIcon.cs</Link>
     </Compile>
@@ -4682,9 +4679,6 @@
     </Compile>
     <Compile Include="..\..\Modules\AssetPipelineEditor\AssetPostprocessors\FBXMaterialDescriptionPreprocessor.cs">
       <Link>Modules\AssetPipelineEditor\AssetPostprocessors\FBXMaterialDescriptionPreprocessor.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\AssetPipelineEditor\AssetPostprocessors\ModelImporterPostProcessor.cs">
-      <Link>Modules\AssetPipelineEditor\AssetPostprocessors\ModelImporterPostProcessor.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\AssetPipelineEditor\AssetPostprocessors\SketchupMaterialDescriptionPreprocessor.cs">
       <Link>Modules\AssetPipelineEditor\AssetPostprocessors\SketchupMaterialDescriptionPreprocessor.cs</Link>

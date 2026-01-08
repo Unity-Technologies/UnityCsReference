@@ -320,7 +320,7 @@ namespace UnityEditor
                         ((newShaderChannelValue & (int)AdditionalCanvasShaderChannels.Normal) | (newShaderChannelValue & (int)AdditionalCanvasShaderChannels.Tangent)) != 0)
                     {
                         EditorGUILayout.HelpBox(
-                            "Shader channels Normal and Tangent are most often used with lighting, which an Overlay canvas does not support. Its likely these channels are not needed.",
+                            "Shader channels Normal and Tangent are most often used with lighting, which an Overlay canvas does not support. It's likely these channels are not needed.",
                             MessageType.Warning);
                     }
                 }

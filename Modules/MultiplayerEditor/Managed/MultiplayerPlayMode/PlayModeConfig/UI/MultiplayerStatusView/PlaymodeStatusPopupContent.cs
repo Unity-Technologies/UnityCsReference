@@ -87,9 +87,11 @@ namespace Unity.Multiplayer.PlayMode.Editor
 
         static void UpdateInstanceStatus()
         {
+            var aborted = ScenarioRunner.instance.ActiveScenario.Status.State is ScenarioState.Aborted;
             foreach (var (view, instance) in m_ViewToInstance)
             {
                 var state = instance.GetInstanceExecutionState();
+                state = state is ExecutionState.Running && aborted ? ExecutionState.Aborted : state;
 
                 view.SetStatus(state);
                 view.RefreshFreeRunUI();

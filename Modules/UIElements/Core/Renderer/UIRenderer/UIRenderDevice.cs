@@ -1004,7 +1004,8 @@ namespace UnityEngine.UIElements.UIR
                     // Skip matching Pop/Push default material commands
                     if (head.type == CommandType.PopDefaultMaterial
                         && head.next?.type == CommandType.PushDefaultMaterial
-                        && defaultMat == head.next?.material)
+                        && defaultMat == head.next?.material
+                        && userProps == head.next?.userProps)
                     {
                         head = head.next.next;
                         continue;

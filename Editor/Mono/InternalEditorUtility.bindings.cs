@@ -156,10 +156,12 @@ namespace UnityEditorInternal
 
         [StaticAccessor("BumpMapSettings::Get()", StaticAccessorType.Dot)]
         [NativeMethod("PerformUnmarkedBumpMapTexturesFixingAfterDialog")]
+        [Obsolete("PerformUnmarkedBumpMapTexturesFixingAfterDialog is obsolete.", false)]
         public extern static void BumpMapSettingsFixingWindowReportResult(int result);
 
         [StaticAccessor("BumpMapSettings::Get()", StaticAccessorType.Dot)]
         [NativeMethod("PerformUnmarkedBumpMapTexturesFixing")]
+        [Obsolete("PerformUnmarkedBumpMapTexturesFixing is obsolete.", false)]
         public extern static bool PerformUnmarkedBumpMapTexturesFixing();
 
         [FreeFunction("InternalEditorUtilityBindings::BumpMapTextureNeedsFixingInternal")]
