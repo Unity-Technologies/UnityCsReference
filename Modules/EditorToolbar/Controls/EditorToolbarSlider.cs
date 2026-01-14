@@ -197,10 +197,11 @@ namespace UnityEditor.Toolbars
         {
             if (rounded)
                 newValue = Mathf.Round(newValue);
-            
-            m_ValueLabel.text = GetValueAsText(newValue);
 
             base.SetValueWithoutNotify(newValue);
+
+            if (m_ValueLabel != null)
+                m_ValueLabel.text = GetValueAsText(value);
         }
     }
 }

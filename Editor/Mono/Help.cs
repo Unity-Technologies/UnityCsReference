@@ -283,13 +283,21 @@ namespace UnityEditor
                 {
                     if (!TryRedirect(ref topic))
                     {
-                        topic = $"Manual/{topic}";
+                        // For topics with subdirectories (containing '/'), don't add Manual/ prefix if they already start with it
+                        if (!topic.StartsWith("Manual/"))
+                        {
+                            topic = $"Manual/{topic}";
+                        }
                     }
                     documentPath = GetURLPath(true, baseDocumentationUrl, topic);
                 }
                 else if (docRedirectionServer == DocRedirectionServer.None)
                 {
-                    topic = $"Manual/{topic}";
+                    // For topics with subdirectories (containing '/'), don't add Manual/ prefix if they already start with it
+                    if (!topic.StartsWith("Manual/"))
+                    {
+                        topic = $"Manual/{topic}";
+                    }
                     documentPath = GetURLPath(true, baseDocumentationUrl, topic);
                 }
                 else

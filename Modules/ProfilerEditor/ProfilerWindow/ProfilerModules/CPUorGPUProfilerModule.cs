@@ -660,6 +660,10 @@ namespace UnityEditorInternal.Profiling
         {
             if (selectionToSet != null)
             {
+                // Select the module
+                ProfilerWindow.selectedModule = this;
+
+                // Set the active visible frame index to the selection's frame index if needed
                 if (selectionToSet.safeFrameIndex != ProfilerWindow.selectedFrameIndex)
                     ProfilerWindow.SetActiveVisibleFrameIndex(selectionToSet.safeFrameIndex != FrameDataView.invalidOrCurrentFrameIndex ? (int)selectionToSet.safeFrameIndex : ProfilerDriver.lastFrameIndex);
                 if (string.IsNullOrEmpty(selectionToSet.legacyMarkerPath))
@@ -670,6 +674,7 @@ namespace UnityEditorInternal.Profiling
                     selectionToSet.GenerateMarkerNamePath(frameDataView, markerIdPath);
                 }
                 selection = selectionToSet;
+                // Set the selected sample
                 SetSelectedPropertyPath(selectionToSet.legacyMarkerPath, selectionToSet.threadName);
             }
             else

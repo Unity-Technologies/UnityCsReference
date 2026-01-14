@@ -19,9 +19,9 @@ namespace UnityEditor
         }
 
 
-        private SerializedProperty m_SortingOrder;
-        private SerializedProperty m_SortingLayerID;
-        private SerializedProperty m_SortAtRoot;
+        internal SerializedProperty m_SortingOrder;
+        internal SerializedProperty m_SortingLayerID;
+        internal SerializedProperty m_SortAtRoot;
 
         public virtual void OnEnable()
         {

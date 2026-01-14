@@ -52,8 +52,8 @@ namespace UnityEditor.Search
 
             public static readonly GUIStyle propositionIcon = new GUIStyle("label")
             {
-                fixedWidth = 18f,
-                fixedHeight = 18f,
+                fixedWidth = 16f,
+                fixedHeight = 16f,
                 padding = new RectOffset(0, 0, 0, 0),
                 margin = new RectOffset(0, 0, 0, 0)
             };

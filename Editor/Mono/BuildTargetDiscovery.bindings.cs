@@ -595,7 +595,7 @@ namespace UnityEditor
                {
                     displayName = "Facebook Instant Games",
                     downloadLinkName = "WebGL",
-                    subtitle = "<color=\"#FFC107\">⚠️</color> The Facebook Instant Games platform is deprecated. Use the Web platform instead.",
+                    subtitle = "The Facebook Instant Games platform is deprecated. Use the Web platform instead.",
                     buildTarget = BuildTarget.WebGL,
                     iconName = "BuildSettings.Facebook",
                     settingsDocsLink = $"https://docs.unity3d.com/{Help.GetShortReleaseVersion()}/Documentation/Manual/web-setting-configurations.html",

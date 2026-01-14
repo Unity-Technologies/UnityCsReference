@@ -459,9 +459,9 @@ namespace UnityEditor.Search.Providers
 
             yield return new SearchProposition(category: "Filters", label: "Directory (Name)", replacement: "dir:\"folder name\"", help:"Assets in a specific folder",icon: Icons.quicksearch, color: QueryColors.filter);
             yield return new SearchProposition(category: "Filters", label: "File Size", replacement: "size>=8096", help: "Assets with a specific size in bytes", icon: Icons.quicksearch, color: QueryColors.filter);
-            yield return new SearchProposition(category: "Filters", label: "File Extension", replacement: "ext:png", help:"Assets with a specific extension", icon: Icons.quicksearch, color: QueryColors.filter);
+            yield return new SearchProposition(category: "Filters", label: "File Extension", replacement: "ext=png", help:"Assets with a specific extension", icon: Icons.quicksearch, color: QueryColors.filter);
             yield return new SearchProposition(category: "Filters", label: "Age", replacement: "age>=1.5", help: "In days, when was the file last modified?", icon: Icons.quicksearch, color: QueryColors.filter);
-            yield return new SearchProposition(category: "Filters", label: "Sub Asset", replacement: "is:subasset", help: "Yield nested assets (i.e. media from FBX files)", icon: Icons.quicksearch, color: QueryColors.filter);
+            yield return new SearchProposition(category: "Filters", label: "Sub Asset", replacement: "is=subasset", help: "Yield nested assets (i.e. media from FBX files)", icon: Icons.quicksearch, color: QueryColors.filter);
             yield return new SearchProposition(category: "Filters", label: "Name", replacement: "name=", help: "Search asset by object name", icon: Icons.quicksearch, color: QueryColors.filter);
 
             var sceneIcon = Utils.LoadIcon("SceneAsset Icon");
@@ -477,10 +477,17 @@ namespace UnityEditor.Search.Providers
                     continue;
 
                 yield return new SearchProposition(
-                    category: "Area (Index)",
-                    label: db.name,
-                    replacement: $"a:{db.name}",
-                    help: $"Search assets index by {db.name}.index",
+                category: "Area",
+                label: "Assets",
+                replacement: $"a=assets",
+                help: $"Search assets in projects",
+                color: QueryColors.type,
+                icon: Icons.quicksearch);
+            yield return new SearchProposition(
+                category: "Area",
+                label: "Packages",
+                replacement: $"a=packages",
+                help: $"Search assets in packages",
                     color: QueryColors.type,
                     icon: Icons.quicksearch);
 
@@ -591,6 +598,8 @@ namespace UnityEditor.Search.Providers
                 if (!Utils.IsRunningTests())
                 {
                     var findOptions = FindOptions.Words | FindOptions.Regex | FindOptions.Glob;
+                    if (context.options.HasAny(SearchFlags.Packages))
+                        findOptions |= FindOptions.Packages;
                     foreach (var e in FindProvider.Search(searchQuery, db.settings.roots, context, provider, findOptions))
                     {
                         if (!e.valid)
@@ -644,23 +653,33 @@ namespace UnityEditor.Search.Providers
                 searchTask.Wait(k_MaxKillSearchWaitTime);
             });
 
+            var rejectPackageResult = IsRejectPackageResult(db, context);
             while (results.Count > 0 || !searchTask.IsCompleted || results.Count > 0)
             {
                 while (results.TryTake(out var e))
-                    yield return CreateItem(context, provider, db, e);
+                    yield return CreateItem(context, provider, db, e, rejectPackageResult);
 
                 if (!searchTask.Wait(0))
                     yield return null;
             }
         }
 
-        private static SearchItem CreateItem(in SearchContext context, in SearchProvider provider, in SearchDatabase db, in SearchResult e)
+        internal static bool IsRejectPackageResult(SearchDatabase db, SearchContext context)
+        {
+            // By default, we will yield any results regardless of if they are from a Package or Assets. Decide if we need to reject Package result:
+            // This switch is a global way of hiding or showing Package results AFTER the query has been fully resolved.
+            return db.settings.IsPackagesIndexingEnabled() && !context.options.HasFlag(SearchFlags.Packages);
+        }
+
+        private static SearchItem CreateItem(in SearchContext context, in SearchProvider provider, in SearchDatabase db, in SearchResult e, in bool rejectPackageResult)
         {
             var doc = db.index.GetDocument(e.index);
             if (string.IsNullOrEmpty(doc.id))
                 return null;
-            var score = ComputeSearchDocumentScore(context, doc, e.score);
+            if (rejectPackageResult && doc.source.StartsWith("Packages"))
+                return null;
 
+            var score = ComputeSearchDocumentScore(context, doc, e.score);
             var flags = doc.flags;
             if (!IsProjectIndex(db))
                 flags |= SearchDocumentFlags.Grouped;

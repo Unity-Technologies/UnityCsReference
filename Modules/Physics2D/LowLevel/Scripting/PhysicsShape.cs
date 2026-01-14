@@ -280,10 +280,11 @@ namespace UnityEngine.LowLevelPhysics2D
                 public readonly float tangentImpulse => m_TangentImpulse;
 
                 /// <summary>
-	            /// The total normal impulse applied across sub-stepping and restitution.
+                /// The total normal impulse applied across sub-stepping and restitution.
+                /// This includes the warm starting impulse, the sub-step delta impulse, and the restitution impulse.
                 /// This can be used to identify speculative contact points that had an interaction during the simulation step.
                 /// </summary>
-	            public readonly float totalNormalImpulse => m_TotalNormalImpulse;
+                public readonly float totalNormalImpulse => m_TotalNormalImpulse;
 
                 /// <summary>
                 /// Relative normal velocity pre-solve. Used for hit events.

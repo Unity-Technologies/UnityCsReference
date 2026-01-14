@@ -392,7 +392,7 @@ namespace UnityEditor.Connect
 
         protected void OpenDashboardOrgAndProjectIds(string dashboardUrl)
         {
-            var orgSubUrl = UnityConnect.instance.projectInfo.organizationId;
+            var orgSubUrl = UnityConnect.instance.projectInfo.organizationForeignKey;
             var projectSubUrl = UnityConnect.instance.projectInfo.projectId;
             EditorAnalytics.SendOpenDashboardForService(new OpenDashboardForService()
             {

@@ -14,6 +14,7 @@ using UnityEngine.Multiplayer.Internal;
 
 namespace Unity.Multiplayer.PlayMode.Editor
 {
+    [Serializable]
     class EditorMultiplayerPlaymodeDeployNode : Node
     {
         bool m_HasConnected;

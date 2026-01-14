@@ -149,6 +149,15 @@ namespace UnityEditor
         
         public static event Action availableSettingsChanged;
         
+        
+        // For custom pivots, we essentially want to do handle rotations same way as when in Global Pivot rotation but without  
+        // having to resort to storing intermediate state in m_GlobalHandleRotation for active rotation persistence/delta calculation.
+        // We don't want this because m_GlobalHandleRotation can be implicitly set for Global pivots through public API (Tools.handleRotation)
+        // and that would interfere with what a custom implementation might be trying to return instead.
+        // ActiveRotationTracker is used instead to track the intermediate handle rotation for all custom pivot rotation implementations.
+        ActiveRotationTracker m_ActiveRotationTracker = new();
+        internal static ActiveRotationTracker activeRotationTracker => instance.m_ActiveRotationTracker;
+
         EditorPivotManager()
         {
             m_TypeToPivotSettingDef = new Dictionary<Type, PivotSettingDefinition>();
@@ -211,13 +220,9 @@ namespace UnityEditor
         void OnEnable()
         {
             RefreshAvailablePivotSettings();
-            
-            // If active settings failed to deserialize, set them to the default.
-            if (m_ActivePivotMode == null)
-                PivotManager.SetActivePivotMode(PivotManager.defaultPivotModeType);
-            if (m_ActivePivotRotation == null)
-                PivotManager.SetActivePivotRotation(PivotManager.defaultPivotRotationType);
 
+            SyncToolsPivotStateIfNeeded();
+            
             ToolManager.activeToolChanged += OnActiveToolChanged;
             ToolManager.activeContextChanged += OnActiveContextChanged;
         }
@@ -240,6 +245,48 @@ namespace UnityEditor
             RefreshAvailablePivotSettings();
         }
 
+        public void SyncToolsPivotStateIfNeeded()
+        {
+            // If active settings failed to deserialize, set them to the default.
+            if (m_ActivePivotMode == null)
+                PivotManager.SetActivePivotMode(PivotManager.defaultPivotModeType);
+            if (m_ActivePivotRotation == null)
+                PivotManager.SetActivePivotRotation(PivotManager.defaultPivotRotationType);
+            
+            // Ensure the Tools pivot state is sync with EditorPivotManager state.
+            /* UUM-130229:
+               Multiple Tools SO instances can accumulate after a series of domain reloads.
+               Due to how its singleton pattern is implemented, the last instance that receives an OnEnable call becomes the "current" one.
+               This can cause the correct Tools pivot state to be dropped if the "domain reload survivor" Tools instance it not last one enabled.*/
+            if (m_ActivePivotMode != null)
+            {
+                var activePivotModeType = m_ActivePivotMode.GetType();
+                // Set Tools pivotMode state if it does not match EditorPivotManager's state
+                if (activePivotModeType == typeof(CenterPivotMode))
+                    Tools.pivotMode = PivotMode.Center;
+                else if (activePivotModeType == typeof(PivotPointPivotMode))
+                    Tools.pivotMode = PivotMode.Pivot;
+                else if (!IsBuiltInPivotMode(m_ActivePivotMode))
+                    Tools.pivotMode = PivotMode.Custom;
+                else
+                    Debug.LogError("Could not sync active pivot mode with any of the existing PivotMode enum values.");
+            }
+            
+            if (m_ActivePivotRotation != null)
+            {
+                var activeRotationType = m_ActivePivotRotation.GetType();
+                // Set Tools pivotRotation state if it does not match EditorPivotManager's state
+                if (activeRotationType == typeof(GlobalPivotRotation))
+                    Tools.pivotRotation = PivotRotation.Global;
+                else if (activeRotationType == typeof(LocalPivotRotation))
+                    Tools.pivotRotation = PivotRotation.Local;
+                else if (!IsBuiltInPivotRotation(m_ActivePivotRotation))
+                    Tools.pivotRotation = PivotRotation.Custom;
+                else 
+                    Debug.LogError("Could not sync active pivot rotation with any of the existing PivotRotation enum values.");
+            }
+        }
+        
         void FallbackActiveSettingsIfTargetsInvalid()
         {
             // If current active PivotMode is custom and incompatible with active tools, fallback to the last or default built-in pivot mode.

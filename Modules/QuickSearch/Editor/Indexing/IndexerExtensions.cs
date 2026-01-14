@@ -413,7 +413,7 @@ namespace UnityEditor.Search
                 indexer.MapProperty(propertyName, label ?? propertyName, null, "Vector4", ownerType?.AssemblyQualifiedName, removeNestedKeys: true);
         }
 
-        [SceneQueryEngineFilter("material", new[] { ":" }, "material:<$object:none,Material$>")]
+        [SceneQueryEngineFilter("material", new[] { ":", "=" }, "material=<$object:none,Material$>")]
         [System.ComponentModel.Description("Check if a MeshRenderer uses a specific material")]
         internal static bool FilterMeshRendererMaterials(GameObject go, string op, string value)
         {

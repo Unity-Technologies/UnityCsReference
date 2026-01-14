@@ -9,6 +9,7 @@ using UnityEngine;
 
 namespace Unity.Multiplayer.PlayMode.Editor
 {
+    [Serializable]
     class InitialiseFleetNode : MultiplayNode
     {
         private const string k_DefaultLocalHost = "127.0.0.1";

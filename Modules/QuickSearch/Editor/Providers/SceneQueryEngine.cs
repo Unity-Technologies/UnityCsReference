@@ -122,7 +122,7 @@ namespace UnityEditor.Search.Providers
             {
                 var layerName = InternalEditorUtility.GetLayerName(i);
                 if (!string.IsNullOrEmpty(layerName))
-                    layerFilter.AddOrUpdatePropositionData(label: ObjectNames.NicifyVariableName(layerName), data: layerName, replacement: $"<$layer:{i}, {layerName}$>");
+                    layerFilter.AddOrUpdatePropositionData(label: ObjectNames.NicifyVariableName(layerName), data: layerName, replacement: $"<$layer={i}, {layerName}$>");
             }
 
             var tagFilter = m_QueryEngine.GetFilter("tag")

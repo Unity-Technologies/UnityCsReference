@@ -91,7 +91,8 @@ namespace UnityEditor.PackageManager.UI.Internal
             if (version == null || version.isInstalled)
                 return false;
 
-            m_UpmClient.AddById(version.packageId);
+            // When there is an IPackageVersion, we know for sure that the packageId is in the PackageDatabase
+            m_UpmClient.AddById(version.packageId, false);
             return true;
         }
 
@@ -111,7 +112,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 Debug.LogWarning(InstallOrRemoveInProgressWarningMessage(packageId));
                 return false;
             }
-            m_UpmClient.AddById(packageId);
+            m_UpmClient.AddById(packageId, true);
             return true;
         }
 

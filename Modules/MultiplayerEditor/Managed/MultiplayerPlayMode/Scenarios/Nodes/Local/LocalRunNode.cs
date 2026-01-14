@@ -15,6 +15,7 @@ using Debug = UnityEngine.Debug;
 // [TODO] Defined proper way  to finish the nodes that would match the lifecycle of its thread.
 namespace Unity.Multiplayer.PlayMode.Editor
 {
+    [Serializable]
     internal class LocalRunNode : Node, IInstanceRunNode
     {
         private const int k_LogMonitorIntervalMS = 100;

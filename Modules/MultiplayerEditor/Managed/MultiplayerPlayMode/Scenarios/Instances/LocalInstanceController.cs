@@ -11,6 +11,7 @@ using UnityEngine;
 
 namespace Unity.Multiplayer.PlayMode.Editor
 {
+    [Serializable]
     class LocalInstanceController : PlayModeController
     {
         [SerializeReference] LocalInstanceDescription m_Settings;

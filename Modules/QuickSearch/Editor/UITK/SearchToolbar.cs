@@ -79,7 +79,7 @@ namespace UnityEditor.Search
             }
 
             // Search field
-            m_SearchField = new SearchFieldElement(nameof(SearchFieldElement), viewModel, useSearchGlobalEventHandler:true);
+            m_SearchField = new SearchFieldElement(nameof(SearchFieldElement), viewModel, SearchQueryBuilderViewFlags.Default);
             Add(m_SearchField);
 
             // Save query dropdown

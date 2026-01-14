@@ -445,16 +445,24 @@ namespace Unity.UI.Builder
         // Sub Document
         //
 
-        public void AddSubDocument(TemplateAsset vea = null)
+        public void AddSubDocumentInIsolation()
         {
             var newUXMLFile = new BuilderDocumentOpenUXML();
-
-            newUXMLFile.templateAsset = vea;
             newUXMLFile.openSubDocumentParentIndex = m_ActiveOpenUXMLFileIndex;
 
             m_OpenUXMLFiles.Add(newUXMLFile);
-            int newIndex = m_OpenUXMLFiles.Count - 1;
-            m_ActiveOpenUXMLFileIndex = newIndex;
+            m_ActiveOpenUXMLFileIndex = m_OpenUXMLFiles.Count - 1;
+        }
+
+        public void AddSubDocumentInContext(TemplateAsset templateAsset, int templateAssetIndex)
+        {
+            var newUXMLFile = new BuilderDocumentOpenUXML();
+            newUXMLFile.openSubDocumentParentIndex = m_ActiveOpenUXMLFileIndex;
+            newUXMLFile.templateAsset = templateAsset;
+            newUXMLFile.templateAssetIndex = templateAssetIndex;
+
+            m_OpenUXMLFiles.Add(newUXMLFile);
+            m_ActiveOpenUXMLFileIndex = m_OpenUXMLFiles.Count - 1;
         }
 
         void GoToSubdocument(BuilderDocumentOpenUXML targetDocument)
@@ -485,6 +493,21 @@ namespace Unity.UI.Builder
         {
             var parentDoc = paneWindow.document.openUXMLFiles[0];
             GoToSubdocument(documentRootElement, paneWindow, parentDoc, skipUnsavedChangesCheck);
+        }
+
+        public int GetTemplateAssetIndex(TemplateAsset templateAsset)
+        {
+            var allTemplates = activeOpenUXMLFile.visualTreeAsset.DepthFirstTraversalOfType<TemplateAsset>();
+            var index = 0;
+            foreach (var template in allTemplates)
+            {
+                if (template == templateAsset)
+                {
+                    return index;
+                }
+                index++;
+            }
+            return -1;
         }
 
         //

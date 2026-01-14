@@ -15,8 +15,15 @@ namespace UnityEditor.Search.Providers
     {
         public const string type = "adb";
         public const string filterId = "adb:";
+
+        // Used with context.searchWords.Contains so the + is necessary.
         public const string implicitToggle = "+implicit";
         public const string explicitToggle = "+explicit";
+        // Used with HasToggle: + must not be there.
+        public const string showAllHitsToggle = "showallhits";
+        public const string typeIntersectionToggle = "typeintersection";
+        public const string typeUnionToggle = "typeunion";
+
         public const string resourcesItemTag = "Resources";
         internal const string k_DefaultResources = "library/unity default resources";
         internal const string k_EditorResources = "library/unity editor resources";
@@ -57,11 +64,7 @@ namespace UnityEditor.Search.Providers
         {
             get
             {
-                if (m_ResourcesQueryEngine == null)
-                {
-                    m_ResourcesQueryEngine = new ObjectQueryEngine() { reportError = false };
-                }
-                return m_ResourcesQueryEngine;
+                return m_ResourcesQueryEngine ??= new ObjectQueryEngine() { reportError = false };
             }
         }
 
@@ -84,7 +87,7 @@ namespace UnityEditor.Search.Providers
 
         internal static string ConvertProjectQueryToAdb(string query, ref bool filterByTypeIntersection)
         {
-            var parsedQuery = UnityEditor.Search.Providers.AdbProvider.adbImplicitQueryEngine.ParseQuery(query);
+            var parsedQuery = UnityEditor.Search.Providers.AdbProvider.adbExplicitQueryEngine.ParseQuery(query);
             return ConvertProjectQueryToAdb(parsedQuery, ref filterByTypeIntersection);
         }
 
@@ -216,6 +219,7 @@ namespace UnityEditor.Search.Providers
             m_AdbImplicitQueryEngine = new QueryEngine<UnityEngine.Object>(options);
             m_AdbImplicitQueryEngine.AddFilter("t", k_Operators);
             m_AdbImplicitQueryEngine.AddFilter("l", k_Operators);
+            m_AdbImplicitQueryEngine.AddFilter("a", k_Operators);
             m_AdbImplicitQueryEngine.SetSearchDataCallback(GetWords);
         }
 
@@ -230,12 +234,21 @@ namespace UnityEditor.Search.Providers
             var filterType = context.filterType;
             var searchFilter = new SearchFilter
             {
-                searchArea = GetSearchArea(flags),
-                showAllHits = flags.HasAny(SearchFlags.WantsMore),
+                searchArea = SearchFilter.SearchArea.SelectedFolders, // Init to this value to see if the query itself contains an override for the area.
                 originalText = searchQuery
             };
+
             if (!string.IsNullOrEmpty(searchQuery))
+            {
                 SearchUtility.ParseSearchString(searchQuery, searchFilter);
+            }
+
+            // The query doesn't contain any area overrides: apply the are found in the context
+            if (searchFilter.searchArea == SearchFilter.SearchArea.SelectedFolders)
+            {
+                searchFilter.searchArea = flags.HasAny(SearchFlags.Packages) ? SearchFilter.SearchArea.AllAssets : SearchFilter.SearchArea.InAssetsOnly;
+            }
+
             if (filterType != null && searchFilter.classNames.Length == 0)
                 searchFilter.classNames = new [] { filterType.Name };
 
@@ -277,31 +290,32 @@ namespace UnityEditor.Search.Providers
             if (string.IsNullOrEmpty(context.searchQuery) && context.filterType == null)
                 yield break;
 
-            var searchQuery = context.searchQuery;
-            var filterByTypeIntersection = true;
+            ParsedQuery<UnityEngine.Object> parsedQuery;
             if (IsExplicitQuery(context))
             {
                 // This is an explicit query on the provider, used the full query engine
-                var parsedQuery = adbExplicitQueryEngine.ParseQuery(context.searchQuery);
-                if (parsedQuery != null && !parsedQuery.valid)
-                {
-                    context.AddSearchQueryErrors(parsedQuery.errors.Select(e => new SearchQueryError(e, context, provider)));
-                    yield break;
-                }
+                parsedQuery = adbExplicitQueryEngine.ParseQuery(context.searchQuery);
             }
             else
             {
                 // This is an implicit query that hits the ADBProvider because useExplicitProvider is true. Only support subset that is compatible with asset provider.
-                var parsedQuery = adbImplicitQueryEngine.ParseQuery(context.searchQuery);
-                if (parsedQuery != null && !parsedQuery.valid)
-                {
-                    context.AddSearchQueryErrors(parsedQuery.errors.Select(e => new SearchQueryError(e, context, provider)));
-                    yield break;
-                }
-                searchQuery = ConvertProjectQueryToAdb(parsedQuery, ref filterByTypeIntersection);
-                if (searchQuery == null)
-                    yield break;
+                parsedQuery = adbImplicitQueryEngine.ParseQuery(context.searchQuery);
             }
+
+            if (parsedQuery == null)
+                yield break;
+
+            if (!parsedQuery.valid)
+            {
+                context.AddSearchQueryErrors(parsedQuery.errors.Select(e => new SearchQueryError(e, context, provider)));
+                yield break;
+            }
+
+            // Convert OR with type, get rid of toggles.
+            var filterByTypeIntersection = true;
+            var searchQuery = ConvertProjectQueryToAdb(parsedQuery, ref filterByTypeIntersection);
+            if (searchQuery == null)
+                yield break;
 
             // Search asset database
             var searchFilter = CreateSearchFilter(searchQuery, context);
@@ -310,7 +324,9 @@ namespace UnityEditor.Search.Providers
 
             // Note: by default ADB search assumes all type searching uses a boolean implicit OR: t:Texture t:AudioClip => t:Texture OR t:AudioClip
             // This switch make the ADB search use an explicit AND instead: t:Texture t:AudioClip => t:Texture AND t:AudioClip
-            searchFilter.filterByTypeIntersection = filterByTypeIntersection;            
+            searchFilter.filterByTypeIntersection = (filterByTypeIntersection || parsedQuery.HasToggle(typeIntersectionToggle)) && !parsedQuery.HasToggle(typeUnionToggle);
+            searchFilter.showAllHits = searchFilter.showAllHits || parsedQuery.HasToggle(showAllHitsToggle);
+
             foreach (var id in EnumerateInstanceIDs(searchFilter))
             {
                 var path = AssetDatabase.GetAssetPath((EntityId)id);
@@ -330,11 +346,11 @@ namespace UnityEditor.Search.Providers
                 yield return item;
             }
 
-            // Search builtin resources
-            var resources = GetAllResourcesAtPath(k_DefaultResources)
-                .Concat(GetAllResourcesAtPath(k_BuiltinExtraResources));
+            // Builtin extra are always searched (similar to Legacy picker)
+            var resources = GetAllResourcesAtPath(k_BuiltinExtraResources);
+            // Add editorResources and defaultResources if needed.
             if (context.wantsMore)
-                resources = resources.Concat(GetAllResourcesAtPath(k_EditorResources));
+                resources = resources.Concat(GetAllResourcesAtPath(k_EditorResources)).Concat(GetAllResourcesAtPath(k_DefaultResources));
 
             if (context.filterType != null)
                 resources = resources.Where(r => context.filterType.IsAssignableFrom(r.GetType()));
@@ -347,10 +363,18 @@ namespace UnityEditor.Search.Providers
             foreach (var obj in resources)
             {
                 if (!obj)
+                {
+                    yield return null;
                     continue;
+                }
+
                 var gid = GlobalObjectId.GetGlobalObjectIdSlow(obj);
                 if (gid.identifierType == 0)
+                {
+                    yield return null;
                     continue;
+                }
+
                 // If this ever changes and we no longer use the AssetProvider to create items, please update the test SearchEngineTests.ProjectSearch_AlwaysReturnsPaths
                 yield return AssetProvider.CreateItem(resourcesItemTag, context, provider, gid.ToString(), null, 1998, SearchDocumentFlags.Resources);
             }
@@ -419,7 +443,7 @@ namespace UnityEditor.Search.Providers
         }
     }
 
-    [QueryListBlock("Bundle", "bundle", "b", ":")]
+    [QueryListBlock("Bundle", "bundle", "b")]
     class QueryBundleFilterBlock : QueryListBlock
     {
         public QueryBundleFilterBlock(IQuerySource source, string id, string value, QueryListBlockAttribute attr)
@@ -433,7 +457,8 @@ namespace UnityEditor.Search.Providers
             var bundleNames = AssetDatabase.GetAllAssetBundleNames();
             foreach (var bundleName in bundleNames)
             {
-                yield return CreateProposition(flags, bundleName, bundleName, $"Search inside bundle \"{bundleName}\"");
+                var bundleStr = SearchUtils.EscapeLiteralString(bundleName);
+                yield return CreateProposition(flags, bundleName, bundleStr, $"Search inside bundle {bundleStr}");
             }
         }
     }

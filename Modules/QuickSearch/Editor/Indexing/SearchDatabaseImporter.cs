@@ -118,6 +118,11 @@ namespace UnityEditor.Search
             }
         }
 
+        public static bool NeedTestProjectTemplate()
+        {
+            return Search.Utils.UseDeveloperPreferences();
+        }
+
         public static string CreateTemplateIndex(string template, string path, string name = null, string settings = null)
         {
             if (settings == null && !SearchDatabaseTemplates.all.ContainsKey(template))

@@ -238,17 +238,16 @@ namespace UnityEngine.TextCore.Text
         protected TextStyleSheet m_DefaultStyleSheet;
 
         /// <summary>
-        /// The relative path to a Resources folder in the project where the text system will look to load style sheets.
-        /// The default location is "Resources/Style Sheets".
+        /// This property is obsolete and no longer used. It will be removed in a future version.
         /// </summary>
+        [Obsolete("styleSheetsResourcePath is no longer used and will be removed in a future version.", false)]
         public string styleSheetsResourcePath
         {
             get => m_StyleSheetsResourcePath;
             set => m_StyleSheetsResourcePath = value;
         }
 
-        [SerializeField]
-        protected string m_StyleSheetsResourcePath = "Text Style Sheets/";
+        string m_StyleSheetsResourcePath = "Text Style Sheets/";
 
         /// <summary>
         /// The relative path to a Resources folder in the project where the text system will look to load color gradient presets.

@@ -16,3 +16,4 @@ using System.Runtime.CompilerServices;
 [assembly: InternalsVisibleTo("Unity.Multiplayer.PlayMode.Services.Editor")]
 [assembly: InternalsVisibleTo("Unity.Multiplayer.Workflows.IntegrationTests.PlayMode.Editor")]
 [assembly: InternalsVisibleTo("Unity.Multiplayer.Workflows.Tests.Common.Editor")]
+[assembly: InternalsVisibleTo("UnityEditor.QuickSearchModule")]

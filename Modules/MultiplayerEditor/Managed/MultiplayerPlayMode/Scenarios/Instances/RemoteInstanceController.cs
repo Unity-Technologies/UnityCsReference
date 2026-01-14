@@ -13,6 +13,7 @@ using static Unity.Multiplayer.PlayMode.Editor.ScenarioFactory;
 
 namespace Unity.Multiplayer.PlayMode.Editor
 {
+    [Serializable]
     class RemoteInstanceController : PlayModeController
     {
         [SerializeReference] RemoteInstanceDescription m_Settings;

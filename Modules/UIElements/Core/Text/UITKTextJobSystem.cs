@@ -268,7 +268,7 @@ namespace UnityEngine.UIElements
 
                 int remainingVertexCount = meshInfo.vertexCount;
                 int vSrc = 0;
-                while (remainingVertexCount > 0)
+                do
                 {
                     int vertexCount = Mathf.Min(remainingVertexCount, verticesPerAlloc);
                     int quadCount = vertexCount >> 2;
@@ -300,7 +300,7 @@ namespace UnityEngine.UIElements
                     indicesArray.Add(indices);
 
                     remainingVertexCount -= vertexCount;
-                }
+                } while (remainingVertexCount > 0);
 
                 Debug.Assert(remainingVertexCount == 0);
             }

@@ -6,6 +6,7 @@ using System;
 
 namespace Unity.Multiplayer.PlayMode.Editor
 {
+    [Serializable]
     internal abstract class MultiplayNode : Node
     {
         protected MultiplayNode(string name) : base(name) {}

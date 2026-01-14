@@ -142,7 +142,14 @@ namespace UnityEditor
 
         internal void OnLostFocus()
         {
-            m_TreeView.currentProvider?.OnFocusLost();
+            try
+            {
+                m_TreeView.currentProvider?.OnFocusLost();
+            }
+            catch (Exception e)
+            {
+                Debug.LogException(e);
+            }
         }
 
         internal void FilterProviders(string search)
@@ -261,7 +268,14 @@ namespace UnityEditor
 
         internal void OnInspectorUpdate()
         {
-            m_TreeView.currentProvider?.OnInspectorUpdate();
+            try
+            {
+                m_TreeView.currentProvider?.OnInspectorUpdate();
+            }
+            catch (Exception e)
+            {
+                Debug.LogException(e);
+            }
         }
 
         private void OnUndoRedoPerformed(in UndoRedoInfo info)
@@ -515,8 +529,23 @@ namespace UnityEditor
                 {
                     EditorGUIUtility.wideMode = true;
                 }
-                m_TreeView.currentProvider.OnGUI(m_SearchText);
-                EditorGUIUtility.wideMode = currentWideMode;
+
+                try
+                {
+                    m_TreeView.currentProvider.OnGUI(m_SearchText);
+                }
+                catch (ExitGUIException e)
+                {
+                    throw e;
+                }
+                catch (Exception e)
+                {
+                    Debug.LogException(e);
+                }
+                finally
+                {
+                    EditorGUIUtility.wideMode = currentWideMode;
+                }
             }
         }
 
@@ -527,13 +556,30 @@ namespace UnityEditor
             var headerContent = new GUIContent(m_TreeView.currentProvider.label, Styles.header.GetBool("-unity-show-icon") ? m_TreeView.currentProvider.icon : null);
             GUILayout.Label(headerContent, ImguiStyles.header, GUILayout.MaxHeight(Styles.header.GetFloat("max-height")), GUILayout.MinWidth(160));
             GUILayout.FlexibleSpace();
-            m_TreeView.currentProvider.OnTitleBarGUI();
-            GUILayout.EndHorizontal();
+            try
+            {
+                m_TreeView.currentProvider.OnTitleBarGUI();
+            }
+            catch (Exception e)
+            {
+                Debug.LogException(e);
+            }
+            finally
+            {
+                GUILayout.EndHorizontal();
+            }
         }
 
         private void DrawFooterBar()
         {
-            m_TreeView.currentProvider.OnFooterBarGUI();
+            try
+            {
+                m_TreeView.currentProvider.OnFooterBarGUI();
+            }
+            catch (Exception e)
+            {
+                Debug.LogException(e);
+            }
         }
 
         private void DrawTreeView()

@@ -804,6 +804,17 @@ namespace Unity.UI.Builder
                 return false;
             }
 
+            if (fieldElement.GetProperty(BuilderConstants.FoldoutFieldPropertyName) is FoldoutField foldout)
+            {
+                foldout.UpdateFromChildFields();
+
+                // disable initially so we can check if we have any overridden fields, otherwise it'll think of the header as an overriden field (UUM-53358)
+                foldout.header.EnableInClassList(BuilderConstants.InspectorLocalStyleOverrideClassName, false);
+
+                var hasOverriddenField = BuilderInspectorUtilities.HasOverriddenField(foldout);
+                foldout.header.EnableInClassList(BuilderConstants.InspectorLocalStyleOverrideClassName, hasOverriddenField);
+            }
+
             var val = StyleDebug.GetComputedStyleValue(currentVisualElement.computedStyle, styleName);
             var cSharpStyleName = BuilderNameUtilities.ConvertUssNameToStyleName(styleName);
             var styleProperty = GetLastStyleProperty(currentRule, cSharpStyleName);
@@ -2169,6 +2180,7 @@ namespace Unity.UI.Builder
                     if (elementHasBinding && removeBinding)
                     {
                         m_Inspector.attributeSection.RemoveBindingFromSerializedData(fieldElement, bindingProperty);
+                        ResetInlineStyle(styleName);
                     }
                 }
 

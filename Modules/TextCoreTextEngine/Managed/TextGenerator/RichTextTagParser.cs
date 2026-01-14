@@ -1479,6 +1479,31 @@ namespace UnityEngine.TextCore
 
             return false;
         }
+		
+		const string k_StyleTag = "<style=\"";
+        internal static bool ContainsStyleTags(string text)
+        {
+            if (string.IsNullOrEmpty(text))
+                return false;
+
+            ReadOnlySpan<char> source = text.AsSpan();
+            ReadOnlySpan<char> tag = k_StyleTag.AsSpan();
+
+            int tagIndex = source.IndexOf(tag, StringComparison.Ordinal);
+
+            if (tagIndex < 0)
+                return false;
+
+            int startIndex = tagIndex + tag.Length;
+            for (int i = startIndex; i < source.Length; i++)
+            {
+                if (source[i] == '>')
+                    return true;
+            }
+
+            return false;
+        }
+		
 
         [VisibleToOtherModules("UnityEngine.UIElementsModule", "UnityEngine.IMGUIModule")]
         internal static bool HasFontTags(string text, TextSettings textSettings, out List<string> fontAssetNames)

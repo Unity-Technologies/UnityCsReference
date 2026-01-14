@@ -267,7 +267,7 @@ namespace Unity.Hierarchy.Editor
 
             m_SearchView = new HierarchySearchView(this);
             m_SearchView.state.queryBuilderEnabled = HierarchyPreferences.UseQueryBuilder;
-            m_SearchField = new SearchFieldElement(nameof(SearchFieldElement), m_SearchView, false);
+            m_SearchField = new SearchFieldElement(nameof(SearchFieldElement), m_SearchView, SearchQueryBuilderViewFlags.None);
             var addNewBlockContent = EditorGUIUtility.IconContent("search_menu");
             m_SearchField.addNewBlockIcon = (Texture2D)addNewBlockContent.image;
             toolbar.Add(m_SearchField);

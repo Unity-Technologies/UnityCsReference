@@ -240,7 +240,8 @@ namespace UnityEditor.Search
             hideTabs = ReadSetting(settings, nameof(hideTabs), false);
 
             // Default if not a source build
-            indexOnEditorStartup = ReadSetting(settings, nameof(indexOnEditorStartup), !Unsupported.IsSourceBuild(checkHumanControllingUs: false));
+            var indexOnStartUpDefault = !Utils.UseDeveloperPreferences() && Utils.IsMainProcess();
+            indexOnEditorStartup = ReadSetting(settings, nameof(indexOnEditorStartup), indexOnStartUpDefault);
 
             // Default is always false. If we want to log this data at all times, we should log it in the Log folder.
             logIndexingPerformanceReport = ReadSetting(settings, nameof(logIndexingPerformanceReport), false);

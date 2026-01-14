@@ -78,6 +78,8 @@ namespace UnityEditor
 
         internal static MainToolbarWindow instance;
 
+        MainToolbarAnalytics m_Analytics;
+
         OverlayCanvasMode ISupportsOverlaysCustomMode.overlayCanvasMode => OverlayCanvasMode.MainToolbar;
 
         string[] m_UniqueMenuCategories;
@@ -139,7 +141,7 @@ namespace UnityEditor
                 overlayCanvas.ApplySaveData(data.m_SaveData.ToArray(), data.m_DynamicPanelContainerData.ToArray());
             }
 
-            overlayCanvas.presetChanged += UpdateLatestSaveState;
+            overlayCanvas.presetChanged += OnPresetChanged;
 
             // Setup initial save state
             if (OverlayCanvasesData.instance.toolbarSaveState.overlays == null
@@ -147,6 +149,13 @@ namespace UnityEditor
             {
                 UpdateLatestSaveState();
             }
+
+            m_Analytics = new MainToolbarAnalytics(this);
+        }
+
+        void OnPresetChanged()
+        {
+            UpdateLatestSaveState();
         }
 
         void UpdateLatestSaveState()
@@ -156,8 +165,10 @@ namespace UnityEditor
 
         void OnDisable()
         {
+            overlayCanvas.presetChanged -= OnPresetChanged;
             EditorApplication.modifierKeysChanged -= OnModifierKeyChanged;
             OverlayCanvasesData.instance.SetLastActiveCanvasForWindowType(overlayCanvas);
+            m_Analytics.Dispose();
         }
 
         void CreateGUI()

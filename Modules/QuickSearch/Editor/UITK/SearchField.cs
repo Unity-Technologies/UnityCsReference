@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEditor.UIElements;
@@ -11,6 +12,15 @@ using UnityEngine.UIElements;
 
 namespace UnityEditor.Search
 {
+    [Flags]
+    enum SearchQueryBuilderViewFlags
+    {
+        None = 0,
+        UseSearchGlobalEventHandler = 1 << 0,
+        BlocksSupportExclude = 1 << 1,
+        Default = UseSearchGlobalEventHandler | BlocksSupportExclude
+    }
+
     class SearchFieldElement : SearchElement
     {
         enum FocusType
@@ -75,7 +85,7 @@ namespace UnityEditor.Search
         private readonly UndoManager m_UndoManager;
         private readonly Label m_SearchPlaceholder;
         private readonly Label m_PressTabPlaceholder;
-        private readonly bool m_UseSearchGlobalEventHandler;
+        private readonly SearchQueryBuilderViewFlags m_BuilderViewFlags;
         private Button m_CancelButton;
 
         const float k_PlaceholdersTouchThreshold = 2f;
@@ -130,11 +140,11 @@ namespace UnityEditor.Search
         public static readonly string searchFieldPlaceholderClassName = "search-field-placeholder";
         public static readonly string searchFieldMultilineClassName = "search-field-multiline";
 
-        public SearchFieldElement(string name, ISearchView viewModel, bool useSearchGlobalEventHandler)
+        public SearchFieldElement(string name, ISearchView viewModel, SearchQueryBuilderViewFlags builderViewFlags)
             : base(name, viewModel)
         {
             this.name = name;
-            m_UseSearchGlobalEventHandler = useSearchGlobalEventHandler;
+            m_BuilderViewFlags = builderViewFlags;
             m_SearchPlaceholder = new Label($"Search {viewState.title}");
             m_SearchPlaceholder.AddToClassList(searchFieldPlaceholderClassName);
             m_SearchPlaceholder.style.paddingLeft = 4f;
@@ -184,7 +194,7 @@ namespace UnityEditor.Search
 
             if (viewState.queryBuilderEnabled)
             {
-                var queryBuilderView = new SearchQueryBuilderView("SearchQueryBuilder", m_ViewModel, searchField, m_UseSearchGlobalEventHandler);
+                var queryBuilderView = new SearchQueryBuilderView("SearchQueryBuilder", m_ViewModel, searchField, m_BuilderViewFlags);
                 searchField.Insert(1, queryBuilderView);
                 searchField.RegisterCallback<ChangeEvent<string>>(OnQueryChanged);
                 m_SearchTextInput = queryBuilderView;

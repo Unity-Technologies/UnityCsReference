@@ -367,6 +367,7 @@ namespace UnityEditor.Overlays
 
 
         List<OverlayContainer> m_Containers;
+        HashSet<MainToolbarOverlay> m_NewMainToolbarOverlays = new HashSet<MainToolbarOverlay>();
 
         internal IEnumerable<OverlayContainer> containers => m_Containers;
 
@@ -1200,10 +1201,24 @@ namespace UnityEditor.Overlays
                         data.dockPosition = (DockPosition)(int)attr.defaultDockPosition;
                         data.displayed = mtOverlay.createElementMethod.GetCustomAttribute<UnityOnlyMainToolbarPresetAttribute>() != null;
                     }
+
+                    m_NewMainToolbarOverlays.Add(mtOverlay);
                 }
             }
 
             return data;
+        }
+
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        internal IEnumerable<MainToolbarOverlay> GetNewMainToolbarOverlaysBuffer()
+        {
+            return m_NewMainToolbarOverlays;
+        }
+
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        internal void ClearNewMainToolbarOverlaysBuffer()
+        {
+            m_NewMainToolbarOverlays.Clear();
         }
 
         internal void ClearHighlights()

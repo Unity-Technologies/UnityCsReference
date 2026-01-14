@@ -10,6 +10,7 @@ using UnityEngine.Assertions;
 
 namespace Unity.Multiplayer.PlayMode.Editor
 {
+    [Serializable]
     class RunServerNode : MultiplayNode, IInstanceRunNode
     {
         // The monitoring task will send requests to the server every interval to get the logs

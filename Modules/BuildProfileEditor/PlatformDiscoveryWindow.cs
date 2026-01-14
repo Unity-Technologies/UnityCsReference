@@ -386,7 +386,15 @@ namespace UnityEditor.Build.Profile
             m_SelectedCard = card;
             m_SelectedDisplayNameLabel.text = card.displayName;
             m_SelectedCardImage.image = BuildProfileModuleUtil.GetPlatformIconHero(card.platformId);
-            m_AddtionalInfoLabel.text = BuildProfileModuleUtil.GetSubtitle(card.platformId);
+            string subtitle = BuildProfileModuleUtil.GetSubtitle(card.platformId);
+            if (subtitle.Contains("deprecated"))
+            {
+                m_AddtionalInfoLabel.Add(new HelpBox(subtitle, HelpBoxMessageType.Warning));
+            }
+            else
+            {
+                m_AddtionalInfoLabel.text = subtitle;
+            }
 
             // Only color if not a default color and color can be parsed.
             if (!card.platformBannerBgColorHex.Equals("#00000000") && ColorUtility.TryParseHtmlString(card.platformBannerBgColorHex, out Color bgColor))

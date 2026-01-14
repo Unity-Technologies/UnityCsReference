@@ -537,17 +537,17 @@ namespace UnityEditor.Search
             if (category != null)
             {
                 // Note: since GameObject is NOT the same as prefab, we chose not to set any data and blocktype so the propsition must use the replacement text:
-                yield return new SearchProposition(category: category, label: "Prefabs", replacement: "t:prefab",
+                yield return new SearchProposition(category: category, label: "Prefabs", replacement: "t=prefab",
                     icon: GetTypeIcon(typeof(GameObject)), data: null, type: null, priority: priority, color: QueryColors.type);
             }
 
             if (string.Equals(category, "Types", StringComparison.Ordinal))
             {
-                yield return new SearchProposition(category: "Types", label: "Scripts", replacement: "t:script",
+                yield return new SearchProposition(category: "Types", label: "Scripts", replacement: "t=script",
                     icon: GetTypeIcon(typeof(MonoScript)), data: typeof(MonoScript), type: blockType, priority: priority, color: QueryColors.type);
-                yield return new SearchProposition(category: "Types", label: "Scenes", replacement: "t:scene",
+                yield return new SearchProposition(category: "Types", label: "Scenes", replacement: "t=scene",
                     icon: GetTypeIcon(typeof(SceneAsset)), data: typeof(SceneAsset), type: blockType, priority: priority, color: QueryColors.type);
-                yield return new SearchProposition(category: "Types", label: "Presets", replacement: "t:preset",
+                yield return new SearchProposition(category: "Types", label: "Presets", replacement: "t=preset",
                     icon: GetTypeIcon(typeof(Presets.Preset)), data: typeof(Presets.Preset), type: blockType, priority: priority, color: QueryColors.type);
             }
 
@@ -565,7 +565,7 @@ namespace UnityEditor.Search
                     priority: t.Name[0] + priority,
                     category: category,
                     label: t.Name,
-                    replacement: $"t:{t.Name}",
+                    replacement: $"t={t.Name}",
                     data: t,
                     help: $"Search {ObjectNames.NicifyVariableName(t.Name)}",
                     type: blockType,

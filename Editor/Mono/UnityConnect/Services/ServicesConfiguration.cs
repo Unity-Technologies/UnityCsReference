@@ -149,7 +149,7 @@ namespace UnityEditor.Connect
             m_ProjectApiUrl = m_ProjectsApiUrl + "/{1}";
             m_ProjectCoppaApiUrl = m_ProjectApiUrl + "/coppa";
             m_ProjectUsersApiUrl = m_ProjectApiUrl + "/users";
-            m_ProjectDashboardUrl = m_ServicesUrlsConfig["core"] + "/orgs/{0}/projects/{1}";
+            m_ProjectDashboardUrl = m_ServicesUrlsConfig["build"] + "/organizations/{0}/projects/{1}";
             m_ProjectServiceFlagsApiUrl = m_ApiUrl + "/projects/{0}/service_flags"; //no org to specify
 
             m_CloudBuildProjectUrl = m_ServicesUrlsConfig["build"] + "/build/orgs/{0}/projects/{1}";
@@ -552,31 +552,6 @@ namespace UnityEditor.Connect
             });
         }
 
-        /// <summary>
-        /// Requests the current project dashboard url
-        /// </summary>
-        /// <param name="callback"></param>
-        /// <returns></returns>
-        public void RequestCurrentProjectDashboardUrl(Action<string> callback)
-        {
-            RequestProjectDashboardUrl(UnityConnect.instance.projectInfo.organizationId, UnityConnect.instance.projectInfo.projectId, callback);
-        }
-
-        /// <summary>
-        /// Requests a specified project dashboard url
-        /// </summary>
-        /// <param name="organizationId">Identical to organization name at the time of this comment</param>
-        /// <param name="projectId">A project's ID</param>
-        /// <param name="callback"></param>
-        /// <returns></returns>
-        public void RequestProjectDashboardUrl(string organizationId, string projectId, Action<string> callback)
-        {
-            RequestAsyncUrl(AsyncUrlId.ProjectDashboardUrl, projectDashboardUrl =>
-            {
-                callback(string.Format(projectDashboardUrl, organizationId, projectId));
-            });
-        }
-
         public void RequestCurrentProjectServiceFlagsApiUrl(Action<string> callback)
         {
             RequestProjectServiceFlagsApiUrl(UnityConnect.instance.projectInfo.projectGUID, callback);
@@ -587,15 +562,6 @@ namespace UnityEditor.Connect
             RequestAsyncUrl(AsyncUrlId.ProjectServiceFlagsApiUrl, projectServiceFlagsApiUrl =>
             {
                 callback(string.Format(projectServiceFlagsApiUrl, projectGUID));
-            });
-        }
-
-        // Return the specific Cloud Usage URL for the Collab service
-        public void RequestCloudUsageDashboardUrl(Action<string> callback)
-        {
-            RequestCurrentProjectDashboardUrl(cloudUsageDashboardUrl =>
-            {
-                callback(cloudUsageDashboardUrl + k_CloudUsageDashboardUrl);
             });
         }
 

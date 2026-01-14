@@ -20,6 +20,20 @@ namespace UnityEditor.Shaders
             SingleVariantWithDynamicBranching
         }
 
+        internal static bool IsEmptyKeyword(string keyword)
+        {
+            if (keyword.Length == 0)
+                return false;
+
+            bool isEmptyKeyword = true;
+            foreach (var c in keyword)
+            {
+                if (!c.Equals('_'))
+                    isEmptyKeyword = false;
+            }
+            return isEmptyKeyword;
+        }
+
         [RequiredByNativeCode(GenerateProxy = true)]
         [Serializable]
         public struct KeywordOverrideInfo
@@ -90,9 +104,12 @@ namespace UnityEditor.Shaders
                 // Duplicate detection
                 for (int i = 0, n = keywords.Length; i < n; ++i)
                 {
+                    bool isEmptyKeyword = IsEmptyKeyword(keywords[i].name);
+
                     for (int j = i + 1; j < n; ++j)
                     {
-                        if (keywords[i].name.Equals(keywords[j].name))
+                        if ((keywords[i].name == keywords[j].name) ||
+                            (isEmptyKeyword && IsEmptyKeyword(keywords[j].name)))
                         {
                             msg = "Duplicate keywords: " + keywords[i].name;
                             return false;
@@ -102,6 +119,27 @@ namespace UnityEditor.Shaders
 
                 msg = "";
                 return true;
+            }
+
+            internal bool FindMatchingKeyword(string keyword, out KeywordOverrideInfo foundElement)
+            {
+                if (keyword.Length > 0 && keywords != null)
+                {
+                    bool isEmptyKeyword = IsEmptyKeyword(keyword);
+
+                    foreach (var k in keywords)
+                    {
+                        if ((k.name == keyword) ||
+                            (isEmptyKeyword && IsEmptyKeyword(k.name)))
+                        {
+                            foundElement = k;
+                            return true;
+                        }
+                    }
+                }
+
+                foundElement = new KeywordOverrideInfo();
+                return false;
             }
 
             internal bool EqualKeywords(KeywordDeclarationOverride other)
@@ -116,17 +154,7 @@ namespace UnityEditor.Shaders
 
                 for (int i = 0, n = keywords.Length; i < n; ++i)
                 {
-                    bool foundMatch = false;
-                    for (int j = 0; j < n; ++j)
-                    {
-                        if (keywords[i].name.Equals(other.keywords[j].name))
-                        {
-                            foundMatch = true;
-                            j = n;
-                        }
-                    }
-
-                    if (!foundMatch)
+                    if (!other.FindMatchingKeyword(keywords[i].name, out _))
                         return false;
                 }
 
