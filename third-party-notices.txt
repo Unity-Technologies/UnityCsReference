@@ -1,1 +1,1 @@
-For more information about third party notices please refer to the Unity release page: https://unity.com/releases/editor/whats-new/2022.3.70f1#third-party-notices
+For more information about third party notices please refer to the Unity release page: https://unity.com/releases/editor/whats-new/2022.3.71f1#third-party-notices
