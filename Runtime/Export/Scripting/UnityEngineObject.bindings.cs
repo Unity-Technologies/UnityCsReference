@@ -171,10 +171,10 @@ namespace UnityEngine
 
         public bool Equals(int other) => m_Data == (int)other;
 
-        [Obsolete("Use GetRawData() instead. This will be removed in a future version.", false)]
+        [Obsolete("EntityId will not be representable by an int in the future. This casting operator will be removed in a future version.", false)]
         public static implicit operator int(EntityId entityId) => entityId.m_Data;
 
-        [Obsolete("Use From(int) instead. This will be removed in a future version.", false)]
+        [Obsolete("EntityId will not be representable by an int in the future. This casting operator will be removed in a future version.", false)]
         public static implicit operator EntityId(int intValue) => new EntityId {m_Data = intValue};
 
         [Obsolete("",false)]

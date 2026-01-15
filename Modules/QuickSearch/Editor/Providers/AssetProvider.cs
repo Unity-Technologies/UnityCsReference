@@ -484,9 +484,9 @@ namespace UnityEditor.Search.Providers
 
             yield return new SearchProposition(category: "Filters", label: "Directory (Name)", replacement: "dir:\"folder name\"", help:"Assets in a specific folder",icon: Icons.quicksearch, color: QueryColors.filter);
             yield return new SearchProposition(category: "Filters", label: "File Size", replacement: "size>=8096", help: "Assets with a specific size in bytes", icon: Icons.quicksearch, color: QueryColors.filter);
-            yield return new SearchProposition(category: "Filters", label: "File Extension", replacement: "ext:png", help:"Assets with a specific extension", icon: Icons.quicksearch, color: QueryColors.filter);
+            yield return new SearchProposition(category: "Filters", label: "File Extension", replacement: "ext=png", help:"Assets with a specific extension", icon: Icons.quicksearch, color: QueryColors.filter);
             yield return new SearchProposition(category: "Filters", label: "Age", replacement: "age>=1.5", help: "In days, when was the file last modified?", icon: Icons.quicksearch, color: QueryColors.filter);
-            yield return new SearchProposition(category: "Filters", label: "Sub Asset", replacement: "is:subasset", help: "Yield nested assets (i.e. media from FBX files)", icon: Icons.quicksearch, color: QueryColors.filter);
+            yield return new SearchProposition(category: "Filters", label: "Sub Asset", replacement: "is=subasset", help: "Yield nested assets (i.e. media from FBX files)", icon: Icons.quicksearch, color: QueryColors.filter);
             yield return new SearchProposition(category: "Filters", label: "Name", replacement: "name=", help: "Search asset by object name", icon: Icons.quicksearch, color: QueryColors.filter);
 
             var sceneIcon = Utils.LoadIcon("SceneAsset Icon");
@@ -509,10 +509,17 @@ namespace UnityEditor.Search.Providers
             }
 
             yield return new SearchProposition(
-                category: "Area (Index)",
-                label: db.name,
-                replacement: $"a:{db.name}",
-                help: $"Search assets index by {db.name}.index",
+                category: "Area",
+                label: "Assets",
+                replacement: $"a=assets",
+                help: $"Search assets in projects",
+                color: QueryColors.type,
+                icon: Icons.quicksearch);
+            yield return new SearchProposition(
+                category: "Area",
+                label: "Packages",
+                replacement: $"a=packages",
+                help: $"Search assets in packages",
                 color: QueryColors.type,
                 icon: Icons.quicksearch);
             foreach (var prop in s_KeywordPropositions)

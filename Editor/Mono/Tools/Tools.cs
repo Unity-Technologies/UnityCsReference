@@ -166,20 +166,13 @@ namespace UnityEditor
                 return EditorPivotManager.activePivotMode.position + totalOffset;
             }
         }
-
-        // For custom pivots, we essentially want to do handle rotations same way as when in Global Pivot rotation but without  
-        // having to resort to storing intermediate state in m_GlobalHandleRotation for active rotation persistence/delta calculation.
-        // We don't want this because m_GlobalHandleRotation can be implicitly set for Global pivots through public API (Tools.handleRotation)
-        // and that would interfere with what a custom implementation might be trying to return instead.
-        // ActiveRotationTracker is used instead to track the intermediate handle rotation for all custom pivot rotation implementations.
-        ActiveRotationTracker m_ActiveRotationTracker = new ();
-        internal static ActiveRotationTracker activeRotationTracker => get.m_ActiveRotationTracker;
         
         public static Rect handleRect
         {
             get
             {
                 var rotation = handleRotation;
+                var activeRotationTracker = EditorPivotManager.activeRotationTracker;
                 if ((pivotRotation == PivotRotation.Custom || pivotRotation == PivotRotation.Grid) && activeRotationTracker.isRotationControlHot)
                     rotation = activeRotationTracker.rotation;
                 
@@ -194,6 +187,7 @@ namespace UnityEditor
             get
             {
                 var rotation = handleRotation;
+                var activeRotationTracker = EditorPivotManager.activeRotationTracker;
                 if ((pivotRotation == PivotRotation.Custom || pivotRotation == PivotRotation.Grid) && activeRotationTracker.isRotationControlHot)
                     rotation = activeRotationTracker.rotation;
                 
@@ -481,6 +475,8 @@ namespace UnityEditor
             s_Get = this;
 
             rectBlueprintMode = EditorPrefs.GetBool("RectBlueprintMode", false);
+            
+            EditorPivotManager.instance.SyncToolsPivotStateIfNeeded();
             
             var layerSettings = s_LayersStateCache.GetState(m_LayerSettingsKey, new LayerSettings(-1, 0));
             visibleLayers = layerSettings.visibleLayersValue;

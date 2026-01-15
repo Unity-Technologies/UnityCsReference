@@ -108,13 +108,14 @@ namespace UnityEditor.PackageManager.UI.Internal
             Start();
         }
 
-        public void AddById(string versionId)
+        public void AddById(string versionId, bool isUnlistedPackage)
         {
             m_PackageIdsToReset = new string[0];
             m_PackageIdsToAdd = new  [] {versionId};
             m_PackagesNamesToRemove = new string[0];
             m_PackageIdOrName = versionId;
-            m_SpecialUniqueId = string.Empty;
+            // Unlisted packages potentially can't be found in the package database so we treat it the same way as if it's from git/url/path
+            m_SpecialUniqueId = isUnlistedPackage ? versionId : string.Empty;
             Start();
         }
 

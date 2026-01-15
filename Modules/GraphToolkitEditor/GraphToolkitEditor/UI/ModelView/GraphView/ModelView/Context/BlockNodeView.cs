@@ -41,6 +41,7 @@ namespace Unity.GraphToolkit.Editor
         internal static readonly CustomStyleProperty<Color> BlocksBackgroundColorStyle = new CustomStyleProperty<Color>("--block--background-color");
         internal static readonly CustomStyleProperty<Color> DisabledBackgroundColorStyle = new CustomStyleProperty<Color>("--disabled-background-color");
         internal static readonly CustomStyleProperty<float> BlockBorderStyle = new CustomStyleProperty<float>("--block--border");
+        internal static readonly CustomStyleProperty<Color> NodeOutputBackgroundColorStyle = new CustomStyleProperty<Color>("--block-output--background-color");
 
         /// <summary>
         /// The <see cref="BlockNodeModel"/> this <see cref="BlockNodeView"/> displays.
@@ -50,6 +51,7 @@ namespace Unity.GraphToolkit.Editor
         BlockDragInfos m_BlockDragInfos;
 
         Color m_BkgndColor;
+        Color m_OutputBkgndColor;
         Color m_DisabledColor;
         bool m_Attached;
 
@@ -101,6 +103,12 @@ namespace Unity.GraphToolkit.Editor
             if (e.customStyle.TryGetValue(BlocksBackgroundColorStyle, out Color bkgndColor))
             {
                 m_BkgndColor = bkgndColor;
+                changed = true;
+            }
+            
+            if (e.customStyle.TryGetValue(NodeOutputBackgroundColorStyle, out Color outColor))
+            {
+                m_OutputBkgndColor = outColor;
                 changed = true;
             }
 
@@ -477,15 +485,37 @@ namespace Unity.GraphToolkit.Editor
             actualParams.bottomEtchWidth += m_Border;
 
             var p2d = mgc.painter2D;
-            p2d.fillColor = m_BkgndColor;
             var isFirst = BlockNodeModel == BlockNodeModel?.ContextNodeModel?.FirstBlock;
 
+            p2d.fillColor = m_BkgndColor;
             DrawBlock(ref bounds, p2d, m_DisplayEtch, false, isFirst, false, ref actualParams);
+            p2d.Fill(FillRule.OddEven);
+
+            bool isOutputOnlyState = m_DisplayEtch &&
+                                     ClassListContains(CollapsibleInOutNodeView.collapsedUssClassName) &&
+                                     ClassListContains(CollapsibleInOutNodeView.hasConnectedOutputUssClassName) &&
+                                     !ClassListContains(CollapsibleInOutNodeView.hasConnectedInputUssClassName);
+
+            // if the block is collapsed, and only output connected, we want the bottom etch to be the color of the
+            // output port background.
+            if (isOutputOnlyState)
+            {
+                p2d.BeginPath();
+                p2d.fillColor = m_OutputBkgndColor;
+
+                float startX = bounds.xMin + actualParams.bottomEtchMargin + actualParams.bottomEtchWidth + actualParams.etchInnerRadius;
+                p2d.MoveTo(new Vector2(startX, bounds.yMax));
+
+                AppendBottomEtchGeometry(p2d, ref bounds, ref actualParams, 0, 0);
+
+                // Close it to fill
+                p2d.ClosePath();
+                p2d.Fill(FillRule.OddEven);
+            }
 
             p2d.lineWidth = m_Border;
             p2d.strokeColor = resolvedStyle.borderLeftColor;
-
-            p2d.Fill(FillRule.OddEven);
+            DrawBlock(ref bounds, p2d, m_DisplayEtch, false, isFirst, false, ref actualParams);
             p2d.Stroke();
         }
 
@@ -590,28 +620,7 @@ namespace Unity.GraphToolkit.Editor
 
             if (displayEtch)
             {
-                p2d.LineTo(new Vector2(r.xMin + drawParams.bottomEtchMargin + drawParams.bottomEtchWidth + drawParams.etchInnerRadius + colorLineWidth, r.yMax));
-                p2d.BezierCurveTo(
-                    new Vector2(r.xMin + drawParams.bottomEtchMargin + drawParams.bottomEtchWidth + colorLineWidth, r.yMax),
-                    new Vector2(r.xMin + drawParams.bottomEtchMargin + drawParams.bottomEtchWidth + colorLineWidth, r.yMax),
-                    new Vector2(r.xMin + drawParams.bottomEtchMargin + drawParams.bottomEtchWidth + colorLineWidth, r.yMax + drawParams.etchInnerRadius));
-
-                p2d.LineTo(new Vector2(r.xMin + drawParams.bottomEtchMargin + drawParams.bottomEtchWidth + colorLineWidth, r.yMax + drawParams.etchHeight - drawParams.etchOuterRadius));
-                p2d.BezierCurveTo(
-                    new Vector2(r.xMin + drawParams.bottomEtchMargin + drawParams.bottomEtchWidth + colorLineWidth, r.yMax + drawParams.etchHeight),
-                    new Vector2(r.xMin + drawParams.bottomEtchMargin + drawParams.bottomEtchWidth + colorLineWidth, r.yMax + drawParams.etchHeight),
-                    new Vector2(r.xMin + drawParams.bottomEtchMargin + drawParams.bottomEtchWidth - drawParams.etchOuterRadius + colorLineWidth, r.yMax + drawParams.etchHeight));
-
-                p2d.LineTo(new Vector2(r.xMin + drawParams.bottomEtchMargin + drawParams.etchOuterRadius - colorLineWidth, r.yMax + drawParams.etchHeight));
-                p2d.BezierCurveTo(
-                    new Vector2(r.xMin + drawParams.bottomEtchMargin - colorLineWidth - borderWidth, r.yMax + drawParams.etchHeight),
-                    new Vector2(r.xMin + drawParams.bottomEtchMargin - colorLineWidth - borderWidth, r.yMax + drawParams.etchHeight),
-                    new Vector2(r.xMin + drawParams.bottomEtchMargin - colorLineWidth - borderWidth, r.yMax + drawParams.etchHeight - drawParams.etchOuterRadius));
-                p2d.LineTo(new Vector2(r.xMin + drawParams.bottomEtchMargin - colorLineWidth - borderWidth, r.yMax + drawParams.etchInnerRadius));
-                p2d.BezierCurveTo(
-                    new Vector2(r.xMin + drawParams.bottomEtchMargin - colorLineWidth - borderWidth, r.yMax),
-                    new Vector2(r.xMin + drawParams.bottomEtchMargin - colorLineWidth - borderWidth, r.yMax),
-                    new Vector2(r.xMin + drawParams.bottomEtchMargin - drawParams.etchInnerRadius - colorLineWidth - borderWidth, r.yMax));
+                AppendBottomEtchGeometry(p2d, ref r, ref drawParams, borderWidth, colorLineWidth);
             }
 
             if (isLast)
@@ -620,6 +629,35 @@ namespace Unity.GraphToolkit.Editor
                     drawParams.extremeBlockRadius);
 
             p2d.ClosePath();
+        }
+        
+        /// <summary>
+        /// Appends only the bottom etch geometry commands to the current painter path.
+        /// </summary>
+        internal static void AppendBottomEtchGeometry(Painter2D p2d, ref Rect r, ref BlockDrawParams drawParams, float borderWidth, float colorLineWidth)
+        {
+            p2d.LineTo(new Vector2(r.xMin + drawParams.bottomEtchMargin + drawParams.bottomEtchWidth + drawParams.etchInnerRadius + colorLineWidth, r.yMax));
+            p2d.BezierCurveTo(
+                new Vector2(r.xMin + drawParams.bottomEtchMargin + drawParams.bottomEtchWidth + colorLineWidth, r.yMax),
+                new Vector2(r.xMin + drawParams.bottomEtchMargin + drawParams.bottomEtchWidth + colorLineWidth, r.yMax),
+                new Vector2(r.xMin + drawParams.bottomEtchMargin + drawParams.bottomEtchWidth + colorLineWidth, r.yMax + drawParams.etchInnerRadius));
+
+            p2d.LineTo(new Vector2(r.xMin + drawParams.bottomEtchMargin + drawParams.bottomEtchWidth + colorLineWidth, r.yMax + drawParams.etchHeight - drawParams.etchOuterRadius));
+            p2d.BezierCurveTo(
+                new Vector2(r.xMin + drawParams.bottomEtchMargin + drawParams.bottomEtchWidth + colorLineWidth, r.yMax + drawParams.etchHeight),
+                new Vector2(r.xMin + drawParams.bottomEtchMargin + drawParams.bottomEtchWidth + colorLineWidth, r.yMax + drawParams.etchHeight),
+                new Vector2(r.xMin + drawParams.bottomEtchMargin + drawParams.bottomEtchWidth - drawParams.etchOuterRadius + colorLineWidth, r.yMax + drawParams.etchHeight));
+
+            p2d.LineTo(new Vector2(r.xMin + drawParams.bottomEtchMargin + drawParams.etchOuterRadius - colorLineWidth, r.yMax + drawParams.etchHeight));
+            p2d.BezierCurveTo(
+                new Vector2(r.xMin + drawParams.bottomEtchMargin - colorLineWidth - borderWidth, r.yMax + drawParams.etchHeight),
+                new Vector2(r.xMin + drawParams.bottomEtchMargin - colorLineWidth - borderWidth, r.yMax + drawParams.etchHeight),
+                new Vector2(r.xMin + drawParams.bottomEtchMargin - colorLineWidth - borderWidth, r.yMax + drawParams.etchHeight - drawParams.etchOuterRadius));
+            p2d.LineTo(new Vector2(r.xMin + drawParams.bottomEtchMargin - colorLineWidth - borderWidth, r.yMax + drawParams.etchInnerRadius));
+            p2d.BezierCurveTo(
+                new Vector2(r.xMin + drawParams.bottomEtchMargin - colorLineWidth - borderWidth, r.yMax),
+                new Vector2(r.xMin + drawParams.bottomEtchMargin - colorLineWidth - borderWidth, r.yMax),
+                new Vector2(r.xMin + drawParams.bottomEtchMargin - drawParams.etchInnerRadius - colorLineWidth - borderWidth, r.yMax));
         }
 
         public override bool ContainsPoint(Vector2 localPoint)

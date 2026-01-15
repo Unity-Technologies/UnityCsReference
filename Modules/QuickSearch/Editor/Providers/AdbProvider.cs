@@ -443,7 +443,7 @@ namespace UnityEditor.Search.Providers
         }
     }
 
-    [QueryListBlock("Bundle", "bundle", "b", ":")]
+    [QueryListBlock("Bundle", "bundle", "b")]
     class QueryBundleFilterBlock : QueryListBlock
     {
         public QueryBundleFilterBlock(IQuerySource source, string id, string value, QueryListBlockAttribute attr)
@@ -457,7 +457,8 @@ namespace UnityEditor.Search.Providers
             var bundleNames = AssetDatabase.GetAllAssetBundleNames();
             foreach (var bundleName in bundleNames)
             {
-                yield return CreateProposition(flags, bundleName, bundleName, $"Search inside bundle \"{bundleName}\"");
+                var bundleStr = SearchUtils.EscapeLiteralString(bundleName);
+                yield return CreateProposition(flags, bundleName, bundleStr, $"Search inside bundle {bundleStr}");
             }
         }
     }

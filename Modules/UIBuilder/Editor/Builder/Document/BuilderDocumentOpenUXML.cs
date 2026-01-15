@@ -43,6 +43,9 @@ namespace Unity.UI.Builder
         int m_TemplateAssetId;
 
         [SerializeField]
+        int m_TemplateAssetIndex = -1;
+
+        [SerializeField]
         StyleSheet m_ActiveStyleSheet;
 
         [SerializeField]
@@ -140,18 +143,37 @@ namespace Unity.UI.Builder
                     return null;
 
                 var parentDocument = openSubDocumentParent;
-
                 var templateAssets = parentDocument.visualTreeAsset.DepthFirstTraversalOfType<TemplateAsset>();
+                var idx = 0;
 
                 foreach (var template in templateAssets)
                 {
                     if (template.id == m_TemplateAssetId)
+                    {
+                        m_TemplateAssetIndex = idx;
                         return template;
+                    }
+
+                    // If there was a change during reload, the template id might be out of sync. Therefore, we will
+                    // rely on the active index.
+                    if (idx == m_TemplateAssetIndex)
+                    {
+                        m_TemplateAssetId = template.id;
+                        m_TemplateAssetIndex = -1;
+                        return template;
+                    }
+                    idx++;
                 }
 
                 return null;
             }
             set => m_TemplateAssetId = value?.id ?? 0;
+        }
+
+        public int templateAssetIndex
+        {
+            get => m_TemplateAssetIndex;
+            internal set => m_TemplateAssetIndex = value;
         }
 
         public string uxmlFileName

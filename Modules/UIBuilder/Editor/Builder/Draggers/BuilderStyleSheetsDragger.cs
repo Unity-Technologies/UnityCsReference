@@ -140,6 +140,16 @@ namespace Unity.UI.Builder
             if (element == null)
                 return false;
 
+            // Performing external drag
+            if (DragAndDrop.entityIds.Length > 0)
+            {
+                // Check if USS is part of active document.
+                if (element.IsStyleSheet() && !string.IsNullOrEmpty(element.GetProperty(BuilderConstants.ExplorerItemLinkedUXMLFileName) as string))
+                    return false;
+                if (element.IsParentSelector())
+                    return false;
+            }
+
             var newParent = element;
             foreach (var elementToReparent in m_ElementsToReparent)
             {
@@ -173,7 +183,9 @@ namespace Unity.UI.Builder
 
         protected override bool SupportsDragInEmptySpace(VisualElement element)
         {
-            if (paneWindow.document.activeOpenUXMLFile.openUSSFiles.Count != BuilderSharedStyles.GetSelectorContainerElement(selection.documentRootElement).childCount)
+            // Drag and drop should allow drag into empty space
+            if (DragAndDrop.entityIds.Length == 0 &&
+                paneWindow.document.activeOpenUXMLFile.openUSSFiles.Count != BuilderSharedStyles.GetSelectorContainerElement(selection.documentRootElement).childCount)
                 return false;
 
             return element != null && element.HasAncestor(builderStylesheetRoot);

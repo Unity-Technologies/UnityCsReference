@@ -960,6 +960,14 @@ namespace UnityEditor.Search
             if (AssetDatabaseAPI.IsAssetImportWorkerProcess())
                 return false;
 
+            // If ADB is readonly assumes we are not a main editor process.
+            if (Application.HasARGV("readonly"))
+                return false;
+
+            // If we are a mppm clone: we are a secondary process
+            if (Unity.Multiplayer.PlayMode.Editor.VirtualProjectsEditor.IsClone)
+                return false;
+
             if (EditorUtility.isInSafeMode)
                 return false;
 
@@ -1546,6 +1554,11 @@ namespace UnityEditor.Search
                 return true;
             }
             return false;
+        }
+
+        public static bool UseDeveloperPreferences()
+        {
+            return Unsupported.IsSourceBuild(checkHumanControllingUs:false) || Application.isTestRun;
         }
 
         internal static bool IsBuiltInResource(UnityEngine.Object obj)

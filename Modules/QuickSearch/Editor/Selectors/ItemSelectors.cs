@@ -60,7 +60,7 @@ namespace UnityEditor.Search
 
             if (items != null)
             {
-                yield return CreateColumn("ID");
+                yield return CreateColumn("Id");
                 yield return CreateColumn("Name", null, "Name");
                 yield return CreateColumn("Value");
                 yield return CreateColumn("Thumbnail", "thumbnail", "Texture2D");

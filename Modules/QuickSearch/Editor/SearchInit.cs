@@ -19,6 +19,8 @@ namespace UnityEditor.Search
             EditorApplication.wantsToQuit -= UnityQuit;
             EditorApplication.wantsToQuit += UnityQuit;
 
+            Console.WriteLine($"ScheduleIndexationOnStartup MainProcess:{Utils.IsMainProcess()} IndexOnStartup:{SearchSettings.indexOnEditorStartup}");
+
             // IndexingOnEditorStartup_Started is Used to signal that we already have started indexing and that further domain reload shouldn't restart it.
             // Do not run indexing on startup if we are in a secondary process.
             if (!Utils.IsMainProcess() || EditorUtility.isInSafeMode || !SearchSettings.indexOnEditorStartup || SessionState.GetBool("IndexingOnEditorStartup_Started", false))
@@ -105,6 +107,8 @@ namespace UnityEditor.Search
 
         internal static void IndexationOnStartup()
         {
+            Console.WriteLine("Start Indexing on Editor startup");
+
             // Acessing the default DB will import it and start Indexing.
             var db = SearchDatabase.GetDefaultSearchDatabase();
 

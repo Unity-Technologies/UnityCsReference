@@ -238,17 +238,16 @@ namespace UnityEngine.TextCore.Text
         protected TextStyleSheet m_DefaultStyleSheet;
 
         /// <summary>
-        /// The relative path to a Resources folder in the project where the text system will look to load style sheets.
-        /// The default location is "Resources/Style Sheets".
+        /// This property is obsolete and no longer used. It will be removed in a future version.
         /// </summary>
+        [Obsolete("styleSheetsResourcePath is no longer used and will be removed in a future version.", false)]
         public string styleSheetsResourcePath
         {
             get => m_StyleSheetsResourcePath;
             set => m_StyleSheetsResourcePath = value;
         }
 
-        [SerializeField]
-        protected string m_StyleSheetsResourcePath = "Text Style Sheets/";
+        string m_StyleSheetsResourcePath = "Text Style Sheets/";
 
         /// <summary>
         /// The relative path to a Resources folder in the project where the text system will look to load color gradient presets.
@@ -329,7 +328,7 @@ namespace UnityEngine.TextCore.Text
         void OnDestroy()
         {
             if (m_NativeTextSettings != IntPtr.Zero)
-                DestroyNativeObject(m_NativeTextSettings);
+                DestroyNativeObject(m_NativeTextSettings, MarshalledUnityObject.MarshalNotNull(this));
         }
 
         protected void InitializeFontReferenceLookup()
@@ -425,9 +424,9 @@ namespace UnityEngine.TextCore.Text
             return null;
         }
         [NativeMethod(Name = "TextSettings::Create")]
-        static extern IntPtr CreateNativeObject(IntPtr[] fallbacks);
+        static extern IntPtr CreateNativeObject(IntPtr[] fallbacks, IntPtr managedObject);
         [NativeMethod(Name = "TextSettings::Destroy")]
-        static extern void DestroyNativeObject(IntPtr m_NativeTextSettings);
+        static extern void DestroyNativeObject(IntPtr m_NativeTextSettings, IntPtr managedObject);
         static extern void UpdateFallbacks(IntPtr ptr, IntPtr[] fallbacks);
 
         IntPtr m_NativeTextSettings = IntPtr.Zero;
@@ -511,7 +510,7 @@ namespace UnityEngine.TextCore.Text
         {
             if (m_NativeTextSettings == IntPtr.Zero)
             {
-                m_NativeTextSettings = CreateNativeObject(GetGlobalFallbacks());
+                m_NativeTextSettings = CreateNativeObject(GetGlobalFallbacks(), MarshalledUnityObject.MarshalNotNull(this));
                 m_IsNativeTextSettingsDirty = false;
             }
             else if (m_IsNativeTextSettingsDirty && m_NativeTextSettings != IntPtr.Zero)

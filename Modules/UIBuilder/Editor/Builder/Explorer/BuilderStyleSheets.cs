@@ -16,6 +16,7 @@ namespace Unity.UI.Builder
     {
         static readonly string kToolbarPath = BuilderConstants.UIBuilderPackagePath + "/Explorer/BuilderStyleSheetsNewSelectorControls.uxml";
         private static readonly string kMessageLinkClassName = "unity-builder-message-link";
+        static readonly string kExplorerStyleSheetPaneContextModeUssClassName = BuilderConstants.ExplorerStyleSheetsPaneClassName + "--context-mode";
 
         ToolbarMenu m_AddUSSMenu;
         BuilderNewSelectorField m_NewSelectorField;
@@ -320,17 +321,24 @@ namespace Unity.UI.Builder
             // Show empty state if no stylesheet loaded
             if (document.activeStyleSheet == null)
             {
+                var activeFile = document.activeOpenUXMLFile;
+                var parentHasStyleSheet = activeFile.openSubDocumentParent != null && activeFile.openSubDocumentParent.activeStyleSheet;
+                var treeViewScrollContainer = m_ElementHierarchyView.treeView.scrollView.Q<VisualElement>("unity-content-and-vertical-scroll-container");
                 m_ElementHierarchyView.container.style.justifyContent = Justify.Center;
                 m_ElementHierarchyView.treeView.style.flexGrow = 1;
                 m_EmptyStyleSheetsPaneLabel.style.display = DisplayStyle.Flex;
-                m_EmptyStyleSheetsPaneLabel.pickingMode = PickingMode.Ignore;
-                m_ElementHierarchyView.container.Add(m_EmptyStyleSheetsPaneLabel);
+                // This class will add a background color based on the theme which allows the highlight blue to not bleed into the parent stylesheet.
+                treeViewScrollContainer.EnableInClassList(kExplorerStyleSheetPaneContextModeUssClassName, parentHasStyleSheet);
+                treeViewScrollContainer.style.flexGrow = parentHasStyleSheet ? 1 : 0;
+                m_ElementHierarchyView.treeView.scrollView.hierarchy.Insert(0, m_EmptyStyleSheetsPaneLabel);
             }
-            else if (m_EmptyStyleSheetsPaneLabel.parent == m_ElementHierarchyView.container)
+            else if (m_EmptyStyleSheetsPaneLabel.parent == m_ElementHierarchyView.treeView.scrollView)
             {
+                var treeViewScrollContainer = m_ElementHierarchyView.treeView.scrollView.Q<VisualElement>("unity-content-and-vertical-scroll-container");
                 // Revert inline style changes to default
                 m_ElementHierarchyView.container.style.justifyContent = Justify.FlexStart;
-                elementHierarchyView.treeView.style.flexGrow = 1;
+                treeViewScrollContainer.RemoveFromClassList(kExplorerStyleSheetPaneContextModeUssClassName);
+                treeViewScrollContainer.style.flexGrow = 1;
                 m_EmptyStyleSheetsPaneLabel.style.display = DisplayStyle.None;
                 m_EmptyStyleSheetsPaneLabel.RemoveFromHierarchy();
             }

@@ -55,7 +55,6 @@ namespace UnityEditor
             public GUIContent eula = EditorGUIUtility.TrTextContent("Eula");
             public string addToYourPro = L10n.Tr("Add {0} to your Unity Pro license");
             public GUIContent installInBuildFolder = EditorGUIUtility.TrTextContent("Install into source code 'build' folder", "Install into source checkout 'build' folder, for debugging with source code");
-            public GUIContent installInBuildFolderHelp = EditorGUIUtility.TrIconContent("_Help", "Open documentation about source code building and debugging");
 
             public Texture2D activePlatformIcon = EditorGUIUtility.IconContent("BuildSettings.SelectedIcon").image as Texture2D;
 
@@ -977,14 +976,6 @@ namespace UnityEditor
             {
                 GUILayout.BeginHorizontal();
                 EditorUserBuildSettings.installInBuildFolder = GUILayout.Toggle(EditorUserBuildSettings.installInBuildFolder, styles.installInBuildFolder, GUILayout.ExpandWidth(false));
-                if (GUILayout.Button(styles.installInBuildFolderHelp, EditorStyles.iconButton))
-                {
-                    var path = Path.Combine(Unsupported.GetBaseUnityDeveloperFolder(), "Documentation/BuildDocs/view");
-                    if (Application.platform == RuntimePlatform.WindowsEditor)
-                        System.Diagnostics.Process.Start(path + ".cmd");
-                    else
-                        System.Diagnostics.Process.Start("/bin/bash", path);
-                }
                 GUILayout.EndHorizontal();
             }
             else

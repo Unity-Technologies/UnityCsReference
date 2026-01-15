@@ -383,17 +383,17 @@ namespace UnityEditor
 
             if (Tools.pivotRotation == PivotRotation.Custom)
             {
-                if (Tools.activeRotationTracker.isRotationControlHot) 
-                    before = Tools.activeRotationTracker.rotation;
+                if (EditorPivotManager.activeRotationTracker.isRotationControlHot) 
+                    before = EditorPivotManager.activeRotationTracker.rotation;
                 
-                Tools.activeRotationTracker.RecordHotControl();
+                EditorPivotManager.activeRotationTracker.RecordHotControl();
             }
 
             EditorGUI.BeginChangeCheck();
             Quaternion after = Handles.RotationHandle(before, handlePosition);
 
             if (Tools.pivotRotation == PivotRotation.Custom)
-                Tools.activeRotationTracker.CheckForHotControlChangeAndRefresh(after);
+                EditorPivotManager.activeRotationTracker.CheckForHotControlChangeAndRefresh(after);
 
             if (EditorGUI.EndChangeCheck() && !isStatic)
             {
@@ -616,16 +616,16 @@ namespace UnityEditor
                   
                     if (Tools.pivotRotation == PivotRotation.Custom)
                     {
-                        if (Tools.activeRotationTracker.isRotationControlHot) 
-                            rectRotation = Tools.activeRotationTracker.rotation;
+                        if (EditorPivotManager.activeRotationTracker.isRotationControlHot) 
+                            rectRotation = EditorPivotManager.activeRotationTracker.rotation;
                 
-                        Tools.activeRotationTracker.RecordHotControl();
+                        EditorPivotManager.activeRotationTracker.RecordHotControl();
                     }
                     
                     Quaternion after = RotationHandlesGUI(rect, handlePosition, rectRotation);
                     
                     if (Tools.pivotRotation == PivotRotation.Custom)
-                        Tools.activeRotationTracker.CheckForHotControlChangeAndRefresh(after);
+                        EditorPivotManager.activeRotationTracker.CheckForHotControlChangeAndRefresh(after);
                     
                     if (EditorGUI.EndChangeCheck() && !isStatic)
                     {

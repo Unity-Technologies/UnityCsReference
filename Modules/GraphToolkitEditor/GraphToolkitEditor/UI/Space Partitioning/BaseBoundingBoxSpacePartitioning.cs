@@ -42,6 +42,20 @@ namespace Unity.GraphToolkit.Editor
                 Key = key;
                 BoundingBox = boundingBox;
             }
+
+            /// <inheritdoc />
+            public override bool Equals(object obj)
+            {
+                if (obj is BoundingBoxElement other)
+                    return Key.Equals(other.Key);
+                return false;
+            }
+
+            /// <inheritdoc />
+            public override int GetHashCode()
+            {
+                return Key.GetHashCode();
+            }
         }
 
         /// <summary>

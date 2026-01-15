@@ -285,7 +285,7 @@ namespace UnityEngine.UIElements
             if (m_TextElement.enableRichText && RichTextTagParser.MayNeedParsing(nativeSettings.text))
             {
                 // If we're not using richTextTags, we're doing this on the native side to avoid allocations.
-                TextPreprocessor.PreProcessString(ref nativeSettings.text, nativeSettings.preProcessFlags);
+                TextPreprocessor.PreProcessString(ref nativeSettings.text, nativeSettings.preProcessFlags, TextUtilities.GetTextSettingsFrom(m_TextElement));
                 nativeSettings.preProcessFlags = PreProcessFlags.None;
                 //TODO GetBlurryFontAssetMapping for other fonts in the rich text tags
                 CreateTextGenerationSettingsArray(ref nativeSettings, Links, atgHyperlinkColor, GetPixelsPerPoint(), TextUtilities.GetTextSettingsFrom(m_TextElement));

@@ -111,7 +111,7 @@ namespace UnityEditor.Snap
         {
             var activeGO = Selection.activeGameObject;
             if (activeGO != null)
-                GridSettings.instance.ApplyCustomRotation(activeGO.transform.rotation);
+                GridSettings.instance.SampleTransformRotation(activeGO.transform);
         }
 
         [Shortcut("Grid and Snap/Move Grid To Handle Position", typeof(SceneView), KeyCode.Semicolon,

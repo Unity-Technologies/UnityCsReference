@@ -387,7 +387,8 @@ namespace UnityEditor.Overlays
                     {
                         onFailed?.Invoke();
                     }
-                });
+                }, 
+                400f);
         }
 
         static void ApplyPreset(OverlayCanvas canvas, IOverlayPreset preset, Func<OverlayCanvas, bool> canvasChangedCheck = null)

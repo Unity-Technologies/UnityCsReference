@@ -130,8 +130,9 @@ namespace UnityEditor.Rendering
         Geometry    = 3,
         Hull        = 4,
         Domain      = 5,
-        Surface     = 6,
-        RayTracing  = 7,
-        Count       = 7
+        RayTracing  = 6,
+        [Obsolete("Please use ShaderType.RayTracing instead. ShaderType.Surface was added incorrectly, and is not supposed to be part of this enumeration. (UnityUpgradable) -> ShaderType.RayTracing", false)]
+        Surface     = 6,    // Due to a mistake at some point, Surface got exposed, but was mapped to RayTracing. The native enum didn't even have this option. Keep it as is.
+        Count       = 7,
     }
 }

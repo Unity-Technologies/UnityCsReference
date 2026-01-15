@@ -1481,6 +1481,8 @@ namespace UnityEditor.ShortcutManagement
 
         const int maxChordLength = 1;
         HashSet<KeyCode> m_KeyDown = new HashSet<KeyCode>();
+        
+        Focusable m_PreviousFocusable;
 
         class ShortcutInput : TextInputBase { }
 
@@ -1488,17 +1490,20 @@ namespace UnityEditor.ShortcutManagement
         {
             rawValue = new List<KeyCombination>();
             isPasswordField = false;
+            m_PreviousFocusable = null;
 
             RegisterEvents(visualInput);
         }
-
+        
         private void RegisterEvents(VisualElement input)
         {
             input.RegisterCallback<KeyDownEvent>(OnKeyDown, TrickleDown.TrickleDown);
             input.RegisterCallback<KeyUpEvent>(OnKeyUp, TrickleDown.TrickleDown);
             input.RegisterCallback<MouseDownEvent>(OnMouse, TrickleDown.TrickleDown);
             input.RegisterCallback<MouseUpEvent>(OnMouse, TrickleDown.TrickleDown);
-            input.RegisterCallback<FocusEvent>((evt) => {
+            input.RegisterCallback<FocusEvent>((evt) =>
+            {
+                m_PreviousFocusable = evt.relatedTarget;
                 StartNewCombination();
                 evt.StopPropagation();
                 textSelection.MoveTextEnd();
@@ -1590,8 +1595,9 @@ namespace UnityEditor.ShortcutManagement
         {
             m_KeyDown.Clear();
             value = m_WorkingValue;
+            
             if (hasFocus)
-                focusController.SwitchFocus(null);
+                focusController.SwitchFocus(m_PreviousFocusable);
         }
 
         void Revert()

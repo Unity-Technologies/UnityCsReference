@@ -28,7 +28,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         bool IsAnyExperimentalPackagesInUse();
         bool IsRemoveInProgress(string packageName);
         bool IsAddInProgress(string packageId);
-        void AddById(string packageId);
+        void AddById(string packageId, bool isUnlisted);
         bool AddByPath(string path, out string tempPackageId);
         void AddByUrl(string url);
         void AddByIds(IEnumerable<string> versionIds);
@@ -154,12 +154,12 @@ namespace UnityEditor.PackageManager.UI.Internal
             return m_AddAndRemoveOperation?.isInProgress == true && m_AddAndRemoveOperation.packageIdsToAdd.Contains(packageId);
         }
 
-        public void AddById(string packageId)
+        public void AddById(string packageId, bool isUnlisted)
         {
             if (isAddOrRemoveInProgress)
                 return;
 
-            addAndRemoveOperation.AddById(packageId);
+            addAndRemoveOperation.AddById(packageId, isUnlisted);
             SetupAddAndRemoveOperation();
         }
 

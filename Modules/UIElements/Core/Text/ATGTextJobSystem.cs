@@ -108,13 +108,17 @@ internal class ATGTextJobSystem
     }
 
 
-    static void PrepareTextElementForJobsOnMainThread(TextElement textElement)
+    static bool PrepareTextElementForJobsOnMainThread(TextElement textElement)
     {
         textElement.uitkTextHandle.EnsureIsReadyForJobs();
 
         // Unity Font object needs a call to GetCachedFontAsset() which needs to be called from the main thread.
         if (textElement.computedStyle.unityFontDefinition.fontAsset == null)
-            textElement.uitkTextHandle.ConvertUssToNativeTextGenerationSettings();
+        {
+            if (!textElement.uitkTextHandle.ConvertUssToNativeTextGenerationSettings())
+                return false;
+        }
+            
 
         // Pre-load font assets from font tags before jobs
         if (textElement.enableRichText)
@@ -123,6 +127,8 @@ internal class ATGTextJobSystem
             RichTextTagParser.PreloadFontAssetsFromTags(textElement.renderedTextString, textSettings);
             RichTextTagParser.PreloadSpriteAssetsFromTags(textElement.renderedTextString, textSettings);
         }
+
+        return true;
     }
 
     List<TextElement> m_PrepareShapingDataList = new();
@@ -168,8 +174,8 @@ internal class ATGTextJobSystem
                 if (TextUtilities.IsAdvancedTextEnabledForElement(textElement) // Only advanced text elements need shaping
                     && TextElement.AnySizeAutoOrNone(textElement.computedStyle)) // Only elements without fixed width/height get measured
                 {
-                    PrepareTextElementForJobsOnMainThread(textElement);
-                    m_PrepareShapingDataList.Add(textElement);
+                    if (PrepareTextElementForJobsOnMainThread(textElement))
+                        m_PrepareShapingDataList.Add(textElement);
                 }
             }
         }
@@ -270,11 +276,13 @@ internal class ATGTextJobSystem
             alloc = alloc
         };
 
-        for (int i = 0; i < textJobDatas.Count; i++)
+        for (int i = textJobDatas.Count - 1; i >= 0; i--)
         {
             var textData = textJobDatas[i];
             var textElement = textData.textElement;
-            PrepareTextElementForJobsOnMainThread(textElement);
+            bool valid = PrepareTextElementForJobsOnMainThread(textElement);
+            if (!valid)
+                textJobDatas.RemoveAt(i);
         }
 
         // This ensures Fallbacks are properly created.

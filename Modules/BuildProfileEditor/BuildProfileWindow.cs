@@ -187,6 +187,7 @@ namespace UnityEditor.Build.Profile
             m_BuildInCloudPackageButton.clicked += OnCloudBuildClicked;
             addBuildProfileButton.clicked += this.OpenPlatformDiscoveryWindow; ;
             listViewAddProfileButton.clicked += this.OpenPlatformDiscoveryWindow;
+
             playerSettingsButton.clicked += () =>
             {
                 SettingsService.OpenProjectSettings(k_PlayerSettingsWindow);
@@ -802,9 +803,10 @@ namespace UnityEditor.Build.Profile
         /// </summary>
         void OpenPlatformDiscoveryWindow()
         {
+            var profile = m_BuildProfileSelection.Get(0);
             if (m_BuildProfileDataSource.customBuildProfiles.Count == 0)
             {
-                PlatformDiscoveryWindow.ShowWindow(() =>
+                PlatformDiscoveryWindow.ShowWindowAndSelectPlatform(profile?.platformGuid, () =>
                 {
                     foreach (var profile in m_BuildProfileDataSource.customBuildProfiles)
                     {
@@ -818,7 +820,7 @@ namespace UnityEditor.Build.Profile
                 return;
             }
 
-            PlatformDiscoveryWindow.ShowWindow();
+            PlatformDiscoveryWindow.ShowWindowAndSelectPlatform(profile?.platformGuid);
         }
     }
 }
