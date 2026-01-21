@@ -45,73 +45,83 @@ namespace UnityEngine.LowLevelPhysics2D
         public Vector2 upperBound { [MethodImpl(MethodImplOptions.AggressiveInlining)] readonly get => m_UpperBound; [MethodImpl(MethodImplOptions.AggressiveInlining)] set => m_UpperBound = value; }
 
         /// <summary>
-        /// Normalize the PhysicsAABB ensuring that <see cref="LowLevelPhysics2D.PhysicsAABB.lowerBound"/> is lower than or equal to <see cref="LowLevelPhysics2D.PhysicsAABB.upperBound"/>.
+        /// Get a new normalized copy of the AABB ensuring that <see cref="LowLevelPhysics2D.PhysicsAABB.lowerBound"/> is lower than or equal to <see cref="LowLevelPhysics2D.PhysicsAABB.upperBound"/>.
         /// </summary>
-        [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
-        public void Normalized()
+        public readonly PhysicsAABB normalized
         {
-            this = new PhysicsAABB
+            get
             {
-                lowerBound = Vector2.Min(lowerBound, upperBound),
-                upperBound = Vector2.Max(lowerBound, upperBound)
-            };
+                return new PhysicsAABB
+                {
+                    lowerBound = Vector2.Min(lowerBound, upperBound),
+                    upperBound = Vector2.Max(lowerBound, upperBound)
+                };
+            }
         }
 
         /// <summary>
-        /// Perform a point overlap against this PhysicsAABB.
+        /// Normalize the AABB ensuring that <see cref="LowLevelPhysics2D.PhysicsAABB.lowerBound"/> is lower than or equal to <see cref="LowLevelPhysics2D.PhysicsAABB.upperBound"/>.
+        /// </summary>
+        [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
+        public void Normalized() => this = normalized;
+
+        /// <summary>
+        /// Check if the specified point overlaps this AABB.
         /// </summary>
         /// <param name="point">The point to check for overlap.</param>
         /// <returns>True if the point overlaps, false if not.</returns>
         public readonly bool OverlapPoint(Vector2 point) => PhysicsAABB_OverlapPoint(this, point);
 
         /// <summary>
-        /// Perform a raycast against this PhysicsAABB. Nothing will be detected if the ray <paramref name="origin"/> starts inside the PhysicsAABB.
+        /// Perform a raycast against this AABB.
+        /// Nothing will be detected if the ray starts inside the AABB.
+        /// To check if the ray starts inside the AABB use <see cref="LowLevelPhysics2D.PhysicsAABB.OverlapPoint(Vector2)"/>.
         /// </summary>
         /// <param name="castRayInput">The configuration of the ray to cast.</param>
         /// <returns>The results of the intersection test.</returns>
         public readonly PhysicsQuery.CastResult CastRay(PhysicsQuery.CastRayInput castRayInput) => PhysicsAABB_CastRay(this, castRayInput);
 
         /// <summary>
-        /// Check if the specified PhysicsAABB overlaps this PhysicsAABB.
+        /// Check if the specified AABB overlaps this AABB.
         /// </summary>
-        /// <param name="aabb">The PhysicsAABB to check overlap with.</param>
+        /// <param name="aabb">The AABB to check overlap with.</param>
         /// <returns>True if overlapped, false if not.</returns>
         public readonly bool Overlap(PhysicsAABB aabb) => PhysicsAABB_Overlap(this, aabb);
 
         /// <summary>
-        /// Check if the specified point overlaps this PhysicsAABB.
+        /// Check if the specified point overlaps this AABB.
         /// </summary>
         /// <param name="point">The point to check overlap with.</param>
         /// <returns>True if overlapped, false if not.</returns>
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
-        public readonly bool Overlap(Vector2 point) => m_LowerBound.x <= point.x && m_LowerBound.y <= point.y && point.x <= m_UpperBound.x && point.y <= m_UpperBound.y;
+        public readonly bool Overlap(Vector2 point) => OverlapPoint(point);
 
         /// <summary>
-        /// Create a union of the the specified PhysicsAABB and this PhysicsAABB where resulting PhysicsAABB completely encapsules both PhysicsAABB.
+        /// Create a union of the the specified AABB and this AABB where resulting AABB completely encapsules both AABB.
         /// </summary>
-        /// <param name="aabb">The PhysicsAABB to create a union with.</param>
+        /// <param name="aabb">The AABB to create a union with.</param>
         /// <returns>The results of the union.</returns>
         public readonly PhysicsAABB Union(PhysicsAABB aabb) => PhysicsAABB_Union(this, aabb);
 
         /// <summary>
-        /// Checks if the PhysicsAABB contains (completely encapsulates) the specified PhysicsAABB.
+        /// Checks if the AABB contains (completely encapsulates) the specified AABB.
         /// </summary>
-        /// <param name="aabb">The PhysicsAABB to check being contained by this PhysicsAABB.</param>
-        /// <returns>True if the specified PhysicsAABB is contained by this PhysicsAABB. False if not.</returns>
+        /// <param name="aabb">The AABB to check being contained by this AABB.</param>
+        /// <returns>True if the specified AABB is contained by this AABB. False if not.</returns>
         public readonly bool Contains(PhysicsAABB aabb) => PhysicsAABB_Contains(this, aabb);
 
         /// <summary>
-        /// Get the center of the PhysicsAABB.
+        /// Get the center of the AABB.
         /// </summary>
         public readonly Vector2 center => PhysicsAABB_Center(this);
 
         /// <summary>
-        /// Get the extents (half size) of the PhysicsAABB.
+        /// Get the extents (half size) of the AABB.
         /// </summary>
         public readonly Vector2 extents => PhysicsAABB_Extents(this);
 
         /// <summary>
-        /// Get the surface area (perimeter length) of the PhysicsAABB.
+        /// Get the surface area (perimeter length) of the AABB.
         /// </summary>
         public readonly float perimeter => PhysicsAABB_Perimeter(this);
 

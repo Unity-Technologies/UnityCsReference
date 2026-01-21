@@ -259,6 +259,13 @@ namespace UnityEditor.Search
                 SetType(t);
                 ApplyChanges();
             }
+            else if (!string.IsNullOrEmpty(searchProposition.replacement))
+            {
+                value = searchProposition.replacement.Replace("t:", "").Replace("t=", "");
+                icon = searchProposition.icon;
+                label = searchProposition.label;
+                ApplyChanges();
+            }
         }
 
         public override IEnumerable<SearchProposition> GetPropositions(SearchPropositionFlags flags)

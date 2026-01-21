@@ -279,8 +279,10 @@ namespace Unity.Collections.LowLevel.Unsafe
         internal static void CreateHandle(out AtomicSafetyHandle safety, Allocator allocator)
         {
             safety = (allocator == Allocator.Temp) ? GetTempMemoryHandle() : Create();
-            if(!Unity.Jobs.LowLevel.Unsafe.JobsUtility.IsExecutingJob)
+
+            if(!Jobs.LowLevel.Unsafe.JobsUtility.AreHandlesPatched)
                 return;
+
             switch(allocator)
             {
                 case Allocator.TempJob:

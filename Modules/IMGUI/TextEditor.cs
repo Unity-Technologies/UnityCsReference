@@ -126,8 +126,8 @@ namespace UnityEngine
 
         public DblClickSnapping doubleClickSnapping
         {
-            get => (DblClickSnapping)m_TextSelecting.dblClickSnap;
-            set => m_TextSelecting.dblClickSnap = (TextSelectingUtilities.DblClickSnapping)value;
+            get => m_TextSelecting.dblClickSnap;
+            set => m_TextSelecting.dblClickSnap = value;
         }
 
         public int altCursorPosition
@@ -136,7 +136,7 @@ namespace UnityEngine
             set => m_TextSelecting.iAltCursorPos = value;
         }
 
-        public enum DblClickSnapping : byte { WORDS = TextSelectingUtilities.DblClickSnapping.WORDS, PARAGRAPHS = TextSelectingUtilities.DblClickSnapping.PARAGRAPHS }
+        public enum DblClickSnapping : byte { WORDS, PARAGRAPHS }
 
         [RequiredByNativeCode]
         public TextEditor()
@@ -231,7 +231,7 @@ namespace UnityEngine
         // return true if the event was recognized.
         public bool HandleKeyEvent(Event e)
         {
-            return m_TextEditing.HandleKeyEvent(e.keyCode, e.modifiers) || m_TextSelecting.HandleKeyEvent(e.keyCode, e.modifiers);
+            return m_TextEditing.HandleKeyEvent(e) || m_TextSelecting.HandleKeyEvent(e);
         }
 
         // Deletes previous text on the line
@@ -351,7 +351,7 @@ namespace UnityEngine
         /// sets whether the text selection is done by dbl click or not
         public void MouseDragSelectsWholeWords(bool on) => m_TextSelecting.MouseDragSelectsWholeWords(on);
 
-        public void DblClickSnap(DblClickSnapping snapping) => m_TextSelecting.DblClickSnap((TextSelectingUtilities.DblClickSnapping)snapping);
+        public void DblClickSnap(DblClickSnapping snapping) => m_TextSelecting.DblClickSnap(snapping);
 
         /// Move to the end of the word.
         /// If the cursor is over some space characters, these are skipped

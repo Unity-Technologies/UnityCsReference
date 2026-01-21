@@ -6,7 +6,6 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using Unity.Collections;
-using UnityEditorInternal.VersionControl;
 using UnityEngine;
 using UnityEngine.UIElements;
 
@@ -16,6 +15,7 @@ namespace UnityEditor.Overlays
     {
         // The height of a toolbar overlay in panel mode. This is validated in a test for future proofing of style changes.
         public const float minChunkHeight = 44f; //Use rounded numbers to take into account 1x screens
+        public const float foldedChunkHeight = 22f; //Use rounded numbers to take into account 1x screens
 
         // Enough width to show all overlay actions. This is validated in a test for future proofing of style changes and additional actions.
         public const float minWidth = 56;
@@ -51,6 +51,11 @@ namespace UnityEditor.Overlays
             }
         }
 
+        struct OverlayCallback
+        {
+            public Action<bool> displayedCallback;
+            public Action<bool> foldedCallback;
+        }
 
         float m_Width = 20;
         public float width => m_Width;
@@ -64,13 +69,15 @@ namespace UnityEditor.Overlays
         const string k_AdditionalClassNameToolbar = "overlay-layout--toolbar-vertical";
         const string k_BorderClassName = "overlay-dynamic-panel-container__border";
         public const string k_WidthDraggerClassName = "overlay-dynamic-panel-container__width-dragger"; // Used in tests.
+        public const string k_DraggerMarkerClassName = k_ClassName + "__dragger-marker";
 
         readonly List<ChunkData> m_Chunks = new List<ChunkData>();
-        readonly Dictionary<Overlay, Action<bool>> m_OverlayToDisplayCallback = new Dictionary<Overlay, Action<bool>>();
+        readonly Dictionary<Overlay, OverlayCallback> m_OverlayToCallbacks = new Dictionary<Overlay, OverlayCallback>();
         readonly ContainerSection<MetaData> m_Section;
         readonly DraggerElement m_WidthDragger;
         readonly OverlayActions m_OverlayActions;
         readonly ScrollView m_ScrollView;
+        readonly VisualElement m_DraggerSpace;
         readonly OverlayDropZoneBase m_ToolbarDropzone;
 
         bool m_AlignRight;
@@ -174,6 +181,9 @@ namespace UnityEditor.Overlays
             m_Section.overlayInserted += OnOverlayInserted;
             m_Section.overlayRemoved += OnOverlayRemoved;
             m_ScrollView.Add(m_Section);
+
+            m_ScrollView.Add(m_DraggerSpace = new VisualElement() { name = "DraggerSpace"});
+            m_DraggerSpace.StretchToParentSize();
 
             // Create width dragger
             m_WidthDragger = new DraggerElement(DragDirection.Horizontal);
@@ -352,6 +362,8 @@ namespace UnityEditor.Overlays
         {
             public Overlay overlay { get; private set; }
 
+            readonly VisualElement m_DraggerSpace;
+            readonly VisualElement m_DraggerMarker;
             public DraggerElement dragger { get; private set; }
 
             public bool draggerEnabled
@@ -363,11 +375,29 @@ namespace UnityEditor.Overlays
             public event Action<Overlay> sizeChangeBegun;
             public event Action<(Overlay overlay, float total, float delta)> sizeChanged;
 
-            public ChunkData(OverlayCanvas.DynamicPanelBehavior behavior)
+            public ChunkData(OverlayCanvas.DynamicPanelBehavior behavior, VisualElement draggerSpace)
             {
+                m_DraggerSpace = draggerSpace;
+                m_DraggerMarker = new VisualElement();
+                m_DraggerMarker.AddToClassList(k_DraggerMarkerClassName);
+                m_DraggerMarker.style.width = new Length(100, LengthUnit.Percent);
+                m_DraggerMarker.style.height = 0;
+
                 dragger = new DraggerElement(DragDirection.Vertical);
+                dragger.style.position = Position.Absolute;
                 dragger.translated += OnDraggerTranslated;
                 dragger.translationBegun += OnDraggerTranslationBegun;
+
+                m_DraggerMarker.RegisterCallback<GeometryChangedEvent>((evt) =>
+                {
+                    if (m_DraggerMarker.parent != null && dragger.parent != null)
+                    {
+                        var worldPos = m_DraggerMarker.parent.LocalToWorld(evt.newRect.position);
+                        dragger.style.translate = dragger.parent.WorldToLocal(worldPos);
+                        dragger.style.width = evt.newRect.width;
+                        dragger.style.height = evt.newRect.height;
+                    }
+                });
             }
 
             public void Dispose()
@@ -400,12 +430,14 @@ namespace UnityEditor.Overlays
                 this.overlay = overlay;
 
                 dragger.RemoveFromHierarchy();
+                m_DraggerMarker.RemoveFromHierarchy();
                 if (this.overlay != null)
                 {
                     // Add after overlay
                     var parent = overlay.rootVisualElement.parent;
                     var index = parent.IndexOf(overlay.rootVisualElement);
-                    parent.Insert(index + 1, dragger);
+                    parent.Insert(index + 1, m_DraggerMarker);
+                    m_DraggerSpace.Add(dragger);
                 }
 
                 return true;
@@ -448,7 +480,7 @@ namespace UnityEditor.Overlays
             {
                 while (m_Chunks.Count < count)
                 {
-                    var chunk = new ChunkData(canvas.dynamicPanelBehavior);
+                    var chunk = new ChunkData(canvas.dynamicPanelBehavior, m_DraggerSpace);
                     chunk.draggerEnabled = m_ChunksEnabled;
                     chunk.sizeChangeBegun += HeightDraggerTranslationStart;
                     chunk.sizeChanged += HeightDraggerTranslationUpdate;
@@ -493,17 +525,54 @@ namespace UnityEditor.Overlays
                 UpdateChunkHeights();
         }
 
-        float m_OriginalOverlayHeight;
+        float GetMinChunkHeight(ChunkData chunk)
+        {
+            if (chunk.overlay.folded)
+                return foldedChunkHeight;
+
+            return minChunkHeight;
+        }
+
+        float m_DownwardTranslationTotal;
+        float m_TranslationLastFrameTotal;
+        float m_TranslationAvailableSpaceAbove;
+        float m_TranslationAvailableSpaceBelow;
+
         void HeightDraggerTranslationStart(Overlay overlay)
         {
-            m_OriginalOverlayHeight = m_Section.GetData(overlay).currentHeight;
+            m_TranslationLastFrameTotal = 0;
+            m_DownwardTranslationTotal = 0;
+            m_TranslationAvailableSpaceAbove = m_TranslationAvailableSpaceBelow = 0;
+
+            if (TryGetChunk(overlay, out var index))
+            {
+                for (int i = index; i >= 0; --i)
+                {
+                    var chunk = m_Chunks[i];
+                    var currentHeight = chunk.overlay.rootVisualElement.rect.height;
+                    var minHeight = GetMinChunkHeight(chunk);
+                    m_TranslationAvailableSpaceAbove += currentHeight - minHeight;
+                }
+
+                for (int i = index + 1; i < m_Chunks.Count; ++i)
+                {
+                    var chunk = m_Chunks[i];
+                    var currentHeight = chunk.overlay.rootVisualElement.rect.height;
+                    var minHeight = GetMinChunkHeight(chunk);
+                    m_TranslationAvailableSpaceBelow += currentHeight - minHeight;
+                }
+            }
         }
 
         void HeightDraggerTranslationUpdate((Overlay overlay, float total, float delta) args)
         {
-            var total = m_OriginalOverlayHeight + args.total;
+            var total = Mathf.Clamp(args.total, -m_TranslationAvailableSpaceAbove, m_TranslationAvailableSpaceBelow);
             if (TryGetChunk(args.overlay, out int chunkIndex))
-                RequestChunkHeightChange(chunkIndex, args.delta);
+                RequestChunkHeightChange(chunkIndex, total - m_TranslationLastFrameTotal);
+
+            m_TranslationLastFrameTotal = total;
+            if (args.delta > 0)
+                m_DownwardTranslationTotal += args.delta;
         }
 
         void RequestChunkHeightChange(int chunkIndex, float delta)
@@ -522,8 +591,19 @@ namespace UnityEditor.Overlays
 
                 if (delta < 0)
                 {
+                    m_DownwardTranslationTotal = 0;
                     delta = -delta; // make the delta positive
-                    expandingChunk = m_Chunks[chunkIndex + 1];
+                    expandingChunk = null;
+
+                    // Get first expandable chunk after the target
+                    for (int i = chunkIndex + 1; i < m_Chunks.Count; ++i)
+                    {
+                        if (!m_Chunks[i].overlay.folded)
+                        {
+                            expandingChunk = m_Chunks[i];
+                            break;
+                        }
+                    }
 
                     for (int i = chunkIndex; i >= 0 && remaining > 0; --i)
                         ReduceChunkHeight(m_Chunks[i], true, ref remaining);
@@ -531,31 +611,47 @@ namespace UnityEditor.Overlays
                 else
                 {
                     expandingChunk = m_Chunks[chunkIndex];
+                    if (expandingChunk.overlay.folded && m_DownwardTranslationTotal < foldedChunkHeight)
+                        return;
+
+                    // If the overlay was folded, we unfold and make it the minimum size
+                    if (expandingChunk.overlay.folded)
+                    {
+                        expandingChunk.overlay.folded = false;
+                        m_Section.SetData(expandingChunk.overlay, new MetaData { currentHeight = minChunkHeight });
+                    }
 
                     for (int i = chunkIndex + 1; i < m_Chunks.Count && remaining > 0; ++i)
                         ReduceChunkHeight(m_Chunks[i], true, ref remaining);
                 }
 
-                var expandingIndex = m_Section.GetOverlayIndex(expandingChunk.overlay);
-                var expandingData = m_Section.GetData(expandingIndex);
+                if (expandingChunk != null)
+                {
+                    var expandingIndex = m_Section.GetOverlayIndex(expandingChunk.overlay);
+                    var expandingData = m_Section.GetData(expandingIndex);
 
-                expandingData.currentHeight += delta - remaining;
+                    expandingData.currentHeight += delta - remaining;
 
-                expandingChunk.SetSize(expandingData.currentHeight);
-                m_Section.SetData(expandingIndex, expandingData);
+                    expandingChunk.SetSize(expandingData.currentHeight);
+                    m_Section.SetData(expandingIndex, expandingData);
+                }
             }
         }
 
         void ReduceChunkHeight(ChunkData chunk, bool useLayoutValues, ref float delta)
         {
+            bool folded = chunk.overlay.folded;
             var idx = m_Section.GetOverlayIndex(chunk.overlay);
             var targetData = m_Section.GetData(idx);
-            var actualHeight = useLayoutValues ? chunk.overlay.rootVisualElement.rect.height : targetData.currentHeight; 
-            var newHeight = Mathf.Max(actualHeight - delta, minChunkHeight);
+            var targetHeight = folded ? foldedChunkHeight : targetData.currentHeight;
+            var actualHeight = useLayoutValues ? chunk.overlay.rootVisualElement.rect.height : targetHeight; 
+            var newHeight = Mathf.Max(folded ? foldedChunkHeight : minChunkHeight, actualHeight - delta);
 
             delta -= actualHeight - newHeight;
             targetData.currentHeight = Mathf.Min(newHeight, targetData.currentHeight); // Take into account potential flex grow
-            m_Section.SetData(idx, targetData);
+
+            if (!folded)
+                m_Section.SetData(idx, targetData);
 
             chunk.SetSize(targetData.currentHeight);
         }
@@ -604,7 +700,9 @@ namespace UnityEditor.Overlays
         {
             if (TryGetChunk(overlay, out var index))
             {
-                RequestChunkHeightChange(index, height - m_Section.GetData(overlay).currentHeight);
+                var change = height - m_Section.GetData(overlay).currentHeight;
+                overlay.folded = false; //Enforce that the overlay cannot be folded so the size is changed
+                RequestChunkHeightChange(index, change);
             }
         }
 
@@ -614,6 +712,17 @@ namespace UnityEditor.Overlays
                 return 0;
 
             return m_Section.GetData(overlay).currentHeight;
+        }
+
+        float GetFinalHeight(Overlay overlay, float targetHeight)
+        {
+            if (!overlay.displayed)
+                return 0;
+
+            if (overlay.folded)
+                return foldedChunkHeight;
+
+            return Mathf.Max(minChunkHeight, targetHeight);
         }
 
         void UpdateChunkHeights()
@@ -642,7 +751,7 @@ namespace UnityEditor.Overlays
             // Find requested height
             for (int i = m_Chunks.Count - 1; i >= 0; --i) 
             {
-                requestedHeight += Mathf.Max(m_Section.GetData(m_Chunks[i].overlay).currentHeight, minChunkHeight);
+                requestedHeight += GetFinalHeight(m_Chunks[i].overlay, m_Section.GetData(m_Chunks[i].overlay).currentHeight);
             }
 
             UpdateExpandingChunk();
@@ -660,7 +769,7 @@ namespace UnityEditor.Overlays
                     var data = m_Section.GetData(index);
                     data.currentHeight = Mathf.Max(minChunkHeight, data.currentHeight); // Ensure is at least minimum
                     m_Section.SetData(index, data);
-                    chunk.SetSize(data.currentHeight);
+                    chunk.SetSize(GetFinalHeight(chunk.overlay, data.currentHeight));
                 }
             }
 
@@ -722,9 +831,15 @@ namespace UnityEditor.Overlays
 
             m_Section.SetData(overlay, float.IsNaN(currentHeight) ? MetaData.@default : new MetaData(currentHeight));
 
-            Action<bool> handler = (displayed) => OnDisplayedChanged(overlay, displayed);
-            overlay.displayedChanged += handler;
-            m_OverlayToDisplayCallback.Add(overlay, handler);
+            Action<bool> displayedHandler = (displayed) => OnDisplayedChanged(overlay, displayed);
+            Action<bool> foldedHandler = (folded) => OnFoldedChanged(overlay, folded);
+            overlay.displayedChanged += displayedHandler;
+            overlay.foldedChanged += foldedHandler;
+            m_OverlayToCallbacks.Add(overlay, new OverlayCallback
+            {
+                displayedCallback = displayedHandler,
+                foldedCallback = foldedHandler
+            });
 
             if (overlay.displayed)
             {
@@ -751,10 +866,11 @@ namespace UnityEditor.Overlays
 
         void OnOverlayRemoved(Overlay overlay, int removedOverlayIndex)
         {
-            if (m_OverlayToDisplayCallback.TryGetValue(overlay, out var handler))
+            if (m_OverlayToCallbacks.TryGetValue(overlay, out var handlers))
             {
-                overlay.displayedChanged -= handler;
-                m_OverlayToDisplayCallback.Remove(overlay);
+                overlay.displayedChanged -= handlers.displayedCallback;
+                overlay.foldedChanged -= handlers.foldedCallback;
+                m_OverlayToCallbacks.Remove(overlay);
             }
 
             if (overlay.displayed && TryGetChunk(overlay, out var index))
@@ -773,6 +889,11 @@ namespace UnityEditor.Overlays
             overlay.layout = Layout.Panel;
 
             UpdateWidth();
+        }
+
+        void OnFoldedChanged(Overlay overlay, bool folded)
+        {
+            UpdateChunkHeights();
         }
 
         void OnDisplayedChanged(Overlay overlay, bool displayed)

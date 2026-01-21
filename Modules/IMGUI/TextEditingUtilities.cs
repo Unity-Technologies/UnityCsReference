@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using UnityEngine.Bindings;
+using UnityEngine.Scripting;
 using UnityEngine.TextCore.Text;
 
 namespace UnityEngine
@@ -27,12 +28,10 @@ namespace UnityEngine
         SelectParagraphForward, Copy, SelectAll, SelectNone
     }
 
-    [VisibleToOtherModules("UnityEngine.UIElementsModule", "UnityEngine.IMGUIModule")]
+    [VisibleToOtherModules("UnityEngine.UIElementsModule")]
     internal class TextEditingUtilities
     {
         private TextSelectingUtilities m_TextSelectingUtility;
-
-        [VisibleToOtherModules("UnityEngine.IMGUIModule")]
         internal TextHandle textHandle;
         private bool hasSelection => m_TextSelectingUtility.hasSelection;
         private string SelectedText => m_TextSelectingUtility.selectedText;
@@ -43,8 +42,6 @@ namespace UnityEngine
         internal bool isCompositionActive;
 
         bool m_UpdateImeWindowPosition;
-
-        [VisibleToOtherModules("UnityEngine.IMGUIModule")]
         internal Action OnTextChanged;
 
         public bool multiline = false;
@@ -55,7 +52,6 @@ namespace UnityEngine
         }
 
         //Used by automated tests
-        [VisibleToOtherModules("UnityEngine.IMGUIModule")]
         internal int stringCursorIndex
         {
             get => textHandle.GetCorrespondingStringIndex(cursorIndex);
@@ -81,7 +77,6 @@ namespace UnityEngine
             get => textHandle.GetCorrespondingStringIndex(m_TextSelectingUtility.cursorIndexNoValidation);
         }
 
-        [VisibleToOtherModules("UnityEngine.IMGUIModule")]
         //Used by automated tests
         internal int stringSelectIndex
         {
@@ -109,7 +104,6 @@ namespace UnityEngine
             }
         }
 
-        [VisibleToOtherModules("UnityEngine.IMGUIModule")]
         internal void SetTextWithoutNotify(string value)
         {
             m_Text = value;
@@ -127,7 +121,7 @@ namespace UnityEngine
         /// </summary>
         public bool UpdateImeState()
         {
-            if (Input.compositionString.Length > 0)
+            if (GUIUtility.compositionString.Length > 0)
             {
                 if (!isCompositionActive)
                 {
@@ -153,13 +147,13 @@ namespace UnityEngine
         public void SetImeWindowPosition(Vector2 worldPosition)
         {
             var cursorPos = textHandle.GetCursorPositionFromStringIndexUsingCharacterHeight(cursorIndex, true);
-            Input.compositionCursorPos = worldPosition + cursorPos;
+            GUIUtility.compositionCursorPos = worldPosition + cursorPos;
         }
 
         public string GeneratePreviewString(bool richText)
         {
             RestoreCursorState();
-            var compositionString = Input.compositionString;
+            var compositionString = GUIUtility.compositionString;
             if (isCompositionActive)
             {
                 return richText ? text.Insert(stringCursorIndex, $"<u>{compositionString}</u>") : text.Insert(stringCursorIndex, compositionString);
@@ -178,7 +172,7 @@ namespace UnityEngine
                 return;
 
             m_CursorIndexSavedState = m_TextSelectingUtility.cursorIndexNoValidation;
-            cursorIndexNoValidation = selectIndexNoValidation = m_CursorIndexSavedState + Input.compositionString.Length;
+            cursorIndexNoValidation = selectIndexNoValidation = m_CursorIndexSavedState + GUIUtility.compositionString.Length;
         }
 
         /// <summary>
@@ -192,8 +186,13 @@ namespace UnityEngine
             cursorIndex = selectIndex = m_CursorIndexSavedState;
             m_CursorIndexSavedState = -1;
         }
+        internal bool HandleKeyEvent(Event e)
+        {
+            return HandleKeyEvent(e.keyCode, e.modifiers);
+        }
 
-        public bool HandleKeyEvent(KeyCode key, EventModifiers modifiers)
+        [VisibleToOtherModules("UnityEngine.UIElementsModule")]
+        internal bool HandleKeyEvent(KeyCode key, EventModifiers modifiers)
         {
             var op = TextEditOpFromEnum(key, modifiers, (SystemInfo.operatingSystemFamily == OperatingSystemFamily.MacOSX));
             if (op.HasValue)
@@ -566,7 +565,7 @@ namespace UnityEngine
 
         public bool CanPaste()
         {
-            return StytemCopyBuffer.systemCopyBuffer.Length != 0;
+            return GUIUtility.systemCopyBuffer.Length != 0;
         }
 
         public bool Cut()
@@ -578,7 +577,7 @@ namespace UnityEngine
         public bool Paste()
         {
             RestoreCursorState();
-            string pasteval = StytemCopyBuffer.systemCopyBuffer;
+            string pasteval = GUIUtility.systemCopyBuffer;
             if (pasteval != "")
             {
                 if (!multiline)

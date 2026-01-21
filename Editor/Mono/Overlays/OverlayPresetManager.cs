@@ -401,26 +401,28 @@ namespace UnityEditor.Overlays
                 return;
             }
 
-            int choice = EditorUtility.DisplayDialogComplex(
+            var result = EditorDialog.DisplayComplexDecisionDialogWithOptOut(
                     L10n.Tr("Unsaved Changes"),
                     L10n.Tr("Your current toolbar preset has unsaved changes that will be overriden by your current action."),
                     L10n.Tr("Save changes..."),
+                    L10n.Tr("Continue without saving"),
                     L10n.Tr("Cancel"),
-                    L10n.Tr("Continue without saving"));
+                    DialogOptOutDecisionType.ForThisUser,
+                    "overlays.presetDirtyWarningOptOut");
 
-            switch (choice)
+            switch (result)
             {
                 // Save Changes
-                case 0:
+                case DialogResult.DefaultAction:
                     ShowSavePresetWindow(canvas.containerWindow, onContinue);
                     break;
 
                 // Cancel
-                case 1:
+                case DialogResult.Cancel:
                     return;
 
                 // Continue Unsaved
-                case 2:
+                case DialogResult.AlternateAction:
                     onContinue?.Invoke();
                     break;
             }
@@ -450,7 +452,7 @@ namespace UnityEditor.Overlays
                 // Ensure we remove custom presets if a user defined one has the same name already
                 if (IsReservedName(customPreset.name) || presets.Find((preset) => preset.name == customPreset.name) == null)
                 {
-                    menu.AddItem(pathPrefix + customPreset.name, false, () =>
+                    menu.AddItem(pathPrefix + customPreset.name, window.overlayCanvas.lastAppliedPresetName == customPreset.name, () =>
                     {
                         ApplyPreset(window.overlayCanvas, customPreset, canvasChangeCheck);
                     });
@@ -462,7 +464,7 @@ namespace UnityEditor.Overlays
                 if (IsReservedName(preset.name))
                     continue;
 
-                menu.AddItem(pathPrefix + preset.name, false, () =>
+                menu.AddItem(pathPrefix + preset.name, window.overlayCanvas.lastAppliedPresetName == preset.name, () =>
                 {
                     ApplyPreset(window.overlayCanvas, preset, canvasChangeCheck);
                 });

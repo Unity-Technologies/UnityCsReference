@@ -49,7 +49,7 @@ namespace UnityEditor
             get
             {
                 if (instance.m_ActivePivotMode == null) 
-                    PivotManager.SetActivePivotMode(PivotManager.defaultPivotModeType);
+                    PivotManager.SetActivePivotMode(EditorToolsSettingsData.instance.lastPivotModeType);
 
                 return instance.m_ActivePivotMode;
             }
@@ -66,7 +66,9 @@ namespace UnityEditor
             if (IsBuiltInPivotMode(activePivotMode))
                 instance.m_LastBuiltInPivotMode = activePivotMode;
 
-            var activePivotModeType = PivotManager.GetActivePivotMode().GetType();
+            var activePivotModeType = instance.m_ActivePivotMode.GetType();
+            EditorToolsSettingsData.instance.SetLastPivotModeType(activePivotModeType);
+            
             if (activePivotModeType == typeof(CenterPivotMode))
                 Tools.pivotMode = PivotMode.Center;
             else if (activePivotModeType == typeof(PivotPointPivotMode))
@@ -95,7 +97,7 @@ namespace UnityEditor
             get
             {
                 if (instance.m_ActivePivotRotation == null) 
-                    PivotManager.SetActivePivotRotation(PivotManager.defaultPivotRotationType);
+                    PivotManager.SetActivePivotRotation(EditorToolsSettingsData.instance.lastPivotRotationType);
 
                 return instance.m_ActivePivotRotation;
             }
@@ -112,7 +114,9 @@ namespace UnityEditor
             if (IsBuiltInPivotRotation(activePivotRotation))
                 instance.m_LastBuiltInPivotRotation = activePivotRotation;
 
-            var activePivotRotationType = PivotManager.GetActivePivotRotation().GetType();
+            var activePivotRotationType = instance.m_ActivePivotRotation.GetType();
+            EditorToolsSettingsData.instance.SetLastPivotRotationType(activePivotRotationType);
+            
             if (activePivotRotationType == typeof(GlobalPivotRotation))
                 Tools.pivotRotation = PivotRotation.Global;
             else if (activePivotRotationType == typeof(LocalPivotRotation))
@@ -157,7 +161,7 @@ namespace UnityEditor
         // ActiveRotationTracker is used instead to track the intermediate handle rotation for all custom pivot rotation implementations.
         ActiveRotationTracker m_ActiveRotationTracker = new();
         internal static ActiveRotationTracker activeRotationTracker => instance.m_ActiveRotationTracker;
-
+        
         EditorPivotManager()
         {
             m_TypeToPivotSettingDef = new Dictionary<Type, PivotSettingDefinition>();
@@ -220,7 +224,6 @@ namespace UnityEditor
         void OnEnable()
         {
             RefreshAvailablePivotSettings();
-
             SyncToolsPivotStateIfNeeded();
             
             ToolManager.activeToolChanged += OnActiveToolChanged;
@@ -244,21 +247,15 @@ namespace UnityEditor
             FallbackActiveSettingsIfTargetsInvalid();
             RefreshAvailablePivotSettings();
         }
-
+        
         public void SyncToolsPivotStateIfNeeded()
         {
-            // If active settings failed to deserialize, set them to the default.
-            if (m_ActivePivotMode == null)
-                PivotManager.SetActivePivotMode(PivotManager.defaultPivotModeType);
-            if (m_ActivePivotRotation == null)
-                PivotManager.SetActivePivotRotation(PivotManager.defaultPivotRotationType);
-            
             // Ensure the Tools pivot state is sync with EditorPivotManager state.
             /* UUM-130229:
                Multiple Tools SO instances can accumulate after a series of domain reloads.
                Due to how its singleton pattern is implemented, the last instance that receives an OnEnable call becomes the "current" one.
                This can cause the correct Tools pivot state to be dropped if the "domain reload survivor" Tools instance it not last one enabled.*/
-            if (m_ActivePivotMode != null)
+            if (activePivotMode != null)
             {
                 var activePivotModeType = m_ActivePivotMode.GetType();
                 // Set Tools pivotMode state if it does not match EditorPivotManager's state
@@ -272,7 +269,7 @@ namespace UnityEditor
                     Debug.LogError("Could not sync active pivot mode with any of the existing PivotMode enum values.");
             }
             
-            if (m_ActivePivotRotation != null)
+            if (activePivotRotation != null)
             {
                 var activeRotationType = m_ActivePivotRotation.GetType();
                 // Set Tools pivotRotation state if it does not match EditorPivotManager's state

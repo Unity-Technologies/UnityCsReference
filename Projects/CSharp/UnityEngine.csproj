@@ -1089,8 +1089,14 @@
     <Compile Include="..\..\Modules\IMGUI\SliderHandler.cs">
       <Link>Modules\IMGUI\SliderHandler.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\IMGUI\TextEditingUtilities.cs">
+      <Link>Modules\IMGUI\TextEditingUtilities.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\IMGUI\TextEditor.cs">
       <Link>Modules\IMGUI\TextEditor.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\IMGUI\TextSelectingUtilities.cs">
+      <Link>Modules\IMGUI\TextSelectingUtilities.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\Identifiers\Identifiers.bindings.cs">
       <Link>Modules\Identifiers\Identifiers.bindings.cs</Link>
@@ -1914,9 +1920,6 @@
     <Compile Include="..\..\Modules\TextCoreTextEngine\Managed\TextCoreVertex.bindings.cs">
       <Link>Modules\TextCoreTextEngine\Managed\TextCoreVertex.bindings.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\TextCoreTextEngine\Managed\TextEditingUtilities.cs">
-      <Link>Modules\TextCoreTextEngine\Managed\TextEditingUtilities.cs</Link>
-    </Compile>
     <Compile Include="..\..\Modules\TextCoreTextEngine\Managed\TextElement.cs">
       <Link>Modules\TextCoreTextEngine\Managed\TextElement.cs</Link>
     </Compile>
@@ -1997,9 +2000,6 @@
     </Compile>
     <Compile Include="..\..\Modules\TextCoreTextEngine\Managed\TextResourcesManager.cs">
       <Link>Modules\TextCoreTextEngine\Managed\TextResourcesManager.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\TextCoreTextEngine\Managed\TextSelectingUtilities.cs">
-      <Link>Modules\TextCoreTextEngine\Managed\TextSelectingUtilities.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\TextCoreTextEngine\Managed\TextShaderUtilities.cs">
       <Link>Modules\TextCoreTextEngine\Managed\TextShaderUtilities.cs</Link>
@@ -4617,14 +4617,8 @@
     <Compile Include="..\..\Runtime\Export\IMGUI\ScrollWaitDefinitions.cs">
       <Link>Runtime\Export\IMGUI\ScrollWaitDefinitions.cs</Link>
     </Compile>
-    <Compile Include="..\..\Runtime\Export\Input\CopyBuffer.binding.cs">
-      <Link>Runtime\Export\Input\CopyBuffer.binding.cs</Link>
-    </Compile>
     <Compile Include="..\..\Runtime\Export\Input\Cursor.bindings.cs">
       <Link>Runtime\Export\Input\Cursor.bindings.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Runtime\Export\Input\EventModifers.cs">
-      <Link>Runtime\Export\Input\EventModifers.cs</Link>
     </Compile>
     <Compile Include="..\..\Runtime\Export\Input\KeyCode.cs">
       <Link>Runtime\Export\Input\KeyCode.cs</Link>

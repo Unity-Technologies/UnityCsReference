@@ -56,6 +56,16 @@ namespace UnityEditor.Build.Profile.Elements
                 var property = serializedObject.FindProperty("m_ScriptingDefines");
                 listView.TrackPropertyValue(property, this.OnScriptingDefinePropertyChange);
                 listView.BindProperty(property);
+                listView.itemsAdded += (indices) =>
+                {
+                    var enumerator = indices.GetEnumerator();
+                    if (enumerator.MoveNext())
+                    {
+                        var element = property.GetArrayElementAtIndex(enumerator.Current);
+                        element.stringValue = "";
+                        property.serializedObject.ApplyModifiedProperties();
+                    }
+                };
 
                 if (!profile.IsActiveBuildProfileOrPlatform())
                 {

@@ -1339,15 +1339,7 @@ namespace UnityEditor.SceneManagement
             }
         }
 
-        bool isTextFieldCaretShowing
-        {
-            get { return EditorGUI.IsEditingTextField() && !EditorGUIUtility.textFieldHasSelection; }
-        }
-
-        bool readyToAutoSave
-        {
-            get { return m_PrefabContentsRoot != null && hasUnsavedChanges && GUIUtility.hotControl == 0 && !isTextFieldCaretShowing && !EditorApplication.isCompiling; }
-        }
+        bool readyToAutoSave => m_PrefabContentsRoot != null && hasUnsavedChanges && PrefabImporterEditor.IsAutoSaveAllowed();
 
         void HandleAutoSave()
         {

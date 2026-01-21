@@ -65,6 +65,7 @@ namespace UnityEngine.LowLevelPhysics2D
 
         /// <summary>
         /// Get the relative angle between this rotation and the specified rotation.
+        /// The limits of this are +/- <see cref="LowLevelPhysics2D.PhysicsMath.PI"/>.
         /// </summary>
         /// <param name="rotation">The rotation to calculate the relative angle against.</param>
         /// <returns>The relative angle, in radians.</returns>

@@ -888,21 +888,19 @@ namespace UnityEditor
         // Set a new location for the build.
         public static extern void SetBuildLocation(BuildTarget target, string location);
 
-        public static void SetPlatformSettings(string platformName, string name, string value)
+        public static extern void SetPlatformSettings(string platformName, string name, string value);
+
+        public static void SetPlatformSettings(string buildTargetGroup, string buildTarget, string name, string value)
         {
-            string buildTargetGroup = BuildPipeline.GetBuildTargetGroupName(BuildPipeline.GetBuildTargetByName(platformName));
-            SetPlatformSettings(buildTargetGroup, platformName, name, value);
+            SetPlatformSettings(buildTarget, name, value);
         }
 
-        public static extern void SetPlatformSettings(string buildTargetGroup, string buildTarget, string name, string value);
+        public static extern string GetPlatformSettings(string platformName, string name);
 
-        public static string GetPlatformSettings(string platformName, string name)
+        public static string GetPlatformSettings(string buildTargetGroup, string platformName, string name)
         {
-            string buildTargetGroup = BuildPipeline.GetBuildTargetGroupName(BuildPipeline.GetBuildTargetByName(platformName));
-            return GetPlatformSettings(buildTargetGroup, platformName, name);
+            return GetPlatformSettings(platformName, name);
         }
-
-        public static extern string GetPlatformSettings(string buildTargetGroup, string platformName, string name);
 
         // Enables a development build.
         public static extern bool development { get; set; }

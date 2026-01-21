@@ -96,7 +96,7 @@ namespace UnityEditor
     public static class PivotManager
     {
         public static Type defaultPivotModeType => typeof(CenterPivotMode);
-        public static Type defaultPivotRotationType => typeof(GlobalPivotRotation);
+        public static Type defaultPivotRotationType => typeof(LocalPivotRotation);
 
         public static CustomPivotMode GetActivePivotMode() => EditorPivotManager.activePivotMode;
         public static CustomPivotRotation GetActivePivotRotation() => EditorPivotManager.activePivotRotation;

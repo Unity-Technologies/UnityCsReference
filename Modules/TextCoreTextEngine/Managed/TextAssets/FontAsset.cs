@@ -985,7 +985,7 @@ namespace UnityEngine.TextCore.Text
 
             if (m_NativeFontAsset != IntPtr.Zero)
             {
-                Destroy(m_NativeFontAsset);
+                Destroy(m_NativeFontAsset, MarshalledUnityObject.MarshalNotNull(this));
                 m_NativeFontAsset = IntPtr.Zero;
             }
         }
