@@ -60,7 +60,7 @@ namespace UnityEditor.Build.Profile.Elements
                 m_ArrowContainer.Add(arrow);
                 Add(m_ArrowContainer);
 
-                m_ArrowContainer.RegisterCallback<ClickEvent>(OnDropdownClicked);
+                m_ArrowContainer.RegisterCallback<PointerDownEvent>(OnDropdownClicked);
             }
 
             RegisterCallback<ClickEvent>(OnMainClicked);
@@ -107,10 +107,9 @@ namespace UnityEditor.Build.Profile.Elements
             evt.StopPropagation();
         }
 
-        void OnDropdownClicked(ClickEvent evt)
+        void OnDropdownClicked(PointerDownEvent evt)
         {
             OpenDropdown();
-            evt.StopPropagation();
         }
 
         void OpenDropdown()

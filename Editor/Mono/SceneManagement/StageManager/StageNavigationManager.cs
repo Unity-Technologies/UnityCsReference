@@ -288,7 +288,8 @@ namespace UnityEditor.SceneManagement
                 // Unload assets that are no longer referenced after switching stages (UUM-49014).
                 // If a user is opening one Prefab Asset after another this ensures that we still
                 // keep assets in memory to a minimum.
-                if (stage.stageHandle.isMainStage || setAsFirstItemAfterMainStage)
+                // We don't do this if the "force GC on scene load" setting isn't enabled as it indicates the user would rather keep assets in memory.
+                if ((stage.stageHandle.isMainStage || setAsFirstItemAfterMainStage) && EditorSettings.forceAssetUnloadAndGCOnSceneLoad)
                 {
                     EditorUtility.UnloadUnusedAssetsImmediate();
                 }

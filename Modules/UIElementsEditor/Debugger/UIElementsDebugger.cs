@@ -547,7 +547,9 @@ namespace UnityEditor.UIElements.Debugger
             if ((changeTypeFlag & VersionChangeType.Hierarchy) == VersionChangeType.Hierarchy)
                 m_TreeViewContainer.hierarchyHasChanged = true;
 
-            if ((changeTypeFlag & VersionChangeType.StyleSheet) == VersionChangeType.StyleSheet && ve == m_Context.selectedElement)
+            if ((changeTypeFlag & VersionChangeType.StyleSheet) == VersionChangeType.StyleSheet
+                && (changeTypeFlag & VersionChangeType.Styles) == 0
+                && ve == m_Context.selectedElement)
                 m_StylesDebuggerContainer.UpdateMatches();
 
             if (panelDebug?.debuggerOverlayPanel != null)

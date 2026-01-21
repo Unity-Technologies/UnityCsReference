@@ -40,6 +40,11 @@ namespace UnityEditor.Build.Profile
 
         bool m_PlayerSettingsYamlUpdated = false;
 
+        IVisualElementScheduledItem m_RepaintScheduler;
+        long m_LastInteractionTime;
+        const long k_RepaintDurationMs = 700;
+        VisualElement m_Root;
+
         internal static BuildProfilePlayerSettingsEditor CreatePlayerSettingsUI(VisualElement root, SerializedObject buildProfileSerializedObject)
         {
             var buildProfilePlayerSettingsEditor = new BuildProfilePlayerSettingsEditor();
@@ -83,6 +88,7 @@ namespace UnityEditor.Build.Profile
 
         void InitializeVisualElements(VisualElement root)
         {
+            m_Root = root;
             var playerSettingsRoot = root.Q<VisualElement>(k_PlayerSettingsRoot);
             m_PlayerSettingsFoldout = playerSettingsRoot.Q<Foldout>(k_PlayerSettingsFoldout);
             m_PlayerSettingsHelpBox = playerSettingsRoot.Q<HelpBox>(k_PlayerSettingsHelpBox);
@@ -92,6 +98,50 @@ namespace UnityEditor.Build.Profile
 
             m_PlayerSettingsFoldout.text = TrText.playerSettings;
             playerSettingsRoot.Show();
+
+            // Listen for user interactions to detect when IMGUI animations might occur.
+            // We repaint temporarily after interactions since IMGUI doesn't communicate repaint needs to UI Toolkit.
+            root.RegisterCallback<MouseDownEvent>(OnUserInteraction, TrickleDown.TrickleDown);
+            root.RegisterCallback<KeyDownEvent>(OnUserInteraction, TrickleDown.TrickleDown);
+            root.RegisterCallback<ChangeEvent<bool>>(OnUserInteraction, TrickleDown.TrickleDown);
+
+            // Register a detach callback to clean up the scheduler and listeners when the view is destroyed
+            root.RegisterCallback<DetachFromPanelEvent>(OnRootDetached);
+
+            // Start repaint scheduler
+            m_RepaintScheduler = root.schedule.Execute(RepaintIfNeeded).Every(16); // every 16ms roughly equals to 60fps
+        }
+
+        void OnRootDetached(DetachFromPanelEvent evt)
+        {
+            if (m_Root == null) return;
+
+            m_Root.UnregisterCallback<MouseDownEvent>(OnUserInteraction, TrickleDown.TrickleDown);
+            m_Root.UnregisterCallback<KeyDownEvent>(OnUserInteraction, TrickleDown.TrickleDown);
+            m_Root.UnregisterCallback<ChangeEvent<bool>>(OnUserInteraction, TrickleDown.TrickleDown);
+            
+            m_Root = null;
+
+            m_RepaintScheduler?.Pause();
+            m_RepaintScheduler = null;
+        }
+
+        void OnUserInteraction<T>(T evt) where T : EventBase
+        {
+            m_LastInteractionTime = DateTime.Now.Ticks / TimeSpan.TicksPerMillisecond;
+        }
+
+        void RepaintIfNeeded()
+        {
+            // Only repaint if we're within the window after last interaction
+            long currentTime = DateTime.Now.Ticks / TimeSpan.TicksPerMillisecond;
+            long timeSinceInteraction = currentTime - m_LastInteractionTime;
+
+            if (timeSinceInteraction < k_RepaintDurationMs)
+            {
+                // Ensure the inspector exists before trying to repaint
+                m_PlayerSettingsInspector?.MarkDirtyRepaint();
+            }
         }
 
         void HidePlayerSettingsUI()

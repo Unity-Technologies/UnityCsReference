@@ -324,5 +324,8 @@ namespace UnityEditor
 
         [StaticAccessor("GetEditorSettings()", StaticAccessorType.Dot)]
         public static extern bool referencedClipsExactNaming { get; set; }
+
+        [StaticAccessor("GetEditorSettings()", StaticAccessorType.Dot)]
+        public static extern bool forceAssetUnloadAndGCOnSceneLoad { get; set; }
     }
 }

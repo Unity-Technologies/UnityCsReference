@@ -37,6 +37,9 @@ namespace UnityEditor
             tooltip = k_Tooltip;
             text = k_NoCameraFound;
 
+            // UUM-130353: Ensure that the dropdown is not too long when the camera name is long.
+            style.flexShrink = 1;
+
             // The button will always reflect the Viewpoint's gameobject name.
             var textElement = this.Q<TextElement>(EditorToolbarContent.textElementName);
             textElement.bindingPath = "m_Name";

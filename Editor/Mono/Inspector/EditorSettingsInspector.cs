@@ -31,7 +31,7 @@ namespace UnityEditor
             public static GUIContent standbyImportWorkerCount = EditorGUIUtility.TrTextContent("Standby Import Worker Count", "The number of import worker processes to keep around in standby and ready for importing. The actual number of worker processes on the system can be both lower or higher that this, but the system will seek towards this number when worker processes are idle.");
             public static GUIContent idleWorkerShutdownDelay = EditorGUIUtility.TrTextContent("Idle Import Worker Shutdown Delay", "When an importer worker has been idle for this amount of seconds in will be shutdown unless it would take the worker count below the standby worker count setting.");
 
-            public static GUIContent cacheServer = EditorGUIUtility.TrTextContent("Cache Server (project specific)");
+            public static GUIContent cacheServer = EditorGUIUtility.TrTextContent("Accelerator Cache Server (project specific)");
             public static GUIContent assetPipeline = EditorGUIUtility.TrTextContent("Asset Pipeline");
             public static GUIContent artifactGarbageCollection = EditorGUIUtility.TrTextContent("Remove unused Artifacts on Restart", "By default, when you start the Editor, Unity removes unused artifact files in the Library folder, and removes their entries in the asset database. This is a form of \"garbage collection\". This setting allows you to turn off the asset database garbage collection, so that previous artifact revisions which are no longer used are still preserved after restarting the Editor. This is useful if you need to debug unexpected import results.");
             public static GUIContent cacheServerIPLabel = EditorGUIUtility.TrTextContent("IP address");
@@ -44,7 +44,7 @@ namespace UnityEditor
             public static GUIContent cacheServerAuthPasswordLabel = EditorGUIUtility.TrTextContent("Password");
             public static GUIContent cacheServerValidationLabel = EditorGUIUtility.TrTextContent("Content Validation");
             public static GUIContent cacheServerDownloadBatchSizeLabel = EditorGUIUtility.TrTextContent("Download Batch Size");
-            public static readonly GUIContent cacheServerLearnMore = new GUIContent("Learn more...", "Go to cacheserver documentation.");
+            public static readonly GUIContent cacheServerLearnMore = new GUIContent("Learn more...", "Go to Unity Accelerator documentation.");
 
             public static GUIContent assetSerialization = EditorGUIUtility.TrTextContent("Asset Serialization");
             public static GUIContent textSerializeMappingsOnOneLine = EditorGUIUtility.TrTextContent("Reduce version control noise", "Forces Unity to write references and similar YAML structures on one line, which reduces version control noise.");
@@ -53,6 +53,9 @@ namespace UnityEditor
             public static GUIContent buildPipelineHeader = EditorGUIUtility.TrTextContent("Build Pipeline");
             public static GUIContent ucbpEnableAssetBundles = EditorGUIUtility.TrTextContent("Multi-Process AssetBundle Building", "Enable experimental improvements to the AssetBundle Build Pipeline aimed at reducing build times with multi-process importing and providing more efficient incremental content building");
             public static readonly GUIContent ucbpLearnMore = new GUIContent("Learn more...", "Review official Unity documentation for important considerations around these experimental improvements.");
+
+            public static GUIContent sceneHandlingHeader = EditorGUIUtility.TrTextContent("Scene Handling");
+            public static GUIContent forceAssetUnloadAndGCOnSceneLoad = EditorGUIUtility.TrTextContent("Force Asset Unload & GC on Scene Load", "Force a managed heap garbage collection and unload unused assets after loading scenes in single mode in the Editor or exiting Prefab Mode. In complex projects, this can slow down performance. Disable this if you do not require class finalizers to run at the end of scene loading. Note that regular dynamic GC and unused asset unloading still occur when memory usage is high, but without this option, class finalizers might not run immediately after each scene load.");
 
             public static GUIContent graphics = EditorGUIUtility.TrTextContent("Graphics");
             public static GUIContent showLightmapResolutionOverlay = EditorGUIUtility.TrTextContent("Show Lightmap Resolution Overlay");
@@ -478,6 +481,13 @@ namespace UnityEditor
                 EditorBuildSettings.UseParallelAssetBundleBuilding = parallelAssetBundleBuilding;
             if(parallelAssetBundleBuilding)
                 EditorGUILayout.HelpBox("Please review official documentation before building any content with these experimental improvements enabled. These improvements apply only to AssetBundles built with BuildPipeline.BuildAssetBundles() and do not apply to AssetBundles built with Scriptable Build Pipeline or Addressables.", MessageType.Info);
+
+            GUILayout.Label(Content.sceneHandlingHeader, EditorStyles.boldLabel);
+            EditorGUI.BeginChangeCheck();
+            bool forceAssetUnloadAndGCOnSceneLoad = EditorSettings.forceAssetUnloadAndGCOnSceneLoad;
+            forceAssetUnloadAndGCOnSceneLoad = EditorGUILayout.Toggle(Content.forceAssetUnloadAndGCOnSceneLoad, forceAssetUnloadAndGCOnSceneLoad);
+            if (EditorGUI.EndChangeCheck())
+                EditorSettings.forceAssetUnloadAndGCOnSceneLoad = forceAssetUnloadAndGCOnSceneLoad;
 
             GUILayout.Space(10);
 

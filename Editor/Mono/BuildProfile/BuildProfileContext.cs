@@ -617,6 +617,12 @@ namespace UnityEditor.Build.Profile
         }
 
         [RequiredByNativeCode, UsedImplicitly]
+        static void SetProfileRawPlatformSetting(BuildProfile profile, string settingName, string settingValue)
+        {
+            profile?.platformBuildProfile?.SetRawPlatformSetting(settingName, settingValue);
+        }
+
+        [RequiredByNativeCode, UsedImplicitly]
         static void EnsureInitialized()
         {
             GC.KeepAlive(instance);

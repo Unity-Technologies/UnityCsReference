@@ -85,7 +85,6 @@ namespace UnityEditor
                 + "\n* Silly: detailed debugging messages.");
             public static readonly GUIContent packageManagerLogLevelOverridden = EditorGUIUtility.TrTextContent("Package Manager Log Level currently overridden by -enablePackageManagerTraces command-line argument.");
 
-            public static readonly GUIContent performBumpMapCheck = EditorGUIUtility.TrTextContent("Perform Bump Map Check", "Enables Bump Map Checks upon import of Materials. This checks that textures used in a normal map material slot are actually defined as normal maps.");
             public static readonly GUIContent enableExtendedLogging = EditorGUIUtility.TrTextContent("Timestamp Editor log entries", "Adds timestamp and thread Id to Editor.log messages.");
             public static readonly GUIContent enableShortcutHelperBar = EditorGUIUtility.TrTextContent("Enable Shortcut Helper Bar", "Enables the Shortcut Helper Bar in the status bar at the bottom of the main Unity Editor window.");
             public static readonly GUIContent enablePlayModeTooltips = EditorGUIUtility.TrTextContent("Enable PlayMode Tooltips", "Enables tooltips in the editor while in play mode.");
@@ -620,7 +619,6 @@ By default, Windows will combine these under a single taskbar item.");
 
             DrawPackageManagerOptions();
             DrawDynamicHintsOptions();
-            DrawPerformBumpMapCheck();
 
             m_EnableExtendedLogging = EditorGUILayout.Toggle(GeneralProperties.enableExtendedLogging, m_EnableExtendedLogging);
 
@@ -745,19 +743,6 @@ By default, Windows will combine these under a single taskbar item.");
                 {
                     EditorGUILayout.HelpBox(GeneralProperties.packageManagerLogLevelOverridden.text, MessageType.Info, true);
                 }
-            }
-        }
-
-        void DrawPerformBumpMapCheck()
-        {
-            const string bumpMapChecksKeyName = "PerformBumpMapChecks";
-            var bumpMapChecks = EditorPrefs.GetBool(bumpMapChecksKeyName, true);
-
-            EditorGUI.BeginChangeCheck();
-            bumpMapChecks = EditorGUILayout.Toggle(GeneralProperties.performBumpMapCheck, bumpMapChecks);
-            if (EditorGUI.EndChangeCheck())
-            {
-                EditorPrefs.SetBool(bumpMapChecksKeyName, bumpMapChecks);
             }
         }
 

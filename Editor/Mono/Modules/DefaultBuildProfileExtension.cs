@@ -39,8 +39,6 @@ namespace UnityEditor.Modules
             EditorGUIUtility.TrTextContent("LZ4HC"),
         };
         static readonly GUIContent k_InstallInBuildFolder = EditorGUIUtility.TrTextContent("Install into source code 'build' folder", "Install into source checkout 'build' folder, for debugging with source code");
-        static readonly GUIContent k_InstallInBuildFolderHelp = EditorGUIUtility.TrIconContent("_Help", "Open documentation about source code building and debugging");
-
         SerializedProperty m_Development;
         SerializedProperty m_ConnectProfiler;
         SerializedProperty m_BuildWithDeepProfilingSupport;
@@ -251,22 +249,6 @@ namespace UnityEditor.Modules
                 using (new EditorGUILayout.HorizontalScope())
                 {
                     EditorGUILayout.PropertyField(m_InstallInBuildFolder, k_InstallInBuildFolder, GUILayout.ExpandWidth(false));
-                    EditorGUILayout.BeginVertical();
-                    GUILayout.Space(3);
-                    if (GUILayout.Button(k_InstallInBuildFolderHelp, EditorStyles.iconButton))
-                    {
-                        const string k_ViewScriptPath = "Documentation/InternalDocs/view";
-                        const string k_WindowsEditorScriptExtension = ".cmd";
-                        const string k_MacAndLinuxEditorScriptExtension = ".sh";
-
-                        var path = Path.Combine(Unsupported.GetBaseUnityDeveloperFolder(), k_ViewScriptPath);
-                        if (Application.platform == RuntimePlatform.WindowsEditor)
-                            System.Diagnostics.Process.Start(path + k_WindowsEditorScriptExtension);
-                        else
-                            System.Diagnostics.Process.Start(path + k_MacAndLinuxEditorScriptExtension);
-                    }
-
-                    EditorGUILayout.EndVertical();
                 }
             }
 
