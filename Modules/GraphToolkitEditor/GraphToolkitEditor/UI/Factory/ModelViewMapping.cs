@@ -74,6 +74,10 @@ namespace Unity.GraphToolkit.Editor
             var contextualizedView = m_ContextualizedModelViews.FirstOrDefault(cge => cge.View == modelView.RootView && cge.Context == modelView.Context);
 #pragma warning restore RS0030
 
+            // Don't remove the mapping if another view with this guid already exists
+            if (contextualizedView != null && contextualizedView.ModelViews.ContainsKey(modelView.Model.Guid) && modelView != contextualizedView.ModelViews[modelView.Model.Guid])
+                return;
+
             contextualizedView?.ModelViews.Remove(modelView.Model.Guid);
         }
 
@@ -88,6 +92,10 @@ namespace Unity.GraphToolkit.Editor
 
             foreach (var model in modelView.Models)
             {
+                // Don't remove the mapping if another view with this guid already exists
+                if (contextualizedView != null && contextualizedView.ModelViews.ContainsKey(model.Guid) && modelView != contextualizedView.ModelViews[model.Guid])
+                    continue;
+
                 contextualizedView?.ModelViews.Remove(model.Guid);
             }
         }

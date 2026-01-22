@@ -152,7 +152,7 @@ namespace UnityEngine.UIElements
             m_OptionsPopup.AddToClassList(unitDropdownUssClass);
             popupContainer.Add(m_OptionsPopup);
 
-            angleInput.parentAngleField = this;
+            angleInput.parentField = this;
 
             angleInput.AddToClassList(inputUssClassName);
             angleInput.delegatesFocus = true;
@@ -283,7 +283,7 @@ namespace UnityEngine.UIElements
 
         class AngleInput : TextValueInput
         {
-            internal AngleField parentAngleField { get; set; }
+            internal AngleField parentField { get; set; }
 
             internal AngleInput()
             {
@@ -294,37 +294,31 @@ namespace UnityEngine.UIElements
 
             public override void ApplyInputDeviceDelta(Vector3 delta, DeltaSpeed speed, Angle startValue)
             {
-                var v = StringToValue(text);
-                v.unit = startValue.unit;
-
-                if (v.IsNone())
-                    v = new Angle(0);
-
-                double value = v.value;
-
-                double sensitivity = NumericFieldDraggerUtility.CalculateIntDragSensitivity((long)startValue.value);
-                float acceleration = NumericFieldDraggerUtility.Acceleration(speed == DeltaSpeed.Fast, speed == DeltaSpeed.Slow);
-                value += NumericFieldDraggerUtility.NiceDelta(delta, acceleration) * sensitivity;
-                value = Mathf.RoundBasedOnMinimumDifference(value, sensitivity);
-
-                v = new Angle((float)value, v.unit);
-
-                if (parentAngleField.isDelayed)
-                    parentAngleField.text = ValueToString(v);
+                double sensitivity = NumericFieldDraggerUtility.CalculateIntDragSensitivity(startValue.value);
+                float acceleration =
+                    NumericFieldDraggerUtility.Acceleration(speed == DeltaSpeed.Fast, speed == DeltaSpeed.Slow);
+                var v = StringToValue(text).value;
+                v += (long)Math.Round(NumericFieldDraggerUtility.NiceDelta(delta, acceleration) * sensitivity);
+                if (parentField.isDelayed)
+                {
+                    text = ValueToString(Mathf.ClampToInt((long)v));
+                }
                 else
-                    parentAngleField.value = v;
+                {
+                    parentField.value = Mathf.ClampToInt((long)v);
+                }
             }
 
             protected override string ValueToString(Angle v)
             {
-                return parentAngleField.showUnitAsDropdown
+                return parentField.showUnitAsDropdown
                     ? v.value.ToString(CultureInfo.InvariantCulture)
                     : v.ToString();
             }
 
             protected override Angle StringToValue(string str)
             {
-                return Angle.TryParseString(str, out var v) ? v : parentAngleField.value;
+                return Angle.TryParseString(str, out var v) ? v : parentField.value;
             }
         }
     }

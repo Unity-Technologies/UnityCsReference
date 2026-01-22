@@ -86,8 +86,8 @@ namespace Unity.VectorGraphics
 
             if (contour.Segments.Length < 2)
             {
-                vertices = new Vector2[0];
-                indices = new UInt16[0];
+                vertices = Array.Empty<Vector2>();
+                indices = Array.Empty<ushort>();
                 return;
             }
 
@@ -138,7 +138,7 @@ namespace Unity.VectorGraphics
                 throw new Exception("stepDistance too small");
 
             if (contour.Segments.Length < 2)
-                return new Vector2[0];
+                return Array.Empty<Vector2>();
 
             float[] segmentLengths = VectorUtils.SegmentsLengths(contour.Segments, contour.Closed);
 

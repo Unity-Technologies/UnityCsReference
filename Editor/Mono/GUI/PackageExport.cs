@@ -59,7 +59,7 @@ namespace UnityEditor
             // if nothing is selected, export all
             if (0 == guids.Count)
             {
-                string[] temp = new string[0]; // <--- I dont get this API
+                string[] temp = Array.Empty<string>(); // <--- I dont get this API
                 guids = new HashSet<string>(AssetDatabase.CollectAllChildren(AssetDatabase.assetFolderGUID, temp));
             }
 

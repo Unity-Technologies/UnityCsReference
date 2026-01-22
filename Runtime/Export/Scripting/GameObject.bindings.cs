@@ -97,7 +97,14 @@ namespace UnityEngine
         }
 
         [FreeFunction(Name = "GameObjectBindings::GetComponentsInternal", HasExplicitThis = true, ThrowsException = true)]
-        private extern System.Array GetComponentsInternal(Type type, bool useSearchTypeAsArrayReturnType, bool recursive, bool includeInactive, bool reverse, object resultList);
+        private extern System.Array GetComponentsInternal(Type type, bool useSearchTypeAsArrayReturnType, bool recursive, bool includeInactive, bool reverse, [Out] List<Component> resultList);
+
+        private System.Array GetComponentsInternal<T>(bool useSearchTypeAsArrayReturnType, bool recursive, bool includeInactive, bool reverse, [Out] List<T> resultList)
+        {
+            // Use UnsafeUtility.As to cast the list to the appropriate type
+            // This could be a problem if native code provides us a type that does not match
+            return GetComponentsInternal(typeof(T), useSearchTypeAsArrayReturnType, recursive, includeInactive, reverse, UnsafeUtility.As<List<Component>>(resultList));
+        }
 
         public Component[] GetComponents(Type type)
         {
@@ -106,7 +113,7 @@ namespace UnityEngine
 
         public T[] GetComponents<T>()
         {
-            return (T[])GetComponentsInternal(typeof(T), true, false, true, false, null);
+            return (T[])GetComponentsInternal<T>(true, false, true, false, null);
         }
 
         public void GetComponents(Type type, List<Component> results)
@@ -116,7 +123,7 @@ namespace UnityEngine
 
         public void GetComponents<T>(List<T> results)
         {
-            GetComponentsInternal(typeof(T), true, false, true, false, results);
+            GetComponentsInternal<T>(true, false, true, false, results);
         }
 
         [uei.ExcludeFromDocs]
@@ -133,12 +140,12 @@ namespace UnityEngine
 
         public T[] GetComponentsInChildren<T>(bool includeInactive)
         {
-            return (T[])GetComponentsInternal(typeof(T), true, true, includeInactive, false, null);
+            return (T[])GetComponentsInternal<T>(true, true, includeInactive, false, null);
         }
 
         public void GetComponentsInChildren<T>(bool includeInactive, List<T> results)
         {
-            GetComponentsInternal(typeof(T), true, true, includeInactive, false, results);
+            GetComponentsInternal<T>(true, true, includeInactive, false, results);
         }
 
         public T[] GetComponentsInChildren<T>()
@@ -165,12 +172,12 @@ namespace UnityEngine
 
         public void GetComponentsInParent<T>(bool includeInactive, List<T> results)
         {
-            GetComponentsInternal(typeof(T), true, true, includeInactive, true, results);
+            GetComponentsInternal<T>(true, true, includeInactive, true, results);
         }
 
         public T[] GetComponentsInParent<T>(bool includeInactive)
         {
-            return (T[])GetComponentsInternal(typeof(T), true, true, includeInactive, true, null);
+            return (T[])GetComponentsInternal<T>(true, true, includeInactive, true, null);
         }
 
         public T[] GetComponentsInParent<T>()

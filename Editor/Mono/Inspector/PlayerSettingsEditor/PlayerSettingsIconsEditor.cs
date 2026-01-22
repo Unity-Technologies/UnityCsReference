@@ -319,7 +319,7 @@ namespace UnityEditor
 
             PlatformIconStruct[] iconStructs;
             if (icons == null)
-                iconStructs = new PlatformIconStruct[0];
+                iconStructs = Array.Empty<PlatformIconStruct>();
             else if (requiredIconCount != icons.Length)
             {
                 throw new InvalidOperationException($"Attempting to set an incorrect number of icons for {namedBuildTarget} {kind} kind, it requires {requiredIconCount} icons but trying to assign {icons.Length}.");
@@ -440,7 +440,7 @@ namespace UnityEditor
                                 if (overrideIcons)
                                     icons = new Texture2D[widths.Length];
                                 else
-                                    icons = new Texture2D[0];
+                                    icons = Array.Empty<Texture2D>();
 
                                 if (changed)
                                     SetLegacyPlatformIcons(platformName, icons, IconKind.Any, ref m_AllLegacyIcons);

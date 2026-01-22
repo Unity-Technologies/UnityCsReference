@@ -50,9 +50,11 @@ namespace UnityEditor.Search
         [SearchExpressionEvaluator(SearchExpressionType.AnyValue | SearchExpressionType.Variadic)]
         public static IEnumerable<SearchItem> Empty(SearchExpressionContext c)
         {
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable RS0031 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return c.args.Select(e => SearchExpression.CreateItem(!e.Execute(c).Any()));
 #pragma warning restore RS0030
+#pragma warning restore RS0031
         }
 
         [Description("Return true if each elements evaluates has being true."), Category("Filters")]

@@ -365,9 +365,7 @@ namespace Unity.GraphToolkit.Editor
                     #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     ? Enumerable.Repeat(OriginalWire, 1)
 #pragma warning restore RS0030
-                    #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                    : Enumerable.Empty<Wire>())
-#pragma warning restore RS0030
+                    : Array.Empty<Wire>())
                         .Concat(otherWires);
 
                 if (endPort != null)

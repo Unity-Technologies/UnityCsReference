@@ -140,7 +140,7 @@ namespace Unity.GraphToolkit.Editor
                         Vector2.Distance(m_MouseDownPosition, e.localMousePosition) > k_StartDragThreshold)
                     {
                         DragAndDrop.PrepareStartDrag();
-                        DragAndDrop.objectReferences = new Object[] { };      // this IS required for dragging to work
+                        DragAndDrop.objectReferences = Array.Empty<Object>();      // this IS required for dragging to work
                         DragAndDrop.SetGenericData(k_DragAndDropKey, selection);
                         m_Dragging = true;
 

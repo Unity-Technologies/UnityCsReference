@@ -645,7 +645,7 @@ namespace UnityEditor
             int layoutMenuItemPriority = -20;
 
             // Get user saved layouts
-            string[] layoutPaths = new string[0];
+            string[] layoutPaths = Array.Empty<string>();
             if (Directory.Exists(layoutsModePreferencesPath))
             {
 #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
@@ -1631,9 +1631,7 @@ namespace UnityEditor
                 all.Add(w);
             }
 
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            if (all.Any())
-#pragma warning restore RS0030
+            if (all.Count > 0)
 #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 InternalEditorUtility.SaveToSerializedFileAndForget(all.Where(o => o).ToArray(), path, true);
 #pragma warning restore RS0030

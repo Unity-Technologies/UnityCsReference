@@ -111,7 +111,7 @@ namespace UnityEditorInternal
             }
         }
         internal bool m_PropertyCacheValid = false;
-        PropertyCacheEntry[] m_PropertyCache = new PropertyCacheEntry[0];
+        PropertyCacheEntry[] m_PropertyCache = Array.Empty<PropertyCacheEntry>();
         static List<string> m_OutdatedProperties = new List<string>();
 
         static string GetParentListPath(string propertyPath)

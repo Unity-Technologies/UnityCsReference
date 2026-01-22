@@ -11,13 +11,12 @@ using Object = UnityEngine.Object;
 
 namespace UnityEditor.Presets
 {
-    [NativeType(Header = "Modules/PresetsEditor/Public/Preset.h")]
+    [NativeHeader("Modules/PresetsEditor/Public/Preset.h")]
     [NativeHeader("Modules/PresetsEditor/Public/PresetManager.h")]
     [UsedByNativeCode]
     [ExcludeFromPreset]
     public sealed class Preset : Object
     {
-        static readonly string[] s_EmptyArray = new string[0];
         public Preset(Object source)
         {
             Internal_Create(this, source);
@@ -37,7 +36,7 @@ namespace UnityEditor.Presets
 
         public bool ApplyTo(Object target)
         {
-            return ApplyTo(target, s_EmptyArray);
+            return ApplyTo(target, Array.Empty<string>());
         }
 
         public extern bool ApplyTo([NotNull] Object target, string[] selectedPropertyPaths);

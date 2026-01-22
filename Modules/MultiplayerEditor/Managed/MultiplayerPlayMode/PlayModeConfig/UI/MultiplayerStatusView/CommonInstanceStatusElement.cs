@@ -116,10 +116,9 @@ internal class CommonInstanceStatusElement : VisualElement
             bool hasTag = editorInstanceDescription.PlayerTag != "";
             if (hasTag)
             {
-                var pill = new Pill();
-                pill.Text = editorInstanceDescription.PlayerTag;
-                pill.AddToClassList("player-tag-pill");
-                instanceRoleAndTagsContainer.Add(pill);
+                var tagPill = new Label(editorInstanceDescription.PlayerTag);
+                tagPill.AddToClassList(EditorInstanceStatusElement.k_PillClass, EditorInstanceStatusElement.k_TagPillClass);
+                instanceRoleAndTagsContainer.Add(tagPill);
             }
 
             if (editorInstanceDescription.Name.Contains("Main"))

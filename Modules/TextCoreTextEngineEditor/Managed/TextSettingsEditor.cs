@@ -64,7 +64,6 @@ namespace UnityEditor.TextCore.Text
             public static readonly GUIContent spriteAssetsPathLabel = new GUIContent("Path:        Resources/", "The relative path to a Resources folder where the Sprite Assets are located.\nExample \"Sprite Assets/\"");
 
             public static readonly GUIContent defaultStyleSheetLabel = new GUIContent("Default Style Sheet", "The Style Sheet that will be used for all text objects in this project.");
-            public static readonly GUIContent styleSheetResourcePathLabel = new GUIContent("Path:        Resources/", "The relative path to a Resources folder where the Style Sheets are located.\nExample \"Style Sheets/\"");
 
             public static readonly GUIContent colorGradientPresetsLabel = new GUIContent("Color Gradient Presets", "The relative path to a Resources folder where the Color Gradient Presets are located.\nExample \"Color Gradient Presets/\"");
             public static readonly GUIContent colorGradientsPathLabel = new GUIContent("Path:        Resources/", "The relative path to a Resources folder where the Color Gradient Presets are located.\nExample \"Color Gradient Presets/\"");
@@ -93,7 +92,6 @@ namespace UnityEditor.TextCore.Text
         ReorderableList m_EmojiFallbackTextAssetList;
 
         SerializedProperty m_PropStyleSheet;
-        SerializedProperty m_PropStyleSheetsResourcePath;
 
         SerializedProperty m_PropColorGradientPresetsPath;
 
@@ -178,8 +176,6 @@ namespace UnityEditor.TextCore.Text
             m_PropSpriteAssetPath = serializedObject.FindProperty("m_DefaultSpriteAssetPath");
 
             m_PropStyleSheet = serializedObject.FindProperty("m_DefaultStyleSheet");
-            m_PropStyleSheetsResourcePath = serializedObject.FindProperty("m_StyleSheetsResourcePath");
-
 
             m_PropColorGradientPresetsPath = serializedObject.FindProperty("m_DefaultColorGradientPresetsPath");
 
@@ -363,8 +359,6 @@ namespace UnityEditor.TextCore.Text
                 if (styleSheet != null)
                     styleSheet.RefreshStyles();
             }
-            EditorGUILayout.PropertyField(m_PropStyleSheetsResourcePath, Styles.styleSheetResourcePathLabel);
-            EditorGUI.indentLevel = 0;
 
             EditorGUILayout.Space();
             EditorGUILayout.EndVertical();

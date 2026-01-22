@@ -45,7 +45,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_VersionString = versionString;
             m_Tag = tag | PackageTag.Placeholder;
             m_Version = new SemVersion(0);
-            m_Errors = error != null ? new UIError[] { error } : new UIError[0];
+            m_Errors = error != null ? [error] : Array.Empty<UIError>();
 
             SemVersionParser.TryParse(m_VersionString, out m_Version);
         }

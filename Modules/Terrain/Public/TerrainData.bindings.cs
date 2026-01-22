@@ -263,6 +263,12 @@ namespace UnityEngine
         [FreeFunction("TerrainDataScriptingInterface::ValidateDetailPrototype")]
         extern internal static bool ValidateDetailPrototype([NotNull] DetailPrototype prototype, out string errorMessage);
 
+        internal bool ValidateTextures(out string errorMessage)
+            => ValidateDetailPrototypeTextures(this, out errorMessage);
+
+        [FreeFunction("TerrainDataScriptingInterface::ValidateDetailPrototypeTextures")]
+        extern internal static bool ValidateDetailPrototypeTextures([NotNull] DetailPrototype prototype, out string errorMessage);
+
         internal static bool IsModeSupportedByRenderPipeline(DetailRenderMode renderMode, bool useInstancing, out string errorMessage)
         {
             if (GraphicsSettings.currentRenderPipeline != null)

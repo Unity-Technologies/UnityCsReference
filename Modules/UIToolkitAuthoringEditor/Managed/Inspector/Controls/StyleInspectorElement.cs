@@ -5,6 +5,7 @@
 using System;
 using System.Diagnostics;
 using Unity.Properties;
+using UnityEditor.UIElements;
 using UnityEngine;
 using UnityEngine.Internal;
 using UnityEngine.UIElements;
@@ -156,6 +157,8 @@ internal sealed class StyleInspectorElement : VisualElement, IVisualElementChang
 
         contentContainer = m_ContentContainer;
         ContentAsset = content;
+
+        BindAdvancedTextUI();
     }
 
     [EventInterest(typeof(AttachToPanelEvent), typeof(DetachFromPanelEvent))]
@@ -187,6 +190,7 @@ internal sealed class StyleInspectorElement : VisualElement, IVisualElementChang
                     ReleaseSelection(m_Element);
                 dataSource = null;
                 m_Context.Dispose();
+                UnbindAdvancedTextUI();
                 break;
             }
         }
@@ -234,6 +238,7 @@ internal sealed class StyleInspectorElement : VisualElement, IVisualElementChang
         {
             m_Context.Refresh(Element);
             UpdateFlexColumnGlobalState(m_Context.StyleDiff.flexDirection.computedValue);
+            UpdateAdvancedTextHelpBox(UIToolkitProjectSettings.enableAdvancedText);
         }
         else
         {
@@ -247,6 +252,34 @@ internal sealed class StyleInspectorElement : VisualElement, IVisualElementChang
         EnableInClassList(InspectorFlexColumnReverseModeClassName, newDirection == FlexDirection.ColumnReverse);
         EnableInClassList(InspectorFlexRowModeClassName, newDirection == FlexDirection.Row);
         EnableInClassList(InspectorFlexRowReverseModeClassName, newDirection == FlexDirection.RowReverse);
+    }
+
+    void BindAdvancedTextUI()
+    {
+        UIToolkitProjectSettings.onEnableAdvancedTextChanged += UpdateAdvancedTextHelpBox;
+    }
+
+    void UnbindAdvancedTextUI()
+    {
+        UIToolkitProjectSettings.onEnableAdvancedTextChanged -= UpdateAdvancedTextHelpBox;
+    }
+
+    internal void UpdateAdvancedTextHelpBox(bool enable)
+    {
+        var atgWarningRow = contentContainer.Q<OverrideRow>("atg-warning-row");
+        var autoSizeWarningRow = contentContainer.Q<OverrideRow>("autosize-warning-row");
+
+        if (atgWarningRow == null || autoSizeWarningRow == null)
+            return;
+
+        var isAdvanced = m_Context.StyleDiff.unityTextGenerator.computedValue == TextGeneratorType.Advanced;
+
+        var showAtgWarning = isAdvanced && !enable;
+        atgWarningRow.style.display = showAtgWarning ? DisplayStyle.Flex : DisplayStyle.None;
+
+        var bestFit = m_Context.StyleDiff.unityTextAutoSize.computedValue.mode == TextAutoSizeMode.BestFit;
+        var showAutoSizeWarning = !isAdvanced && bestFit;
+        autoSizeWarningRow.style.display = showAutoSizeWarning ? DisplayStyle.Flex : DisplayStyle.None;
     }
 
     private void RegenerateContent()

@@ -64,49 +64,47 @@ namespace Unity.Properties.Internal
                     throw new InvalidOperationException("Properties does not support multidimensional arrays.");
                 }
 
-                return (IPropertyBag<TContainer>) m_CreateArrayPropertyBagMethod.MakeGenericMethod(typeof(TContainer).GetElementType()).Invoke(this, new object[0]);
+                return (IPropertyBag<TContainer>) m_CreateArrayPropertyBagMethod.MakeGenericMethod(typeof(TContainer).GetElementType()).Invoke(this, Array.Empty<object>());
             }
 
             if (typeof(TContainer).IsGenericType && typeof(TContainer).GetGenericTypeDefinition().IsAssignableFrom(typeof(List<>)))
             {
                 #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                return (IPropertyBag<TContainer>) m_CreateListPropertyBagMethod.MakeGenericMethod(typeof(TContainer).GetGenericArguments().First()).Invoke(this, new object[0]);
+                return (IPropertyBag<TContainer>) m_CreateListPropertyBagMethod.MakeGenericMethod(typeof(TContainer).GetGenericArguments().First()).Invoke(this, Array.Empty<object>());
 #pragma warning restore RS0030
             }
 
             if (typeof(TContainer).IsGenericType && typeof(TContainer).GetGenericTypeDefinition().IsAssignableFrom(typeof(HashSet<>)))
             {
                 #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                return (IPropertyBag<TContainer>) m_CreateHashSetPropertyBagMethod.MakeGenericMethod(typeof(TContainer).GetGenericArguments().First()).Invoke(this, new object[0]);
+                return (IPropertyBag<TContainer>) m_CreateHashSetPropertyBagMethod.MakeGenericMethod(typeof(TContainer).GetGenericArguments().First()).Invoke(this, Array.Empty<object>());
 #pragma warning restore RS0030
             }
 
             if (typeof(TContainer).IsGenericType && typeof(TContainer).GetGenericTypeDefinition().IsAssignableFrom(typeof(Dictionary<,>)))
             {
-                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                return (IPropertyBag<TContainer>) m_CreateDictionaryPropertyBagMethod.MakeGenericMethod(typeof(TContainer).GetGenericArguments().First(), typeof(TContainer).GetGenericArguments().ElementAt(1)).Invoke(this, new object[0]);
-#pragma warning restore RS0030
+                var args = typeof(TContainer).GetGenericArguments();
+                return (IPropertyBag<TContainer>) m_CreateDictionaryPropertyBagMethod.MakeGenericMethod(args[0], args[1]).Invoke(this, Array.Empty<object>());
             }
 
             if (typeof(TContainer).IsGenericType && typeof(TContainer).GetGenericTypeDefinition().IsAssignableFrom(typeof(IList<>)))
             {
                 #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                return (IPropertyBag<TContainer>) m_CreateIndexedCollectionPropertyBagMethod.MakeGenericMethod(typeof(TContainer), typeof(TContainer).GetGenericArguments().First()).Invoke(this, new object[0]);
+                return (IPropertyBag<TContainer>) m_CreateIndexedCollectionPropertyBagMethod.MakeGenericMethod(typeof(TContainer), typeof(TContainer).GetGenericArguments().First()).Invoke(this, Array.Empty<object>());
 #pragma warning restore RS0030
             }
 
             if (typeof(TContainer).IsGenericType && typeof(TContainer).GetGenericTypeDefinition().IsAssignableFrom(typeof(ISet<>)))
             {
                 #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                return (IPropertyBag<TContainer>) m_CreateSetPropertyBagMethod.MakeGenericMethod(typeof(TContainer), typeof(TContainer).GetGenericArguments().First()).Invoke(this, new object[0]);
+                return (IPropertyBag<TContainer>) m_CreateSetPropertyBagMethod.MakeGenericMethod(typeof(TContainer), typeof(TContainer).GetGenericArguments().First()).Invoke(this, Array.Empty<object>());
 #pragma warning restore RS0030
             }
 
             if (typeof(TContainer).IsGenericType && typeof(TContainer).GetGenericTypeDefinition().IsAssignableFrom(typeof(IDictionary<,>)))
             {
-                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                return (IPropertyBag<TContainer>) m_CreateKeyValueCollectionPropertyBagMethod.MakeGenericMethod(typeof(TContainer),  typeof(TContainer).GetGenericArguments().First(), typeof(TContainer).GetGenericArguments().ElementAt(1)).Invoke(this, new object[0]);
-#pragma warning restore RS0030
+                var args = typeof(TContainer).GetGenericArguments();
+                return (IPropertyBag<TContainer>) m_CreateKeyValueCollectionPropertyBagMethod.MakeGenericMethod(typeof(TContainer), args[0], args[1]).Invoke(this, Array.Empty<object>());
             }
 
             if (typeof(TContainer).IsGenericType && typeof(TContainer).GetGenericTypeDefinition().IsAssignableFrom(typeof(KeyValuePair<,>)))
@@ -114,7 +112,7 @@ namespace Unity.Properties.Internal
                 #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 var types = typeof(TContainer).GetGenericArguments().ToArray();
 #pragma warning restore RS0030
-                return (IPropertyBag<TContainer>) m_CreateKeyValuePairPropertyBagMethod.MakeGenericMethod(types[0], types[1]).Invoke(this, new object[0]);
+                return (IPropertyBag<TContainer>) m_CreateKeyValuePairPropertyBagMethod.MakeGenericMethod(types[0], types[1]).Invoke(this, Array.Empty<object>());
             }
 
             var propertyBag = new ReflectedPropertyBag<TContainer>();

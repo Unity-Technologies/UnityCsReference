@@ -66,7 +66,7 @@ namespace UnityEditor
             EditorGUILayout.EndFadeGroup();
 
             // Let the default implementation add the extra shader properties at the bottom.
-            materialEditor.PropertiesDefaultGUI(new MaterialProperty[0]);
+            materialEditor.PropertiesDefaultGUI(System.Array.Empty<MaterialProperty>());
         }
 
         private delegate GUIContent ContentGenerator(MaterialProperty property);

@@ -29,17 +29,17 @@ internal static class VisualElementRemapper
 
     private readonly struct RemapContext : IEquatable<RemapContext>
     {
-        private readonly VisualTreeAsset m_VisualTreeAsset;
-        private readonly TemplateAsset m_TemplateAsset;
-        private readonly VisualElementAsset m_VisualElementAsset;
+        private readonly GUID m_VisualTreeAsset;
+        private readonly int m_TemplateAsset;
+        private readonly int m_VisualElementAsset;
         private readonly GlobalObjectId m_Document;
         public bool Remappable { get; }
 
         public RemapContext(VisualElement element)
         {
-            m_VisualTreeAsset = element.visualTreeAssetSource;
-            m_TemplateAsset = element.templateAsset;
-            m_VisualElementAsset = element.visualElementAsset;
+            m_VisualTreeAsset = AssetDatabase.GUIDFromAssetPath(AssetDatabase.GetAssetPath(element.visualTreeAssetSource));
+            m_TemplateAsset = element.templateAsset?.id ?? -1;
+            m_VisualElementAsset = element.visualElementAsset?.id ?? -1;
             m_Document = ExtractGlobalObjectID(element);
             Remappable = element.visualTreeAssetSource || !m_Document.Equals(default);
         }

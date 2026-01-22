@@ -5,9 +5,11 @@
 using System;
 using System.Collections.Generic;
 using System.Globalization;
-using System.Linq;
+using System.Text;
+using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
 using UnityEngine.Bindings;
+using UnityEngine.Pool;
 using UnityEngine.Scripting.APIUpdating;
 
 namespace UnityEngine
@@ -45,9 +47,7 @@ namespace UnityEngine
             {
                 if (obj is Expression other)
                 {
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                    return rpnTokens.SequenceEqual(other.rpnTokens);
-#pragma warning restore RS0030
+                    return rpnTokens.AsSpan().SequenceEqual(other.rpnTokens.AsSpan());
                 }
                 return false;
             }
@@ -225,7 +225,7 @@ namespace UnityEngine
                 if (IsOperator(token))
                 {
                     Operator oper = TokenToOperator(token);
-                    var values = new List<double>();
+                    using var _ = ListPool<double>.Get(out var values);
                     var parsed = true;
 
                     while (stack.Count > 0 && !IsCommand(stack.Peek()) && values.Count < oper.inputs)
@@ -341,38 +341,36 @@ namespace UnityEngine
         static string[] ExpressionToTokens(string expression, out bool hasVariables)
         {
             hasVariables = false;
-            var result = new List<string>();
-            var currentString = "";
+            using var _ = ListPool<string>.Get(out var result);
+            var sb = new StringBuilder();
 
             foreach (var currentChar in expression)
             {
                 if (IsCommand(currentChar.ToString()))
                 {
-                    if (currentString.Length > 0)
-                        result.Add(currentString);
+                    if (sb.Length > 0)
+                        result.Add(sb.ToString());
 
                     result.Add(currentChar.ToString());
-                    currentString = "";
+                    sb.Clear();
                 }
                 else
                 {
                     if (currentChar != ' ')
-                        currentString += currentChar;
+                        sb.Append(currentChar);
                     else
                     {
-                        if (currentString.Length > 0)
-                            result.Add(currentString);
-                        currentString = "";
+                        if (sb.Length > 0)
+                            result.Add(sb.ToString());
+                        sb.Clear();
                     }
                 }
             }
 
-            if (currentString.Length > 0)
-                result.Add(currentString);
+            if (sb.Length > 0)
+                result.Add(sb.ToString());
 
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            hasVariables = result.Any(f => IsVariable(f) || IsDelayedFunction(f));
-#pragma warning restore RS0030
+            hasVariables = result.Exists(res => IsVariable(res) || IsDelayedFunction(res));
             return result.ToArray();
         }
 

@@ -35,6 +35,8 @@ namespace UnityEditor.Search
         internal override string targetTitle => query.displayName;
         protected override bool ShouldHideOpenButton() => false;
 
+        internal SearchView resultView => m_ResultView;
+
         public void OnEnable()
         {
             m_DescriptionProperty = serializedObject.FindProperty(nameof(SearchQueryAsset.description));
@@ -97,6 +99,11 @@ namespace UnityEditor.Search
 
             m_Body.Add(m_HeaderElement);
             m_Body.Add(m_ResultView);
+
+            m_Body.schedule.Execute(() =>
+            {
+                m_ResultView?.UpdateIncrementalTimed(TimeSpan.FromMilliseconds(16));
+            }).Every(100);
 
             return m_Body;
         }

@@ -10,16 +10,16 @@ namespace UnityEngine
     [NativeHeader("Runtime/GI/DynamicGI.h")]
     public sealed partial class DynamicGI
     {
-        public static float indirectScale { get { return 0.0f; } set {} }
-        public static float updateThreshold { get { return 0.0f; } set {} }
-        public static int   materialUpdateTimeSlice { get { return 0; } set {} }
-        public static void  SetEmissive(Renderer renderer, Color color) {}
-        public static void  SetEnvironmentData(float[] input) {}
-        public static bool  synchronousMode { get { return false; } set {} }
-        public static bool  isConverged { get { return false; } }
+        public static extern float indirectScale { get; set; }
+        public static extern float updateThreshold { get; set; }
+        public static extern int   materialUpdateTimeSlice { get; set; }
+        public static extern void  SetEmissive(Renderer renderer, Color color);
+        [NativeThrows] public static extern void  SetEnvironmentData([NotNull] float[] input);
+        public static extern bool  synchronousMode { get; set; }
+        public static extern bool  isConverged { get; }
 
-        internal static int scheduledMaterialUpdatesCount { get { return 0; } }
-        internal static bool asyncMaterialUpdates { get { return false; } set {} }
+        internal static extern int scheduledMaterialUpdatesCount { get; }
+        internal static extern bool asyncMaterialUpdates { get; set; }
         public static extern void UpdateEnvironment();
 
         [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]

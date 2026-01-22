@@ -27,7 +27,7 @@ namespace UnityEditor.UIElements
         public string ToString(object value, VisualTreeAsset visualTreeAsset);
     }
 
-    [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+    [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
     internal static class UxmlAttributeConverter
     {
         private static readonly Dictionary<Type, Type> s_RegisteredConverterTypes = new();
@@ -1435,6 +1435,46 @@ namespace UnityEditor.UIElements
 
             // Return full three-component scale
             return FormattableString.Invariant($"{value.value.x} {value.value.y} {value.value.z}");
+        }
+    }
+
+    internal class TextAutoSizeAttributeConverter : UxmlAttributeConverter<TextAutoSize>
+    {
+        // Following the syntax: none | [best-fit && <length-percentage>{2}]
+        public override TextAutoSize FromString(string value)
+        {
+            if (string.IsNullOrEmpty(value))
+            {
+                return TextAutoSize.None();
+            }
+
+            var spanStr = value.AsSpan().Trim();
+            if (spanStr.Equals("none", StringComparison.OrdinalIgnoreCase))
+            {
+                return TextAutoSize.None();
+            }
+
+            var parts = value.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
+
+            // Expected format: "best-fit minSize maxSize"
+            if (parts.Length == 3 && parts[0].Equals("best-fit", StringComparison.OrdinalIgnoreCase))
+            {
+                var minSize = Length.ParseString(parts[1]);
+                var maxSize = Length.ParseString(parts[2]);
+                return new TextAutoSize(TextAutoSizeMode.BestFit, minSize, maxSize);
+            }
+
+            return TextAutoSize.None();
+        }
+
+        public override string ToString(TextAutoSize value)
+        {
+            return value.mode switch
+            {
+                TextAutoSizeMode.None => "none",
+                TextAutoSizeMode.BestFit => $"best-fit {value.minSize} {value.maxSize}",
+                _ => null
+            };
         }
     }
 

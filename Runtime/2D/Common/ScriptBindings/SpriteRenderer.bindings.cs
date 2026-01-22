@@ -30,7 +30,7 @@ namespace UnityEngine
         VisibleOutsideMask = 2
     }
 
-    [NativeType("Runtime/Graphics/Mesh/SpriteRenderer.h")]
+    [NativeHeader("Runtime/Graphics/Mesh/SpriteRenderer.h")]
     [RequireComponent(typeof(Transform))]
     public sealed partial class SpriteRenderer : Renderer
     {

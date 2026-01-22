@@ -91,21 +91,7 @@ namespace UnityEditor.Build.Profile
                 window.SelectPlatform(platformGuid.Value);
         }
 
-        public static void AddBuildProfile(GUID platformId)
-        {
-            var platforms = FindAllVisiblePlatforms(BuildProfileModuleUtil.FindAllViewablePlatforms().ToArray());
-            foreach (var card in platforms)
-            {
-                if (card.platformId != platformId)
-                {
-                    continue;
-                }
-
-                AddSelectedBuildProfiles(card, Array.Empty<string>());
-            }
-        }
-
-        static void AddSelectedBuildProfiles(BuildProfileCard card, string[] packagesToAdd)
+        static void AddSelectedBuildProfiles(BuildProfileCard card, string customProfileName, string[] packagesToAdd)
         {
             bool noneSelected = true;
             for (var ii = 0; ii < card.preconfiguredSettingsVariants.Length; ii++)
@@ -113,19 +99,19 @@ namespace UnityEditor.Build.Profile
                 var variant = card.preconfiguredSettingsVariants[ii];
                 if (variant.Selected)
                 {
-                    AddSingleBuildProfile(card, variant.Name, ii, packagesToAdd);
+                    AddSingleBuildProfile(card, customProfileName, variant.Name, ii, packagesToAdd);
                     noneSelected = false;
                 }
             }
             if (noneSelected)
             {
-                AddSingleBuildProfile(card, null, -1, packagesToAdd);
+                AddSingleBuildProfile(card, customProfileName, null, -1, packagesToAdd);
             }
         }
 
-        static void AddSingleBuildProfile(BuildProfileCard card, string preconfiguredSettingsVariantName, int preconfiguredSettingsVariant, string[] packagesToAdd)
+        static void AddSingleBuildProfile(BuildProfileCard card, string customProfileName, string preconfiguredSettingsVariantName, int preconfiguredSettingsVariant, string[] packagesToAdd)
         {
-            BuildProfileDataSource.CreateNewAssetWithName(card.platformId, card.displayName.Trim(), preconfiguredSettingsVariantName, preconfiguredSettingsVariant, packagesToAdd);
+            BuildProfileDataSource.CreateNewAssetWithName(card.platformId, customProfileName.Trim(), preconfiguredSettingsVariantName, preconfiguredSettingsVariant, packagesToAdd);
             EditorAnalytics.SendAnalytic(new BuildProfileCreatedEvent(new BuildProfileCreatedEvent.Payload
             {
                 creationType = BuildProfileCreatedEvent.CreationType.PlatformBrowser,
@@ -223,11 +209,11 @@ namespace UnityEditor.Build.Profile
             });
             m_BuildProfileNameTextField.RegisterCallback<FocusOutEvent>(evt =>
             {
-                m_SelectedCard.displayName = m_BuildProfileNameTextField.value;
                 // truncate the name, just in case UI restrictions don't apply.
-                if (!string.IsNullOrEmpty(m_SelectedCard.displayName) &&
-                    m_SelectedCard.displayName.Length > k_MaxBuildProfileNameLength)
-                    m_SelectedCard.displayName = m_SelectedCard.displayName.Substring(0, k_MaxBuildProfileNameLength);
+                var newProfileName = m_BuildProfileNameTextField.value;
+                if (!string.IsNullOrEmpty(newProfileName) &&
+                    System.Text.Encoding.UTF8.GetByteCount(newProfileName) > k_MaxBuildProfileNameLength)
+                    m_BuildProfileNameTextField.value = BuildProfileModuleUtil.TruncateUtf8StringByBytes(newProfileName, k_MaxBuildProfileNameLength);
                 m_RenameOverlay.OnRenameEnd();
             });
             m_BuildProfileNameTextField.maxLength = k_MaxBuildProfileNameLength;
@@ -266,7 +252,7 @@ namespace UnityEditor.Build.Profile
             m_AddBuildProfileButton.SetEnabled(true);
             m_AddBuildProfileButton.clicked += () =>
             {
-                OnAddBuildProfileClicked(m_SelectedCard);
+                OnAddBuildProfileClicked(m_SelectedCard, m_BuildProfileNameTextField.value);
                 m_CloseEvent = new BuildProfilePlatformBrowserClosed(new BuildProfilePlatformBrowserClosed.Payload()
                 {
                     wasProfileCreated = true,
@@ -405,8 +391,7 @@ namespace UnityEditor.Build.Profile
         internal void OnCardSelected(BuildProfileCard card)
         {
             ClearWindowData();
-            m_BuildProfileNameTextField.value = BuildProfileDataSource.SanitizeFileName(
-                BuildProfileModuleUtil.GetClassicPlatformDisplayName(card.platformId));
+            m_BuildProfileNameTextField.value = BuildProfileDataSource.SanitizeFileName(card.displayName);
             m_SelectedCard = card;
             SetCardSelected(card);
             m_SelectedDisplayNameLabel.text = card.displayName;
@@ -555,10 +540,10 @@ namespace UnityEditor.Build.Profile
         /// <summary>
         /// Creates a build profile assets based on the selected card.
         /// </summary>
-        void OnAddBuildProfileClicked(BuildProfileCard card)
+        void OnAddBuildProfileClicked(BuildProfileCard card, string customProfileName)
         {
             var packagesToAdd = DeterminePackagesToAdd();
-            AddSelectedBuildProfiles(card, packagesToAdd);
+            AddSelectedBuildProfiles(card, customProfileName, packagesToAdd);
         }
 
         string[] DeterminePackagesToAdd()

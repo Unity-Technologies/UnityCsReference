@@ -475,10 +475,10 @@ namespace UnityEditor
             {
                 ImportLog importLog = AssetImporter.GetImportLog(singleImporter.assetPath);
                 #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                ImportLog.ImportLogEntry[] importRigErrors = importLog != null ? importLog.logEntries.Where(x => x.flags == ImportLogFlags.Error && x.message.StartsWith(k_RigErrorPrefix)).ToArray() : new ImportLog.ImportLogEntry[0];
+                ImportLog.ImportLogEntry[] importRigErrors = importLog != null ? importLog.logEntries.Where(x => x.flags == ImportLogFlags.Error && x.message.StartsWith(k_RigErrorPrefix)).ToArray() : Array.Empty<ImportLog.ImportLogEntry>();
 #pragma warning restore RS0030
                 #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                ImportLog.ImportLogEntry[] importRigWarnings = importLog != null ? importLog.logEntries.Where(x => x.flags == ImportLogFlags.Warning && x.message.StartsWith(k_RigErrorPrefix)).ToArray() : new ImportLog.ImportLogEntry[0];
+                ImportLog.ImportLogEntry[] importRigWarnings = importLog != null ? importLog.logEntries.Where(x => x.flags == ImportLogFlags.Warning && x.message.StartsWith(k_RigErrorPrefix)).ToArray() : Array.Empty<ImportLog.ImportLogEntry>();
 #pragma warning restore RS0030
 
                 bool hasNoValidAnimationData = targets.Length == 1 && !m_ContainsAnimation.boolValue && singleImporter.animationType != ModelImporterAnimationType.None && !isEditorPreset;

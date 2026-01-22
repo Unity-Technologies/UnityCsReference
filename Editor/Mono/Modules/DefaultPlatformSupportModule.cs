@@ -26,11 +26,11 @@ namespace UnityEditor.Modules
 
         public virtual GUIContent[] GetDisplayNames() { return null; }
 
-        public virtual string[] NativeLibraries { get { return new string[0]; } }
+        public virtual string[] NativeLibraries { get { return Array.Empty<string>(); } }
 
-        public virtual string[] AssemblyReferencesForUserScripts { get { return new string[0]; } }
+        public virtual string[] AssemblyReferencesForUserScripts { get { return Array.Empty<string>(); } }
 
-        public virtual string[] AssemblyReferencesForEditorCsharpProject { get { return new string[0]; } }
+        public virtual string[] AssemblyReferencesForEditorCsharpProject { get { return Array.Empty<string>(); } }
 
         public abstract IBuildPostprocessor CreateBuildPostprocessor();
 
@@ -68,9 +68,7 @@ namespace UnityEditor.Modules
 
         public virtual IEnumerable<ScriptAssemblyPlatform> GetExtraScriptAssemblyPlatforms(BuildTarget target = BuildTarget.NoTarget)
         {
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            return Enumerable.Empty<ScriptAssemblyPlatform>();
-#pragma warning restore RS0030
+            return Array.Empty<ScriptAssemblyPlatform>();
         }
 
         public virtual IEditorAnalyticsExtension GetEditorAnalyticsExtension() { return null; }

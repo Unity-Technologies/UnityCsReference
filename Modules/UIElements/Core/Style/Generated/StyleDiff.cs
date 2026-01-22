@@ -11,107 +11,103 @@
 /******************************************************************************/
 using System;
 using System.Collections.Generic;
-using UnityEngine.UIElements.StyleSheets;
 using Unity.Properties;
+using UnityEngine.UIElements.StyleSheets;
+using UnityEngine.UIElements.Unmanaged;
 using UnityEngine.Assertions;
 
 namespace UnityEngine.UIElements
 {
     internal partial class StyleDiff
     {
-        private StylePropertyData<StyleEnum<Align>, Align> m_AlignContent;
-        private StylePropertyData<StyleEnum<Align>, Align> m_AlignItems;
-        private StylePropertyData<StyleEnum<Align>, Align> m_AlignSelf;
-        private StylePropertyData<StyleRatio, Ratio> m_AspectRatio;
-        private StylePropertyData<StyleColor, Color> m_BackgroundColor;
-        private StylePropertyData<StyleBackground, Background> m_BackgroundImage;
-        private StylePropertyData<StyleBackgroundPosition, BackgroundPosition> m_BackgroundPositionX;
-        private StylePropertyData<StyleBackgroundPosition, BackgroundPosition> m_BackgroundPositionY;
-        private StylePropertyData<StyleBackgroundRepeat, BackgroundRepeat> m_BackgroundRepeat;
-        private StylePropertyData<StyleBackgroundSize, BackgroundSize> m_BackgroundSize;
-        private StylePropertyData<StyleColor, Color> m_BorderBottomColor;
-        private StylePropertyData<StyleLength, Length> m_BorderBottomLeftRadius;
-        private StylePropertyData<StyleLength, Length> m_BorderBottomRightRadius;
-        private StylePropertyData<StyleFloat, float> m_BorderBottomWidth;
-        private StylePropertyData<StyleColor, Color> m_BorderLeftColor;
-        private StylePropertyData<StyleFloat, float> m_BorderLeftWidth;
-        private StylePropertyData<StyleColor, Color> m_BorderRightColor;
-        private StylePropertyData<StyleFloat, float> m_BorderRightWidth;
-        private StylePropertyData<StyleColor, Color> m_BorderTopColor;
-        private StylePropertyData<StyleLength, Length> m_BorderTopLeftRadius;
-        private StylePropertyData<StyleLength, Length> m_BorderTopRightRadius;
-        private StylePropertyData<StyleFloat, float> m_BorderTopWidth;
-        private StylePropertyData<StyleLength, Length> m_Bottom;
-        private StylePropertyData<StyleColor, Color> m_Color;
-        private StylePropertyData<StyleCursor, Cursor> m_Cursor;
-        private StylePropertyData<StyleEnum<DisplayStyle>, DisplayStyle> m_Display;
-        private StylePropertyData<StyleList<FilterFunction>, List<FilterFunction>> m_Filter = new()
-        {computedValueComparer = ListEqualityComparer<List<FilterFunction>, FilterFunction>.Default};
-        private StylePropertyData<StyleLength, Length> m_FlexBasis;
-        private StylePropertyData<StyleEnum<FlexDirection>, FlexDirection> m_FlexDirection;
-        private StylePropertyData<StyleFloat, float> m_FlexGrow;
-        private StylePropertyData<StyleFloat, float> m_FlexShrink;
-        private StylePropertyData<StyleEnum<Wrap>, Wrap> m_FlexWrap;
-        private StylePropertyData<StyleLength, Length> m_FontSize;
-        private StylePropertyData<StyleLength, Length> m_Height;
-        private StylePropertyData<StyleEnum<Justify>, Justify> m_JustifyContent;
-        private StylePropertyData<StyleLength, Length> m_Left;
-        private StylePropertyData<StyleLength, Length> m_LetterSpacing;
-        private StylePropertyData<StyleLength, Length> m_MarginBottom;
-        private StylePropertyData<StyleLength, Length> m_MarginLeft;
-        private StylePropertyData<StyleLength, Length> m_MarginRight;
-        private StylePropertyData<StyleLength, Length> m_MarginTop;
-        private StylePropertyData<StyleLength, Length> m_MaxHeight;
-        private StylePropertyData<StyleLength, Length> m_MaxWidth;
-        private StylePropertyData<StyleLength, Length> m_MinHeight;
-        private StylePropertyData<StyleLength, Length> m_MinWidth;
-        private StylePropertyData<StyleFloat, float> m_Opacity;
-        private StylePropertyData<StyleEnum<Overflow>, OverflowInternal> m_Overflow;
-        private StylePropertyData<StyleLength, Length> m_PaddingBottom;
-        private StylePropertyData<StyleLength, Length> m_PaddingLeft;
-        private StylePropertyData<StyleLength, Length> m_PaddingRight;
-        private StylePropertyData<StyleLength, Length> m_PaddingTop;
-        private StylePropertyData<StyleEnum<Position>, Position> m_Position;
-        private StylePropertyData<StyleLength, Length> m_Right;
-        private StylePropertyData<StyleRotate, Rotate> m_Rotate;
-        private StylePropertyData<StyleScale, Scale> m_Scale;
-        private StylePropertyData<StyleEnum<TextOverflow>, TextOverflow> m_TextOverflow;
-        private StylePropertyData<StyleTextShadow, TextShadow> m_TextShadow;
-        private StylePropertyData<StyleLength, Length> m_Top;
-        private StylePropertyData<StyleTransformOrigin, TransformOrigin> m_TransformOrigin;
-        private StylePropertyData<StyleList<TimeValue>, List<TimeValue>> m_TransitionDelay = new()
-        {computedValueComparer = ListEqualityComparer<List<TimeValue>, TimeValue>.Default};
-        private StylePropertyData<StyleList<TimeValue>, List<TimeValue>> m_TransitionDuration = new()
-        {computedValueComparer = ListEqualityComparer<List<TimeValue>, TimeValue>.Default};
-        private StylePropertyData<StyleList<StylePropertyName>, List<StylePropertyName>> m_TransitionProperty = new()
-        {computedValueComparer = ListEqualityComparer<List<StylePropertyName>, StylePropertyName>.Default};
-        private StylePropertyData<StyleList<EasingFunction>, List<EasingFunction>> m_TransitionTimingFunction = new()
-        {computedValueComparer = ListEqualityComparer<List<EasingFunction>, EasingFunction>.Default};
-        private StylePropertyData<StyleTranslate, Translate> m_Translate;
-        private StylePropertyData<StyleColor, Color> m_UnityBackgroundImageTintColor;
-        private StylePropertyData<StyleEnum<EditorTextRenderingMode>, EditorTextRenderingMode> m_UnityEditorTextRenderingMode;
-        private StylePropertyData<StyleFont, Font> m_UnityFont;
-        private StylePropertyData<StyleFontDefinition, FontDefinition> m_UnityFontDefinition;
-        private StylePropertyData<StyleEnum<FontStyle>, FontStyle> m_UnityFontStyleAndWeight;
-        private StylePropertyData<StyleMaterialDefinition, MaterialDefinition> m_UnityMaterial;
-        private StylePropertyData<StyleEnum<OverflowClipBox>, OverflowClipBox> m_UnityOverflowClipBox;
-        private StylePropertyData<StyleLength, Length> m_UnityParagraphSpacing;
-        private StylePropertyData<StyleInt, int> m_UnitySliceBottom;
-        private StylePropertyData<StyleInt, int> m_UnitySliceLeft;
-        private StylePropertyData<StyleInt, int> m_UnitySliceRight;
-        private StylePropertyData<StyleFloat, float> m_UnitySliceScale;
-        private StylePropertyData<StyleInt, int> m_UnitySliceTop;
-        private StylePropertyData<StyleEnum<SliceType>, SliceType> m_UnitySliceType;
-        private StylePropertyData<StyleEnum<TextAnchor>, TextAnchor> m_UnityTextAlign;
-        private StylePropertyData<StyleTextAutoSize, TextAutoSize> m_UnityTextAutoSize;
-        private StylePropertyData<StyleEnum<TextGeneratorType>, TextGeneratorType> m_UnityTextGenerator;
-        private StylePropertyData<StyleColor, Color> m_UnityTextOutlineColor;
-        private StylePropertyData<StyleFloat, float> m_UnityTextOutlineWidth;
-        private StylePropertyData<StyleEnum<TextOverflowPosition>, TextOverflowPosition> m_UnityTextOverflowPosition;
-        private StylePropertyData<StyleEnum<Visibility>, Visibility> m_Visibility;
-        private StylePropertyData<StyleEnum<WhiteSpace>, WhiteSpace> m_WhiteSpace;
-        private StylePropertyData<StyleLength, Length> m_Width;
-        private StylePropertyData<StyleLength, Length> m_WordSpacing;
+        private StylePropertyData<StyleEnum<Align>, Align> m_AlignContent = new(StylePropertyId.AlignContent);
+        private StylePropertyData<StyleEnum<Align>, Align> m_AlignItems = new(StylePropertyId.AlignItems);
+        private StylePropertyData<StyleEnum<Align>, Align> m_AlignSelf = new(StylePropertyId.AlignSelf);
+        private StylePropertyData<StyleRatio, Ratio> m_AspectRatio = new(StylePropertyId.AspectRatio);
+        private StylePropertyData<StyleColor, Color> m_BackgroundColor = new(StylePropertyId.BackgroundColor);
+        private StylePropertyData<StyleBackground, Background> m_BackgroundImage = new(StylePropertyId.BackgroundImage);
+        private StylePropertyData<StyleBackgroundPosition, BackgroundPosition> m_BackgroundPositionX = new(StylePropertyId.BackgroundPositionX);
+        private StylePropertyData<StyleBackgroundPosition, BackgroundPosition> m_BackgroundPositionY = new(StylePropertyId.BackgroundPositionY);
+        private StylePropertyData<StyleBackgroundRepeat, BackgroundRepeat> m_BackgroundRepeat = new(StylePropertyId.BackgroundRepeat);
+        private StylePropertyData<StyleBackgroundSize, BackgroundSize> m_BackgroundSize = new(StylePropertyId.BackgroundSize);
+        private StylePropertyData<StyleColor, Color> m_BorderBottomColor = new(StylePropertyId.BorderBottomColor);
+        private StylePropertyData<StyleLength, Length> m_BorderBottomLeftRadius = new(StylePropertyId.BorderBottomLeftRadius);
+        private StylePropertyData<StyleLength, Length> m_BorderBottomRightRadius = new(StylePropertyId.BorderBottomRightRadius);
+        private StylePropertyData<StyleFloat, float> m_BorderBottomWidth = new(StylePropertyId.BorderBottomWidth);
+        private StylePropertyData<StyleColor, Color> m_BorderLeftColor = new(StylePropertyId.BorderLeftColor);
+        private StylePropertyData<StyleFloat, float> m_BorderLeftWidth = new(StylePropertyId.BorderLeftWidth);
+        private StylePropertyData<StyleColor, Color> m_BorderRightColor = new(StylePropertyId.BorderRightColor);
+        private StylePropertyData<StyleFloat, float> m_BorderRightWidth = new(StylePropertyId.BorderRightWidth);
+        private StylePropertyData<StyleColor, Color> m_BorderTopColor = new(StylePropertyId.BorderTopColor);
+        private StylePropertyData<StyleLength, Length> m_BorderTopLeftRadius = new(StylePropertyId.BorderTopLeftRadius);
+        private StylePropertyData<StyleLength, Length> m_BorderTopRightRadius = new(StylePropertyId.BorderTopRightRadius);
+        private StylePropertyData<StyleFloat, float> m_BorderTopWidth = new(StylePropertyId.BorderTopWidth);
+        private StylePropertyData<StyleLength, Length> m_Bottom = new(StylePropertyId.Bottom);
+        private StylePropertyData<StyleColor, Color> m_Color = new(StylePropertyId.Color);
+        private StylePropertyData<StyleCursor, Cursor> m_Cursor = new(StylePropertyId.Cursor);
+        private StylePropertyData<StyleEnum<DisplayStyle>, DisplayStyle> m_Display = new(StylePropertyId.Display);
+        private StylePropertyData<StyleList<FilterFunction>, List<FilterFunction>> m_Filter = new(StylePropertyId.Filter);
+        private StylePropertyData<StyleLength, Length> m_FlexBasis = new(StylePropertyId.FlexBasis);
+        private StylePropertyData<StyleEnum<FlexDirection>, FlexDirection> m_FlexDirection = new(StylePropertyId.FlexDirection);
+        private StylePropertyData<StyleFloat, float> m_FlexGrow = new(StylePropertyId.FlexGrow);
+        private StylePropertyData<StyleFloat, float> m_FlexShrink = new(StylePropertyId.FlexShrink);
+        private StylePropertyData<StyleEnum<Wrap>, Wrap> m_FlexWrap = new(StylePropertyId.FlexWrap);
+        private StylePropertyData<StyleLength, Length> m_FontSize = new(StylePropertyId.FontSize);
+        private StylePropertyData<StyleLength, Length> m_Height = new(StylePropertyId.Height);
+        private StylePropertyData<StyleEnum<Justify>, Justify> m_JustifyContent = new(StylePropertyId.JustifyContent);
+        private StylePropertyData<StyleLength, Length> m_Left = new(StylePropertyId.Left);
+        private StylePropertyData<StyleLength, Length> m_LetterSpacing = new(StylePropertyId.LetterSpacing);
+        private StylePropertyData<StyleLength, Length> m_MarginBottom = new(StylePropertyId.MarginBottom);
+        private StylePropertyData<StyleLength, Length> m_MarginLeft = new(StylePropertyId.MarginLeft);
+        private StylePropertyData<StyleLength, Length> m_MarginRight = new(StylePropertyId.MarginRight);
+        private StylePropertyData<StyleLength, Length> m_MarginTop = new(StylePropertyId.MarginTop);
+        private StylePropertyData<StyleLength, Length> m_MaxHeight = new(StylePropertyId.MaxHeight);
+        private StylePropertyData<StyleLength, Length> m_MaxWidth = new(StylePropertyId.MaxWidth);
+        private StylePropertyData<StyleLength, Length> m_MinHeight = new(StylePropertyId.MinHeight);
+        private StylePropertyData<StyleLength, Length> m_MinWidth = new(StylePropertyId.MinWidth);
+        private StylePropertyData<StyleFloat, float> m_Opacity = new(StylePropertyId.Opacity);
+        private StylePropertyData<StyleEnum<Overflow>, OverflowInternal> m_Overflow = new(StylePropertyId.Overflow);
+        private StylePropertyData<StyleLength, Length> m_PaddingBottom = new(StylePropertyId.PaddingBottom);
+        private StylePropertyData<StyleLength, Length> m_PaddingLeft = new(StylePropertyId.PaddingLeft);
+        private StylePropertyData<StyleLength, Length> m_PaddingRight = new(StylePropertyId.PaddingRight);
+        private StylePropertyData<StyleLength, Length> m_PaddingTop = new(StylePropertyId.PaddingTop);
+        private StylePropertyData<StyleEnum<Position>, Position> m_Position = new(StylePropertyId.Position);
+        private StylePropertyData<StyleLength, Length> m_Right = new(StylePropertyId.Right);
+        private StylePropertyData<StyleRotate, Rotate> m_Rotate = new(StylePropertyId.Rotate);
+        private StylePropertyData<StyleScale, Scale> m_Scale = new(StylePropertyId.Scale);
+        private StylePropertyData<StyleEnum<TextOverflow>, TextOverflow> m_TextOverflow = new(StylePropertyId.TextOverflow);
+        private StylePropertyData<StyleTextShadow, TextShadow> m_TextShadow = new(StylePropertyId.TextShadow);
+        private StylePropertyData<StyleLength, Length> m_Top = new(StylePropertyId.Top);
+        private StylePropertyData<StyleTransformOrigin, TransformOrigin> m_TransformOrigin = new(StylePropertyId.TransformOrigin);
+        private StylePropertyData<StyleList<TimeValue>, List<TimeValue>> m_TransitionDelay = new(StylePropertyId.TransitionDelay);
+        private StylePropertyData<StyleList<TimeValue>, List<TimeValue>> m_TransitionDuration = new(StylePropertyId.TransitionDuration);
+        private StylePropertyData<StyleList<StylePropertyName>, List<StylePropertyName>> m_TransitionProperty = new(StylePropertyId.TransitionProperty);
+        private StylePropertyData<StyleList<EasingFunction>, List<EasingFunction>> m_TransitionTimingFunction = new(StylePropertyId.TransitionTimingFunction);
+        private StylePropertyData<StyleTranslate, Translate> m_Translate = new(StylePropertyId.Translate);
+        private StylePropertyData<StyleColor, Color> m_UnityBackgroundImageTintColor = new(StylePropertyId.UnityBackgroundImageTintColor);
+        private StylePropertyData<StyleEnum<EditorTextRenderingMode>, EditorTextRenderingMode> m_UnityEditorTextRenderingMode = new(StylePropertyId.UnityEditorTextRenderingMode);
+        private StylePropertyData<StyleFont, Font> m_UnityFont = new(StylePropertyId.UnityFont);
+        private StylePropertyData<StyleFontDefinition, FontDefinition> m_UnityFontDefinition = new(StylePropertyId.UnityFontDefinition);
+        private StylePropertyData<StyleEnum<FontStyle>, FontStyle> m_UnityFontStyleAndWeight = new(StylePropertyId.UnityFontStyleAndWeight);
+        private StylePropertyData<StyleMaterialDefinition, MaterialDefinition> m_UnityMaterial = new(StylePropertyId.UnityMaterial);
+        private StylePropertyData<StyleEnum<OverflowClipBox>, OverflowClipBox> m_UnityOverflowClipBox = new(StylePropertyId.UnityOverflowClipBox);
+        private StylePropertyData<StyleLength, Length> m_UnityParagraphSpacing = new(StylePropertyId.UnityParagraphSpacing);
+        private StylePropertyData<StyleInt, int> m_UnitySliceBottom = new(StylePropertyId.UnitySliceBottom);
+        private StylePropertyData<StyleInt, int> m_UnitySliceLeft = new(StylePropertyId.UnitySliceLeft);
+        private StylePropertyData<StyleInt, int> m_UnitySliceRight = new(StylePropertyId.UnitySliceRight);
+        private StylePropertyData<StyleFloat, float> m_UnitySliceScale = new(StylePropertyId.UnitySliceScale);
+        private StylePropertyData<StyleInt, int> m_UnitySliceTop = new(StylePropertyId.UnitySliceTop);
+        private StylePropertyData<StyleEnum<SliceType>, SliceType> m_UnitySliceType = new(StylePropertyId.UnitySliceType);
+        private StylePropertyData<StyleEnum<TextAnchor>, TextAnchor> m_UnityTextAlign = new(StylePropertyId.UnityTextAlign);
+        private StylePropertyData<StyleTextAutoSize, TextAutoSize> m_UnityTextAutoSize = new(StylePropertyId.UnityTextAutoSize);
+        private StylePropertyData<StyleEnum<TextGeneratorType>, TextGeneratorType> m_UnityTextGenerator = new(StylePropertyId.UnityTextGenerator);
+        private StylePropertyData<StyleColor, Color> m_UnityTextOutlineColor = new(StylePropertyId.UnityTextOutlineColor);
+        private StylePropertyData<StyleFloat, float> m_UnityTextOutlineWidth = new(StylePropertyId.UnityTextOutlineWidth);
+        private StylePropertyData<StyleEnum<TextOverflowPosition>, TextOverflowPosition> m_UnityTextOverflowPosition = new(StylePropertyId.UnityTextOverflowPosition);
+        private StylePropertyData<StyleEnum<Visibility>, Visibility> m_Visibility = new(StylePropertyId.Visibility);
+        private StylePropertyData<StyleEnum<WhiteSpace>, WhiteSpace> m_WhiteSpace = new(StylePropertyId.WhiteSpace);
+        private StylePropertyData<StyleLength, Length> m_Width = new(StylePropertyId.Width);
+        private StylePropertyData<StyleLength, Length> m_WordSpacing = new(StylePropertyId.WordSpacing);
         private ShortHandStylePropertyData m_All;
         private ShortHandStylePropertyData m_BackgroundPosition;
         private ShortHandStylePropertyData m_BorderColor;
@@ -124,1148 +120,268 @@ namespace UnityEngine.UIElements
         private ShortHandStylePropertyData m_UnityBackgroundScaleMode;
         private ShortHandStylePropertyData m_UnityTextOutline;
         [CreateProperty]
-        public StylePropertyData<StyleEnum<Align>, Align> alignContent
-        {
-            get => m_AlignContent;
-            private set
-            {
-                if (m_AlignContent == value)
-                    return;
-                m_AlignContent = value;
-                Notify();
-            }
-        }
-
-        [CreateProperty]
-        public StylePropertyData<StyleEnum<Align>, Align> alignItems
-        {
-            get => m_AlignItems;
-            private set
-            {
-                if (m_AlignItems == value)
-                    return;
-                m_AlignItems = value;
-                Notify();
-            }
-        }
-
-        [CreateProperty]
-        public StylePropertyData<StyleEnum<Align>, Align> alignSelf
-        {
-            get => m_AlignSelf;
-            private set
-            {
-                if (m_AlignSelf == value)
-                    return;
-                m_AlignSelf = value;
-                Notify();
-            }
-        }
-
-        [CreateProperty]
-        public StylePropertyData<StyleRatio, Ratio> aspectRatio
-        {
-            get => m_AspectRatio;
-            private set
-            {
-                if (m_AspectRatio == value)
-                    return;
-                m_AspectRatio = value;
-                Notify();
-            }
-        }
-
-        [CreateProperty]
-        public StylePropertyData<StyleColor, Color> backgroundColor
-        {
-            get => m_BackgroundColor;
-            private set
-            {
-                if (m_BackgroundColor == value)
-                    return;
-                m_BackgroundColor = value;
-                Notify();
-            }
-        }
-
-        [CreateProperty]
-        public StylePropertyData<StyleBackground, Background> backgroundImage
-        {
-            get => m_BackgroundImage;
-            private set
-            {
-                if (m_BackgroundImage == value)
-                    return;
-                m_BackgroundImage = value;
-                Notify();
-            }
-        }
-
-        [CreateProperty]
-        public StylePropertyData<StyleBackgroundPosition, BackgroundPosition> backgroundPositionX
-        {
-            get => m_BackgroundPositionX;
-            private set
-            {
-                if (m_BackgroundPositionX == value)
-                    return;
-                m_BackgroundPositionX = value;
-                Notify();
-            }
-        }
-
-        [CreateProperty]
-        public StylePropertyData<StyleBackgroundPosition, BackgroundPosition> backgroundPositionY
-        {
-            get => m_BackgroundPositionY;
-            private set
-            {
-                if (m_BackgroundPositionY == value)
-                    return;
-                m_BackgroundPositionY = value;
-                Notify();
-            }
-        }
-
-        [CreateProperty]
-        public StylePropertyData<StyleBackgroundRepeat, BackgroundRepeat> backgroundRepeat
-        {
-            get => m_BackgroundRepeat;
-            private set
-            {
-                if (m_BackgroundRepeat == value)
-                    return;
-                m_BackgroundRepeat = value;
-                Notify();
-            }
-        }
-
-        [CreateProperty]
-        public StylePropertyData<StyleBackgroundSize, BackgroundSize> backgroundSize
-        {
-            get => m_BackgroundSize;
-            private set
-            {
-                if (m_BackgroundSize == value)
-                    return;
-                m_BackgroundSize = value;
-                Notify();
-            }
-        }
-
-        [CreateProperty]
-        public StylePropertyData<StyleColor, Color> borderBottomColor
-        {
-            get => m_BorderBottomColor;
-            private set
-            {
-                if (m_BorderBottomColor == value)
-                    return;
-                m_BorderBottomColor = value;
-                Notify();
-            }
-        }
-
-        [CreateProperty]
-        public StylePropertyData<StyleLength, Length> borderBottomLeftRadius
-        {
-            get => m_BorderBottomLeftRadius;
-            private set
-            {
-                if (m_BorderBottomLeftRadius == value)
-                    return;
-                m_BorderBottomLeftRadius = value;
-                Notify();
-            }
-        }
-
-        [CreateProperty]
-        public StylePropertyData<StyleLength, Length> borderBottomRightRadius
-        {
-            get => m_BorderBottomRightRadius;
-            private set
-            {
-                if (m_BorderBottomRightRadius == value)
-                    return;
-                m_BorderBottomRightRadius = value;
-                Notify();
-            }
-        }
-
-        [CreateProperty]
-        public StylePropertyData<StyleFloat, float> borderBottomWidth
-        {
-            get => m_BorderBottomWidth;
-            private set
-            {
-                if (m_BorderBottomWidth == value)
-                    return;
-                m_BorderBottomWidth = value;
-                Notify();
-            }
-        }
-
-        [CreateProperty]
-        public StylePropertyData<StyleColor, Color> borderLeftColor
-        {
-            get => m_BorderLeftColor;
-            private set
-            {
-                if (m_BorderLeftColor == value)
-                    return;
-                m_BorderLeftColor = value;
-                Notify();
-            }
-        }
-
-        [CreateProperty]
-        public StylePropertyData<StyleFloat, float> borderLeftWidth
-        {
-            get => m_BorderLeftWidth;
-            private set
-            {
-                if (m_BorderLeftWidth == value)
-                    return;
-                m_BorderLeftWidth = value;
-                Notify();
-            }
-        }
-
-        [CreateProperty]
-        public StylePropertyData<StyleColor, Color> borderRightColor
-        {
-            get => m_BorderRightColor;
-            private set
-            {
-                if (m_BorderRightColor == value)
-                    return;
-                m_BorderRightColor = value;
-                Notify();
-            }
-        }
-
-        [CreateProperty]
-        public StylePropertyData<StyleFloat, float> borderRightWidth
-        {
-            get => m_BorderRightWidth;
-            private set
-            {
-                if (m_BorderRightWidth == value)
-                    return;
-                m_BorderRightWidth = value;
-                Notify();
-            }
-        }
-
-        [CreateProperty]
-        public StylePropertyData<StyleColor, Color> borderTopColor
-        {
-            get => m_BorderTopColor;
-            private set
-            {
-                if (m_BorderTopColor == value)
-                    return;
-                m_BorderTopColor = value;
-                Notify();
-            }
-        }
-
-        [CreateProperty]
-        public StylePropertyData<StyleLength, Length> borderTopLeftRadius
-        {
-            get => m_BorderTopLeftRadius;
-            private set
-            {
-                if (m_BorderTopLeftRadius == value)
-                    return;
-                m_BorderTopLeftRadius = value;
-                Notify();
-            }
-        }
-
-        [CreateProperty]
-        public StylePropertyData<StyleLength, Length> borderTopRightRadius
-        {
-            get => m_BorderTopRightRadius;
-            private set
-            {
-                if (m_BorderTopRightRadius == value)
-                    return;
-                m_BorderTopRightRadius = value;
-                Notify();
-            }
-        }
-
-        [CreateProperty]
-        public StylePropertyData<StyleFloat, float> borderTopWidth
-        {
-            get => m_BorderTopWidth;
-            private set
-            {
-                if (m_BorderTopWidth == value)
-                    return;
-                m_BorderTopWidth = value;
-                Notify();
-            }
-        }
-
-        [CreateProperty]
-        public StylePropertyData<StyleLength, Length> bottom
-        {
-            get => m_Bottom;
-            private set
-            {
-                if (m_Bottom == value)
-                    return;
-                m_Bottom = value;
-                Notify();
-            }
-        }
-
-        [CreateProperty]
-        public StylePropertyData<StyleColor, Color> color
-        {
-            get => m_Color;
-            private set
-            {
-                if (m_Color == value)
-                    return;
-                m_Color = value;
-                Notify();
-            }
-        }
-
-        [CreateProperty]
-        public StylePropertyData<StyleCursor, Cursor> cursor
-        {
-            get => m_Cursor;
-            private set
-            {
-                if (m_Cursor == value)
-                    return;
-                m_Cursor = value;
-                Notify();
-            }
-        }
-
-        [CreateProperty]
-        public StylePropertyData<StyleEnum<DisplayStyle>, DisplayStyle> display
-        {
-            get => m_Display;
-            private set
-            {
-                if (m_Display == value)
-                    return;
-                m_Display = value;
-                Notify();
-            }
-        }
-
-        [CreateProperty]
-        public StylePropertyData<StyleList<FilterFunction>, List<FilterFunction>> filter
-        {
-            get => m_Filter;
-            private set
-            {
-                if (m_Filter == value)
-                    return;
-                m_Filter = value;
-                Notify();
-            }
-        }
-
-        [CreateProperty]
-        public StylePropertyData<StyleLength, Length> flexBasis
-        {
-            get => m_FlexBasis;
-            private set
-            {
-                if (m_FlexBasis == value)
-                    return;
-                m_FlexBasis = value;
-                Notify();
-            }
-        }
-
-        [CreateProperty]
-        public StylePropertyData<StyleEnum<FlexDirection>, FlexDirection> flexDirection
-        {
-            get => m_FlexDirection;
-            private set
-            {
-                if (m_FlexDirection == value)
-                    return;
-                m_FlexDirection = value;
-                Notify();
-            }
-        }
-
-        [CreateProperty]
-        public StylePropertyData<StyleFloat, float> flexGrow
-        {
-            get => m_FlexGrow;
-            private set
-            {
-                if (m_FlexGrow == value)
-                    return;
-                m_FlexGrow = value;
-                Notify();
-            }
-        }
-
-        [CreateProperty]
-        public StylePropertyData<StyleFloat, float> flexShrink
-        {
-            get => m_FlexShrink;
-            private set
-            {
-                if (m_FlexShrink == value)
-                    return;
-                m_FlexShrink = value;
-                Notify();
-            }
-        }
-
-        [CreateProperty]
-        public StylePropertyData<StyleEnum<Wrap>, Wrap> flexWrap
-        {
-            get => m_FlexWrap;
-            private set
-            {
-                if (m_FlexWrap == value)
-                    return;
-                m_FlexWrap = value;
-                Notify();
-            }
-        }
-
-        [CreateProperty]
-        public StylePropertyData<StyleLength, Length> fontSize
-        {
-            get => m_FontSize;
-            private set
-            {
-                if (m_FontSize == value)
-                    return;
-                m_FontSize = value;
-                Notify();
-            }
-        }
-
-        [CreateProperty]
-        public StylePropertyData<StyleLength, Length> height
-        {
-            get => m_Height;
-            private set
-            {
-                if (m_Height == value)
-                    return;
-                m_Height = value;
-                Notify();
-            }
-        }
-
-        [CreateProperty]
-        public StylePropertyData<StyleEnum<Justify>, Justify> justifyContent
-        {
-            get => m_JustifyContent;
-            private set
-            {
-                if (m_JustifyContent == value)
-                    return;
-                m_JustifyContent = value;
-                Notify();
-            }
-        }
-
-        [CreateProperty]
-        public StylePropertyData<StyleLength, Length> left
-        {
-            get => m_Left;
-            private set
-            {
-                if (m_Left == value)
-                    return;
-                m_Left = value;
-                Notify();
-            }
-        }
-
-        [CreateProperty]
-        public StylePropertyData<StyleLength, Length> letterSpacing
-        {
-            get => m_LetterSpacing;
-            private set
-            {
-                if (m_LetterSpacing == value)
-                    return;
-                m_LetterSpacing = value;
-                Notify();
-            }
-        }
-
-        [CreateProperty]
-        public StylePropertyData<StyleLength, Length> marginBottom
-        {
-            get => m_MarginBottom;
-            private set
-            {
-                if (m_MarginBottom == value)
-                    return;
-                m_MarginBottom = value;
-                Notify();
-            }
-        }
-
-        [CreateProperty]
-        public StylePropertyData<StyleLength, Length> marginLeft
-        {
-            get => m_MarginLeft;
-            private set
-            {
-                if (m_MarginLeft == value)
-                    return;
-                m_MarginLeft = value;
-                Notify();
-            }
-        }
-
-        [CreateProperty]
-        public StylePropertyData<StyleLength, Length> marginRight
-        {
-            get => m_MarginRight;
-            private set
-            {
-                if (m_MarginRight == value)
-                    return;
-                m_MarginRight = value;
-                Notify();
-            }
-        }
-
-        [CreateProperty]
-        public StylePropertyData<StyleLength, Length> marginTop
-        {
-            get => m_MarginTop;
-            private set
-            {
-                if (m_MarginTop == value)
-                    return;
-                m_MarginTop = value;
-                Notify();
-            }
-        }
-
-        [CreateProperty]
-        public StylePropertyData<StyleLength, Length> maxHeight
-        {
-            get => m_MaxHeight;
-            private set
-            {
-                if (m_MaxHeight == value)
-                    return;
-                m_MaxHeight = value;
-                Notify();
-            }
-        }
-
-        [CreateProperty]
-        public StylePropertyData<StyleLength, Length> maxWidth
-        {
-            get => m_MaxWidth;
-            private set
-            {
-                if (m_MaxWidth == value)
-                    return;
-                m_MaxWidth = value;
-                Notify();
-            }
-        }
-
-        [CreateProperty]
-        public StylePropertyData<StyleLength, Length> minHeight
-        {
-            get => m_MinHeight;
-            private set
-            {
-                if (m_MinHeight == value)
-                    return;
-                m_MinHeight = value;
-                Notify();
-            }
-        }
-
-        [CreateProperty]
-        public StylePropertyData<StyleLength, Length> minWidth
-        {
-            get => m_MinWidth;
-            private set
-            {
-                if (m_MinWidth == value)
-                    return;
-                m_MinWidth = value;
-                Notify();
-            }
-        }
-
-        [CreateProperty]
-        public StylePropertyData<StyleFloat, float> opacity
-        {
-            get => m_Opacity;
-            private set
-            {
-                if (m_Opacity == value)
-                    return;
-                m_Opacity = value;
-                Notify();
-            }
-        }
-
-        [CreateProperty]
-        public StylePropertyData<StyleEnum<Overflow>, OverflowInternal> overflow
-        {
-            get => m_Overflow;
-            private set
-            {
-                if (m_Overflow == value)
-                    return;
-                m_Overflow = value;
-                Notify();
-            }
-        }
-
-        [CreateProperty]
-        public StylePropertyData<StyleLength, Length> paddingBottom
-        {
-            get => m_PaddingBottom;
-            private set
-            {
-                if (m_PaddingBottom == value)
-                    return;
-                m_PaddingBottom = value;
-                Notify();
-            }
-        }
-
-        [CreateProperty]
-        public StylePropertyData<StyleLength, Length> paddingLeft
-        {
-            get => m_PaddingLeft;
-            private set
-            {
-                if (m_PaddingLeft == value)
-                    return;
-                m_PaddingLeft = value;
-                Notify();
-            }
-        }
-
-        [CreateProperty]
-        public StylePropertyData<StyleLength, Length> paddingRight
-        {
-            get => m_PaddingRight;
-            private set
-            {
-                if (m_PaddingRight == value)
-                    return;
-                m_PaddingRight = value;
-                Notify();
-            }
-        }
-
-        [CreateProperty]
-        public StylePropertyData<StyleLength, Length> paddingTop
-        {
-            get => m_PaddingTop;
-            private set
-            {
-                if (m_PaddingTop == value)
-                    return;
-                m_PaddingTop = value;
-                Notify();
-            }
-        }
-
-        [CreateProperty]
-        public StylePropertyData<StyleEnum<Position>, Position> position
-        {
-            get => m_Position;
-            private set
-            {
-                if (m_Position == value)
-                    return;
-                m_Position = value;
-                Notify();
-            }
-        }
-
-        [CreateProperty]
-        public StylePropertyData<StyleLength, Length> right
-        {
-            get => m_Right;
-            private set
-            {
-                if (m_Right == value)
-                    return;
-                m_Right = value;
-                Notify();
-            }
-        }
-
-        [CreateProperty]
-        public StylePropertyData<StyleRotate, Rotate> rotate
-        {
-            get => m_Rotate;
-            private set
-            {
-                if (m_Rotate == value)
-                    return;
-                m_Rotate = value;
-                Notify();
-            }
-        }
-
-        [CreateProperty]
-        public StylePropertyData<StyleScale, Scale> scale
-        {
-            get => m_Scale;
-            private set
-            {
-                if (m_Scale == value)
-                    return;
-                m_Scale = value;
-                Notify();
-            }
-        }
-
-        [CreateProperty]
-        public StylePropertyData<StyleEnum<TextOverflow>, TextOverflow> textOverflow
-        {
-            get => m_TextOverflow;
-            private set
-            {
-                if (m_TextOverflow == value)
-                    return;
-                m_TextOverflow = value;
-                Notify();
-            }
-        }
-
-        [CreateProperty]
-        public StylePropertyData<StyleTextShadow, TextShadow> textShadow
-        {
-            get => m_TextShadow;
-            private set
-            {
-                if (m_TextShadow == value)
-                    return;
-                m_TextShadow = value;
-                Notify();
-            }
-        }
-
-        [CreateProperty]
-        public StylePropertyData<StyleLength, Length> top
-        {
-            get => m_Top;
-            private set
-            {
-                if (m_Top == value)
-                    return;
-                m_Top = value;
-                Notify();
-            }
-        }
-
-        [CreateProperty]
-        public StylePropertyData<StyleTransformOrigin, TransformOrigin> transformOrigin
-        {
-            get => m_TransformOrigin;
-            private set
-            {
-                if (m_TransformOrigin == value)
-                    return;
-                m_TransformOrigin = value;
-                Notify();
-            }
-        }
-
-        [CreateProperty]
-        public StylePropertyData<StyleList<TimeValue>, List<TimeValue>> transitionDelay
-        {
-            get => m_TransitionDelay;
-            private set
-            {
-                if (m_TransitionDelay == value)
-                    return;
-                m_TransitionDelay = value;
-                Notify();
-            }
-        }
-
-        [CreateProperty]
-        public StylePropertyData<StyleList<TimeValue>, List<TimeValue>> transitionDuration
-        {
-            get => m_TransitionDuration;
-            private set
-            {
-                if (m_TransitionDuration == value)
-                    return;
-                m_TransitionDuration = value;
-                Notify();
-            }
-        }
-
-        [CreateProperty]
-        public StylePropertyData<StyleList<StylePropertyName>, List<StylePropertyName>> transitionProperty
-        {
-            get => m_TransitionProperty;
-            private set
-            {
-                if (m_TransitionProperty == value)
-                    return;
-                m_TransitionProperty = value;
-                Notify();
-            }
-        }
-
-        [CreateProperty]
-        public StylePropertyData<StyleList<EasingFunction>, List<EasingFunction>> transitionTimingFunction
-        {
-            get => m_TransitionTimingFunction;
-            private set
-            {
-                if (m_TransitionTimingFunction == value)
-                    return;
-                m_TransitionTimingFunction = value;
-                Notify();
-            }
-        }
-
-        [CreateProperty]
-        public StylePropertyData<StyleTranslate, Translate> translate
-        {
-            get => m_Translate;
-            private set
-            {
-                if (m_Translate == value)
-                    return;
-                m_Translate = value;
-                Notify();
-            }
-        }
-
-        [CreateProperty]
-        public StylePropertyData<StyleColor, Color> unityBackgroundImageTintColor
-        {
-            get => m_UnityBackgroundImageTintColor;
-            private set
-            {
-                if (m_UnityBackgroundImageTintColor == value)
-                    return;
-                m_UnityBackgroundImageTintColor = value;
-                Notify();
-            }
-        }
-
-        [CreateProperty]
-        public StylePropertyData<StyleEnum<EditorTextRenderingMode>, EditorTextRenderingMode> unityEditorTextRenderingMode
-        {
-            get => m_UnityEditorTextRenderingMode;
-            private set
-            {
-                if (m_UnityEditorTextRenderingMode == value)
-                    return;
-                m_UnityEditorTextRenderingMode = value;
-                Notify();
-            }
-        }
-
-        [CreateProperty]
-        public StylePropertyData<StyleFont, Font> unityFont
-        {
-            get => m_UnityFont;
-            private set
-            {
-                if (m_UnityFont == value)
-                    return;
-                m_UnityFont = value;
-                Notify();
-            }
-        }
-
-        [CreateProperty]
-        public StylePropertyData<StyleFontDefinition, FontDefinition> unityFontDefinition
-        {
-            get => m_UnityFontDefinition;
-            private set
-            {
-                if (m_UnityFontDefinition == value)
-                    return;
-                m_UnityFontDefinition = value;
-                Notify();
-            }
-        }
-
-        [CreateProperty]
-        public StylePropertyData<StyleEnum<FontStyle>, FontStyle> unityFontStyleAndWeight
-        {
-            get => m_UnityFontStyleAndWeight;
-            private set
-            {
-                if (m_UnityFontStyleAndWeight == value)
-                    return;
-                m_UnityFontStyleAndWeight = value;
-                Notify();
-            }
-        }
-
-        [CreateProperty]
-        public StylePropertyData<StyleMaterialDefinition, MaterialDefinition> unityMaterial
-        {
-            get => m_UnityMaterial;
-            private set
-            {
-                if (m_UnityMaterial == value)
-                    return;
-                m_UnityMaterial = value;
-                Notify();
-            }
-        }
-
-        [CreateProperty]
-        public StylePropertyData<StyleEnum<OverflowClipBox>, OverflowClipBox> unityOverflowClipBox
-        {
-            get => m_UnityOverflowClipBox;
-            private set
-            {
-                if (m_UnityOverflowClipBox == value)
-                    return;
-                m_UnityOverflowClipBox = value;
-                Notify();
-            }
-        }
-
-        [CreateProperty]
-        public StylePropertyData<StyleLength, Length> unityParagraphSpacing
-        {
-            get => m_UnityParagraphSpacing;
-            private set
-            {
-                if (m_UnityParagraphSpacing == value)
-                    return;
-                m_UnityParagraphSpacing = value;
-                Notify();
-            }
-        }
-
-        [CreateProperty]
-        public StylePropertyData<StyleInt, int> unitySliceBottom
-        {
-            get => m_UnitySliceBottom;
-            private set
-            {
-                if (m_UnitySliceBottom == value)
-                    return;
-                m_UnitySliceBottom = value;
-                Notify();
-            }
-        }
-
-        [CreateProperty]
-        public StylePropertyData<StyleInt, int> unitySliceLeft
-        {
-            get => m_UnitySliceLeft;
-            private set
-            {
-                if (m_UnitySliceLeft == value)
-                    return;
-                m_UnitySliceLeft = value;
-                Notify();
-            }
-        }
-
-        [CreateProperty]
-        public StylePropertyData<StyleInt, int> unitySliceRight
-        {
-            get => m_UnitySliceRight;
-            private set
-            {
-                if (m_UnitySliceRight == value)
-                    return;
-                m_UnitySliceRight = value;
-                Notify();
-            }
-        }
-
-        [CreateProperty]
-        public StylePropertyData<StyleFloat, float> unitySliceScale
-        {
-            get => m_UnitySliceScale;
-            private set
-            {
-                if (m_UnitySliceScale == value)
-                    return;
-                m_UnitySliceScale = value;
-                Notify();
-            }
-        }
-
-        [CreateProperty]
-        public StylePropertyData<StyleInt, int> unitySliceTop
-        {
-            get => m_UnitySliceTop;
-            private set
-            {
-                if (m_UnitySliceTop == value)
-                    return;
-                m_UnitySliceTop = value;
-                Notify();
-            }
-        }
-
-        [CreateProperty]
-        public StylePropertyData<StyleEnum<SliceType>, SliceType> unitySliceType
-        {
-            get => m_UnitySliceType;
-            private set
-            {
-                if (m_UnitySliceType == value)
-                    return;
-                m_UnitySliceType = value;
-                Notify();
-            }
-        }
-
-        [CreateProperty]
-        public StylePropertyData<StyleEnum<TextAnchor>, TextAnchor> unityTextAlign
-        {
-            get => m_UnityTextAlign;
-            private set
-            {
-                if (m_UnityTextAlign == value)
-                    return;
-                m_UnityTextAlign = value;
-                Notify();
-            }
-        }
-
-        [CreateProperty]
-        public StylePropertyData<StyleTextAutoSize, TextAutoSize> unityTextAutoSize
-        {
-            get => m_UnityTextAutoSize;
-            private set
-            {
-                if (m_UnityTextAutoSize == value)
-                    return;
-                m_UnityTextAutoSize = value;
-                Notify();
-            }
-        }
-
-        [CreateProperty]
-        public StylePropertyData<StyleEnum<TextGeneratorType>, TextGeneratorType> unityTextGenerator
-        {
-            get => m_UnityTextGenerator;
-            private set
-            {
-                if (m_UnityTextGenerator == value)
-                    return;
-                m_UnityTextGenerator = value;
-                Notify();
-            }
-        }
-
-        [CreateProperty]
-        public StylePropertyData<StyleColor, Color> unityTextOutlineColor
-        {
-            get => m_UnityTextOutlineColor;
-            private set
-            {
-                if (m_UnityTextOutlineColor == value)
-                    return;
-                m_UnityTextOutlineColor = value;
-                Notify();
-            }
-        }
-
-        [CreateProperty]
-        public StylePropertyData<StyleFloat, float> unityTextOutlineWidth
-        {
-            get => m_UnityTextOutlineWidth;
-            private set
-            {
-                if (m_UnityTextOutlineWidth == value)
-                    return;
-                m_UnityTextOutlineWidth = value;
-                Notify();
-            }
-        }
-
-        [CreateProperty]
-        public StylePropertyData<StyleEnum<TextOverflowPosition>, TextOverflowPosition> unityTextOverflowPosition
-        {
-            get => m_UnityTextOverflowPosition;
-            private set
-            {
-                if (m_UnityTextOverflowPosition == value)
-                    return;
-                m_UnityTextOverflowPosition = value;
-                Notify();
-            }
-        }
-
-        [CreateProperty]
-        public StylePropertyData<StyleEnum<Visibility>, Visibility> visibility
-        {
-            get => m_Visibility;
-            private set
-            {
-                if (m_Visibility == value)
-                    return;
-                m_Visibility = value;
-                Notify();
-            }
-        }
-
-        [CreateProperty]
-        public StylePropertyData<StyleEnum<WhiteSpace>, WhiteSpace> whiteSpace
-        {
-            get => m_WhiteSpace;
-            private set
-            {
-                if (m_WhiteSpace == value)
-                    return;
-                m_WhiteSpace = value;
-                Notify();
-            }
-        }
-
-        [CreateProperty]
-        public StylePropertyData<StyleLength, Length> width
-        {
-            get => m_Width;
-            private set
-            {
-                if (m_Width == value)
-                    return;
-                m_Width = value;
-                Notify();
-            }
-        }
-
-        [CreateProperty]
-        public StylePropertyData<StyleLength, Length> wordSpacing
-        {
-            get => m_WordSpacing;
-            private set
-            {
-                if (m_WordSpacing == value)
-                    return;
-                m_WordSpacing = value;
-                Notify();
-            }
-        }
+        public StylePropertyData<StyleEnum<Align>, Align> alignContent => m_AlignContent;
+
+        [CreateProperty]
+        public StylePropertyData<StyleEnum<Align>, Align> alignItems => m_AlignItems;
+
+        [CreateProperty]
+        public StylePropertyData<StyleEnum<Align>, Align> alignSelf => m_AlignSelf;
+
+        [CreateProperty]
+        public StylePropertyData<StyleRatio, Ratio> aspectRatio => m_AspectRatio;
+
+        [CreateProperty]
+        public StylePropertyData<StyleColor, Color> backgroundColor => m_BackgroundColor;
+
+        [CreateProperty]
+        public StylePropertyData<StyleBackground, Background> backgroundImage => m_BackgroundImage;
+
+        [CreateProperty]
+        public StylePropertyData<StyleBackgroundPosition, BackgroundPosition> backgroundPositionX => m_BackgroundPositionX;
+
+        [CreateProperty]
+        public StylePropertyData<StyleBackgroundPosition, BackgroundPosition> backgroundPositionY => m_BackgroundPositionY;
+
+        [CreateProperty]
+        public StylePropertyData<StyleBackgroundRepeat, BackgroundRepeat> backgroundRepeat => m_BackgroundRepeat;
+
+        [CreateProperty]
+        public StylePropertyData<StyleBackgroundSize, BackgroundSize> backgroundSize => m_BackgroundSize;
+
+        [CreateProperty]
+        public StylePropertyData<StyleColor, Color> borderBottomColor => m_BorderBottomColor;
+
+        [CreateProperty]
+        public StylePropertyData<StyleLength, Length> borderBottomLeftRadius => m_BorderBottomLeftRadius;
+
+        [CreateProperty]
+        public StylePropertyData<StyleLength, Length> borderBottomRightRadius => m_BorderBottomRightRadius;
+
+        [CreateProperty]
+        public StylePropertyData<StyleFloat, float> borderBottomWidth => m_BorderBottomWidth;
+
+        [CreateProperty]
+        public StylePropertyData<StyleColor, Color> borderLeftColor => m_BorderLeftColor;
+
+        [CreateProperty]
+        public StylePropertyData<StyleFloat, float> borderLeftWidth => m_BorderLeftWidth;
+
+        [CreateProperty]
+        public StylePropertyData<StyleColor, Color> borderRightColor => m_BorderRightColor;
+
+        [CreateProperty]
+        public StylePropertyData<StyleFloat, float> borderRightWidth => m_BorderRightWidth;
+
+        [CreateProperty]
+        public StylePropertyData<StyleColor, Color> borderTopColor => m_BorderTopColor;
+
+        [CreateProperty]
+        public StylePropertyData<StyleLength, Length> borderTopLeftRadius => m_BorderTopLeftRadius;
+
+        [CreateProperty]
+        public StylePropertyData<StyleLength, Length> borderTopRightRadius => m_BorderTopRightRadius;
+
+        [CreateProperty]
+        public StylePropertyData<StyleFloat, float> borderTopWidth => m_BorderTopWidth;
+
+        [CreateProperty]
+        public StylePropertyData<StyleLength, Length> bottom => m_Bottom;
+
+        [CreateProperty]
+        public StylePropertyData<StyleColor, Color> color => m_Color;
+
+        [CreateProperty]
+        public StylePropertyData<StyleCursor, Cursor> cursor => m_Cursor;
+
+        [CreateProperty]
+        public StylePropertyData<StyleEnum<DisplayStyle>, DisplayStyle> display => m_Display;
+
+        [CreateProperty]
+        public StylePropertyData<StyleList<FilterFunction>, List<FilterFunction>> filter => m_Filter;
+
+        [CreateProperty]
+        public StylePropertyData<StyleLength, Length> flexBasis => m_FlexBasis;
+
+        [CreateProperty]
+        public StylePropertyData<StyleEnum<FlexDirection>, FlexDirection> flexDirection => m_FlexDirection;
+
+        [CreateProperty]
+        public StylePropertyData<StyleFloat, float> flexGrow => m_FlexGrow;
+
+        [CreateProperty]
+        public StylePropertyData<StyleFloat, float> flexShrink => m_FlexShrink;
+
+        [CreateProperty]
+        public StylePropertyData<StyleEnum<Wrap>, Wrap> flexWrap => m_FlexWrap;
+
+        [CreateProperty]
+        public StylePropertyData<StyleLength, Length> fontSize => m_FontSize;
+
+        [CreateProperty]
+        public StylePropertyData<StyleLength, Length> height => m_Height;
+
+        [CreateProperty]
+        public StylePropertyData<StyleEnum<Justify>, Justify> justifyContent => m_JustifyContent;
+
+        [CreateProperty]
+        public StylePropertyData<StyleLength, Length> left => m_Left;
+
+        [CreateProperty]
+        public StylePropertyData<StyleLength, Length> letterSpacing => m_LetterSpacing;
+
+        [CreateProperty]
+        public StylePropertyData<StyleLength, Length> marginBottom => m_MarginBottom;
+
+        [CreateProperty]
+        public StylePropertyData<StyleLength, Length> marginLeft => m_MarginLeft;
+
+        [CreateProperty]
+        public StylePropertyData<StyleLength, Length> marginRight => m_MarginRight;
+
+        [CreateProperty]
+        public StylePropertyData<StyleLength, Length> marginTop => m_MarginTop;
+
+        [CreateProperty]
+        public StylePropertyData<StyleLength, Length> maxHeight => m_MaxHeight;
+
+        [CreateProperty]
+        public StylePropertyData<StyleLength, Length> maxWidth => m_MaxWidth;
+
+        [CreateProperty]
+        public StylePropertyData<StyleLength, Length> minHeight => m_MinHeight;
+
+        [CreateProperty]
+        public StylePropertyData<StyleLength, Length> minWidth => m_MinWidth;
+
+        [CreateProperty]
+        public StylePropertyData<StyleFloat, float> opacity => m_Opacity;
+
+        [CreateProperty]
+        public StylePropertyData<StyleEnum<Overflow>, OverflowInternal> overflow => m_Overflow;
+
+        [CreateProperty]
+        public StylePropertyData<StyleLength, Length> paddingBottom => m_PaddingBottom;
+
+        [CreateProperty]
+        public StylePropertyData<StyleLength, Length> paddingLeft => m_PaddingLeft;
+
+        [CreateProperty]
+        public StylePropertyData<StyleLength, Length> paddingRight => m_PaddingRight;
+
+        [CreateProperty]
+        public StylePropertyData<StyleLength, Length> paddingTop => m_PaddingTop;
+
+        [CreateProperty]
+        public StylePropertyData<StyleEnum<Position>, Position> position => m_Position;
+
+        [CreateProperty]
+        public StylePropertyData<StyleLength, Length> right => m_Right;
+
+        [CreateProperty]
+        public StylePropertyData<StyleRotate, Rotate> rotate => m_Rotate;
+
+        [CreateProperty]
+        public StylePropertyData<StyleScale, Scale> scale => m_Scale;
+
+        [CreateProperty]
+        public StylePropertyData<StyleEnum<TextOverflow>, TextOverflow> textOverflow => m_TextOverflow;
+
+        [CreateProperty]
+        public StylePropertyData<StyleTextShadow, TextShadow> textShadow => m_TextShadow;
+
+        [CreateProperty]
+        public StylePropertyData<StyleLength, Length> top => m_Top;
+
+        [CreateProperty]
+        public StylePropertyData<StyleTransformOrigin, TransformOrigin> transformOrigin => m_TransformOrigin;
+
+        [CreateProperty]
+        public StylePropertyData<StyleList<TimeValue>, List<TimeValue>> transitionDelay => m_TransitionDelay;
+
+        [CreateProperty]
+        public StylePropertyData<StyleList<TimeValue>, List<TimeValue>> transitionDuration => m_TransitionDuration;
+
+        [CreateProperty]
+        public StylePropertyData<StyleList<StylePropertyName>, List<StylePropertyName>> transitionProperty => m_TransitionProperty;
+
+        [CreateProperty]
+        public StylePropertyData<StyleList<EasingFunction>, List<EasingFunction>> transitionTimingFunction => m_TransitionTimingFunction;
+
+        [CreateProperty]
+        public StylePropertyData<StyleTranslate, Translate> translate => m_Translate;
+
+        [CreateProperty]
+        public StylePropertyData<StyleColor, Color> unityBackgroundImageTintColor => m_UnityBackgroundImageTintColor;
+
+        [CreateProperty]
+        public StylePropertyData<StyleEnum<EditorTextRenderingMode>, EditorTextRenderingMode> unityEditorTextRenderingMode => m_UnityEditorTextRenderingMode;
+
+        [CreateProperty]
+        public StylePropertyData<StyleFont, Font> unityFont => m_UnityFont;
+
+        [CreateProperty]
+        public StylePropertyData<StyleFontDefinition, FontDefinition> unityFontDefinition => m_UnityFontDefinition;
+
+        [CreateProperty]
+        public StylePropertyData<StyleEnum<FontStyle>, FontStyle> unityFontStyleAndWeight => m_UnityFontStyleAndWeight;
+
+        [CreateProperty]
+        public StylePropertyData<StyleMaterialDefinition, MaterialDefinition> unityMaterial => m_UnityMaterial;
+
+        [CreateProperty]
+        public StylePropertyData<StyleEnum<OverflowClipBox>, OverflowClipBox> unityOverflowClipBox => m_UnityOverflowClipBox;
+
+        [CreateProperty]
+        public StylePropertyData<StyleLength, Length> unityParagraphSpacing => m_UnityParagraphSpacing;
+
+        [CreateProperty]
+        public StylePropertyData<StyleInt, int> unitySliceBottom => m_UnitySliceBottom;
+
+        [CreateProperty]
+        public StylePropertyData<StyleInt, int> unitySliceLeft => m_UnitySliceLeft;
+
+        [CreateProperty]
+        public StylePropertyData<StyleInt, int> unitySliceRight => m_UnitySliceRight;
+
+        [CreateProperty]
+        public StylePropertyData<StyleFloat, float> unitySliceScale => m_UnitySliceScale;
+
+        [CreateProperty]
+        public StylePropertyData<StyleInt, int> unitySliceTop => m_UnitySliceTop;
+
+        [CreateProperty]
+        public StylePropertyData<StyleEnum<SliceType>, SliceType> unitySliceType => m_UnitySliceType;
+
+        [CreateProperty]
+        public StylePropertyData<StyleEnum<TextAnchor>, TextAnchor> unityTextAlign => m_UnityTextAlign;
+
+        [CreateProperty]
+        public StylePropertyData<StyleTextAutoSize, TextAutoSize> unityTextAutoSize => m_UnityTextAutoSize;
+
+        [CreateProperty]
+        public StylePropertyData<StyleEnum<TextGeneratorType>, TextGeneratorType> unityTextGenerator => m_UnityTextGenerator;
+
+        [CreateProperty]
+        public StylePropertyData<StyleColor, Color> unityTextOutlineColor => m_UnityTextOutlineColor;
+
+        [CreateProperty]
+        public StylePropertyData<StyleFloat, float> unityTextOutlineWidth => m_UnityTextOutlineWidth;
+
+        [CreateProperty]
+        public StylePropertyData<StyleEnum<TextOverflowPosition>, TextOverflowPosition> unityTextOverflowPosition => m_UnityTextOverflowPosition;
+
+        [CreateProperty]
+        public StylePropertyData<StyleEnum<Visibility>, Visibility> visibility => m_Visibility;
+
+        [CreateProperty]
+        public StylePropertyData<StyleEnum<WhiteSpace>, WhiteSpace> whiteSpace => m_WhiteSpace;
+
+        [CreateProperty]
+        public StylePropertyData<StyleLength, Length> width => m_Width;
+
+        [CreateProperty]
+        public StylePropertyData<StyleLength, Length> wordSpacing => m_WordSpacing;
 
         [CreateProperty]
         public ShortHandStylePropertyData all
@@ -1412,94 +528,623 @@ namespace UnityEngine.UIElements
 
         private void Refresh(VisualElement element, in ResolutionContext context)
         {
-            alignContent = ComputeStyleProperty(StylePropertyId.AlignContent, nameof(alignContent), element.style.alignContent, element.computedStyle.alignContent, in context);
-            alignItems = ComputeStyleProperty(StylePropertyId.AlignItems, nameof(alignItems), element.style.alignItems, element.computedStyle.alignItems, in context);
-            alignSelf = ComputeStyleProperty(StylePropertyId.AlignSelf, nameof(alignSelf), element.style.alignSelf, element.computedStyle.alignSelf, in context);
-            aspectRatio = ComputeStyleProperty(StylePropertyId.AspectRatio, nameof(aspectRatio), element.style.aspectRatio, element.computedStyle.aspectRatio, in context);
-            backgroundColor = ComputeStyleProperty(StylePropertyId.BackgroundColor, nameof(backgroundColor), element.style.backgroundColor, element.computedStyle.backgroundColor, in context);
-            backgroundImage = ComputeStyleProperty(StylePropertyId.BackgroundImage, nameof(backgroundImage), element.style.backgroundImage, Background.From(element.computedStyle.backgroundImage), in context);
-            backgroundPositionX = ComputeStyleProperty(StylePropertyId.BackgroundPositionX, nameof(backgroundPositionX), element.style.backgroundPositionX, element.computedStyle.backgroundPositionX, in context);
-            backgroundPositionY = ComputeStyleProperty(StylePropertyId.BackgroundPositionY, nameof(backgroundPositionY), element.style.backgroundPositionY, element.computedStyle.backgroundPositionY, in context);
-            backgroundRepeat = ComputeStyleProperty(StylePropertyId.BackgroundRepeat, nameof(backgroundRepeat), element.style.backgroundRepeat, element.computedStyle.backgroundRepeat, in context);
-            backgroundSize = ComputeStyleProperty(StylePropertyId.BackgroundSize, nameof(backgroundSize), element.style.backgroundSize, element.computedStyle.backgroundSize, in context);
-            borderBottomColor = ComputeStyleProperty(StylePropertyId.BorderBottomColor, nameof(borderBottomColor), element.style.borderBottomColor, element.computedStyle.borderBottomColor, in context);
-            borderBottomLeftRadius = ComputeStyleProperty(StylePropertyId.BorderBottomLeftRadius, nameof(borderBottomLeftRadius), element.style.borderBottomLeftRadius, element.computedStyle.borderBottomLeftRadius, in context);
-            borderBottomRightRadius = ComputeStyleProperty(StylePropertyId.BorderBottomRightRadius, nameof(borderBottomRightRadius), element.style.borderBottomRightRadius, element.computedStyle.borderBottomRightRadius, in context);
-            borderBottomWidth = ComputeStyleProperty(StylePropertyId.BorderBottomWidth, nameof(borderBottomWidth), element.style.borderBottomWidth, element.computedStyle.borderBottomWidth, in context);
-            borderLeftColor = ComputeStyleProperty(StylePropertyId.BorderLeftColor, nameof(borderLeftColor), element.style.borderLeftColor, element.computedStyle.borderLeftColor, in context);
-            borderLeftWidth = ComputeStyleProperty(StylePropertyId.BorderLeftWidth, nameof(borderLeftWidth), element.style.borderLeftWidth, element.computedStyle.borderLeftWidth, in context);
-            borderRightColor = ComputeStyleProperty(StylePropertyId.BorderRightColor, nameof(borderRightColor), element.style.borderRightColor, element.computedStyle.borderRightColor, in context);
-            borderRightWidth = ComputeStyleProperty(StylePropertyId.BorderRightWidth, nameof(borderRightWidth), element.style.borderRightWidth, element.computedStyle.borderRightWidth, in context);
-            borderTopColor = ComputeStyleProperty(StylePropertyId.BorderTopColor, nameof(borderTopColor), element.style.borderTopColor, element.computedStyle.borderTopColor, in context);
-            borderTopLeftRadius = ComputeStyleProperty(StylePropertyId.BorderTopLeftRadius, nameof(borderTopLeftRadius), element.style.borderTopLeftRadius, element.computedStyle.borderTopLeftRadius, in context);
-            borderTopRightRadius = ComputeStyleProperty(StylePropertyId.BorderTopRightRadius, nameof(borderTopRightRadius), element.style.borderTopRightRadius, element.computedStyle.borderTopRightRadius, in context);
-            borderTopWidth = ComputeStyleProperty(StylePropertyId.BorderTopWidth, nameof(borderTopWidth), element.style.borderTopWidth, element.computedStyle.borderTopWidth, in context);
-            bottom = ComputeStyleProperty(StylePropertyId.Bottom, nameof(bottom), element.style.bottom, element.computedStyle.bottom, in context);
-            color = ComputeStyleProperty(StylePropertyId.Color, nameof(color), element.style.color, element.computedStyle.color, in context);
-            cursor = ComputeStyleProperty(StylePropertyId.Cursor, nameof(cursor), element.style.cursor, element.computedStyle.cursor, in context);
-            display = ComputeStyleProperty(StylePropertyId.Display, nameof(display), element.style.display, element.computedStyle.display, in context);
-            filter = ComputeStyleProperty(StylePropertyId.Filter, nameof(filter), element.style.filter, element.computedStyle.filter, in context, ListEqualityComparer<List<FilterFunction>, FilterFunction>.Default);
-            flexBasis = ComputeStyleProperty(StylePropertyId.FlexBasis, nameof(flexBasis), element.style.flexBasis, element.computedStyle.flexBasis, in context);
-            flexDirection = ComputeStyleProperty(StylePropertyId.FlexDirection, nameof(flexDirection), element.style.flexDirection, element.computedStyle.flexDirection, in context);
-            flexGrow = ComputeStyleProperty(StylePropertyId.FlexGrow, nameof(flexGrow), element.style.flexGrow, element.computedStyle.flexGrow, in context);
-            flexShrink = ComputeStyleProperty(StylePropertyId.FlexShrink, nameof(flexShrink), element.style.flexShrink, element.computedStyle.flexShrink, in context);
-            flexWrap = ComputeStyleProperty(StylePropertyId.FlexWrap, nameof(flexWrap), element.style.flexWrap, element.computedStyle.flexWrap, in context);
-            fontSize = ComputeStyleProperty(StylePropertyId.FontSize, nameof(fontSize), element.style.fontSize, element.computedStyle.fontSize, in context);
-            height = ComputeStyleProperty(StylePropertyId.Height, nameof(height), element.style.height, element.computedStyle.height, in context);
-            justifyContent = ComputeStyleProperty(StylePropertyId.JustifyContent, nameof(justifyContent), element.style.justifyContent, element.computedStyle.justifyContent, in context);
-            left = ComputeStyleProperty(StylePropertyId.Left, nameof(left), element.style.left, element.computedStyle.left, in context);
-            letterSpacing = ComputeStyleProperty(StylePropertyId.LetterSpacing, nameof(letterSpacing), element.style.letterSpacing, element.computedStyle.letterSpacing, in context);
-            marginBottom = ComputeStyleProperty(StylePropertyId.MarginBottom, nameof(marginBottom), element.style.marginBottom, element.computedStyle.marginBottom, in context);
-            marginLeft = ComputeStyleProperty(StylePropertyId.MarginLeft, nameof(marginLeft), element.style.marginLeft, element.computedStyle.marginLeft, in context);
-            marginRight = ComputeStyleProperty(StylePropertyId.MarginRight, nameof(marginRight), element.style.marginRight, element.computedStyle.marginRight, in context);
-            marginTop = ComputeStyleProperty(StylePropertyId.MarginTop, nameof(marginTop), element.style.marginTop, element.computedStyle.marginTop, in context);
-            maxHeight = ComputeStyleProperty(StylePropertyId.MaxHeight, nameof(maxHeight), element.style.maxHeight, element.computedStyle.maxHeight, in context);
-            maxWidth = ComputeStyleProperty(StylePropertyId.MaxWidth, nameof(maxWidth), element.style.maxWidth, element.computedStyle.maxWidth, in context);
-            minHeight = ComputeStyleProperty(StylePropertyId.MinHeight, nameof(minHeight), element.style.minHeight, element.computedStyle.minHeight, in context);
-            minWidth = ComputeStyleProperty(StylePropertyId.MinWidth, nameof(minWidth), element.style.minWidth, element.computedStyle.minWidth, in context);
-            opacity = ComputeStyleProperty(StylePropertyId.Opacity, nameof(opacity), element.style.opacity, element.computedStyle.opacity, in context);
-            overflow = ComputeStyleProperty(StylePropertyId.Overflow, nameof(overflow), element.style.overflow, element.computedStyle.overflow, in context);
-            paddingBottom = ComputeStyleProperty(StylePropertyId.PaddingBottom, nameof(paddingBottom), element.style.paddingBottom, element.computedStyle.paddingBottom, in context);
-            paddingLeft = ComputeStyleProperty(StylePropertyId.PaddingLeft, nameof(paddingLeft), element.style.paddingLeft, element.computedStyle.paddingLeft, in context);
-            paddingRight = ComputeStyleProperty(StylePropertyId.PaddingRight, nameof(paddingRight), element.style.paddingRight, element.computedStyle.paddingRight, in context);
-            paddingTop = ComputeStyleProperty(StylePropertyId.PaddingTop, nameof(paddingTop), element.style.paddingTop, element.computedStyle.paddingTop, in context);
-            position = ComputeStyleProperty(StylePropertyId.Position, nameof(position), element.style.position, element.computedStyle.position, in context);
-            right = ComputeStyleProperty(StylePropertyId.Right, nameof(right), element.style.right, element.computedStyle.right, in context);
-            rotate = ComputeStyleProperty(StylePropertyId.Rotate, nameof(rotate), element.style.rotate, element.computedStyle.rotate, in context);
-            scale = ComputeStyleProperty(StylePropertyId.Scale, nameof(scale), element.style.scale, element.computedStyle.scale, in context);
-            textOverflow = ComputeStyleProperty(StylePropertyId.TextOverflow, nameof(textOverflow), element.style.textOverflow, element.computedStyle.textOverflow, in context);
-            textShadow = ComputeStyleProperty(StylePropertyId.TextShadow, nameof(textShadow), element.style.textShadow, element.computedStyle.textShadow, in context);
-            top = ComputeStyleProperty(StylePropertyId.Top, nameof(top), element.style.top, element.computedStyle.top, in context);
-            transformOrigin = ComputeStyleProperty(StylePropertyId.TransformOrigin, nameof(transformOrigin), element.style.transformOrigin, element.computedStyle.transformOrigin, in context);
-            transitionDelay = ComputeStyleProperty(StylePropertyId.TransitionDelay, nameof(transitionDelay), element.style.transitionDelay, element.computedStyle.transitionDelay, in context, ListEqualityComparer<List<TimeValue>, TimeValue>.Default);
-            transitionDuration = ComputeStyleProperty(StylePropertyId.TransitionDuration, nameof(transitionDuration), element.style.transitionDuration, element.computedStyle.transitionDuration, in context, ListEqualityComparer<List<TimeValue>, TimeValue>.Default);
-            transitionProperty = ComputeStyleProperty(StylePropertyId.TransitionProperty, nameof(transitionProperty), element.style.transitionProperty, element.computedStyle.transitionProperty, in context, ListEqualityComparer<List<StylePropertyName>, StylePropertyName>.Default);
-            transitionTimingFunction = ComputeStyleProperty(StylePropertyId.TransitionTimingFunction, nameof(transitionTimingFunction), element.style.transitionTimingFunction, element.computedStyle.transitionTimingFunction, in context, ListEqualityComparer<List<EasingFunction>, EasingFunction>.Default);
-            translate = ComputeStyleProperty(StylePropertyId.Translate, nameof(translate), element.style.translate, element.computedStyle.translate, in context);
-            unityBackgroundImageTintColor = ComputeStyleProperty(StylePropertyId.UnityBackgroundImageTintColor, nameof(unityBackgroundImageTintColor), element.style.unityBackgroundImageTintColor, element.computedStyle.unityBackgroundImageTintColor, in context);
-            unityEditorTextRenderingMode = ComputeStyleProperty(StylePropertyId.UnityEditorTextRenderingMode, nameof(unityEditorTextRenderingMode), element.style.unityEditorTextRenderingMode, element.computedStyle.unityEditorTextRenderingMode, in context);
-            unityFont = ComputeStyleProperty(StylePropertyId.UnityFont, nameof(unityFont), element.style.unityFont, element.computedStyle.unityFont, in context);
-            unityFontDefinition = ComputeStyleProperty(StylePropertyId.UnityFontDefinition, nameof(unityFontDefinition), element.style.unityFontDefinition, element.computedStyle.unityFontDefinition, in context);
-            unityFontStyleAndWeight = ComputeStyleProperty(StylePropertyId.UnityFontStyleAndWeight, nameof(unityFontStyleAndWeight), element.style.unityFontStyleAndWeight, element.computedStyle.unityFontStyleAndWeight, in context);
-            unityMaterial = ComputeStyleProperty(StylePropertyId.UnityMaterial, nameof(unityMaterial), element.style.unityMaterial, element.computedStyle.unityMaterial, in context);
-            unityOverflowClipBox = ComputeStyleProperty(StylePropertyId.UnityOverflowClipBox, nameof(unityOverflowClipBox), element.style.unityOverflowClipBox, element.computedStyle.unityOverflowClipBox, in context);
-            unityParagraphSpacing = ComputeStyleProperty(StylePropertyId.UnityParagraphSpacing, nameof(unityParagraphSpacing), element.style.unityParagraphSpacing, element.computedStyle.unityParagraphSpacing, in context);
-            unitySliceBottom = ComputeStyleProperty(StylePropertyId.UnitySliceBottom, nameof(unitySliceBottom), element.style.unitySliceBottom, element.computedStyle.unitySliceBottom, in context);
-            unitySliceLeft = ComputeStyleProperty(StylePropertyId.UnitySliceLeft, nameof(unitySliceLeft), element.style.unitySliceLeft, element.computedStyle.unitySliceLeft, in context);
-            unitySliceRight = ComputeStyleProperty(StylePropertyId.UnitySliceRight, nameof(unitySliceRight), element.style.unitySliceRight, element.computedStyle.unitySliceRight, in context);
-            unitySliceScale = ComputeStyleProperty(StylePropertyId.UnitySliceScale, nameof(unitySliceScale), element.style.unitySliceScale, element.computedStyle.unitySliceScale, in context);
-            unitySliceTop = ComputeStyleProperty(StylePropertyId.UnitySliceTop, nameof(unitySliceTop), element.style.unitySliceTop, element.computedStyle.unitySliceTop, in context);
-            unitySliceType = ComputeStyleProperty(StylePropertyId.UnitySliceType, nameof(unitySliceType), element.style.unitySliceType, element.computedStyle.unitySliceType, in context);
-            unityTextAlign = ComputeStyleProperty(StylePropertyId.UnityTextAlign, nameof(unityTextAlign), element.style.unityTextAlign, element.computedStyle.unityTextAlign, in context);
-            unityTextAutoSize = ComputeStyleProperty(StylePropertyId.UnityTextAutoSize, nameof(unityTextAutoSize), element.style.unityTextAutoSize, element.computedStyle.unityTextAutoSize, in context);
-            unityTextGenerator = ComputeStyleProperty(StylePropertyId.UnityTextGenerator, nameof(unityTextGenerator), element.style.unityTextGenerator, element.computedStyle.unityTextGenerator, in context);
-            unityTextOutlineColor = ComputeStyleProperty(StylePropertyId.UnityTextOutlineColor, nameof(unityTextOutlineColor), element.style.unityTextOutlineColor, element.computedStyle.unityTextOutlineColor, in context);
-            unityTextOutlineWidth = ComputeStyleProperty(StylePropertyId.UnityTextOutlineWidth, nameof(unityTextOutlineWidth), element.style.unityTextOutlineWidth, element.computedStyle.unityTextOutlineWidth, in context);
-            unityTextOverflowPosition = ComputeStyleProperty(StylePropertyId.UnityTextOverflowPosition, nameof(unityTextOverflowPosition), element.style.unityTextOverflowPosition, element.computedStyle.unityTextOverflowPosition, in context);
-            visibility = ComputeStyleProperty(StylePropertyId.Visibility, nameof(visibility), element.style.visibility, element.computedStyle.visibility, in context);
-            whiteSpace = ComputeStyleProperty(StylePropertyId.WhiteSpace, nameof(whiteSpace), element.style.whiteSpace, element.computedStyle.whiteSpace, in context);
-            width = ComputeStyleProperty(StylePropertyId.Width, nameof(width), element.style.width, element.computedStyle.width, in context);
-            wordSpacing = ComputeStyleProperty(StylePropertyId.WordSpacing, nameof(wordSpacing), element.style.wordSpacing, element.computedStyle.wordSpacing, in context);
+            bool notify;
+            notify = false;
+            notify |= SetInlineValue(ref m_AlignContent, element.style.alignContent);
+            notify |= SetComputedValue(ref m_AlignContent, element.computedStyle.alignContent);
+            notify |= ApplyContext(ref m_AlignContent, in context);
+            if (notify)
+                Notify(nameof(alignContent));
+
+            notify = false;
+            notify |= SetInlineValue(ref m_AlignItems, element.style.alignItems);
+            notify |= SetComputedValue(ref m_AlignItems, element.computedStyle.alignItems);
+            notify |= ApplyContext(ref m_AlignItems, in context);
+            if (notify)
+                Notify(nameof(alignItems));
+
+            notify = false;
+            notify |= SetInlineValue(ref m_AlignSelf, element.style.alignSelf);
+            notify |= SetComputedValue(ref m_AlignSelf, element.computedStyle.alignSelf);
+            notify |= ApplyContext(ref m_AlignSelf, in context);
+            if (notify)
+                Notify(nameof(alignSelf));
+
+            notify = false;
+            notify |= SetInlineValue(ref m_AspectRatio, element.style.aspectRatio);
+            notify |= SetComputedValue(ref m_AspectRatio, element.computedStyle.aspectRatio);
+            notify |= ApplyContext(ref m_AspectRatio, in context);
+            if (notify)
+                Notify(nameof(aspectRatio));
+
+            notify = false;
+            notify |= SetInlineValue(ref m_BackgroundColor, element.style.backgroundColor);
+            notify |= SetComputedValue(ref m_BackgroundColor, element.computedStyle.backgroundColor);
+            notify |= ApplyContext(ref m_BackgroundColor, in context);
+            if (notify)
+                Notify(nameof(backgroundColor));
+
+            notify = false;
+            notify |= SetInlineValue(ref m_BackgroundImage, element.style.backgroundImage);
+            notify |= SetComputedValue(ref m_BackgroundImage, element.computedStyle.backgroundImage);
+            notify |= ApplyContext(ref m_BackgroundImage, in context);
+            if (notify)
+                Notify(nameof(backgroundImage));
+
+            notify = false;
+            notify |= SetInlineValue(ref m_BackgroundPositionX, element.style.backgroundPositionX);
+            notify |= SetComputedValue(ref m_BackgroundPositionX, element.computedStyle.backgroundPositionX);
+            notify |= ApplyContext(ref m_BackgroundPositionX, in context);
+            if (notify)
+                Notify(nameof(backgroundPositionX));
+
+            notify = false;
+            notify |= SetInlineValue(ref m_BackgroundPositionY, element.style.backgroundPositionY);
+            notify |= SetComputedValue(ref m_BackgroundPositionY, element.computedStyle.backgroundPositionY);
+            notify |= ApplyContext(ref m_BackgroundPositionY, in context);
+            if (notify)
+                Notify(nameof(backgroundPositionY));
+
+            notify = false;
+            notify |= SetInlineValue(ref m_BackgroundRepeat, element.style.backgroundRepeat);
+            notify |= SetComputedValue(ref m_BackgroundRepeat, element.computedStyle.backgroundRepeat);
+            notify |= ApplyContext(ref m_BackgroundRepeat, in context);
+            if (notify)
+                Notify(nameof(backgroundRepeat));
+
+            notify = false;
+            notify |= SetInlineValue(ref m_BackgroundSize, element.style.backgroundSize);
+            notify |= SetComputedValue(ref m_BackgroundSize, element.computedStyle.backgroundSize);
+            notify |= ApplyContext(ref m_BackgroundSize, in context);
+            if (notify)
+                Notify(nameof(backgroundSize));
+
+            notify = false;
+            notify |= SetInlineValue(ref m_BorderBottomColor, element.style.borderBottomColor);
+            notify |= SetComputedValue(ref m_BorderBottomColor, element.computedStyle.borderBottomColor);
+            notify |= ApplyContext(ref m_BorderBottomColor, in context);
+            if (notify)
+                Notify(nameof(borderBottomColor));
+
+            notify = false;
+            notify |= SetInlineValue(ref m_BorderBottomLeftRadius, element.style.borderBottomLeftRadius);
+            notify |= SetComputedValue(ref m_BorderBottomLeftRadius, element.computedStyle.borderBottomLeftRadius);
+            notify |= ApplyContext(ref m_BorderBottomLeftRadius, in context);
+            if (notify)
+                Notify(nameof(borderBottomLeftRadius));
+
+            notify = false;
+            notify |= SetInlineValue(ref m_BorderBottomRightRadius, element.style.borderBottomRightRadius);
+            notify |= SetComputedValue(ref m_BorderBottomRightRadius, element.computedStyle.borderBottomRightRadius);
+            notify |= ApplyContext(ref m_BorderBottomRightRadius, in context);
+            if (notify)
+                Notify(nameof(borderBottomRightRadius));
+
+            notify = false;
+            notify |= SetInlineValue(ref m_BorderBottomWidth, element.style.borderBottomWidth);
+            notify |= SetComputedValue(ref m_BorderBottomWidth, element.computedStyle.borderBottomWidth);
+            notify |= ApplyContext(ref m_BorderBottomWidth, in context);
+            if (notify)
+                Notify(nameof(borderBottomWidth));
+
+            notify = false;
+            notify |= SetInlineValue(ref m_BorderLeftColor, element.style.borderLeftColor);
+            notify |= SetComputedValue(ref m_BorderLeftColor, element.computedStyle.borderLeftColor);
+            notify |= ApplyContext(ref m_BorderLeftColor, in context);
+            if (notify)
+                Notify(nameof(borderLeftColor));
+
+            notify = false;
+            notify |= SetInlineValue(ref m_BorderLeftWidth, element.style.borderLeftWidth);
+            notify |= SetComputedValue(ref m_BorderLeftWidth, element.computedStyle.borderLeftWidth);
+            notify |= ApplyContext(ref m_BorderLeftWidth, in context);
+            if (notify)
+                Notify(nameof(borderLeftWidth));
+
+            notify = false;
+            notify |= SetInlineValue(ref m_BorderRightColor, element.style.borderRightColor);
+            notify |= SetComputedValue(ref m_BorderRightColor, element.computedStyle.borderRightColor);
+            notify |= ApplyContext(ref m_BorderRightColor, in context);
+            if (notify)
+                Notify(nameof(borderRightColor));
+
+            notify = false;
+            notify |= SetInlineValue(ref m_BorderRightWidth, element.style.borderRightWidth);
+            notify |= SetComputedValue(ref m_BorderRightWidth, element.computedStyle.borderRightWidth);
+            notify |= ApplyContext(ref m_BorderRightWidth, in context);
+            if (notify)
+                Notify(nameof(borderRightWidth));
+
+            notify = false;
+            notify |= SetInlineValue(ref m_BorderTopColor, element.style.borderTopColor);
+            notify |= SetComputedValue(ref m_BorderTopColor, element.computedStyle.borderTopColor);
+            notify |= ApplyContext(ref m_BorderTopColor, in context);
+            if (notify)
+                Notify(nameof(borderTopColor));
+
+            notify = false;
+            notify |= SetInlineValue(ref m_BorderTopLeftRadius, element.style.borderTopLeftRadius);
+            notify |= SetComputedValue(ref m_BorderTopLeftRadius, element.computedStyle.borderTopLeftRadius);
+            notify |= ApplyContext(ref m_BorderTopLeftRadius, in context);
+            if (notify)
+                Notify(nameof(borderTopLeftRadius));
+
+            notify = false;
+            notify |= SetInlineValue(ref m_BorderTopRightRadius, element.style.borderTopRightRadius);
+            notify |= SetComputedValue(ref m_BorderTopRightRadius, element.computedStyle.borderTopRightRadius);
+            notify |= ApplyContext(ref m_BorderTopRightRadius, in context);
+            if (notify)
+                Notify(nameof(borderTopRightRadius));
+
+            notify = false;
+            notify |= SetInlineValue(ref m_BorderTopWidth, element.style.borderTopWidth);
+            notify |= SetComputedValue(ref m_BorderTopWidth, element.computedStyle.borderTopWidth);
+            notify |= ApplyContext(ref m_BorderTopWidth, in context);
+            if (notify)
+                Notify(nameof(borderTopWidth));
+
+            notify = false;
+            notify |= SetInlineValue(ref m_Bottom, element.style.bottom);
+            notify |= SetComputedValue(ref m_Bottom, element.computedStyle.bottom);
+            notify |= ApplyContext(ref m_Bottom, in context);
+            if (notify)
+                Notify(nameof(bottom));
+
+            notify = false;
+            notify |= SetInlineValue(ref m_Color, element.style.color);
+            notify |= SetComputedValue(ref m_Color, element.computedStyle.color);
+            notify |= ApplyContext(ref m_Color, in context);
+            if (notify)
+                Notify(nameof(color));
+
+            notify = false;
+            notify |= SetInlineValue(ref m_Cursor, element.style.cursor);
+            notify |= SetComputedValue(ref m_Cursor, element.computedStyle.cursor);
+            notify |= ApplyContext(ref m_Cursor, in context);
+            if (notify)
+                Notify(nameof(cursor));
+
+            notify = false;
+            notify |= SetInlineValue(ref m_Display, element.style.display);
+            notify |= SetComputedValue(ref m_Display, element.computedStyle.display);
+            notify |= ApplyContext(ref m_Display, in context);
+            if (notify)
+                Notify(nameof(display));
+
+            notify = false;
+            notify |= SetInlineValue(ref m_Filter, element.style.filter);
+            notify |= SetComputedValue(ref m_Filter, element.computedStyle.filter);
+            notify |= ApplyContext(ref m_Filter, in context);
+            if (notify)
+                Notify(nameof(filter));
+
+            notify = false;
+            notify |= SetInlineValue(ref m_FlexBasis, element.style.flexBasis);
+            notify |= SetComputedValue(ref m_FlexBasis, element.computedStyle.flexBasis);
+            notify |= ApplyContext(ref m_FlexBasis, in context);
+            if (notify)
+                Notify(nameof(flexBasis));
+
+            notify = false;
+            notify |= SetInlineValue(ref m_FlexDirection, element.style.flexDirection);
+            notify |= SetComputedValue(ref m_FlexDirection, element.computedStyle.flexDirection);
+            notify |= ApplyContext(ref m_FlexDirection, in context);
+            if (notify)
+                Notify(nameof(flexDirection));
+
+            notify = false;
+            notify |= SetInlineValue(ref m_FlexGrow, element.style.flexGrow);
+            notify |= SetComputedValue(ref m_FlexGrow, element.computedStyle.flexGrow);
+            notify |= ApplyContext(ref m_FlexGrow, in context);
+            if (notify)
+                Notify(nameof(flexGrow));
+
+            notify = false;
+            notify |= SetInlineValue(ref m_FlexShrink, element.style.flexShrink);
+            notify |= SetComputedValue(ref m_FlexShrink, element.computedStyle.flexShrink);
+            notify |= ApplyContext(ref m_FlexShrink, in context);
+            if (notify)
+                Notify(nameof(flexShrink));
+
+            notify = false;
+            notify |= SetInlineValue(ref m_FlexWrap, element.style.flexWrap);
+            notify |= SetComputedValue(ref m_FlexWrap, element.computedStyle.flexWrap);
+            notify |= ApplyContext(ref m_FlexWrap, in context);
+            if (notify)
+                Notify(nameof(flexWrap));
+
+            notify = false;
+            notify |= SetInlineValue(ref m_FontSize, element.style.fontSize);
+            notify |= SetComputedValue(ref m_FontSize, element.computedStyle.fontSize);
+            notify |= ApplyContext(ref m_FontSize, in context);
+            if (notify)
+                Notify(nameof(fontSize));
+
+            notify = false;
+            notify |= SetInlineValue(ref m_Height, element.style.height);
+            notify |= SetComputedValue(ref m_Height, element.computedStyle.height);
+            notify |= ApplyContext(ref m_Height, in context);
+            if (notify)
+                Notify(nameof(height));
+
+            notify = false;
+            notify |= SetInlineValue(ref m_JustifyContent, element.style.justifyContent);
+            notify |= SetComputedValue(ref m_JustifyContent, element.computedStyle.justifyContent);
+            notify |= ApplyContext(ref m_JustifyContent, in context);
+            if (notify)
+                Notify(nameof(justifyContent));
+
+            notify = false;
+            notify |= SetInlineValue(ref m_Left, element.style.left);
+            notify |= SetComputedValue(ref m_Left, element.computedStyle.left);
+            notify |= ApplyContext(ref m_Left, in context);
+            if (notify)
+                Notify(nameof(left));
+
+            notify = false;
+            notify |= SetInlineValue(ref m_LetterSpacing, element.style.letterSpacing);
+            notify |= SetComputedValue(ref m_LetterSpacing, element.computedStyle.letterSpacing);
+            notify |= ApplyContext(ref m_LetterSpacing, in context);
+            if (notify)
+                Notify(nameof(letterSpacing));
+
+            notify = false;
+            notify |= SetInlineValue(ref m_MarginBottom, element.style.marginBottom);
+            notify |= SetComputedValue(ref m_MarginBottom, element.computedStyle.marginBottom);
+            notify |= ApplyContext(ref m_MarginBottom, in context);
+            if (notify)
+                Notify(nameof(marginBottom));
+
+            notify = false;
+            notify |= SetInlineValue(ref m_MarginLeft, element.style.marginLeft);
+            notify |= SetComputedValue(ref m_MarginLeft, element.computedStyle.marginLeft);
+            notify |= ApplyContext(ref m_MarginLeft, in context);
+            if (notify)
+                Notify(nameof(marginLeft));
+
+            notify = false;
+            notify |= SetInlineValue(ref m_MarginRight, element.style.marginRight);
+            notify |= SetComputedValue(ref m_MarginRight, element.computedStyle.marginRight);
+            notify |= ApplyContext(ref m_MarginRight, in context);
+            if (notify)
+                Notify(nameof(marginRight));
+
+            notify = false;
+            notify |= SetInlineValue(ref m_MarginTop, element.style.marginTop);
+            notify |= SetComputedValue(ref m_MarginTop, element.computedStyle.marginTop);
+            notify |= ApplyContext(ref m_MarginTop, in context);
+            if (notify)
+                Notify(nameof(marginTop));
+
+            notify = false;
+            notify |= SetInlineValue(ref m_MaxHeight, element.style.maxHeight);
+            notify |= SetComputedValue(ref m_MaxHeight, element.computedStyle.maxHeight);
+            notify |= ApplyContext(ref m_MaxHeight, in context);
+            if (notify)
+                Notify(nameof(maxHeight));
+
+            notify = false;
+            notify |= SetInlineValue(ref m_MaxWidth, element.style.maxWidth);
+            notify |= SetComputedValue(ref m_MaxWidth, element.computedStyle.maxWidth);
+            notify |= ApplyContext(ref m_MaxWidth, in context);
+            if (notify)
+                Notify(nameof(maxWidth));
+
+            notify = false;
+            notify |= SetInlineValue(ref m_MinHeight, element.style.minHeight);
+            notify |= SetComputedValue(ref m_MinHeight, element.computedStyle.minHeight);
+            notify |= ApplyContext(ref m_MinHeight, in context);
+            if (notify)
+                Notify(nameof(minHeight));
+
+            notify = false;
+            notify |= SetInlineValue(ref m_MinWidth, element.style.minWidth);
+            notify |= SetComputedValue(ref m_MinWidth, element.computedStyle.minWidth);
+            notify |= ApplyContext(ref m_MinWidth, in context);
+            if (notify)
+                Notify(nameof(minWidth));
+
+            notify = false;
+            notify |= SetInlineValue(ref m_Opacity, element.style.opacity);
+            notify |= SetComputedValue(ref m_Opacity, element.computedStyle.opacity);
+            notify |= ApplyContext(ref m_Opacity, in context);
+            if (notify)
+                Notify(nameof(opacity));
+
+            notify = false;
+            notify |= SetInlineValue(ref m_Overflow, element.style.overflow);
+            notify |= SetComputedValue(ref m_Overflow, element.computedStyle.overflow);
+            notify |= ApplyContext(ref m_Overflow, in context);
+            if (notify)
+                Notify(nameof(overflow));
+
+            notify = false;
+            notify |= SetInlineValue(ref m_PaddingBottom, element.style.paddingBottom);
+            notify |= SetComputedValue(ref m_PaddingBottom, element.computedStyle.paddingBottom);
+            notify |= ApplyContext(ref m_PaddingBottom, in context);
+            if (notify)
+                Notify(nameof(paddingBottom));
+
+            notify = false;
+            notify |= SetInlineValue(ref m_PaddingLeft, element.style.paddingLeft);
+            notify |= SetComputedValue(ref m_PaddingLeft, element.computedStyle.paddingLeft);
+            notify |= ApplyContext(ref m_PaddingLeft, in context);
+            if (notify)
+                Notify(nameof(paddingLeft));
+
+            notify = false;
+            notify |= SetInlineValue(ref m_PaddingRight, element.style.paddingRight);
+            notify |= SetComputedValue(ref m_PaddingRight, element.computedStyle.paddingRight);
+            notify |= ApplyContext(ref m_PaddingRight, in context);
+            if (notify)
+                Notify(nameof(paddingRight));
+
+            notify = false;
+            notify |= SetInlineValue(ref m_PaddingTop, element.style.paddingTop);
+            notify |= SetComputedValue(ref m_PaddingTop, element.computedStyle.paddingTop);
+            notify |= ApplyContext(ref m_PaddingTop, in context);
+            if (notify)
+                Notify(nameof(paddingTop));
+
+            notify = false;
+            notify |= SetInlineValue(ref m_Position, element.style.position);
+            notify |= SetComputedValue(ref m_Position, element.computedStyle.position);
+            notify |= ApplyContext(ref m_Position, in context);
+            if (notify)
+                Notify(nameof(position));
+
+            notify = false;
+            notify |= SetInlineValue(ref m_Right, element.style.right);
+            notify |= SetComputedValue(ref m_Right, element.computedStyle.right);
+            notify |= ApplyContext(ref m_Right, in context);
+            if (notify)
+                Notify(nameof(right));
+
+            notify = false;
+            notify |= SetInlineValue(ref m_Rotate, element.style.rotate);
+            notify |= SetComputedValue(ref m_Rotate, element.computedStyle.rotate);
+            notify |= ApplyContext(ref m_Rotate, in context);
+            if (notify)
+                Notify(nameof(rotate));
+
+            notify = false;
+            notify |= SetInlineValue(ref m_Scale, element.style.scale);
+            notify |= SetComputedValue(ref m_Scale, element.computedStyle.scale);
+            notify |= ApplyContext(ref m_Scale, in context);
+            if (notify)
+                Notify(nameof(scale));
+
+            notify = false;
+            notify |= SetInlineValue(ref m_TextOverflow, element.style.textOverflow);
+            notify |= SetComputedValue(ref m_TextOverflow, element.computedStyle.textOverflow);
+            notify |= ApplyContext(ref m_TextOverflow, in context);
+            if (notify)
+                Notify(nameof(textOverflow));
+
+            notify = false;
+            notify |= SetInlineValue(ref m_TextShadow, element.style.textShadow);
+            notify |= SetComputedValue(ref m_TextShadow, element.computedStyle.textShadow);
+            notify |= ApplyContext(ref m_TextShadow, in context);
+            if (notify)
+                Notify(nameof(textShadow));
+
+            notify = false;
+            notify |= SetInlineValue(ref m_Top, element.style.top);
+            notify |= SetComputedValue(ref m_Top, element.computedStyle.top);
+            notify |= ApplyContext(ref m_Top, in context);
+            if (notify)
+                Notify(nameof(top));
+
+            notify = false;
+            notify |= SetInlineValue(ref m_TransformOrigin, element.style.transformOrigin);
+            notify |= SetComputedValue(ref m_TransformOrigin, element.computedStyle.transformOrigin);
+            notify |= ApplyContext(ref m_TransformOrigin, in context);
+            if (notify)
+                Notify(nameof(transformOrigin));
+
+            notify = false;
+            notify |= SetInlineValue(ref m_TransitionDelay, element.style.transitionDelay);
+            notify |= SetComputedValue(ref m_TransitionDelay, element.computedStyle.transitionDelay);
+            notify |= ApplyContext(ref m_TransitionDelay, in context);
+            if (notify)
+                Notify(nameof(transitionDelay));
+
+            notify = false;
+            notify |= SetInlineValue(ref m_TransitionDuration, element.style.transitionDuration);
+            notify |= SetComputedValue(ref m_TransitionDuration, element.computedStyle.transitionDuration);
+            notify |= ApplyContext(ref m_TransitionDuration, in context);
+            if (notify)
+                Notify(nameof(transitionDuration));
+
+            notify = false;
+            notify |= SetInlineValue(ref m_TransitionProperty, element.style.transitionProperty);
+            notify |= SetComputedValue(ref m_TransitionProperty, element.computedStyle.transitionProperty);
+            notify |= ApplyContext(ref m_TransitionProperty, in context);
+            if (notify)
+                Notify(nameof(transitionProperty));
+
+            notify = false;
+            notify |= SetInlineValue(ref m_TransitionTimingFunction, element.style.transitionTimingFunction);
+            notify |= SetComputedValue(ref m_TransitionTimingFunction, element.computedStyle.transitionTimingFunction);
+            notify |= ApplyContext(ref m_TransitionTimingFunction, in context);
+            if (notify)
+                Notify(nameof(transitionTimingFunction));
+
+            notify = false;
+            notify |= SetInlineValue(ref m_Translate, element.style.translate);
+            notify |= SetComputedValue(ref m_Translate, element.computedStyle.translate);
+            notify |= ApplyContext(ref m_Translate, in context);
+            if (notify)
+                Notify(nameof(translate));
+
+            notify = false;
+            notify |= SetInlineValue(ref m_UnityBackgroundImageTintColor, element.style.unityBackgroundImageTintColor);
+            notify |= SetComputedValue(ref m_UnityBackgroundImageTintColor, element.computedStyle.unityBackgroundImageTintColor);
+            notify |= ApplyContext(ref m_UnityBackgroundImageTintColor, in context);
+            if (notify)
+                Notify(nameof(unityBackgroundImageTintColor));
+
+            notify = false;
+            notify |= SetInlineValue(ref m_UnityEditorTextRenderingMode, element.style.unityEditorTextRenderingMode);
+            notify |= SetComputedValue(ref m_UnityEditorTextRenderingMode, element.computedStyle.unityEditorTextRenderingMode);
+            notify |= ApplyContext(ref m_UnityEditorTextRenderingMode, in context);
+            if (notify)
+                Notify(nameof(unityEditorTextRenderingMode));
+
+            notify = false;
+            notify |= SetInlineValue(ref m_UnityFont, element.style.unityFont);
+            notify |= SetComputedValue(ref m_UnityFont, element.computedStyle.unityFont);
+            notify |= ApplyContext(ref m_UnityFont, in context);
+            if (notify)
+                Notify(nameof(unityFont));
+
+            notify = false;
+            notify |= SetInlineValue(ref m_UnityFontDefinition, element.style.unityFontDefinition);
+            notify |= SetComputedValue(ref m_UnityFontDefinition, element.computedStyle.unityFontDefinition);
+            notify |= ApplyContext(ref m_UnityFontDefinition, in context);
+            if (notify)
+                Notify(nameof(unityFontDefinition));
+
+            notify = false;
+            notify |= SetInlineValue(ref m_UnityFontStyleAndWeight, element.style.unityFontStyleAndWeight);
+            notify |= SetComputedValue(ref m_UnityFontStyleAndWeight, element.computedStyle.unityFontStyleAndWeight);
+            notify |= ApplyContext(ref m_UnityFontStyleAndWeight, in context);
+            if (notify)
+                Notify(nameof(unityFontStyleAndWeight));
+
+            notify = false;
+            notify |= SetInlineValue(ref m_UnityMaterial, element.style.unityMaterial);
+            notify |= SetComputedValue(ref m_UnityMaterial, element.computedStyle.unityMaterial);
+            notify |= ApplyContext(ref m_UnityMaterial, in context);
+            if (notify)
+                Notify(nameof(unityMaterial));
+
+            notify = false;
+            notify |= SetInlineValue(ref m_UnityOverflowClipBox, element.style.unityOverflowClipBox);
+            notify |= SetComputedValue(ref m_UnityOverflowClipBox, element.computedStyle.unityOverflowClipBox);
+            notify |= ApplyContext(ref m_UnityOverflowClipBox, in context);
+            if (notify)
+                Notify(nameof(unityOverflowClipBox));
+
+            notify = false;
+            notify |= SetInlineValue(ref m_UnityParagraphSpacing, element.style.unityParagraphSpacing);
+            notify |= SetComputedValue(ref m_UnityParagraphSpacing, element.computedStyle.unityParagraphSpacing);
+            notify |= ApplyContext(ref m_UnityParagraphSpacing, in context);
+            if (notify)
+                Notify(nameof(unityParagraphSpacing));
+
+            notify = false;
+            notify |= SetInlineValue(ref m_UnitySliceBottom, element.style.unitySliceBottom);
+            notify |= SetComputedValue(ref m_UnitySliceBottom, element.computedStyle.unitySliceBottom);
+            notify |= ApplyContext(ref m_UnitySliceBottom, in context);
+            if (notify)
+                Notify(nameof(unitySliceBottom));
+
+            notify = false;
+            notify |= SetInlineValue(ref m_UnitySliceLeft, element.style.unitySliceLeft);
+            notify |= SetComputedValue(ref m_UnitySliceLeft, element.computedStyle.unitySliceLeft);
+            notify |= ApplyContext(ref m_UnitySliceLeft, in context);
+            if (notify)
+                Notify(nameof(unitySliceLeft));
+
+            notify = false;
+            notify |= SetInlineValue(ref m_UnitySliceRight, element.style.unitySliceRight);
+            notify |= SetComputedValue(ref m_UnitySliceRight, element.computedStyle.unitySliceRight);
+            notify |= ApplyContext(ref m_UnitySliceRight, in context);
+            if (notify)
+                Notify(nameof(unitySliceRight));
+
+            notify = false;
+            notify |= SetInlineValue(ref m_UnitySliceScale, element.style.unitySliceScale);
+            notify |= SetComputedValue(ref m_UnitySliceScale, element.computedStyle.unitySliceScale);
+            notify |= ApplyContext(ref m_UnitySliceScale, in context);
+            if (notify)
+                Notify(nameof(unitySliceScale));
+
+            notify = false;
+            notify |= SetInlineValue(ref m_UnitySliceTop, element.style.unitySliceTop);
+            notify |= SetComputedValue(ref m_UnitySliceTop, element.computedStyle.unitySliceTop);
+            notify |= ApplyContext(ref m_UnitySliceTop, in context);
+            if (notify)
+                Notify(nameof(unitySliceTop));
+
+            notify = false;
+            notify |= SetInlineValue(ref m_UnitySliceType, element.style.unitySliceType);
+            notify |= SetComputedValue(ref m_UnitySliceType, element.computedStyle.unitySliceType);
+            notify |= ApplyContext(ref m_UnitySliceType, in context);
+            if (notify)
+                Notify(nameof(unitySliceType));
+
+            notify = false;
+            notify |= SetInlineValue(ref m_UnityTextAlign, element.style.unityTextAlign);
+            notify |= SetComputedValue(ref m_UnityTextAlign, element.computedStyle.unityTextAlign);
+            notify |= ApplyContext(ref m_UnityTextAlign, in context);
+            if (notify)
+                Notify(nameof(unityTextAlign));
+
+            notify = false;
+            notify |= SetInlineValue(ref m_UnityTextAutoSize, element.style.unityTextAutoSize);
+            notify |= SetComputedValue(ref m_UnityTextAutoSize, element.computedStyle.unityTextAutoSize);
+            notify |= ApplyContext(ref m_UnityTextAutoSize, in context);
+            if (notify)
+                Notify(nameof(unityTextAutoSize));
+
+            notify = false;
+            notify |= SetInlineValue(ref m_UnityTextGenerator, element.style.unityTextGenerator);
+            notify |= SetComputedValue(ref m_UnityTextGenerator, element.computedStyle.unityTextGenerator);
+            notify |= ApplyContext(ref m_UnityTextGenerator, in context);
+            if (notify)
+                Notify(nameof(unityTextGenerator));
+
+            notify = false;
+            notify |= SetInlineValue(ref m_UnityTextOutlineColor, element.style.unityTextOutlineColor);
+            notify |= SetComputedValue(ref m_UnityTextOutlineColor, element.computedStyle.unityTextOutlineColor);
+            notify |= ApplyContext(ref m_UnityTextOutlineColor, in context);
+            if (notify)
+                Notify(nameof(unityTextOutlineColor));
+
+            notify = false;
+            notify |= SetInlineValue(ref m_UnityTextOutlineWidth, element.style.unityTextOutlineWidth);
+            notify |= SetComputedValue(ref m_UnityTextOutlineWidth, element.computedStyle.unityTextOutlineWidth);
+            notify |= ApplyContext(ref m_UnityTextOutlineWidth, in context);
+            if (notify)
+                Notify(nameof(unityTextOutlineWidth));
+
+            notify = false;
+            notify |= SetInlineValue(ref m_UnityTextOverflowPosition, element.style.unityTextOverflowPosition);
+            notify |= SetComputedValue(ref m_UnityTextOverflowPosition, element.computedStyle.unityTextOverflowPosition);
+            notify |= ApplyContext(ref m_UnityTextOverflowPosition, in context);
+            if (notify)
+                Notify(nameof(unityTextOverflowPosition));
+
+            notify = false;
+            notify |= SetInlineValue(ref m_Visibility, element.style.visibility);
+            notify |= SetComputedValue(ref m_Visibility, element.computedStyle.visibility);
+            notify |= ApplyContext(ref m_Visibility, in context);
+            if (notify)
+                Notify(nameof(visibility));
+
+            notify = false;
+            notify |= SetInlineValue(ref m_WhiteSpace, element.style.whiteSpace);
+            notify |= SetComputedValue(ref m_WhiteSpace, element.computedStyle.whiteSpace);
+            notify |= ApplyContext(ref m_WhiteSpace, in context);
+            if (notify)
+                Notify(nameof(whiteSpace));
+
+            notify = false;
+            notify |= SetInlineValue(ref m_Width, element.style.width);
+            notify |= SetComputedValue(ref m_Width, element.computedStyle.width);
+            notify |= ApplyContext(ref m_Width, in context);
+            if (notify)
+                Notify(nameof(width));
+
+            notify = false;
+            notify |= SetInlineValue(ref m_WordSpacing, element.style.wordSpacing);
+            notify |= SetComputedValue(ref m_WordSpacing, element.computedStyle.wordSpacing);
+            notify |= ApplyContext(ref m_WordSpacing, in context);
+            if (notify)
+                Notify(nameof(wordSpacing));
+
             all = ComputeStyleProperty(StylePropertyId.All, nameof(all), in context);
             backgroundPosition = ComputeStyleProperty(StylePropertyId.BackgroundPosition, nameof(backgroundPosition), in context);
             borderColor = ComputeStyleProperty(StylePropertyId.BorderColor, nameof(borderColor), in context);

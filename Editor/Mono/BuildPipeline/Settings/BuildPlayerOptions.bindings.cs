@@ -10,16 +10,80 @@ using System;
 namespace UnityEditor
 {
     // NB! Keep in sync with BuildPlayerOptionsManagedStruct in Editor/Src/BuildPipeline/BuildPlayerOptions.h
+    ///<summary>Provide various options to control the behavior of <see cref="BuildPipeline.BuildPlayer" />.</summary>
+    ///<example>
+    ///  <code source="../../../../Modules/ContentBuild/Tests/local.test.build-examples/Editor/BuildPipeline/Settings/BuildPlayerOptions_BuildPlayerOptions.cs"/>
+    ///</example>
+    ///<seealso cref="EditorBuildSettings" />
+    ///<seealso cref="BuildPlayerWindow.DefaultBuildMethods.GetBuildPlayerOptions" />
     [StructLayout(LayoutKind.Sequential)]
     public struct BuildPlayerOptions
     {
+        ///<summary>The Scenes to be included in the build.</summary>
+        ///<remarks>If empty, the currently open Scene will be built. Paths are relative to the project folder, for example "Assets/MyLevels/MyScene.unity". If any scene is currently open and has unsaved changes, the editor will ask the user to save these changes before building - or save changes automatically, if <see cref="Application.isBatchMode" /> is true.</remarks>
+        ///<seealso cref="EditorBuildSettings.scenes" />
         public string[] scenes { get; set; }
+        ///<summary>Specifies the path for the application to be built.</summary>
+        ///<remarks>The value of <c>locationPathName</c> determines both the location and the file name of the built application.
+        ///
+        ///                This path can be either relative to the project directory or an absolute path.
+        ///
+        ///                Unity does not modify this path automatically, so it must include the correct file name and extension based on the target platform.
+        ///
+        ///                If the directory doesn't exist, Unity will create the directory automatically during the build process.
+        ///
+        ///**Guidelines**:
+        ///
+        ///* The path must include your chosen file name. For example, <c>Builds/MyApp.apk</c> for Android, <c>Builds/MyApp.exe</c> for Windows. Unity does not append extensions automatically.
+        ///* For Android Package, use the <c>.apk</c> extension and for Android App Bundle, use the <c>.aab</c> extension.
+        ///* For Windows, use the <c>.exe</c> extension.
+        ///* For Mac, use the <c>.app</c> extension.
+        ///* If the path is relative (e.g., <c>Builds/MyApp</c>), Unity will treat it as relative to the project root directory.
+        ///* To place the build outside the project directory,  specify an absolute path such as <c>C:/MyBuilds/MyApp.exe</c>.
+        ///
+        ///Don't use the following project directories for <c>locationPathName</c>:
+        ///
+        ///* Assets/
+        ///* ProjectSettings/
+        ///* Library/
+        ///* Packages/
+        ///* UserSettings/
+        ///
+        ///**Note:** Paths pointing directly to the user desktop are not allowed.</remarks>
         public string locationPathName { get; set; }
+        ///<summary>The path to an manifest file describing all of the asset bundles used in the build (optional).</summary>
+        ///<remarks>When you call <see cref="BuildPipeline.BuildAssetBundles" /> to create your AssetBundles, Unity will also generate a manifest file with a filename matching the parent directory name and ".manifest" as its extension.
+        ///You can assign the path to this manifest file to <c>assetBundleManifestPath</c> to ensure that a player build does not strip any types used in the AssetBundles that you built.
+        ///
+        ///You do not need to set this property when you use /link.xml/ files, or if you generate AssetBundles using the &lt;a href="https://docs.unity3d.com/Packages/com.unity.addressables@latest"&gt;Addressables&lt;/a&gt; package.
+        ///
+        ///See [Managed code stripping](xref:ManagedCodeStripping) for more information about code stripping.</remarks>
         public string assetBundleManifestPath { get; set; }
+        ///<summary>The <see cref="BuildTargetGroup" /> to build.</summary>
         public BuildTargetGroup targetGroup { get; set; }
+        ///<summary>The <see cref="BuildTarget" /> to build.</summary>
+        ///<seealso cref="EditorUserBuildSettings.activeBuildTarget" />
         public BuildTarget target { get; set; }
+        ///<summary>The Subtarget to build.</summary>
+        ///<remarks>For certain platforms, setting a non-zero value for this property can modify the build behaviour.
+        ///
+        ///Both this property and <see cref="BuildPlayerOptions.target" /> should remain unset to automatically use the target and subtarget as defined in the current Build Profile.
+        ///
+        ///The valid values for this property correspond to target-specific enums, which are cast to ints.  Examples of these enums include <see cref="StandaloneBuildSubtarget" />, <see cref="MobileTextureSubtarget" />, <see cref="WebGLTextureSubtarget" /> and <see cref="XboxBuildSubtarget" />.
+        ///
+        ///Usage examples:
+        ///
+        ///* For building a headless server, when building for <see cref="BuildTarget.StandaloneWindows" />, <see cref="BuildTarget.StandaloneOSX" /> or <see cref="BuildTarget.StandaloneLinux64" />, specify <see cref="StandaloneBuildSubtarget.Server" /> (numeric value 1).
+        ///* For ETC2 texture compression, when building for <see cref="BuildTarget.Android" />, or another mobile platform, specify <see cref="MobileTextureSubtarget.ETC2" /> (numeric value 5).</remarks>
+        ///<seealso cref="BuildAssetBundlesParameters.subtarget" />
+        ///<seealso cref="EditorUserBuildSettings.standaloneBuildSubtarget" />
+        ///<seealso cref="EditorUserBuildSettings.androidBuildSubtarget" />
+        ///<seealso cref="EditorUserBuildSettings.webGLBuildSubtarget" />
+        ///<seealso cref="EditorUserBuildSettings.ps4BuildSubtarget" />
         public int subtarget { get; set; }
+        ///<summary>Additional <see cref="BuildOptions" />, like whether to run the built player.</summary>
         public BuildOptions options { get; set; }
+        ///<summary>The additional preprocessor defines you can specify while compiling assemblies for the Player. These defines are appended to the existing Scripting Define Symbols list configured in the Player settings.</summary>
         public string[] extraScriptingDefines { get; set; }
         /*UCBP-PUBLIC*/ internal string[] previousBuildMetadataLocations { get; set; }
     }

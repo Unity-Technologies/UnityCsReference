@@ -55,6 +55,35 @@ namespace UnityEngine
         Prologic = 7
     }
 
+    internal enum AudioFoundation
+    {
+        Classic = 0,
+        Enhanced = 1,
+    }
+
+	internal enum ChannelLayoutBehavior
+    {
+        DeviceNative = 0,
+        Mono = 1,
+        Stereo = 2,
+        Quadraphonic = 4,
+        Surround_5_0 = 5,
+        Surround_5_1 = 6,
+        Surround_7_1 = 8
+    };
+
+    internal enum SamplingRateBehavior
+    {
+        DeviceNative = 0,
+        Hz8000 = 8000,
+        Hz16000 = 16000,
+        Hz22050 = 22050,
+        Hz24000 = 24000,
+        Hz32000 = 32000,
+        Hz44100 = 44100,
+        Hz48000 = 48000
+    };
+
     public static class AudioExtensions
     {
         [NativeMethod(Name = "AudioSpeakerModeBindings::InternalIAudioSpeakerModeChannelCount", IsFreeFunction = true)]
@@ -93,6 +122,13 @@ namespace UnityEngine
         public int sampleRate;
         public int numRealVoices;
         public int numVirtualVoices;
+    }
+
+    internal struct EnhancedAudioConfiguration
+    {
+        public AudioFoundation audioFoundation;
+        public ChannelLayoutBehavior outputChannelLayout;
+        public SamplingRateBehavior outputSampleRate;
     }
 
     // Imported audio format for [[AudioImporter]].
@@ -292,6 +328,9 @@ namespace UnityEngine
         [NativeThrows, NativeMethod(Name = "AudioSettings::SetConfiguration", IsFreeFunction = true)]
         extern static private bool SetConfiguration(AudioConfiguration config);
 
+        [NativeMethod(Name = "AudioSettings::SetEnhancedConfiguration", IsFreeFunction = true)]
+        extern static internal bool SetEnhancedConfiguration(EnhancedAudioConfiguration config);
+
         [NativeMethod(Name = "AudioSettings::GetSampleRate", IsFreeFunction = true)]
         extern static private int GetSampleRate();
 
@@ -386,10 +425,16 @@ namespace UnityEngine
 
 
         extern static public AudioConfiguration GetConfiguration();
+        extern static internal EnhancedAudioConfiguration GetEnhancedConfiguration();
 
         static public bool Reset(AudioConfiguration config)
         {
             return SetConfiguration(config);
+        }
+
+        static internal bool Reset(EnhancedAudioConfiguration config)
+        {
+            return SetEnhancedConfiguration(config);
         }
 
         public delegate void AudioConfigurationChangeHandler(bool deviceWasChanged);
@@ -1221,7 +1266,7 @@ namespace UnityEngine
         extern public float cutoffFrequency { get; set; }
 
         // Determines how much the filter's self-resonance isdampened.
-        extern public float highpassResonanceQ {get; set; }
+        extern public float highpassResonanceQ { get; set; }
     }
 
     // The Audio Distortion Filter distorts the sound from an AudioSource or
@@ -1246,7 +1291,7 @@ namespace UnityEngine
         extern public float dryMix { get; set; }
 
         // Volume of echo signal to pass to output. 0.0 to 1.0. Default = 1.0.
-        extern public float wetMix {get; set; }
+        extern public float wetMix { get; set; }
     }
 
     // The Audio Chorus Filter takes an Audio Clip and processes it creating a chorus effect.
@@ -1435,4 +1480,5 @@ namespace UnityEngine
             GetDeviceCaps(deviceID, out minFreq, out maxFreq);
         }
     }
+
 }

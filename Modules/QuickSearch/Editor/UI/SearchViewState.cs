@@ -21,7 +21,7 @@ namespace UnityEditor.Search
     public class SearchViewState : ISerializationCallbackReceiver
     {
         public static readonly Vector2 defaultSize = new Vector2(850f, 539f);
-        static readonly string[] emptyProviders = new string[0];
+        static readonly string[] emptyProviders = Array.Empty<string>();
 
         [NonSerialized] private SearchContext m_Context;
         [NonSerialized] private bool m_WasDeserialized;
@@ -119,7 +119,7 @@ namespace UnityEditor.Search
             get
             {
                 if (m_SelectedIds == null)
-                    m_SelectedIds = new EntityId[0];
+                    m_SelectedIds = Array.Empty<EntityId>();
                 return m_SelectedIds;
             }
             set

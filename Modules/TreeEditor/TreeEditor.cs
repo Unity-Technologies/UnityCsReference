@@ -406,7 +406,7 @@ namespace TreeEditor
             if (renderer != null)
             {
                 if (materials == null)
-                    materials = new Material[0];
+                    materials = System.Array.Empty<Material>();
 
                 renderer.sharedMaterials = materials;
             }

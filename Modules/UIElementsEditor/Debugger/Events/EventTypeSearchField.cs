@@ -89,7 +89,7 @@ namespace UnityEditor.UIElements.Debugger
 
         bool IsGenericTypeOf(Type t, Type genericDefinition, out Type[] genericParameters)
         {
-            genericParameters = new Type[] {};
+            genericParameters = Array.Empty<Type>();
             if (!genericDefinition.IsGenericType)
             {
                 return false;
@@ -100,9 +100,7 @@ namespace UnityEditor.UIElements.Debugger
             {
                 isMatch = IsGenericTypeOf(t.BaseType, genericDefinition, out genericParameters);
             }
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            if (!isMatch && genericDefinition.IsInterface && t.GetInterfaces().Any())
-#pragma warning restore RS0030
+            if (!isMatch && genericDefinition.IsInterface && t.GetInterfaces().Length > 0)
             {
                 foreach (var i in t.GetInterfaces())
                 {
@@ -114,9 +112,7 @@ namespace UnityEditor.UIElements.Debugger
                 }
             }
 
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            if (isMatch && !genericParameters.Any())
-#pragma warning restore RS0030
+            if (isMatch && genericParameters.Length == 0)
             {
                 genericParameters = t.GetGenericArguments();
             }

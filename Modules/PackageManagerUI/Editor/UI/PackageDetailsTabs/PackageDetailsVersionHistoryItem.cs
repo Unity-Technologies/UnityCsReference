@@ -223,15 +223,17 @@ namespace UnityEditor.PackageManager.UI.Internal
             if (left == null || right == null)
                 return false;
 
-            var leftDependencies = left.dependencies ?? new DependencyInfo[0];
-            var rightDependencies = right.dependencies ?? new DependencyInfo[0];
+            var leftDependencies = left.dependencies ?? Array.Empty<DependencyInfo>();
+            var rightDependencies = right.dependencies ?? Array.Empty<DependencyInfo>();
             if (leftDependencies.Length != rightDependencies.Length)
                 return true;
 
             var comparer = new DependencyInfoComparer();
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable RS0031 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return leftDependencies.Except(rightDependencies, comparer).Any() || rightDependencies.Except(leftDependencies, comparer).Any();
 #pragma warning restore RS0030
+#pragma warning restore RS0031
         }
 
         private void RefreshMetaDataChanges()

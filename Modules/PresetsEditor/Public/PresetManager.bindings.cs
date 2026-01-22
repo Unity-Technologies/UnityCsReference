@@ -10,13 +10,13 @@ using UnityEngine.Bindings;
 
 namespace UnityEditor.Presets
 {
-    [NativeType(Header = "Modules/PresetsEditor/Public/PresetManager.h")]
+    [NativeHeader("Modules/PresetsEditor/Public/PresetManager.h")]
     internal class PresetManager : ProjectSettingsBase
     {
         internal extern void AddPresetType(PresetType presetType);
     }
 
-    [NativeType(Header = "Modules/PresetsEditor/Public/PresetManager.h")]
+    [NativeHeader("Modules/PresetsEditor/Public/PresetManager.h")]
     [StructLayout(LayoutKind.Sequential)]
     [Serializable]
     public struct DefaultPreset

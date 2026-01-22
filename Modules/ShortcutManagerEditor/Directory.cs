@@ -36,9 +36,7 @@ namespace UnityEditor.ShortcutManagement
             foreach (ShortcutEntry entry in entries)
             {
                 m_ShortcutEntries.Add(entry);
-                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                if (entry.combinations.Any())
-#pragma warning restore RS0030
+                if (entry.combinations.Count > 0)
                     #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     AddEntry(entry.combinations.First().keyCode, entry);
 #pragma warning restore RS0030
@@ -185,17 +183,13 @@ namespace UnityEditor.ShortcutManagement
 
         public void FindPotentialConflicts(Type context, string tag, IList<KeyCombination> binding, IList<ShortcutEntry> output, IContextManager contextManager)
         {
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            if (!binding.Any())
-#pragma warning restore RS0030
+            if (binding.Count == 0)
                 return;
 
             var tempCombinations = new List<KeyCombination>(binding.Count);
             output.Clear();
             List<ShortcutEntry> entries = m_IndexedShortcutEntries.GetValueOrDefault(binding[0].keyCode);
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            if (entries == null || !entries.Any())
-#pragma warning restore RS0030
+            if (entries == null || entries.Count == 0)
                 return;
 
             foreach (var shortcutEntry in entries)

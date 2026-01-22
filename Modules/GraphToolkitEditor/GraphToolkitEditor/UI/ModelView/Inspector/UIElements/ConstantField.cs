@@ -143,10 +143,10 @@ namespace Unity.GraphToolkit.Editor
                 return;
 
             // If the field is a string and has a TextAreaAttribute, adjust its height accordingly.
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            if (Field is TextField textField && m_Attributes?.First(a => a is TextAreaAttribute) is TextAreaAttribute textAreaAttribute)
-#pragma warning restore RS0030
+
+            if (Field is TextField textField && m_Attributes != null && m_Attributes.HasAny(a => a is TextAreaAttribute))
             {
+                var textAreaAttribute = m_Attributes.First(a => a is TextAreaAttribute) as TextAreaAttribute;
                 TextAreaFieldHelper.UpdateTextAreaHeight(textAreaAttribute, textField, ConstantModels[0].ObjectValue as string ?? string.Empty);
             }
 

@@ -17,7 +17,7 @@ namespace UnityEditor.ShortcutManagement
 
     class BindingValidator : IBindingValidator
     {
-        static readonly HashSet<KeyCode> s_InvalidKeyCodes = new HashSet<KeyCode>
+        static readonly HashSet<KeyCode> s_InvalidKeyCodes = new HashSet<KeyCode>(new[]
         {
             KeyCode.None,
             KeyCode.Escape,
@@ -31,7 +31,7 @@ namespace UnityEditor.ShortcutManagement
             KeyCode.LeftControl,
             KeyCode.RightCommand,
             KeyCode.LeftCommand,
-        };
+        });
 
         // The following method is internal because it's also used in tests.
         internal string GetInvalidKeyCodes(KeyCode key)

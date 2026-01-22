@@ -15,17 +15,17 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
 {
     class ViewSelectionTreeView : TreeView
     {
-        public Action<Tab> OnSelectedNonAnalyzedTab;
+        public Action<Tab, bool> OnSelectedNonAnalyzedTab;
 
         readonly Tab[] m_Tabs;
         readonly ViewManager m_ViewManager;
-        readonly Report m_Report;
 
         Dictionary<int, IssueCategory> m_ItemIdToCategory = new Dictionary<int, IssueCategory>();
         Dictionary<IssueCategory, TreeViewItem> m_CategoryToItem = new Dictionary<IssueCategory, TreeViewItem>();
         Dictionary<int, Tab> m_ItemIdToTab = new Dictionary<int, Tab>();
 
         const float k_NonAnalyzedIconWidth = 16f;
+        const float k_AnalysisInProgressIconWidth = 16f;
 
         int m_CurrentlySelectedItemID;
         TreeViewItem m_RootItem;
@@ -33,14 +33,11 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
         GUIContent m_NonAnalyzedIcon;
 
         public ViewSelectionTreeView(TreeViewState treeViewState, Tab[] tabs,
-                                     ViewManager viewManager,
-                                     Report report)
+                                     ViewManager viewManager)
             : base(treeViewState)
         {
             m_Tabs = tabs;
             m_ViewManager = viewManager;
-            m_Report = report;
-
             m_NonAnalyzedIcon = Utility.GetIcon(Utility.IconType.AdditionalAnalysis, "Not Analyzed");
 
             Reload();
@@ -72,12 +69,15 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
                 if (tab.categories.Length > 1)
                 {
                     var anyChildrenAnalyzed = false;
-                    foreach (var childCategory in tab.categories)
+                    if (m_ViewManager.Report != null)
                     {
-                        if (m_Report != null && m_Report.HasCategory(childCategory))
+                        foreach (var childCategory in tab.categories)
                         {
-                            anyChildrenAnalyzed = true;
-                            break;
+                            if (m_ViewManager.Report.HasCategory(childCategory) || m_ViewManager.HasPendingCategory(childCategory))
+                            {
+                                anyChildrenAnalyzed = true;
+                                break;
+                            }
                         }
                     }
 
@@ -142,30 +142,58 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
         {
             base.RowGUI(args);
 
-            Rect iconRect = new Rect(args.rowRect);
-            iconRect.x = iconRect.xMax - k_NonAnalyzedIconWidth;
-            iconRect.width = k_NonAnalyzedIconWidth;
-
             // Only show parent items as non-analyzed, not children (= views / categories)
-            if (args.item.parent == m_RootItem && m_Report != null)
+            if (args.item.parent == m_RootItem)
             {
                 if (NeedsAnalysis(args.item))
                 {
+                    Rect iconRect = new Rect(args.rowRect);
+                    iconRect.x = iconRect.xMax - k_NonAnalyzedIconWidth;
+                    iconRect.width = k_NonAnalyzedIconWidth;
+
                     GUI.Label(iconRect, m_NonAnalyzedIcon, SharedStyles.LabelWithDynamicSize);
+                }
+                else if (AnalysisInProgress(args.item))
+                {
+                    Rect iconRect = new Rect(args.rowRect);
+                    iconRect.x = iconRect.xMax - k_AnalysisInProgressIconWidth;
+                    iconRect.width = k_AnalysisInProgressIconWidth;
+
+                    GUI.Label(iconRect, Utility.GetIcon(Utility.IconType.StatusWheel), SharedStyles.LabelWithDynamicSize);
                 }
             }
         }
 
         bool NeedsAnalysis(TreeViewItem item)
         {
+            if (m_ViewManager.Report == null)
+                return true;
+
             if (m_ItemIdToTab.TryGetValue(item.id, out Tab foundTab))
             {
                 foreach (var category in foundTab.categories)
                 {
-                    if (!m_Report.HasCategory(category))
-                    {
+                    if (!m_ViewManager.Report.HasCategory(category) && !m_ViewManager.HasPendingCategory(category))
                         return true;
-                    }
+                }
+
+                return false;
+            }
+
+            return true;
+        }
+
+        bool AnalysisInProgress(TreeViewItem item)
+        {
+            if (m_ViewManager.Report == null)
+                return false;
+
+            if (m_ItemIdToTab.TryGetValue(item.id, out Tab foundTab))
+            {
+                foreach (var category in foundTab.categories)
+                {
+                    if (m_ViewManager.HasPendingCategory(category))
+                        return true;
                 }
 
                 return false;
@@ -209,31 +237,27 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
 
             if (changeView)
             {
-                bool needsAnalysis = false;
-
                 // Leaf items select a view using their category
                 if (m_ItemIdToCategory.TryGetValue(item.id, out IssueCategory foundCategory))
                 {
-                    if (m_Report.HasCategory(foundCategory))
-                        m_ViewManager.ChangeView(foundCategory);
-                    else
-                        needsAnalysis = true;
+                    m_ViewManager.ChangeView(foundCategory);
+                    if (!m_ViewManager.Report.HasCategory(foundCategory))
+                    {
+                        if (m_ItemIdToTab.TryGetValue(item.id, out var foundTab))
+                            OnSelectedNonAnalyzedTab(foundTab, false);
+                    }
                 }
                 // Parent items with children select a view using their first child's category
                 else if (item.hasChildren)
                 {
-                    if (m_ItemIdToCategory.TryGetValue(item.children[0].id, out IssueCategory foundChildCategory))
-                    {
-                        m_ViewManager.ChangeView(foundChildCategory);
-                    }
+                    OnNewSelection(item.children[0], changeView, expandItem);
+                    return;
                 }
                 else
                 {
-                    needsAnalysis = true;
+                    if (m_ItemIdToTab.TryGetValue(item.id, out var foundTab))
+                        OnSelectedNonAnalyzedTab(foundTab, true);
                 }
-
-                if (needsAnalysis && m_ItemIdToTab.TryGetValue(item.id, out var foundTab))
-                    OnSelectedNonAnalyzedTab(foundTab);
             }
         }
 

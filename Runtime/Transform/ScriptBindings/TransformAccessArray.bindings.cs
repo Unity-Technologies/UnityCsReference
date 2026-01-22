@@ -239,7 +239,8 @@ namespace UnityEngine.Jobs
     }
 
     [StructLayout(LayoutKind.Sequential)]
-    [NativeType(Header = "Runtime/Transform/ScriptBindings/TransformAccess.bindings.h", CodegenOptions = CodegenOptions.Custom)]
+    [NativeType(CodegenOptions = CodegenOptions.Custom)]
+    [NativeHeader("Runtime/Transform/ScriptBindings/TransformAccess.bindings.h")]
     public struct TransformAccessArray : IDisposable
     {
         IntPtr              m_TransformArray;

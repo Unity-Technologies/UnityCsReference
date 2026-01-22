@@ -53,7 +53,7 @@ namespace UnityEditor
 
         public void ClearChannelStrips()
         {
-            Selection.objects = new Object[0];
+            Selection.objects = System.Array.Empty<Object>();
             //Debug.Log("ClearChannelStrips " + DebugUtils.ListToString(Selection.instanceIDs));
         }
 

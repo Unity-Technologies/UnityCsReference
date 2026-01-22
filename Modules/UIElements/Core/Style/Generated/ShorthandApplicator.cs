@@ -82,16 +82,6 @@ namespace UnityEngine.UIElements.StyleSheets
             computedStyle.layoutData.Write().paddingLeft = paddingLeft;
         }
 
-        public static void ApplyTransition(StylePropertyReader reader, ref ComputedStyle computedStyle)
-        {
-            CompileTransition(reader, out List<TimeValue> transitionDelay, out List<TimeValue> transitionDuration, out List<StylePropertyName> transitionProperty, out List<EasingFunction> transitionTimingFunction);
-
-            computedStyle.transitionData.Write().transitionDelay.CopyFrom(transitionDelay);
-            computedStyle.transitionData.Write().transitionDuration.CopyFrom(transitionDuration);
-            computedStyle.transitionData.Write().transitionProperty.CopyFrom(transitionProperty);
-            computedStyle.transitionData.Write().transitionTimingFunction.CopyFrom(transitionTimingFunction);
-        }
-
         public static void ApplyUnityBackgroundScaleMode(StylePropertyReader reader, ref ComputedStyle computedStyle)
         {
             CompileUnityBackgroundScaleMode(reader, out BackgroundPosition backgroundPositionX, out BackgroundPosition backgroundPositionY, out BackgroundRepeat backgroundRepeat, out BackgroundSize backgroundSize);

@@ -59,9 +59,9 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public override SemVersion? supportedVersion => m_SupportedUnityVersion;
 
-        public override IReadOnlyCollection<SemVersion> supportedVersions => m_SupportedUnityVersions;
+        public override IReadOnlyList<SemVersion> supportedVersions => m_SupportedUnityVersions;
 
-        public override IReadOnlyCollection<PackageSizeInfo> sizes => m_SizeInfos;
+        public override IReadOnlyList<PackageSizeInfo> sizes => m_SizeInfos;
 
         public override IReadOnlyCollection<Asset> importedAssets => m_ImportedPackage;
 
@@ -115,9 +115,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 m_SupportedUnityVersionString = m_SupportedUnityVersion?.ToString();
             }
 
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            m_SizeInfos = new List<PackageSizeInfo>(productInfo?.sizeInfos ?? Enumerable.Empty<PackageSizeInfo>());
-#pragma warning restore RS0030
+            m_SizeInfos = new List<PackageSizeInfo>(productInfo?.sizeInfos ?? (IEnumerable<PackageSizeInfo>)Array.Empty<PackageSizeInfo>());
             m_SizeInfos.Sort((left, right) => left.supportedUnityVersion.CompareTo(right.supportedUnityVersion));
 
             var state = productInfo?.state ?? string.Empty;

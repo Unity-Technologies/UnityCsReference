@@ -26,12 +26,12 @@ namespace Unity.UI.Builder
             return false;
         }
 
-        public static int MaxCount(this TransitionData data)
+        public static int TransitionMaxCount(this in ComputedStyle data)
         {
-            return Mathf.Max(data.transitionProperty.Count,
-                Mathf.Max(data.transitionDuration.Count,
-                    Mathf.Max(data.transitionTimingFunction.Count,
-                        data.transitionDelay.Count)));
+            return Mathf.Max(data.transitionProperty.Length,
+                Mathf.Max(data.transitionDuration.Length,
+                    Mathf.Max(data.transitionTimingFunction.Length,
+                        data.transitionDelay.Length)));
         }
 
         public static string UssName(this StylePropertyId id)

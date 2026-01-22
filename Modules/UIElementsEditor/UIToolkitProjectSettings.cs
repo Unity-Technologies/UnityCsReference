@@ -14,7 +14,7 @@ using UnityEngine.UIElements;
 namespace UnityEditor.UIElements
 {
     [FilePath("ProjectSettings/UIToolkitProjectSettings.asset", FilePathAttribute.Location.ProjectFolder)]
-    [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+    [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
     internal class UIToolkitProjectSettings : ScriptableSingleton<UIToolkitProjectSettings>
     {
         const string k_EditorExtensionModeKey = "UIBuilder.EditorExtensionModeKey";
@@ -34,7 +34,7 @@ namespace UnityEditor.UIElements
 
         internal static bool enableAdvancedText
         {
-            [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+            [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
             get => instance.m_EnableAdvancedText;
             set
             {
@@ -47,7 +47,7 @@ namespace UnityEditor.UIElements
             }
         }
 
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
         internal static Action<bool> onEnableAdvancedTextChanged;
 
         /// <summary>

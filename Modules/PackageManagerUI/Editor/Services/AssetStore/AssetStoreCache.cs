@@ -55,25 +55,25 @@ namespace UnityEditor.PackageManager.UI.Internal
         private Dictionary<long, AssetStoreImportedPackage> m_ImportedPackages = new();
 
         [SerializeField]
-        private string[] m_SerializedCategories = new string[0];
+        private string[] m_SerializedCategories = Array.Empty<string>();
 
         [SerializeField]
-        private long[] m_SerializedCategoryCounts = new long[0];
+        private long[] m_SerializedCategoryCounts = Array.Empty<long>();
 
         [SerializeField]
-        private AssetStorePurchaseInfo[] m_SerializedPurchaseInfos = new AssetStorePurchaseInfo[0];
+        private AssetStorePurchaseInfo[] m_SerializedPurchaseInfos = Array.Empty<AssetStorePurchaseInfo>();
 
         [SerializeField]
-        private AssetStoreProductInfo[] m_SerializedProductInfos = new AssetStoreProductInfo[0];
+        private AssetStoreProductInfo[] m_SerializedProductInfos = Array.Empty<AssetStoreProductInfo>();
 
         [SerializeField]
-        private AssetStoreLocalInfo[] m_SerializedLocalInfos = new AssetStoreLocalInfo[0];
+        private AssetStoreLocalInfo[] m_SerializedLocalInfos = Array.Empty<AssetStoreLocalInfo>();
 
         [SerializeField]
-        private AssetStoreUpdateInfo[] m_SerializedUpdateInfos = new AssetStoreUpdateInfo[0];
+        private AssetStoreUpdateInfo[] m_SerializedUpdateInfos = Array.Empty<AssetStoreUpdateInfo>();
 
         [SerializeField]
-        private Asset[] m_SerializedImportedAssets = new Asset[0];
+        private Asset[] m_SerializedImportedAssets = Array.Empty<Asset>();
 
         public event Action<IEnumerable<AssetStoreLocalInfo> /*addedOrUpdated*/, IEnumerable<AssetStoreLocalInfo> /*removed*/> onLocalInfosChanged;
         public event Action<AssetStoreProductInfo> onProductInfoChanged;
@@ -342,9 +342,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             var oldInfo = m_LocalInfos.Get(productId);
             m_LocalInfos[productId] = localInfo;
             if (IsLocalInfoUpdated(oldInfo, localInfo))
-                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                onLocalInfosChanged?.Invoke(new []{ localInfo }, Enumerable.Empty<AssetStoreLocalInfo>());
-#pragma warning restore RS0030
+                onLocalInfosChanged?.Invoke([localInfo], Array.Empty<AssetStoreLocalInfo>());
         }
 
         private static bool IsLocalInfoUpdated(AssetStoreLocalInfo oldInfo, AssetStoreLocalInfo newInfo)
@@ -374,9 +372,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         public void UpdateImportedAssets(IEnumerable<Asset> addedOrUpdatedAssets, IEnumerable<string> removedAssetPaths)
         {
             var modifiedProductIds = new HashSet<long>();
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            foreach (var path in removedAssetPaths ?? Enumerable.Empty<string>())
-#pragma warning restore RS0030
+            foreach (var path in removedAssetPaths ?? Array.Empty<string>())
             {
                 if (!m_ImportedAssets.ContainsKey(path))
                     continue;
@@ -384,9 +380,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 modifiedProductIds.Add(m_ImportedAssets[path].origin.productId);
                 m_ImportedAssets.Remove(path);
             }
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            foreach (var asset in addedOrUpdatedAssets ?? Enumerable.Empty<Asset>())
-#pragma warning restore RS0030
+            foreach (var asset in addedOrUpdatedAssets ?? Array.Empty<Asset>())
             {
                 modifiedProductIds.Add(asset.origin.productId);
                 m_ImportedAssets[asset.importedPath] = asset;

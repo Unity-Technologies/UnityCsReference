@@ -3,10 +3,12 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using UnityEngine.Internal;
 
 namespace UnityEditor.Experimental
 {
     [Obsolete("BuildPipelineExperimental is no longer supported and will be removed")]
+    [ExcludeFromDocs]
     public static class BuildPipelineExperimental
     {
         public static string GetSessionIdForBuildTarget(BuildTarget target)

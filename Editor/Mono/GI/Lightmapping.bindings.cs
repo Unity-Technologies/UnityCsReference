@@ -700,6 +700,7 @@ namespace UnityEditor
         public delegate void AdditionalBakeDelegate(ref float progress, ref bool done);
 
         [RequiredByNativeCode]
+        [Obsolete("This method has been deprecated. Use AddBakeDelegate instead.", false)]
         public static void SetAdditionalBakeDelegate(AdditionalBakeDelegate del) { s_AdditionalBakeDelegate = del != null ? del : s_DefaultAdditionalBakeDelegate; }
 
         public delegate void BakeDelegate(ref float progress, out bool done, UnityEngine.LightTransport.InputExtraction.BakeInput bakeInput);
@@ -711,15 +712,61 @@ namespace UnityEditor
         public static void RemoveBakeDelegate(BakeDelegate del) => s_BakeDelegates.RemoveAll(d => d.GetHashCode() == del.GetHashCode());
 
         [RequiredByNativeCode]
+        [Obsolete("This method has been deprecated.", false)]
         public static AdditionalBakeDelegate GetAdditionalBakeDelegate() { return s_AdditionalBakeDelegate; }
 
         [RequiredByNativeCode]
+        [Obsolete("This method has been deprecated. Use RemoveBakeDelegate instead.", false)]
         public static void ResetAdditionalBakeDelegate() { s_AdditionalBakeDelegate = s_DefaultAdditionalBakeDelegate; }
 
         [RequiredByNativeCode]
         internal static void AdditionalBake(ref float progress, ref bool done)
         {
             s_AdditionalBakeDelegate(ref progress, ref done);
+        }
+
+        delegate void VirtualOffsetBakeInitializeDataDelegate(IntPtr virtualOffsetsBuffer, ref bool bakeVirtualOffsets);
+        delegate void VirtualOffsetBakeUpdateDelegate(ref float progress, ref bool done);
+
+        [RequiredByNativeCode]
+        static VirtualOffsetBakeInitializeDataDelegate s_VirtualOffsetBakeInitializeDataDelegate;
+        [RequiredByNativeCode]
+        static VirtualOffsetBakeUpdateDelegate s_VirtualOffsetBakeUpdateDelegate;
+
+        static class VirtualOffsetBake
+        {
+            [RequiredByNativeCode]
+            static void InitializeData(IntPtr pVirtualOffsetsBuffer, ref bool bakeVirtualOffsets)
+            {
+                if (s_VirtualOffsetBakeInitializeDataDelegate != null)
+                {
+                    Debug.Assert(UnityEditor.PackageManager.PackageInfo.IsPackageRegistered("com.unity.render-pipelines.core"),
+                        $"{nameof(s_VirtualOffsetBakeInitializeDataDelegate)} is meant to be used with the render pipelines core package");
+                    s_VirtualOffsetBakeInitializeDataDelegate(pVirtualOffsetsBuffer, ref bakeVirtualOffsets);
+                }
+                else
+                    bakeVirtualOffsets = false;
+
+                s_VirtualOffsetBakeInitializeDataDelegate = null;
+            }
+            [RequiredByNativeCode]
+            static void Update(ref float progress, ref bool done)
+            {
+                if (s_VirtualOffsetBakeUpdateDelegate != null)
+                {
+                    Debug.Assert(UnityEditor.PackageManager.PackageInfo.IsPackageRegistered("com.unity.render-pipelines.core"),
+                        $"{nameof(s_VirtualOffsetBakeUpdateDelegate)} is meant to be used with the render pipelines core package");
+                    s_VirtualOffsetBakeUpdateDelegate(ref progress, ref done);
+                }
+                else
+                {
+                    progress = 1.0f;
+                    done = true;
+                }
+
+                if (done)
+                    s_VirtualOffsetBakeUpdateDelegate = null;
+            }
         }
 
         // We want to control the order of delegate invocations, and we want to explicitly provide the logic for handling each delegate's potential change of ref values
@@ -755,6 +802,7 @@ namespace UnityEditor
         };
         [RequiredByNativeCode]
         private static AdditionalBakeDelegate s_AdditionalBakeDelegate = s_DefaultAdditionalBakeDelegate;
+
         [RequiredByNativeCode]
         [AutoStaticsCleanupOnCodeReload]
         private static List<BakeDelegate> s_BakeDelegates = new() { };

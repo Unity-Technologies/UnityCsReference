@@ -19,7 +19,7 @@ namespace UnityEditor.UIElements
             public new static void Register()
             {
                 DropdownField.UxmlSerializedData.Register();
-                UxmlDescriptionCache.RegisterType(typeof(UxmlSerializedData), new UxmlAttributeNames[] { }, false);
+                UxmlDescriptionCache.RegisterType(typeof(UxmlSerializedData), Array.Empty<UxmlAttributeNames>(), false);
             }
 
             public override object CreateInstance() => new ProjectSettingsThemeDropdown();

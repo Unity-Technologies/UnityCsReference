@@ -645,13 +645,10 @@ namespace UnityEngine.UIElements
 
                 if (panelSettings.m_AttachedPanelComponentsList != null)
                 {
-                    var attachedUIDocuments = new List<UIDocument>();
-                    foreach (var panelComponent in panelSettings.m_AttachedPanelComponentsList.m_AttachedPanelComponents)
-                        if (panelComponent is UIDocument uidoc)
-                            attachedUIDocuments.Add(uidoc);
-
-                    foreach (var attachedUIDocument in attachedUIDocuments)
-                        attachedUIDocument.OnLiveReloadOptionChanged();
+                    // We need to work on a copy in case changes are made during invocation.
+                    var copy = new List<IPanelComponent>(panelSettings.m_AttachedPanelComponentsList.m_AttachedPanelComponents);
+                    foreach (var panelComponent in copy)
+                        panelComponent.OnLiveReloadOptionChanged();
                 }
             }
         }

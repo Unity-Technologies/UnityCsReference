@@ -11,6 +11,7 @@ using System.Runtime.InteropServices;
 namespace UnityEditor
 {
     [UsedByNativeCode]
+    [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
     struct ScriptingMenuItem
     {
         string m_Path;
@@ -63,7 +64,7 @@ namespace UnityEditor
         internal static extern void SetHotkey(string menuPath, string hotkey);
 
         [FreeFunction("MenuController::GetMenuItemHotkey")]
-        [VisibleToOtherModules("UnityEditor.GraphToolkitModule")]
+        [VisibleToOtherModules("UnityEditor.GraphToolkitModule", "UnityEditor.UIToolkitAuthoringModule")]
         internal static extern string GetHotkey(string menuPath);
 
         [FreeFunction("MenuController::ExtractSubmenus")]
@@ -71,6 +72,7 @@ namespace UnityEditor
 
         // "separators" in this context means submenu roots, ex "GameObject/" in "GameObject/Cube".
         [FreeFunction("MenuController::ExtractMenuItems")]
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
         internal static extern ScriptingMenuItem[] GetMenuItems(string menuPath, bool includeSeparators, bool localized);
 
         [FreeFunction("MenuController::AddMenuItem")]

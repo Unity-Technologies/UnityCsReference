@@ -642,6 +642,18 @@ namespace UnityEditor.UIElements
                         });
                         handledAttributes.Add("style");
                     }
+
+                    // Add "authoring-id" attribute (optional int for authoring ID)
+                    if (!handledAttributes.Contains("authoring-id"))
+                    {
+                        attributes.Add(new XmlSchemaAttribute
+                        {
+                            Name = "authoring-id",
+                            SchemaTypeName = m_AttributeTypes[typeof(int)],
+                            Use = XmlSchemaUse.Optional
+                        });
+                        handledAttributes.Add("authoring-id");
+                    }
                 }
             }
 

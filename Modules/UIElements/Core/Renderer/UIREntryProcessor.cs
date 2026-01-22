@@ -451,7 +451,7 @@ namespace UnityEngine.UIElements.UIR
                 }
                 else
                 {
-                    currentMaterial = m_CurrentRenderData.owner.resolvedStyle.unityMaterial.material;
+                    currentMaterial = (Material)Resources.EntityIdToObject(m_CurrentRenderData.owner.computedStyle.unityMaterial.material);
                 }
 
                 var job = new ConvertMeshJobData

@@ -202,9 +202,9 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public void OnVisualStateChange(IEnumerable<VisualState> visualStates)
         {
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable RS0031 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             if (!visualStates.Any())
-#pragma warning restore RS0030
+#pragma warning restore RS0031
                 return;
 
             foreach (var state in visualStates)
@@ -264,9 +264,9 @@ namespace UnityEditor.PackageManager.UI.Internal
                     evt.StopPropagation();
                     break;
                 case KeyCode.PageUp:
-                    #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable RS0031 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     if (!selectedIndices.Any()) return;
-#pragma warning restore RS0030
+#pragma warning restore RS0031
                     #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     index = Mathf.Max(0, selectedIndices.Max() - (virtualizationController.visibleItemCount - 1));
 #pragma warning restore RS0030
@@ -274,9 +274,9 @@ namespace UnityEditor.PackageManager.UI.Internal
                     evt.StopPropagation();
                     break;
                 case KeyCode.PageDown:
-                    #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable RS0031 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     if (!selectedIndices.Any()) return;
-#pragma warning restore RS0030
+#pragma warning restore RS0031
                     index = Mathf.Min(viewController.itemsSource.Count - 1,
                         #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                         selectedIndices.Max() + (virtualizationController.visibleItemCount - 1));

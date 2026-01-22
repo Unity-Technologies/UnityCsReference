@@ -11,7 +11,7 @@ namespace UnityEditor
     [NativeHeader("Modules/MeshLODGenerator/Public/MeshLODUtility.bindings.h")]
     public sealed class MeshLodUtility
     {
-        [NativeType(Header = "Modules/MeshLODGenerator/Public/MeshLODGenerator.h")]
+        [NativeHeader("Modules/MeshLODGenerator/Public/MeshLODGenerator.h")]
         [Flags]
         public enum LodGenerationFlags
         {

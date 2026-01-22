@@ -882,7 +882,7 @@ namespace NiceIO
         public NPath[] Files(string[] extensions, bool recurse = false)
         {
             if (!DirectoryExists() || extensions.Length == 0)
-                return new NPath[] {};
+                return Array.Empty<NPath>();
 
             // If there is only one extension, do a glob with a more specific filter, which should both allow the OS to
             // do more prefiltering, and also avoids registering a misleadingly general glob with any capturing filesystems
@@ -946,7 +946,7 @@ namespace NiceIO
         {
             ThrowIfRoot();
             EnsureParentDirectoryExists();
-            FileSystem.Active.File_WriteAllBytes(this, new byte[0]);
+            FileSystem.Active.File_WriteAllBytes(this, Array.Empty<byte>());
             return this;
         }
 
@@ -1155,7 +1155,7 @@ namespace NiceIO
                 }
                 catch (IOException)
                 {
-                    if (Files(true).Any())
+                    if (Files(true).Length > 0)
                         throw;
                 }
 

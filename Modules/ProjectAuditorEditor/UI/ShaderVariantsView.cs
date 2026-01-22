@@ -109,7 +109,7 @@ namespace Unity.ProjectAuditor.Editor.UI
             #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var variants = m_Issues.Where(i => i.Category == IssueCategory.ShaderVariant).ToArray();
 #pragma warning restore RS0030
-            var result = ShadersModule.ParsePlayerLog(logFilename, variants, new ProgressBar());
+            var result = ShadersModule.ParsePlayerLog(logFilename, variants);
             switch (result)
             {
                 case ParseLogResult.Success:

@@ -69,7 +69,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         public event Action<FetchStatus> onFetchStatusChanged;
 
         [SerializeField]
-        private FetchStatus[] m_SerializedFetchStatuses = new FetchStatus[0];
+        private FetchStatus[] m_SerializedFetchStatuses = Array.Empty<FetchStatus>();
 
         public FetchStatus GetOrCreateFetchStatus(long productId)
         {

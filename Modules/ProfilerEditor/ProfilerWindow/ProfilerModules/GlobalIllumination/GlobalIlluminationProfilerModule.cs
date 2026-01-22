@@ -42,11 +42,11 @@ namespace UnityEditorInternal.Profiling
             return null;
         }
 
-        private protected override ProfilerChart InstantiateChart(float defaultChartScale, float chartMaximumScaleInterpolationValue)
+        internal override ChartViewController CreateChartViewController()
         {
-            var chart = base.InstantiateChart(defaultChartScale, chartMaximumScaleInterpolationValue);
-            chart.statisticsAvailabilityMessage = GetStatisticsAvailabilityStateReason;
-            return chart;
+            var chartView = base.CreateChartViewController();
+            chartView.StatisticsAvailabilityMessageFactory = GetStatisticsAvailabilityStateReason;
+            return chartView;
         }
 
         public override void DrawToolbar(Rect position)

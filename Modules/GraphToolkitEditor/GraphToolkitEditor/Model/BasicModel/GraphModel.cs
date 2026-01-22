@@ -383,6 +383,40 @@ namespace Unity.GraphToolkit.Editor
         public virtual IReadOnlyList<VariableDeclarationModelBase> VariableDeclarations => m_GraphVariableModels;
 
         /// <summary>
+        /// Gets the variable declarations in the order they are displayed in the blackboard.
+        /// </summary>
+        public IReadOnlyList<VariableDeclarationModelBase> GetVariableDeclarationsByDisplayOrder()
+        {
+            var orderedVariables = new List<VariableDeclarationModelBase>();
+            foreach (var sectionModel in SectionModels)
+            {
+                PopulateVariableList(sectionModel, orderedVariables);
+            }
+
+            return orderedVariables;
+
+            void PopulateVariableList(GroupModelBase groupItemModel, List<VariableDeclarationModelBase> variableList)
+            {
+                // GroupModelBase.Items are already in display order, so just iterate through them
+                foreach (var containedModel in groupItemModel.Items)
+                {
+                    switch (containedModel)
+                    {
+                        // If it's a variable, add it to the list
+                        case VariableDeclarationModelBase vdm:
+                            variableList.Add(vdm);
+                            break;
+
+                        // If it's a group, recurse into it
+                        case GroupModelBase groupItem:
+                            PopulateVariableList(groupItem, variableList);
+                            break;
+                    }
+                }
+            }
+        }
+
+        /// <summary>
         /// The portals of the graph.
         /// </summary>
         public virtual IReadOnlyList<DeclarationModel> PortalDeclarations => m_GraphPortalModels;
@@ -1008,9 +1042,7 @@ namespace Unity.GraphToolkit.Editor
         /// <returns>The entry points of the <see cref="GraphModel"/>.</returns>
         public virtual IEnumerable<AbstractNodeModel> GetEntryPoints()
         {
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            return Enumerable.Empty<AbstractNodeModel>();
-#pragma warning restore RS0030
+            return Array.Empty<AbstractNodeModel>();
         }
 
         /// <summary>
@@ -3599,9 +3631,7 @@ namespace Unity.GraphToolkit.Editor
                 return this.FindReferencesInGraph<WirePortalModel>(portalModel.DeclarationModel);
             }
 
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            return Enumerable.Empty<WirePortalModel>();
-#pragma warning restore RS0030
+            return Array.Empty<WirePortalModel>();
         }
 
         /// <summary>
@@ -3622,9 +3652,7 @@ namespace Unity.GraphToolkit.Editor
 #pragma warning restore RS0030
             }
 
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            return Enumerable.Empty<WirePortalModel>();
-#pragma warning restore RS0030
+            return Array.Empty<WirePortalModel>();
         }
 
         /// <summary>
@@ -4317,9 +4345,7 @@ namespace Unity.GraphToolkit.Editor
             var contextWithNullBlocks = new List<ContextNodeModel>();
             for (var i = 0; i < NodeModels.Count; i++)
             {
-                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                var node = NodeModels.ElementAt(i);
-#pragma warning restore RS0030
+                var node = NodeModels[i];
                 if (node == null)
                 {
                     #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
@@ -5027,8 +5053,14 @@ namespace Unity.GraphToolkit.Editor
         /// <param name="port">The port.</param>
         public virtual void OnDefineSubPorts(ISubPortDefinition subPortsDefinition, PortModel port)
         {
-        }
+            if (port.NodeModel is not ConstantNodeModel constantNode
+                || port.ParentPort != null)
+            {
+                return;
+            }
 
+            constantNode.OnDefineSubPorts(subPortsDefinition, port);
+        }
         /// <summary>
         /// Resolves a <see cref="GraphModel"/> from a <see cref="GraphReference"/>. Relative to this graph.
         /// </summary>

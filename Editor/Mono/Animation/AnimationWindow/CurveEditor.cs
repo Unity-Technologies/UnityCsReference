@@ -221,7 +221,7 @@ namespace UnityEditor
             get
             {
                 if (m_AnimationCurves == null)
-                    m_AnimationCurves = new CurveWrapper[0];
+                    m_AnimationCurves = Array.Empty<CurveWrapper>();
 
                 return m_AnimationCurves;
             }

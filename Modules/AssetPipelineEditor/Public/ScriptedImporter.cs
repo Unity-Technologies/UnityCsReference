@@ -136,6 +136,65 @@ namespace UnityEditor.AssetImporters
             }
         }
 
+        [RequiredByNativeCode]
+        static string[] GatherAllImportedAssetDependencyGUIDs(System.Type importerType, string assetPath)
+        {
+            var bindingFlags = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static;
+            var gatherMethodName = "GatherDependenciesFromSourceFile";
+            if (IsStaticMethodInClassOrParent(importerType, gatherMethodName))
+            {
+                var type = importerType;
+                var baseClass = typeof(ScriptedImporter);
+                var guidsSet = new HashSet<string>();
+                while (type != null && type != baseClass)
+                {
+                    var method = type.GetMethod(gatherMethodName, bindingFlags | BindingFlags.DeclaredOnly);
+                    if (method != null)
+                    {
+                        var paths = method.Invoke(null, new object[] { assetPath }) as string[];
+                        if (paths != null)
+                        {
+                            foreach (var path in paths)
+                            {
+                                var guid = AssetDatabase.AssetPathToGUID(path);
+                                if (string.IsNullOrEmpty(guid))
+                                    continue;
+                                guidsSet.Add(guid);
+                            }
+                        }
+                    }
+
+                    type = type.BaseType;
+                }
+
+                var result = new string[guidsSet.Count];
+                guidsSet.CopyTo(result);
+                return result;
+            }
+            else
+            {
+                var method = importerType.GetMethod("GetHashOfImportedAssetDependencyHintsForTesting", bindingFlags);
+                if (method != null)
+                {
+                    try
+                    {
+                        var guids = method.Invoke(null, new object[] { assetPath }) as GUID[];
+                        var guidsStrings = new string[guids.Length];
+                        for (int i = 0; i < guids.Length; i++)
+                            guidsStrings[i] = guids[i].ToString();
+                        return guidsStrings;
+                    }
+                    catch (Exception _ex)
+                    {
+                        Debug.LogException(_ex);
+                        throw;
+                    }
+                }
+            }
+
+            return null;
+        }
+
         static SortedDictionary<string, bool> GetHandledExtensionsByImporter(ScriptedImporterAttribute attribute)
         {
             var handledExts = new SortedDictionary<string, bool>();

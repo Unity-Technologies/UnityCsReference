@@ -8,14 +8,6 @@ namespace Unity.Multiplayer.PlayMode.Editor
 {
     static class VisualElementExtensions
     {
-        public static void AddToClassList(this VisualElement visualElement, params string[] classNames)
-        {
-            foreach (var className in classNames)
-            {
-                visualElement.AddToClassList(className);
-            }
-        }
-
         public static void RemoveFromClassList(this VisualElement visualElement, params string[] classNames)
         {
             foreach (var className in classNames)

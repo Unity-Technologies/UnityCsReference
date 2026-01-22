@@ -216,9 +216,7 @@ namespace UnityEditor.ShortcutManagement
 #pragma warning restore RS0030
             if (m_Type == ShortcutType.Menu && m_Identifier.path.StartsWith(ShortcutManagerWindowViewController.k_MainMenu))
             {
-                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                var newMenuKey = m_OverriddenCombinations.Any() ? m_OverriddenCombinations[0].ToMenuShortcutString() : "";
-#pragma warning restore RS0030
+                var newMenuKey = m_OverriddenCombinations.Count > 0 ? m_OverriddenCombinations[0].ToMenuShortcutString() : "";
                 Menu.SetHotkey(m_Identifier.path.Substring(Discovery.k_MainMenuShortcutPrefix.Length), newMenuKey);
             }
         }

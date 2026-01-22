@@ -76,7 +76,7 @@ namespace UnityEngine
     [NativeHeader("Runtime/2D/Common/ScriptBindings/SpritesMarshalling.h")]
     [NativeHeader("Runtime/2D/Common/SpriteDataAccess.h")]
     [NativeHeader("Runtime/Graphics/SpriteUtility.h")]
-    [NativeType("Runtime/Graphics/SpriteFrame.h")]
+    [NativeHeader("Runtime/Graphics/SpriteFrame.h")]
     [ExcludeFromPreset]
     public sealed partial class Sprite : Object
     {

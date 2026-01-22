@@ -4,9 +4,6 @@
 
 using System;
 using System.Collections.Generic;
-using Mono.Cecil;
-using UnityEditor.Scripting.ScriptCompilation;
-using UnityEngine;
 
 namespace UnityEditor.Modules
 {
@@ -15,32 +12,32 @@ namespace UnityEditor.Modules
     {
         public virtual string[] GetCompilerExtraAssemblyPaths(bool isEditor, string assemblyPathName)
         {
-            return new string[] {};
+            return Array.Empty<string>();
         }
 
         public virtual IEnumerable<string> GetWindowsMetadataReferences()
         {
-            return new string[0];
+            return Array.Empty<string>();
         }
 
         public virtual IEnumerable<string> GetAdditionalAssemblyReferences()
         {
-            return new string[0];
+            return Array.Empty<string>();
         }
 
         public virtual IEnumerable<string> GetAdditionalDefines()
         {
-            return new string[0];
+            return Array.Empty<string>();
         }
 
         public virtual IEnumerable<string> GetAdditionalEditorDefines()
         {
-            return new string[0];
+            return Array.Empty<string>();
         }
 
         public virtual IEnumerable<string> GetAdditionalSourceFiles()
         {
-            return new string[0];
+            return Array.Empty<string>();
         }
     }
 }

@@ -12,6 +12,7 @@ using System.Text;
 using Unity.Collections.LowLevel.Unsafe;
 using UnityEditor.Experimental;
 using UnityEngine;
+using UnityEngine.Bindings;
 using UnityEngine.UIElements;
 using Debug = UnityEngine.Debug;
 
@@ -165,6 +166,7 @@ namespace UnityEditor.StyleSheets
     }
 
     [DebuggerDisplay("{value}")]
+    [VisibleToOtherModules("UnityEditor.AIModule")]
     internal class SVC<T>
     {
         protected T m_Value;
@@ -1077,8 +1079,8 @@ namespace UnityEditor.StyleSheets
             public StyleFunction[] functions;
         }
 
-        private static readonly StyleValue[] k_NoValue = {};
-        private static readonly StyleState[] k_NoState = {};
+        private static readonly StyleValue[] k_NoValue = Array.Empty<StyleValue>();
+        private static readonly StyleState[] k_NoState = Array.Empty<StyleState>();
         private static readonly StyleState[] k_RegularBlockStates = { StyleState.normal };
         private static readonly StyleBlock k_ElementNotFound = new StyleBlock(-1, k_NoState, k_NoValue, null);
 

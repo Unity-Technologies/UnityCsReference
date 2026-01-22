@@ -285,7 +285,12 @@ namespace UnityEditor.Search
         /// <summary>
         /// List of actions the search provider supports.
         /// </summary>
-        public List<SearchAction> actions { get; internal set; } // TODO: Add SearchAction serialization
+        public List<SearchAction> actions
+        {
+            get;
+            [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
+            internal set;
+        } // TODO: Add SearchAction serialization
 
         /// <summary>
         /// Create a new SearchProvider

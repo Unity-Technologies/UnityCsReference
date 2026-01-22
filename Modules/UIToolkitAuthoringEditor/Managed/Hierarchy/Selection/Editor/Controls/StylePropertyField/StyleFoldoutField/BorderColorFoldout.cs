@@ -5,14 +5,13 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using Unity.Properties;
 using UnityEditor.UIElements;
 using UnityEngine;
 using UnityEngine.UIElements;
 
 namespace Unity.UIToolkit.Editor
 {
-    internal sealed class BorderColorFoldout : StyleFoldoutField<ColorField>, INotifyCompositeStylePropertyChanged<StyleColor>
+    internal sealed class BorderColorFoldout : StyleFoldoutField<ColorField>
     {
         static readonly string k_FieldClassName = FoldoutFieldPropertyName + "__color-field";
         static readonly string k_MixedValueLineClassName = FoldoutFieldPropertyName + "__mixed-value-line";
@@ -36,11 +35,6 @@ namespace Unity.UIToolkit.Editor
         const string k_BottomPropertyName = "borderBottomColor";
         const string k_LeftPropertyName = "borderLeftColor";
 
-        public static readonly BindingId topProperty = nameof(top);
-        public static readonly BindingId rightProperty = nameof(right);
-        public static readonly BindingId bottomProperty = nameof(bottom);
-        public static readonly BindingId leftProperty = nameof(left);
-
         private readonly VisualElement m_MixedValueLine;
 
         public bool isMixed
@@ -55,11 +49,6 @@ namespace Unity.UIToolkit.Editor
             }
         }
 
-        StyleColor m_Top;
-        StyleColor m_Right;
-        StyleColor m_Bottom;
-        StyleColor m_Left;
-
         public StyleColorField topField { get; }
         public StyleColorField rightField { get; }
         public StyleColorField bottomField { get; }
@@ -73,70 +62,6 @@ namespace Unity.UIToolkit.Editor
             leftField
         };
 
-        [CreateProperty]
-        public StyleColor top
-        {
-            get => m_Top;
-            set
-            {
-                if (m_Top.Equals(value))
-                    return;
-
-                var previousValue = m_Top;
-                m_Top = value;
-                Refresh();
-                NotifyStylePropertyChanged(topProperty, previousValue, m_Top);
-            }
-        }
-
-        [CreateProperty]
-        public StyleColor right
-        {
-            get => m_Right;
-            set
-            {
-                if (m_Right.Equals(value))
-                    return;
-
-                var previousValue = m_Right;
-                m_Right = value;
-                Refresh();
-                NotifyStylePropertyChanged(rightProperty, previousValue, m_Right);
-            }
-        }
-
-        [CreateProperty]
-        public StyleColor bottom
-        {
-            get => m_Bottom;
-            set
-            {
-                if (m_Bottom.Equals(value))
-                    return;
-
-                var previousValue = m_Bottom;
-                m_Bottom = value;
-                Refresh();
-                NotifyStylePropertyChanged(bottomProperty, previousValue, m_Bottom);
-            }
-        }
-
-        [CreateProperty]
-        public StyleColor left
-        {
-            get => m_Left;
-            set
-            {
-                if (m_Left.Equals(value))
-                    return;
-
-                var previousValue = m_Left;
-                m_Left = value;
-                Refresh();
-                NotifyStylePropertyChanged(leftProperty, previousValue, m_Left);
-            }
-        }
-
         public BorderColorFoldout()
             : this("Color") { }
 
@@ -145,21 +70,25 @@ namespace Unity.UIToolkit.Editor
         {
             var topRow = new OverrideRow() { name = k_TopPropertyName };
             topField = new StyleColorField("Top") { name = k_TopPropertyName, classList = { TextField.alignedFieldUssClassName } };
+            topField.SetBinding("value", new StylePropertyBinding(k_TopPropertyName));
             topRow.Add(topField);
             Add(topRow);
 
             var rightRow = new OverrideRow() { name = k_RightPropertyName };
             rightField = new StyleColorField("Right") { name = k_RightPropertyName, classList = { TextField.alignedFieldUssClassName } };
+            rightField.SetBinding("value", new StylePropertyBinding(k_RightPropertyName));
             rightRow.Add(rightField);
             Add(rightRow);
 
             var bottomRow = new OverrideRow() { name = k_BottomPropertyName };
             bottomField = new StyleColorField("Bottom") { name = k_BottomPropertyName, classList = { TextField.alignedFieldUssClassName } };
+            bottomField.SetBinding("value", new StylePropertyBinding(k_BottomPropertyName));
             bottomRow.Add(bottomField);
             Add(bottomRow);
 
             var leftRow = new OverrideRow() { name = k_LeftPropertyName };
             leftField = new StyleColorField("Left") { name = k_LeftPropertyName, classList = { TextField.alignedFieldUssClassName } };
+            leftField.SetBinding("value", new StylePropertyBinding(k_LeftPropertyName));
             leftRow.Add(leftField);
             Add(leftRow);
 
@@ -173,10 +102,26 @@ namespace Unity.UIToolkit.Editor
             bottomField.AddValidation(new Syntax("border-bottom-width"));
             leftField.AddValidation(new Syntax("border-left-width"));
 
-            topField.RegisterValueChangedCallback((e) => top = e.newValue);
-            rightField.RegisterValueChangedCallback((e) => right = e.newValue);
-            bottomField.RegisterValueChangedCallback((e) => bottom = e.newValue);
-            leftField.RegisterValueChangedCallback((e) => left = e.newValue);
+            topField.RegisterCallback<PropertyChangedEvent>(e =>
+            {
+                if (e.property == BaseField<StyleColor>.valueProperty)
+                    UpdateFromChildFields();
+            });
+            rightField.RegisterCallback<PropertyChangedEvent>(e =>
+            {
+                if (e.property == BaseField<StyleColor>.valueProperty)
+                    UpdateFromChildFields();
+            });
+            bottomField.RegisterCallback<PropertyChangedEvent>(e =>
+            {
+                if (e.property == BaseField<StyleColor>.valueProperty)
+                    UpdateFromChildFields();
+            });
+            leftField.RegisterCallback<PropertyChangedEvent>(e =>
+            {
+                if (e.property == BaseField<StyleColor>.valueProperty)
+                    UpdateFromChildFields();
+            });
 
             headerInputField.AddToClassList(TextField.alignedFieldUssClassName);
             headerInputField.name = k_FieldClassName;
@@ -245,54 +190,5 @@ namespace Unity.UIToolkit.Editor
             evt.StopPropagation();
         }
 
-        protected override void Refresh()
-        {
-            topField.SetValueWithoutNotify(top);
-            rightField.SetValueWithoutNotify(right);
-            bottomField.SetValueWithoutNotify(bottom);
-            leftField.SetValueWithoutNotify(left);
-            base.Refresh();
-        }
-
-        public void SetValue(BindingId id, StyleColor v, bool notify)
-        {
-            if (id == topProperty)
-            {
-                if (notify)
-                    top = v;
-                else
-                    m_Top = v;
-            }
-            else if (id == rightProperty)
-            {
-                if (notify)
-                    right = v;
-                else
-                    m_Right = v;
-            }
-            else if (id == bottomProperty)
-            {
-                if (notify)
-                    bottom = v;
-                else
-                    m_Bottom = v;
-            }
-            else if (id == leftProperty)
-            {
-                if (notify)
-                    left = v;
-                else
-                    m_Left = v;
-            }
-
-            if (!notify)
-                Refresh();
-        }
-
-        public void NotifyStylePropertyChanged(BindingId id, StyleColor previousValue, StyleColor newValue)
-        {
-            this.NotifyStylePropertyChanged(this, id, previousValue, newValue);
-            NotifyPropertyChanged(id);
-        }
     }
 }

@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
 using System.Runtime.InteropServices;
 using System.Text;
 using UnityEngine.Bindings;
@@ -22,7 +23,7 @@ namespace UnityEngine.Android
     }
 
     [NativeAsStruct]
-    [NativeType(Header = "Modules/AndroidJNI/Public/AndroidConfiguration.bindings.h")]
+    [NativeHeader("Modules/AndroidJNI/Public/AndroidConfiguration.bindings.h")]
     [RequiredByNativeCode]
     [StructLayout(LayoutKind.Sequential)]
     public sealed class AndroidConfiguration
@@ -65,7 +66,7 @@ namespace UnityEngine.Android
             get
             {
                 if (primaryLocaleCountry == null && primaryLocaleLanguage == null)
-                    return new AndroidLocale[0];
+                    return Array.Empty<AndroidLocale>();
                 return new[] { new AndroidLocale(primaryLocaleCountry, primaryLocaleLanguage) };
             }
         }

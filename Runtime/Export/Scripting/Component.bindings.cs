@@ -6,6 +6,8 @@ using UnityEngine.Internal;
 using UnityEngineInternal;
 using UnityEngine.Bindings;
 using UnityEngine.Scripting;
+using Unity.Collections.LowLevel.Unsafe;
+using System.Runtime.InteropServices;
 
 using System;
 using System.Collections.Generic;
@@ -175,7 +177,7 @@ namespace UnityEngine
         }
 
         [FreeFunction(HasExplicitThis = true, ThrowsException = true)]
-        private extern void GetComponentsForListInternal(Type searchType, object resultList);
+        private extern void GetComponentsForListInternal(Type searchType, [Out] List<Component> resultList);
 
         public void GetComponents(Type type, List<Component> results)
         {
@@ -184,7 +186,9 @@ namespace UnityEngine
 
         public void GetComponents<T>(List<T> results)
         {
-            GetComponentsForListInternal(typeof(T), results);
+            // Use UnsafeUtility.As to cast the list to the appropriate type
+            // This could be a problem if native code provides us a type that does not match
+            GetComponentsForListInternal(typeof(T), UnsafeUtility.As<List<Component>>(results));
         }
 
         public string tag

@@ -10,7 +10,7 @@ namespace UnityEditor.Build.Reporting
 {
     ///<summary>An extension to the <see cref="BuildReport" /> class that tracks which scenes in the build have references to a specific asset in the build.</summary>
     ///<remarks>The build process generates this information when <see cref="BuildOptions.DetailedBuildReport" /> is used during a build.</remarks>
-    [NativeType(Header = "Modules/BuildReportingEditor/Public/ScenesUsingAssets.h")]
+    [NativeHeader("Modules/BuildReportingEditor/Public/ScenesUsingAssets.h")]
     [NativeClass("BuildReporting::ScenesUsingAssets")]
     public sealed class ScenesUsingAssets : Object
     {

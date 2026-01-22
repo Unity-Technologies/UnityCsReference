@@ -457,7 +457,7 @@ namespace UnityEditor
 
         internal void LogWarningForElementAddedToFakeToolbar(VisualElement ve)
         {
-            Debug.LogWarning($"We have detected that your project includes custom elements added to the Unity Editor's main toolbar using unsupported methods. This approach is not supported and will lead to issues in future versions. Refer to the official <a href=\"" + k_MainToolbarAPIDocumentationLink + "\">API documentation</a> for adding custom elements to the main toolbar.\n\nYour custom toolbar elements can be unhidden via the context menu (right-click the main toolbar -> <i>Unsupported User Elements</i>).");
+            Debug.LogWarning($"We have detected that your project includes the following custom element added to the Unity Editor's main toolbar using unsupported methods: \n\n {ve.name} \n\nThis approach is not supported and will lead to issues in future versions. Refer to the official <a href=\"" + k_MainToolbarAPIDocumentationLink + "\">API documentation</a> for adding custom elements to the main toolbar.\n\nYour custom toolbar elements can be unhidden via the context menu (right-click the main toolbar -> <i>Unsupported User Elements</i>).");
             m_DeprecatedElements.Add(ve);
             MainToolbar.Refresh(deprecatedElementsId);
         }

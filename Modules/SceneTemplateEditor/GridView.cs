@@ -276,9 +276,9 @@ namespace UnityEditor.SceneTemplate
             m_SelectedItems = itemToSelect.ToList();
 #pragma warning restore RS0030
 
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable RS0031 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             if (itemToSelect.Any())
-#pragma warning restore RS0030
+#pragma warning restore RS0031
             {
                 // Select new item
                 #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
@@ -295,7 +295,7 @@ namespace UnityEditor.SceneTemplate
 
         public void ClearSelection()
         {
-            SetSelection(new Item[0]);
+            SetSelection(Array.Empty<Item>());
         }
 
         public void SelectAll()

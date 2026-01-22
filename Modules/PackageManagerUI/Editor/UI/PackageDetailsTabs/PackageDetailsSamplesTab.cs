@@ -52,9 +52,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             var packageChanged = version.package.uniqueId != m_Version?.package.uniqueId;
 
             m_Version = version;
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            m_Samples = m_Version.isInstalled || m_Version.HasTag(PackageTag.Feature) ? m_PackageDatabase.GetSamples(m_Version) : Enumerable.Empty<Sample>();
-#pragma warning restore RS0030
+            m_Samples = m_Version.isInstalled || m_Version.HasTag(PackageTag.Feature) ? m_PackageDatabase.GetSamples(m_Version) : Array.Empty<Sample>();
 
             #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             UIUtils.SetElementDisplay(samplesErrorInfoBox, m_Version.HasTag(PackageTag.InDevelopment) && m_Samples.Any(sample => string.IsNullOrEmpty(sample.displayName)));
@@ -73,7 +71,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             {
                 var sampleItem = new PackageDetailsSampleItem(m_Version, sample, m_Application, m_IOProxy);
                 var sampleContainer = new VisualElement();
-                sampleContainer.AddClasses("sampleContainer");
+                sampleContainer.AddToClassList("sampleContainer");
 
                 var sampleInformationContainer = new VisualElement { name = "sampleInformationContainer"};
 

@@ -3,16 +3,13 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using System.Collections;
+using System.Collections.Generic;
 using UnityEngine.Bindings;
-using uei = UnityEngine.Internal;
 using UnityEngine.Rendering;
 
 using AmbientMode = UnityEngine.Rendering.AmbientMode;
 using ReflectionMode = UnityEngine.Rendering.DefaultReflectionMode;
-using System.Collections.Generic;
-using System.Linq;
-using UnityEngine.Assertions;
+using uei = UnityEngine.Internal;
 
 namespace UnityEngine
 {
@@ -89,7 +86,7 @@ namespace UnityEngine
 
         [NativeProperty("DefaultSpotCookie")]
         extern internal static Texture2D spotCookieTexture { get; set; }
-        
+
         extern internal static Texture2D haloTexture { get; set; }
 
         extern internal static bool WasUsingAutoEnvironmentBakingWithNonDefaultSettings();
@@ -367,10 +364,6 @@ namespace UnityEngine
             s_RenderPipelineAssets.Clear();
 
             GetAllRenderPipelineAssetsForPlatform(buildTargetGroupName, ref s_RenderPipelineAssets);
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            if (!s_RenderPipelineAssets.Any())
-#pragma warning restore RS0030
-                return true;
 
             for (int i = 0; i < s_RenderPipelineAssets.Count; i++)
             {

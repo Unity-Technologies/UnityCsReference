@@ -4,7 +4,6 @@
 
 using System;
 using System.Collections.Generic;
-using Unity.GraphToolkit.Editor.Implementation;
 using UnityEngine;
 
 namespace Unity.GraphToolkit.Editor
@@ -318,7 +317,7 @@ namespace Unity.GraphToolkit.Editor
         /// <summary>
         /// The number of node options defined in the node.
         /// </summary>
-        public int NodeOptionCount => m_Implementation is InputOutputPortsNodeModel ioNodeModel ? ioNodeModel.NodeOptions.Count : 0;
+        public int NodeOptionCount => ((INode)m_Implementation).NodeOptionCount;
 
         /// <summary>
         /// Retrieves a node option using its zero-based index.
@@ -331,20 +330,12 @@ namespace Unity.GraphToolkit.Editor
         /// <exception cref="IndexOutOfRangeException">
         /// Thrown if the index is out of bounds.
         /// </exception>
-        public INodeOption GetNodeOption(int index)
-        {
-            if (m_Implementation is IUserNodeModelImp customNodeModel)
-            {
-                return customNodeModel.NodeOptions[index];
-            }
-
-            throw new ArgumentOutOfRangeException(nameof(index), index, "Index is out of range for the node options in this node.");
-        }
+        public INodeOption GetNodeOption(int index) => ((INode)m_Implementation).GetNodeOption(index);
 
         /// <summary>
         /// The node options defined on this node.
         /// </summary>
-        public IEnumerable<INodeOption> NodeOptions => m_Implementation is InputOutputPortsNodeModel ioNodeModel ? ioNodeModel.NodeOptions : Array.Empty<INodeOption>();
+        public IEnumerable<INodeOption> NodeOptions => ((INode)m_Implementation).NodeOptions;
 
         /// <summary>
         /// Retrieves a node option using its name.
@@ -352,7 +343,7 @@ namespace Unity.GraphToolkit.Editor
         /// <param name="name">The unique name of the node option.</param>
         /// <returns>The node option with the specified name, or null if none is found.</returns>
         /// <remarks>The node option's name is unique within the node's input ports and node options.</remarks>
-        public INodeOption GetNodeOptionByName(string name) => m_Implementation is IUserNodeModelImp customNodeModel ? customNodeModel.GetNodeOptionByName(name) : null;
+        public INodeOption GetNodeOptionByName(string name) => ((INode)m_Implementation).GetNodeOptionByName(name);
 
         /// <summary>
         /// The number of input ports on the node.

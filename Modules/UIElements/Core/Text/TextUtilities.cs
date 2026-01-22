@@ -109,28 +109,46 @@ namespace UnityEngine.UIElements
 
         internal static FontAsset GetFontAsset(VisualElement ve)
         {
-            if (ve.computedStyle.unityFontDefinition.fontAsset != null)
-                return ve.computedStyle.unityFontDefinition.fontAsset as FontAsset;
+            var fontAsset = GetFontAssetFromStyle_MainThreadOnly(ve);
+            if (fontAsset != null)
+                return fontAsset;
 
             var textSettings = GetTextSettingsFrom(ve);
-            if (!Equals(ve.computedStyle.unityFontDefinition.font, null))
-                return textSettings.GetCachedFontAsset(ve.computedStyle.unityFontDefinition.font);
-            else if (!Equals(ve.computedStyle.unityFont, null))
-                return textSettings.GetCachedFontAsset(ve.computedStyle.unityFont);
-            else if (!Equals(textSettings, null))
+            if (!Equals(textSettings, null))
                 return textSettings.defaultFontAsset;
+
+            return null;
+        }
+     
+        internal static FontAsset GetFontAssetFromStyle_MainThreadOnly(VisualElement ve)
+        {
+            var fontDefinition = FontDefinition.From(ve.computedStyle.unityFontDefinition);
+            if (fontDefinition.fontAsset != null)
+                return fontDefinition.fontAsset;
+
+            // Text settings is accessed here but GetCachedFontAsset does not depend on which instance is used.
+            var textSettings = GetTextSettingsFrom(ve);
+            if (!Equals(fontDefinition.font, null))
+                return textSettings.GetCachedFontAsset(fontDefinition.font);
+
+            var font = (Font)Resources.EntityIdToObject(ve.computedStyle.unityFont);
+            if (!Equals(font, null))
+                return textSettings.GetCachedFontAsset(font);
+
             return null;
         }
 
         internal static bool IsFontAssigned(VisualElement ve)
         {
-            return ve.computedStyle.unityFont != null || !ve.computedStyle.unityFontDefinition.IsEmpty();
+            return ve.computedStyle.unityFont != EntityId.None ||
+                   ve.computedStyle.unityFontDefinition != EntityId.None ||
+                   GetTextSettingsFrom(ve)?.GetFontAsset() != null;
         }
 
         internal static TextSettings GetTextSettingsFrom(VisualElement ve)
         {
             if (ve.panel is RuntimePanel runtimePanel)
-                return runtimePanel.panelSettings.textSettings ?? PanelTextSettings.defaultPanelTextSettings;
+                return runtimePanel.panelSettings?.textSettings ?? PanelTextSettings.defaultPanelTextSettings;
             return getEditorTextSettings();
         }
 
@@ -160,14 +178,19 @@ namespace UnityEngine.UIElements
             return isAdvancedTextGeneratorEnabledOnTextElement && isAdvancedTextGeneratorEnabledOnProject;
         }
 
-        internal static TextCoreSettings GetTextCoreSettingsForElement(VisualElement ve, bool ignoreColors)
+        internal static TextCoreSettings GetTextCoreSettingsForElement(TextElement te, bool ignoreColors)
         {
-            var fontAsset = GetFontAsset(ve);
+            var fontAsset = te.cachedFontAsset;
+            if (fontAsset == null)
+            {
+                var textSettings = TextUtilities.GetTextSettingsFrom(te);
+                fontAsset = textSettings.GetFontAsset();
+            }
             if (fontAsset == null)
                 return new TextCoreSettings();
 
-            var resolvedStyle = ve.resolvedStyle;
-            ref var computedStyle = ref ve.computedStyle;
+            var resolvedStyle = te.resolvedStyle;
+            ref var computedStyle = ref te.computedStyle;
             TextShadow textShadow = computedStyle.textShadow;
 
             float factor = TextHandle.ConvertPixelUnitsToTextCoreRelativeUnits(computedStyle.fontSize.value, fontAsset);

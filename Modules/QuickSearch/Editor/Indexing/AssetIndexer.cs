@@ -37,7 +37,7 @@ namespace UnityEditor.Search
         internal override IEnumerable<string> GetRoots()
         {
             if (settings.roots == null)
-                settings.roots = new string[0];
+                settings.roots = Array.Empty<string>();
             var roots = settings.roots;
             if (roots.Length == 0)
                 roots = new string[] { settings.root };

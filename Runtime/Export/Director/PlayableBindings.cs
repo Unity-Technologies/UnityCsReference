@@ -3,8 +3,6 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using System.Runtime.InteropServices;
-using UnityEngine.Scripting;
 using UnityEngine.Bindings;
 
 namespace UnityEngine.Playables
@@ -29,7 +27,7 @@ namespace UnityEngine.Playables
         private System.Type m_SourceBindingType;
         private CreateOutputMethod m_CreateOutputMethod;
 
-        public static readonly PlayableBinding[] None = new PlayableBinding[0];
+        public static readonly PlayableBinding[] None = Array.Empty<PlayableBinding>();
         public static readonly double DefaultDuration = double.PositiveInfinity;
 
         public string streamName { get { return m_StreamName; }  set { m_StreamName = value; } }

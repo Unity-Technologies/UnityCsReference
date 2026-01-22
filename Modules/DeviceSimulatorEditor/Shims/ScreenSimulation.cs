@@ -372,7 +372,7 @@ namespace UnityEditor.DeviceSimulation
 
             if (orientationData.cutouts == null || orientationData.cutouts.Length == 0)
             {
-                m_CurrentCutouts = new Rect[0];
+                m_CurrentCutouts = Array.Empty<Rect>();
             }
             else
             {

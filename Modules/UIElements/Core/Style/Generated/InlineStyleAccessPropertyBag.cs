@@ -21,6 +21,7 @@ namespace UnityEngine.UIElements
             public override string Name => nameof(IStyle.alignContent);
             public override string ussName => "align-content";
             public override bool IsReadOnly => false;
+
             public override StyleEnum<Align> GetValue(ref InlineStyleAccess container) => ((IStyle)container).alignContent;
             public override void SetValue(ref InlineStyleAccess container, StyleEnum<Align> value) => ((IStyle)container).alignContent = value;
         }
@@ -30,6 +31,7 @@ namespace UnityEngine.UIElements
             public override string Name => nameof(IStyle.alignItems);
             public override string ussName => "align-items";
             public override bool IsReadOnly => false;
+
             public override StyleEnum<Align> GetValue(ref InlineStyleAccess container) => ((IStyle)container).alignItems;
             public override void SetValue(ref InlineStyleAccess container, StyleEnum<Align> value) => ((IStyle)container).alignItems = value;
         }
@@ -39,6 +41,7 @@ namespace UnityEngine.UIElements
             public override string Name => nameof(IStyle.alignSelf);
             public override string ussName => "align-self";
             public override bool IsReadOnly => false;
+
             public override StyleEnum<Align> GetValue(ref InlineStyleAccess container) => ((IStyle)container).alignSelf;
             public override void SetValue(ref InlineStyleAccess container, StyleEnum<Align> value) => ((IStyle)container).alignSelf = value;
         }
@@ -48,6 +51,7 @@ namespace UnityEngine.UIElements
             public override string Name => nameof(IStyle.aspectRatio);
             public override string ussName => "aspect-ratio";
             public override bool IsReadOnly => false;
+
             public override StyleRatio GetValue(ref InlineStyleAccess container) => ((IStyle)container).aspectRatio;
             public override void SetValue(ref InlineStyleAccess container, StyleRatio value) => ((IStyle)container).aspectRatio = value;
         }
@@ -57,6 +61,7 @@ namespace UnityEngine.UIElements
             public override string Name => nameof(IStyle.backgroundColor);
             public override string ussName => "background-color";
             public override bool IsReadOnly => false;
+
             public override StyleColor GetValue(ref InlineStyleAccess container) => ((IStyle)container).backgroundColor;
             public override void SetValue(ref InlineStyleAccess container, StyleColor value) => ((IStyle)container).backgroundColor = value;
         }
@@ -66,6 +71,7 @@ namespace UnityEngine.UIElements
             public override string Name => nameof(IStyle.backgroundImage);
             public override string ussName => "background-image";
             public override bool IsReadOnly => false;
+
             public override StyleBackground GetValue(ref InlineStyleAccess container) => ((IStyle)container).backgroundImage;
             public override void SetValue(ref InlineStyleAccess container, StyleBackground value) => ((IStyle)container).backgroundImage = value;
         }
@@ -75,6 +81,7 @@ namespace UnityEngine.UIElements
             public override string Name => nameof(IStyle.backgroundPositionX);
             public override string ussName => "background-position-x";
             public override bool IsReadOnly => false;
+
             public override StyleBackgroundPosition GetValue(ref InlineStyleAccess container) => ((IStyle)container).backgroundPositionX;
             public override void SetValue(ref InlineStyleAccess container, StyleBackgroundPosition value) => ((IStyle)container).backgroundPositionX = value;
         }
@@ -84,6 +91,7 @@ namespace UnityEngine.UIElements
             public override string Name => nameof(IStyle.backgroundPositionY);
             public override string ussName => "background-position-y";
             public override bool IsReadOnly => false;
+
             public override StyleBackgroundPosition GetValue(ref InlineStyleAccess container) => ((IStyle)container).backgroundPositionY;
             public override void SetValue(ref InlineStyleAccess container, StyleBackgroundPosition value) => ((IStyle)container).backgroundPositionY = value;
         }
@@ -93,6 +101,7 @@ namespace UnityEngine.UIElements
             public override string Name => nameof(IStyle.backgroundRepeat);
             public override string ussName => "background-repeat";
             public override bool IsReadOnly => false;
+
             public override StyleBackgroundRepeat GetValue(ref InlineStyleAccess container) => ((IStyle)container).backgroundRepeat;
             public override void SetValue(ref InlineStyleAccess container, StyleBackgroundRepeat value) => ((IStyle)container).backgroundRepeat = value;
         }
@@ -102,6 +111,7 @@ namespace UnityEngine.UIElements
             public override string Name => nameof(IStyle.backgroundSize);
             public override string ussName => "background-size";
             public override bool IsReadOnly => false;
+
             public override StyleBackgroundSize GetValue(ref InlineStyleAccess container) => ((IStyle)container).backgroundSize;
             public override void SetValue(ref InlineStyleAccess container, StyleBackgroundSize value) => ((IStyle)container).backgroundSize = value;
         }
@@ -111,6 +121,7 @@ namespace UnityEngine.UIElements
             public override string Name => nameof(IStyle.borderBottomColor);
             public override string ussName => "border-bottom-color";
             public override bool IsReadOnly => false;
+
             public override StyleColor GetValue(ref InlineStyleAccess container) => ((IStyle)container).borderBottomColor;
             public override void SetValue(ref InlineStyleAccess container, StyleColor value) => ((IStyle)container).borderBottomColor = value;
         }
@@ -120,6 +131,7 @@ namespace UnityEngine.UIElements
             public override string Name => nameof(IStyle.borderBottomLeftRadius);
             public override string ussName => "border-bottom-left-radius";
             public override bool IsReadOnly => false;
+
             public override StyleLength GetValue(ref InlineStyleAccess container) => ((IStyle)container).borderBottomLeftRadius;
             public override void SetValue(ref InlineStyleAccess container, StyleLength value) => ((IStyle)container).borderBottomLeftRadius = value;
         }
@@ -129,6 +141,7 @@ namespace UnityEngine.UIElements
             public override string Name => nameof(IStyle.borderBottomRightRadius);
             public override string ussName => "border-bottom-right-radius";
             public override bool IsReadOnly => false;
+
             public override StyleLength GetValue(ref InlineStyleAccess container) => ((IStyle)container).borderBottomRightRadius;
             public override void SetValue(ref InlineStyleAccess container, StyleLength value) => ((IStyle)container).borderBottomRightRadius = value;
         }
@@ -138,6 +151,7 @@ namespace UnityEngine.UIElements
             public override string Name => nameof(IStyle.borderBottomWidth);
             public override string ussName => "border-bottom-width";
             public override bool IsReadOnly => false;
+
             public override StyleFloat GetValue(ref InlineStyleAccess container) => ((IStyle)container).borderBottomWidth;
             public override void SetValue(ref InlineStyleAccess container, StyleFloat value) => ((IStyle)container).borderBottomWidth = value;
         }
@@ -147,6 +161,7 @@ namespace UnityEngine.UIElements
             public override string Name => nameof(IStyle.borderLeftColor);
             public override string ussName => "border-left-color";
             public override bool IsReadOnly => false;
+
             public override StyleColor GetValue(ref InlineStyleAccess container) => ((IStyle)container).borderLeftColor;
             public override void SetValue(ref InlineStyleAccess container, StyleColor value) => ((IStyle)container).borderLeftColor = value;
         }
@@ -156,6 +171,7 @@ namespace UnityEngine.UIElements
             public override string Name => nameof(IStyle.borderLeftWidth);
             public override string ussName => "border-left-width";
             public override bool IsReadOnly => false;
+
             public override StyleFloat GetValue(ref InlineStyleAccess container) => ((IStyle)container).borderLeftWidth;
             public override void SetValue(ref InlineStyleAccess container, StyleFloat value) => ((IStyle)container).borderLeftWidth = value;
         }
@@ -165,6 +181,7 @@ namespace UnityEngine.UIElements
             public override string Name => nameof(IStyle.borderRightColor);
             public override string ussName => "border-right-color";
             public override bool IsReadOnly => false;
+
             public override StyleColor GetValue(ref InlineStyleAccess container) => ((IStyle)container).borderRightColor;
             public override void SetValue(ref InlineStyleAccess container, StyleColor value) => ((IStyle)container).borderRightColor = value;
         }
@@ -174,6 +191,7 @@ namespace UnityEngine.UIElements
             public override string Name => nameof(IStyle.borderRightWidth);
             public override string ussName => "border-right-width";
             public override bool IsReadOnly => false;
+
             public override StyleFloat GetValue(ref InlineStyleAccess container) => ((IStyle)container).borderRightWidth;
             public override void SetValue(ref InlineStyleAccess container, StyleFloat value) => ((IStyle)container).borderRightWidth = value;
         }
@@ -183,6 +201,7 @@ namespace UnityEngine.UIElements
             public override string Name => nameof(IStyle.borderTopColor);
             public override string ussName => "border-top-color";
             public override bool IsReadOnly => false;
+
             public override StyleColor GetValue(ref InlineStyleAccess container) => ((IStyle)container).borderTopColor;
             public override void SetValue(ref InlineStyleAccess container, StyleColor value) => ((IStyle)container).borderTopColor = value;
         }
@@ -192,6 +211,7 @@ namespace UnityEngine.UIElements
             public override string Name => nameof(IStyle.borderTopLeftRadius);
             public override string ussName => "border-top-left-radius";
             public override bool IsReadOnly => false;
+
             public override StyleLength GetValue(ref InlineStyleAccess container) => ((IStyle)container).borderTopLeftRadius;
             public override void SetValue(ref InlineStyleAccess container, StyleLength value) => ((IStyle)container).borderTopLeftRadius = value;
         }
@@ -201,6 +221,7 @@ namespace UnityEngine.UIElements
             public override string Name => nameof(IStyle.borderTopRightRadius);
             public override string ussName => "border-top-right-radius";
             public override bool IsReadOnly => false;
+
             public override StyleLength GetValue(ref InlineStyleAccess container) => ((IStyle)container).borderTopRightRadius;
             public override void SetValue(ref InlineStyleAccess container, StyleLength value) => ((IStyle)container).borderTopRightRadius = value;
         }
@@ -210,6 +231,7 @@ namespace UnityEngine.UIElements
             public override string Name => nameof(IStyle.borderTopWidth);
             public override string ussName => "border-top-width";
             public override bool IsReadOnly => false;
+
             public override StyleFloat GetValue(ref InlineStyleAccess container) => ((IStyle)container).borderTopWidth;
             public override void SetValue(ref InlineStyleAccess container, StyleFloat value) => ((IStyle)container).borderTopWidth = value;
         }
@@ -219,6 +241,7 @@ namespace UnityEngine.UIElements
             public override string Name => nameof(IStyle.bottom);
             public override string ussName => "bottom";
             public override bool IsReadOnly => false;
+
             public override StyleLength GetValue(ref InlineStyleAccess container) => ((IStyle)container).bottom;
             public override void SetValue(ref InlineStyleAccess container, StyleLength value) => ((IStyle)container).bottom = value;
         }
@@ -228,6 +251,7 @@ namespace UnityEngine.UIElements
             public override string Name => nameof(IStyle.color);
             public override string ussName => "color";
             public override bool IsReadOnly => false;
+
             public override StyleColor GetValue(ref InlineStyleAccess container) => ((IStyle)container).color;
             public override void SetValue(ref InlineStyleAccess container, StyleColor value) => ((IStyle)container).color = value;
         }
@@ -237,6 +261,7 @@ namespace UnityEngine.UIElements
             public override string Name => nameof(IStyle.cursor);
             public override string ussName => "cursor";
             public override bool IsReadOnly => false;
+
             public override StyleCursor GetValue(ref InlineStyleAccess container) => ((IStyle)container).cursor;
             public override void SetValue(ref InlineStyleAccess container, StyleCursor value) => ((IStyle)container).cursor = value;
         }
@@ -246,6 +271,7 @@ namespace UnityEngine.UIElements
             public override string Name => nameof(IStyle.display);
             public override string ussName => "display";
             public override bool IsReadOnly => false;
+
             public override StyleEnum<DisplayStyle> GetValue(ref InlineStyleAccess container) => ((IStyle)container).display;
             public override void SetValue(ref InlineStyleAccess container, StyleEnum<DisplayStyle> value) => ((IStyle)container).display = value;
         }
@@ -255,6 +281,7 @@ namespace UnityEngine.UIElements
             public override string Name => nameof(IStyle.filter);
             public override string ussName => "filter";
             public override bool IsReadOnly => false;
+
             public override StyleList<FilterFunction> GetValue(ref InlineStyleAccess container) => ((IStyle)container).filter;
             public override void SetValue(ref InlineStyleAccess container, StyleList<FilterFunction> value) => ((IStyle)container).filter = value;
         }
@@ -264,6 +291,7 @@ namespace UnityEngine.UIElements
             public override string Name => nameof(IStyle.flexBasis);
             public override string ussName => "flex-basis";
             public override bool IsReadOnly => false;
+
             public override StyleLength GetValue(ref InlineStyleAccess container) => ((IStyle)container).flexBasis;
             public override void SetValue(ref InlineStyleAccess container, StyleLength value) => ((IStyle)container).flexBasis = value;
         }
@@ -273,6 +301,7 @@ namespace UnityEngine.UIElements
             public override string Name => nameof(IStyle.flexDirection);
             public override string ussName => "flex-direction";
             public override bool IsReadOnly => false;
+
             public override StyleEnum<FlexDirection> GetValue(ref InlineStyleAccess container) => ((IStyle)container).flexDirection;
             public override void SetValue(ref InlineStyleAccess container, StyleEnum<FlexDirection> value) => ((IStyle)container).flexDirection = value;
         }
@@ -282,6 +311,7 @@ namespace UnityEngine.UIElements
             public override string Name => nameof(IStyle.flexGrow);
             public override string ussName => "flex-grow";
             public override bool IsReadOnly => false;
+
             public override StyleFloat GetValue(ref InlineStyleAccess container) => ((IStyle)container).flexGrow;
             public override void SetValue(ref InlineStyleAccess container, StyleFloat value) => ((IStyle)container).flexGrow = value;
         }
@@ -291,6 +321,7 @@ namespace UnityEngine.UIElements
             public override string Name => nameof(IStyle.flexShrink);
             public override string ussName => "flex-shrink";
             public override bool IsReadOnly => false;
+
             public override StyleFloat GetValue(ref InlineStyleAccess container) => ((IStyle)container).flexShrink;
             public override void SetValue(ref InlineStyleAccess container, StyleFloat value) => ((IStyle)container).flexShrink = value;
         }
@@ -300,6 +331,7 @@ namespace UnityEngine.UIElements
             public override string Name => nameof(IStyle.flexWrap);
             public override string ussName => "flex-wrap";
             public override bool IsReadOnly => false;
+
             public override StyleEnum<Wrap> GetValue(ref InlineStyleAccess container) => ((IStyle)container).flexWrap;
             public override void SetValue(ref InlineStyleAccess container, StyleEnum<Wrap> value) => ((IStyle)container).flexWrap = value;
         }
@@ -309,6 +341,7 @@ namespace UnityEngine.UIElements
             public override string Name => nameof(IStyle.fontSize);
             public override string ussName => "font-size";
             public override bool IsReadOnly => false;
+
             public override StyleLength GetValue(ref InlineStyleAccess container) => ((IStyle)container).fontSize;
             public override void SetValue(ref InlineStyleAccess container, StyleLength value) => ((IStyle)container).fontSize = value;
         }
@@ -318,6 +351,7 @@ namespace UnityEngine.UIElements
             public override string Name => nameof(IStyle.height);
             public override string ussName => "height";
             public override bool IsReadOnly => false;
+
             public override StyleLength GetValue(ref InlineStyleAccess container) => ((IStyle)container).height;
             public override void SetValue(ref InlineStyleAccess container, StyleLength value) => ((IStyle)container).height = value;
         }
@@ -327,6 +361,7 @@ namespace UnityEngine.UIElements
             public override string Name => nameof(IStyle.justifyContent);
             public override string ussName => "justify-content";
             public override bool IsReadOnly => false;
+
             public override StyleEnum<Justify> GetValue(ref InlineStyleAccess container) => ((IStyle)container).justifyContent;
             public override void SetValue(ref InlineStyleAccess container, StyleEnum<Justify> value) => ((IStyle)container).justifyContent = value;
         }
@@ -336,6 +371,7 @@ namespace UnityEngine.UIElements
             public override string Name => nameof(IStyle.left);
             public override string ussName => "left";
             public override bool IsReadOnly => false;
+
             public override StyleLength GetValue(ref InlineStyleAccess container) => ((IStyle)container).left;
             public override void SetValue(ref InlineStyleAccess container, StyleLength value) => ((IStyle)container).left = value;
         }
@@ -345,6 +381,7 @@ namespace UnityEngine.UIElements
             public override string Name => nameof(IStyle.letterSpacing);
             public override string ussName => "letter-spacing";
             public override bool IsReadOnly => false;
+
             public override StyleLength GetValue(ref InlineStyleAccess container) => ((IStyle)container).letterSpacing;
             public override void SetValue(ref InlineStyleAccess container, StyleLength value) => ((IStyle)container).letterSpacing = value;
         }
@@ -354,6 +391,7 @@ namespace UnityEngine.UIElements
             public override string Name => nameof(IStyle.marginBottom);
             public override string ussName => "margin-bottom";
             public override bool IsReadOnly => false;
+
             public override StyleLength GetValue(ref InlineStyleAccess container) => ((IStyle)container).marginBottom;
             public override void SetValue(ref InlineStyleAccess container, StyleLength value) => ((IStyle)container).marginBottom = value;
         }
@@ -363,6 +401,7 @@ namespace UnityEngine.UIElements
             public override string Name => nameof(IStyle.marginLeft);
             public override string ussName => "margin-left";
             public override bool IsReadOnly => false;
+
             public override StyleLength GetValue(ref InlineStyleAccess container) => ((IStyle)container).marginLeft;
             public override void SetValue(ref InlineStyleAccess container, StyleLength value) => ((IStyle)container).marginLeft = value;
         }
@@ -372,6 +411,7 @@ namespace UnityEngine.UIElements
             public override string Name => nameof(IStyle.marginRight);
             public override string ussName => "margin-right";
             public override bool IsReadOnly => false;
+
             public override StyleLength GetValue(ref InlineStyleAccess container) => ((IStyle)container).marginRight;
             public override void SetValue(ref InlineStyleAccess container, StyleLength value) => ((IStyle)container).marginRight = value;
         }
@@ -381,6 +421,7 @@ namespace UnityEngine.UIElements
             public override string Name => nameof(IStyle.marginTop);
             public override string ussName => "margin-top";
             public override bool IsReadOnly => false;
+
             public override StyleLength GetValue(ref InlineStyleAccess container) => ((IStyle)container).marginTop;
             public override void SetValue(ref InlineStyleAccess container, StyleLength value) => ((IStyle)container).marginTop = value;
         }
@@ -390,6 +431,7 @@ namespace UnityEngine.UIElements
             public override string Name => nameof(IStyle.maxHeight);
             public override string ussName => "max-height";
             public override bool IsReadOnly => false;
+
             public override StyleLength GetValue(ref InlineStyleAccess container) => ((IStyle)container).maxHeight;
             public override void SetValue(ref InlineStyleAccess container, StyleLength value) => ((IStyle)container).maxHeight = value;
         }
@@ -399,6 +441,7 @@ namespace UnityEngine.UIElements
             public override string Name => nameof(IStyle.maxWidth);
             public override string ussName => "max-width";
             public override bool IsReadOnly => false;
+
             public override StyleLength GetValue(ref InlineStyleAccess container) => ((IStyle)container).maxWidth;
             public override void SetValue(ref InlineStyleAccess container, StyleLength value) => ((IStyle)container).maxWidth = value;
         }
@@ -408,6 +451,7 @@ namespace UnityEngine.UIElements
             public override string Name => nameof(IStyle.minHeight);
             public override string ussName => "min-height";
             public override bool IsReadOnly => false;
+
             public override StyleLength GetValue(ref InlineStyleAccess container) => ((IStyle)container).minHeight;
             public override void SetValue(ref InlineStyleAccess container, StyleLength value) => ((IStyle)container).minHeight = value;
         }
@@ -417,6 +461,7 @@ namespace UnityEngine.UIElements
             public override string Name => nameof(IStyle.minWidth);
             public override string ussName => "min-width";
             public override bool IsReadOnly => false;
+
             public override StyleLength GetValue(ref InlineStyleAccess container) => ((IStyle)container).minWidth;
             public override void SetValue(ref InlineStyleAccess container, StyleLength value) => ((IStyle)container).minWidth = value;
         }
@@ -426,6 +471,7 @@ namespace UnityEngine.UIElements
             public override string Name => nameof(IStyle.opacity);
             public override string ussName => "opacity";
             public override bool IsReadOnly => false;
+
             public override StyleFloat GetValue(ref InlineStyleAccess container) => ((IStyle)container).opacity;
             public override void SetValue(ref InlineStyleAccess container, StyleFloat value) => ((IStyle)container).opacity = value;
         }
@@ -435,6 +481,7 @@ namespace UnityEngine.UIElements
             public override string Name => nameof(IStyle.overflow);
             public override string ussName => "overflow";
             public override bool IsReadOnly => false;
+
             public override StyleEnum<Overflow> GetValue(ref InlineStyleAccess container) => ((IStyle)container).overflow;
             public override void SetValue(ref InlineStyleAccess container, StyleEnum<Overflow> value) => ((IStyle)container).overflow = value;
         }
@@ -444,6 +491,7 @@ namespace UnityEngine.UIElements
             public override string Name => nameof(IStyle.paddingBottom);
             public override string ussName => "padding-bottom";
             public override bool IsReadOnly => false;
+
             public override StyleLength GetValue(ref InlineStyleAccess container) => ((IStyle)container).paddingBottom;
             public override void SetValue(ref InlineStyleAccess container, StyleLength value) => ((IStyle)container).paddingBottom = value;
         }
@@ -453,6 +501,7 @@ namespace UnityEngine.UIElements
             public override string Name => nameof(IStyle.paddingLeft);
             public override string ussName => "padding-left";
             public override bool IsReadOnly => false;
+
             public override StyleLength GetValue(ref InlineStyleAccess container) => ((IStyle)container).paddingLeft;
             public override void SetValue(ref InlineStyleAccess container, StyleLength value) => ((IStyle)container).paddingLeft = value;
         }
@@ -462,6 +511,7 @@ namespace UnityEngine.UIElements
             public override string Name => nameof(IStyle.paddingRight);
             public override string ussName => "padding-right";
             public override bool IsReadOnly => false;
+
             public override StyleLength GetValue(ref InlineStyleAccess container) => ((IStyle)container).paddingRight;
             public override void SetValue(ref InlineStyleAccess container, StyleLength value) => ((IStyle)container).paddingRight = value;
         }
@@ -471,6 +521,7 @@ namespace UnityEngine.UIElements
             public override string Name => nameof(IStyle.paddingTop);
             public override string ussName => "padding-top";
             public override bool IsReadOnly => false;
+
             public override StyleLength GetValue(ref InlineStyleAccess container) => ((IStyle)container).paddingTop;
             public override void SetValue(ref InlineStyleAccess container, StyleLength value) => ((IStyle)container).paddingTop = value;
         }
@@ -480,6 +531,7 @@ namespace UnityEngine.UIElements
             public override string Name => nameof(IStyle.position);
             public override string ussName => "position";
             public override bool IsReadOnly => false;
+
             public override StyleEnum<Position> GetValue(ref InlineStyleAccess container) => ((IStyle)container).position;
             public override void SetValue(ref InlineStyleAccess container, StyleEnum<Position> value) => ((IStyle)container).position = value;
         }
@@ -489,6 +541,7 @@ namespace UnityEngine.UIElements
             public override string Name => nameof(IStyle.right);
             public override string ussName => "right";
             public override bool IsReadOnly => false;
+
             public override StyleLength GetValue(ref InlineStyleAccess container) => ((IStyle)container).right;
             public override void SetValue(ref InlineStyleAccess container, StyleLength value) => ((IStyle)container).right = value;
         }
@@ -498,6 +551,7 @@ namespace UnityEngine.UIElements
             public override string Name => nameof(IStyle.rotate);
             public override string ussName => "rotate";
             public override bool IsReadOnly => false;
+
             public override StyleRotate GetValue(ref InlineStyleAccess container) => ((IStyle)container).rotate;
             public override void SetValue(ref InlineStyleAccess container, StyleRotate value) => ((IStyle)container).rotate = value;
         }
@@ -507,6 +561,7 @@ namespace UnityEngine.UIElements
             public override string Name => nameof(IStyle.scale);
             public override string ussName => "scale";
             public override bool IsReadOnly => false;
+
             public override StyleScale GetValue(ref InlineStyleAccess container) => ((IStyle)container).scale;
             public override void SetValue(ref InlineStyleAccess container, StyleScale value) => ((IStyle)container).scale = value;
         }
@@ -516,6 +571,7 @@ namespace UnityEngine.UIElements
             public override string Name => nameof(IStyle.textOverflow);
             public override string ussName => "text-overflow";
             public override bool IsReadOnly => false;
+
             public override StyleEnum<TextOverflow> GetValue(ref InlineStyleAccess container) => ((IStyle)container).textOverflow;
             public override void SetValue(ref InlineStyleAccess container, StyleEnum<TextOverflow> value) => ((IStyle)container).textOverflow = value;
         }
@@ -525,6 +581,7 @@ namespace UnityEngine.UIElements
             public override string Name => nameof(IStyle.textShadow);
             public override string ussName => "text-shadow";
             public override bool IsReadOnly => false;
+
             public override StyleTextShadow GetValue(ref InlineStyleAccess container) => ((IStyle)container).textShadow;
             public override void SetValue(ref InlineStyleAccess container, StyleTextShadow value) => ((IStyle)container).textShadow = value;
         }
@@ -534,6 +591,7 @@ namespace UnityEngine.UIElements
             public override string Name => nameof(IStyle.top);
             public override string ussName => "top";
             public override bool IsReadOnly => false;
+
             public override StyleLength GetValue(ref InlineStyleAccess container) => ((IStyle)container).top;
             public override void SetValue(ref InlineStyleAccess container, StyleLength value) => ((IStyle)container).top = value;
         }
@@ -543,6 +601,7 @@ namespace UnityEngine.UIElements
             public override string Name => nameof(IStyle.transformOrigin);
             public override string ussName => "transform-origin";
             public override bool IsReadOnly => false;
+
             public override StyleTransformOrigin GetValue(ref InlineStyleAccess container) => ((IStyle)container).transformOrigin;
             public override void SetValue(ref InlineStyleAccess container, StyleTransformOrigin value) => ((IStyle)container).transformOrigin = value;
         }
@@ -552,6 +611,7 @@ namespace UnityEngine.UIElements
             public override string Name => nameof(IStyle.transitionDelay);
             public override string ussName => "transition-delay";
             public override bool IsReadOnly => false;
+
             public override StyleList<TimeValue> GetValue(ref InlineStyleAccess container) => ((IStyle)container).transitionDelay;
             public override void SetValue(ref InlineStyleAccess container, StyleList<TimeValue> value) => ((IStyle)container).transitionDelay = value;
         }
@@ -561,6 +621,7 @@ namespace UnityEngine.UIElements
             public override string Name => nameof(IStyle.transitionDuration);
             public override string ussName => "transition-duration";
             public override bool IsReadOnly => false;
+
             public override StyleList<TimeValue> GetValue(ref InlineStyleAccess container) => ((IStyle)container).transitionDuration;
             public override void SetValue(ref InlineStyleAccess container, StyleList<TimeValue> value) => ((IStyle)container).transitionDuration = value;
         }
@@ -570,6 +631,7 @@ namespace UnityEngine.UIElements
             public override string Name => nameof(IStyle.transitionProperty);
             public override string ussName => "transition-property";
             public override bool IsReadOnly => false;
+
             public override StyleList<StylePropertyName> GetValue(ref InlineStyleAccess container) => ((IStyle)container).transitionProperty;
             public override void SetValue(ref InlineStyleAccess container, StyleList<StylePropertyName> value) => ((IStyle)container).transitionProperty = value;
         }
@@ -579,6 +641,7 @@ namespace UnityEngine.UIElements
             public override string Name => nameof(IStyle.transitionTimingFunction);
             public override string ussName => "transition-timing-function";
             public override bool IsReadOnly => false;
+
             public override StyleList<EasingFunction> GetValue(ref InlineStyleAccess container) => ((IStyle)container).transitionTimingFunction;
             public override void SetValue(ref InlineStyleAccess container, StyleList<EasingFunction> value) => ((IStyle)container).transitionTimingFunction = value;
         }
@@ -588,6 +651,7 @@ namespace UnityEngine.UIElements
             public override string Name => nameof(IStyle.translate);
             public override string ussName => "translate";
             public override bool IsReadOnly => false;
+
             public override StyleTranslate GetValue(ref InlineStyleAccess container) => ((IStyle)container).translate;
             public override void SetValue(ref InlineStyleAccess container, StyleTranslate value) => ((IStyle)container).translate = value;
         }
@@ -597,6 +661,7 @@ namespace UnityEngine.UIElements
             public override string Name => nameof(IStyle.unityBackgroundImageTintColor);
             public override string ussName => "-unity-background-image-tint-color";
             public override bool IsReadOnly => false;
+
             public override StyleColor GetValue(ref InlineStyleAccess container) => ((IStyle)container).unityBackgroundImageTintColor;
             public override void SetValue(ref InlineStyleAccess container, StyleColor value) => ((IStyle)container).unityBackgroundImageTintColor = value;
         }
@@ -606,6 +671,7 @@ namespace UnityEngine.UIElements
             public override string Name => nameof(IStyle.unityEditorTextRenderingMode);
             public override string ussName => "-unity-editor-text-rendering-mode";
             public override bool IsReadOnly => false;
+
             public override StyleEnum<EditorTextRenderingMode> GetValue(ref InlineStyleAccess container) => ((IStyle)container).unityEditorTextRenderingMode;
             public override void SetValue(ref InlineStyleAccess container, StyleEnum<EditorTextRenderingMode> value) => ((IStyle)container).unityEditorTextRenderingMode = value;
         }
@@ -615,6 +681,7 @@ namespace UnityEngine.UIElements
             public override string Name => nameof(IStyle.unityFont);
             public override string ussName => "-unity-font";
             public override bool IsReadOnly => false;
+
             public override StyleFont GetValue(ref InlineStyleAccess container) => ((IStyle)container).unityFont;
             public override void SetValue(ref InlineStyleAccess container, StyleFont value) => ((IStyle)container).unityFont = value;
         }
@@ -624,6 +691,7 @@ namespace UnityEngine.UIElements
             public override string Name => nameof(IStyle.unityFontDefinition);
             public override string ussName => "-unity-font-definition";
             public override bool IsReadOnly => false;
+
             public override StyleFontDefinition GetValue(ref InlineStyleAccess container) => ((IStyle)container).unityFontDefinition;
             public override void SetValue(ref InlineStyleAccess container, StyleFontDefinition value) => ((IStyle)container).unityFontDefinition = value;
         }
@@ -633,6 +701,7 @@ namespace UnityEngine.UIElements
             public override string Name => nameof(IStyle.unityFontStyleAndWeight);
             public override string ussName => "-unity-font-style";
             public override bool IsReadOnly => false;
+
             public override StyleEnum<FontStyle> GetValue(ref InlineStyleAccess container) => ((IStyle)container).unityFontStyleAndWeight;
             public override void SetValue(ref InlineStyleAccess container, StyleEnum<FontStyle> value) => ((IStyle)container).unityFontStyleAndWeight = value;
         }
@@ -642,6 +711,7 @@ namespace UnityEngine.UIElements
             public override string Name => nameof(IStyle.unityMaterial);
             public override string ussName => "-unity-material";
             public override bool IsReadOnly => false;
+
             public override StyleMaterialDefinition GetValue(ref InlineStyleAccess container) => ((IStyle)container).unityMaterial;
             public override void SetValue(ref InlineStyleAccess container, StyleMaterialDefinition value) => ((IStyle)container).unityMaterial = value;
         }
@@ -651,6 +721,7 @@ namespace UnityEngine.UIElements
             public override string Name => nameof(IStyle.unityOverflowClipBox);
             public override string ussName => "-unity-overflow-clip-box";
             public override bool IsReadOnly => false;
+
             public override StyleEnum<OverflowClipBox> GetValue(ref InlineStyleAccess container) => ((IStyle)container).unityOverflowClipBox;
             public override void SetValue(ref InlineStyleAccess container, StyleEnum<OverflowClipBox> value) => ((IStyle)container).unityOverflowClipBox = value;
         }
@@ -660,6 +731,7 @@ namespace UnityEngine.UIElements
             public override string Name => nameof(IStyle.unityParagraphSpacing);
             public override string ussName => "-unity-paragraph-spacing";
             public override bool IsReadOnly => false;
+
             public override StyleLength GetValue(ref InlineStyleAccess container) => ((IStyle)container).unityParagraphSpacing;
             public override void SetValue(ref InlineStyleAccess container, StyleLength value) => ((IStyle)container).unityParagraphSpacing = value;
         }
@@ -669,6 +741,7 @@ namespace UnityEngine.UIElements
             public override string Name => nameof(IStyle.unitySliceBottom);
             public override string ussName => "-unity-slice-bottom";
             public override bool IsReadOnly => false;
+
             public override StyleInt GetValue(ref InlineStyleAccess container) => ((IStyle)container).unitySliceBottom;
             public override void SetValue(ref InlineStyleAccess container, StyleInt value) => ((IStyle)container).unitySliceBottom = value;
         }
@@ -678,6 +751,7 @@ namespace UnityEngine.UIElements
             public override string Name => nameof(IStyle.unitySliceLeft);
             public override string ussName => "-unity-slice-left";
             public override bool IsReadOnly => false;
+
             public override StyleInt GetValue(ref InlineStyleAccess container) => ((IStyle)container).unitySliceLeft;
             public override void SetValue(ref InlineStyleAccess container, StyleInt value) => ((IStyle)container).unitySliceLeft = value;
         }
@@ -687,6 +761,7 @@ namespace UnityEngine.UIElements
             public override string Name => nameof(IStyle.unitySliceRight);
             public override string ussName => "-unity-slice-right";
             public override bool IsReadOnly => false;
+
             public override StyleInt GetValue(ref InlineStyleAccess container) => ((IStyle)container).unitySliceRight;
             public override void SetValue(ref InlineStyleAccess container, StyleInt value) => ((IStyle)container).unitySliceRight = value;
         }
@@ -696,6 +771,7 @@ namespace UnityEngine.UIElements
             public override string Name => nameof(IStyle.unitySliceScale);
             public override string ussName => "-unity-slice-scale";
             public override bool IsReadOnly => false;
+
             public override StyleFloat GetValue(ref InlineStyleAccess container) => ((IStyle)container).unitySliceScale;
             public override void SetValue(ref InlineStyleAccess container, StyleFloat value) => ((IStyle)container).unitySliceScale = value;
         }
@@ -705,6 +781,7 @@ namespace UnityEngine.UIElements
             public override string Name => nameof(IStyle.unitySliceTop);
             public override string ussName => "-unity-slice-top";
             public override bool IsReadOnly => false;
+
             public override StyleInt GetValue(ref InlineStyleAccess container) => ((IStyle)container).unitySliceTop;
             public override void SetValue(ref InlineStyleAccess container, StyleInt value) => ((IStyle)container).unitySliceTop = value;
         }
@@ -714,6 +791,7 @@ namespace UnityEngine.UIElements
             public override string Name => nameof(IStyle.unitySliceType);
             public override string ussName => "-unity-slice-type";
             public override bool IsReadOnly => false;
+
             public override StyleEnum<SliceType> GetValue(ref InlineStyleAccess container) => ((IStyle)container).unitySliceType;
             public override void SetValue(ref InlineStyleAccess container, StyleEnum<SliceType> value) => ((IStyle)container).unitySliceType = value;
         }
@@ -723,6 +801,7 @@ namespace UnityEngine.UIElements
             public override string Name => nameof(IStyle.unityTextAlign);
             public override string ussName => "-unity-text-align";
             public override bool IsReadOnly => false;
+
             public override StyleEnum<TextAnchor> GetValue(ref InlineStyleAccess container) => ((IStyle)container).unityTextAlign;
             public override void SetValue(ref InlineStyleAccess container, StyleEnum<TextAnchor> value) => ((IStyle)container).unityTextAlign = value;
         }
@@ -732,6 +811,7 @@ namespace UnityEngine.UIElements
             public override string Name => nameof(IStyle.unityTextAutoSize);
             public override string ussName => "-unity-text-auto-size";
             public override bool IsReadOnly => false;
+
             public override StyleTextAutoSize GetValue(ref InlineStyleAccess container) => ((IStyle)container).unityTextAutoSize;
             public override void SetValue(ref InlineStyleAccess container, StyleTextAutoSize value) => ((IStyle)container).unityTextAutoSize = value;
         }
@@ -741,6 +821,7 @@ namespace UnityEngine.UIElements
             public override string Name => nameof(IStyle.unityTextGenerator);
             public override string ussName => "-unity-text-generator";
             public override bool IsReadOnly => false;
+
             public override StyleEnum<TextGeneratorType> GetValue(ref InlineStyleAccess container) => ((IStyle)container).unityTextGenerator;
             public override void SetValue(ref InlineStyleAccess container, StyleEnum<TextGeneratorType> value) => ((IStyle)container).unityTextGenerator = value;
         }
@@ -750,6 +831,7 @@ namespace UnityEngine.UIElements
             public override string Name => nameof(IStyle.unityTextOutlineColor);
             public override string ussName => "-unity-text-outline-color";
             public override bool IsReadOnly => false;
+
             public override StyleColor GetValue(ref InlineStyleAccess container) => ((IStyle)container).unityTextOutlineColor;
             public override void SetValue(ref InlineStyleAccess container, StyleColor value) => ((IStyle)container).unityTextOutlineColor = value;
         }
@@ -759,6 +841,7 @@ namespace UnityEngine.UIElements
             public override string Name => nameof(IStyle.unityTextOutlineWidth);
             public override string ussName => "-unity-text-outline-width";
             public override bool IsReadOnly => false;
+
             public override StyleFloat GetValue(ref InlineStyleAccess container) => ((IStyle)container).unityTextOutlineWidth;
             public override void SetValue(ref InlineStyleAccess container, StyleFloat value) => ((IStyle)container).unityTextOutlineWidth = value;
         }
@@ -768,6 +851,7 @@ namespace UnityEngine.UIElements
             public override string Name => nameof(IStyle.unityTextOverflowPosition);
             public override string ussName => "-unity-text-overflow-position";
             public override bool IsReadOnly => false;
+
             public override StyleEnum<TextOverflowPosition> GetValue(ref InlineStyleAccess container) => ((IStyle)container).unityTextOverflowPosition;
             public override void SetValue(ref InlineStyleAccess container, StyleEnum<TextOverflowPosition> value) => ((IStyle)container).unityTextOverflowPosition = value;
         }
@@ -777,6 +861,7 @@ namespace UnityEngine.UIElements
             public override string Name => nameof(IStyle.visibility);
             public override string ussName => "visibility";
             public override bool IsReadOnly => false;
+
             public override StyleEnum<Visibility> GetValue(ref InlineStyleAccess container) => ((IStyle)container).visibility;
             public override void SetValue(ref InlineStyleAccess container, StyleEnum<Visibility> value) => ((IStyle)container).visibility = value;
         }
@@ -786,6 +871,7 @@ namespace UnityEngine.UIElements
             public override string Name => nameof(IStyle.whiteSpace);
             public override string ussName => "white-space";
             public override bool IsReadOnly => false;
+
             public override StyleEnum<WhiteSpace> GetValue(ref InlineStyleAccess container) => ((IStyle)container).whiteSpace;
             public override void SetValue(ref InlineStyleAccess container, StyleEnum<WhiteSpace> value) => ((IStyle)container).whiteSpace = value;
         }
@@ -795,6 +881,7 @@ namespace UnityEngine.UIElements
             public override string Name => nameof(IStyle.width);
             public override string ussName => "width";
             public override bool IsReadOnly => false;
+
             public override StyleLength GetValue(ref InlineStyleAccess container) => ((IStyle)container).width;
             public override void SetValue(ref InlineStyleAccess container, StyleLength value) => ((IStyle)container).width = value;
         }
@@ -804,6 +891,7 @@ namespace UnityEngine.UIElements
             public override string Name => nameof(IStyle.wordSpacing);
             public override string ussName => "word-spacing";
             public override bool IsReadOnly => false;
+
             public override StyleLength GetValue(ref InlineStyleAccess container) => ((IStyle)container).wordSpacing;
             public override void SetValue(ref InlineStyleAccess container, StyleLength value) => ((IStyle)container).wordSpacing = value;
         }

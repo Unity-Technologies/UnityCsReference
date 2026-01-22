@@ -14,7 +14,7 @@ namespace UnityEngine
     // Representation of 2D vectors and points.
     [UsedByNativeCode]
     [StructLayout(LayoutKind.Sequential)]
-    [NativeType("Runtime/Math/Vector2Int.h")]
+    [NativeHeader("Runtime/Math/Vector2Int.h")]
     [Unity.IL2CPP.CompilerServices.Il2CppEagerStaticClassConstruction]
     [Serializable]
     public struct Vector2Int : IEquatable<Vector2Int>, IFormattable

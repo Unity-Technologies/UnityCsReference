@@ -21,7 +21,7 @@ namespace UnityEngine.Rendering
     [NativeHeader("Runtime/Shaders/ComputeShader.h")]
     [NativeHeader("Runtime/Shaders/RayTracing/RayTracingShader.h")]
     [NativeHeader("Runtime/Export/Graphics/RenderingCommandBuffer.bindings.h")]
-    [NativeType("Runtime/Graphics/CommandBuffer/RenderingCommandBuffer.h")]
+    [NativeHeader("Runtime/Graphics/CommandBuffer/RenderingCommandBuffer.h")]
     [UsedByNativeCode]
     public partial class CommandBuffer : IDisposable
     {

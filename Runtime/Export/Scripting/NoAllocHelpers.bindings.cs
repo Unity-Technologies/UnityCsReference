@@ -133,6 +133,14 @@ namespace UnityEngine
             tListAccess._version++;
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void InvalidateListEnumerators<T>(List<T> list)
+        {
+            var tListAccess = UnsafeUtility.As<ListPrivateFieldAccess<T>>(list);
+            // Updating the version invalidates any active enumerators
+            tListAccess._version++;
+        }
+
         [RequiredByNativeCode]
         private static Array PrepareListForNativeFill(object list, Type elementType, int newSize)
         {

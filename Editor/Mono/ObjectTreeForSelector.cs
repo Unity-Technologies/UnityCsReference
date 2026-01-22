@@ -132,7 +132,7 @@ namespace UnityEditor
             if (m_TreeView != null)
                 return m_TreeView.GetSelection();
 
-            return new EntityId[0];
+            return Array.Empty<EntityId>();
         }
 
         public void SetSearchFilter(string searchString)

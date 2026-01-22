@@ -416,7 +416,7 @@ namespace UnityEditor
         void HandleUnusedEvents()
         {
             if (allowDeselection && Event.current.type == EventType.MouseDown && Event.current.button == 0 && m_TotalRect.Contains(Event.current.mousePosition))
-                SetSelection(new EntityId[0], false);
+                SetSelection(Array.Empty<EntityId>(), false);
         }
 
         internal Vector2 sizeUsedForCroppingName;
@@ -468,7 +468,7 @@ namespace UnityEditor
             FilteredHierarchy hierarchy = new FilteredHierarchy(type, searchSessionOptions);
             hierarchy.searchFilter = searchFilter;
             var assetProperty = FilteredHierarchyIterator.CreateHierarchyIteratorForFilter(hierarchy);
-            var empty = new EntityId[0];
+            var empty = Array.Empty<EntityId>();
             if (assetProperty.CountRemaining(empty) == 0)
                 return true;
 

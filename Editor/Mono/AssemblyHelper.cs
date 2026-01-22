@@ -38,7 +38,7 @@ namespace UnityEditor
 
         public static bool IsUnityEngineModule(Assembly assembly)
         {
-            return assembly.GetCustomAttributes(typeof(UnityEngineModuleAssembly), false).Length > 0;
+            return assembly.IsDefined(typeof(UnityEngineModuleAssembly), false);
         }
 
         public static string[] GetDefaultAssemblySearchPaths()
@@ -153,14 +153,14 @@ namespace UnityEditor
         internal static Type[] GetTypesFromAssembly(Assembly assembly)
         {
             if (assembly == null)
-                return new Type[] {};
+                return Array.Empty<Type>();
             try
             {
                 return assembly.GetTypes();
             }
             catch (ReflectionTypeLoadException)
             {
-                return new Type[] {};
+                return Array.Empty<Type>();
             }
         }
 

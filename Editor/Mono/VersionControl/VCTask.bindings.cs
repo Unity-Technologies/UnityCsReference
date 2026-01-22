@@ -9,7 +9,7 @@ using System.Runtime.InteropServices;
 
 namespace UnityEditor.VersionControl
 {
-    [NativeType("Editor/Src/VersionControl/VCEnums.h")]
+    [NativeHeader("Editor/Src/VersionControl/VCEnums.h")]
     public enum CompletionAction
     {
         UpdatePendingWindow = 1,

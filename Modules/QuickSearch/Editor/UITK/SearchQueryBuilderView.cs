@@ -64,12 +64,9 @@ namespace UnityEditor.Search
             base.OnAttachToPanel(evt);
             if (m_BuilderViewFlags.HasFlag(SearchQueryBuilderViewFlags.UseSearchGlobalEventHandler))
             {
-                RegisterGlobalEventHandler<KeyDownEvent>(KeyEventHandler, 0);
+                RegisterGlobalEventHandler<KeyDownEvent>(GlobalKeyEventHandler, 0);
             }
-            else
-            {
-                RegisterCallback<KeyDownEvent>(OnKeyDown, useTrickleDown: TrickleDown.TrickleDown);
-            }
+            RegisterCallback<KeyDownEvent>(OnKeyDown, useTrickleDown: TrickleDown.TrickleDown);
             RegisterCallback<FocusInEvent>(OnFocusInEvent, TrickleDown.TrickleDown);
             On(SearchEvent.RefreshBuilder, RefreshBuilder);
             On(SearchEvent.SearchContextChanged, Rebuild);
@@ -95,12 +92,9 @@ namespace UnityEditor.Search
 
             if (m_BuilderViewFlags.HasFlag(SearchQueryBuilderViewFlags.UseSearchGlobalEventHandler))
             {
-                UnregisterGlobalEventHandler<KeyDownEvent>(KeyEventHandler);
+                UnregisterGlobalEventHandler<KeyDownEvent>(GlobalKeyEventHandler);
             }
-            else
-            {
-                UnregisterCallback<KeyDownEvent>(OnKeyDown);
-            }
+            UnregisterCallback<KeyDownEvent>(OnKeyDown);
             UnregisterCallback<FocusInEvent>(OnFocusInEvent, TrickleDown.TrickleDown);
 
             Off(SearchEvent.RefreshBuilder, RefreshBuilder);
@@ -128,7 +122,7 @@ namespace UnityEditor.Search
         {
             if (evt.imguiEvent != null && m_QueryBuilder != null)
             {
-                if (KeyEventHandler(evt))
+                if (KeyEventHandler(evt, false))
                     evt.StopImmediatePropagation();
             }
         }
@@ -165,12 +159,17 @@ namespace UnityEditor.Search
             this.focusController.IgnoreEvent(evt);
         }
 
-        private bool KeyEventHandler(KeyDownEvent evt)
+        private bool GlobalKeyEventHandler(KeyDownEvent evt)
+        {
+            return KeyEventHandler(evt, true);
+        }
+
+        private bool KeyEventHandler(KeyDownEvent evt, bool globalHandler)
         {
             if (m_QueryBuilder == null)
                 return false;
 
-            var isHandled = m_QueryBuilder.HandleGlobalKeyDown(evt) || m_QueryBuilder.HandleKeyEvent(evt);
+            var isHandled = globalHandler ? m_QueryBuilder.HandleGlobalKeyDown(evt) : m_QueryBuilder.HandleKeyEvent(evt);
             if (isHandled)
                 Focus();
             return isHandled;

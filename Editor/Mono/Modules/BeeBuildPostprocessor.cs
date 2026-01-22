@@ -175,18 +175,17 @@ namespace UnityEditor.Modules
             }
         }
 
-        static IEnumerable<NPath> GetFilesWithRoleFromBuildReport(BuildReport report, params string[] roles) =>
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            report.GetFiles()
-#pragma warning restore RS0030
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                .Where(file => roles.Contains(file.role))
-#pragma warning restore RS0030
-                .Select(file => file.path.ToNPath())
-                .GroupBy(file => file.FileName)
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                .Select(group => group.First());
-#pragma warning restore RS0030
+        static IEnumerable<NPath> GetFilesWithRoleFromBuildReport(BuildReport report, params string[] roles)
+        {
+            var rolesToInclude = new HashSet<string>(roles);
+            foreach (var file in report.GetFiles())
+            {
+                if (!rolesToInclude.Contains(file.role))
+                    continue;
+
+                yield return file.path.ToNPath();
+            }
+        }
 
         LinkerConfig LinkerConfigFor(BuildPostProcessArgs args)
         {

@@ -141,9 +141,9 @@ namespace UnityEditor.PackageManager.UI.Internal
                     // Replace PackageItem
                     m_PackageItemsLookup[package.uniqueId] = newGroup.AddPackageItem(package, state);
                     oldGroup.RemovePackageItem(item);
-                    #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable RS0031 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     if (!oldGroup.packageItems.Any())
-#pragma warning restore RS0030
+#pragma warning restore RS0031
                         m_ItemsList.Remove(oldGroup);
 
                     ReorderGroups(page.visualStates.orderedGroups);
@@ -195,9 +195,9 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public void OnVisualStateChange(IEnumerable<VisualState> visualStates)
         {
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable RS0031 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             if (!visualStates.Any())
-#pragma warning restore RS0030
+#pragma warning restore RS0031
                 return;
 
             foreach (var state in visualStates)
@@ -491,9 +491,9 @@ namespace UnityEditor.PackageManager.UI.Internal
                     newGroup.AddPackageItem(packageItem);
                     needGroupsReordering = true;
 
-                    #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable RS0031 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     if (!oldGroup.packageItems.Any())
-#pragma warning restore RS0030
+#pragma warning restore RS0031
                         m_ItemsList.Remove(oldGroup);
                 }
             }

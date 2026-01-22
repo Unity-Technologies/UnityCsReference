@@ -4,9 +4,9 @@
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Reflection;
 using UnityEngine.Bindings;
+using UnityEngine.Pool;
 
 namespace UnityEngine
 {
@@ -56,7 +56,7 @@ namespace UnityEngine
                 || enumData.underlyingType == typeof(uint)
                 || enumData.underlyingType == typeof(ulong);
             var enumFields = enumType.GetFields(BindingFlags.Static | BindingFlags.Public);
-            List<FieldInfo> enumfieldlist = new List<FieldInfo>();
+            using var _ = ListPool<FieldInfo>.Get(out var enumfieldlist);
             int enumFieldslen = enumFields.Length;
             for (int j = 0; j < enumFieldslen; j++)
             {
@@ -65,12 +65,10 @@ namespace UnityEngine
             }
 
             // For Empty List Scenario
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            if (!enumfieldlist.Any())
-#pragma warning restore RS0030
+            if (enumfieldlist.Count == 0)
             {
                 string[] defaultstr = { "" };
-                Enum[] defaultenum = {};
+                Enum[] defaultenum = Array.Empty<Enum>();
                 int[] defaultarr = { 0 };
                 enumData.values = defaultenum;
                 enumData.flagValues = defaultarr;
@@ -85,14 +83,10 @@ namespace UnityEngine
             // We can't order the enum from its MetadataToken if its Assembly Dynamic because of a bug in .NET
             try
             {
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                var location = enumfieldlist.First().Module.Assembly.GetLoadedAssemblyPath();
-#pragma warning restore RS0030
+                var location = enumfieldlist[0].Module.Assembly.GetLoadedAssemblyPath();
                 if (!string.IsNullOrEmpty(location))
                 {
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                    enumfieldlist = enumfieldlist.OrderBy(f => f.MetadataToken).ToList();
-#pragma warning restore RS0030
+                    enumfieldlist.Sort((a, b) => a.MetadataToken.CompareTo(b.MetadataToken));
                 }
             }
             catch
@@ -100,27 +94,51 @@ namespace UnityEngine
                 // ignored
             }
 
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            enumData.displayNames = enumfieldlist.Select(f => EnumNameFromEnumField(f, nicifyName)).ToArray();
-#pragma warning restore RS0030
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            if (enumData.displayNames.Distinct().Count() != enumData.displayNames.Length)
-#pragma warning restore RS0030
+            var enumFieldListCount = enumfieldlist.Count;
+
+            var displayNames = new string[enumFieldListCount];
+            using (HashSetPool<string>.Get(out var uniqueNames))
             {
-                Debug.LogWarning(
-                    $"Enum {enumType.Name} has multiple entries with the same display name, this prevents selection in EnumPopup.");
+                for (int i = 0; i < enumFieldListCount; i++)
+                {
+                    var displayName = EnumNameFromEnumField(enumfieldlist[i], nicifyName);
+                    displayNames[i] = displayName;
+                    if (!uniqueNames.Add(displayName))
+                    {
+                        Debug.LogWarning(
+                            $"Enum {enumType.Name} has multiple entries names {displayName}, this prevents selection in EnumPopup.");
+                    }
+                }
             }
 
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            enumData.tooltip = enumfieldlist.Select(f => EnumTooltipFromEnumField(f)).ToArray();
-            enumData.values = enumfieldlist.Select(f => (Enum)f.GetValue(null)).ToArray();
-            enumData.flagValues = enumData.unsigned
-                ? enumData.values.Select(v => unchecked((int)Convert.ToUInt64(v))).ToArray()
-                : enumData.values.Select(v => unchecked((int)Convert.ToInt64(v))).ToArray();
-#pragma warning restore RS0030
+            enumData.displayNames = displayNames;
+
+            enumData.tooltip = new string[enumFieldListCount];
+            enumData.values = new Enum[enumFieldListCount];
+            for (int i = 0; i < enumFieldListCount; i++)
+            {
+                enumData.tooltip[i] = EnumTooltipFromEnumField(enumfieldlist[i]);
+                enumData.values[i] = (Enum)enumfieldlist[i].GetValue(null);
+            }
+
+            enumData.flagValues = new int[enumData.values.Length];
+            if (enumData.unsigned)
+            {
+                for (int i = 0; i < enumData.values.Length; i++)
+                {
+                    enumData.flagValues[i] = unchecked((int)Convert.ToUInt64(enumData.values[i]));
+                }
+            }
+            else
+            {
+                for (int i = 0; i < enumData.values.Length; i++)
+                {
+                    enumData.flagValues[i] = unchecked((int)Convert.ToInt64(enumData.values[i]));
+                }
+            }
 
             enumData.names = new string[enumData.values.Length];
-            for (int i = 0; i < enumfieldlist.Count; ++i)
+            for (int i = 0; i < enumFieldListCount; ++i)
             {
                 enumData.names[i] = enumfieldlist[i].Name;
             }
@@ -269,9 +287,7 @@ namespace UnityEngine
                 if (cachedType == CachedType.IncludeAllObsolete)
                     return true;
 
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                return !((ObsoleteAttribute)obsolete.First()).IsError;
-#pragma warning restore RS0030
+                return !((ObsoleteAttribute)obsolete[0]).IsError;
             }
 
             return true;
@@ -281,11 +297,7 @@ namespace UnityEngine
         {
             var tooltip = field.GetCustomAttributes(typeof(TooltipAttribute), false);
             if (tooltip.Length > 0)
-            {
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                return ((TooltipAttribute)tooltip.First()).tooltip;
-#pragma warning restore RS0030
-            }
+                return ((TooltipAttribute)tooltip[0]).tooltip;
 
             return string.Empty;
         }
@@ -295,9 +307,7 @@ namespace UnityEngine
             var description = field.GetCustomAttributes(typeof(InspectorNameAttribute), false);
             if (description.Length > 0)
             {
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                return ((InspectorNameAttribute)description.First()).displayName;
-#pragma warning restore RS0030
+                return ((InspectorNameAttribute)description[0]).displayName;
             }
 
             string NicifyName()

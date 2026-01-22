@@ -18,7 +18,7 @@ namespace UnityEditor.MPE
     {
         internal static bool s_ImportRefreshEnabled = false;
         internal static bool s_AboutToRefresh = false;
-        internal static string[] s_ImportedAssets = {};
+        internal static string[] s_ImportedAssets = Array.Empty<string>();
 
         [UsedImplicitly]
         private class AssetEvents : AssetPostprocessor
@@ -49,7 +49,7 @@ namespace UnityEditor.MPE
 
             EventService.Emit(nameof(DataServiceEvent.AUTO_REFRESH), s_ImportedAssets);
             s_AboutToRefresh = false;
-            s_ImportedAssets = new string[] {};
+            s_ImportedAssets = Array.Empty<string>();
         }
 
         [UsedImplicitly, RoleProvider(ProcessLevel.Main, ProcessEvent.AfterDomainReload)]

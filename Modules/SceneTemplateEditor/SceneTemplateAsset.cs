@@ -52,7 +52,7 @@ namespace UnityEditor.SceneTemplate
         void OnEnable()
         {
             if (dependencies == null)
-                dependencies = new DependencyInfo[0];
+                dependencies = Array.Empty<DependencyInfo>();
         }
 
         internal void BindScene(SceneAsset scene)
@@ -60,7 +60,7 @@ namespace UnityEditor.SceneTemplate
             if (templateScene != scene)
             {
                 templateScene = scene;
-                dependencies = new DependencyInfo[0];
+                dependencies = Array.Empty<DependencyInfo>();
                 UpdateDependencies();
             }
         }
@@ -69,14 +69,14 @@ namespace UnityEditor.SceneTemplate
         {
             if (!isValid)
             {
-                dependencies = new DependencyInfo[0];
+                dependencies = Array.Empty<DependencyInfo>();
                 return false;
             }
 
             var scenePath = AssetDatabase.GetAssetPath(templateScene.GetEntityId());
             if (string.IsNullOrEmpty(scenePath))
             {
-                dependencies = new DependencyInfo[0];
+                dependencies = Array.Empty<DependencyInfo>();
                 return false;
             }
 

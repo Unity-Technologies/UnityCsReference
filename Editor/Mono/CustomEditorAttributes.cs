@@ -75,9 +75,7 @@ namespace UnityEditor
 
         Type FindEditors(List<MonoEditorType> editors)
         {
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            if (!editors.Any())
-#pragma warning restore RS0030
+            if (editors.Count == 0)
                 return null;
 
             var getEditorActions = m_CurrentGetEditorList;
@@ -128,9 +126,7 @@ namespace UnityEditor
 
         static Type UseNotSupportedOnInspector(List<MonoEditorType> editors)
         {
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            if (!editors.Any())
-#pragma warning restore RS0030
+            if (editors.Count == 0)
                 return null;
 
             var allEditorHaveSupportedOn = true;

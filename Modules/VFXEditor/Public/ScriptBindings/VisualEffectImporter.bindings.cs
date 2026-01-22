@@ -16,6 +16,7 @@ namespace UnityEditor.VFX
        public string description;
        public Texture2D icon;
        public Texture2D thumbnail;
+       public int order;
     }
 
     [NativeHeader("Modules/VFXEditor/Public/VisualEffectImporter.h")]

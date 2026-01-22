@@ -3,9 +3,6 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using System.Collections;
-using System.Collections.Generic;
-using System.Text;
 using UnityEngine;
 
 namespace Unity.VectorGraphics
@@ -15,7 +12,7 @@ namespace Unity.VectorGraphics
         internal static BezierPathSegment[] BuildEllipsePath(Vector2 p0, Vector2 p1, float rotation, float rx, float ry, bool largeArc, bool sweep)
         {
             if ((p1-p0).magnitude < VectorUtils.Epsilon)
-                return new BezierPathSegment[0];
+                return Array.Empty<BezierPathSegment>();
 
             Vector2 c;
             float theta1;

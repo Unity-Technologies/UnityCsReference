@@ -7,14 +7,17 @@ using System;
 namespace UnityEditor.UnityLinker
 {
     /// <summary>
-    /// Data exposed during IRunUnityLinker callbacks
+    /// Contains information for various IUnityLinkerProcessor callbacks.
     /// </summary>
     public sealed class UnityLinkerBuildPipelineData
     {
+        ///<summary>The build target.</summary>
         public readonly BuildTarget target;
+        ///<summary>The directory containing the assemblies that UnityLinker will process.</summary>
         [Obsolete("For platforms using the new incremental build pipeline, inputDirectory will no longer contain any files", false)]
         public readonly string inputDirectory;
 
+        ///<summary>Creates a new instance of an UnityLinkerBuildPipelineData.</summary>
         public UnityLinkerBuildPipelineData(BuildTarget target, string inputDirectory)
         {
             this.target = target;

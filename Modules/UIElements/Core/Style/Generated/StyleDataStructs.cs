@@ -11,16 +11,11 @@
 /******************************************************************************/
 using System;
 using System.Collections.Generic;
+using UnityEngine.UIElements.StyleSheets;
+using UnityEngine.UIElements.Unmanaged;
 
 namespace UnityEngine.UIElements
 {
-    internal interface IStyleDataGroup<T>
-    {
-        T GetDefault();
-        T Copy();
-        void CopyFrom(ref T other);
-    }
-
     internal struct InheritedData : IStyleDataGroup<InheritedData>, IEquatable<InheritedData>
     {
         public Color color;
@@ -28,10 +23,10 @@ namespace UnityEngine.UIElements
         public Length letterSpacing;
         public TextShadow textShadow;
         public EditorTextRenderingMode unityEditorTextRenderingMode;
-        public Font unityFont;
-        public FontDefinition unityFontDefinition;
+        public EntityId unityFont;
+        public EntityId unityFontDefinition;
         public FontStyle unityFontStyleAndWeight;
-        public MaterialDefinition unityMaterial;
+        public UnmanagedMaterialDefinition unityMaterial;
         public Length unityParagraphSpacing;
         public TextAnchor unityTextAlign;
         public TextAutoSize unityTextAutoSize;
@@ -49,12 +44,53 @@ namespace UnityEngine.UIElements
 
         public InheritedData Copy()
         {
-            return this;
+            var data = new InheritedData();
+            data.color = color;
+            data.fontSize = fontSize;
+            data.letterSpacing = letterSpacing;
+            data.textShadow = textShadow;
+            data.unityEditorTextRenderingMode = unityEditorTextRenderingMode;
+            data.unityFont = unityFont;
+            data.unityFontDefinition = unityFontDefinition;
+            data.unityFontStyleAndWeight = unityFontStyleAndWeight;
+            data.unityMaterial.CopyFrom(unityMaterial);
+            data.unityParagraphSpacing = unityParagraphSpacing;
+            data.unityTextAlign = unityTextAlign;
+            data.unityTextAutoSize = unityTextAutoSize;
+            data.unityTextGenerator = unityTextGenerator;
+            data.unityTextOutlineColor = unityTextOutlineColor;
+            data.unityTextOutlineWidth = unityTextOutlineWidth;
+            data.visibility = visibility;
+            data.whiteSpace = whiteSpace;
+            data.wordSpacing = wordSpacing;
+            return data;
         }
 
         public void CopyFrom(ref InheritedData other)
         {
-            this = other;
+            color = other.color;
+            fontSize = other.fontSize;
+            letterSpacing = other.letterSpacing;
+            textShadow = other.textShadow;
+            unityEditorTextRenderingMode = other.unityEditorTextRenderingMode;
+            unityFont = other.unityFont;
+            unityFontDefinition = other.unityFontDefinition;
+            unityFontStyleAndWeight = other.unityFontStyleAndWeight;
+            unityMaterial.CopyFrom(other.unityMaterial);
+            unityParagraphSpacing = other.unityParagraphSpacing;
+            unityTextAlign = other.unityTextAlign;
+            unityTextAutoSize = other.unityTextAutoSize;
+            unityTextGenerator = other.unityTextGenerator;
+            unityTextOutlineColor = other.unityTextOutlineColor;
+            unityTextOutlineWidth = other.unityTextOutlineWidth;
+            visibility = other.visibility;
+            whiteSpace = other.whiteSpace;
+            wordSpacing = other.wordSpacing;
+        }
+
+        public void Dispose()
+        {
+            unityMaterial.Dispose();
         }
 
         public static bool operator ==(InheritedData lhs, InheritedData rhs)
@@ -109,7 +145,7 @@ namespace UnityEngine.UIElements
                 hashCode = (hashCode * 397) ^ (unityFont == null ? 0 : unityFont.GetHashCode());
                 hashCode = (hashCode * 397) ^ unityFontDefinition.GetHashCode();
                 hashCode = (hashCode * 397) ^ (int)unityFontStyleAndWeight;
-                hashCode = (hashCode * 397) ^ (unityMaterial == null ? 0 : unityMaterial.GetHashCode());
+                hashCode = (hashCode * 397) ^ unityMaterial.GetHashCode();
                 hashCode = (hashCode * 397) ^ unityParagraphSpacing.GetHashCode();
                 hashCode = (hashCode * 397) ^ (int)unityTextAlign;
                 hashCode = (hashCode * 397) ^ unityTextAutoSize.GetHashCode();
@@ -127,7 +163,7 @@ namespace UnityEngine.UIElements
     internal struct RareData : IStyleDataGroup<RareData>, IEquatable<RareData>
     {
         public Cursor cursor;
-        public List<FilterFunction> filter;
+        public UnmanagedRefCountedList<UnmanagedFilterFunction> filter;
         public TextOverflow textOverflow;
         public Color unityBackgroundImageTintColor;
         public OverflowClipBox unityOverflowClipBox;
@@ -148,7 +184,7 @@ namespace UnityEngine.UIElements
         {
             var data = new RareData();
             data.cursor = cursor;
-            data.filter = new List<FilterFunction>(filter);
+            data.filter.CopyFrom(filter);
             data.textOverflow = textOverflow;
             data.unityBackgroundImageTintColor = unityBackgroundImageTintColor;
             data.unityOverflowClipBox = unityOverflowClipBox;
@@ -165,12 +201,7 @@ namespace UnityEngine.UIElements
         public void CopyFrom(ref RareData other)
         {
             cursor = other.cursor;
-            if (!ReferenceEquals(filter, other.filter))
-            {
-                filter.Clear();
-                filter.AddRange(other.filter);
-            }
-
+            filter.CopyFrom(other.filter);
             textOverflow = other.textOverflow;
             unityBackgroundImageTintColor = other.unityBackgroundImageTintColor;
             unityOverflowClipBox = other.unityOverflowClipBox;
@@ -181,6 +212,11 @@ namespace UnityEngine.UIElements
             unitySliceTop = other.unitySliceTop;
             unitySliceType = other.unitySliceType;
             unityTextOverflowPosition = other.unityTextOverflowPosition;
+        }
+
+        public void Dispose()
+        {
+            filter.Clear();
         }
 
         public static bool operator ==(RareData lhs, RareData rhs)
@@ -299,13 +335,12 @@ namespace UnityEngine.UIElements
         }
     }
 
-    [UnityEngine.Bindings.VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
     internal struct TransitionData : IStyleDataGroup<TransitionData>, IEquatable<TransitionData>
     {
-        public List<TimeValue> transitionDelay;
-        public List<TimeValue> transitionDuration;
-        public List<StylePropertyName> transitionProperty;
-        public List<EasingFunction> transitionTimingFunction;
+        public UnmanagedRefCountedList<TimeValue> transitionDelay;
+        public UnmanagedRefCountedList<TimeValue> transitionDuration;
+        public UnmanagedRefCountedList<StylePropertyId> transitionProperty;
+        public UnmanagedRefCountedList<EasingFunction> transitionTimingFunction;
 
         public TransitionData GetDefault()
         {
@@ -315,38 +350,27 @@ namespace UnityEngine.UIElements
         public TransitionData Copy()
         {
             var data = new TransitionData();
-            data.transitionDelay = new List<TimeValue>(transitionDelay);
-            data.transitionDuration = new List<TimeValue>(transitionDuration);
-            data.transitionProperty = new List<StylePropertyName>(transitionProperty);
-            data.transitionTimingFunction = new List<EasingFunction>(transitionTimingFunction);
+            data.transitionDelay.CopyFrom(transitionDelay);
+            data.transitionDuration.CopyFrom(transitionDuration);
+            data.transitionProperty.CopyFrom(transitionProperty);
+            data.transitionTimingFunction.CopyFrom(transitionTimingFunction);
             return data;
         }
 
         public void CopyFrom(ref TransitionData other)
         {
-            if (!ReferenceEquals(transitionDelay, other.transitionDelay))
-            {
-                transitionDelay.Clear();
-                transitionDelay.AddRange(other.transitionDelay);
-            }
+            transitionDelay.CopyFrom(other.transitionDelay);
+            transitionDuration.CopyFrom(other.transitionDuration);
+            transitionProperty.CopyFrom(other.transitionProperty);
+            transitionTimingFunction.CopyFrom(other.transitionTimingFunction);
+        }
 
-            if (!ReferenceEquals(transitionDuration, other.transitionDuration))
-            {
-                transitionDuration.Clear();
-                transitionDuration.AddRange(other.transitionDuration);
-            }
-
-            if (!ReferenceEquals(transitionProperty, other.transitionProperty))
-            {
-                transitionProperty.Clear();
-                transitionProperty.AddRange(other.transitionProperty);
-            }
-
-            if (!ReferenceEquals(transitionTimingFunction, other.transitionTimingFunction))
-            {
-                transitionTimingFunction.Clear();
-                transitionTimingFunction.AddRange(other.transitionTimingFunction);
-            }
+        public void Dispose()
+        {
+            transitionDelay.Clear();
+            transitionDuration.Clear();
+            transitionProperty.Clear();
+            transitionTimingFunction.Clear();
         }
 
         public static bool operator ==(TransitionData lhs, TransitionData rhs)

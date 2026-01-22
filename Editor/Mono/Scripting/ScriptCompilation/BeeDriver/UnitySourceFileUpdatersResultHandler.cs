@@ -58,9 +58,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
             var(immutablePackageUpdates, nonImmutableUpdates) = updates.SplitBy(u => u.originalFileWithError.StartsWith(libraryPackageCache));
 
             Console.WriteLine("[API Updater] Updated Files:");
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            if (immutablePackageUpdates.Any())
-#pragma warning restore RS0030
+            if (immutablePackageUpdates.Count > 0)
             {
 #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 var immutablePackageFiles = immutablePackageUpdates.Select(u => u.originalFileWithError).ToArray();
@@ -69,9 +67,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 ExecuteUpdates(immutablePackageUpdates);
             }
 
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            if (nonImmutableUpdates.Any())
-#pragma warning restore RS0030
+            if (nonImmutableUpdates.Count > 0)
             {
 #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 var nonImmutableTargetFiles = nonImmutableUpdates.Select(u => u.originalFileWithError).ToArray();
@@ -81,9 +77,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
                     ExecuteUpdates(nonImmutableUpdates);
             }
 
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            if (problemUpdates.Any())
-#pragma warning restore RS0030
+            if (problemUpdates.Count > 0)
             {
                 var sb = new StringBuilder();
                 sb.AppendLine("Unable to update the following files. Are they marked readonly?");

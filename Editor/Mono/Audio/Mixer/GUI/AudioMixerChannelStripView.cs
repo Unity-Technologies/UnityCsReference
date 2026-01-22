@@ -1685,7 +1685,7 @@ namespace UnityEditor
             {
                 if (!evt.shift)
                 {
-                    Selection.objects = new UnityEngine.Object[0];
+                    Selection.objects = Array.Empty<Object>();
                     m_Controller.OnUnitySelectionChanged();
                 }
                 GUIUtility.hotControl = m_RectSelectionControlID;

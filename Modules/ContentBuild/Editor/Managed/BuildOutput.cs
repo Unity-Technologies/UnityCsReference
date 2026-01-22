@@ -121,5 +121,12 @@ namespace UnityEditor.Build.Content
         internal ExternalFileReference[] m_ExternalFileReferences;
         ///<summary>The collection of externally referenced files.</summary>
         public ReadOnlyCollection<ExternalFileReference> externalFileReferences { get { return Array.AsReadOnly(m_ExternalFileReferences); } }
+
+        [NativeName("extractedTypeTreeDataPath")]
+        internal string m_ExtractedTypeTreeDataPath;
+        /// <summary>
+        /// The path of the artifact that contains any extracted TypeTree data.
+        /// </summary>
+        public string extractedTypeTreeDataPath { get { return m_ExtractedTypeTreeDataPath == null ? string.Empty : m_ExtractedTypeTreeDataPath; } }
     }
 }

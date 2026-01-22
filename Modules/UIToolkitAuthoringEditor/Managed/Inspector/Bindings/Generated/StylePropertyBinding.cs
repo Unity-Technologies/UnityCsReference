@@ -20,7 +20,7 @@ namespace Unity.UIToolkit.Editor
 {
     internal partial class StylePropertyBinding
     {
-        private BindingResult Update(in BindingId id, StylePropertyId propertyId, StyleDiff diff, VisualElement targetElement)
+        private BindingResult Update(in BindingId id, StylePropertyId propertyId, StyleInspectorElement.AuthoringContext authoringContext, VisualElement targetElement)
         {
             if (!IsStylePropertySupported(propertyId))
             {
@@ -30,181 +30,181 @@ namespace Unity.UIToolkit.Editor
             switch (propertyId)
             {
                 case StylePropertyId.AlignContent:
-                    return Update(in id, diff.alignContent, diff, targetElement);
+                    return Update(in id, authoringContext.StyleDiff.alignContent, authoringContext, targetElement);
                 case StylePropertyId.AlignItems:
-                    return Update(in id, diff.alignItems, diff, targetElement);
+                    return Update(in id, authoringContext.StyleDiff.alignItems, authoringContext, targetElement);
                 case StylePropertyId.AlignSelf:
-                    return Update(in id, diff.alignSelf, diff, targetElement);
+                    return Update(in id, authoringContext.StyleDiff.alignSelf, authoringContext, targetElement);
                 case StylePropertyId.AspectRatio:
-                    return Update(in id, diff.aspectRatio, diff, targetElement);
+                    return Update(in id, authoringContext.StyleDiff.aspectRatio, authoringContext, targetElement);
                 case StylePropertyId.BackgroundColor:
-                    return Update(in id, diff.backgroundColor, diff, targetElement);
+                    return Update(in id, authoringContext.StyleDiff.backgroundColor, authoringContext, targetElement);
                 case StylePropertyId.BackgroundImage:
-                    return Update(in id, diff.backgroundImage, diff, targetElement);
+                    return Update(in id, authoringContext.StyleDiff.backgroundImage, authoringContext, targetElement);
                 case StylePropertyId.BackgroundPositionX:
-                    return Update(in id, diff.backgroundPositionX, diff, targetElement);
+                    return Update(in id, authoringContext.StyleDiff.backgroundPositionX, authoringContext, targetElement);
                 case StylePropertyId.BackgroundPositionY:
-                    return Update(in id, diff.backgroundPositionY, diff, targetElement);
+                    return Update(in id, authoringContext.StyleDiff.backgroundPositionY, authoringContext, targetElement);
                 case StylePropertyId.BackgroundRepeat:
-                    return Update(in id, diff.backgroundRepeat, diff, targetElement);
+                    return Update(in id, authoringContext.StyleDiff.backgroundRepeat, authoringContext, targetElement);
                 case StylePropertyId.BackgroundSize:
-                    return Update(in id, diff.backgroundSize, diff, targetElement);
+                    return Update(in id, authoringContext.StyleDiff.backgroundSize, authoringContext, targetElement);
                 case StylePropertyId.BorderBottomColor:
-                    return Update(in id, diff.borderBottomColor, diff, targetElement);
+                    return Update(in id, authoringContext.StyleDiff.borderBottomColor, authoringContext, targetElement);
                 case StylePropertyId.BorderBottomLeftRadius:
-                    return Update(in id, diff.borderBottomLeftRadius, diff, targetElement);
+                    return Update(in id, authoringContext.StyleDiff.borderBottomLeftRadius, authoringContext, targetElement);
                 case StylePropertyId.BorderBottomRightRadius:
-                    return Update(in id, diff.borderBottomRightRadius, diff, targetElement);
+                    return Update(in id, authoringContext.StyleDiff.borderBottomRightRadius, authoringContext, targetElement);
                 case StylePropertyId.BorderBottomWidth:
-                    return Update(in id, diff.borderBottomWidth, diff, targetElement);
+                    return Update(in id, authoringContext.StyleDiff.borderBottomWidth, authoringContext, targetElement);
                 case StylePropertyId.BorderLeftColor:
-                    return Update(in id, diff.borderLeftColor, diff, targetElement);
+                    return Update(in id, authoringContext.StyleDiff.borderLeftColor, authoringContext, targetElement);
                 case StylePropertyId.BorderLeftWidth:
-                    return Update(in id, diff.borderLeftWidth, diff, targetElement);
+                    return Update(in id, authoringContext.StyleDiff.borderLeftWidth, authoringContext, targetElement);
                 case StylePropertyId.BorderRightColor:
-                    return Update(in id, diff.borderRightColor, diff, targetElement);
+                    return Update(in id, authoringContext.StyleDiff.borderRightColor, authoringContext, targetElement);
                 case StylePropertyId.BorderRightWidth:
-                    return Update(in id, diff.borderRightWidth, diff, targetElement);
+                    return Update(in id, authoringContext.StyleDiff.borderRightWidth, authoringContext, targetElement);
                 case StylePropertyId.BorderTopColor:
-                    return Update(in id, diff.borderTopColor, diff, targetElement);
+                    return Update(in id, authoringContext.StyleDiff.borderTopColor, authoringContext, targetElement);
                 case StylePropertyId.BorderTopLeftRadius:
-                    return Update(in id, diff.borderTopLeftRadius, diff, targetElement);
+                    return Update(in id, authoringContext.StyleDiff.borderTopLeftRadius, authoringContext, targetElement);
                 case StylePropertyId.BorderTopRightRadius:
-                    return Update(in id, diff.borderTopRightRadius, diff, targetElement);
+                    return Update(in id, authoringContext.StyleDiff.borderTopRightRadius, authoringContext, targetElement);
                 case StylePropertyId.BorderTopWidth:
-                    return Update(in id, diff.borderTopWidth, diff, targetElement);
+                    return Update(in id, authoringContext.StyleDiff.borderTopWidth, authoringContext, targetElement);
                 case StylePropertyId.Bottom:
-                    return Update(in id, diff.bottom, diff, targetElement);
+                    return Update(in id, authoringContext.StyleDiff.bottom, authoringContext, targetElement);
                 case StylePropertyId.Color:
-                    return Update(in id, diff.color, diff, targetElement);
+                    return Update(in id, authoringContext.StyleDiff.color, authoringContext, targetElement);
                 case StylePropertyId.Cursor:
-                    return Update(in id, diff.cursor, diff, targetElement);
+                    return Update(in id, authoringContext.StyleDiff.cursor, authoringContext, targetElement);
                 case StylePropertyId.Display:
-                    return Update(in id, diff.display, diff, targetElement);
+                    return Update(in id, authoringContext.StyleDiff.display, authoringContext, targetElement);
                 case StylePropertyId.Filter:
-                    return Update(in id, diff.filter, diff, targetElement);
+                    return Update(in id, authoringContext.StyleDiff.filter, authoringContext, targetElement);
                 case StylePropertyId.FlexBasis:
-                    return Update(in id, diff.flexBasis, diff, targetElement);
+                    return Update(in id, authoringContext.StyleDiff.flexBasis, authoringContext, targetElement);
                 case StylePropertyId.FlexDirection:
-                    return Update(in id, diff.flexDirection, diff, targetElement);
+                    return Update(in id, authoringContext.StyleDiff.flexDirection, authoringContext, targetElement);
                 case StylePropertyId.FlexGrow:
-                    return Update(in id, diff.flexGrow, diff, targetElement);
+                    return Update(in id, authoringContext.StyleDiff.flexGrow, authoringContext, targetElement);
                 case StylePropertyId.FlexShrink:
-                    return Update(in id, diff.flexShrink, diff, targetElement);
+                    return Update(in id, authoringContext.StyleDiff.flexShrink, authoringContext, targetElement);
                 case StylePropertyId.FlexWrap:
-                    return Update(in id, diff.flexWrap, diff, targetElement);
+                    return Update(in id, authoringContext.StyleDiff.flexWrap, authoringContext, targetElement);
                 case StylePropertyId.FontSize:
-                    return Update(in id, diff.fontSize, diff, targetElement);
+                    return Update(in id, authoringContext.StyleDiff.fontSize, authoringContext, targetElement);
                 case StylePropertyId.Height:
-                    return Update(in id, diff.height, diff, targetElement);
+                    return Update(in id, authoringContext.StyleDiff.height, authoringContext, targetElement);
                 case StylePropertyId.JustifyContent:
-                    return Update(in id, diff.justifyContent, diff, targetElement);
+                    return Update(in id, authoringContext.StyleDiff.justifyContent, authoringContext, targetElement);
                 case StylePropertyId.Left:
-                    return Update(in id, diff.left, diff, targetElement);
+                    return Update(in id, authoringContext.StyleDiff.left, authoringContext, targetElement);
                 case StylePropertyId.LetterSpacing:
-                    return Update(in id, diff.letterSpacing, diff, targetElement);
+                    return Update(in id, authoringContext.StyleDiff.letterSpacing, authoringContext, targetElement);
                 case StylePropertyId.MarginBottom:
-                    return Update(in id, diff.marginBottom, diff, targetElement);
+                    return Update(in id, authoringContext.StyleDiff.marginBottom, authoringContext, targetElement);
                 case StylePropertyId.MarginLeft:
-                    return Update(in id, diff.marginLeft, diff, targetElement);
+                    return Update(in id, authoringContext.StyleDiff.marginLeft, authoringContext, targetElement);
                 case StylePropertyId.MarginRight:
-                    return Update(in id, diff.marginRight, diff, targetElement);
+                    return Update(in id, authoringContext.StyleDiff.marginRight, authoringContext, targetElement);
                 case StylePropertyId.MarginTop:
-                    return Update(in id, diff.marginTop, diff, targetElement);
+                    return Update(in id, authoringContext.StyleDiff.marginTop, authoringContext, targetElement);
                 case StylePropertyId.MaxHeight:
-                    return Update(in id, diff.maxHeight, diff, targetElement);
+                    return Update(in id, authoringContext.StyleDiff.maxHeight, authoringContext, targetElement);
                 case StylePropertyId.MaxWidth:
-                    return Update(in id, diff.maxWidth, diff, targetElement);
+                    return Update(in id, authoringContext.StyleDiff.maxWidth, authoringContext, targetElement);
                 case StylePropertyId.MinHeight:
-                    return Update(in id, diff.minHeight, diff, targetElement);
+                    return Update(in id, authoringContext.StyleDiff.minHeight, authoringContext, targetElement);
                 case StylePropertyId.MinWidth:
-                    return Update(in id, diff.minWidth, diff, targetElement);
+                    return Update(in id, authoringContext.StyleDiff.minWidth, authoringContext, targetElement);
                 case StylePropertyId.Opacity:
-                    return Update(in id, diff.opacity, diff, targetElement);
+                    return Update(in id, authoringContext.StyleDiff.opacity, authoringContext, targetElement);
                 case StylePropertyId.Overflow:
-                    return Update(in id, diff.overflow, diff, targetElement);
+                    return Update(in id, authoringContext.StyleDiff.overflow, authoringContext, targetElement);
                 case StylePropertyId.PaddingBottom:
-                    return Update(in id, diff.paddingBottom, diff, targetElement);
+                    return Update(in id, authoringContext.StyleDiff.paddingBottom, authoringContext, targetElement);
                 case StylePropertyId.PaddingLeft:
-                    return Update(in id, diff.paddingLeft, diff, targetElement);
+                    return Update(in id, authoringContext.StyleDiff.paddingLeft, authoringContext, targetElement);
                 case StylePropertyId.PaddingRight:
-                    return Update(in id, diff.paddingRight, diff, targetElement);
+                    return Update(in id, authoringContext.StyleDiff.paddingRight, authoringContext, targetElement);
                 case StylePropertyId.PaddingTop:
-                    return Update(in id, diff.paddingTop, diff, targetElement);
+                    return Update(in id, authoringContext.StyleDiff.paddingTop, authoringContext, targetElement);
                 case StylePropertyId.Position:
-                    return Update(in id, diff.position, diff, targetElement);
+                    return Update(in id, authoringContext.StyleDiff.position, authoringContext, targetElement);
                 case StylePropertyId.Right:
-                    return Update(in id, diff.right, diff, targetElement);
+                    return Update(in id, authoringContext.StyleDiff.right, authoringContext, targetElement);
                 case StylePropertyId.Rotate:
-                    return Update(in id, diff.rotate, diff, targetElement);
+                    return Update(in id, authoringContext.StyleDiff.rotate, authoringContext, targetElement);
                 case StylePropertyId.Scale:
-                    return Update(in id, diff.scale, diff, targetElement);
+                    return Update(in id, authoringContext.StyleDiff.scale, authoringContext, targetElement);
                 case StylePropertyId.TextOverflow:
-                    return Update(in id, diff.textOverflow, diff, targetElement);
+                    return Update(in id, authoringContext.StyleDiff.textOverflow, authoringContext, targetElement);
                 case StylePropertyId.TextShadow:
-                    return Update(in id, diff.textShadow, diff, targetElement);
+                    return Update(in id, authoringContext.StyleDiff.textShadow, authoringContext, targetElement);
                 case StylePropertyId.Top:
-                    return Update(in id, diff.top, diff, targetElement);
+                    return Update(in id, authoringContext.StyleDiff.top, authoringContext, targetElement);
                 case StylePropertyId.TransformOrigin:
-                    return Update(in id, diff.transformOrigin, diff, targetElement);
+                    return Update(in id, authoringContext.StyleDiff.transformOrigin, authoringContext, targetElement);
                 case StylePropertyId.TransitionDelay:
-                    return Update(in id, diff.transitionDelay, diff, targetElement);
+                    return Update(in id, authoringContext.StyleDiff.transitionDelay, authoringContext, targetElement);
                 case StylePropertyId.TransitionDuration:
-                    return Update(in id, diff.transitionDuration, diff, targetElement);
+                    return Update(in id, authoringContext.StyleDiff.transitionDuration, authoringContext, targetElement);
                 case StylePropertyId.TransitionProperty:
-                    return Update(in id, diff.transitionProperty, diff, targetElement);
+                    return Update(in id, authoringContext.StyleDiff.transitionProperty, authoringContext, targetElement);
                 case StylePropertyId.TransitionTimingFunction:
-                    return Update(in id, diff.transitionTimingFunction, diff, targetElement);
+                    return Update(in id, authoringContext.StyleDiff.transitionTimingFunction, authoringContext, targetElement);
                 case StylePropertyId.Translate:
-                    return Update(in id, diff.translate, diff, targetElement);
+                    return Update(in id, authoringContext.StyleDiff.translate, authoringContext, targetElement);
                 case StylePropertyId.UnityBackgroundImageTintColor:
-                    return Update(in id, diff.unityBackgroundImageTintColor, diff, targetElement);
+                    return Update(in id, authoringContext.StyleDiff.unityBackgroundImageTintColor, authoringContext, targetElement);
                 case StylePropertyId.UnityEditorTextRenderingMode:
-                    return Update(in id, diff.unityEditorTextRenderingMode, diff, targetElement);
+                    return Update(in id, authoringContext.StyleDiff.unityEditorTextRenderingMode, authoringContext, targetElement);
                 case StylePropertyId.UnityFont:
-                    return Update(in id, diff.unityFont, diff, targetElement);
+                    return Update(in id, authoringContext.StyleDiff.unityFont, authoringContext, targetElement);
                 case StylePropertyId.UnityFontDefinition:
-                    return Update(in id, diff.unityFontDefinition, diff, targetElement);
+                    return Update(in id, authoringContext.StyleDiff.unityFontDefinition, authoringContext, targetElement);
                 case StylePropertyId.UnityFontStyleAndWeight:
-                    return Update(in id, diff.unityFontStyleAndWeight, diff, targetElement);
+                    return Update(in id, authoringContext.StyleDiff.unityFontStyleAndWeight, authoringContext, targetElement);
                 case StylePropertyId.UnityMaterial:
-                    return Update(in id, diff.unityMaterial, diff, targetElement);
+                    return Update(in id, authoringContext.StyleDiff.unityMaterial, authoringContext, targetElement);
                 case StylePropertyId.UnityOverflowClipBox:
-                    return Update(in id, diff.unityOverflowClipBox, diff, targetElement);
+                    return Update(in id, authoringContext.StyleDiff.unityOverflowClipBox, authoringContext, targetElement);
                 case StylePropertyId.UnityParagraphSpacing:
-                    return Update(in id, diff.unityParagraphSpacing, diff, targetElement);
+                    return Update(in id, authoringContext.StyleDiff.unityParagraphSpacing, authoringContext, targetElement);
                 case StylePropertyId.UnitySliceBottom:
-                    return Update(in id, diff.unitySliceBottom, diff, targetElement);
+                    return Update(in id, authoringContext.StyleDiff.unitySliceBottom, authoringContext, targetElement);
                 case StylePropertyId.UnitySliceLeft:
-                    return Update(in id, diff.unitySliceLeft, diff, targetElement);
+                    return Update(in id, authoringContext.StyleDiff.unitySliceLeft, authoringContext, targetElement);
                 case StylePropertyId.UnitySliceRight:
-                    return Update(in id, diff.unitySliceRight, diff, targetElement);
+                    return Update(in id, authoringContext.StyleDiff.unitySliceRight, authoringContext, targetElement);
                 case StylePropertyId.UnitySliceScale:
-                    return Update(in id, diff.unitySliceScale, diff, targetElement);
+                    return Update(in id, authoringContext.StyleDiff.unitySliceScale, authoringContext, targetElement);
                 case StylePropertyId.UnitySliceTop:
-                    return Update(in id, diff.unitySliceTop, diff, targetElement);
+                    return Update(in id, authoringContext.StyleDiff.unitySliceTop, authoringContext, targetElement);
                 case StylePropertyId.UnitySliceType:
-                    return Update(in id, diff.unitySliceType, diff, targetElement);
+                    return Update(in id, authoringContext.StyleDiff.unitySliceType, authoringContext, targetElement);
                 case StylePropertyId.UnityTextAlign:
-                    return Update(in id, diff.unityTextAlign, diff, targetElement);
+                    return Update(in id, authoringContext.StyleDiff.unityTextAlign, authoringContext, targetElement);
                 case StylePropertyId.UnityTextAutoSize:
-                    return Update(in id, diff.unityTextAutoSize, diff, targetElement);
+                    return Update(in id, authoringContext.StyleDiff.unityTextAutoSize, authoringContext, targetElement);
                 case StylePropertyId.UnityTextGenerator:
-                    return Update(in id, diff.unityTextGenerator, diff, targetElement);
+                    return Update(in id, authoringContext.StyleDiff.unityTextGenerator, authoringContext, targetElement);
                 case StylePropertyId.UnityTextOutlineColor:
-                    return Update(in id, diff.unityTextOutlineColor, diff, targetElement);
+                    return Update(in id, authoringContext.StyleDiff.unityTextOutlineColor, authoringContext, targetElement);
                 case StylePropertyId.UnityTextOutlineWidth:
-                    return Update(in id, diff.unityTextOutlineWidth, diff, targetElement);
+                    return Update(in id, authoringContext.StyleDiff.unityTextOutlineWidth, authoringContext, targetElement);
                 case StylePropertyId.UnityTextOverflowPosition:
-                    return Update(in id, diff.unityTextOverflowPosition, diff, targetElement);
+                    return Update(in id, authoringContext.StyleDiff.unityTextOverflowPosition, authoringContext, targetElement);
                 case StylePropertyId.Visibility:
-                    return Update(in id, diff.visibility, diff, targetElement);
+                    return Update(in id, authoringContext.StyleDiff.visibility, authoringContext, targetElement);
                 case StylePropertyId.WhiteSpace:
-                    return Update(in id, diff.whiteSpace, diff, targetElement);
+                    return Update(in id, authoringContext.StyleDiff.whiteSpace, authoringContext, targetElement);
                 case StylePropertyId.Width:
-                    return Update(in id, diff.width, diff, targetElement);
+                    return Update(in id, authoringContext.StyleDiff.width, authoringContext, targetElement);
                 case StylePropertyId.WordSpacing:
-                    return Update(in id, diff.wordSpacing, diff, targetElement);
+                    return Update(in id, authoringContext.StyleDiff.wordSpacing, authoringContext, targetElement);
                 default:
                     return new BindingResult(BindingStatus.Failure, GetUnsupportedPropertyId(propertyId));
             }

@@ -263,7 +263,7 @@ namespace UnityEditor
         {
             if (m_Selection.Count == m_LineRenderer.positionCount)
             {
-                return new Vector3[0];
+                return System.Array.Empty<Vector3>();
             }
 
             Vector3[] positions = new Vector3[m_LineRenderer.positionCount];

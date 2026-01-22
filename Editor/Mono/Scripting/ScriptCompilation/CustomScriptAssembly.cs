@@ -184,16 +184,14 @@ namespace UnityEditor.Scripting.ScriptCompilation
 
             public void UpdateLegacyData()
             {
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                if (optionalUnityReferences != null && optionalUnityReferences.Any())
-#pragma warning restore RS0030
+                if (optionalUnityReferences?.Length > 0)
                 {
                     autoReferenced = false;
                     overrideReferences = true;
 
-                    references = references ?? new string[0];
-                    precompiledReferences = precompiledReferences ?? new string[0];
-                    defineConstraints = defineConstraints ?? new string[0];
+                    references = references ?? Array.Empty<string>();
+                    precompiledReferences = precompiledReferences ?? Array.Empty<string>();
+                    defineConstraints = defineConstraints ?? Array.Empty<string>();
 
                     AddTo(ref references, "UnityEngine.TestRunner", "UnityEditor.TestRunner");
                     AddTo(ref precompiledReferences, "nunit.framework.dll");
@@ -337,9 +335,9 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 if(extensionModule != null)
                 {
                     var extraScriptAssemblyPlatforms = extensionModule.GetExtraScriptAssemblyPlatforms(buildTargetList[i].buildTargetPlatformVal);
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable RS0031 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     if (extraScriptAssemblyPlatforms != null && extraScriptAssemblyPlatforms.Any())
-#pragma warning restore RS0030
+#pragma warning restore RS0031
                     {
                         foreach(var extraPlatform in extraScriptAssemblyPlatforms)
                         {
@@ -389,7 +387,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
             return true;
         }
 
-        public bool IsCompatibleWith(BuildTarget buildTarget, int subTarget, EditorScriptCompilationOptions options, string[] defines)
+        public bool IsCompatibleWith(BuildTarget buildTarget, int subTarget, EditorScriptCompilationOptions options, EditorBuildRules.SymbolDefinitionContext symbolDefinitionContext)
         {
             bool buildingForEditor = (options & EditorScriptCompilationOptions.BuildingForEditor) == EditorScriptCompilationOptions.BuildingForEditor;
 
@@ -405,9 +403,9 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 return false;
             }
 
-            if (defines != null && defines.Length == 0)
+            if (symbolDefinitionContext.IsEmpty())
             {
-                throw new ArgumentException("Defines cannot be empty", nameof(defines));
+                throw new ArgumentException("Defines cannot be empty", nameof(symbolDefinitionContext));
             }
 
             // Log invalid define constraints
@@ -421,12 +419,8 @@ namespace UnityEditor.Scripting.ScriptCompilation
                     }
                 }
             }
-            var allDefines = ResponseFileDefines != null ?
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                (defines != null ? defines.Concat(ResponseFileDefines) : ResponseFileDefines)
-#pragma warning restore RS0030
-                : defines;
-            if (!DefineConstraintsHelper.IsDefineConstraintsCompatible_Enumerable(allDefines, DefineConstraints))
+            symbolDefinitionContext.SetResponseFileDefines(ResponseFileDefines);
+            if (!DefineConstraintsHelper.IsDefineConstraintsCompatibleContext(symbolDefinitionContext, DefineConstraints))
             {
                 return false;
             }
@@ -480,8 +474,8 @@ namespace UnityEditor.Scripting.ScriptCompilation
             customScriptAssembly.RootNamespace = name ?? string.Empty;
             customScriptAssembly.FilePath = modifiedDirectory;
             customScriptAssembly.PathPrefix = modifiedDirectory;
-            customScriptAssembly.References = new string[0];
-            customScriptAssembly.PrecompiledReferences = new string[0];
+            customScriptAssembly.References = Array.Empty<string>();
+            customScriptAssembly.PrecompiledReferences = Array.Empty<string>();
             customScriptAssembly.CompilerOptions = new ScriptCompilerOptions();
             customScriptAssembly.AutoReferenced = true;
 
@@ -506,9 +500,9 @@ namespace UnityEditor.Scripting.ScriptCompilation
             customScriptAssembly.AutoReferenced = customScriptAssemblyData.autoReferenced;
             customScriptAssembly.OverrideReferences = customScriptAssemblyData.overrideReferences;
             customScriptAssembly.NoEngineReferences = customScriptAssemblyData.noEngineReferences;
-            customScriptAssembly.PrecompiledReferences = customScriptAssemblyData.precompiledReferences ?? new string[0];
-            customScriptAssembly.DefineConstraints = customScriptAssemblyData.defineConstraints ?? new string[0];
-            customScriptAssembly.VersionDefines = (customScriptAssemblyData.versionDefines ?? new VersionDefine[0]);
+            customScriptAssembly.PrecompiledReferences = customScriptAssemblyData.precompiledReferences ?? Array.Empty<string>();
+            customScriptAssembly.DefineConstraints = customScriptAssemblyData.defineConstraints ?? Array.Empty<string>();
+            customScriptAssembly.VersionDefines = (customScriptAssemblyData.versionDefines ?? Array.Empty<VersionDefine>());
 
             if (customScriptAssemblyData.includePlatforms != null && customScriptAssemblyData.includePlatforms.Length > 0)
                 customScriptAssembly.IncludePlatforms = GetPlatformsFromNames(customScriptAssemblyData.includePlatforms);

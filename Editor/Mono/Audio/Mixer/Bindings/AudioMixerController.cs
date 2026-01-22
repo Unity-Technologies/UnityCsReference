@@ -500,9 +500,7 @@ namespace UnityEditor.Audio
                 var childGroupsToRemove = filteredGroups.Intersect(group.children).ToArray();
 #pragma warning restore RS0030
 
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                if (childGroupsToRemove.Any())
-#pragma warning restore RS0030
+                if (childGroupsToRemove.Length > 0)
                 {
                     Undo.RecordObject(group, "Detach Group Children");
 #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
@@ -861,8 +859,10 @@ namespace UnityEditor.Audio
             {
                 // Check if any groups in the selection is part of current groups child list
 #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable RS0031 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 if (g.children.Intersect(selection).Any())
 #pragma warning restore RS0030
+#pragma warning restore RS0031
                 {
                     Undo.RecordObject(g, string.Empty); // empty string will use undo name above
                     var modifiedChildList = new List<AudioMixerGroupController>(g.children);

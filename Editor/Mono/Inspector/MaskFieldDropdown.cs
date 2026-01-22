@@ -491,7 +491,7 @@ namespace UnityEditor
         internal static void GetSelected(int maskValue, out uint[] selected, int size)
         {
             if (maskValue == 0)
-                selected = new uint[0];
+                selected = Array.Empty<uint>();
             else if (maskValue == int.MaxValue)
 #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 selected = Enumerable.Range(1, size).Select(i => (uint)i).ToArray();

@@ -179,10 +179,14 @@ namespace Unity.GraphToolkit.Editor
 
         protected void OnSetVisible()
         {
+            if (EditableTitlePart == null)
+                return;
+
             // We just changed the node to be visible. We need one more frame of layout to get the editableTitlePart to be visible.
             schedule.Execute(() =>
             {
                 var editableTitlePart = EditableTitlePart;
+
                 if (m_ShouldRename && editableTitlePart != null && editableTitlePart.Root.visible)
                 {
                     // The editable title is now visible. If the node needs to be renamed, the rename is activated here.

@@ -1018,6 +1018,7 @@ namespace UnityEngine.UIElements
                 if (SetStyleValue(StylePropertyId.UnityFont, value))
                 {
                     ve.IncrementVersion(VersionChangeType.Styles | VersionChangeType.StyleSheet | VersionChangeType.Layout | VersionChangeType.Repaint);
+                    (ve as TextElement)?.RefreshCachedFontAsset();
                 }
             }
         }
@@ -1034,6 +1035,7 @@ namespace UnityEngine.UIElements
                 if (SetStyleValue(StylePropertyId.UnityFontDefinition, value))
                 {
                     ve.IncrementVersion(VersionChangeType.Styles | VersionChangeType.StyleSheet | VersionChangeType.Layout | VersionChangeType.Repaint);
+                    (ve as TextElement)?.RefreshCachedFontAsset();
                 }
             }
         }

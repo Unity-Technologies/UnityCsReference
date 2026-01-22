@@ -17,7 +17,7 @@ namespace UnityEngine.Bindings
     [VisibleToOtherModules]
     internal interface ICollectionMarshallingAccessor<T>
     {
-        public void Resize(int newSize);
+        public void CollectionChanged(int newSize);
         public void SetNull();
         public void SetEmpty();
         public int Length { get; }
@@ -87,18 +87,11 @@ namespace UnityEngine.Bindings
             ///Collection is null
             /// </summary>
             Null = 7,
-        }
-
-        [Flags]
-        enum MarshalledArrayOptions : int
-        {
-            None = 0,
 
             /// <summary>
-            /// Marshal only the size of the collection - the collection should be "empty" in native
-            /// It will either be zero filled or have default constructed entries
+            ///Collection is only marshalled out
             /// </summary>
-            EmptyCollectionWithSizeFlag = 1,
+            Out = 8,
         }
 
         internal void* data;
@@ -110,7 +103,6 @@ namespace UnityEngine.Bindings
         internal int capacity;
 
         internal DataOwner dataOwner;
-        private MarshalledArrayOptions options = MarshalledArrayOptions.None;
 
         private MarshalledArray(void* data, int size, int capacity, DataOwner dataOwner)
         {
@@ -128,10 +120,24 @@ namespace UnityEngine.Bindings
             return new Span<TNative>(data, size);
         }
 
-        public void MarkAsEmptyCollectionWithSize<T, TAccessor>(in TAccessor accessor) where TAccessor:ICollectionMarshallingAccessor<T>
+        public void MarkAsOutMarshalledWithCapacity<T, TAccessor>(in TAccessor accessor) where TAccessor:ICollectionMarshallingAccessor<T>
         {
-            size = accessor.IsNull ? 0 : accessor.Length;
-            options |= MarshalledArrayOptions.EmptyCollectionWithSizeFlag;
+            // We assume that if we have data, it is a pinned buffer
+            // Otherwise reseting the dataOwner to Null/Out would lose track of the pinned buffer
+            Debug.Assert(data == null || dataOwner == DataOwner.PinnedBuffer);
+
+            if (accessor.IsNull)
+            {
+                dataOwner = DataOwner.Null;
+            }
+            else
+            {
+                // Why are we setting size to accessor.Capacity and not using this.capacity?
+                // The marshalling code may have already set data and capacity to a pinned/stackalloc'd buffer and we want to keep that untouched
+                // so the out marshaller can use that buffer.  But this.size is free so we use that.
+                size = accessor.Capacity;
+                dataOwner = DataOwner.Out;
+            }
         }
 
         public static MarshalledArray CreateFromPinnedAccessor<T, TAccessor>(in TAccessor accessor, void* data) where TAccessor:ICollectionMarshallingAccessor<T>
@@ -223,11 +229,11 @@ namespace UnityEngine.Bindings
                     break;
                 case DataOwner.PinnedBufferSizeChanged:
                 case DataOwner.ExternallyOwned:
-                    collectionAccessor.Resize(size);
+                    collectionAccessor.CollectionChanged(size);
                     new ReadOnlySpan<TBlittable>(data, size).CopyTo(collectionAccessor.AsSpan());
                     break;
                 case DataOwner.NativeOwnedMemory:
-                    collectionAccessor.Resize(size);
+                    collectionAccessor.CollectionChanged(size);
                     new ReadOnlySpan<TBlittable>(BindingsAllocator.GetNativeOwnedDataPointer(data), size).CopyTo(collectionAccessor.AsSpan());
                     break;
                 case DataOwner.Empty:
@@ -256,10 +262,10 @@ namespace UnityEngine.Bindings
                 case DataOwner.TempAllocatedCleanupRequired:
                 case DataOwner.PinnedBufferSizeChanged:
                 case DataOwner.ExternallyOwned:
-                    collectionAccessor.Resize(size);
+                    collectionAccessor.CollectionChanged(size);
                     return new Span<TNative>(data, size);
                 case DataOwner.NativeOwnedMemory:
-                    collectionAccessor.Resize(size);
+                    collectionAccessor.CollectionChanged(size);
                     return new Span<TNative>(BindingsAllocator.GetNativeOwnedDataPointer(data), size);
                 case DataOwner.Empty:
                     collectionAccessor.SetEmpty();

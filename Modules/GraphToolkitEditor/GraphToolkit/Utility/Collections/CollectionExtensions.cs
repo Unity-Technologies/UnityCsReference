@@ -134,7 +134,6 @@ namespace Unity.GraphToolkit
             return false;
         }
 
-
         /// <summary>
         /// Checks if at least one element from the IEnumerable <paramref name="source"/> matches the predicate <paramref name="predicate"/>.
         /// </summary>
@@ -162,6 +161,28 @@ namespace Unity.GraphToolkit
                 }
             }
             return false;
+        }
+
+        /// <summary>
+        /// Returns the first element of the IReadOnlyList <paramref name="source"/> that matches the predicate <paramref name="predicate"/>.
+        /// </summary>
+        /// <typeparam name="T">The type of the elements contained in the list.</typeparam>
+        /// <param name="source">The list to check.</param>
+        /// <param name="predicate">The predicate to use.</param>
+        /// <returns>The first element that matches the predicate.</returns>
+        /// <exception cref="InvalidOperationException">Thrown if no matching element is found.</exception>
+        public static T First<T>(this IReadOnlyList<T> source, Func<T, bool> predicate)
+        {
+            if (source.Count == 0)
+                throw new InvalidOperationException("The source sequence is empty.");
+
+            foreach (var element in source)
+            {
+                if (predicate(element))
+                    return element;
+            }
+
+            throw new InvalidOperationException("No matching element found.");
         }
 
         public static List<T> OfTypeToList<T, T2>(this IEnumerable<T2> list)

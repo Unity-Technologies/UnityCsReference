@@ -30,9 +30,7 @@ namespace UnityEditor.UIElements
         /// <param name="tbe">The element that is part of the menu to be displayed.</param>
         public static void ShowMenu(this IToolbarMenuElement tbe)
         {
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            if (tbe == null || !tbe.menu.MenuItems().Any())
-#pragma warning restore RS0030
+            if (tbe == null || tbe.menu.MenuItems().Count == 0)
                 return;
 
             var ve = tbe as VisualElement;

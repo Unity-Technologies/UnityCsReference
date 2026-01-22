@@ -12,28 +12,29 @@ namespace UnityEditor.UIElements
         static LiveReloadTrackerCreator()
         {
             UIDocument.CreateLiveReloadVisualTreeAssetTracker = CreateVisualTreeAssetTrackerInstance;
+            PanelRenderer.CreateLiveReloadVisualTreeAssetTracker = CreateVisualTreeAssetTrackerInstance;
 
             DefaultEditorWindowBackend.SetupLiveReloadPanelTrackers = PanelSettings.SetupLiveReloadPanelTrackers;
         }
 
-        internal static ILiveReloadAssetTracker<VisualTreeAsset> CreateVisualTreeAssetTrackerInstance(UIDocument owner)
+        internal static ILiveReloadAssetTracker<VisualTreeAsset> CreateVisualTreeAssetTrackerInstance(IPanelComponent owner)
         {
-            return new UIDocumentVisualTreeAssetTracker(owner);
+            return new PanelComponentVisualTreeAssetTracker(owner);
         }
     }
 
-    internal class UIDocumentVisualTreeAssetTracker : BaseLiveReloadVisualTreeAssetTracker
+    internal class PanelComponentVisualTreeAssetTracker : BaseLiveReloadVisualTreeAssetTracker 
     {
-        private UIDocument m_Owner;
+        IPanelComponent m_Owner;
 
-        public UIDocumentVisualTreeAssetTracker(UIDocument owner)
+        public PanelComponentVisualTreeAssetTracker(IPanelComponent owner)
         {
             m_Owner = owner;
         }
 
         internal override void OnVisualTreeAssetChanged()
         {
-            if (m_Owner.rootVisualElement != null)
+            if (m_Owner != null)
             {
                 m_Owner.HandleLiveReload();
             }

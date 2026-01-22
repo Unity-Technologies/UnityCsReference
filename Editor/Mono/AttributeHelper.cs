@@ -200,7 +200,7 @@ namespace UnityEditor
                     continue;
 
                 var behaviourType = behaviour.GetType();
-                if (behaviourType.GetCustomAttributes(typeof(T), true).Length > 0)
+                if (behaviourType.IsDefined(typeof(T), true))
                     return true;
             }
             return false;
@@ -244,8 +244,8 @@ namespace UnityEditor
             List<MethodInfo> validSignatures = new List<MethodInfo>();
             foreach (var signature in attributeType.GetMethods(BindingFlags.NonPublic | BindingFlags.Static | BindingFlags.Instance | BindingFlags.DeclaredOnly))
             {
-                var requiredSignatureAttributes = signature.GetCustomAttributes(typeof(RequiredSignatureAttribute), false);
-                if (requiredSignatureAttributes.Length > 0)
+                var requiredSignatureAttributes = signature.IsDefined(typeof(RequiredSignatureAttribute), false);
+                if (requiredSignatureAttributes)
                 {
                     if (AreSignaturesMatching(method, signature))
                     {

@@ -406,7 +406,7 @@ namespace UnityEngine.UIElements
             AddRootVisualElementToTree();
         }
 
-        internal static Func<UIDocument, ILiveReloadAssetTracker<VisualTreeAsset>> CreateLiveReloadVisualTreeAssetTracker;
+        internal static Func<IPanelComponent, ILiveReloadAssetTracker<VisualTreeAsset>> CreateLiveReloadVisualTreeAssetTracker;
         private ILiveReloadAssetTracker<VisualTreeAsset> m_LiveReloadVisualTreeAssetTracker;
 
 
@@ -1046,12 +1046,12 @@ namespace UnityEngine.UIElements
                 m_PanelSettings.panel.liveReloadSystem.RegisterVisualTreeAssetTracker(m_LiveReloadVisualTreeAssetTracker, m_RootVisualElement);
         }
 
-        internal void OnLiveReloadOptionChanged()
+        void IPanelComponent.OnLiveReloadOptionChanged()
         {
             // We not only have to recreate ourselves but also our children (and their children).
             ClearChildrenRecursively();
 
-            HandleLiveReload();
+            ((IPanelComponent)this).HandleLiveReload();
         }
 
         private void ClearChildrenRecursively()
@@ -1074,8 +1074,11 @@ namespace UnityEngine.UIElements
             }
         }
 
-        internal void HandleLiveReload()
+        void IPanelComponent.HandleLiveReload()
         {
+            if (rootVisualElement == null)
+                return;
+
             var disabledCompanions = DisableCompanions();
 
             RecreateUI();

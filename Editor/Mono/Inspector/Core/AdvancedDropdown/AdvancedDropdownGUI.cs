@@ -92,9 +92,7 @@ namespace UnityEditor.IMGUI.Controls
                 return;
 
             lastContentImage = content.image;
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            if (m_DataSource.selectedIDs.Any() && m_DataSource.selectedIDs.Contains(item.id))
-#pragma warning restore RS0030
+            if (m_DataSource.selectedIDs.Count > 0 && m_DataSource.selectedIDs.Contains(item.id))
             {
                 var checkMarkRect = new Rect(rect);
                 checkMarkRect.width = iconSize.x + 1;

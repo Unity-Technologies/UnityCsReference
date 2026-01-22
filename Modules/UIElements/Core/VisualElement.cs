@@ -277,7 +277,11 @@ namespace UnityEngine.UIElements
             [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags bindings_UxmlAttributeFlags;
             #pragma warning restore 649
 
-            internal string nameValue => name;
+            internal string nameValue
+            {
+                [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
+                get => name;
+            }
 
             [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
             internal bool HasBindingInternal(string property)
@@ -668,13 +672,11 @@ namespace UnityEngine.UIElements
                 if ((renderHints & RenderHints.DynamicPostProcessing) != 0)
                     return true;
 
-                var filter = resolvedStyle.filter as List<FilterFunction>;
-                if (filter == null)
-                    throw new ArgumentException("resolvedStyle.filter is not a List<FilterFunction>");
+                var computedFilter = computedStyle.filter;
 
-                for (int i = 0; i < filter.Count; i++)
+                for (int i = 0; i < computedFilter.Length; i++)
                 {
-                    var def = filter[i].GetDefinition();
+                    var def = ((FilterFunction)computedFilter[i]).GetDefinition();
                     if (def == null)
                         continue;
 
@@ -2645,7 +2647,10 @@ namespace UnityEngine.UIElements
         void FinalizeLayout(VersionChangeType changes)
         {
             if ((changes & VersionChangeType.Layout) != 0)
+            {
                 layoutNode.MarkDirty();
+                (this as TextElement)?.RefreshCachedFontAsset();
+            }
         }
 
         internal void SetInlineRule(StyleSheet sheet, StyleRule rule)
@@ -2790,6 +2795,36 @@ namespace UnityEngine.UIElements
 
             m_ClassList.Add(className);
             IncrementVersion(VersionChangeType.StyleSheet);
+        }
+
+        /// <summary>
+        /// Adds multiple classes to the class list of the element in order to assign styles from USS. Note the class names are case-sensitive.
+        /// </summary>
+        /// <param name="classNames">The names of the classes to add to the list.</param>
+        public void AddToClassList(params string[] classNames)
+        {
+            if (classNames.Length == 0)
+                return;
+
+            if (m_ClassList == s_EmptyClassList)
+                m_ClassList = StringObjectListPool.Get();
+
+            // Reserve capacity assuming all class names are new.
+            if (m_ClassList.Capacity < m_ClassList.Count + classNames.Length)
+                m_ClassList.Capacity = m_ClassList.Count + classNames.Length;
+
+            var didAddAny = false;
+            foreach (var className in classNames)
+            {
+                if (m_ClassList.Contains(className))
+                    continue;
+
+                m_ClassList.Add(className);
+                didAddAny = true;
+            }
+
+            if (didAddAny)
+                IncrementVersion(VersionChangeType.StyleSheet);
         }
 
         /// <summary>

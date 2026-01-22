@@ -47,5 +47,19 @@ namespace UnityEngine.Bindings
 
             return GCHandle.FromIntPtr(handle);
         }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void Free(IntPtr handle)
+        {
+            if (handle != IntPtr.Zero)
+                GCHandle.FromIntPtr(handle).Free();
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static T ResolveSafe<T>(IntPtr handle)
+        {
+            if (handle == IntPtr.Zero) return default;
+            return (T)GCHandle.FromIntPtr(handle).Target;
+        }
     }
 }

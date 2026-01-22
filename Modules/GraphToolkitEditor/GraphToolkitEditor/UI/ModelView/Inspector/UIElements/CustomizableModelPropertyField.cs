@@ -213,7 +213,12 @@ namespace Unity.GraphToolkit.Editor
 
             #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             bool isDelayed = attributes?.FirstOrDefault(t => t is DelayedAttribute) != null;
-#pragma warning restore RS0030
+            #pragma warning restore RS0030
+            //if (typeof(IList).IsAssignableFrom(type))
+            //{
+            //    var listField = new ListPropertyField(type);
+            //    SetupList(listField);
+            //}
 
             if (type == typeof(long))
             {
@@ -222,7 +227,23 @@ namespace Unity.GraphToolkit.Editor
 
             if (type == typeof(int))
             {
-                Setup(new IntegerField { isDelayed = isDelayed }, fieldTooltip);
+                var intField = new IntegerField { isDelayed = isDelayed };
+                Setup(intField, fieldTooltip);
+
+                if (attributes != null && attributes.HasAny(t => t is RangeAttribute))
+                {
+                    RangeAttribute rangeAttribute = attributes.First(t => t is RangeAttribute) as RangeAttribute;
+                    var minValueAttribute = rangeAttribute.min;
+                    var maxValueAttribute = rangeAttribute.max;
+
+                    intField.RegisterValueChangedCallback(evt =>
+                    {
+                        if (evt.newValue < minValueAttribute)
+                            intField.value = (int)minValueAttribute;
+                        else if (evt.newValue > maxValueAttribute)
+                            intField.value = (int)maxValueAttribute;
+                    });
+                }
             }
 
             if (type == typeof(bool))
@@ -344,8 +365,20 @@ namespace Unity.GraphToolkit.Editor
                     var field = new EnumField(defaultValue);
                     Setup(field, fieldTooltip);
 
-                    m_ValueToDisplay = v => ((EnumValueReference)v).ValueAsEnum();
-                    m_ValueFromDisplay = v => new EnumValueReference((Enum)v);
+                    m_ValueToDisplay = v =>
+                    {
+                        if (typeof(EnumValueReference).IsAssignableFrom(v.GetType()))
+                            return ((EnumValueReference)v).ValueAsEnum();
+                        // Enums in collections are not wrapped in EnumValueReference
+                        return v;
+                    };
+                    m_ValueFromDisplay = v =>
+                    {
+                        if (typeof(EnumValueReference).IsAssignableFrom(v.GetType()))
+                            return new EnumValueReference((Enum)v);
+                        // Enums in collections are not wrapped in EnumValueReference
+                        return v;
+                    };
                     DisplayFieldValueType = typeof(Enum);
                 }
             }

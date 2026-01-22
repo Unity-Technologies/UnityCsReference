@@ -795,12 +795,10 @@ namespace UnityEditor
                 if (m_ToolNameToType.TryGetValue(toolName, out var existingToolType))
                 {
                     // if this tool is a builtin tool
-                    #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                    if (klass.Assembly.GetCustomAttributes(typeof(AssemblyIsEditorAssembly), false).Any())
-#pragma warning restore RS0030
+                    if (klass.Assembly.IsDefined(typeof(AssemblyIsEditorAssembly), false))
                         continue;
                     // if existing tool is an override
-                    if (existingToolType.Assembly.GetCustomAttributes(typeof(AssemblyIsEditorAssembly), false).Length == 0)
+                    if (!existingToolType.Assembly.IsDefined(typeof(AssemblyIsEditorAssembly), false))
                     {
                         Debug.LogWarning($"A TerrainTool override already exists for ${toolName}. Check to make sure there are not multiple tools that return the same tool name in your project. Skipping tool loading for now.");
                         continue;
@@ -809,11 +807,9 @@ namespace UnityEditor
 
                 if (m_ToolsMap.TryGetValue(toolName, out var existingTool))
                 {
-                    #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                    if (klass.Assembly.GetCustomAttributes(typeof(AssemblyIsEditorAssembly), false).Any()) continue;
-#pragma warning restore RS0030
+                    if (klass.Assembly.IsDefined(typeof(AssemblyIsEditorAssembly), false)) continue;
 
-                    if (existingTool.GetType().Assembly.GetCustomAttributes(typeof(AssemblyIsEditorAssembly), false).Length == 0)
+                    if (!existingTool.GetType().Assembly.IsDefined(typeof(AssemblyIsEditorAssembly), false))
                     {
                         Debug.LogWarning($"A TerrainTools override already exists for {toolName}. Check to make sure there are not multiple tools with the same tool name in your project. This specific tool will not be loaded.");
                         continue;

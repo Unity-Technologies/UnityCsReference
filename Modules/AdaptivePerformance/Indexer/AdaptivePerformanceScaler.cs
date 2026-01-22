@@ -191,6 +191,16 @@ namespace UnityEngine.AdaptivePerformance
         public int CpuImpact { get; internal set; }
 
         int m_OverrideLevel = -1;
+        /// <summary>
+        /// Default settings for this scaler.
+        /// </summary>
+        public AdaptivePerformanceScalerSettingsBase DefaultSetting
+        {
+            get => m_defaultSetting;
+            set => m_defaultSetting = value;
+        }
+
+        [SerializeField]
         AdaptivePerformanceScalerSettingsBase m_defaultSetting = new AdaptivePerformanceScalerSettingsBase();
 
         /// <summary>
@@ -258,24 +268,45 @@ namespace UnityEngine.AdaptivePerformance
             m_Indexer = Holder.Instance.Indexer;
         }
 
+        internal void InitializeScaler()
+        {
+            if (Holder.Instance == null)
+                return;
+
+            m_Settings =  Holder.Instance.Settings;
+            m_Indexer = Holder.Instance.Indexer;
+            EnableScaler();
+        }
+
         private void OnEnable()
+        {
+            EnableScaler();
+        }
+
+        internal void EnableScaler()
         {
             if (m_Indexer == null)
                 return;
-
             m_Indexer.AddScaler(this);
             AdaptivePerformanceAnalytics.RegisterFeature(Name, Enabled);
             AdaptivePerformanceAnalytics.SendAdaptiveFeatureUpdateEvent(Name, Enabled);
             OnEnabled();
         }
 
-        private void OnDisable()
+        internal void RemoveScaler()
         {
             if (m_Indexer == null)
                 return;
 
-            m_Indexer.RemoveScaler(this);
-            OnDisabled();
+            if (m_Indexer.RemoveScaler(this))
+            {
+                OnDisabled();
+            }
+        }
+
+        private void OnDisable()
+        {
+            RemoveScaler();
         }
 
         internal void IncreaseLevel()

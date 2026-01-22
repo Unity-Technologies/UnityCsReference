@@ -149,9 +149,8 @@ namespace UnityEditor.Build.Profile
             else
             {
                 m_AddSettingsButton.Hide();
-                var button = root.Q<Button>(k_SharedSettingsInfoHelpboxButton);
-                button.text = TrText.addBuildProfile;
-                button.clicked += () => PlatformDiscoveryWindow.ShowWindowAndSelectPlatform(profile.platformGuid);
+                sharedSettingsInfoHelpBox.buttonText = TrText.addBuildProfile;
+                sharedSettingsInfoHelpBox.onButtonClicked += () => PlatformDiscoveryWindow.ShowWindowAndSelectPlatform(profile.platformGuid);
             }
 
             if (hasErrors)
@@ -195,15 +194,18 @@ namespace UnityEditor.Build.Profile
             visualTree.CloneTree(root);
             root.styleSheets.Add(windowUss);
 
+            // Note: HelpBox now includes a built-in button (UISD-514)
+            // The button only appears when configured via code. Since we don't configure it here,
+            // it won't be visible - no manual hiding required. So we don't do it below this line
+            var sharedSettingsHelpbox = root.Q<HelpBox>(k_SharedSettingsInfoHelpbox);
+
             root.Q<HelpBox>(k_PlatformWarningHelpBox).Hide();
             root.Q<VisualElement>(k_PlatformSettingsBaseRoot).Hide();
             root.Q<HelpBox>(k_VirtualTextureWarningHelpBox).Hide();
             root.Q<HelpBox>(k_CompilingWarningHelpBox).Hide();
-            root.Q<Button>(k_SharedSettingsInfoHelpboxButton).Hide();
             root.Q<Foldout>(k_BuildSettingsFoldout).Hide();
             root.Q<Button>(k_AddSettingsButton).Hide();
 
-            var sharedSettingsHelpbox = root.Q<HelpBox>(k_SharedSettingsInfoHelpbox);
             sharedSettingsHelpbox.text = TrText.sharedSettingsSectionInfo;
 
             var sectionLabel = root.Q<Label>(k_GlobalSceneLabel);

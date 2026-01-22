@@ -25,7 +25,7 @@ namespace UnityEditor.IMGUI.Controls
         }
 
         [SerializeField]
-        private AdvancedDropdownItemState[] states = new AdvancedDropdownItemState[0];
+        private AdvancedDropdownItemState[] states = Array.Empty<AdvancedDropdownItemState>();
         private AdvancedDropdownItemState m_LastSelectedState;
 
         private AdvancedDropdownItemState GetStateForItem(AdvancedDropdownItem item)
@@ -126,8 +126,10 @@ namespace UnityEditor.IMGUI.Controls
         {
             var index = GetSelectedIndex(item);
 #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable RS0031 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             if (!item.children.Any() || index < 0 || index >= item.children.Count())
 #pragma warning restore RS0030
+#pragma warning restore RS0031
                 return null;
 #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return item.children.ElementAt(index);

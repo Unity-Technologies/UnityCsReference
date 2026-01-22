@@ -235,8 +235,8 @@ namespace Unity.UI.Builder
                 if (t.IsGenericType)
                     continue;
 
-                var attributes = t.GetCustomAttributes(typeof(UxmlObjectAttribute), false);
-                if (attributes.Length == 0)
+                var attributes = t.IsDefined(typeof(UxmlObjectAttribute), false);
+                if (attributes == false)
                     continue;
 
                 // Probably need to do some mapping to a Uxml type name.

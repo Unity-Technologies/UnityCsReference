@@ -130,9 +130,10 @@ namespace UnityEditor.Snap
                 ApplyCustomPosition(evt.newValue);
                 m_IgnoreGridChangeCallback = false;
             });
-          
+            
             m_GridRotation = rootVisualElement.Q<Vector3Field>("GridRotationField");
-            m_GridRotation.value = GetSmartRoundedVec(gridSettings.rotation.eulerAngles);
+            RefreshGridRotationField();
+            
             m_GridRotation.tooltip = L10n.Tr("The rotation of the Scene View grid in world space.");
             m_GridRotation.RegisterValueChangedCallback(evt =>
             {
@@ -152,10 +153,9 @@ namespace UnityEditor.Snap
 
                     var transform = Selection.activeGameObject.transform;
                     EditorSnapSettings.gridPosition = transform.position;
-                  
-                    EditorSnapSettings.gridRotation = transform.rotation;
-                    var eulerAngles = GetSmartRoundedVec(transform.rotation.eulerAngles);
-                    m_GridRotation.SetValueWithoutNotify(eulerAngles);
+                    
+                    gridSettings.SampleTransformRotation(transform);
+                    m_GridRotation.SetValueWithoutNotify(GetEulerRotationFromTransform(transform));
                     
                     SceneView.RepaintAll();
                 }
@@ -168,6 +168,7 @@ namespace UnityEditor.Snap
             m_ApplyLastCustomButton.clicked += () =>
             {
                 gridSettings.ActivateMode(GridMode.Custom);
+                RefreshGridRotationField();
                 SceneView.RepaintAll();
             };
 
@@ -339,6 +340,21 @@ namespace UnityEditor.Snap
                 m_ResetWorldButton.SetEnabled(true); 
             }
         }
+
+        void RefreshGridRotationField()
+        {
+            var gridSettings = GridSettings.instance;
+            
+            var lastSampledTransform = GridSettings.lastRotationSampleTransform;
+            if (lastSampledTransform != null && lastSampledTransform.parent == null &&
+                lastSampledTransform.rotation.Equals(EditorSnapSettings.gridRotation))
+            {
+                var rotationOrder = (RotationOrder)lastSampledTransform.GetRotationOrderInternal();
+                m_GridRotation.SetValueWithoutNotify(lastSampledTransform.GetLocalEulerAngles(rotationOrder));
+            }
+            else
+                m_GridRotation.SetValueWithoutNotify(GetSmartRoundedVec(gridSettings.rotation.eulerAngles));
+        }
         
         void OnSelectionChanged()
         {
@@ -346,6 +362,20 @@ namespace UnityEditor.Snap
                 m_CopyFromActiveButton.SetEnabled(false);
             else
                 m_CopyFromActiveButton.SetEnabled(Selection.activeGameObject != null);
+        }
+
+        Vector3 GetEulerRotationFromTransform(Transform transform)
+        {
+            Vector3 rotationEuler;
+            if (transform.parent != null)
+                rotationEuler = GetSmartRoundedVec(transform.rotation.eulerAngles);
+            else
+            {
+                var rotationOrder = (RotationOrder)transform.GetRotationOrderInternal();
+                rotationEuler = transform.GetLocalEulerAngles(rotationOrder);
+            }
+
+            return rotationEuler;
         }
         
         Vector3 GetSmartRoundedVec(Vector3 vector)

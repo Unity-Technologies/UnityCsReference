@@ -33,7 +33,7 @@ namespace UnityEditor.Build.Reporting
     ///<code source="../Tests/BuildReporting/Assets/Editor/ReferenceExamples/PackedAssets.cs"/>
     ///</example>
     ///<seealso cref="Build.Reporting.PackedAssetInfo" />
-    [NativeType(Header = "Modules/BuildReportingEditor/Public/PackedAssets.h")]
+    [NativeHeader("Modules/BuildReportingEditor/Public/PackedAssets.h")]
     [NativeClass("BuildReporting::PackedAssets")]
     public sealed class PackedAssets : Object
     {

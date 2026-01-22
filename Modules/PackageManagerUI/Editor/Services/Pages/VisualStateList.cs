@@ -29,14 +29,12 @@ namespace UnityEditor.PackageManager.UI.Internal
         protected Dictionary<string, int> m_UniqueIdToIndexLookup = new();
 
         #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-        public VisualStateList() : this(Enumerable.Empty<string>()) {}
+        public VisualStateList() : this(Array.Empty<string>()) {}
 #pragma warning restore RS0030
 
         public VisualStateList(IEnumerable<string> packageUniqueIds)
         {
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            Rebuild(packageUniqueIds ?? Enumerable.Empty<string>());
-#pragma warning restore RS0030
+            Rebuild(packageUniqueIds ?? Array.Empty<string>());
         }
 
         [ExcludeFromCodeCoverage]

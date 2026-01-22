@@ -288,8 +288,8 @@ namespace Unity.Hierarchy
         /// <param name="textValues">List of textual values.</param>
         public HierarchySearchQueryDescriptor(HierarchySearchFilter[] filters = null, string[] textValues = null)
         {
-            filters = filters ?? new HierarchySearchFilter[0];
-            textValues = textValues ?? new string[0];
+            filters = filters ?? Array.Empty<HierarchySearchFilter>();
+            textValues = textValues ?? Array.Empty<string>();
             Filters = Where(filters, f => !s_SystemFilters.Contains(f.Name));
             SystemFilters = Where(filters, f => s_SystemFilters.Contains(f.Name));
             TextValues = textValues;

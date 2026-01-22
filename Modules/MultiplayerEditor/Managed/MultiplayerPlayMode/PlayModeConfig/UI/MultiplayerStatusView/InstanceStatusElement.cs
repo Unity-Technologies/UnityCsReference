@@ -88,12 +88,13 @@ internal class InstanceStatusElement : VisualElement
 
     static Texture2D GetIconTextureForInstance(Instance instance)
     {
-        var instanceDescription = instance.GetInstanceDescription();
+        // var instanceDescription = instance.GetInstanceDescription();
         Texture2D iconTexture = null;
-        if (instanceDescription is EditorInstanceDescription)
+        var controller = instance.Controller;
+        if (controller is MainEditorController || controller is CloneEditorController)
             iconTexture = EditorGUIUtility.FindTexture("UnityLogo");
-        else if (instanceDescription is LocalInstanceDescription localInstanceDescription)
-            iconTexture = InternalUtilities.GetBuildProfileTypeIcon(localInstanceDescription.BuildProfile);
+        else if (controller is LocalPlayerController localPlayerController)
+            iconTexture = InternalUtilities.GetBuildProfileTypeIcon(localPlayerController.Settings.BuildProfile);
         return iconTexture;
     }
 

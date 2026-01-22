@@ -570,9 +570,7 @@ namespace UnityEditor.Search.Providers
         {
             if (options.HasAny(SearchPropositionFlags.QueryBuilder))
                 return FetchQueryBuilderPropositions(context, options);
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            return Enumerable.Empty<SearchProposition>();
-#pragma warning restore RS0030
+            return Array.Empty<SearchProposition>();
         }
 
         protected virtual IEnumerable<SearchProposition> FetchQueryBuilderPropositions(SearchContext context, SearchPropositionOptions options)

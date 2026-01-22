@@ -8,7 +8,7 @@ using UnityEngine.Bindings;
 namespace UnityEditor.Build.Reporting
 {
     ///<summary>Contains information about which scenes in a build have references to an Asset in the build.</summary>
-    [NativeType(Header = "Modules/BuildReportingEditor/Public/ScenesUsingAssets.h")]
+    [NativeHeader("Modules/BuildReportingEditor/Public/ScenesUsingAssets.h")]
     public struct ScenesUsingAsset
     {
         ///<summary>The asset path.</summary>

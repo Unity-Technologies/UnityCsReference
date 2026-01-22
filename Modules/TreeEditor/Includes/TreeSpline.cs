@@ -2,8 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 using UnityEditor;
 
@@ -13,7 +11,7 @@ namespace TreeEditor
     public class TreeSpline
     {
         // members
-        public SplineNode[] nodes = new SplineNode[0];
+        public SplineNode[] nodes = System.Array.Empty<SplineNode>();
         public float tension = 0.5f; // 0.0f = linear, 0.5f = catmull-rom spline, 1.0f = over shoot
 
         public TreeSpline()
@@ -32,7 +30,7 @@ namespace TreeEditor
 
         public void Reset()
         {
-            nodes = new SplineNode[0];
+            nodes = System.Array.Empty<SplineNode>();
         }
 
         public int GetNodeCount()

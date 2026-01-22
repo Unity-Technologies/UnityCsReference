@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using UnityEditor;
+using UnityEditor.SceneManagement;
 using UnityEditor.Search;
 using UnityEditor.UIElements;
 using UnityEngine;
@@ -47,14 +48,33 @@ namespace Unity.UIToolkit.Editor
 
         // Cache for sorted and filtered library types per category
         static readonly Dictionary<string, List<LibraryTypeKey>> s_CachedTypesByCategory = new();
-        static int s_CachedTypesHash;
         static List<LibraryTypeKey> s_SortedTypes;
+        const string k_MenuPath = "Window/UI Toolkit/UI Library";
+        static int s_CachedTypesHash;
+        const int k_MenuPriority = 3030;
 
-        // [MenuItem("Window/Search/UI Elements", priority = 1270)]
+        [InitializeOnLoadMethod]
+        static void Initialize()
+        {
+            UIToolkitAuthoringSettings.UIStagesChanged += OnUIStagesChanged;
+            EditorApplication.delayCall += () => OnUIStagesChanged(UIToolkitAuthoringSettings.EnableUIStages);
+        }
+
+        static void OnUIStagesChanged(bool enabled)
+        {
+            if (enabled)
+            {
+                Menu.AddMenuItem(k_MenuPath, "", false, k_MenuPriority, OpenUIElementsPicker, null);
+                return;
+            }
+
+            Menu.RemoveMenuItem(k_MenuPath);
+        }
+
         internal static void OpenUIElementsPicker()
         {
             var searchContext = SearchService.CreateContext(CreateUIElementsProviders(), string.Empty);
-            var state = SearchViewState.CreatePickerState("UI Library", searchContext, OnElementSelected);
+            var state = SearchViewState.CreatePickerState("UI Library", searchContext, null);
             state.excludeClearItem = true;
             state.windowTitle = new GUIContent("UI Library");
 
@@ -79,7 +99,8 @@ namespace Unity.UIToolkit.Editor
                     startDrag = StartElementDrag,
                     toObject = ToObject,
                     showDetails = true,
-                    showDetailsOptions = ShowDetailsOptions.Preview | ShowDetailsOptions.Actions,
+                    showDetailsOptions = ShowDetailsOptions.Preview,
+                    actions = [CreateAddElementAction(config.id)]
                 };
             }
         }
@@ -124,7 +145,6 @@ namespace Unity.UIToolkit.Editor
                 // Store the library item for drag-and-drop
                 DragAndDrop.PrepareStartDrag();
                 DragAndDrop.SetGenericData("LibraryItem", libItem);
-
                 DragAndDrop.StartDrag(libItem.name);
             }
         }
@@ -242,8 +262,45 @@ namespace Unity.UIToolkit.Editor
             return filtered;
         }
 
-        static void OnElementSelected(SearchItem item, bool canceled)
+        static SearchAction CreateAddElementAction(string providerId)
         {
+            var action = new SearchAction(
+                providerId,
+                "add-to-visual-tree-asset" ,
+                new GUIContent("Add Element"),
+                AddElementToVisualTreeAsset
+            );
+
+            // Keep the window open after adding an element
+            action.closeWindowAfterExecution = false;
+            return action;
+        }
+
+        static void AddElementToVisualTreeAsset(SearchItem item)
+        {
+            if (item.data is not LibraryItem libItem)
+                return;
+
+            if (StageUtility.GetCurrentStage() is not VisualElementEditingStage stage)
+                return;
+
+            var selectedElement = (Selection.activeObject as VisualElementSelection)?.Element;
+            var parentVea = selectedElement?.visualElementAsset ?? stage.EditedVisualTreeAsset.visualTree;
+
+            if (selectedElement != null)
+            {
+                var editFlags = stage.Context.GetElementEditFlags(selectedElement);
+                if (editFlags != VisualElementEditFlags.FullyEditable)
+                {
+                    parentVea = stage.EditedVisualTreeAsset.visualTree;
+                }
+            }
+
+            var elementType = libItem.libraryType.type;
+            var command = new AddElementCommand(elementType, stage.EditedVisualTreeAsset, parentVea);
+            command.Execute();
+
+            stage.RequestRefresh();
         }
     }
 }

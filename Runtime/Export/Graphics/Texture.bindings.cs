@@ -56,6 +56,8 @@ namespace UnityEngine
 
         extern virtual public bool isReadable { get; }
 
+        extern virtual internal bool isReadableRaw { [NativeName("GetIsReadableRaw")] get; }
+
         extern internal bool allowReadingInEditor { get; set; }
 
         // Note: getter for "wrapMode" returns the U mode on purpose

@@ -638,15 +638,26 @@ namespace UnityEditor.Search
 
             SearchAnalytics.SendEvent(viewState.sessionId, SearchAnalytics.GenericEventType.QuickSearchShowActionMenu, item.provider.id);
             var menu = new GenericMenu();
+            PopulateItemContextualMenu(this, item, menu);
+
+            if (contextualActionPosition == default)
+                menu.ShowAsContext();
+            else
+              menu.DropDown(contextualActionPosition);
+        }
+
+        // This is made intentionally static so we can test it with a custom searchView in unit tests.
+        internal static void PopulateItemContextualMenu(ISearchView searchView, SearchItem item, GenericMenu menu)
+        {
             var shortcutIndex = 0;
 
             #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            var useSelection = context?.selection?.Any(e => string.Equals(e.id, item.id, StringComparison.OrdinalIgnoreCase)) ?? false;
-#pragma warning restore RS0030
-            var currentSelection = useSelection ? context.selection : new SearchSelection(new[] { item });
+            var useSelection = searchView.context?.selection?.Any(e => string.Equals(e.id, item.id, StringComparison.OrdinalIgnoreCase)) ?? false;
+            #pragma warning restore RS0030
+            var currentSelection = useSelection ? searchView.context.selection : new SearchSelection(new[] { item });
             #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             foreach (var action in item.provider.actions.Where(a => a.enabled?.Invoke(currentSelection) ?? true))
-#pragma warning restore RS0030
+                #pragma warning restore RS0030
             {
                 var itemName = !string.IsNullOrWhiteSpace(action.content.text) ? action.content.text : action.content.tooltip;
                 if (shortcutIndex == 0)
@@ -655,8 +666,8 @@ namespace UnityEditor.Search
                     itemName += " _&enter";
 
                 #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                menu.AddItem(new GUIContent(itemName, action.content.image), false, () => ExecuteAction(action, currentSelection.ToArray()));
-#pragma warning restore RS0030
+                menu.AddItem(new GUIContent(itemName, action.content.image), false, () => searchView.ExecuteAction(action, currentSelection.ToArray(), true));
+                #pragma warning restore RS0030
                 ++shortcutIndex;
             }
 
@@ -665,11 +676,6 @@ namespace UnityEditor.Search
                 menu.AddItem(new GUIContent("Remove from Favorites"), false, () => SearchSettings.RemoveItemFavorite(item));
             else
                 menu.AddItem(new GUIContent("Add to Favorites"), false, () => SearchSettings.AddItemFavorite(item));
-
-            if (contextualActionPosition == default)
-                menu.ShowAsContext();
-            else
-              menu.DropDown(contextualActionPosition);
         }
 
         internal static SearchAction GetSelectAction(SearchSelection selection, IEnumerable<SearchItem> items)
@@ -708,7 +714,7 @@ namespace UnityEditor.Search
         void ISearchView.ExecuteSelection()
         {
             #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            ExecuteAction(GetDefaultAction(selection, selection), selection.ToArray(), endSearch: false);
+            ExecuteAction(GetDefaultAction(selection, selection), selection.ToArray(), endSearch: true);
 #pragma warning restore RS0030
         }
 
@@ -744,9 +750,12 @@ namespace UnityEditor.Search
                     action?.handler?.Invoke(item);
             }
 
-            var searchWindow = this.GetHostWindow() as SearchWindow;
-            if (searchWindow != null && endSearch && (action?.closeWindowAfterExecution ?? true) && !searchWindow.context.options.HasFlag(SearchFlags.Dockable))
-                searchWindow.CloseSearchWindow();
+            if (endSearch)
+            {
+                var searchWindow = this.GetHostWindow() as SearchWindow;
+                if (searchWindow != null && (action?.closeWindowAfterExecution ?? true) && searchWindow.CanCloseWindowOnAction())
+                    searchWindow.CloseSearchWindow();
+            }
         }
 
         private void SendSearchEvent(SearchItem item, SearchAction action = null)

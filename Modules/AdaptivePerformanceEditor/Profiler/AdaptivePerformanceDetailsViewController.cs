@@ -229,7 +229,7 @@ namespace UnityEditor.AdaptivePerformance
                     }
                 }
 
-                var returnVal = new AdaptivePerformanceProfilerStats.ScalerInfo[] {};
+                var returnVal = Array.Empty<AdaptivePerformanceProfilerStats.ScalerInfo>();
                 var scalerInfos = GetScalerFromProfilerStream(selectedFrameIndexInt32);
                 unsafe
                 {
@@ -292,7 +292,7 @@ namespace UnityEditor.AdaptivePerformance
         {
             using (var frameData = UnityEditorInternal.ProfilerDriver.GetRawFrameDataView(frame, 0))
             {
-                var returnVal = new AdaptivePerformanceProfilerStats.ScalerInfo[] {};
+                var returnVal = Array.Empty<AdaptivePerformanceProfilerStats.ScalerInfo>();
                 if (frameData != null)
                 {
                     var clientInfos =

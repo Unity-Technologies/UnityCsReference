@@ -36,6 +36,9 @@ class MSBuildCompilationBuildState
 
     public Task<BuildResultMessage> BuildAsync(bool restore, bool generateBinLog, string configuration, bool useNugetRestore)
     {
+        if (_compilerClient == null)
+            throw new InvalidOperationException("Compiler client is not initialized");
+
         ProgressId = Progress.Start("Compiling Scripts", "Starting Build", Progress.Options.None);
         System.Console.WriteLine($@"Building with configuration: {configuration}
                                         Generating Binlogs: {generateBinLog}");

@@ -7,7 +7,7 @@ using UnityEngine.Bindings;
 namespace UnityEditor.Build.Reporting
 {
     ///<summary>This class provides constant values for some of the common roles used by files in the build. The role of each file in the build is available in <see cref="BuildFile.role" />.</summary>
-    [NativeType(Header = "Modules/BuildReportingEditor/Public/CommonRoles.h")]
+    [NativeHeader("Modules/BuildReportingEditor/Public/CommonRoles.h")]
     public static class CommonRoles
     {
         ///<summary>The <see cref="BuildFile.role" /> value of a file that contains the packed content of a Scene.</summary>

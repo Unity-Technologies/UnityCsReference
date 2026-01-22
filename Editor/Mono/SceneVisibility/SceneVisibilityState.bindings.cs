@@ -13,7 +13,7 @@ using Object = UnityEngine.Object;
 namespace UnityEditor
 {
     [NativeClass(null)]
-    [NativeType(Header = "Editor/Src/SceneVisibility/SceneVisibilityState.h")]
+    [NativeHeader("Editor/Src/SceneVisibility/SceneVisibilityState.h")]
     [StaticAccessor("GetSceneVisibilityState()", StaticAccessorType.Dot)]
     [ExcludeFromObjectFactory]
     [ExcludeFromPreset]

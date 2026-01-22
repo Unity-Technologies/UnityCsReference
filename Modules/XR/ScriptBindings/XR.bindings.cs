@@ -25,14 +25,14 @@ namespace UnityEngine.XR
     [NativeHeader("Runtime/Interfaces/IVRDevice.h")]
     [NativeHeader("Runtime/GfxDevice/GfxDeviceTypes.h")]
     [NativeConditional("ENABLE_VR")]
-    public static class XRSettings
+    public static partial class XRSettings
     {
         extern public static bool enabled
         {
             [StaticAccessor("GetIVRDeviceScripting()", StaticAccessorType.ArrowWithDefaultReturnIfNull)]
             get;
 
-            [Obsolete("XRSettings.enabled{set;} is deprecated and should no longer be used. Instead, call Start() and Stop() on an XRDisplaySubystem instance.")]
+            [Obsolete("XRSettings.enabled{set;} is deprecated and should no longer be used. Instead, call Start() and Stop() on an XRDisplaySubsystem instance.", true)]
             set;
         }
 
@@ -96,15 +96,6 @@ namespace UnityEngine.XR
         [StaticAccessor("GetIVRDeviceScripting()", StaticAccessorType.ArrowWithDefaultReturnIfNull)]
         extern public static string loadedDeviceName { get; }
 
-        [Obsolete("XRSettings.LoadDeviceByName is deprecated and should no longer be used. Instead, use the SubsystemManager to load XR devices by querying subsystem descriptors to create and start the subsystems of your choice.")]
-        public static void LoadDeviceByName(string deviceName)
-        {
-            LoadDeviceByName(new string[] { deviceName });
-        }
-
-        [Obsolete("XRSettings.LoadDeviceByName is deprecated and should no longer be used. Instead, use the SubsystemManager to load XR devices by querying subsystem descriptors to create and start the subsystems of your choice.")]
-        extern public static void LoadDeviceByName(string[] prioritizedDeviceNameList);
-
         extern public static string[] supportedDevices { get; }
 
         public enum StereoRenderingMode
@@ -117,78 +108,5 @@ namespace UnityEngine.XR
 
         [StaticAccessor("GetIVRDeviceScripting()", StaticAccessorType.ArrowWithDefaultReturnIfNull)]
         extern public static StereoRenderingMode stereoRenderingMode { get; }
-    }
-
-    [Obsolete("This is obsolete, and should no longer be used. Please use InputTrackingModeFlags.")]
-    public enum TrackingSpaceType
-    {
-        Stationary,
-        RoomScale
-    }
-
-    [NativeConditional("ENABLE_VR")]
-    [Obsolete("UnityEngine.VRModule is deprecated and will be removed in a future version. Please use the APIs in the UnityEngine.XRModule instead")]
-    public static class XRDevice
-    {
-        [Obsolete("This is obsolete, and should no longer be used. Instead, find the active XRDisplaySubsystem and check that the running property is true (for details, see XRDevice.isPresent documentation).", true)]
-        public static bool isPresent { get {throw new NotSupportedException("XRDevice is Obsolete. Instead, find the active XRDisplaySubsystem and check to see if it is running.");} }
-
-
-        [NativeName("DeviceRefreshRate")]
-        [StaticAccessor("GetIVRDeviceSwapChain()", StaticAccessorType.ArrowWithDefaultReturnIfNull)]
-        extern public static float refreshRate { get; }
-
-        [StaticAccessor("GetIVRDeviceScripting()", StaticAccessorType.ArrowWithDefaultReturnIfNull)]
-        extern public static IntPtr GetNativePtr();
-
-        [StaticAccessor("GetIVRDevice()", StaticAccessorType.ArrowWithDefaultReturnIfNull)]
-        [Obsolete("This is obsolete, and should no longer be used.  Please use XRInputSubsystem.GetTrackingOriginMode.")]
-        extern public static TrackingSpaceType GetTrackingSpaceType();
-
-        [StaticAccessor("GetIVRDevice()", StaticAccessorType.ArrowWithDefaultReturnIfNull)]
-        [Obsolete("This is obsolete, and should no longer be used.  Please use XRInputSubsystem.TrySetTrackingOriginMode.")]
-        extern public static bool SetTrackingSpaceType(TrackingSpaceType trackingSpaceType);
-
-        [NativeName("DisableAutoVRCameraTracking")]
-        [StaticAccessor("GetIVRDevice()", StaticAccessorType.ArrowWithDefaultReturnIfNull)]
-        extern public static void DisableAutoXRCameraTracking([NotNull] Camera camera, bool disabled);
-
-        [NativeName("UpdateEyeTextureMSAASetting")]
-        [StaticAccessor("GetIVRDeviceScripting()", StaticAccessorType.ArrowWithDefaultReturnIfNull)]
-        extern public static void UpdateEyeTextureMSAASetting();
-
-        extern public static float fovZoomFactor
-        {
-            get;
-
-            [NativeName("SetProjectionZoomFactor")]
-            [StaticAccessor("GetIVRDeviceScripting()", StaticAccessorType.ArrowWithDefaultReturnIfNull)]
-            set;
-        }
-
-        public static event Action<string> deviceLoaded = null;
-
-        [RequiredByNativeCode]
-        private static void InvokeDeviceLoaded(string loadedDeviceName)
-        {
-            if (deviceLoaded != null)
-            {
-                deviceLoaded(loadedDeviceName);
-            }
-        }
-    }
-
-    [NativeConditional("ENABLE_VR")]
-    [Obsolete("UnityEngine.VRModule is deprecated and will be removed in a future version. Please use the APIs in the UnityEngine.XRModule instead")]
-    public static class XRStats
-    {
-        [StaticAccessor("GetIVRDeviceScripting()", StaticAccessorType.ArrowWithDefaultReturnIfNull)]
-        extern public static bool TryGetGPUTimeLastFrame(out float gpuTimeLastFrame);
-
-        [StaticAccessor("GetIVRDeviceScripting()", StaticAccessorType.ArrowWithDefaultReturnIfNull)]
-        extern public static bool TryGetDroppedFrameCount(out int droppedFrameCount);
-
-        [StaticAccessor("GetIVRDeviceScripting()", StaticAccessorType.ArrowWithDefaultReturnIfNull)]
-        extern public static bool TryGetFramePresentCount(out int framePresentCount);
     }
 }

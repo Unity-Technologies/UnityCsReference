@@ -1518,5 +1518,8 @@ namespace UnityEngine
         private static extern int RegisterNativesAndFree(IntPtr clazz, IntPtr natives, int n);
         [ThreadSafe]
         public static extern int UnregisterNatives(IntPtr clazz);
+
+        [ThreadSafe]
+        public static extern bool DumpReferenceTables();
     }
 }

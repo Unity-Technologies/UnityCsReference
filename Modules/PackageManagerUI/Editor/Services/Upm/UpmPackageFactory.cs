@@ -166,9 +166,9 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public void GeneratePackagesAndTriggerChangeEvent(IEnumerable<string> packageNames, PackagesChangedSource changedSource = PackagesChangedSource.Other)
         {
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable RS0031 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             if (packageNames?.Any() != true)
-#pragma warning restore RS0030
+#pragma warning restore RS0031
                 return;
 
             var updatedPackages = new List<IPackage>();
@@ -193,9 +193,9 @@ namespace UnityEditor.PackageManager.UI.Internal
                 else
                 {
                     var versionList = new UpmVersionList(packageData, tagsToExclude);
-                    #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable RS0031 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     if (!versionList.Any())
-#pragma warning restore RS0030
+#pragma warning restore RS0031
                     {
                         packagesToRemove.Add(packageName);
                         continue;
@@ -298,9 +298,9 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public void GeneratePackagesAndTriggerChangeEvent(IEnumerable<long> productIds)
         {
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable RS0031 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             if (productIds?.Any() != true)
-#pragma warning restore RS0030
+#pragma warning restore RS0031
                 return;
 
             var packagesChanged = new List<IPackage>();

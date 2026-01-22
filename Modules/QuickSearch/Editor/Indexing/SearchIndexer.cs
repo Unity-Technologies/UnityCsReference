@@ -482,9 +482,7 @@ namespace UnityEditor.Search
             }
             else
             {
-                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                results = SearchTerm(args.name, args.value, args.op, args.exclude, subset) ?? Enumerable.Empty<SearchResult>();
-#pragma warning restore RS0030
+                results = SearchTerm(args.name, args.value, args.op, args.exclude, subset) ?? Array.Empty<SearchResult>();
             }
 
             if (args.orSet != null)
@@ -703,9 +701,7 @@ namespace UnityEditor.Search
                     #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     context.AddSearchQueryErrors(parsedQuery.errors.Select(e => new SearchQueryError(e, context, provider)));
 #pragma warning restore RS0030
-                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                return Enumerable.Empty<SearchResult>();
-#pragma warning restore RS0030
+                return Array.Empty<SearchResult>();
             }
             m_DoFuzzyMatch = parsedQuery.HasToggle("fuzzy");
 

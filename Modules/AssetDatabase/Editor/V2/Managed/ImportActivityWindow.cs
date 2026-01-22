@@ -488,7 +488,7 @@ namespace UnityEditor
             m_Overview.importProcessAnalysis.container = m_Overview.importProcessAnalysis.treeView.CreateAndSetupIMGUIContainer();
             m_Overview.importProcessAnalysis.container.RegisterCallback<MouseUpEvent>(HandleProjectAnalysisRightClick);
 
-            // Summary 
+            // Summary
             m_Overview.SummaryView = new VisualElement();
             m_Overview.SummaryView.style.paddingLeft = kContentsLeftPadding;
             m_Overview.SummaryView.Add(m_Overview.overView);
@@ -505,9 +505,7 @@ namespace UnityEditor
             if (id - 1 < 0)
                 return;
 
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            var selectedItem = m_LongestDurationAssets.ElementAt(id - 1);
-#pragma warning restore RS0030
+            var selectedItem = m_LongestDurationAssets[id - 1];
             var selectedItemGUID = selectedItem.artifactInfo.artifactKey.guid;
             FocusOnSelectedItem(selectedItemGUID.ToString());
         }
@@ -517,9 +515,7 @@ namespace UnityEditor
             if (id - 1 < 0)
                 return;
 
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            var selectedItem = m_MostDependencyAssets.ElementAt(id - 1);
-#pragma warning restore RS0030
+            var selectedItem = m_MostDependencyAssets[id - 1];
             var selectedItemGUID = selectedItem.artifactInfo.artifactKey.guid;
             FocusOnSelectedItem(selectedItemGUID.ToString());
         }
@@ -529,9 +525,8 @@ namespace UnityEditor
             if (id - 1 < 0)
                 return;
 
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            var selectedItem = m_ProjectAnalysisResults.ElementAt(id - 1);
-#pragma warning restore RS0030
+            var selectedItem = m_ProjectAnalysisResults[id - 1];
+
             // File could not be found, so we log this
             // warning to the console on double click
             if (string.IsNullOrEmpty(selectedItem.itemDetails.filePath))
@@ -616,7 +611,7 @@ namespace UnityEditor
             contentLabel.style.maxHeight = 20;
             contentLabel.style.backgroundColor = new Color(0, 0, 0, 0); // Transparent background
             contentLabel.style.unityFontStyleAndWeight = FontStyle.Normal;
-            
+
             // Make the label selectable by enabling text selection
             contentLabel.selection.isSelectable = true;
 
@@ -716,7 +711,7 @@ namespace UnityEditor
             m_ItemContainers.timeStamp.container = CreateHeaderAndContentLabelContainer(windowPosition, "Timestamp", "", out m_ItemContainers.timeStamp.header, out m_ItemContainers.timeStamp.content);
             m_ItemContainers.duration.container = CreateHeaderAndContentLabelContainer(windowPosition, "Duration", "", out m_ItemContainers.duration.header, out m_ItemContainers.duration.content);
             m_ItemContainers.staticDependenciesID.container = CreateHeaderAndContentLabelContainer(windowPosition, "Static Dependencies ID", "", out m_ItemContainers.staticDependenciesID.header, out m_ItemContainers.staticDependenciesID.content);
-            m_ItemContainers.dependenciesID.container = CreateHeaderAndContentLabelContainer(windowPosition, "Dependencies ID", "", out m_ItemContainers.dependenciesID.header, out m_ItemContainers.dependenciesID.content);            
+            m_ItemContainers.dependenciesID.container = CreateHeaderAndContentLabelContainer(windowPosition, "Dependencies ID", "", out m_ItemContainers.dependenciesID.header, out m_ItemContainers.dependenciesID.content);
             m_ItemContainers.importResultOutputID.container = CreateHeaderAndContentLabelContainer(windowPosition, "Import Result Output ID", "", out m_ItemContainers.importResultOutputID.header, out m_ItemContainers.importResultOutputID.content);
             m_ItemContainers.importResultID.container = CreateHeaderAndContentLabelContainer(windowPosition, "Import Result ID", "", out m_ItemContainers.importResultID.header, out m_ItemContainers.importResultID.content);
 
@@ -755,7 +750,7 @@ namespace UnityEditor
             m_ItemContainers.SelectedItemView.Add(m_ItemContainers.path.container);
             m_ItemContainers.SelectedItemView.Add(m_ItemContainers.editorRevision.container);
             m_ItemContainers.SelectedItemView.Add(m_ItemContainers.timeStamp.container);
-            m_ItemContainers.SelectedItemView.Add(m_ItemContainers.duration.container);                        
+            m_ItemContainers.SelectedItemView.Add(m_ItemContainers.duration.container);
             m_ItemContainers.SelectedItemView.Add(m_ItemContainers.staticDependenciesID.container);
             m_ItemContainers.SelectedItemView.Add(m_ItemContainers.dependenciesID.container);
             m_ItemContainers.SelectedItemView.Add(m_ItemContainers.importResultOutputID.container);
@@ -911,8 +906,18 @@ namespace UnityEditor
                 if (entry.storage == ArtifactInfoProducedFiles.kStorageInline)
                     continue;
 
-                var fullPath = Path.GetFullPath(entry.libraryPath);
-                EditorUtility.RevealInFinder(fullPath);
+                if (UDS.UsingFullBackend())
+                {
+                    const string kUDSTempFolder = "Temp/UDS";
+                    Directory.CreateDirectory(kUDSTempFolder);
+                    var tempPath = Path.Combine(kUDSTempFolder, Path.GetFileName(entry.libraryPath));
+                    FileUtil.CopyFileOrDirectory(entry.libraryPath, tempPath);
+                    EditorUtility.RevealInFinder(tempPath);
+                }
+                else
+                {
+                    EditorUtility.RevealInFinder(entry.libraryPath);
+                }
             }
         }
 
@@ -2134,20 +2139,20 @@ namespace UnityEditor
             }
 
             m_ItemContainers.duration.content.text = importDuration;
-            
+
             // Populate the new ID fields with custom tooltips
             m_ItemContainers.importResultID.content.text = artifactInfo.importResultID;
             m_ItemContainers.importResultID.content.tooltip = "A unique identifier for an import result. This ID is generated as a hash of both the import's dependencies (inputs) and its resulting output. Unity's asset database uses it internally to track a specific import result.";
-            
+
             m_ItemContainers.dependenciesID.content.text = artifactInfo.dependenciesID.ToString();
             m_ItemContainers.dependenciesID.content.tooltip = "ID is a hash of all dependencies that affect this asset's import (input). This includes both static and dynamic dependencies.";
-            
+
             m_ItemContainers.staticDependenciesID.content.text = artifactInfo.staticDependenciesID.ToString();
             m_ItemContainers.staticDependenciesID.content.tooltip = "ID is a hash of static dependencies only. Static dependencies include importer settings, importer version, and other factors that are determined before import time. Dynamic dependencies are discovered during the import.";
-            
+
             m_ItemContainers.importResultOutputID.content.text = artifactInfo.importResultOutputID.ToString();
             m_ItemContainers.importResultOutputID.content.tooltip = "ID is a hash of the output of an import. This includes both meta data of the import result and the actual import artifacts generated during the import.";
-            
+
             var producedFiles = artifactInfo.producedFiles;
             string headerText;
             string contentText;
@@ -2173,9 +2178,20 @@ namespace UnityEditor
             {
                 if (curProducedFile.storage == ArtifactInfoProducedFiles.kStorageLibrary)
                 {
-                    var fullPath = Path.GetFullPath(curProducedFile.libraryPath);
-                    var fileInfo = new FileInfo(fullPath);
-                    totalSize += fileInfo.Length;
+                    if (UDS.UsingFullBackend())
+                    {
+                        var tempPath = FileUtil.GetUniqueTempPathInProject();
+                        FileUtil.CopyFileOrDirectory(curProducedFile.libraryPath, tempPath);
+                        var fileInfo = new FileInfo(tempPath);
+                        totalSize += fileInfo.Length;
+                        File.Delete(tempPath);
+                    }
+                    else
+                    {
+                        var fullPath = Path.GetFullPath(curProducedFile.libraryPath);
+                        var fileInfo = new FileInfo(fullPath);
+                        totalSize += fileInfo.Length;
+                    }
                 }
                 else
                 {
@@ -2698,7 +2714,7 @@ namespace UnityEditor
             internal List<T> m_ItemList;
             public event Action<int> SelectionChangedCallback;
             private bool m_SearchEnabled;
-            private IList<int> m_PrevSelectedIndices = new int[0];
+            private IList<int> m_PrevSelectedIndices = Array.Empty<int>();
             private int m_SelectedItem = -1;
             internal float minimumHeight => (m_SearchEnabled ? k_SearchFieldTotalHeight : 0) + 77f; // 80 is for the treeview with header and vertical scroll bar that can show both arrows and a dragger
             internal bool allowFullHeight { get; set; } = false;
@@ -2766,7 +2782,7 @@ namespace UnityEditor
 
             public void ClearPrevIndices()
             {
-                m_PrevSelectedIndices = new int[0];
+                m_PrevSelectedIndices = Array.Empty<int>();
             }
 
             protected override TreeViewItem BuildRoot()
@@ -2995,9 +3011,7 @@ namespace UnityEditor
             {
                 artifactInfoTreeViewItems.Add(new ArtifactInfoTreeViewItem()
                 {
-                    #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                    artifactInfo = revisions.ElementAt(i)
-#pragma warning restore RS0030
+                    artifactInfo = revisions[i]
                 });
             }
 

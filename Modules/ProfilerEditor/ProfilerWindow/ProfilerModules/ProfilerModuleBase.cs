@@ -60,7 +60,7 @@ namespace UnityEditorInternal.Profiling
 
         int maximumNumberOfChartCounters
         {
-            get => ProfilerChart.k_MaximumSeriesCount;
+            get => ChartModelBuilder.k_MaximumSeriesCount;
         }
 
         public virtual void DrawToolbar(Rect position) {}
@@ -87,13 +87,13 @@ namespace UnityEditorInternal.Profiling
 
             // Capture each chart counter's enabled state prior to assignment.
             Dictionary<ProfilerCounterData, bool> counterEnabledStates = null;
-            if (m_Chart != null)
+            if (ChartModelBuilder != null)
             {
                 counterEnabledStates = new Dictionary<ProfilerCounterData, bool>();
                 for (int i = 0; i < m_LegacyChartCounters.Count; ++i)
                 {
                     var counter = m_LegacyChartCounters[i];
-                    var enabled = m_Chart.m_Series[i].enabled;
+                    var enabled = ChartModelBuilder.Model.series[i].enabled;
                     counterEnabledStates.Add(counter, enabled);
                 }
             }
@@ -101,8 +101,8 @@ namespace UnityEditorInternal.Profiling
             m_LegacyChartCounters = chartCounters;
             m_LegacyDetailCounters = detailCounters;
             InternalUpdateBaseCountersAndAutoEnabledCategoryNames();
-            if (Chart != null)
-                RebuildChart();
+            if (ChartModelBuilder != null)
+                Rebuild();
 
             // Restore each chart counter's enabled state after assignment.
             if (counterEnabledStates != null && counterEnabledStates.Count > 0)
@@ -118,7 +118,7 @@ namespace UnityEditorInternal.Profiling
                         enabled = true;
                     }
 
-                    m_Chart.m_Series[i].enabled = enabled;
+                    ChartModelBuilder.Model.series[i].enabled = enabled;
                 }
             }
 
@@ -256,7 +256,7 @@ namespace UnityEditorInternal.Profiling
 
             SaveActiveState();
             orderIndex = orderIndex;
-            m_Chart.SetName(DisplayName, legacyPreferenceKey);
+            ChartModelBuilder.SetName(DisplayName);
         }
 
         // ProfilerModule (base class) does not publicly support changing the chart's counters - it expects it to remain constant. We can do this internally from ProfilerModuleBase as long as we also update the auto-enabled category names.

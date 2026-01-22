@@ -513,7 +513,7 @@ namespace UnityEditor
 
             m_ListArea.Init(rect, HierarchyType.Assets, new SearchFilter(), true, SearchService.SearchSessionOptions.Default);
             m_Enumerator = FindInAllAssets(m_SearchFilter);
-            m_Results = new EntityId[0];
+            m_Results = Array.Empty<EntityId>();
         }
 
         void Search()

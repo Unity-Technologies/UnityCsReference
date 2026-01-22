@@ -132,60 +132,63 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
                     });
                 }
 
-                if (descriptor.Fixer != null)
+                using (new EditorGUI.DisabledScope(m_ViewManager.HasPendingCategories()))
                 {
-                    GUI.enabled = Array.Exists(selectedIssues, i => !i.WasFixed);
-
-                    var content = string.IsNullOrEmpty(descriptor.FixerLabel) ? Contents.QuickFix : EditorGUIUtility.TrTempContent(descriptor.FixerLabel);
-                    DrawActionButton(GUI.enabled ? content : Contents.QuickFixDone, () =>
+                    if (descriptor.Fixer != null)
                     {
-                        foreach (var issue in selectedIssues)
+                        bool isFixed = Array.TrueForAll(selectedIssues, i => i.WasFixed);
+                        using (new EditorGUI.DisabledScope(isFixed))
                         {
-                            descriptor.Fix(issue, m_ViewManager.Report.SessionInfo);
+                            var content = string.IsNullOrEmpty(descriptor.FixerLabel) ? Contents.QuickFix : EditorGUIUtility.TrTempContent(descriptor.FixerLabel);
+                            DrawActionButton(isFixed ? Contents.QuickFixDone : content, () =>
+                            {
+                                foreach (var issue in selectedIssues)
+                                {
+                                    descriptor.Fix(issue, m_ViewManager.Report.SessionInfo);
+                                }
+
+                                m_ViewManager.OnSelectedIssuesQuickFixRequested?.Invoke(selectedIssues);
+                            });
                         }
+                    }
 
-                        m_ViewManager.OnSelectedIssuesQuickFixRequested?.Invoke(selectedIssues);
-                    });
-
-                    GUI.enabled = true;
-                }
-            }
-
-            if (selectedIssues.Length > 0)
-            {
-                if (issuesAreIgnored)
-                {
-                    DrawActionButton(selectedIssues.Length > 1 ? Contents.DisplayAll : Contents.Display, () =>
+                    if (selectedIssues.Length > 0)
                     {
-                        foreach (var t in selectedIssues)
+                        if (issuesAreIgnored)
                         {
-                            t.IsIgnored = false;
+                            DrawActionButton(selectedIssues.Length > 1 ? Contents.DisplayAll : Contents.Display, () =>
+                            {
+                                foreach (var t in selectedIssues)
+                                {
+                                    t.IsIgnored = false;
+                                }
+
+                                ProjectAuditorSettings.instance.Save();
+                                m_ViewManager.OnSelectedIssuesDisplayRequested?.Invoke(selectedIssues);
+
+                                m_Table.Clear();
+                                m_Table.AddIssues(m_Issues);
+                                m_Table.Reload();
+                            });
                         }
-
-                        ProjectAuditorSettings.instance.Save();
-                        m_ViewManager.OnSelectedIssuesDisplayRequested?.Invoke(selectedIssues);
-
-                        m_Table.Clear();
-                        m_Table.AddIssues(m_Issues);
-                        m_Table.Reload();
-                    });
-                }
-                else
-                {
-                    DrawActionButton(selectedIssues.Length > 1 ? Contents.IgnoreAll : Contents.Ignore, () =>
-                    {
-                        foreach (var t in selectedIssues)
+                        else
                         {
-                            t.IsIgnored = true;
+                            DrawActionButton(selectedIssues.Length > 1 ? Contents.IgnoreAll : Contents.Ignore, () =>
+                            {
+                                foreach (var t in selectedIssues)
+                                {
+                                    t.IsIgnored = true;
+                                }
+
+                                ProjectAuditorSettings.instance.Save();
+                                m_ViewManager.OnSelectedIssuesIgnoreRequested?.Invoke(selectedIssues);
+
+                                m_Table.Clear();
+                                m_Table.AddIssues(m_Issues);
+                                m_Table.Reload();
+                            });
                         }
-
-                        ProjectAuditorSettings.instance.Save();
-                        m_ViewManager.OnSelectedIssuesIgnoreRequested?.Invoke(selectedIssues);
-
-                        m_Table.Clear();
-                        m_Table.AddIssues(m_Issues);
-                        m_Table.Reload();
-                    });
+                    }
                 }
             }
 

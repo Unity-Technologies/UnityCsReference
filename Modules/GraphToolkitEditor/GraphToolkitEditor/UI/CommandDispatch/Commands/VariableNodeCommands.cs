@@ -108,7 +108,7 @@ namespace Unity.GraphToolkit.Editor
             using (var changeScope = graphModel.ChangeDescriptionScope)
             {
                 #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                foreach (var constantModel in command.ConstantNodeModels ?? Enumerable.Empty<ConstantNodeModel>())
+                foreach (var constantModel in command.ConstantNodeModels ?? Array.Empty<ConstantNodeModel>())
 #pragma warning restore RS0030
                 {
                     var declarationModel = graphModel.CreateGraphVariableDeclaration(
@@ -139,7 +139,7 @@ namespace Unity.GraphToolkit.Editor
                 }
 
                 #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                foreach (var variableModel in command.VariableNodeModels ?? Enumerable.Empty<VariableNodeModel>())
+                foreach (var variableModel in command.VariableNodeModels ?? Array.Empty<VariableNodeModel>())
 #pragma warning restore RS0030
                 {
                     if (graphModel.GetConstantType(variableModel.DataType) == null)

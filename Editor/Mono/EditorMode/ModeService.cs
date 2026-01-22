@@ -125,7 +125,7 @@ namespace UnityEditor
 
         public static string currentId => currentIndex == -1 || modes.Length == 0 ? k_DefaultModeId : modes[currentIndex].id;
         public static int currentIndex { get; private set; }
-        private static ModeEntry[] modes { get; set; } = new ModeEntry[0];
+        private static ModeEntry[] modes { get; set; } = Array.Empty<ModeEntry>();
         internal static bool hasSwitchableModes { get; private set; }
         private static bool initialModeChanged
         {

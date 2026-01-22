@@ -56,7 +56,7 @@ namespace Unity.Multiplayer.PlayMode.Editor
             };
 
         private static readonly HashSet<string> k_SupportedAuxiliaryViews =
-            new HashSet<string>()
+            new HashSet<string>(new[]
             {
                 "Unity.Multiplayer.PlayMode.Editor.TopView",
                 "UnityEditor.PopupWindow",
@@ -70,7 +70,7 @@ namespace Unity.Multiplayer.PlayMode.Editor
                 "UnityEditor.DeviceSimulation.SimulatorWindow",
                 "UnityEditor.Profiling.ProfilerModulesDropdownWindow",
                 "UnityEditor.Profiling.ModuleEditor.ModuleEditorWindow"
-            };
+            });
 
         // Determines if a given LayoutFlag's window panel view is supported in this unity project.
         // Ex: Netcode Entites packages may have not been included.

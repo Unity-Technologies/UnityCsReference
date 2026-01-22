@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
+using UnityEngine.Bindings;
 using UnityEngine.Pool;
 
 namespace UnityEngine.UIElements;
@@ -14,12 +15,19 @@ namespace UnityEngine.UIElements;
 /// Handles adding, removing, invoking, and disposing reference handlers.
 /// Handlers are stored as weak references to avoid memory leaks.
 /// </summary>
+[VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
 class VisualElementReferenceProvider : IDisposable
 {
     Dictionary<IVisualElementReferenceHandler, int> m_DeferredOperations;
     internal readonly List<GCHandle> m_VisualElementReferences = new();
     VisualElementAssetReferenceTable m_ReferenceTable;
     internal bool m_Invoking;
+
+    internal VisualElementAssetReferenceTable referenceTable
+    {
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
+        get => m_ReferenceTable;
+    }
 
     ~VisualElementReferenceProvider() => Dispose(false);
 

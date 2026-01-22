@@ -374,7 +374,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         public void PushToCheckUpdateStack(IEnumerable<long> productIds, bool forceCheckUpdate = false)
         {
             #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            foreach (var productId in productIds?.Reverse() ?? Enumerable.Empty<long>())
+            foreach (var productId in productIds?.Reverse() ?? Array.Empty<long>())
 #pragma warning restore RS0030
                 PushToCheckUpdateStack(productId, forceCheckUpdate);
         }

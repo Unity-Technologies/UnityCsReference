@@ -10,7 +10,7 @@ using Object = UnityEngine.Object;
 
 namespace UnityEditor.Presets
 {
-    [NativeType(Header = "Modules/PresetsEditor/Public/PresetType.h")]
+    [NativeHeader("Modules/PresetsEditor/Public/PresetType.h")]
     [StructLayout(LayoutKind.Sequential)]
     public struct PresetType : IEquatable<PresetType>
     {

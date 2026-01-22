@@ -15,6 +15,47 @@ namespace Unity.UIToolkit.Editor
     [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
     internal static class LibraryContent
     {
+        const string k_StandardElementsPath = "Standard Elements";
+        const string k_ProjectElementsPath = "Project Elements";
+
+        internal static readonly string[] k_BaseLibraryPaths = new[]
+        {
+            k_StandardElementsPath,
+            k_ProjectElementsPath
+        };
+
+        static readonly Dictionary<string, HashSet<string>> s_CategoriesByType = new()
+        {
+            ["Numeric Fields"] = new()
+            {
+                nameof(IntegerField),
+                nameof(FloatField),
+                nameof(LongField),
+                nameof(DoubleField)
+            }
+        };
+
+        /// <summary>
+        /// Unity core controls to display in "Standard Elements".
+        /// Only these controls will appear (unless they have subcategories defined in s_Categories).
+        /// </summary>
+        static readonly HashSet<string> s_StandardElementControls = new()
+        {
+            nameof(VisualElement),
+            nameof(ScrollView),
+            nameof(Image),
+            nameof(Label),
+            nameof(Button),
+            nameof(Toggle),
+            nameof(DropdownField),
+            nameof(TextField),
+            nameof(Slider),
+            nameof(IntegerField),
+            nameof(FloatField),
+            nameof(DoubleField),
+            nameof(LongField),
+        };
+
         static readonly Dictionary<LibraryTypeKey, LibraryItem> s_LibraryTypes = GenerateLibraryTypeFromSerializedDataTypes();
 
         static Dictionary<LibraryTypeKey, LibraryItem> GenerateLibraryTypeFromSerializedDataTypes()
@@ -26,8 +67,10 @@ namespace Unity.UIToolkit.Editor
                 if (!IsValidSerializedDataType(type))
                     continue;
 
-                var typeKey = new LibraryTypeKey(type.DeclaringType, key);
-                var typeItem = new LibraryItem(typeKey.name, typeKey);
+                var declaringType = type.DeclaringType;
+                var libraryPath = ResolveLibraryPath(declaringType);
+                var typeKey = new LibraryTypeKey(declaringType, key);
+                var typeItem = new LibraryItem(typeKey.name, typeKey, libraryPath);
                 dictionary.Add(typeKey, typeItem);
             }
 
@@ -83,6 +126,71 @@ namespace Unity.UIToolkit.Editor
         static bool IsValidSerializedDataType(Type type)
         {
             return typeof(VisualElement.UxmlSerializedData).IsAssignableFrom(type) || type.IsAbstract || type.IsGenericType;
+        }
+
+        /// <summary>
+        /// Resolves the library path for a type based on namespace and optional attribute.
+        /// </summary>
+        static string ResolveLibraryPath(Type type)
+        {
+            if (type == null)
+                return null;
+
+            var uxmlAttr = type.GetCustomAttribute<UxmlElementAttribute>();
+
+            // Check visibility setting
+            if (uxmlAttr != null && uxmlAttr.visibility == LibraryVisibility.Hidden)
+                return null;
+
+            // Removing editor controls - for now
+            if (type.Namespace != null && type.Namespace.StartsWith("UnityEditor."))
+                return null;
+
+            if (type.IsAbstract)
+                return null;
+
+            // Look for existing libraryPath value, this means they have opt-in for their control to appear in the menu.
+            if (!string.IsNullOrEmpty(uxmlAttr?.libraryPath))
+            {
+                // Check if it's a Unity control with explicit path
+                if (type.Namespace == "UnityEngine.UIElements")
+                {
+                    return $"{k_StandardElementsPath}/{uxmlAttr.libraryPath}";
+                }
+
+                // "Non-Core" controls
+                return $"{k_ProjectElementsPath}/{uxmlAttr.libraryPath}";
+            }
+
+            if (type.Namespace == "UnityEngine.UIElements")
+            {
+                if (!s_StandardElementControls.Contains(type.Name))
+                    return null;
+
+                var category= GetCategoryForType(type.Name);
+                return category != null ? $"{k_StandardElementsPath}/{category}" : k_StandardElementsPath;
+            }
+
+            return null;
+        }
+
+        static string GetCategoryForType(string typeName)
+        {
+            foreach (var (category, types) in s_CategoriesByType)
+            {
+                if (types.Contains(typeName))
+                    return category;
+            }
+
+            return null;
+        }
+
+        /// <summary>
+        /// Checks if a control is a container type that should appear at the top.
+        /// </summary>
+        internal static bool IsContainer(string typeName)
+        {
+            return typeName == nameof(VisualElement) || typeName == nameof(ScrollView);
         }
     }
 }

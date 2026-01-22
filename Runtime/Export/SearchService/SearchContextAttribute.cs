@@ -75,8 +75,8 @@ namespace UnityEngine.Search
         public SearchContextAttribute(string query, SearchViewFlags flags, string providerIdsCommaSeparated, params Type[] instantiableProviders)
         {
             this.query = query;
-            this.providerIds = providerIdsCommaSeparated?.Split(',', ';') ?? new string[0];
-            this.instantiableProviders = instantiableProviders ?? new Type[0];
+            this.providerIds = providerIdsCommaSeparated?.Split(',', ';') ?? Array.Empty<string>();
+            this.instantiableProviders = instantiableProviders ?? Array.Empty<Type>();
             this.flags = flags | SearchViewFlags.ObjectPicker;
         }
     }

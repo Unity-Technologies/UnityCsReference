@@ -46,7 +46,7 @@ namespace UnityEditor.UIElements.Debugger
         public void OnEnable()
         {
             m_VisualTrees = new List<VisualTreeDebug>();
-            m_Labels = new GUIContent[0];
+            m_Labels = Array.Empty<GUIContent>();
 
             m_TryAutoSelect = true;
         }

@@ -11,7 +11,7 @@ using UnityEngine.Scripting;
 namespace UnityEditor.VFX
 {
     [RequiredByNativeCode]
-    [NativeType(Header = "Modules/VFX/Public/VFXExpressionNoiseFunctions.h")]
+    [NativeHeader("Modules/VFX/Public/VFXExpressionNoiseFunctions.h")]
     [StaticAccessor("VFXExpressionNoiseFunctions", StaticAccessorType.DoubleColon)]
     internal class VFXExpressionNoise
     {

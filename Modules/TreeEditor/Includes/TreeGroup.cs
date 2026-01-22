@@ -93,11 +93,11 @@ namespace TreeEditor
         public int lockFlags = 0;
 
         // Child nodes.. indexed, needs TreeData to resolve reference
-        public int[] nodeIDs = new int[0];
+        public int[] nodeIDs = System.Array.Empty<int>();
 
         // Parent and child groups.. indexed, needs TreeData to resolve reference
         public int parentGroupID = -1;
-        public int[] childGroupIDs = new int[0];
+        public int[] childGroupIDs = System.Array.Empty<int>();
 
         //
         // Should only be accessed internally and from TreeData

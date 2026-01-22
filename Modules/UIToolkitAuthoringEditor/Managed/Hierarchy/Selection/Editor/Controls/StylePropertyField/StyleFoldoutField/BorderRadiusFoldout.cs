@@ -5,13 +5,12 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using Unity.Properties;
 using UnityEngine;
 using UnityEngine.UIElements;
 
 namespace Unity.UIToolkit.Editor
 {
-    internal sealed class BorderRadiusFoldout : StyleFoldoutField<TextField>, INotifyCompositeStylePropertyChanged<StyleLength>
+    internal sealed class BorderRadiusFoldout : StyleFoldoutField<TextField>
     {
         public static readonly string textUssClassName = FoldoutFieldPropertyName + "__textfield";
 
@@ -33,16 +32,6 @@ namespace Unity.UIToolkit.Editor
         const string k_BottomRightPropertyName = "borderBottomRightRadius";
         const string k_BottomLeftPropertyName = "borderBottomLeftRadius";
 
-        public static readonly BindingId topRightProperty = nameof(topRight);
-        public static readonly BindingId topLeftProperty = nameof(topLeft);
-        public static readonly BindingId bottomRightProperty = nameof(bottomRight);
-        public static readonly BindingId bottomLeftProperty = nameof(bottomLeft);
-
-        StyleLength m_TopLeft;
-        StyleLength m_TopRight;
-        StyleLength m_BottomLeft;
-        StyleLength m_BottomRight;
-
         public StyleLengthField topLeftField { get; }
         public StyleLengthField topRightField { get; }
         public StyleLengthField bottomRightField { get; }
@@ -59,69 +48,6 @@ namespace Unity.UIToolkit.Editor
         IntegerField m_DraggerField;
         public IntegerField draggerIntegerField => m_DraggerField;
 
-        [CreateProperty]
-        public StyleLength topLeft
-        {
-            get => m_TopLeft;
-            set
-            {
-                if (m_TopLeft.Equals(value))
-                    return;
-
-                var previousValue = m_TopLeft;
-                m_TopLeft = value;
-                Refresh();
-                NotifyStylePropertyChanged(topLeftProperty, previousValue, m_TopLeft);
-            }
-        }
-
-        [CreateProperty]
-        public StyleLength topRight
-        {
-            get => m_TopRight;
-            set
-            {
-                if (m_TopRight.Equals(value))
-                    return;
-                var previousValue = m_TopRight;
-                m_TopRight = value;
-                Refresh();
-                NotifyStylePropertyChanged(topRightProperty, previousValue, m_TopRight);
-            }
-        }
-
-        [CreateProperty]
-        public StyleLength bottomRight
-        {
-            get => m_BottomRight;
-            set
-            {
-                if (m_BottomRight.Equals(value))
-                    return;
-
-                var previousValue = m_BottomRight;
-                m_BottomRight = value;
-                Refresh();
-                NotifyStylePropertyChanged(bottomRightProperty, previousValue, m_BottomRight);
-            }
-        }
-
-        [CreateProperty]
-        public StyleLength bottomLeft
-        {
-            get => m_BottomLeft;
-            set
-            {
-                if (m_BottomLeft.Equals(value))
-                    return;
-
-                var previousValue = m_BottomLeft;
-                m_BottomLeft = value;
-                Refresh();
-                NotifyStylePropertyChanged(bottomLeftProperty, previousValue, m_BottomLeft);
-            }
-        }
-
         public BorderRadiusFoldout() : this("Radius") { }
 
         public BorderRadiusFoldout(string text)
@@ -129,21 +55,25 @@ namespace Unity.UIToolkit.Editor
         {
             var topLeftRow = new OverrideRow() { name = k_TopLeftPropertyName };
             topLeftField = new StyleLengthField("Top-Left") { name = k_TopLeftPropertyName, classList = { TextField.alignedFieldUssClassName }};
+            topLeftField.SetBinding("value", new StylePropertyBinding(k_TopLeftPropertyName));
             topLeftRow.Add(topLeftField);
             Add(topLeftRow);
 
             var topRightRow = new OverrideRow() { name = k_TopRightPropertyName };
             topRightField = new StyleLengthField("Top-Right") { name = k_TopRightPropertyName, classList = { TextField.alignedFieldUssClassName }};
+            topRightField.SetBinding("value", new StylePropertyBinding(k_TopRightPropertyName));
             topRightRow.Add(topRightField);
             Add(topRightRow);
 
             var bottomRightRight = new OverrideRow() { name = k_BottomRightPropertyName };
             bottomRightField = new StyleLengthField("Bottom-Right") { name = k_BottomRightPropertyName, classList = { TextField.alignedFieldUssClassName }};
+            bottomRightField.SetBinding("value", new StylePropertyBinding(k_BottomRightPropertyName));
             bottomRightRight.Add(bottomRightField);
             Add(bottomRightRight);
 
             var bottomLeftRow = new OverrideRow() { name = k_BottomLeftPropertyName };
             bottomLeftField = new StyleLengthField("Bottom-Left") { name = k_BottomLeftPropertyName, classList = { TextField.alignedFieldUssClassName }};
+            bottomLeftField.SetBinding("value", new StylePropertyBinding(k_BottomLeftPropertyName));
             bottomLeftRow.Add(bottomLeftField);
             Add(bottomLeftRow);
 
@@ -152,15 +82,33 @@ namespace Unity.UIToolkit.Editor
             bottomRightField.tooltip = "USS property: border-bottom-right-radius\n\nThe radius of the bottom-right corner when a rounded rectangle is drawn in the element's box.";
             bottomLeftField.tooltip = "USS property: border-bottom-left-radius\n\nThe radius of the bottom-left corner when a rounded rectangle is drawn in the element's box.";
 
-            topLeftField.RegisterValueChangedCallback((e) => topLeft = e.newValue);
-            topRightField.RegisterValueChangedCallback((e) => topRight = e.newValue);
-            bottomRightField.RegisterValueChangedCallback((e) => bottomRight = e.newValue);
-            bottomLeftField.RegisterValueChangedCallback((e) => bottomLeft = e.newValue);
+            topLeftField.RegisterCallback<PropertyChangedEvent>(e =>
+            {
+                if (e.property == BaseField<StyleLength>.valueProperty)
+                    UpdateFromChildFields();
+            });
+            topRightField.RegisterCallback<PropertyChangedEvent>(e =>
+            {
+                if (e.property == BaseField<StyleLength>.valueProperty)
+                    UpdateFromChildFields();
+            });
+            bottomRightField.RegisterCallback<PropertyChangedEvent>(e =>
+            {
+                if (e.property == BaseField<StyleLength>.valueProperty)
+                    UpdateFromChildFields();
+            });
+            bottomLeftField.RegisterCallback<PropertyChangedEvent>(e =>
+            {
+                if (e.property == BaseField<StyleLength>.valueProperty)
+                    UpdateFromChildFields();
+            });
 
             // Used for its dragger.
             var toggleInput = this.Q(className: "unity-toggle__input");
             m_DraggerField = new IntegerField(" ");
             m_DraggerField.name = "dragger-integer-field";
+            m_DraggerField.visualInput.focusable = false;
+            m_DraggerField.tabIndex = -1;
             m_DraggerField.AddToClassList(DraggerFieldUssClassName);
             m_DraggerField.RegisterValueChangedCallback(OnDraggerFieldUpdate);
             toggleInput.Add(m_DraggerField);
@@ -233,14 +181,14 @@ namespace Unity.UIToolkit.Editor
             }
             else if (inputArray.Length == 2)
             {
-                topLeft = bottomRight = Length.ParseString(inputArray[0]);
-                topRight = bottomLeft = Length.ParseString(inputArray[1]);
+                topLeftField.value = bottomRightField.value = Length.ParseString(inputArray[0]);
+                topRightField.value = bottomLeftField.value = Length.ParseString(inputArray[1]);
             }
             else if (inputArray.Length == 3)
             {
-                topLeft = Length.ParseString(inputArray[0]);
-                topRight = bottomLeft = Length.ParseString(inputArray[1]);
-                bottomRight = Length.ParseString(inputArray[2]);
+                topLeftField.value = Length.ParseString(inputArray[0]);
+                topRightField.value = bottomLeftField.value = Length.ParseString(inputArray[1]);
+                bottomRightField.value = Length.ParseString(inputArray[2]);
             }
             else
             {
@@ -252,15 +200,6 @@ namespace Unity.UIToolkit.Editor
 
             UpdateFromChildFields();
             evt.StopPropagation();
-        }
-
-        protected override void Refresh()
-        {
-            topLeftField.SetValueWithoutNotify(topLeft);
-            topRightField.SetValueWithoutNotify(topRight);
-            bottomLeftField.SetValueWithoutNotify(bottomLeft);
-            bottomRightField.SetValueWithoutNotify(bottomRight);
-            base.Refresh();
         }
 
         void OnDraggerFieldUpdate(ChangeEvent<int> evt)
@@ -287,47 +226,6 @@ namespace Unity.UIToolkit.Editor
             subEvent.target = target;
             target.SendEvent(subEvent);
             evt.StopImmediatePropagation();
-        }
-
-        public void SetValue(BindingId id, StyleLength v, bool notify)
-        {
-            if (id == topRightProperty)
-            {
-                if (notify)
-                    topRight = v;
-                else
-                    m_TopRight = v;
-            }
-            else if (id == topLeftProperty)
-            {
-                if (notify)
-                    topLeft = v;
-                else
-                    m_TopLeft = v;
-            }
-            else if (id == bottomRightProperty)
-            {
-                if (notify)
-                    bottomRight = v;
-                else
-                    m_BottomRight = v;
-            }
-            else if (id == bottomLeftProperty)
-            {
-                if (notify)
-                    bottomLeft = v;
-                else
-                    m_BottomLeft = v;
-            }
-
-            if (!notify)
-                Refresh();
-        }
-
-        public void NotifyStylePropertyChanged(BindingId id, StyleLength previousValue, StyleLength newValue)
-        {
-            this.NotifyStylePropertyChanged(this, id, previousValue, newValue);
-            NotifyPropertyChanged(id);
         }
     }
 }

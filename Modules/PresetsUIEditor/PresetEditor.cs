@@ -418,9 +418,9 @@ namespace UnityEditor.Presets
                     #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     var defaultList = Preset.GetDefaultPresetsForType(preset.GetPresetType()).Where(d => d.preset == preset);
 #pragma warning restore RS0030
-                    #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable RS0031 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     if (defaultList.Any())
-#pragma warning restore RS0030
+#pragma warning restore RS0031
                     {
                         if (GUILayout.Button(GUIContent.Temp(string.Format(Style.removeFromDefault.text, ObjectNames.NicifyVariableName(preset.GetTargetTypeName())), Style.removeFromDefault.tooltip), EditorStyles.miniButton, GUILayout.ExpandWidth(false)))
                         {
@@ -632,7 +632,7 @@ namespace UnityEditor.Presets
             {
                 // set excludedProperties to an empty array for PropertyModifications to return all properties.
                 var excluded = preset.excludedProperties;
-                preset.excludedProperties = new string[0];
+                preset.excludedProperties = Array.Empty<string>();
 
                 // We need to calculate children for each selected Presets
                 // because the list may differ with polymorphic serialization.
@@ -663,7 +663,7 @@ namespace UnityEditor.Presets
             {
                 // set excludedProperties to an empty array for PropertyModifications to return all properties.
                 var excluded = preset.excludedProperties;
-                preset.excludedProperties = new string[0];
+                preset.excludedProperties = Array.Empty<string>();
 
                 // We need to calculate children for each selected Presets
                 // because the list may differs with polymorphic serialization.
@@ -831,7 +831,7 @@ namespace UnityEditor.Presets
             var preset = mc.context as Preset;
             if (preset != null)
             {
-                preset.excludedProperties = new string[0];
+                preset.excludedProperties = Array.Empty<string>();
                 preset.excludedProperties =
                     #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     preset.PropertyModifications
@@ -849,7 +849,7 @@ namespace UnityEditor.Presets
             var preset = mc.context as Preset;
             if (preset != null)
             {
-                preset.excludedProperties = new string[0];
+                preset.excludedProperties = Array.Empty<string>();
             }
         }
     }

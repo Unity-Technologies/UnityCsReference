@@ -599,7 +599,7 @@ namespace UnityEditor
          */
         internal static SortedSet<AssetPostprocessor.PostprocessorInfo> GetSortedDynamicPostprocessorTypes(Type importer)
         {
-            return GetSortedPostprocessorTypes(importer, s_DynamicPostprocessorMethodsByImporterType, new string[0],
+            return GetSortedPostprocessorTypes(importer, s_DynamicPostprocessorMethodsByImporterType, Array.Empty<string>(),
                 s_DynamicPostprocessorsPerImporterType);
         }
 

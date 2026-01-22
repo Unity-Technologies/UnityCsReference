@@ -8,7 +8,7 @@ using UnityEngine.Bindings;
 // wrapper class to provide similar interface as old settings. old: UnityEditor.EditorUserBuildSettings.selectedEmbeddedLinuxArchitecture   ... new: UnityEditor.EditorUserBuildSettings.EmbeddedLinux.architecture
 namespace UnityEditor
 {
-    [NativeType(Header = "Editor/Src/EditorUserBuildSettings.h")]
+    [NativeHeader("Editor/Src/EditorUserBuildSettings.h")]
     [Obsolete("EmbeddedLinuxArchitecture is deprecated. Use EmbeddedArchitecture. (UnityUpgradable) -> EmbeddedArchitecture", false)]
     public enum EmbeddedLinuxArchitecture
     {

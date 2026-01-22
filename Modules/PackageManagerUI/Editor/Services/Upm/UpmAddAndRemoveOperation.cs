@@ -19,10 +19,10 @@ namespace UnityEditor.PackageManager.UI.Internal
             public override RefreshOptions refreshOptions => RefreshOptions.None;
 
             [SerializeField]
-            protected string[] m_PackageIdsToAdd = new string[0];
+            protected string[] m_PackageIdsToAdd = Array.Empty<string>();
 
             [SerializeField]
-            protected string[] m_PackagesNamesToRemove = new string[0];
+            protected string[] m_PackagesNamesToRemove = Array.Empty<string>();
 
             protected override AddAndRemoveRequest CreateRequest()
             {
@@ -59,15 +59,15 @@ namespace UnityEditor.PackageManager.UI.Internal
         }
 
         [SerializeField]
-        protected string[] m_PackageIdsToReset = new string[0];
+        protected string[] m_PackageIdsToReset = Array.Empty<string>();
         public IReadOnlyCollection<string> packageIdsToReset => m_PackageIdsToReset;
 
         [SerializeField]
-        protected string[] m_PackageIdsToAdd = new string[0];
+        protected string[] m_PackageIdsToAdd = Array.Empty<string>();
         public IReadOnlyCollection<string> packageIdsToAdd => m_PackageIdsToAdd;
 
         [SerializeField]
-        protected string[] m_PackagesNamesToRemove = new string[0];
+        protected string[] m_PackagesNamesToRemove = Array.Empty<string>();
         public IReadOnlyCollection<string> packagesNamesToRemove => m_PackagesNamesToRemove;
 
         [SerializeField]
@@ -108,31 +108,32 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public void AddByPathOrUrl(string pathOrUrl)
         {
-            m_PackageIdsToReset = new string[0];
+            m_PackageIdsToReset = Array.Empty<string>();
             m_PackageIdsToAdd = new [] {pathOrUrl};
-            m_PackagesNamesToRemove = new string[0];
+            m_PackagesNamesToRemove = Array.Empty<string>();
             m_PackageIdOrName = pathOrUrl;
             m_SpecialUniqueId = pathOrUrl;
             Start();
         }
 
-        public void AddById(string versionId)
+        public void AddById(string versionId, bool isUnlistedPackage)
         {
-            m_PackageIdsToReset = new string[0];
+            m_PackageIdsToReset = Array.Empty<string>();
             m_PackageIdsToAdd = new  [] {versionId};
-            m_PackagesNamesToRemove = new string[0];
+            m_PackagesNamesToRemove = Array.Empty<string>();
             m_PackageIdOrName = versionId;
-            m_SpecialUniqueId = versionId;
+            // Unlisted packages potentially can't be found in the package database so we treat it the same way as if it's from git/url/path
+            m_SpecialUniqueId = isUnlistedPackage ? versionId : string.Empty;
             Start();
         }
 
         public void AddByIds(IEnumerable<string> versionIds)
         {
-            m_PackageIdsToReset = new string[0];
+            m_PackageIdsToReset = Array.Empty<string>();
             #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            m_PackageIdsToAdd = (versionIds ?? Enumerable.Empty<string>()).ToArray();
+            m_PackageIdsToAdd = (versionIds ?? Array.Empty<string>()).ToArray();
 #pragma warning restore RS0030
-            m_PackagesNamesToRemove = new string[0];
+            m_PackagesNamesToRemove = Array.Empty<string>();
             m_PackageIdOrName = string.Empty;
             m_SpecialUniqueId = string.Empty;
             Start();
@@ -140,10 +141,10 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public void RemoveByNames(IEnumerable<string> packagesNames)
         {
-            m_PackageIdsToReset = new string[0];
-            m_PackageIdsToAdd = new string[0];
+            m_PackageIdsToReset = Array.Empty<string>();
+            m_PackageIdsToAdd = Array.Empty<string>();
             #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            m_PackagesNamesToRemove = (packagesNames ?? Enumerable.Empty<string>()).ToArray();
+            m_PackagesNamesToRemove = (packagesNames ?? Array.Empty<string>()).ToArray();
 #pragma warning restore RS0030
             m_PackageIdOrName = string.Empty;
             m_SpecialUniqueId = string.Empty;
@@ -152,10 +153,10 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public void AddAndResetDependencies(string packageId, IEnumerable<string> dependencyPackagesNames)
         {
-            m_PackageIdsToReset = new string[0];
+            m_PackageIdsToReset = Array.Empty<string>();
             m_PackageIdsToAdd = new [] { packageId };
             #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            m_PackagesNamesToRemove = (dependencyPackagesNames ?? Enumerable.Empty<string>()).ToArray();
+            m_PackagesNamesToRemove = (dependencyPackagesNames ?? Array.Empty<string>()).ToArray();
 #pragma warning restore RS0030
             m_PackageIdOrName = packageId;
             m_SpecialUniqueId = string.Empty;
@@ -165,9 +166,9 @@ namespace UnityEditor.PackageManager.UI.Internal
         public void ResetDependencies(string packageId, IEnumerable<string> dependencyPackagesNames)
         {
             m_PackageIdsToReset = new [] { packageId };
-            m_PackageIdsToAdd = new string[0];
+            m_PackageIdsToAdd = Array.Empty<string>();
             #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            m_PackagesNamesToRemove = (dependencyPackagesNames ?? Enumerable.Empty<string>()).ToArray();
+            m_PackagesNamesToRemove = (dependencyPackagesNames ?? Array.Empty<string>()).ToArray();
 #pragma warning restore RS0030
             m_PackageIdOrName = packageId;
             m_SpecialUniqueId = string.Empty;

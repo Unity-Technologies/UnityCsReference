@@ -214,7 +214,7 @@ namespace UnityEditor.Media
 
         public MediaEncoder(
             string filePath, VideoTrackEncoderAttributes videoAttrs)
-            : this(filePath, videoAttrs, new AudioTrackAttributes[0])
+            : this(filePath, videoAttrs, Array.Empty<AudioTrackAttributes>())
         {
         }
 
@@ -224,7 +224,7 @@ namespace UnityEditor.Media
         {}
 
         public MediaEncoder(string filePath, VideoTrackAttributes videoAttrs)
-            : this(filePath, videoAttrs, new AudioTrackAttributes[0])
+            : this(filePath, videoAttrs, Array.Empty<AudioTrackAttributes>())
         {}
 
         public MediaEncoder(string filePath, AudioTrackAttributes[] audioAttrs)

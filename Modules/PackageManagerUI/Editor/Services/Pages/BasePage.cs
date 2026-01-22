@@ -308,9 +308,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         public virtual void RemoveSelection(IEnumerable<string> toRemove, bool isExplicitUserSelection = false)
         {
             var previousFirstSelection = GetSelection().firstSelection;
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            AmendSelection(Enumerable.Empty<string>(), toRemove, isExplicitUserSelection);
-#pragma warning restore RS0030
+            AmendSelection(Array.Empty<string>(), toRemove, isExplicitUserSelection);
             if (GetSelection().Count == 0)
                 SetNewSelection(new[] { previousFirstSelection }, isExplicitUserSelection);
         }

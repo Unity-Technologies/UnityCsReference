@@ -15,7 +15,7 @@ namespace UnityEditor.VersionControl
     [StructLayout(LayoutKind.Sequential)]
     public partial class Message
     {
-        [NativeType("Editor/Src/VersionControl/VCMessage.h")]
+        [NativeHeader("Editor/Src/VersionControl/VCMessage.h")]
         public enum Severity
         {
             Data = 0,

@@ -9,7 +9,7 @@ namespace UnityEditor.Search
     /// <summary>
     /// Represents the action to perform at the end of a transaction.
     /// </summary>
-    [NativeType(Header = "Modules/QuickSearch/LMDB/LMDBTransactionEndAction.h")]
+    [NativeHeader("Modules/QuickSearch/LMDB/LMDBTransactionEndAction.h")]
     enum LMDBTransactionEndAction : byte
     {
         /// <summary>

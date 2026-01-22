@@ -242,9 +242,9 @@ namespace UnityEditor.PackageManager.UI.Internal
             }
             else
             {
-                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable RS0031 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 if (entitlements.Any())
-#pragma warning restore RS0030
+#pragma warning restore RS0031
                 {
                     m_PageRefreshHandler.Refresh(RefreshOptions.UpmList | RefreshOptions.UpmSearch);
                     m_PageManager.activePage.TriggerOnSelectionChanged();

@@ -98,24 +98,22 @@ namespace UnityEngine.UIElements
                 SameTransitionProperty(x.transitionDelay, y.transitionDelay);
         }
 
-        private static bool SameTransitionProperty(List<StylePropertyName> a, List<StylePropertyName> b)
+        private static bool SameTransitionProperty(ReadOnlySpan<StylePropertyId> a, ReadOnlySpan<StylePropertyId> b)
         {
             if (a == b) return true;
-            if (a == null || b == null) return false;
-            if (a.Count != b.Count) return false;
-            int n = a.Count;
+            if (a.Length != b.Length) return false;
+            int n = a.Length;
             for (int i = 0; i < n; i++)
                 if (a[i] != b[i])
                     return false;
             return true;
         }
 
-        private static bool SameTransitionProperty(List<TimeValue> a, List<TimeValue> b)
+        private static bool SameTransitionProperty(ReadOnlySpan<TimeValue> a, ReadOnlySpan<TimeValue> b)
         {
             if (a == b) return true;
-            if (a == null || b == null) return false;
-            if (a.Count != b.Count) return false;
-            int n = a.Count;
+            if (a.Length != b.Length) return false;
+            int n = a.Length;
             for (int i = 0; i < n; i++)
                 if (a[i] != b[i])
                     return false;
@@ -125,7 +123,7 @@ namespace UnityEngine.UIElements
         private static void ComputeTransitionPropertyData(ref ComputedStyle computedStyle, List<ComputedTransitionProperty> outData)
         {
             var properties = computedStyle.transitionProperty;
-            if (properties == null || properties.Count == 0)
+            if (properties == null || properties.Length == 0)
                 return;
 
             var durations = computedStyle.transitionDuration;
@@ -138,10 +136,10 @@ namespace UnityEngine.UIElements
             // durations specified than in the master list, the user agent repeat the list of durations. If there are
             // more durations, the list is truncated to the right size. In both case the CSS declaration stays valid.
 
-            int nProperties = properties.Count;
+            int nProperties = properties.Length;
             for (var i = 0; i < nProperties; i++)
             {
-                var id = properties[i].id;
+                var id = properties[i];
 
                 // Remove properties that aren't animatable.
                 if (id == StylePropertyId.Unknown || !StylePropertyUtil.IsAnimatable(id))
@@ -167,9 +165,10 @@ namespace UnityEngine.UIElements
             }
         }
 
-        static T GetWrappingTransitionData<T>(List<T> list, int i, T defaultValue)
+        static T GetWrappingTransitionData<T>(ReadOnlySpan<T> list, int i, T defaultValue)
+            where T : unmanaged
         {
-            return list.Count == 0 ? defaultValue : list[i % list.Count];
+            return list.Length == 0 ? defaultValue : list[i % list.Length];
         }
 
         static int ConvertTransitionTime(TimeValue time)

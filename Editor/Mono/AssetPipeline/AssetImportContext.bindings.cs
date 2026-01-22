@@ -112,6 +112,7 @@ namespace UnityEditor.AssetImporters
 
         public extern string GetArtifactFilePath(ArtifactKey key, string fileName);
 
+        [Obsolete("GetOutputArtifactFilePath has been deprecated. Use SetOutputArtifactData to write artifact data from memory, or SetOutputArtifactFile to copy artifact data from a file instead.")]
         public extern string GetOutputArtifactFilePath(string fileName);
 
         [NativeName("DependsOnImportedAsset")]
@@ -204,6 +205,9 @@ namespace UnityEditor.AssetImporters
         {
             AddImportLog(msg, file, line, ImportLogFlags.Warning, obj);
         }
+
+        public extern void SetOutputArtifactData(string extension, ReadOnlySpan<byte> span);
+        public extern void SetOutputArtifactFile(string extension, string path);
 
         internal static class BindingsMarshaller
         {

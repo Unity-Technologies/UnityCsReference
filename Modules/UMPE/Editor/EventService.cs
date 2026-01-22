@@ -440,7 +440,7 @@ namespace UnityEditor.MPE
         private static object[] NotifyLocalListeners(string eventType, object[] data, bool notifyWildcard)
         {
             List<Func<string, object[], object>> handlers = null;
-            var result = new object[0];
+            var result = Array.Empty<object>();
             if (s_Events.TryGetValue(eventType, out handlers))
             {
                 try
@@ -526,7 +526,7 @@ namespace UnityEditor.MPE
 
             // if the data is null we still send an empty dataInfo to know it uses JsonUtility (useful on a request to keep that info when sending answer)
             if (args == null)
-                return new object[] {};
+                return Array.Empty<object>();
 
 
             List<object> dataInfos = new List<object>();

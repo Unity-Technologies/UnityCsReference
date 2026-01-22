@@ -44,6 +44,7 @@ namespace Unity.Hierarchy
     /// Class containing all persistable configuration for a HierarchyView.
     /// </summary>
     [Serializable]
+    [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
     internal sealed class HierarchyViewState
     {
         const int SerialVersion = 2;

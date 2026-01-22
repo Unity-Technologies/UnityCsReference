@@ -7,6 +7,7 @@ using UnityEditor.PackageManager;
 using System.Linq;
 using Unity.ProjectAuditor.Editor.Core;
 using Unity.ProjectAuditor.Editor.Utils;
+using System.Collections;
 
 namespace Unity.ProjectAuditor.Editor.Modules
 {
@@ -41,41 +42,44 @@ namespace Unity.ProjectAuditor.Editor.Modules
             SettingsModule.k_IssueLayout
         ];
 
-        public override AnalysisResult Audit(AnalysisParams analysisParams, IProgress progress = null)
+        public override IEnumerator Audit(AnalysisParams analysisParams, IProgress progress)
         {
             var analyzers = GetCompatibleAnalyzers(analysisParams);
-            if (analyzers.Length == 0)
-                return AnalysisResult.Success;
-
-            var packages = PackageUtils.GetClientPackages();
-            var packageCount = packages.Length;
-
-            progress?.Start("Finding Packages", "Search in Progress...", packageCount);
-
-            var context = new PackageAnalysisContext
+            if (analyzers.Length > 0)
             {
-                Params = analysisParams
-            };
+                var packages = PackageUtils.GetClientPackages();
+                var packageCount = packages.Length;
 
-            foreach (var package in packages)
-            {
-                if (progress?.IsCancelled ?? false)
-                    return AnalysisResult.Cancelled;
+                AsyncProgressState progressState = progress?.Start("Analyzing Packages", packageCount);
 
-                progress?.Advance(package.displayName);
+                yield return null;
 
-                context.PackageInfo = package;
-
-                analysisParams.OnIncomingIssues(EnumerateInstalledPackages(context));
-
-                foreach (var analyzer in analyzers)
+                var context = new PackageAnalysisContext
                 {
-                    analysisParams.OnIncomingIssues(analyzer.Analyze(context));
+                    Params = analysisParams
+                };
+
+                foreach (var package in packages)
+                {
+                    if (AdvanceAsyncProgress(progress, progressState, package.displayName) == false)
+                        break;
+                    
+                    context.PackageInfo = package;
+
+                    analysisParams.OnIncomingIssues(EnumerateInstalledPackages(context));
+
+                    foreach (var analyzer in analyzers)
+                    {
+                        analysisParams.OnIncomingIssues(analyzer.Analyze(context));
+                    }
+
+                    yield return null;
                 }
+
+                progress?.Clear(progressState);
             }
 
-            progress?.Clear();
-            return AnalysisResult.Success;
+            analysisParams.OnModuleCompleted?.Invoke(Name, AnalysisResult.Success, 0);
         }
 
         IEnumerable<ReportItem> EnumerateInstalledPackages(PackageAnalysisContext context)

@@ -85,7 +85,7 @@ namespace UnityEditor
     [RequiredByNativeCode]
     [NativeAsStruct]
     [StructLayout(LayoutKind.Sequential)]
-    [NativeType(Header = "Modules/VideoEditor/VideoClipImporter.h")]
+    [NativeHeader("Modules/VideoEditor/VideoClipImporter.h")]
     [Serializable]
     public partial class VideoImporterTargetSettings
     {

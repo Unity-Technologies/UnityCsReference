@@ -325,7 +325,7 @@ namespace UnityEditor
                 filterCopy.GetState() == SearchFilter.State.SearchingInAssetsOnly ||
                 filterCopy.GetState() == SearchFilter.State.SearchingInPackagesOnly)
             {
-                filterCopy.folders = new string[0];
+                filterCopy.folders = Array.Empty<string>();
             }
 
             int afterIndex = 0; // add after root index
@@ -420,7 +420,7 @@ namespace UnityEditor
 
             // Always set root filter data (is serialized so we need to set it here to affect serialized data)
             SearchFilter filter = new SearchFilter();
-            filter.classNames = new string[0];
+            filter.classNames = Array.Empty<string>();
             m_SavedFilters[0].m_Name = "Favorites";
             m_SavedFilters[0].m_Filter = filter;
             m_SavedFilters[0].m_Depth = 0;

@@ -13,21 +13,28 @@ namespace Unity.UIToolkit.Editor
     {
         public string name { get; }
         public LibraryTypeKey libraryType { get; }
+        public string libraryPath { get; }
         public Background icon { get; set; }
         public Background largeIcon { get; set; }
 
-        public LibraryItem(string name, LibraryTypeKey typeKey, Background icon, Background largeIcon)
+        public LibraryItem(string name, LibraryTypeKey typeKey, Background icon, Background largeIcon, string path)
         {
             this.name = name;
             libraryType = typeKey;
+            libraryPath = path;
             this.icon = icon;
             this.largeIcon = largeIcon;
         }
 
-        public LibraryItem(string name, LibraryTypeKey typeKey)
+        public LibraryItem(string name, LibraryTypeKey typeKey) : this(name, typeKey, null)
+        {
+        }
+
+        public LibraryItem(string name, LibraryTypeKey typeKey, string path)
         {
             this.name = name;
             libraryType = typeKey;
+            libraryPath = path;
             AssignIcon();
         }
 

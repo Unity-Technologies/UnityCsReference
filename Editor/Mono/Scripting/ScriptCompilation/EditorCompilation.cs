@@ -128,7 +128,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
 
         BeeScriptCompilationState _currentBeeScriptCompilationState;
 
-        CompilerMessage[] _currentEditorCompilationCompilerMessages = new CompilerMessage[0];
+        CompilerMessage[] _currentEditorCompilationCompilerMessages = Array.Empty<CompilerMessage>();
 
         public void SetProjectDirectory(string projectDirectory)
         {
@@ -447,8 +447,10 @@ namespace UnityEditor.Scripting.ScriptCompilation
 #pragma warning restore RS0030
 
 #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable RS0031 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 assembly.AdditionalPrefixes = foundAsmRefs.Any() ? foundAsmRefs.Select(ar => ar.PathPrefix).ToArray() : null;
 #pragma warning restore RS0030
+#pragma warning restore RS0031
             }
         }
 
@@ -476,7 +478,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
         {
             if (assetPathsMetaData == null)
             {
-                return new Exception[0];
+                return Array.Empty<Exception>();
             }
 
             var assetMetaDataPaths = new string[assetPathsMetaData.Length];
@@ -960,12 +962,12 @@ namespace UnityEditor.Scripting.ScriptCompilation
 
         public ScriptAssemblySettings CreateScriptAssemblySettings(BuildTarget buildTarget, EditorScriptCompilationOptions options)
         {
-            return CreateScriptAssemblySettings(buildTarget, EditorUserBuildSettings.GetActiveSubtargetFor(buildTarget), options, new string[] { });
+            return CreateScriptAssemblySettings(buildTarget, EditorUserBuildSettings.GetActiveSubtargetFor(buildTarget), options, Array.Empty<string>());
         }
 
         public ScriptAssemblySettings CreateScriptAssemblySettings(BuildTarget buildTarget, int subtarget, EditorScriptCompilationOptions options)
         {
-            return CreateScriptAssemblySettings(buildTarget, subtarget, options, new string[] { });
+            return CreateScriptAssemblySettings(buildTarget, subtarget, options, Array.Empty<string>());
         }
 
         public ScriptAssemblySettings CreateScriptAssemblySettings(BuildTarget buildTarget, EditorScriptCompilationOptions options, string[] extraScriptingDefines)
@@ -1363,9 +1365,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 if (relatedMessages.TryGetValue(fileName, out var nodeResultIndices))
                     nodeResultIndicesRelatedToAssembly = nodeResultIndices;
                 else
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                    nodeResultIndicesRelatedToAssembly = Enumerable.Empty<int>();
-#pragma warning restore RS0030
+                    nodeResultIndicesRelatedToAssembly = Array.Empty<int>();
 
 #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 var messagesForAssembly = nodeResultIndicesRelatedToAssembly.SelectMany(index => compilerMessagesForNodeResults[index]).ToArray();
@@ -1619,7 +1619,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
 #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var allTargetAssemblies = customScriptAssemblies.Values.ToArray()
 #pragma warning restore RS0030
-                .Concat(predefinedTargetAssemblies ?? new TargetAssembly[0]);
+                .Concat(predefinedTargetAssemblies ?? Array.Empty<TargetAssembly>());
 
 
             var editorApiCompatibility = PlayerSettings.EditorAssemblyCompatibilityToApiCompatibility(PlayerSettings.GetEditorAssembliesCompatibilityLevel());
@@ -1865,7 +1865,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 Filename = AssetPath.GetFileName(assemblyPath),
                 OutputDirectory = AssetPath.GetDirectoryName(assemblyPath),
                 CompilerOptions = new ScriptCompilerOptions(assemblyBuilder.compilerOptions),
-                ScriptAssemblyReferences = new ScriptAssembly[0],
+                ScriptAssemblyReferences = Array.Empty<ScriptAssembly>(),
                 RootNamespace = string.Empty
             };
             scriptAssembly.CompilerOptions.ApiCompatibilityLevel = PlayerSettings.GetApiCompatibilityLevel(NamedBuildTarget.FromActiveSettings(assemblyBuilder.buildTarget));
@@ -1951,7 +1951,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
             // todo split implicit/explicit precompiled references
             var precompiledReferences = EditorBuildRules.GetPrecompiledReferences(scriptAssembly, TargetAssemblyType.Custom, options, EditorCompatibility.CompatibleWithEditor, precompiledAssemblies, null, null);
             var additionalReferences = MonoLibraryHelpers.GetSystemLibraryReferences(scriptAssembly.CompilerOptions.ApiCompatibilityLevel);
-            string[] editorReferences = buildingForEditor ? ModuleUtils.GetAdditionalReferencesForUserScripts() : new string[0];
+            string[] editorReferences = buildingForEditor ? ModuleUtils.GetAdditionalReferencesForUserScripts() : Array.Empty<string>();
 
             var references = new List<string>();
 

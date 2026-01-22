@@ -25,7 +25,7 @@ namespace UnityEditor.UIElements
     // Make sure UXML is imported after assets than can be addressed in USS
     [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
     [HelpURL("UIE-VisualTree-landing")]
-    [ScriptedImporter(version: 27, ext: "uxml", importQueueOffset: 1102)]
+    [ScriptedImporter(version: 28, ext: "uxml", importQueueOffset: 1102)]
     [ExcludeFromPreset]
     internal class UIElementsViewImporter : ScriptedImporter
     {
@@ -41,7 +41,7 @@ namespace UnityEditor.UIElements
             catch (Exception)
             {
                 // We want to be silent here, all XML syntax errors will be reported during the actual import
-                return new string[] { };
+                return Array.Empty<string>();
             }
 
             var dependencies = new List<string>();

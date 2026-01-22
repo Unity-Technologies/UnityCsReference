@@ -598,9 +598,7 @@ namespace UnityEditor
                     failedCompilationList.Sort();
 
                     shaderList.ForEach(s => AddShaderToMenu("", root, s, s));
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                    if (legacyList.Any() || notSupportedList.Any() || failedCompilationList.Any())
-#pragma warning restore RS0030
+                    if (legacyList.Count > 0 || notSupportedList.Count > 0 || failedCompilationList.Count > 0)
                         root.AddSeparator();
                     legacyList.ForEach(s => AddShaderToMenu("", root, s, s));
                     notSupportedList.ForEach(s => AddShaderToMenu("Not supported/", root, s, "Not supported/" + s));
@@ -656,9 +654,9 @@ namespace UnityEditor
                     bool found = false;
                     foreach (var e in m_SearchableElements)
                     {
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable RS0031 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                         if (e.children.Any())
-#pragma warning restore RS0030
+#pragma warning restore RS0031
                             continue;
 
                         var menuItem = (ShaderDropdownItem)e;
@@ -815,9 +813,7 @@ namespace UnityEditor
                         return;
 
                     bool checkMark = false;
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                    if (m_DataSource.selectedIDs.Any() && m_DataSource.selectedIDs.Contains(item.id))
-#pragma warning restore RS0030
+                    if (m_DataSource.selectedIDs.Count > 0 && m_DataSource.selectedIDs.Contains(item.id))
                     {
                         checkMark = true;
                         var checkMarkRect = new Rect(fullRect);
@@ -2224,7 +2220,7 @@ namespace UnityEditor
                 }
             }
 
-            return new Renderer[0];
+            return Array.Empty<Renderer>();
         }
 
         internal static Renderer[] GetAssociatedRenderersFromEditors(IEnumerable<Editor> editors)
@@ -3071,7 +3067,7 @@ namespace UnityEditor
         static bool s_previousAlreadyHadPrefabModification;
         internal static void HandleRenderer(Renderer r, int materialIndex, Material dragMaterial, EventType eventType, bool alt)
         {
-            if (r.GetType().GetCustomAttributes(typeof(RejectDragAndDropMaterial), true).Length > 0)
+            if (r.GetType().IsDefined(typeof(RejectDragAndDropMaterial), true))
                 return;
 
             var applyMaterial = false;

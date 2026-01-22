@@ -542,9 +542,7 @@ namespace UnityEditor
             {
                 if (result == null)
                     result = new List<T>();
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                if (m_Children.Any())
-#pragma warning restore RS0030
+                if (m_Children.Count > 0)
                 {
                     var children = m_Children;
                     if (sorted)

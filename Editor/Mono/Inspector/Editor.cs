@@ -734,9 +734,7 @@ namespace UnityEditor
             var allParents = new HashSet<string>();
             foreach (var fieldInfo in fields)
             {
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                var attribute = (CachePropertyAttribute)fieldInfo.GetCustomAttributes(typeof(CachePropertyAttribute), false).First();
-#pragma warning restore RS0030
+                var attribute = (CachePropertyAttribute)fieldInfo.GetCustomAttributes(typeof(CachePropertyAttribute), false)[0];
                 var propertyName = string.IsNullOrEmpty(attribute.propertyPath) ? fieldInfo.Name : attribute.propertyPath;
                 properties.Add(propertyName, fieldInfo);
                 int dot = propertyName.LastIndexOf('.');

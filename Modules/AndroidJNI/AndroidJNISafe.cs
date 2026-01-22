@@ -20,7 +20,7 @@ namespace UnityEngine
                 {
                     IntPtr toStringMethodId = AndroidJNI.GetMethodID(jthrowableClass, "toString", "()Ljava/lang/String;");
                     IntPtr getStackTraceStringMethodId = AndroidJNI.GetStaticMethodID(androidUtilLogClass, "getStackTraceString", "(Ljava/lang/Throwable;)Ljava/lang/String;");
-                    string exceptionMessage = AndroidJNI.CallStringMethod(jthrowable, toStringMethodId, new jvalue[] {});
+                    string exceptionMessage = AndroidJNI.CallStringMethod(jthrowable, toStringMethodId, Array.Empty<jvalue>());
                     // Pass jthrowable as a param to getStackTraceString()
                     jvalue[] jniArgs = new jvalue[1];
                     jniArgs[0].l = jthrowable;

@@ -35,7 +35,7 @@ namespace Unity.Multiplayer.PlayMode.Editor
             {
                 Debug.Assert(methodInfo != null);
                 Debug.Assert(methodInfo.ReflectedType != null);
-                var result = (SerializeMessageDelegates)methodInfo.Invoke(new object(), new object[] { });
+                var result = (SerializeMessageDelegates)methodInfo.Invoke(new object(), Array.Empty<object>());
                 Debug.Assert(result.SerializeFunc != null);
                 Debug.Assert(result.DeserializeFunc != null);
                 SerializeMessageDelegatesMap[methodInfo.ReflectedType] = result;

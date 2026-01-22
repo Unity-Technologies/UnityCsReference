@@ -39,7 +39,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
         static RunnableProgram DefaultScriptUpdaterProgram()
         {
             NPath scriptUpdaterExe = $"{EditorApplication.applicationBuildPipelinePath}/Compilation/ApiUpdater/ScriptUpdater.dll";
-            return new SystemProcessRunnableProgram(NetCoreRunProgram.NetCoreRunPath, new[] {scriptUpdaterExe.InQuotes()}, stdOutMode: StdOutMode.LogStdOutOnFinish);
+            return new SystemProcessRunnableProgram(NetCoreProgram.DotNetMuxerPath.ToString(), new[] {scriptUpdaterExe.InQuotes()}, stdOutMode: StdOutMode.LogStdOutOnFinish);
         }
 
         enum CanUpdateAny
@@ -61,8 +61,10 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 //we want to see if this is the only error on this location.  we will make an enumerable that matches all compilermessages that match this location
                 //We do Skip(1).Any() as a bit of an unconventional way to express what we care about: is there more than 1 or not.
 #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable RS0031 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 return !compilerMessages.Where(m => MatchesFileLineAndColumn(compilerMessage, m)).Skip(1).Any();
 #pragma warning restore RS0030
+#pragma warning restore RS0031
             }
 
 #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
@@ -76,9 +78,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
             if (upgradableMessages.Any(IsOnlyMessageForThisFileLineAndColumn))
 #pragma warning restore RS0030
                 return CanUpdateAny.Certainly;
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            if (upgradableMessages.Any())
-#pragma warning restore RS0030
+            if (upgradableMessages.Length > 0)
                 return CanUpdateAny.Maybe;
 
             //The "unknown type or namespace" genre of messages we are not sure about. Some of these are legit user programming errors, some of them

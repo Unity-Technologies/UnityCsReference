@@ -2,11 +2,13 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System.Collections.Generic;
 using Unity.UIToolkit.Editor;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.UIElements;
 using UnityEngine.UIElements.StyleSheets;
+using UnityEngine.UIElements.Unmanaged;
 
 namespace Unity.UI.Builder
 {
@@ -42,7 +44,10 @@ namespace Unity.UI.Builder
             if (currentVisualElement.HasRunningAnimation(StylePropertyId.Filter))
                 currentVisualElement.CancelAnimation(StylePropertyId.Filter);
 
-            filterStyleField.SetValueWithoutNotify(currentVisualElement.computedStyle.filter);
+            var result = new List<FilterFunction>();
+            foreach (var f in currentVisualElement.computedStyle.filter)
+                result.Add(f);
+            filterStyleField.SetValueWithoutNotify(result);
 
             var prop = GetLastStyleProperty(currentRule, FilterConstants.Filter);
             m_Inspector.UpdateFieldStatus(filterStyleField, prop);
@@ -70,7 +75,7 @@ namespace Unity.UI.Builder
             // Quick sanity check over the indices
             foreach (var index in evt.indices)
             {
-                if (index >= filter.Count)
+                if (index >= filter.Length)
                     return;
             }
 
@@ -78,12 +83,12 @@ namespace Unity.UI.Builder
             // remove the entire list of functions and re-add them (and skip the removed functions).
             RemoveFilterFunctionsFromStyleSheet();
 
-            if (filter.Count > evt.indices.Count)
+            if (filter.Length > evt.indices.Count)
             {
                 var styleProperty = GetOrCreateStylePropertyByStyleName(FilterConstants.Filter);
                 var manipulator = styleProperty.GetManipulator(styleSheet);
 
-                for (var i = 0; i < filter.Count; ++i)
+                for (var i = 0; i < filter.Length; ++i)
                 {
                     if (evt.indices.Contains(i))
                         continue; // Skip this filter
@@ -118,7 +123,7 @@ namespace Unity.UI.Builder
             s_StyleChangeList.Clear();
 
             bool requiresRefresh = false;
-            if (index < filter.Count)
+            if (index < filter.Length)
             {
                 var styleProperty = GetOrCreateStylePropertyByStyleName(FilterConstants.Filter);
                 var manipulator = styleProperty.GetManipulator(styleSheet);
@@ -142,7 +147,7 @@ namespace Unity.UI.Builder
             // We need to do this since the filter function have a variable number of parameters.
 
             var filter = currentVisualElement.computedStyle.filter;
-            if (evt.index >= filter.Count)
+            if (evt.index >= filter.Length)
                 return;
 
             var styleProperty = GetOrCreateStylePropertyByStyleName(FilterConstants.Filter);

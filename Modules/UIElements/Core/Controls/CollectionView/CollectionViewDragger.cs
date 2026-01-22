@@ -56,13 +56,13 @@ namespace UnityEngine.UIElements.HierarchyV2
             var recycledItem = GetRecycledItem(pointerPosition);
             if (recycledItem != null && targetView.HasCanStartDrag())
             {
-                var ids = targetView.hasSelection ? targetView.selectedIndices : new[] { recycledItem.index };
+                var ids = targetView.hasSelection ? GetCollectionViewSelectedIndices() : new[] { recycledItem.index };
                 return targetView.RaiseCanStartDrag(recycledItem, ids, modifiers);
             }
 
             if (targetView.hasSelection)
             {
-                return dragAndDropController.CanStartDrag(targetView.selectedIndices);
+                return dragAndDropController.CanStartDrag(GetCollectionViewSelectedIndices());
             }
 
             return recycledItem != null && dragAndDropController.CanStartDrag(new[] { recycledItem.index });
@@ -85,12 +85,12 @@ namespace UnityEngine.UIElements.HierarchyV2
                         targetView.SetSelection(recycledItem.index);
                     }
 
-                    indices = targetView.selectedIndices;
+                    indices = GetCollectionViewSelectedIndices();
                 }
             }
             else
             {
-                indices = targetView.hasSelection ? targetView.selectedIndices : Array.Empty<int>();
+                indices = GetCollectionViewSelectedIndices();
             }
 
             var startDragArgs = dragAndDropController.SetupDragAndDrop(indices);
@@ -378,6 +378,17 @@ namespace UnityEngine.UIElements.HierarchyV2
         {
             // If dragging within the same view and reordering is not enabled, otherwise allow drag and drop between views
             return targetView == dragAndDrop.data.source && !enabled;
+        }
+
+        int[] GetCollectionViewSelectedIndices()
+        {
+            if (targetView.selection is CollectionViewSelection collectionViewSelection)
+            {
+                return collectionViewSelection.indices.ToArray();
+            }
+
+            // This works for HierarchyViewSelection, because we have our own implementation for drag and drop workflow.
+            return Array.Empty<int>();
         }
     }
 }

@@ -9,7 +9,7 @@ using Unity.Collections.LowLevel.Unsafe;
 
 namespace Unity.Audio
 {
-    [NativeType(Header = "Modules/Audio/Public/AudioHandle.h")]
+    [NativeHeader("Modules/DSPGraph/Public/DSPGraphHandles.h")]
     [StructLayout(LayoutKind.Sequential)]
     [VisibleToOtherModules("UnityEngine.DSPGraphModule")]
     unsafe struct Handle : IHandle<Handle>

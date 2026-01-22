@@ -205,7 +205,7 @@ namespace UnityEditor
                 return GetSearchKeywordsFromSerializedObject(new SerializedObject(obj));
             }
 
-            return new string[] {};
+            return Array.Empty<string>();
         }
 
         #endregion

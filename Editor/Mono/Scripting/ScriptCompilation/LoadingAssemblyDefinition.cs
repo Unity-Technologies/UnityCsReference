@@ -31,7 +31,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
         bool m_SkipCustomScriptAssemblyGraphValidation;
         string m_ProjectDirectory;
 
-        public CustomScriptAssembly[] CustomScriptAssemblies { get; private set; } = new CustomScriptAssembly[0];
+        public CustomScriptAssembly[] CustomScriptAssemblies { get; private set; } = Array.Empty<CustomScriptAssembly>();
         public List<CustomScriptAssemblyReference> CustomScriptAssemblyReferences { get; private set; } = new List<CustomScriptAssemblyReference>();
 
         public Exception[] Exceptions { get; private set; }
@@ -83,7 +83,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
                         ? LoadCustomScriptAssemblyFromJson(fullPath, contents[i], guid)
                         : LoadCustomScriptAssemblyFromJsonPath(fullPath, guid);
 
-                    loadedCustomScriptAssembly.References = loadedCustomScriptAssembly.References ?? new string[0];
+                    loadedCustomScriptAssembly.References = loadedCustomScriptAssembly.References ?? Array.Empty<string>();
 
                     lowerCaseName = Utility.FastToLower(loadedCustomScriptAssembly.Name);
                     guidsToAssemblies[Utility.FastToLower(guid)] = loadedCustomScriptAssembly;
@@ -124,7 +124,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
                     continue;
                 }
 
-                loadedCustomScriptAssembly.References = loadedCustomScriptAssembly.References ?? new string[0];
+                loadedCustomScriptAssembly.References = loadedCustomScriptAssembly.References ?? Array.Empty<string>();
                 assemblyLowercaseNamesLookup[lowerCaseName] = loadedCustomScriptAssembly;
                 assemblies.Add(loadedCustomScriptAssembly);
 
@@ -301,7 +301,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
 
         public void ClearCustomScriptAssemblies()
         {
-            CustomScriptAssemblies = new CustomScriptAssembly[0];
+            CustomScriptAssemblies = Array.Empty<CustomScriptAssembly>();
             CustomScriptAssemblyReferences.Clear();
         }
 

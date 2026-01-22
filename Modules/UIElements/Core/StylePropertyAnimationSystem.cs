@@ -19,8 +19,6 @@ namespace UnityEngine.UIElements
         bool StartTransition(VisualElement owner, StylePropertyId prop, Color startValue, Color endValue, int durationMs, int delayMs, [NotNull] Func<float, float> easingCurve);
         bool StartTransitionEnum(VisualElement owner, StylePropertyId prop, int startValue, int endValue, int durationMs, int delayMs, [NotNull] Func<float, float> easingCurve);
         bool StartTransition(VisualElement owner, StylePropertyId prop, EntityId startValue, EntityId endValue, int durationMs, int delayMs, [NotNull] Func<float, float> easingCurve);
-        bool StartTransition(VisualElement owner, StylePropertyId prop, FontDefinition startValue, FontDefinition endValue, int durationMs, int delayMs, [NotNull] Func<float, float> easingCurve);
-        bool StartTransition(VisualElement owner, StylePropertyId prop, Font startValue, Font endValue, int durationMs, int delayMs, [NotNull] Func<float, float> easingCurve);
         bool StartTransition(VisualElement owner, StylePropertyId prop, TextShadow startValue, TextShadow endValue, int durationMs, int delayMs, [NotNull] Func<float, float> easingCurve);
         bool StartTransition(VisualElement owner, StylePropertyId prop, Scale startValue, Scale endValue, int durationMs, int delayMs, [NotNull] Func<float, float> easingCurve);
         bool StartTransition(VisualElement owner, StylePropertyId prop, TransformOrigin startValue, TransformOrigin endValue, int durationMs, int delayMs, [NotNull] Func<float, float> easingCurve);
@@ -1039,45 +1037,7 @@ namespace UnityEngine.UIElements
             }
         }
 
-        class ValuesBackground : ValuesDiscrete<EntityId>
-        {
-            protected sealed override void UpdateComputedStyle()
-            {
-                int n = running.count;
-                for (int i = 0; i < n; i++)
-                {
-                    running.elements[i].computedStyle.ApplyPropertyAnimation(running.elements[i],
-                        running.properties[i], running.style[i].currentValue);
-                }
-            }
-
-            protected sealed override void UpdateComputedStyle(int i)
-            {
-                running.elements[i].computedStyle.ApplyPropertyAnimation(running.elements[i],
-                    running.properties[i], running.style[i].currentValue);
-            }
-        }
-
-        class ValuesFontDefinition : ValuesDiscrete<FontDefinition>
-        {
-            protected sealed override void UpdateComputedStyle()
-            {
-                int n = running.count;
-                for (int i = 0; i < n; i++)
-                {
-                    running.elements[i].computedStyle.ApplyPropertyAnimation(running.elements[i],
-                        running.properties[i], running.style[i].currentValue);
-                }
-            }
-
-            protected sealed override void UpdateComputedStyle(int i)
-            {
-                running.elements[i].computedStyle.ApplyPropertyAnimation(running.elements[i],
-                    running.properties[i], running.style[i].currentValue);
-            }
-        }
-
-        class ValuesFont : ValuesDiscrete<Font>
+        class ValuesEntityId : ValuesDiscrete<EntityId>
         {
             protected sealed override void UpdateComputedStyle()
             {
@@ -1676,9 +1636,14 @@ namespace UnityEngine.UIElements
 
                 if (result.material == null)
                 {
-                    // When transitioning from an emtpy source, we sanitize the result beforehand
+                    // When transitioning from an empty source, we sanitize the result beforehand
                     result.material = a.material ?? b.material;
                     result.propertyValues = new List<MaterialPropertyValue>(maxCount);
+                }
+                else
+                {
+                    result.propertyValues ??= new List<MaterialPropertyValue>();
+                    result.propertyValues.Capacity = maxCount;
                 }
 
                 while (result.propertyValues.Count < maxCount)
@@ -1712,9 +1677,7 @@ namespace UnityEngine.UIElements
         private ValuesLength m_Lengths;
         private ValuesColor m_Colors;
         private ValuesEnum m_Enums;
-        private ValuesBackground m_Backgrounds;
-        private ValuesFontDefinition m_FontDefinitions;
-        private ValuesFont m_Fonts;
+        private ValuesEntityId m_EntityIds;
         private ValuesTextShadow m_TextShadows;
         private ValuesScale m_Scale;
         private ValuesRotate m_Rotate;
@@ -1779,17 +1742,7 @@ namespace UnityEngine.UIElements
 
         public bool StartTransition(VisualElement owner, StylePropertyId prop, EntityId startValue, EntityId endValue, int durationMs, int delayMs, [NotNull] Func<float, float> easingCurve)
         {
-            return StartTransition(owner, prop, startValue, endValue, durationMs, delayMs, easingCurve, GetOrCreate(ref m_Backgrounds));
-        }
-
-        public bool StartTransition(VisualElement owner, StylePropertyId prop, FontDefinition startValue, FontDefinition endValue, int durationMs, int delayMs, [NotNull] Func<float, float> easingCurve)
-        {
-            return StartTransition(owner, prop, startValue, endValue, durationMs, delayMs, easingCurve, GetOrCreate(ref m_FontDefinitions));
-        }
-
-        public bool StartTransition(VisualElement owner, StylePropertyId prop, Font startValue, Font endValue, int durationMs, int delayMs, [NotNull] Func<float, float> easingCurve)
-        {
-            return StartTransition(owner, prop, startValue, endValue, durationMs, delayMs, easingCurve, GetOrCreate(ref m_Fonts));
+            return StartTransition(owner, prop, startValue, endValue, durationMs, delayMs, easingCurve, GetOrCreate(ref m_EntityIds));
         }
 
         public bool StartTransition(VisualElement owner, StylePropertyId prop, TextShadow startValue, TextShadow endValue, int durationMs, int delayMs, [NotNull] Func<float, float> easingCurve)

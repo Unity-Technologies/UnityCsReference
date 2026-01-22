@@ -87,7 +87,8 @@ namespace UnityEngine.Windows.WebCam
         public delegate void OnStoppedRecordingVideoCallback(VideoCaptureResult result);
 
         //-----------------------------------------------------------------
-        public static IEnumerable<Resolution> SupportedResolutions
+        public static IEnumerable<Resolution> SupportedResolutions => SupportedResolutions_Internal;
+        internal static Resolution[] SupportedResolutions_Internal
         {
             get
             {
@@ -107,6 +108,10 @@ namespace UnityEngine.Windows.WebCam
 
         //-----------------------------------------------------------------
         public static IEnumerable<float> GetSupportedFrameRatesForResolution(Resolution resolution)
+        {
+            return GetSupportedFrameRatesForResolution_Internal(resolution);
+        }
+        internal static float[] GetSupportedFrameRatesForResolution_Internal(Resolution resolution)
         {
             float[] supportedFrameRates = null;
             supportedFrameRates = GetSupportedFrameRatesForResolution_Internal(resolution.width, resolution.height);
@@ -271,7 +276,7 @@ namespace UnityEngine.Windows.WebCam
         }
 
         //-----------------------------------------------------------------
-        [ThreadAndSerializationSafe]
+        [ThreadSafe]
         [NativeConditional("(PLATFORM_WIN || PLATFORM_WINRT) && !PLATFORM_XBOXONE")]
         [NativeMethod("VideoCaptureBindings::GetUnsafePointerToVideoDeviceController", HasExplicitThis = true)]
         public extern IntPtr GetUnsafePointerToVideoDeviceController();
@@ -302,7 +307,7 @@ namespace UnityEngine.Windows.WebCam
             }
         }
 
-        [ThreadAndSerializationSafe]
+        [ThreadSafe]
         [NativeConditional("(PLATFORM_WIN || PLATFORM_WINRT) && !PLATFORM_XBOXONE")]
         [NativeMethod("VideoCaptureBindings::DisposeThreaded", HasExplicitThis = true)]
         private extern void DisposeThreaded_Internal();

@@ -165,7 +165,7 @@ namespace UnityEditor.Search
         protected BaseFilter(string token, IEnumerable<string> supportedOperatorTypes, bool resolver, QueryEngineImpl<TEngineType> queryEngine)
         {
             this.token = token;
-            supportedOperators = supportedOperatorTypes ?? new string[] {};
+            supportedOperators = supportedOperatorTypes ?? Array.Empty<string>();
             usesResolver = resolver;
             overridesStringComparison = false;
             m_QueryEngine = queryEngine;

@@ -318,7 +318,7 @@ namespace UnityEngine.UIElements
         /// </summary>
         public event Func<SetupDragAndDropArgs, StartDragArgs> setupDragAndDrop;
 
-        internal StartDragArgs RaiseSetupDragAndDrop(ReusableCollectionItem item, IEnumerable<int> ids, StartDragArgs args)
+        internal StartDragArgs RaiseSetupDragAndDrop(ReusableCollectionItem item, IReadOnlyList<int> ids, StartDragArgs args)
         {
             return setupDragAndDrop?.Invoke(new SetupDragAndDropArgs(item?.rootElement, ids, args)) ?? args;
         }

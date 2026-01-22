@@ -189,9 +189,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_ButtonAction = buttonAction;
             UIUtils.SetElementDisplay(messageAreaButton, buttonAction != null);
 
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            m_PageManager.activePage.SetNewSelection(Enumerable.Empty<string>());
-#pragma warning restore RS0030
+            m_PageManager.activePage.SetNewSelection(Array.Empty<string>());
         }
 
         private void HideMessageShowList(bool skipListRebuild)

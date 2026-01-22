@@ -78,7 +78,7 @@ namespace UnityEditor.Modules
                 if (type == typeof(bool)) value = EditorGUILayout.Toggle(name, (bool)value);
                 else if (type.IsEnum)
                 {
-                    if (type.GetCustomAttributes(typeof(FlagsAttribute), false).Length > 0)
+                    if (type.IsDefined(typeof(FlagsAttribute), false))
                         value = EditorGUILayout.EnumFlagsField(name, (Enum)value);
                     else
                         value = EditorGUILayout.EnumPopup(name, (Enum)value);

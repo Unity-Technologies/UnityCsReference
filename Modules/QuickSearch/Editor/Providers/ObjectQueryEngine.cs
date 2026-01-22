@@ -188,9 +188,7 @@ namespace UnityEditor.Search.Providers
 #pragma warning restore RS0030
             }
 
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            return m_TypePropositions ?? Enumerable.Empty<SearchProposition>();
-#pragma warning restore RS0030
+            return m_TypePropositions ?? (IEnumerable<SearchProposition>)Array.Empty<SearchProposition>();
         }
 
         static SearchProposition CreateTypeProposition(in Type t, string prefixFilterId)
@@ -217,9 +215,7 @@ namespace UnityEditor.Search.Providers
                     #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     context.AddSearchQueryErrors(query.errors.Select(e => new SearchQueryError(e, context, provider)));
 #pragma warning restore RS0030
-                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                return Enumerable.Empty<T>();
-#pragma warning restore RS0030
+                return Array.Empty<T>();
             }
 
             m_DoFuzzyMatch = query.HasToggle("fuzzy");

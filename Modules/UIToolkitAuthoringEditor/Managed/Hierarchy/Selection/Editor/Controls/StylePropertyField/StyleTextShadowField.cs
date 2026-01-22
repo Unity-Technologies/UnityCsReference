@@ -40,13 +40,22 @@ namespace Unity.UIToolkit.Editor
         /// </summary>
         public new static readonly string inputUssClassName = ussClassName + "__input";
 
-        public StyleTextShadowField() : this(null) {}
+        public StyleTextShadowField()
+            : this(null) { }
 
-        public StyleTextShadowField(string label) : base(label, new TextShadowField())
+        public StyleTextShadowField(string label)
+            : base(label, new TextShadowField())
         {
             AddToClassList(ussClassName);
             labelElement.AddToClassList(labelUssClassName);
             visualInput.AddToClassList(inputUssClassName);
+
+            // If label is null, remove the labelElement added with the affordance
+            if (Contains(labelElement) && string.IsNullOrEmpty(labelElement.text))
+            {
+                AddToClassList(noLabelVariantUssClassName);
+                labelElement.RemoveFromHierarchy();
+            }
         }
 
         protected override TextShadowField CreateValueField()

@@ -191,7 +191,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             // Since users could have way more locally downloaded .unitypackages than what's in their purchase list
             // we don't want to trigger change events for all of them, only the ones we already checked before (the ones with productInfos)
             #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            var productIds = addedOrUpdated?.Select(info => info.productId).Concat(removed.Select(info => info.productId) ?? new long[0])?.
+            var productIds = addedOrUpdated?.Select(info => info.productId).Concat(removed.Select(info => info.productId) ?? Array.Empty<long>())?.
 #pragma warning restore RS0030
                 Where(id => m_AssetStoreCache.GetProductInfo(id) != null);
             GeneratePackagesAndTriggerChangeEvent(productIds);
@@ -202,7 +202,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             // Since users could have way more locally downloaded .unitypackages than what's in their purchase list
             // we don't want to trigger change events for all of them, only the ones we already checked before (the ones with productInfos)
             #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            var productIds = addedOrUpdated?.Select(info => info.productId).Concat(removed.Select(info => info.productId) ?? new long[0]);
+            var productIds = addedOrUpdated?.Select(info => info.productId).Concat(removed.Select(info => info.productId) ?? Array.Empty<long>());
 #pragma warning restore RS0030
             GeneratePackagesAndTriggerChangeEvent(productIds);
         }
@@ -235,9 +235,9 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public void GeneratePackagesAndTriggerChangeEvent(IEnumerable<long> productIds)
         {
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable RS0031 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             if (productIds?.Any() != true)
-#pragma warning restore RS0030
+#pragma warning restore RS0031
                 return;
 
             var packagesChanged = new List<IPackage>();

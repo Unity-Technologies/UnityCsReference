@@ -64,12 +64,12 @@ namespace Unity.Multiplayer.PlayMode.Editor
                 var instanceElement = new InstanceStatusElement(instance);
 
                 // We separate them just to make sure they show up in that order
-                switch (instance.GetInstanceDescription())
+                switch (instance.Controller)
                 {
-                    case MainEditorInstanceDescription:
+                    case MainEditorController:
                         mainEditor.Add(instanceElement);
                         break;
-                    case VirtualEditorInstanceDescription:
+                    case CloneEditorController:
                         virtualEditors.Add(instanceElement);
                         break;
                     default:

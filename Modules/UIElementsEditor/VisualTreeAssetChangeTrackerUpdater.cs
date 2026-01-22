@@ -17,7 +17,7 @@ namespace UnityEditor.UIElements
 {
     internal class VisualTreeAssetChangeTrackerUpdater : BaseVisualTreeUpdater, ILiveReloadSystem
     {
-        private struct VisualTreeAssetToTrackMappingEntry
+        internal struct VisualTreeAssetToTrackMappingEntry
         {
             public int m_LastDirtyCount;
             public int m_LastElementCount;
@@ -97,7 +97,7 @@ namespace UnityEditor.UIElements
         // Having the information indexed by asset allows quick access to the trackers keeping tabs on them
         // so that we can check assets for being dirty only once per Update call (instead of potentially multiple times
         // if there are multiple trackers looking at the same asset - e.g. life bars on a game).
-        private Dictionary<VisualTreeAsset, VisualTreeAssetToTrackMappingEntry> m_AssetToTrackerMap = new Dictionary<VisualTreeAsset, VisualTreeAssetToTrackMappingEntry>();
+        internal Dictionary<VisualTreeAsset, VisualTreeAssetToTrackMappingEntry> m_AssetToTrackerMap = new Dictionary<VisualTreeAsset, VisualTreeAssetToTrackMappingEntry>();
 
         // List to help with the Update() and avoid creating and destroying the list.
         private HashSet<ILiveReloadAssetTracker<VisualTreeAsset>> m_TrackersToRefresh = new HashSet<ILiveReloadAssetTracker<VisualTreeAsset>>();
@@ -111,7 +111,7 @@ namespace UnityEditor.UIElements
         // For the editor, only one tracker is needed for the whole window.
         // For runtime, there's one tracker per UIDocument. Tracker are registered with the root VisualElement they belong to.
         private ILiveReloadAssetTracker<VisualTreeAsset> m_EditorVisualTreeAssetTracker;
-        private Dictionary<VisualElement, ILiveReloadAssetTracker<VisualTreeAsset>> m_RuntimeVisualTreeAssetTrackers = new Dictionary<VisualElement, ILiveReloadAssetTracker<VisualTreeAsset>>();
+        internal Dictionary<VisualElement, ILiveReloadAssetTracker<VisualTreeAsset>> m_RuntimeVisualTreeAssetTrackers = new Dictionary<VisualElement, ILiveReloadAssetTracker<VisualTreeAsset>>();
 
         public bool enable { get; set; }
 
@@ -146,6 +146,12 @@ namespace UnityEditor.UIElements
         public void UnregisterVisualTreeAssetTracker(VisualElement rootElement)
         {
             Debug.Assert(panel.contextType == ContextType.Player);
+            if (m_RuntimeVisualTreeAssetTrackers.TryGetValue(rootElement, out var tracker))
+            {
+                // Remove template container to clean up uxml asset tracking
+                if (rootElement is TemplateContainer container && container.templateSource != null)
+                    StopVisualTreeAssetTracking(tracker, container.templateSource);
+            }
             m_RuntimeVisualTreeAssetTrackers.Remove(rootElement);
         }
 

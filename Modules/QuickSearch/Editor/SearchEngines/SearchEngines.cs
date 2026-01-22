@@ -178,7 +178,7 @@ namespace UnityEditor.Search
         public virtual IEnumerable<string> Search(ISearchContext context, string query, Action<IEnumerable<string>> asyncItemsReceived)
         {
             if (!searchSessions.ContainsKey(context.guid))
-                return new string[] {};
+                return Array.Empty<string>();
 
             var searchSession = searchSessions[context.guid];
             var projectSearchContext = (ProjectSearchContext)context;

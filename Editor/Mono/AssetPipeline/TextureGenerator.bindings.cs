@@ -25,6 +25,7 @@ namespace UnityEditor.AssetImporters
         private string m_CustomData;
         private float m_TessellationDetail;
         private string m_SpriteID;
+        [UnityMarshalAs(NativeType.ScriptingObjectPtr)]
         private List<Vector2[]> m_Outline;
 
         public string name { get { return m_Name; } set { m_Name = value; } }

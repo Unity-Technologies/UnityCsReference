@@ -113,8 +113,10 @@ namespace UnityEditor.UIElements
         public void PopItem()
         {
 #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable RS0031 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             if (Children().Any() && Children().Last() is BreadcrumbItem)
 #pragma warning restore RS0030
+#pragma warning restore RS0031
                 RemoveAt(childCount - 1);
             else
                 throw new InvalidOperationException("Last child isn't a BreadcrumbItem");

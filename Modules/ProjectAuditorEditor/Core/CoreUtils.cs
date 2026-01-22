@@ -3,8 +3,6 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using System.Linq;
-using System.Reflection;
 using UnityEditor;
 using UnityEngine;
 
@@ -17,14 +15,8 @@ namespace Unity.ProjectAuditor.Editor.Core
         // Otherwise we check to see if the attributes match the currently selected platform (passed in as platform)
         public static bool SupportsPlatform(Type type, BuildTarget platform)
         {
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            if (!type.CustomAttributes.Any())
-#pragma warning restore RS0030
-                return true;
-            var analysisPlatformAttributes = type.GetCustomAttributes<AnalysisPlatformAttribute>();
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            return !analysisPlatformAttributes.Any() || analysisPlatformAttributes.Any(a => a.Platform == platform);
-#pragma warning restore RS0030
+            var analysisPlatformAttributes = Attribute.GetCustomAttributes(type);
+            return analysisPlatformAttributes.Length == 0 || Array.Exists(analysisPlatformAttributes, a => ((AnalysisPlatformAttribute)a).Platform == platform);
         }
 
         public static Severity LogTypeToSeverity(LogType logType)

@@ -107,6 +107,7 @@ namespace UnityEditor.Animations
         }
 
         [FreeFunction(Name = "AnimatorControllerBindings::Internal_GetBehaviours", HasExplicitThis = true)]
+        [return: UnityMarshalAs(NativeType.ScriptingObjectPtr)]
         extern internal ScriptableObject[] InternalGetBehaviours([NotNull] Type type);
 
         internal static T[] ConvertStateMachineBehaviour<T>(ScriptableObject[] rawObjects) where T : StateMachineBehaviour
@@ -130,6 +131,7 @@ namespace UnityEditor.Animations
         extern internal void RemoveStateEffectiveBehaviour([NotNull] AnimatorState state, int layerIndex, int behaviourIndex);
 
         [FreeFunction(Name = "AnimatorControllerBindings::Internal_GetEffectiveBehaviours", HasExplicitThis = true)]
+        [return: UnityMarshalAs(NativeType.ScriptingObjectPtr)]
         extern internal ScriptableObject[] Internal_GetEffectiveBehaviours([NotNull] AnimatorState state, int layerIndex);
 
         [FreeFunction(Name = "AnimatorControllerBindings::Internal_SetEffectiveBehaviours", HasExplicitThis = true)]

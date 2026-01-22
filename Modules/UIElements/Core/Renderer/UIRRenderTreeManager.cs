@@ -277,7 +277,6 @@ namespace UnityEngine.UIElements.UIR
 
             m_BlockDirtyRegistration = true; // The repaint updater is not supposed to register new changes while processing sub-trees
             m_Compositor.Update(m_RootRenderTree);
-            device.AdvanceFrame(); // Before making any changes to the buffers
             DepthFirstProcessChanges(m_RootRenderTree);
             m_BlockDirtyRegistration = false;
 

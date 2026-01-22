@@ -707,8 +707,8 @@ namespace UnityEngine.UIElements
             m_MenuContainer.style.width = roorContainerLayout.width;
             m_MenuContainer.style.height = roorContainerLayout.height;
             m_MenuContainer.style.fontSize = m_TargetElement.computedStyle.fontSize;
-            m_MenuContainer.style.unityFont = m_TargetElement.computedStyle.unityFont;
-            m_MenuContainer.style.unityFontDefinition = m_TargetElement.computedStyle.unityFontDefinition;
+            m_MenuContainer.style.unityFont = (Font)Resources.EntityIdToObject(m_TargetElement.computedStyle.unityFont);
+            m_MenuContainer.style.unityFontDefinition = FontDefinition.From(m_TargetElement.computedStyle.unityFontDefinition);
 
             var local = m_PanelRootVisualContainer.WorldToLocal(position);
             m_PositionTop = local.y + local.height - roorContainerLayout.y;

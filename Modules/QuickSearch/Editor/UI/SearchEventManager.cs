@@ -38,7 +38,7 @@ namespace UnityEditor.Search
         public SearchEventPayload(ISearchElement sourceElement, params object[] arguments)
         {
             this.sourceElement = sourceElement;
-            this.arguments = arguments ?? new object[] {};
+            this.arguments = arguments ?? Array.Empty<object>();
         }
 
         public SearchEventPayload(SearchContext sourceContext, params object[] arguments)
@@ -180,9 +180,9 @@ namespace UnityEditor.Search
             public SearchEventResult(IEnumerable<object> results, int handlersWithResultsCount, SearchEventResultStatus status)
             {
                 this.results = results;
-                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable RS0031 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 hasResults = results != null && results.Any();
-#pragma warning restore RS0030
+#pragma warning restore RS0031
                 this.handlersWithResultsCount = handlersWithResultsCount;
                 this.status = status;
             }

@@ -22,7 +22,7 @@ namespace Unity.ProjectAuditor.Editor.Modules
         )
         {
             IsEnabledByDefault = true,
-            MessageFormat = "Sprite Atlas '{0}' has too much empty space ({1})",
+            MessageFormat = "Sprite Atlas '{0}' has too much empty space ({1}, {2})",
             FixerLabel = "Open Sprite Atlas Analyzer",
             Fixer = (issue, analysisParams) =>
             {
@@ -54,7 +54,7 @@ namespace Unity.ProjectAuditor.Editor.Modules
                 if (context.EmptySpacePercentage > m_EmptySpaceLimit)
                 {
                     yield return context.CreateIssue(IssueCategory.AssetIssue,
-                        k_PoorUtilizationDescriptor.Id, context.SpriteAtlas.name, Formatting.FormatPercentage(context.EmptySpacePercentage / 100))
+                        k_PoorUtilizationDescriptor.Id, context.SpriteAtlas.name, Formatting.FormatPercentage(context.EmptySpacePercentage / 100), Formatting.FormatSize(context.EmptySpaceBytes))
                         .WithLocation(context.AssetPath);
                 }
             }

@@ -405,11 +405,12 @@ namespace UnityEditor
 
                     if (defines != null)
                     {
+                        EditorBuildRules.SymbolDefinitionContext symbolDefinitionContext = new EditorBuildRules.SymbolDefinitionContext(defines);
                         for (var i = 0; i < m_DefineConstraints.serializedProperty.arraySize && defineConstraintsCompatible; ++i)
                         {
                             var defineConstraint = m_DefineConstraints.serializedProperty.GetArrayElementAtIndex(i).FindPropertyRelative("name").stringValue;
 
-                            if (DefineConstraintsHelper.GetDefineConstraintCompatibility(defines, defineConstraint) != DefineConstraintsHelper.DefineConstraintStatus.Compatible)
+                            if (DefineConstraintsHelper.GetDefineConstraintCompatibility(symbolDefinitionContext, defineConstraint) != DefineConstraintsHelper.DefineConstraintStatus.Compatible)
                             {
                                 defineConstraintsCompatible = false;
                             }
@@ -537,7 +538,7 @@ namespace UnityEditor
 
             if (defines != null)
             {
-                var status = DefineConstraintsHelper.GetDefineConstraintCompatibility(defines, defineConstraint.stringValue);
+                var status = DefineConstraintsHelper.GetDefineConstraintCompatibility(new EditorBuildRules.SymbolDefinitionContext(defines), defineConstraint.stringValue);
                 var image = status == DefineConstraintsHelper.DefineConstraintStatus.Compatible ? Styles.validDefineConstraint : Styles.invalidDefineConstraint;
 
                 var content = new GUIContent(image, Styles.GetIndividualTooltipFromDefineConstraintStatus(status));
@@ -554,8 +555,8 @@ namespace UnityEditor
 
         private string[] GetDefines()
         {
-            var responseFileDefinesFromAssemblyName = CompilationPipeline.GetResponseFileDefinesFromAssemblyName(m_AssemblyName.stringValue) ?? new string[0];
-            var definesFromAssemblyName = CompilationPipeline.GetDefinesFromAssemblyName(m_AssemblyName.stringValue) ?? new string[0];
+            var responseFileDefinesFromAssemblyName = CompilationPipeline.GetResponseFileDefinesFromAssemblyName(m_AssemblyName.stringValue) ?? Array.Empty<string>();
+            var definesFromAssemblyName = CompilationPipeline.GetDefinesFromAssemblyName(m_AssemblyName.stringValue) ?? Array.Empty<string>();
 #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var defines = definesFromAssemblyName.Concat(responseFileDefinesFromAssemblyName);
 #pragma warning restore RS0030
@@ -572,8 +573,10 @@ namespace UnityEditor
 #pragma warning restore RS0030
 
 #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable RS0031 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             if (!string.IsNullOrEmpty(preselectedResourceName) && !versionDefineResourceOptions.Where(x => x.Name == preselectedResourceName).Any())
 #pragma warning restore RS0030
+#pragma warning restore RS0031
             {
                 versionDefineResourceOptions.Add(new VersionMetaData(preselectedResourceName));
             }
@@ -882,9 +885,7 @@ namespace UnityEditor
                 .Where(x => (x.Flags & AssemblyFlags.UserAssembly) == AssemblyFlags.UserAssembly)
                 .Distinct()
                 .ToDictionary(x => AssetPath.GetFileName(x.Path), x => x);
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            foreach (var precompiledReferenceName in data.precompiledReferences ?? Enumerable.Empty<String>())
-#pragma warning restore RS0030
+            foreach (var precompiledReferenceName in data.precompiledReferences ?? Array.Empty<string>())
             {
                 try
                 {
@@ -1000,9 +1001,7 @@ namespace UnityEditor
                     dataPlatforms.Add(platforms[i].Name);
             }
 
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            if (dataPlatforms.Any())
-#pragma warning restore RS0030
+            if (dataPlatforms.Count > 0)
             {
                 if (state.compatibleWithAnyPlatform)
                     data.excludePlatforms = dataPlatforms.ToArray();

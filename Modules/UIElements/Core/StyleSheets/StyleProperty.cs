@@ -4,9 +4,11 @@
 
 using System;
 using System.Collections.Generic;
+using Unity.Collections;
 using UnityEngine.Bindings;
 using UnityEngine.UIElements.Layout;
 using UnityEngine.UIElements.StyleSheets;
+using UnityEngine.UIElements.Unmanaged;
 
 namespace UnityEngine.UIElements
 {
@@ -1262,10 +1264,8 @@ namespace UnityEngine.UIElements
         /// <param name="styleSheet">The data store.</param>
         /// <param name="value">The read value.</param>
         /// <returns><see langword="true"/> if the value could be read; <see langword="false"/> otherwise.</returns>
-        public bool TryGetMaterialDefinition(StyleSheet styleSheet, out MaterialDefinition value)
+        public bool TryGetMaterialDefinition(StyleSheet styleSheet, ref UnmanagedMaterialDefinition value)
         {
-            value = default;
-
             if (handleCount < 1)
                 return false;
 
@@ -1278,93 +1278,100 @@ namespace UnityEngine.UIElements
             }
 
             // Read material properties
-            var propertyValues = new List<MaterialPropertyValue>();
-            for (int i = 1; i < values.Length;)
+            using (var tmpList = new UnmanagedTempList<UnmanagedMaterialPropertyValue>(2))
             {
-                var fnType = (StyleValueFunction)values[i++].valueIndex;
-                if (fnType != StyleValueFunction.MaterialProperty)
-                    break;
-
-                if (!styleSheet.TryReadFloat(values[i++], out var ac))
-                    return false;
-
-                int argCount = (int)ac;
-
-                if (!styleSheet.TryReadString(values[i++], out string propertyName))
-                    return false;
-
-                var valueType = values[i].valueType;
-                if (valueType == StyleValueType.Float)
+                for (int i = 1; i < values.Length;)
                 {
-                    int vecDim = argCount - 1; // -1 to account for the property name
-                    var vec = Vector4.zero;
-                    int vecIndex = 0;
-                    while (vecIndex < vecDim)
-                    {
-                        if (!styleSheet.TryReadFloat(values[i++], out var f))
-                            return false;
-                        vec[vecIndex++] = f;
-                    }
+                    var fnType = (StyleValueFunction)values[i++].valueIndex;
+                    if (fnType != StyleValueFunction.MaterialProperty)
+                        break;
 
-                    var type = (vecDim > 1) ? MaterialPropertyValueType.Vector : MaterialPropertyValueType.Float;
-
-                    propertyValues.Add(new MaterialPropertyValue()
-                    {
-                        name = propertyName,
-                        type = type,
-                        packedValue = vec
-                    });
-                }
-                else if (valueType == StyleValueType.Color || valueType == StyleValueType.Enum)
-                {
-                    if (!styleSheet.TryReadColor(values[i++], out var c))
+                    if (!styleSheet.TryReadFloat(values[i++], out var ac))
                         return false;
-                    propertyValues.Add(new MaterialPropertyValue()
+
+                    int argCount = (int)ac;
+
+                    if (!styleSheet.TryReadString(values[i++], out string propertyName))
+                        return false;
+
+                    var valueType = values[i].valueType;
+                    var propID = Shader.PropertyToID(propertyName);
+
+                    UnmanagedMaterialPropertyValue propertyValue;
+
+                    if (valueType == StyleValueType.Float)
                     {
-                        name = propertyName,
-                        type = MaterialPropertyValueType.Color,
-                        packedValue = new Vector4(c.r, c.g, c.b, c.a)
-                    });
-                }
-                else if (valueType == StyleValueType.AssetReference || valueType == StyleValueType.ResourcePath || valueType == StyleValueType.MissingAssetReference)
-                {
-                    Object tex = null;
-                    if (valueType != StyleValueType.MissingAssetReference)
+                        int vecDim = argCount - 1; // -1 to account for the property name
+                        var vec = Vector4.zero;
+                        int vecIndex = 0;
+                        while (vecIndex < vecDim)
+                        {
+                            if (!styleSheet.TryReadFloat(values[i++], out var f))
+                                return false;
+                            vec[vecIndex++] = f;
+                        }
+
+                        var type = (vecDim > 1) ? MaterialPropertyValueType.Vector : MaterialPropertyValueType.Float;
+
+                        propertyValue = new UnmanagedMaterialPropertyValue()
+                        {
+                            name = propID,
+                            type = type,
+                            packedValue = vec
+                        };
+                    }
+                    else if (valueType == StyleValueType.Color || valueType == StyleValueType.Enum)
                     {
-                        if (values[i].valueType == StyleValueType.AssetReference)
+                        if (!styleSheet.TryReadColor(values[i++], out var c))
+                            return false;
+                        propertyValue = new UnmanagedMaterialPropertyValue()
                         {
-                            if (!styleSheet.TryReadAssetReference(values[i++], out tex))
-                                return false;
-                        }
-                        else if (values[i].valueType == StyleValueType.ResourcePath)
+                            name = propID,
+                            type = MaterialPropertyValueType.Color,
+                            packedValue = new Vector4(c.r, c.g, c.b, c.a)
+                        };
+                    }
+                    else if (valueType == StyleValueType.AssetReference || valueType == StyleValueType.ResourcePath || valueType == StyleValueType.MissingAssetReference)
+                    {
+                        Object tex = null;
+                        if (valueType != StyleValueType.MissingAssetReference)
                         {
-                            if (!styleSheet.TryReadResourcePath(values[i++], out var resourcePath))
-                                return false;
-                            tex = resourcePath.LoadResource<Texture>(1.0f);
+                            if (values[i].valueType == StyleValueType.AssetReference)
+                            {
+                                if (!styleSheet.TryReadAssetReference(values[i++], out tex))
+                                    return false;
+                            }
+                            else if (values[i].valueType == StyleValueType.ResourcePath)
+                            {
+                                if (!styleSheet.TryReadResourcePath(values[i++], out var resourcePath))
+                                    return false;
+                                tex = resourcePath.LoadResource<Texture>(1.0f);
+                            }
                         }
+                        else
+                            ++i;
+
+                        propertyValue = new UnmanagedMaterialPropertyValue()
+                        {
+                            name = propID,
+                            type = MaterialPropertyValueType.Texture,
+                            textureValue = tex != null ? tex.GetEntityId() : EntityId.None
+                        };
                     }
                     else
-                        ++i;
-
-                    propertyValues.Add(new MaterialPropertyValue()
                     {
-                        name = propertyName,
-                        type = MaterialPropertyValueType.Texture,
-                        textureValue = tex as Texture
-                    });
-                }
-                else
-                {
-                    Debug.LogError($"Unexpected value type {valueType} in material property argument");
-                    return false;
-                }
-            }
+                        Debug.LogError($"Unexpected value type {valueType} in material property argument");
+                        return false;
+                    }
 
-            value = new MaterialDefinition()
-            {
-                material = matObj as Material,
-                propertyValues = propertyValues
-            };
+                    tmpList.Add(propertyValue);
+                }
+
+                var material = matObj as Material;
+
+                value.material = material != null ? material.GetEntityId() : EntityId.None;
+                value.propertyValues.CopyFrom(tmpList.Span);
+            }
 
             return true;
         }

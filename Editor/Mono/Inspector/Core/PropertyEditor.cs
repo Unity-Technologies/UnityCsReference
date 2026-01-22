@@ -926,11 +926,11 @@ namespace UnityEditor
             // Other cases will cause the number of Editors to change which will result in the tracker being rebuilt already.
             var prevRemovedComponents = new HashSet<Component>(m_RemovedComponents ?? new HashSet<Component>());
             var prevSuppressedComponents = new HashSet<Component>(m_SuppressedComponents ?? new HashSet<Component>());
-            var prevComponentsInPrefabSource = new HashSet<Component>(m_ComponentsInPrefabSource ?? new Component[0]);
+            var prevComponentsInPrefabSource = new HashSet<Component>(m_ComponentsInPrefabSource ?? Array.Empty<Component>());
             ExtractPrefabComponents();
             if (!prevRemovedComponents.SetEquals(m_RemovedComponents ?? new HashSet<Component>())  ||
                 !prevSuppressedComponents.SetEquals(m_SuppressedComponents ?? new HashSet<Component>()) ||
-                !prevComponentsInPrefabSource.SetEquals(m_ComponentsInPrefabSource ?? new Component[0]))
+                !prevComponentsInPrefabSource.SetEquals(m_ComponentsInPrefabSource ?? Array.Empty<Component>()))
             {
                 RebuildContentsContainers();
             }
@@ -1067,7 +1067,7 @@ namespace UnityEditor
 
             foreach (var editor in activeEditors)
             {
-                IEnumerable<IPreviewable> previews = GetPreviewsForType(editor);
+                var previews = GetPreviewsForType(editor);
                 foreach (var preview in previews)
                 {
                     m_Previews.Add(preview);
@@ -1098,20 +1098,16 @@ namespace UnityEditor
             return m_PreviewableTypes;
         }
 
-        private IEnumerable<IPreviewable> GetPreviewsForType(Editor editor)
+        private IReadOnlyCollection<IPreviewable> GetPreviewsForType(Editor editor)
         {
             // Retrieve the type we are looking for.
             if (editor == null || editor.target == null)
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                return Enumerable.Empty<IPreviewable>();
-#pragma warning restore RS0030
+                return Array.Empty<IPreviewable>();
 
             Type targetType = editor.target.GetType();
             var previewableTypes = GetPreviewableTypes();
             if (previewableTypes == null || !previewableTypes.TryGetValue(targetType, out var previewerList) || previewerList == null)
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                return Enumerable.Empty<IPreviewable>();
-#pragma warning restore RS0030
+                return Array.Empty<IPreviewable>();
 
             List<IPreviewable> previews = new List<IPreviewable>();
             foreach (var previewerType in previewerList)
@@ -1207,9 +1203,7 @@ namespace UnityEditor
             foreach (var editor in editors)
                 m_EditorTargetTypes.Add(editor.target ? editor.target.GetType() : null);
 
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            if (editors.Any() && versionControlElement != null)
-#pragma warning restore RS0030
+            if (editors.Length > 0 && versionControlElement != null)
             {
                 versionControlElement.Add(CreateIMGUIContainer(
                     () => VersionControlBar(editors)));
@@ -1244,9 +1238,7 @@ namespace UnityEditor
                 m_MultiEditLabel.RemoveFromHierarchy();
             }
 
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            if (addComponentButton != null && editors.Any() && RootEditorUtils.SupportsAddComponent(editors))
-#pragma warning restore RS0030
+            if (addComponentButton != null && editors.Length > 0 && RootEditorUtils.SupportsAddComponent(editors))
             {
                 addComponentButton.Add(CreateIMGUIContainer(() =>
                 {
@@ -1265,9 +1257,7 @@ namespace UnityEditor
 
             ClearPreview();
 
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            if (m_PreviewResizer != null && editors.Any())
-#pragma warning restore RS0030
+            if (m_PreviewResizer != null && editors.Length > 0)
             {
                 if (previewAndLabelElement != null)
                 {
@@ -1322,9 +1312,7 @@ namespace UnityEditor
 
             k_CreateInspectorElements.Begin();
             // Only trigger the fixed count and viewport creation if this is the first build. Otherwise let the update method handle it.
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            if (m_EditorElementUpdater.Position == 0 && editors.Any())
-#pragma warning restore RS0030
+            if (m_EditorElementUpdater.Position == 0 && editors.Length > 0)
             {
                 // Force create a certain number of inspector elements without invoking a layout pass.
                 // We always want a minimum number of elements to be added.
@@ -1524,9 +1512,7 @@ namespace UnityEditor
 
         private void DragOverBottomArea(DragUpdatedEvent dragUpdatedEvent)
         {
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            if (DragAndDrop.objectReferences.Any())
-#pragma warning restore RS0030
+            if (DragAndDrop.objectReferences.Length > 0)
             {
                 if (editorsElement != null && editorsElement.ContainsPoint(editorsElement.WorldToLocal(dragUpdatedEvent.mousePosition)))
                 {
@@ -2236,12 +2222,8 @@ namespace UnityEditor
             var selection = new HashSet<int>(Selection.entityIds.ToIntArray());
             if (m_DrawnSelection.SetEquals(selection))
             {
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                if (editorsElement.childCount > 0 && m_DrawnSelection.Any()) // do we already have a hierarchy
-#pragma warning restore RS0030
-                {
+                if (editorsElement.childCount > 0 && m_DrawnSelection.Count > 0) // do we already have a hierarchy
                     mapping = ProcessEditorElementsToRebuild(editors);
-                }
             }
             else
             {

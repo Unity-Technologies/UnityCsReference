@@ -23,7 +23,7 @@ namespace UnityEngine
         public float zFar;
     }
 
-    [NativeType(Header = "Runtime/Math/Matrix4x4.h")]
+    [NativeHeader("Runtime/Math/Matrix4x4.h")]
     [NativeHeader("Runtime/Math/MathScripting.h")]
     public partial struct Matrix4x4
     {
@@ -101,7 +101,7 @@ namespace UnityEngine
         internal static bool CompareApproximately(in Matrix4x4 a, in Matrix4x4 b, float threshold) => Matrix4x4.Internal_CompareApproximately(in a, in b, threshold);
     }
 
-    [NativeType(Header = "Runtime/Math/Vector3.h")]
+    [NativeHeader("Runtime/Math/Vector3.h")]
     [NativeHeader("Runtime/Math/MathScripting.h")]
     public partial struct Vector3
     {
@@ -129,7 +129,7 @@ namespace UnityEngine
         public static Vector3 RotateTowards(in Vector3 current, in Vector3 target, float maxRadiansDelta, float maxMagnitudeDelta) => Vector3.Internal_RotateTowards(in current, in target, maxRadiansDelta, maxMagnitudeDelta);
     }
 
-    [NativeType(Header = "Runtime/Math/Quaternion.h")]
+    [NativeHeader("Runtime/Math/Quaternion.h")]
     [NativeHeader("Runtime/Math/MathScripting.h")]
     [UsedByNativeCode]
     public partial struct Quaternion
@@ -191,7 +191,7 @@ namespace UnityEngine
         [uei.ExcludeFromDocs] public static Quaternion LookRotation(in Vector3 forward) => Quaternion.Internal_LookRotation(in forward, Vector3.up);
     }
 
-    [NativeType(Header = "Runtime/Geometry/AABB.h")]
+    [NativeHeader("Runtime/Geometry/AABB.h")]
     [NativeHeader("Runtime/Math/MathScripting.h")]
     [NativeHeader("Runtime/Geometry/Ray.h")]
     [NativeHeader("Runtime/Geometry/Intersection.h")]

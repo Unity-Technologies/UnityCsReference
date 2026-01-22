@@ -3,7 +3,9 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Collections;
 using System.Collections.Generic;
+using System.IO;
 using Unity.ProjectAuditor.Editor.Core;
 using Unity.ProjectAuditor.Editor.Utils;
 using UnityEditor;
@@ -136,7 +138,7 @@ namespace Unity.ProjectAuditor.Editor.Modules
                 });
         }
 
-        public override AnalysisResult Audit(AnalysisParams analysisParams, IProgress progress = null)
+        public override IEnumerator Audit(AnalysisParams analysisParams, IProgress progress)
         {
             var analyzers = GetCompatibleAnalyzers(analysisParams);
             var editorSpriteModeIsV2 = EditorSettings.spritePackerMode == SpritePackerMode.SpriteAtlasV2;
@@ -152,7 +154,9 @@ namespace Unity.ProjectAuditor.Editor.Modules
 
             var assetPaths = GetAssetPathsByFilter("t:SpriteAtlas, a:assets", context);
 
-            progress?.Start("Finding Sprite Atlases", "Search in Progress...", assetPaths.Length);
+            AsyncProgressState progressState = progress?.Start("Analyzing Sprite Atlases", assetPaths.Length);
+
+            yield return null;
 
             bool loggedWarning = false;
 
@@ -160,6 +164,9 @@ namespace Unity.ProjectAuditor.Editor.Modules
 
             foreach (var assetPath in assetPaths)
             {
+                if (AdvanceAsyncProgress(progress, progressState, Path.GetFileName(assetPath)) == false)
+                    break;
+
                 // v2 atlases can only be read when the sprite mode is set to always deal with them.
                 // v1 atlases can be read with any non-v2 setting (even disabled), and get automatically upgraded to
                 // v2 assets if the setting is changed to either of the v2 options.
@@ -171,13 +178,11 @@ namespace Unity.ProjectAuditor.Editor.Modules
                     loggedWarning = true;
                 }
 
-                if (progress?.IsCancelled ?? false)
-                    return AnalysisResult.Cancelled;
-
                 context.AssetPath = assetPath;
                 context.SpriteAtlas = AssetDatabase.LoadAssetAtPath<SpriteAtlas>(context.AssetPath);
                 context.Name = context.SpriteAtlas.name;
                 context.EmptySpacePercentage = -1;
+                context.EmptySpaceBytes = 0;
                 var mainTextureResolution = k_Unavailable;
 
                 // Don't run GetEmptySpacePercentage if disabled, as it's reportedly quite a lengthy analysis on some projects.
@@ -203,7 +208,7 @@ namespace Unity.ProjectAuditor.Editor.Modules
                         {
                             mainTextureResolution = previewTexture.width + "x" + previewTexture.height;
 
-                            context.EmptySpacePercentage = TextureUtils.GetEmptyPixelsPercent(previewTexture);
+                            TextureUtils.GetEmptyPixelsPercent(previewTexture, out context.EmptySpacePercentage, out context.EmptySpaceBytes);
 
                             if (context.EmptySpacePercentage < 0)
                             {
@@ -240,15 +245,14 @@ namespace Unity.ProjectAuditor.Editor.Modules
                     analysisParams.OnIncomingIssues(analyzer.Analyze(context));
                 }
 
-                progress?.Advance();
+                yield return null;
             }
 
             if (issues.Count > 0)
                 context.Params.OnIncomingIssues(issues);
 
-            progress?.Clear();
-
-            return AnalysisResult.Success;
+            progress?.Clear(progressState);
+            analysisParams.OnModuleCompleted?.Invoke(Name, AnalysisResult.Success, 0);
         }
     }
 }

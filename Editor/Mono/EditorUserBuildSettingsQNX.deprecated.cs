@@ -9,7 +9,7 @@ using UnityEngine.Bindings;
 // wrapper class to provide similar interface as old settings. old: UnityEditor.EditorUserBuildSettings.selectedQnxArchitecture   ... new: UnityEditor.EditorUserBuildSettings.QNX.architecture
 namespace UnityEditor
 {
-    [NativeType(Header = "Editor/Src/EditorUserBuildSettings.h")]
+    [NativeHeader("Editor/Src/EditorUserBuildSettings.h")]
     [Obsolete("QNXArchitecture is deprecated. Use EmbeddedArchitecture. (UnityUpgradable) -> EmbeddedArchitecture", false)]
     public enum QNXArchitecture
     {

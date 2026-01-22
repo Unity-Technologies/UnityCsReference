@@ -63,9 +63,7 @@ namespace UnityEditor.EditorTools
 
         internal static int availableComponentContextCount => instance.m_ComponentContexts.Count;
 
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-        internal static IEnumerable<Type> additionalContextToolTypesCache = Enumerable.Empty<Type>();
-#pragma warning restore RS0030
+        internal static IReadOnlyList<Type> additionalContextToolTypesCache = Array.Empty<Type>();
 
         [SerializeField]
         EditorToolContext m_ActiveToolContext;
@@ -853,9 +851,7 @@ namespace UnityEditor.EditorTools
                     entry.tools.Add(i);
                 }
 
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                if (entry.tools.Any())
-#pragma warning restore RS0030
+                if (entry.tools.Count > 0)
                     tools.Add(entry);
             }
 

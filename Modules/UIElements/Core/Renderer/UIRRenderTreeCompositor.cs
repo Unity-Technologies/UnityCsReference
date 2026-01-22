@@ -172,15 +172,13 @@ namespace UnityEngine.UIElements.UIR
             VisualElement ve = renderTree.rootRenderData.owner;
 
             // Extract the filters as List<> to avoid allocations when dealing with IEnumerable<>
-            var filter = ve.resolvedStyle.filter as List<FilterFunction>;
-            if (filter == null)
-                throw new InvalidOperationException("Filter IEnumerable is not a List<FilterFunction>");
+            var computedFilter = ve.computedStyle.filter;
 
             // Add the filters and effects in reversed order since they are applied in a depth-first order
-            for (int i = filter.Count - 1; i >= 0; i--)
+            for (int i = computedFilter.Length - 1; i >= 0; i--)
             {
-                var filterDef = filter[i].GetDefinition();
-                if (filterDef?.passes == null)
+                var filterDef = ((FilterFunction)computedFilter[i]).GetDefinition();
+                if (filterDef == null || filterDef.passes == null)
                     continue;
 
                 for (int j = filterDef.passes.Length - 1; j >= 0; j--)
@@ -190,7 +188,7 @@ namespace UnityEngine.UIElements.UIR
                         continue;
 
                     var operation = m_DrawOperationPool.Get();
-                    operation.Init(ve, filterPass, j, filter[i]);
+                    operation.Init(ve, filterPass, j, computedFilter[i]);
 
                     parentOperation.AddChild(operation);
                     parentOperation = operation;

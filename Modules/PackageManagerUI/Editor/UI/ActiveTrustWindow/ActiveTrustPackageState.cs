@@ -47,20 +47,11 @@ namespace UnityEditor.PackageManager.UI.Internal
                 var label = (Label)e;
                 switch (items[i].source)
                 {
-                    case PackageSource.LocalTarball:
-                        label.text = L10n.Tr("Tarball");
-                        break;
-                    case PackageSource.BuiltIn:
-                        label.text = L10n.Tr("Built-in");
-                        break;
-                    case PackageSource.Embedded:
-                        label.text = L10n.Tr("Custom");
-                        break;
                     case PackageSource.Registry:
-                        label.text = string.IsNullOrEmpty(items[i].registry?.name) ? L10n.Tr("Registry") : items[i].registry.name;
+                        label.text = string.IsNullOrEmpty(items[i].registry?.name) ? items[i].source.GetDisplayName() : items[i].registry.name;
                         break;
                     default:
-                        label.text = items[i].source.ToString();
+                        label.text = items[i].source.GetDisplayName();
                         break;
                 }
             };

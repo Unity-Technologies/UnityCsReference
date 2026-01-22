@@ -849,6 +849,11 @@ namespace Unity.GraphToolkit.Editor
                 Refresh(false);
         }
 
+        internal bool IsGroupViewExpanded(GroupModelBase group)
+        {
+            return m_TreeView.IsExpanded(m_ItemToInfos[group].id);
+        }
+
         /// <inheritdoc />
         public IReadOnlyList<ContextualMenuItem> ContextualMenuItems => k_ContextualMenuItems;
 

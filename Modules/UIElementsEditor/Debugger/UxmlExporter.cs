@@ -111,9 +111,7 @@ namespace UnityEditor.UIElements.Debugger
                 elt.SetAttributeValue("text", elementText);
 
             var classes = ve.GetClassesForIteration();
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            if (classes.Any())
-#pragma warning restore RS0030
+            if (classes.Count > 0)
                 elt.SetAttributeValue("class", string.Join(" ", classes.ToArray()));
 
             if (ve is TemplateContainer)

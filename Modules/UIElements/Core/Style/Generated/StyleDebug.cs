@@ -12,6 +12,7 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine.UIElements.StyleSheets;
+using UnityEngine.UIElements.Unmanaged;
 
 namespace UnityEngine.UIElements
 {
@@ -74,7 +75,12 @@ namespace UnityEngine.UIElements
                 case StylePropertyId.Display:
                     return computedStyle.display;
                 case StylePropertyId.Filter:
-                    return computedStyle.filter;
+                {
+                    var result = new List<FilterFunction>();
+                    computedStyle.rareData.Read().filter.CopyTo(ref result);
+                    return result;
+                }
+
                 case StylePropertyId.FlexBasis:
                     return computedStyle.flexBasis;
                 case StylePropertyId.FlexDirection:
@@ -140,13 +146,33 @@ namespace UnityEngine.UIElements
                 case StylePropertyId.TransformOrigin:
                     return computedStyle.transformOrigin;
                 case StylePropertyId.TransitionDelay:
-                    return computedStyle.transitionDelay;
+                {
+                    var result = new List<TimeValue>();
+                    computedStyle.transitionData.Read().transitionDelay.CopyTo(ref result);
+                    return result;
+                }
+
                 case StylePropertyId.TransitionDuration:
-                    return computedStyle.transitionDuration;
+                {
+                    var result = new List<TimeValue>();
+                    computedStyle.transitionData.Read().transitionDuration.CopyTo(ref result);
+                    return result;
+                }
+
                 case StylePropertyId.TransitionProperty:
-                    return computedStyle.transitionProperty;
+                {
+                    var result = new List<StylePropertyName>();
+                    computedStyle.transitionData.Read().transitionProperty.CopyTo(ref result);
+                    return result;
+                }
+
                 case StylePropertyId.TransitionTimingFunction:
-                    return computedStyle.transitionTimingFunction;
+                {
+                    var result = new List<EasingFunction>();
+                    computedStyle.transitionData.Read().transitionTimingFunction.CopyTo(ref result);
+                    return result;
+                }
+
                 case StylePropertyId.Translate:
                     return computedStyle.translate;
                 case StylePropertyId.UnityBackgroundImageTintColor:
@@ -154,13 +180,13 @@ namespace UnityEngine.UIElements
                 case StylePropertyId.UnityEditorTextRenderingMode:
                     return computedStyle.unityEditorTextRenderingMode;
                 case StylePropertyId.UnityFont:
-                    return computedStyle.unityFont;
+                    return (Font)Resources.EntityIdToObject(computedStyle.unityFont);
                 case StylePropertyId.UnityFontDefinition:
-                    return computedStyle.unityFontDefinition;
+                    return FontDefinition.From(computedStyle.unityFontDefinition);
                 case StylePropertyId.UnityFontStyleAndWeight:
                     return computedStyle.unityFontStyleAndWeight;
                 case StylePropertyId.UnityMaterial:
-                    return computedStyle.unityMaterial;
+                    return MaterialDefinition.From(computedStyle.unityMaterial);
                 case StylePropertyId.UnityOverflowClipBox:
                     return computedStyle.unityOverflowClipBox;
                 case StylePropertyId.UnityParagraphSpacing:
@@ -1923,9 +1949,7 @@ namespace UnityEngine.UIElements
             switch (id)
             {
                 case StylePropertyId.All:
-                    return new string[]
-                    {
-                    };
+                    return Array.Empty<string>();
                 case StylePropertyId.BackgroundPosition:
                     return new string[]
                     {

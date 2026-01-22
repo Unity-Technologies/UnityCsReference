@@ -149,7 +149,7 @@ namespace UnityEditor.Search
             #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var convertedItems = chosenItems.Select(item => (SearchItem)item).ToArray();
 #pragma warning restore RS0030
-            m_ViewModel.ExecuteAction(null, convertedItems, !SearchSettings.keepOpen);
+            m_ViewModel.ExecuteAction(null, convertedItems, true);
         }
 
         private void OnSelectionChanged(ISearchEvent evt)
@@ -279,7 +279,7 @@ namespace UnityEditor.Search
                 var items = m_GridView.selectedItems.Cast<SearchItem>().ToArray();
 #pragma warning restore RS0030
                 var action = evt.altKey ? SearchView.GetSecondaryAction(m_ViewModel.selection, items) : SearchView.GetDefaultAction(m_ViewModel.selection, items);
-                m_ViewModel.ExecuteAction(action, items, !SearchSettings.keepOpen);
+                m_ViewModel.ExecuteAction(action, items, true);
                 return true;
             }
 

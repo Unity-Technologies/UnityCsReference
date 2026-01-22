@@ -41,17 +41,17 @@ namespace UnityEditor.LightBaking
     [RequiredByNativeCode]
     [StructLayout(LayoutKind.Sequential)]
     [NativeHeader("Editor/Src/GI/BakePipeline/BakePipeline.bindings.h")]
-    internal sealed class BakePipelineDriver : IDisposable
+    sealed class BakePipelineDriver : IDisposable
     {
-        private IntPtr _ptr;
-        private readonly bool _ownsPtr;
+        IntPtr _ptr;
+        readonly bool _ownsPtr;
 
-        public BakePipelineDriver()
+        BakePipelineDriver()
         {
             _ptr = Internal_Create();
             _ownsPtr = true;
         }
-        public BakePipelineDriver(IntPtr ptr)
+        BakePipelineDriver(IntPtr ptr)
         {
             _ptr = ptr;
             _ownsPtr = false;
@@ -67,7 +67,7 @@ namespace UnityEditor.LightBaking
             GC.SuppressFinalize(this);
         }
 
-        private void Destroy()
+        void Destroy()
         {
             if (_ownsPtr && _ptr != IntPtr.Zero)
             {
@@ -79,15 +79,28 @@ namespace UnityEditor.LightBaking
         [NativeMethod(IsThreadSafe = true)]
         static extern void Internal_Destroy(IntPtr ptr);
 
-        public extern void SetEnableBakedLightmaps(bool enableBakedLightmaps);
-        public extern void SetEnablePatching(bool enablePatching);
-        public extern void Update(bool isOnDemandBakeInProgress, bool isOnDemandBakeAsync, bool shouldBeRunning,
-            ref float progress, ref int currentStage); // The 'int currentStage' will be cast to BakePipeline::Run::StageName
-        public extern bool RunInProgress();
+        extern void SetEnableBakedLightmaps(bool enableBakedLightmaps);
+        extern void SetEnablePatching(bool enablePatching);
+        extern void Update(bool isOnDemandBakeInProgress, bool isOnDemandBakeAsync, bool shouldBeRunning,
+            ref float progress, ref StageName currentStage);
+        extern bool RunInProgress();
 
         internal static class BindingsMarshaller
         {
             public static IntPtr ConvertToUnmanaged(BakePipelineDriver bakePipelineDriver) => bakePipelineDriver._ptr;
         }
+
+        // Keep this in sync with the enum in Editor\Src\GI\BakePipeline\BakePipeline.bindings.h
+        enum StageName
+        {
+            Invalid = -1,
+            Initialized,
+            Preprocess,
+            PreprocessProbes,
+            Bake,
+            PostProcess,
+            AdditionalBake,
+            Done
+        };
     }
 }

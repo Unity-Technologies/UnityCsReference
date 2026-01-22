@@ -231,7 +231,7 @@ namespace UnityEngine.UIElements
 
         internal VisualElementAsset visualTreeNoAlloc
         {
-            [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+            [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
             get
             {
                 return m_VisualTree;
@@ -795,6 +795,51 @@ namespace UnityEngine.UIElements
             return null;
         }
 
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
+        internal VisualElementAsset FindElementByPath(AuthoringIdPath authoringPath, List<VisualElementAsset> pathToElement = null)
+        {
+            if (authoringPath.isRootReference)
+                return visualTree;
+
+            var currentTree = this;
+            UxmlAsset uxmlAsset = null;
+            for (int i = 0; i < authoringPath.path.Length; i++)
+            {
+                var id = authoringPath.path[i];
+                var element = currentTree.FindElementById(id) as VisualElementAsset;
+                if (element == null)
+                    return null;
+
+                if (pathToElement != null)
+                    pathToElement.Add(element);
+
+                if (element is TemplateAsset templateAsset)
+                {
+                    if (templateAsset.ResolveTemplate() is {} templateAssetResolved)
+                    {
+                        currentTree = templateAssetResolved;
+                        uxmlAsset = element;
+                    }
+                    else
+                    {
+                        return null;
+                    }
+                }
+                else if (i < authoringPath.path.Length - 1)
+                {
+                    // Intermediate elements must be TemplateAssets
+                    return null;
+                }
+                else
+                {
+                    // Last element in the path can be any UxmlAsset
+                    uxmlAsset = element;
+                }
+            }
+
+            return uxmlAsset as VisualElementAsset;
+        }
+
         void FindElementsByName(string visualElementName, List<VisualElementAsset> results)
         {
             using var _ = ListPool<UxmlAsset>.Get(out var list);
@@ -867,7 +912,7 @@ namespace UnityEngine.UIElements
             return Panel.LoadResource(path, typeof(VisualTreeAsset),1) as VisualTreeAsset;
         }
 
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
         internal bool TemplateExists(string templateName)
         {
             if (m_Usings.Count == 0)
@@ -882,7 +927,7 @@ namespace UnityEngine.UIElements
             InsertUsingEntry(new UsingEntry(templateName, path));
         }
 
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
         internal void RegisterTemplate(string templateName, VisualTreeAsset asset)
         {
             InsertUsingEntry(new UsingEntry(templateName, asset));
@@ -1076,7 +1121,7 @@ namespace UnityEngine.UIElements
             }
         }
 
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
         internal IEnumerable<UxmlAsset> DepthFirstTraversal()
         {
             if (null == m_VisualTree)
@@ -1154,7 +1199,7 @@ namespace UnityEngine.UIElements
             return vea;
         }
 
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
         internal VisualElementAsset ReparentElementInDocument(VisualElementAsset vea, VisualElementAsset newParent, int index = -1)
         {
             var actualParent = newParent ?? visualTree;

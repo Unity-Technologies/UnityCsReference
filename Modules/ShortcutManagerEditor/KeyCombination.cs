@@ -182,9 +182,9 @@ namespace UnityEditor.ShortcutManagement
 
         internal static string SequenceToString(IEnumerable<KeyCombination> keyCombinations)
         {
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable RS0031 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             if (!keyCombinations.Any())
-#pragma warning restore RS0030
+#pragma warning restore RS0031
                 return "";
 
             var builder = new StringBuilder();
@@ -340,9 +340,9 @@ namespace UnityEditor.ShortcutManagement
         [VisibleToOtherModules("UnityEditor.GraphToolkitModule")]
         internal static string SequenceToMenuString(IEnumerable<KeyCombination> keyCombinations)
         {
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable RS0031 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             if (!keyCombinations.Any())
-#pragma warning restore RS0030
+#pragma warning restore RS0031
                 return "";
 
             //TODO: once we start supporting chords we need to figure out how to represent that for menus.

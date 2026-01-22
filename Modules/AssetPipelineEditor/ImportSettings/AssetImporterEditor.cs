@@ -848,7 +848,7 @@ namespace UnityEditor.AssetImporters
         List<Type> m_AvailableImporterTypes;
         const int k_MultipleSelectedImporterTypes = -1;
         int m_SelectedImporterType = k_MultipleSelectedImporterTypes;
-        string[] m_AvailableImporterTypesOptions = {};
+        string[] m_AvailableImporterTypesOptions = Array.Empty<string>();
 
         private void DrawImporterSelectionPopup()
         {

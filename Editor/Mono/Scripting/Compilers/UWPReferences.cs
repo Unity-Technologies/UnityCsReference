@@ -101,7 +101,7 @@ namespace UnityEditor.Scripting.Compilers
         {
             var folder = GetWindowsKit10();
             if (string.IsNullOrEmpty(folder))
-                return new string[0];
+                return Array.Empty<string>();
 
             var version = SdkVersionToString(sdk.Version);
             var references = new HashSet<string>(StringComparer.InvariantCultureIgnoreCase);
@@ -134,7 +134,7 @@ namespace UnityEditor.Scripting.Compilers
         {
             var windowsKit10Directory = GetWindowsKit10();
             if (string.IsNullOrEmpty(windowsKit10Directory))
-                return new UWPExtensionSDK[0];
+                return Array.Empty<UWPExtensionSDK>();
 
             return GetExtensionSDKs(windowsKit10Directory, SdkVersionToString(sdk.Version));
         }
@@ -157,15 +157,11 @@ namespace UnityEditor.Scripting.Compilers
         {
             var windowsKit10Directory = GetWindowsKit10();
             if (string.IsNullOrEmpty(windowsKit10Directory))
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                return Enumerable.Empty<UWPSDK>();
-#pragma warning restore RS0030
+                return Array.Empty<UWPSDK>();
 
             var platformsUAP = CombinePaths(windowsKit10Directory, "Platforms", "UAP");
             if (!Directory.Exists(platformsUAP))
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                return Enumerable.Empty<UWPSDK>();
-#pragma warning restore RS0030
+                return Array.Empty<UWPSDK>();
 
             var allSDKs = new List<UWPSDK>();
 
@@ -297,7 +293,7 @@ namespace UnityEditor.Scripting.Compilers
         {
             var platformXml = CombinePaths(folder, @"Platforms\UAP", version, "Platform.xml");
             if (!File.Exists(platformXml))
-                return new string[0];
+                return Array.Empty<string>();
 
             var document = XDocument.Load(platformXml);
             var applicationPlatformElement = document.Element("ApplicationPlatform");
@@ -318,7 +314,7 @@ namespace UnityEditor.Scripting.Compilers
             var extensionsFolder = Path.Combine(sdkFolder, "Extension SDKs");
 
             if (!Directory.Exists(extensionsFolder))
-                return new UWPExtensionSDK[0];
+                return Array.Empty<UWPExtensionSDK>();
 
             foreach (var extensionFolder in Directory.GetDirectories(extensionsFolder))
             {

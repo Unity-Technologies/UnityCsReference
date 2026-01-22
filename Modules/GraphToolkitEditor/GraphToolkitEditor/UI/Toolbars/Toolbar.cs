@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEditor.Overlays;
@@ -38,9 +39,7 @@ namespace Unity.GraphToolkit.Editor
                     return window.GetToolbarDefinition(this)?.ElementIds;
                 }
 
-                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                return Enumerable.Empty<string>();
-#pragma warning restore RS0030
+                return Array.Empty<string>();
             }
         }
 

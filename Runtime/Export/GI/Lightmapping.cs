@@ -730,6 +730,16 @@ namespace UnityEngine
                         case UnityEngine.LightType.Disc:        LightmapperUtils.Extract(l, ref disc);  LightmapperUtils.Extract(l, out cookie); ld.Init(ref disc,  ref cookie); break;
                         default: ld.InitNoBake(l.GetEntityId()); break;
                     }
+
+                    // BiRP uses a game like lambertian response for punctual lights, they are off by a factor PI.
+                    // Since LightBaker expects its punctual lights to be expressed in standard radiometric units, the intensity is pre-multiplied by PI here to counteract this.
+                    // This ensures that the baked punctual light intensity matches realtime intensity. (See GFXLIGHT-1755)
+                    if (l.type == UnityEngine.LightType.Directional || l.type == UnityEngine.LightType.Point || l.type == UnityEngine.LightType.Spot)
+                    {
+                        ld.color.intensity *= Mathf.PI;
+                        ld.indirectColor.intensity *= Mathf.PI;
+                    }
+
                     lightsOutput[i] = ld;
                 }
             };

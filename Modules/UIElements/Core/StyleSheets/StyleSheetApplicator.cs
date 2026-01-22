@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using Unity.Collections.LowLevel.Unsafe;
 using UnityEngine;
 using UnityEngine.Bindings;
+using UnityEngine.UIElements.Unmanaged;
 
 namespace UnityEngine.UIElements.StyleSheets
 {
@@ -358,10 +359,16 @@ namespace UnityEngine.UIElements.StyleSheets
             }
         }
 
+        public static void ApplyTransition(StylePropertyReader reader, ref ComputedStyle computedStyle)
+        {
+            ref var transitionData = ref computedStyle.transitionData.Write();
+            CompileTransition(reader, ref transitionData.transitionDelay, ref transitionData.transitionDuration, ref transitionData.transitionProperty, ref transitionData.transitionTimingFunction);
+        }
+
         // https://drafts.csswg.org/css-transitions/#transition-shorthand-property
         // [ none | <single-transition-property> ] || <time> || <easing-function> || <time>
-        private static void CompileTransition(StylePropertyReader reader, out List<TimeValue> outDelay, out List<TimeValue> outDuration,
-            out List<StylePropertyName> outProperty, out List<EasingFunction> outTimingFunction)
+        private static void CompileTransition(StylePropertyReader reader, ref UnmanagedRefCountedList<TimeValue> outDelay, ref UnmanagedRefCountedList<TimeValue> outDuration,
+            ref UnmanagedRefCountedList<StylePropertyId> outProperty, ref UnmanagedRefCountedList<EasingFunction> outTimingFunction)
         {
             s_TransitionDelayList.Clear();
             s_TransitionDurationList.Clear();
@@ -382,7 +389,7 @@ namespace UnityEngine.UIElements.StyleSheets
                     break;
                 }
 
-                var transitionProperty = InitialStyle.transitionProperty[0];
+                var transitionProperty = new StylePropertyName(InitialStyle.transitionProperty[0]);
                 var transitionDuration = InitialStyle.transitionDuration[0];
                 var transitionDelay = InitialStyle.transitionDelay[0];
                 var transitionTimingFunction = InitialStyle.transitionTimingFunction[0];
@@ -466,17 +473,17 @@ namespace UnityEngine.UIElements.StyleSheets
 
             if (isValid)
             {
-                outProperty = s_TransitionPropertyList;
-                outDelay = s_TransitionDelayList;
-                outDuration = s_TransitionDurationList;
-                outTimingFunction = s_TransitionTimingFunctionList;
+                outProperty.CopyFrom(s_TransitionPropertyList);
+                outDelay.CopyFrom(s_TransitionDelayList);
+                outDuration.CopyFrom(s_TransitionDurationList);
+                outTimingFunction.CopyFrom(s_TransitionTimingFunctionList);
             }
             else
             {
-                outProperty = InitialStyle.transitionProperty;
-                outDelay = InitialStyle.transitionDelay;
-                outDuration = InitialStyle.transitionDuration;
-                outTimingFunction = InitialStyle.transitionTimingFunction;
+                outProperty.CopyFrom(InitialStyle.transitionProperty);
+                outDelay.CopyFrom(InitialStyle.transitionDelay);
+                outDuration.CopyFrom(InitialStyle.transitionDuration);
+                outTimingFunction.CopyFrom(InitialStyle.transitionTimingFunction);
             }
         }
     }

@@ -149,6 +149,12 @@ namespace Unity.GraphToolkit.Editor
                 if (children[i] is Port visibleSubPort)
                 {
                     var parentPortModel = visibleSubPort.PortModel.ParentPort;
+
+                    if (parentPortModel != null
+                        && parentPortModel.EmbeddedValue != null
+                        && parentPortModel.EmbeddedValue.Type.IsListOrArray())
+                        continue;
+
                     float rank = 0.5f;
                     //we look for the parent port UI and then remove it from the list, ensuring only one line is drawn per parent port when if a parent port has multiple visible descendants.
                     while (parentPortModel != null && parentPortUIs.Remove(parentPortModel, out var parentPortUI))

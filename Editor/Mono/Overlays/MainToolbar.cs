@@ -210,8 +210,8 @@ namespace UnityEditor.Toolbars
     {
         public const string presetName = "Unity Default";
 
-        readonly static SaveData[] m_EmptySave = new SaveData[0];
-        readonly static DynamicPanelContainerData[] m_EmptyDynamicPanelContainerData = new DynamicPanelContainerData[0];
+        readonly static SaveData[] m_EmptySave = Array.Empty<SaveData>();
+        readonly static DynamicPanelContainerData[] m_EmptyDynamicPanelContainerData = Array.Empty<DynamicPanelContainerData>();
 
         public SaveData[] saveData => m_EmptySave;
         public DynamicPanelContainerData[] dynamicPanelContainerData => m_EmptyDynamicPanelContainerData;

@@ -51,7 +51,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         private bool m_TermsOfServiceAccepted = false;
 
         [SerializeField]
-        private AssetStoreDownloadOperation[] m_SerializedDownloadOperations = new AssetStoreDownloadOperation[0];
+        private AssetStoreDownloadOperation[] m_SerializedDownloadOperations = Array.Empty<AssetStoreDownloadOperation>();
 
         private readonly IApplicationProxy m_Application;
         private readonly IUnityConnectProxy m_UnityConnect;

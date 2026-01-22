@@ -469,7 +469,7 @@ namespace UnityEditor.Modules
     internal interface IDevice
     {
         // Start remote support for this device
-        RemoteAddress StartRemoteSupport();
+        void StartRemoteSupport(out string ip, out int port);
 
         // Stop remote support for this device
         void StopRemoteSupport();
@@ -478,23 +478,11 @@ namespace UnityEditor.Modules
         // like setting up TCP tunneling over USB, getting remote device's IP, but it doesn't
         // actually make the connection. Only available if SupportsPlayerConnection is true.
         // Otherwise throws NotSupportedException.
-        RemoteAddress StartPlayerConnectionSupport();
+        void StartPlayerConnectionSupport(out string ip, out int port);
 
         // Stop player connection support for this device. Only available if SupportsPlayerConnection
         // is true. Otherwise throws NotSupportedException.
         void StopPlayerConnectionSupport();
-    }
-
-    internal struct RemoteAddress
-    {
-        public string ip;
-        public int port;
-
-        public RemoteAddress(string ip, int port)
-        {
-            this.ip = ip;
-            this.port = port;
-        }
     }
 
     internal interface IPluginImporterExtension

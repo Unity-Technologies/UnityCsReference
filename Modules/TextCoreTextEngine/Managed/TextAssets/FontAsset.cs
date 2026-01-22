@@ -439,8 +439,7 @@ namespace UnityEngine.TextCore.Text
         [SerializeField]
         internal GlyphRenderMode m_AtlasRenderMode;
 
-        [VisibleToOtherModules("UnityEngine.IMGUIModule", "UnityEngine.UIElementsModule")]
-        internal bool IsBitmap() => ((GlyphRasterModes)m_AtlasRenderMode).HasFlag(GlyphRasterModes.RASTER_MODE_BITMAP) && !((GlyphRasterModes)m_AtlasRenderMode).HasFlag(GlyphRasterModes.RASTER_MODE_COLOR);
+        public bool IsBitmap() => ((GlyphRasterModes)m_AtlasRenderMode).HasFlag(GlyphRasterModes.RASTER_MODE_BITMAP) && !((GlyphRasterModes)m_AtlasRenderMode).HasFlag(GlyphRasterModes.RASTER_MODE_COLOR);
 
         [VisibleToOtherModules("UnityEngine.IMGUIModule", "UnityEngine.UIElementsModule")]
         internal bool IsRaster() => m_AtlasRenderMode == FontAssetFactory.k_RasterEditorBitmapGlyphRenderMode;
@@ -985,7 +984,7 @@ namespace UnityEngine.TextCore.Text
 
             if (m_NativeFontAsset != IntPtr.Zero)
             {
-                Destroy(m_NativeFontAsset);
+                Destroy(m_NativeFontAsset, MarshalledUnityObject.MarshalNotNull(this));
                 m_NativeFontAsset = IntPtr.Zero;
             }
         }

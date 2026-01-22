@@ -233,7 +233,7 @@ namespace UnityEditor
         {
             if (menuMethodInfo.GetParameters().Length == 0)
             {
-                var result = menuMethodInfo.Invoke(null, new object[0]);
+                var result = menuMethodInfo.Invoke(null, Array.Empty<object>());
                 return !validate || (bool)result;
             }
 

@@ -387,9 +387,7 @@ namespace UnityEditor.Search
             }
             if (currentStringTokenIndex != -1)
                 throw new SearchExpressionParseException($"The string \"{text.Substring(currentStringTokenIndex)}\" is not closed correctly", text.startIndex + currentStringTokenIndex, text.length - currentStringTokenIndex);
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            if (openersStack.Any())
-#pragma warning restore RS0030
+            if (openersStack.Count > 0)
                 throw new SearchExpressionParseException($"Missing \"{GetCorrespondingCloser(openersStack.Peek())}\" in \"{text}\"", text.startIndex + firstOpenerIndex, text.length - firstOpenerIndex);
             return expressions.ToArray();
         }
@@ -412,9 +410,7 @@ namespace UnityEditor.Search
             }
             // Then we parse the string to check how many we can trim
             bool hasTrimmedText = false;
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            if (nestedLevelsEnd.Any())
-#pragma warning restore RS0030
+            if (nestedLevelsEnd.Count > 0)
             {
                 bool inNonTrimmableText = false;
                 int nonTrimmableOpeners = 0;
@@ -439,9 +435,7 @@ namespace UnityEditor.Search
                             ++nonTrimmableOpeners;
                         continue;
                     }
-                    #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                    if (!nestedLevelsStart.Any() || !nestedLevelsEnd.Any())
-#pragma warning restore RS0030
+                    if (nestedLevelsStart.Count == 0 || nestedLevelsEnd.Count == 0)
                         break;
                     if (outerText[i] == '}' && !IsEscaped(outerText, i))
                     {
@@ -454,9 +448,7 @@ namespace UnityEditor.Search
                         if (i == nestedLevelsEnd.Peek())
                             nestedLevelsEnd.Pop();
                         // In that case that means there was one expression that was closed and no more remaining so we should exit
-                        #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                        if (!nestedLevelsStart.Any())
-#pragma warning restore RS0030
+                        if (nestedLevelsStart.Count == 0)
                             break;
                         if (inNonTrimmableText && nonTrimmableOpeners > 0)
                             --nonTrimmableOpeners;

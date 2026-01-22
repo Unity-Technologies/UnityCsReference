@@ -13,11 +13,11 @@ using System.Runtime.InteropServices;
 
 namespace UnityEngine.XR
 {
-    [NativeType(Header = "Modules/XR/Subsystems/Display/XRDisplaySubsystem.h")]
+    [NativeHeader("Modules/XR/Subsystems/Display/XRDisplaySubsystem.h")]
     [UsedByNativeCode]
     [NativeHeader("Modules/XR/XRPrefix.h")]
     [NativeConditional("ENABLE_XR")]
-    public class XRDisplaySubsystem : IntegratedSubsystem<XRDisplaySubsystemDescriptor>
+    public partial class XRDisplaySubsystem : IntegratedSubsystem<XRDisplaySubsystemDescriptor>
     {
         public event Action<bool> displayFocusChanged;
 
@@ -214,17 +214,8 @@ namespace UnityEngine.XR
             extern public int GetRenderParameterCount();
         }
 
-        [NativeMethod("TryGetAppGPUTimeLastFrame")]
-        extern public bool TryGetAppGPUTimeLastFrame(out float gpuTimeLastFrame);
-
         [NativeMethod("TryGetCompositorGPUTimeLastFrame")]
         extern public bool TryGetCompositorGPUTimeLastFrame(out float gpuTimeLastFrameCompositor);
-
-        [NativeMethod("TryGetDroppedFrameCount")]
-        extern public bool TryGetDroppedFrameCount(out int droppedFrameCount);
-
-        [NativeMethod("TryGetFramePresentCount")]
-        extern public bool TryGetFramePresentCount(out int framePresentCount);
 
         [NativeMethod("TryGetDisplayRefreshRate")]
         extern public bool TryGetDisplayRefreshRate(out float displayRefreshRate);
@@ -309,5 +300,57 @@ namespace UnityEngine.XR
 
         private HDROutputSettings m_HDROutputSettings;
         public HDROutputSettings hdrOutputSettings { get { if (m_HDROutputSettings == null) m_HDROutputSettings = new HDROutputSettings(-1); return m_HDROutputSettings; } }
+
+        // Virtual functions below have default implementations in XRDisplaySubsystemDefault.cs.
+        public virtual float displayRefreshRate
+        {
+            get
+            {
+                if (TryGetDisplayRefreshRate(out float rate))
+                {
+                    return rate;
+                }
+                return 0.0f;
+            }
+        }
+
+        public virtual float fovZoomFactor
+        {
+            get => GetFovZoomFactorInternal();
+            set => SetFovZoomFactorInternal(value);
+        }
+
+        public virtual bool TryGetAppGPUTimeLastFrame(out float gpuTimeLastFrame)
+        {
+            return TryGetAppGPUTimeLastFrameInternal(out gpuTimeLastFrame);
+        }
+
+        public virtual bool TryGetDroppedFrameCount(out int droppedFrameCount)
+        {
+            return TryGetDroppedFrameCountInternal(out droppedFrameCount);
+        }
+
+        public virtual bool TryGetFramePresentCount(out int framePresentCount)
+        {
+            return TryGetFramePresentCountInternal(out framePresentCount);
+        } // End of virtual functions
+        
+        // Pairing extern native methods for virtual functions
+        [NativeMethod(Name = "GetFOVZoomFactor")]
+        [NativeConditional("ENABLE_XR")]
+        extern internal float GetFovZoomFactorInternal();
+
+        [NativeMethod(Name = "SetFOVZoomFactor")]
+        [NativeConditional("ENABLE_XR")]
+        extern internal void SetFovZoomFactorInternal(float value);
+
+        [NativeMethod("TryGetAppGPUTimeLastFrame")]
+        extern internal bool TryGetAppGPUTimeLastFrameInternal(out float gpuTimeLastFrame);
+
+        [NativeMethod("TryGetDroppedFrameCount")]
+        extern internal bool TryGetDroppedFrameCountInternal(out int droppedFrameCount);
+
+        [NativeMethod("TryGetFramePresentCount")]
+        extern internal bool TryGetFramePresentCountInternal(out int framePresentCount);
     }
 }

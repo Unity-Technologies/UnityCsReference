@@ -187,7 +187,7 @@ namespace UnityEditor.UIElements
 
             ranges = Rect.zero;
 
-            rawValue = new AnimationCurve(new Keyframe[0]);
+            rawValue = new AnimationCurve(Array.Empty<Keyframe>());
 
             // Keep creating and adding a VisualElement for the border even though it is not used anymore.
             // It is done to remain backwards compatible (c.f. obsoleted borderUssClassName).
@@ -228,7 +228,7 @@ namespace UnityEditor.UIElements
             }
             else
             {
-                rawValue.keys = new Keyframe[0];
+                rawValue.keys = Array.Empty<Keyframe>();
                 rawValue.preWrapMode = WrapMode.Once;
                 rawValue.postWrapMode = WrapMode.Once;
             }

@@ -462,9 +462,7 @@ namespace UnityEditor.UIElements
         {
             var itemContent = UIElementsDebugger.WindowName;
             var shortcut = ShortcutIntegration.instance.directory.FindShortcutEntry(UIElementsDebugger.k_WindowPath);
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            if (shortcut != null && shortcut.combinations.Any())
-#pragma warning restore RS0030
+            if (shortcut != null && shortcut.combinations.Count > 0)
                 itemContent += $" {KeyCombination.SequenceToMenuString(shortcut.combinations)}";
 
             menu.AddItem(EditorGUIUtility.TrTextContent(itemContent), false, DebugWindow, editorWindowModel.window);

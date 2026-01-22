@@ -94,7 +94,7 @@ namespace UnityEditor
         static void ResetDefaultReferences(MenuCommand command)
         {
             MonoImporter importer = command.context as MonoImporter;
-            importer.SetDefaultReferences(new string[0], new Object[0]);
+            importer.SetDefaultReferences(Array.Empty<string>(), Array.Empty<Object>());
             AssetDatabase.ImportAsset(AssetDatabase.GetAssetPath(importer));
         }
 
@@ -121,8 +121,8 @@ namespace UnityEditor
             {
                 if (!field.IsPublic)
                 {
-                    object[] attr = field.GetCustomAttributes(typeof(SerializeField), true);
-                    if (attr == null || attr.Length == 0)
+                    bool attr = field.IsDefined(typeof(SerializeField), true);
+                    if (attr == false)
                         continue;
                 }
 

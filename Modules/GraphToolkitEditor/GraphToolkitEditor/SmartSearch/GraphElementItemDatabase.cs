@@ -220,7 +220,7 @@ namespace Unity.GraphToolkit.Editor
         /// </summary>
         /// <param name="graphObjectType">The type of subgraphs to get.</param>
         /// <returns>The subgraph assets found.</returns>
-        protected IEnumerable<GraphModel> GetSubgraphsOfType(Type graphObjectType)
+        protected IReadOnlyList<GraphModel> GetSubgraphsOfType(Type graphObjectType)
         {
             if (graphObjectType != null)
             {
@@ -251,9 +251,7 @@ namespace Unity.GraphToolkit.Editor
                 return subGraphModels;
             }
 
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            return Enumerable.Empty<GraphModel>();
-#pragma warning restore RS0030
+            return Array.Empty<GraphModel>();
         }
 
         /// <summary>

@@ -13,7 +13,7 @@ namespace UnityEngine
 {
     public partial class ParticleSystem
     {
-        [StructLayout(LayoutKind.Sequential), NativeType(CodegenOptions.Custom, "MonoBurst", Header = "Runtime/Scripting/ScriptingCommonStructDefinitions.h")]
+        [StructLayout(LayoutKind.Sequential), NativeType(CodegenOptions.Custom, "MonoBurst"), NativeHeader("Runtime/Scripting/ScriptingCommonStructDefinitions.h")]
         public partial struct Burst
         {
             public Burst(float _time, short _count) { m_Time = _time; m_Count = MinMaxCurveBlittable.FromMixMaxCurve(_count); m_RepeatCount = 0; m_RepeatInterval = 0.0f; m_InvProbability = 0.0f; }
@@ -127,7 +127,7 @@ namespace UnityEngine
             [SerializeField] internal float m_ConstantMax;
         }
 
-        [Serializable, NativeType(CodegenOptions.Custom, "MonoMinMaxCurve", Header = "Runtime/Scripting/ScriptingCommonStructDefinitions.h")]
+        [Serializable, NativeType(CodegenOptions.Custom, "MonoMinMaxCurve"), NativeHeader("Runtime/Scripting/ScriptingCommonStructDefinitions.h")]
         [StructLayout(LayoutKind.Sequential)]
         [RequiredByNativeCode]
         internal struct MinMaxCurveBlittable
@@ -230,7 +230,7 @@ namespace UnityEngine
             [SerializeField] internal Color m_ColorMax;
         }
 
-        [Serializable, NativeType(CodegenOptions.Custom, "MonoMinMaxGradient", Header = "Runtime/Scripting/ScriptingCommonStructDefinitions.h")]
+        [Serializable, NativeType(CodegenOptions.Custom, "MonoMinMaxGradient"), NativeHeader("Runtime/Scripting/ScriptingCommonStructDefinitions.h")]
         [StructLayout(LayoutKind.Sequential)]
         [RequiredByNativeCode]
         internal struct MinMaxGradientBlittable

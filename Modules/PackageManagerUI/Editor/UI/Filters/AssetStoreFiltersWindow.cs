@@ -35,7 +35,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 #pragma warning restore RS0030
 
             #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            var categories = m_CategoriesFoldOut?.Children().OfType<Toggle>() ?? Enumerable.Empty<Toggle>();
+            var categories = m_CategoriesFoldOut?.Children().OfType<Toggle>() ?? Array.Empty<Toggle>();
 #pragma warning restore RS0030
             #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var numCategories = categories.Count();
@@ -106,13 +106,13 @@ namespace UnityEditor.PackageManager.UI.Internal
                 toggle.SetValueWithoutNotify(toggle.name == m_Filters.status.ToString());
 
             #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            foreach (var toggle in m_CategoriesFoldOut?.Children().OfType<Toggle>() ?? Enumerable.Empty<Toggle>())
+            foreach (var toggle in m_CategoriesFoldOut?.Children().OfType<Toggle>() ?? Array.Empty<Toggle>())
 #pragma warning restore RS0030
                 toggle.SetValueWithoutNotify(m_Filters.categories?.Contains(toggle.name.ToLower()) ?? false);
 
             var selectedLabels = 0;
             #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            var labels = m_LabelsFoldOut?.Children().OfType<Toggle>() ?? Enumerable.Empty<Toggle>();
+            var labels = m_LabelsFoldOut?.Children().OfType<Toggle>() ?? Array.Empty<Toggle>();
 #pragma warning restore RS0030
             foreach (var toggle in labels)
             {

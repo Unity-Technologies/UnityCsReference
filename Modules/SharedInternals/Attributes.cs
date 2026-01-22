@@ -72,16 +72,6 @@ namespace UnityEngine
         }
     }
 
-    [VisibleToOtherModules]
-    [System.AttributeUsage(System.AttributeTargets.Method)]
-    internal class ThreadAndSerializationSafeAttribute : System.Attribute
-    {
-        public ThreadAndSerializationSafeAttribute()
-        {
-        }
-    }
-
-
     [System.AttributeUsage(System.AttributeTargets.Struct)]
     [VisibleToOtherModules]
     internal class IL2CPPStructAlignmentAttribute : System.Attribute

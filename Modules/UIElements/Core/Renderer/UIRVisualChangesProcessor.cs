@@ -102,8 +102,8 @@ namespace UnityEngine.UIElements.UIR
                 Debug.Assert(renderData.clipMethod != ClipMethod.Undetermined);
                 Debug.Assert(RenderData.AllocatesID(renderData.transformID) || renderData.parent == null || renderData.transformID.Equals(renderData.parent.transformID) || renderData.isGroupTransform);
 
-                if (renderData.owner is TextElement)
-                    RenderEvents.UpdateTextCoreSettings(m_RenderTreeManager, renderData.owner);
+                if (renderData.owner is TextElement te)
+                    RenderEvents.UpdateTextCoreSettings(m_RenderTreeManager, te);
 
                 if ((renderData.owner.renderHints & RenderHints.DynamicColor) == RenderHints.DynamicColor)
                     RenderEvents.SetColorValues(m_RenderTreeManager, renderData.owner);

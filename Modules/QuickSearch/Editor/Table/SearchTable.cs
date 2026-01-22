@@ -23,7 +23,7 @@ namespace UnityEditor.Search
             this.id = id;
             this.name = name;
             #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            columns = columnModels == null ? new SearchColumn[0] : columnModels.Where(c => c != null).ToArray();
+            columns = columnModels == null ? Array.Empty<SearchColumn>() : columnModels.Where(c => c != null).ToArray();
 #pragma warning restore RS0030
             InitFunctors();
         }

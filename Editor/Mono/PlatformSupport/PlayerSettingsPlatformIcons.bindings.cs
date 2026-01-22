@@ -338,7 +338,7 @@ namespace UnityEditor
 
             PlatformIconStruct[] iconStructs;
             if (icons == null)
-                iconStructs = new PlatformIconStruct[0];
+                iconStructs = Array.Empty<PlatformIconStruct>();
             else if (requiredIconCount != icons.Length)
             {
                 throw new InvalidOperationException($"Attempting to set an incorrect number of icons for {buildTarget.TargetName} {kind} kind, it requires {requiredIconCount} icons but trying to assign {icons.Length}.");
@@ -369,7 +369,7 @@ namespace UnityEditor
                     return requiredIcons.Keys.ToArray();
 #pragma warning restore RS0030
             }
-            return new PlatformIconKind[] { };
+            return Array.Empty<PlatformIconKind>();
         }
 
         internal static int GetNonEmptyPlatformIconCount(PlatformIcon[] icons)

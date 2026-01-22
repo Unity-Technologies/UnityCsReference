@@ -532,7 +532,6 @@ namespace UnityEditor
         [NativeName("FindFirstPropertyFromManagedReferencePath")]
         extern internal bool FindFirstPropertyFromManagedReferencePathInternal(string managedReferencePath);
 
-        [ThreadAndSerializationSafe()]
         public void Dispose()
         {
             if (m_NativePropertyPtr != IntPtr.Zero)

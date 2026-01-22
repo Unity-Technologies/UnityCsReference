@@ -31,6 +31,10 @@ namespace UnityEditor.PackageManager
         private bool m_IsDirectDependency = false;
 
         [SerializeField]
+        [NativeName("isInstalled")]
+        private bool m_IsInstalled = false;
+
+        [SerializeField]
         [NativeName("projectDependenciesEntry")]
         private string m_ProjectDependenciesEntry = "";
 
@@ -72,7 +76,7 @@ namespace UnityEditor.PackageManager
 
         [SerializeField]
         [NativeName("errors")]
-        private Error[] m_Errors = new Error[0];
+        private Error[] m_Errors = Array.Empty<Error>();
 
         [SerializeField]
         [NativeName("versions")]
@@ -80,15 +84,15 @@ namespace UnityEditor.PackageManager
 
         [SerializeField]
         [NativeName("dependencies")]
-        private DependencyInfo[] m_Dependencies = new DependencyInfo[0];
+        private DependencyInfo[] m_Dependencies = Array.Empty<DependencyInfo>();
 
         [SerializeField]
         [NativeName("resolvedDependencies")]
-        private DependencyInfo[] m_ResolvedDependencies = new DependencyInfo[0];
+        private DependencyInfo[] m_ResolvedDependencies = Array.Empty<DependencyInfo>();
 
         [SerializeField]
         [NativeName("keywords")]
-        private string[] m_Keywords = new string[0];
+        private string[] m_Keywords = Array.Empty<string>();
 
         [SerializeField]
         [NativeName("author")]
@@ -178,6 +182,7 @@ namespace UnityEditor.PackageManager
 
         public string packageId { get { return m_PackageId;  } }
         public bool isDirectDependency { get { return m_IsDirectDependency;  } }
+        internal bool isInstalled { get { return m_IsInstalled;  } }
         public string version { get { return m_Version;  } }
         public PackageSource source { get { return m_Source;  } }
         public string resolvedPath { get { return m_ResolvedPath;  } }

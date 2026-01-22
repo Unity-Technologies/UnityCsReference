@@ -370,7 +370,7 @@ namespace UnityEditor.Search
         public bool ReloadWithoutIndexing(Settings settings)
         {
             m_IndexSettingsPath = settings.source;
-            SearchMonitor.RaiseContentRefreshed(new[] { settings.source }, new string[0], new string[0]);
+            SearchMonitor.RaiseContentRefreshed(new[] { settings.source }, Array.Empty<string>(), Array.Empty<string>());
 
             LoadingState = LoadState.Loading;
             loaded = false;
@@ -841,10 +841,24 @@ namespace UnityEditor.Search
                 {
                     var artifactIndexSuffix = "." + GetIndexTypeSuffix(settings, a.source);
                     #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                    a.path = paths.LastOrDefault(p => p.EndsWith(artifactIndexSuffix, StringComparison.Ordinal));
+                    var virtualPath = paths.LastOrDefault(p => p.EndsWith(artifactIndexSuffix, StringComparison.Ordinal));
 #pragma warning restore RS0030
-                    if (a.path == null)
+                    if (virtualPath == null)
                         ReportWarning(a, artifactIndexSuffix, paths);
+                    else
+                    {
+                        if (UDS.UsingFullBackend())
+                        {
+                            // Copy the file from its virtual location to extract it from UDS
+                            var tempPath = FileUtil.GetUniqueTempPathInProject();
+                            FileUtil.CopyFileOrDirectory(virtualPath, tempPath);
+                            a.path = tempPath;
+                        }
+                        else
+                        {
+                            a.path = virtualPath;
+                        }
+                    }
                 }
             }
 

@@ -9,6 +9,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UIElements.Layout; // For FixedBuffer4<T>
 using System.Data.Common;
+using System.Runtime.InteropServices;
 using UnityEngine.Bindings;
 
 namespace UnityEngine.UIElements
@@ -168,7 +169,6 @@ namespace UnityEngine.UIElements
     /// Represents a filter function that holds the definition and parameters of a filter.
     /// </summary>
     [Serializable]
-
     public partial struct FilterFunction : IEquatable<FilterFunction>
     {
         [SerializeField]
@@ -364,6 +364,14 @@ namespace UnityEngine.UIElements
             }
         }
 
+        internal FilterFunction(FilterFunctionType type, FixedBuffer4<FilterParameter> parameters, int paramCount, FilterFunctionDefinition customDefinition)
+        {
+            m_Type = type;
+            m_Parameters = parameters;
+            m_ParameterCount = paramCount;
+            m_CustomDefinition = customDefinition;
+        }
+
         [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
         internal FilterFunctionDefinition GetDefinition()
         {
@@ -435,6 +443,89 @@ namespace UnityEngine.UIElements
             sb.Append(")");
 
             return sb.ToString();
+        }
+    }
+
+    /// <summary>
+    /// Unmanaged equivalent of FilterFunction, for ComputedStyle.
+    /// </summary>
+    /// <seealso cref="FilterFunction"/>
+    [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
+    [StructLayout(LayoutKind.Sequential)]
+    internal readonly struct UnmanagedFilterFunction : IEquatable<UnmanagedFilterFunction>
+    {
+        private readonly FilterFunctionType m_Type;
+        private readonly FixedBuffer4<FilterParameter> m_Parameters;
+        private readonly int m_ParameterCount = 0;
+        private readonly EntityId m_CustomDefinition;
+
+        private UnmanagedFilterFunction(FilterFunction filterFunction)
+        {
+            m_Type = filterFunction.type;
+            m_Parameters = filterFunction.parameters;
+            m_ParameterCount = filterFunction.parameterCount;
+            m_CustomDefinition = filterFunction.customDefinition != null
+                ? filterFunction.customDefinition.GetEntityId()
+                : EntityId.None;
+        }
+
+        private FilterFunction ToManaged()
+        {
+            var customDefinition = m_CustomDefinition != EntityId.None
+                ? (FilterFunctionDefinition)Resources.EntityIdToObject(m_CustomDefinition)
+                : null;
+            return new FilterFunction(m_Type, m_Parameters, m_ParameterCount, customDefinition);
+        }
+
+        public static implicit operator UnmanagedFilterFunction(FilterFunction filterFunction)
+        {
+            return new UnmanagedFilterFunction(filterFunction);
+        }
+
+        public static implicit operator FilterFunction(UnmanagedFilterFunction unmanagedFilterFunction)
+        {
+            return unmanagedFilterFunction.ToManaged();
+        }
+
+        /// <undoc/>
+        public static bool operator==(UnmanagedFilterFunction lhs, UnmanagedFilterFunction rhs)
+        {
+            if (lhs.m_CustomDefinition != rhs.m_CustomDefinition)
+                return false;
+
+            for (int i = 0; i < FixedBuffer4<FilterParameter>.Length; ++i)
+            {
+                if (lhs.m_Parameters[i] != rhs.m_Parameters[i])
+                    return false;
+            }
+
+            return true;
+        }
+
+        /// <undoc/>
+        public static bool operator!=(UnmanagedFilterFunction lhs, UnmanagedFilterFunction rhs)
+        {
+            return !(lhs == rhs);
+        }
+
+        /// <undoc/>
+        public bool Equals(UnmanagedFilterFunction other)
+        {
+            return other == this;
+        }
+
+        /// <undoc/>
+        public override bool Equals(object obj)
+        {
+            return obj is UnmanagedFilterFunction other && Equals(other);
+        }
+
+        public override int GetHashCode()
+        {
+            unchecked
+            {
+                return (m_Parameters.GetHashCode() * 397) ^ (m_CustomDefinition != EntityId.None ? m_CustomDefinition.GetHashCode() : 0);
+            }
         }
     }
 }

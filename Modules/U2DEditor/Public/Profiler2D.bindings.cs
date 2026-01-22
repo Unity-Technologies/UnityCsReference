@@ -35,15 +35,12 @@ namespace UnityEditor.U2D
         public float spriteTextureSizeRatio;
     }
 
-    [NativeHeader("Modules/U2DRuntime/Private/Analysis/Profiler2D.h")]
     internal static partial class Profiler2D
     {
-
-        extern internal static string GetGUIDString();
         /// <summary>
-        /// GUID for the Adaptive Performance Profile Module definition. Category | Protocol Major | Minor
+        /// GUID for the 2D Profile Module definition. Category | Protocol Major | Minor
         /// </summary>
-        internal static readonly Guid kProfilerU2D = new Guid(GetGUIDString());
+        internal static readonly Guid kProfilerU2D = new Guid(UnityEngine.U2D.Profiler2D.GetGUIDString());
 
         // Extract from Raw Data View
         internal static NativeArray<SpriteAtlasProfilerInfo> GetSpriteAtlasProfilerInfo(RawFrameDataView frameData)

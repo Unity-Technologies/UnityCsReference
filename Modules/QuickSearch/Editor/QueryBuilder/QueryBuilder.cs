@@ -145,9 +145,7 @@ namespace UnityEditor.Search
 
             foreach(var toSelectIndex in selectedBlockIndexes)
             {
-                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                if (toSelectIndex >=0 && toSelectIndex < blocks.Count())
-#pragma warning restore RS0030
+                if (toSelectIndex >=0 && toSelectIndex < blocks.Count)
                 {
                     blocks[toSelectIndex].selected = true;
                 }
@@ -161,9 +159,7 @@ namespace UnityEditor.Search
 
         public void AddToSelection(int selectedBlockIndex)
         {
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            if (selectedBlockIndex >= 0 && selectedBlockIndex < blocks.Count())
-#pragma warning restore RS0030
+            if (selectedBlockIndex >= 0 && selectedBlockIndex < blocks.Count)
                 blocks[selectedBlockIndex].selected = true;
         }
 
@@ -348,7 +344,7 @@ namespace UnityEditor.Search
             return context != null && context.options.HasAny(flag);
         }
 
-        private IList<QueryBlock> Build(string searchText)
+        private List<QueryBlock> Build(string searchText)
         {
             var newBlocks = new List<QueryBlock>();
             var searchQuery = searchText;
@@ -483,9 +479,7 @@ namespace UnityEditor.Search
 
             blocks.AddRange(newBlocks);
             Apply();
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            return newBlocks.FirstOrDefault();
-#pragma warning restore RS0030
+            return newBlocks[0];
         }
 
         internal QueryBlock InsertBlock(QueryBlock insertAfter, string text)
@@ -494,12 +488,9 @@ namespace UnityEditor.Search
             if (newBlocks == null || newBlocks.Count == 0)
                 return null;
 
-            foreach (var nb in newBlocks)
-                InsertBlock(insertAfter, nb);
+            InsertBlocks(insertAfter, newBlocks);
 
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            return newBlocks.FirstOrDefault();
-#pragma warning restore RS0030
+            return newBlocks[0];
         }
 
         QueryBlock IQuerySource.AddBlock(QueryBlock newBlock) => AddBlock(newBlock);
@@ -508,8 +499,16 @@ namespace UnityEditor.Search
             return InsertBlock(null, newBlock);
         }
 
+        internal IReadOnlyList<QueryBlock> AddBlocks(IReadOnlyList<QueryBlock> newBlocks)
+        {
+            return InsertBlocks(null, newBlocks);
+        }
+
         internal QueryBlock InsertBlock(QueryBlock insertAfter, QueryBlock newBlock)
         {
+            if (newBlock == null)
+                return null;
+
             if (insertAfter == null)
             {
                 blocks.Add(newBlock);
@@ -517,9 +516,10 @@ namespace UnityEditor.Search
             else
             {
                 var insertAt = blocks.IndexOf(insertAfter);
-                if (insertAt < 0)
-                    insertAt = ~insertAt;
-                blocks.Insert(insertAt+1, newBlock);
+                if (insertAt < 0 || insertAt == blocks.Count - 1)
+                    blocks.Add(newBlock);
+                else
+                    blocks.Insert(insertAt + 1, newBlock);
             }
             Apply();
             if (context?.searchView != null)
@@ -527,14 +527,36 @@ namespace UnityEditor.Search
             return newBlock;
         }
 
+        internal IReadOnlyList<QueryBlock> InsertBlocks(QueryBlock insertAfter, IReadOnlyList<QueryBlock> newBlocks)
+        {
+            if (newBlocks == null || newBlocks.Count == 0)
+                return newBlocks;
+
+            if (insertAfter == null)
+            {
+                blocks.AddRange(newBlocks);
+            }
+            else
+            {
+                var insertAt = blocks.IndexOf(insertAfter);
+                if (insertAt < 0 || insertAt == blocks.Count - 1)
+                    blocks.AddRange(newBlocks);
+                else
+                    blocks.InsertRange(insertAt + 1, newBlocks);
+            }
+
+            Apply();
+            if (context?.searchView != null)
+                Dispatcher.Emit(SearchEvent.RefreshBuilder, new SearchEventPayload(context.searchView.state));
+            return newBlocks;
+        }
+
         void IQuerySource.RemoveBlock(in QueryBlock block) => RemoveBlock(block);
         internal void RemoveBlock(in QueryBlock block)
         {
             var currentIndex = currentBlock == block ? GetBlockIndex(block) : -1;
             blocks.Remove(block);
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            if (currentIndex != -1 && currentIndex < blocks.Count())
-#pragma warning restore RS0030
+            if (currentIndex != -1 && currentIndex < blocks.Count)
             {
                 SetSelection(currentIndex);
             }
@@ -573,7 +595,12 @@ namespace UnityEditor.Search
             return true;
         }
 
-        // TODO: Remove me
+        /// <summary>
+        /// This method handles key down events when the focus is on the QueryBuilder. This method should handle
+        /// ALL events, not just the non-global ones.
+        /// </summary>
+        /// <param name="keyDownEvent"><see cref="KeyDownEvent"/> event to handle.</param>
+        /// <returns>True if the event was handled, false otherwise.</returns>
         public bool HandleKeyEvent(KeyDownEvent keyDownEvent)
         {
             var evt = keyDownEvent.imguiEvent;
@@ -600,6 +627,26 @@ namespace UnityEditor.Search
                     return true;
                 }
             }
+            else if (evt.keyCode == KeyCode.Tab)
+            {
+                var cb = currentBlock;
+                var currentIndex = GetBlockIndex(currentBlock);
+                if (m_TextBlock != null && currentIndex == -1)
+                {
+                    // Focus is in the textfield:
+                    if (m_TextBlock.value == "" ||
+                        (te != null && (te.cursorIndex == 0 || te.text[te.cursorIndex - 1] == ' ')))
+                    {
+                        m_AddBlock.OpenEditor(m_AddBlock.drawRect);
+                        return true;
+                    }
+                }
+                else
+                {
+                    cb.OpenEditorAndUpdateStyles(cb.drawRect);
+                    return true;
+                }
+            }
             else if (evt.keyCode == KeyCode.LeftArrow && cursorAtBeginning && !HasCharacterModifier(evt))
             {
                 var currentIndex = GetBlockIndex(currentBlock);
@@ -609,9 +656,7 @@ namespace UnityEditor.Search
                     // Focus is in the textfield:
                     if (te != null && te.cursorIndex == 0)
                     {
-                        #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                        toSelectIndex = blocks.Count() - 1;
-#pragma warning restore RS0030
+                        toSelectIndex = blocks.Count - 1;
                     }
                 }
                 else if (currentIndex != 0)
@@ -646,7 +691,7 @@ namespace UnityEditor.Search
                     m_TextBlock.GetSearchField()?.Focus();
                 }
             }
-            else if (evt.keyCode == KeyCode.Delete)
+            else if (evt.keyCode == KeyCode.Delete || evt.keyCode == KeyCode.Backspace)
             {
                 QueryBlock toRemoveBlock = currentBlock;
                 if (toRemoveBlock != null && !toRemoveBlock.@readonly)
@@ -662,9 +707,7 @@ namespace UnityEditor.Search
                 if (cb != null)
                 {
                     var potentialBlocks = Build(cb.ToString());
-                    #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                    if (potentialBlocks != null && potentialBlocks.Count() > 0)
-#pragma warning restore RS0030
+                    if (potentialBlocks != null && potentialBlocks.Count > 0)
                     {
                         foreach (var b in potentialBlocks)
                         {
@@ -678,13 +721,12 @@ namespace UnityEditor.Search
             else if (m_TextBlock != null && controlPresed && evt.keyCode == KeyCode.Space)
             {
                 var potentialBlocks = Build(m_TextBlock.ToString());
-                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                if (potentialBlocks != null && potentialBlocks.Count() > 0)
-#pragma warning restore RS0030
+                if (potentialBlocks != null && potentialBlocks.Count > 0)
                 {
-                    foreach (var b in potentialBlocks)
-                        AddBlock(b);
+                    // Set the text block to empty before adding new blocks, because adding
+                    // blocks will call Apply, which will read the text block value.
                     m_TextBlock.value = string.Empty;
+                    AddBlocks(potentialBlocks);
                     evt.Use();
                     return true;
                 }
@@ -708,43 +750,23 @@ namespace UnityEditor.Search
             return true;
         }
 
+        /// <summary>
+        /// Handles global key down events for the QueryBuilder. This method should only handle events that are global, i.e.
+        /// events that can be handled even when the focus is not on the QueryBuilder. Those events should also be handled
+        /// in the non-global <see cref="HandleKeyEvent"/> method when the focus is on the QueryBuilder.
+        /// </summary>
+        /// <param name="evt"><see cref="KeyDownEvent"/> event to handle</param>
+        /// <returns>True if the event was handled, false otherwise.</returns>
         public bool HandleGlobalKeyDown(KeyDownEvent evt)
         {
-            if (IsEditingBlockDuringEvent(evt))
-                return false;
-
-            var te = m_TextBlock?.GetSearchField();
-            if (evt.keyCode == KeyCode.Tab)
+            // We only care about Tab key here.
+            switch (evt.keyCode)
             {
-                var cb = currentBlock;
-                var currentIndex = GetBlockIndex(currentBlock);
-                if (m_TextBlock != null && currentIndex == -1)
-                {
-                    // Focus is in the textfield:
-                    if (m_TextBlock.value == "" ||
-                        (te != null && (te.cursorIndex == 0 || te.text[te.cursorIndex - 1] == ' ')))
-                    {
-                        m_AddBlock.OpenEditor(m_AddBlock.drawRect);
-                        return true;
-                    }
-                }
-                else
-                {
-                    cb.OpenEditorAndUpdateStyles(cb.drawRect);
-                    return true;
-                }
+                case KeyCode.Tab:
+                    return HandleKeyEvent(evt);
+                default:
+                    return false;
             }
-            else if (evt.keyCode == KeyCode.LeftArrow)
-            {
-                var currentIndex = GetBlockIndex(currentBlock);
-                if (m_TextBlock != null && currentIndex == -1 && te != null && te.cursorIndex == 0 && blocks.Count > 0)
-                {
-                    SetSelection(blocks.Count - 1);
-                    return true;
-                }
-            }
-
-            return false;
         }
 
         /// <summary>
@@ -770,7 +792,7 @@ namespace UnityEditor.Search
                 // events if the focus is on an object field or toggle for example.
                 if (block is QueryFilterBlock fb)
                 {
-                    if (fb.HasInPlaceEditor() && fb.format == QueryBlockFormat.Text && fb.inPlaceEditorElement.Contains(targetVe))
+                    if (fb.HasInPlaceEditor() && fb.format == QueryBlockFormat.Text && fb.inPlaceEditorElement != null && fb.inPlaceEditorElement.Contains(targetVe))
                         return true;
                 }
             }

@@ -456,7 +456,7 @@ namespace UnityEditor
         public void CallMenuCallback(object[] targets, MethodInfo method)
         {
             foreach (object target in targets)
-                method.Invoke(target, new object[] {});
+                method.Invoke(target, Array.Empty<object>());
         }
 
         static List<Component> s_CachedComponents = new List<Component>();

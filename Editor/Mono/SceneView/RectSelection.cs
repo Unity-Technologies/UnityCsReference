@@ -344,7 +344,7 @@ namespace UnityEditor
             Object[] objs;
             if (newObject == null)
             {
-                objs = new Object[0];
+                objs = Array.Empty<Object>();
             }
             else
             {

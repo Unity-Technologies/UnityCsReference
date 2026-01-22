@@ -10,17 +10,6 @@ using UnityEngine.Scripting;
 
 namespace UnityEngine.Loading
 {
-    // Record a mapping from a string to a Loadable's guid.
-    // This makes it possible to load Loadables by a user friendly string even in the context of Runtime which doesn't have AssetDatabase.
-    // Expected usage would be to record the Asset Path of the "Root Assets", whereas regular Loadables already serialize their guid and don't need a string mapping.
-    // However the data structure is intentionally generic enough to support multiple strings per GUID, and not enforcing that only RootAssets have entries.
-    [Serializable]
-    [StructLayout(LayoutKind.Sequential)]
-    internal struct LoadableKeyEntry
-    {
-        public string LoadableKey;
-        public string ObjectIdHash;
-    }
 
     // Record the mapping from Loadable's guid to the serialized file + LFID for the root of that Asset.
     // Scenes are a special case, with only a single scene per serialized file.
@@ -78,7 +67,8 @@ namespace UnityEngine.Loading
     [NativeHeader("Modules/ContentLoad/Public/BuildManifest.h")]
     internal class BuildManifest
     {
-        public LoadableKeyEntry[] LoadableKeys;
+        public int Version;
+        public string[] RootAssets;
         public LoadableMapEntry[] Loadables;
         public LoadableSceneEntry[] LoadableScenes;
         public SerializedFile[] SerializedFiles;

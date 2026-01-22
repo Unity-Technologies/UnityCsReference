@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using Unity.ProjectAuditor.Editor.Core;
@@ -28,7 +29,7 @@ namespace Unity.ProjectAuditor.Editor.Modules
 
         public override IReadOnlyCollection<IssueLayout> SupportedLayouts => new IssueLayout[] {k_IssueLayout};
 
-        public override AnalysisResult Audit(AnalysisParams analysisParams, IProgress progress = null)
+        public override IEnumerator Audit(AnalysisParams analysisParams, IProgress progress)
         {
             var analyzers = GetCompatibleAnalyzers(analysisParams);
             var context = new SettingsAnalysisContext
@@ -36,26 +37,26 @@ namespace Unity.ProjectAuditor.Editor.Modules
                 Params = analysisParams
             };
 
-            if (progress != null)
-                progress.Start("Analyzing Settings", "Analyzing project settings", analyzers.Length);
+            AsyncProgressState progressState = progress?.Start("Analyzing Settings", analyzers.Length);
+
+            yield return null;
 
             foreach (var analyzer in analyzers)
             {
-                if (progress?.IsCancelled ?? false)
-                    return AnalysisResult.Cancelled;
-
-                if (progress != null)
-                    progress.Advance();
+                if (AdvanceAsyncProgress(progress, progressState) == false)
+                    break;
 
                 #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 var issues = analyzer.Analyze(context).ToArray();
 #pragma warning restore RS0030
                 if (issues.Length > 0)
                     analysisParams.OnIncomingIssues(issues);
+
+                yield return null;
             }
 
-            progress?.Clear();
-            return AnalysisResult.Success;
+            progress?.Clear(progressState);
+            analysisParams.OnModuleCompleted?.Invoke(Name, AnalysisResult.Success, 0);
         }
     }
 }

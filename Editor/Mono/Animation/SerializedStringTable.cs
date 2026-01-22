@@ -4,6 +4,7 @@
 
 using UnityEngine;
 using System.Collections;
+using System;
 
 [System.Serializable]
 internal class SerializedStringTable
@@ -19,8 +20,8 @@ internal class SerializedStringTable
     {
         if (keys == null)
         {
-            keys = new string[0];
-            values = new int[0];
+            keys = Array.Empty<string>();
+            values = Array.Empty<int>();
         }
         if (table == null)
         {

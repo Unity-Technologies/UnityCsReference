@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.ComponentModel;
 using System.IO;
 using UnityEngine;
 using UnityEngine.Bindings;
@@ -11,31 +12,52 @@ using UnityEditor.Scripting.ScriptCompilation;
 using System.Runtime.InteropServices;
 using UnityEditor.Build;
 using UnityEditor.Build.Profile;
+using UnityEngine.Internal;
 using UnityEngine.Scripting;
 
 namespace UnityEditor
 {
     // Keep in sync with CanAppendBuild in EditorUtility.h
+    ///<summary>Whether you can append an existing build using <see cref="BuildOptions.AcceptExternalModificationsToPlayer" />.</summary>
     public enum CanAppendBuild
     {
+        ///<summary>The target platform does not support appending builds.</summary>
         Unsupported = 0,
+        ///<summary>The target platform supports appending builds, and the build can be appended.</summary>
         Yes = 1,
+        ///<summary>The target platform supports appending builds, and the build is not in a valid state.</summary>
         No = 2,
     }
 
-    // Keep in sync with Runtime\Network\PlayerCommunicator\PlayerConnectionTypes.h
+    /// <summary>
+    /// Describes how the player connects to the Editor.
+    /// </summary>
     public enum PlayerConnectionInitiateMode
     {
+        /// <summary>Player connection mode not set.</summary>
         None,
+        /// <summary>Player connection is initiated by the player connecting to the host, usually the host is the Editor.</summary>
         PlayerConnectsToHost,
+        /// <summary>Player connection is initiated by the player broadcasting its IP address, and then Editor connecting to the player.</summary>
         PlayerListens
     }
 
     // Lets you programmatically build players or AssetBundles which can be loaded from the web.
+    ///<summary>API for building players or AssetBundles.</summary>
+    ///<remarks>The BuildPipeline class in the Unity Editor namespace provides essential tools to programmatically <see cref="BuildPipeline.BuildPlayer">Build Players</see> and <see cref="BuildPipeline.BuildAssetBundles">Build AssetBundles</see>.
+    ///AssetBundles can be loaded from external sources such as the web, enhancing the flexibility and scalability of content delivery in Unity applications.
+    ///The class contains several static properties and methods to facilitate building workflows.</remarks>
+    ///<seealso href="xref:AssetBundlesIntro">AssetBundles</seealso>
+    ///<seealso href="xref:BuildPlayerPipeline">Build Player Pipeline</seealso>
     [NativeHeader("Editor/Mono/BuildPipeline/BuildPipeline.bindings.h")]
     [StaticAccessor("BuildPipeline", StaticAccessorType.DoubleColon)]
     public class BuildPipeline
     {
+        /// <summary>
+        /// Given a BuildTarget will return the <see cref="BuildTargetGroup" /> for the build target platform.
+        /// </summary>
+        /// <param name="platform">An instance of the <see cref="BuildTarget" /> enum.</param>
+        /// <returns>The <see cref="BuildTargetGroup" /> represented by the passed in <see cref="BuildTarget" />.</returns>
         [FreeFunction(IsThreadSafe = true)]
         public static extern BuildTargetGroup GetBuildTargetGroup(BuildTarget platform);
 
@@ -48,6 +70,9 @@ namespace UnityEditor
         [FreeFunction]
         internal static extern string GetBuildTargetGroupDisplayName(BuildTargetGroup targetPlatformGroup);
 
+        ///<summary>Given a BuildTarget will return the well known string representation for the build target platform.</summary>
+        ///<param name="targetPlatform">An instance of the <see cref="BuildTarget" /> enum.</param>
+        ///<returns>Target platform name represented by the passed in <see cref="BuildTarget" />.</returns>
         [FreeFunction("GetBuildTargetUniqueName", IsThreadSafe = true)]
         public static extern string GetBuildTargetName(BuildTarget targetPlatform);
 
@@ -69,6 +94,10 @@ namespace UnityEditor
             EditorApplication.Exit(1);
         }
 
+        ///<summary>Checks if Unity can append the build.</summary>
+        ///<param name="target">The <see cref="BuildTarget" /> to build.</param>
+        ///<param name="location">The path where Unity builds the application.</param>
+        ///<returns>Returns a UnityEditor.CanAppendBuild enum that indicates whether Unity can append the build.</returns>
         [FreeFunction]
         public extern static CanAppendBuild BuildCanBeAppended(BuildTarget target, string location);
 
@@ -80,12 +109,22 @@ namespace UnityEditor
             return buildPlayerContext;
         }
 
-        /// <summary>
-        /// Builds a player.
-        /// </summary>
-        /// <param name="buildPlayerWithProfileOptions">The BuildPlayerWithProfileOptions to be built with.</param>
-        /// <returns>A BuildReport giving build process information.</returns>
+
+        [RequiredByNativeCode]
+        internal static string[] RetrieveAdditionalBuildMetadataLocationsFromPlayerContext()
+        {
+            if (BuildPlayerContext.ActiveInstance == null)
+                return new string[] { };
+            return BuildPlayerContext.ActiveInstance.RetrieveAdditionalMetadataLocations();
+        }
+      
+        ///<summary>Builds a player from a specific build profile.</summary>
+        ///<param name="buildPlayerWithProfileOptions">Provide various options to control the behavior of <see cref="BuildPipeline.BuildPlayer" /> when using a <see cref="BuildProfile">build profile</see>.</param>
+        ///<returns>A <see cref="BuildReport" /> object containing build process information.</returns>
         /// <exception cref="ArgumentException">Throws if build profile is null.</exception>
+        ///<example>
+        ///  <code source="../../../Modules/ContentBuild/Tests/local.test.build-examples/Editor/BuildPipeline/BuildPipeline_BuildPlayerWithBuildProfile.cs"/>
+        ///</example>
         public static BuildReport BuildPlayer(BuildPlayerWithProfileOptions buildPlayerWithProfileOptions)
         {
             var buildProfile = buildPlayerWithProfileOptions.buildProfile;
@@ -100,6 +139,12 @@ namespace UnityEditor
 
         // Legacy signature for calling BuildPlayer()
         // Do not add any more overloads of BuildPlayer, or arguments to this method.  Functionality should be added by extending BuildPlayerOptions
+        ///<summary>Builds a Player. These overloads are still supported, but will be replaced. Please use BuildPlayer(<see cref="BuildPlayerOptions" /> buildPlayerOptions) and BuildPlayer(<see cref="BuildPlayerWithProfileOptions" /> buildPlayerWithProfileOptions) instead.</summary>
+        ///<param name="levels">The scenes to include in the build. If empty, the build includes only the current open scene. Paths are relative to the project folder, for example <c>Assets/MyLevels/MyScene.unity</c>.</param>
+        ///<param name="locationPathName">The path where the application will be built. For information on the platform extensions to include in the path, refer to [Build path requirements for target platforms](xref:build-path-requirements).</param>
+        ///<param name="target">The <see cref="BuildTarget" /> to build.</param>
+        ///<param name="options">Additional <see cref="BuildOptions" />, like whether to run the built player.</param>
+        ///<returns>A <see cref="BuildReport" /> object containing build process information.</returns>
         public static BuildReport BuildPlayer(EditorBuildSettingsScene[] levels, string locationPathName, BuildTarget target, BuildOptions options)
         {
             BuildPlayerOptions buildPlayerOptions = new BuildPlayerOptions();
@@ -127,6 +172,24 @@ namespace UnityEditor
         }
 
         // Main entry point for scripts to invoke player builds.
+        ///<summary>Builds a player.</summary>
+        ///<remarks>Use this function to programatically create a build of your project.
+        ///
+        ///Calling this method will invalidate any variables in the editor script that reference GameObjects, so they will need to be reacquired after the call.
+        ///
+        ///Scripts can run at strategic points during the build by implementing one of the supported callback interfaces, for example <see cref="BuildPlayerProcessor" />, <see cref="IPreprocessBuildWithContext" />, <see cref="IProcessSceneWithReport" /> and <see cref="IPostprocessBuildWithContext" />.
+        ///
+        ///Note: Be aware that changes to [scripting symbols](xref:platform-dependent-compilation) only take effect at the next domain reload, when scripts are recompiled.
+        ///
+        ///This means if you make changes to the defined scripting symbols via code using <see cref="PlayerSettings.SetDefineSymbolsForGroup" /> without a domain reload before calling this function, those changes won't take effect.
+        ///
+        ///It also means that the built-in scripting symbols defined for the current active target platform (such as UNITY_STANDALONE_WIN, or UNITY_ANDROID) remain in place even if you try to build for a different target platform, which can result in the wrong code being compiled into your build.</remarks>
+        ///<param name="buildPlayerOptions">Provide various options to control the behavior of <see cref="BuildPipeline.BuildPlayer" />.</param>
+        ///<returns>A <see cref="BuildReport" /> object containing build process information.</returns>
+        ///<example>
+        ///  <code source="../../../Modules/ContentBuild/Tests/local.test.build-examples/Editor/BuildPipeline/BuildPipeline_BuildPlayer.cs"/>
+        ///</example>
+        ///<seealso cref="BuildPlayerWindow.DefaultBuildMethods.BuildPlayer" />
         public static BuildReport BuildPlayer(BuildPlayerOptions buildPlayerOptions)
         {
             if (isBuildingPlayer)
@@ -295,6 +358,9 @@ namespace UnityEditor
         internal static extern bool IsFeatureSupported(string define, BuildTarget platform);
 
         // Is a player currently building?
+        ///<summary>Returns true when Unity is actively building a Player or AssetBundles</summary>
+        ///<remarks>This returns true during Player builds (<see cref="BuildPipeline.BuildPlayer" />) and AssetBundle builds (<see cref="BuildPipeline.BuildAssetBundles" />).
+        ///It can be used to check the context inside script code that could be triggered during a build, for example when <see cref="ExecuteAlways" /> is being used on a <see cref="MonoBehaviour" />.</remarks>
         public static extern bool isBuildingPlayer { [FreeFunction("IsBuildingPlayer")] get; }
 
 
@@ -306,9 +372,10 @@ namespace UnityEditor
         [FreeFunction("WriteBootConfigInternal", ThrowsException = true)]
         static extern void WriteBootConfigInternal(string outputFile, BuildTarget target, BuildOptions options);
 
+        [ExcludeFromDocs]
         public static void WriteBootConfig(string outputFile, BuildTarget target, BuildOptions options)
         {
-            WriteBootConfigInternal(outputFile,  target, options);
+            WriteBootConfigInternal(outputFile, target, options);
         }
 
         [StructLayout(LayoutKind.Sequential)]
@@ -326,7 +393,7 @@ namespace UnityEditor
             if (GetBuildTargetGroup(buildPlayerDataOptions.target) == BuildTargetGroup.Standalone &&
                 buildPlayerDataOptions.subtarget == (int)StandaloneBuildSubtarget.Default)
             {
-                buildPlayerDataOptions.subtarget = (int) EditorUserBuildSettings.standaloneBuildSubtarget;
+                buildPlayerDataOptions.subtarget = (int)EditorUserBuildSettings.standaloneBuildSubtarget;
             }
 
             var result = BuildPlayerData(buildPlayerDataOptions);
@@ -364,7 +431,7 @@ namespace UnityEditor
                 {
                     System.IO.Directory.CreateDirectory(buildParameters.outputPath);
                 }
-                catch(System.Exception ex)
+                catch (System.Exception ex)
                 {
                     Debug.LogError($"BuildContentDirectory failed. The output path '{buildParameters.outputPath}' does not exist and cannot be created.");
                     // Pass up the specific exception so that the cause (permissions, invalid filename etc) is not swallowed.
@@ -378,6 +445,33 @@ namespace UnityEditor
         [NativeThrows]
         private static extern BuildReport BuildContentDirectoryInternal(BuildContentDirectoryParameters buildParameters);
 
+        ///<summary>Build all AssetBundles.</summary>
+        ///<remarks>Use this function to build AssetBundles based on the AssetBundle and Label settings you have configured in the Editor. (See the Manual page about [AssetBundles workflow](xref:AssetBundles-Workflow) for further details.)
+        ///
+        ///Set <c>outputPath</c> to the folder within your project folder where you want to save the built
+        ///bundles (for example: "Assets/MyBundleFolder"). The folder is not created automatically
+        ///and the function simply fails if it doesn't already exist.
+        ///
+        ///Use the optional <c>assetBundleOptions</c> argument to specify bundle build options.
+        ///
+        ///The <c>targetPlatform</c> argument selects which deployment target (Windows Standalone, Android, iOS, and so on) to build the bundles for. An AssetBundle is only compatible with the specific platform
+        ///that it was built for, so you must produce different builds of a given bundle to use the assets on different platforms.
+        ///
+        ///For new code, the signature of BuildAssetBundles accepting a BuildAssetBundlesParameters structure is recommended instead of this one.
+        ///To match the behaviour of this signature leave the <see cref="BuildAssetBundlesParameters.bundleDefinitions" /> field unassigned so that
+        ///the Editor's AssetBundle assignments are used.</remarks>
+        ///<param name="outputPath">Output path for the AssetBundles.</param>
+        ///<param name="assetBundleOptions">AssetBundle building options.</param>
+        ///<param name="targetPlatform">Chosen target build platform.</param>
+        ///<returns>The manifest listing all AssetBundles included in this build.</returns>
+        ///<example>
+        ///  <code source="../../../Modules/ContentBuild/Tests/local.test.build-examples/Editor/BuildPipeline/BuildPipeline_BuildAssetBundles.cs"/>
+        ///</example>
+        ///<seealso cref="EditorUserBuildSettings.activeBuildTarget" />
+        ///<seealso cref="AssetDatabase.GetAssetPathsFromAssetBundle" />
+        ///<seealso cref="AssetDatabase.GetImplicitAssetBundleName" />
+        ///<seealso cref="AssetImporter.assetBundleName" />
+        ///<seealso cref="AssetBundle" />
         public static AssetBundleManifest BuildAssetBundles(string outputPath, BuildAssetBundleOptions assetBundleOptions, BuildTarget targetPlatform)
         {
             BuildAssetBundlesParameters input = new BuildAssetBundlesParameters
@@ -392,6 +486,22 @@ namespace UnityEditor
             return BuildAssetBundles(input);
         }
 
+        ///<summary>Build AssetBundles from a building map.</summary>
+        ///<remarks>This signature of BuildAssetBundles lets you specify the names and contents
+        ///                    of the bundles programmatically, using a "build map" rather than with the details set in the editor.
+        ///                    The map is simply an array of <see cref="AssetBundleBuild" /> objects, each of which contains
+        ///                    a bundle name and a list of the names of asset files to be added to the named bundle.
+        ///
+        ///                    For new code, the signature of BuildAssetBundles accepting a BuildAssetBundlesParameters structure is recommended
+        ///                    instead of this one.  When using that signature the build map is assigned to <see cref="BuildAssetBundlesParameters.bundleDefinitions" />.</remarks>
+        ///<param name="outputPath">Output path for the AssetBundles.</param>
+        ///<param name="builds">AssetBundle building map.</param>
+        ///<param name="assetBundleOptions">AssetBundle building options.</param>
+        ///<param name="targetPlatform">Target build platform.</param>
+        ///<returns>The manifest listing all AssetBundles included in this build.</returns>
+        ///<example>
+        ///  <code source="../../../Modules/ContentBuild/Tests/local.test.build-examples/Editor/BuildPipeline/BuildPipeline_BuildAssetBundles2.cs"/>
+        ///</example>
         public static AssetBundleManifest BuildAssetBundles(string outputPath, AssetBundleBuild[] builds, BuildAssetBundleOptions assetBundleOptions, BuildTarget targetPlatform)
         {
             if (builds == null)
@@ -410,6 +520,163 @@ namespace UnityEditor
             return BuildAssetBundles(input);
         }
 
+        ///<summary>Builds the AssetBundles in your project.</summary>
+        ///<remarks>
+        ///  <para>This signature of BuildAssetBundles is recommended and exposes the most functionality. The other signatures, documented below,
+        ///are retained for backward compatibility and convenience.
+        ///
+        ///During the <see cref="AssetBundle" /> build process, classes that implement <see cref="IProcessSceneWithReport" /> are called as scenes are processed. Similarly the way shaders are built can be influenced by implementing <see cref="IPreprocessShaders" /> or <see cref="IPreprocessComputeShaders" />.
+        ///
+        ///This method returns an <see cref="AssetBundleManifest" /> instance that describes the AssetBundles produced.
+        ///
+        ///If the build fails then this method returns null or throws an exception. You can find details about what went wrong in the exception message or in errors logged to the console.
+        ///
+        ///For example, if you pass an invalid or non-existent path as the <c>outputPath</c> parameter,
+        ///the method throws an <c>ArgumentException</c> to indicate that the supplied argument was invalid.
+        ///
+        ///Specifying a <c>targetPlatform</c> that isn't the active platform causes Unity to change to the new platform and reimport assets. This can cause issues if you create a build in batch mode. To avoid this issue, use the <c>-buildTarget</c> command line argument to set the target platform and then call <c>BuildAssetBundles</c>.
+        ///
+        ///</para>
+        ///  <para>In addition to the AssetBundle files, the build will produce several other files:
+        ///
+        ///                    * The <see cref="AssetBundleManifest" /> is stored in a small AssetBundle that has the same name as the output folder, for example "MyBundleFolder".
+        ///                    This is the same object that is returned from the BuildAssetBundles call, and the serialized form can be useful at runtime,
+        ///                    for example to determine the expected hashes of the other AssetBundles.
+        ///
+        ///                    * The main ".manifest" file, which is a text format file.  It has the same name as the output folder, but using ".manifest" as its extension (for example: "MyBundleFolder.manifest").
+        ///                    Assign the path to this manifest file to
+        ///                    <see cref="BuildPlayerOptions.assetBundleManifestPath" /> before calling <see cref="BuildPipeline.BuildPlayer" /> to make sure that any types appearing in the AssetBundles are not stripped from the build. (See [Managed code stripping](xref:ManagedCodeStripping) for more information about code stripping.)
+        ///
+        ///                    * There is also a separate ".manifest" file written for each AssetBundle, based on the name of the AssetBundle.
+        ///
+        ///                    * Finally, the <see cref="BuildReport" /> for the build is written to "Library/LastBuild.buildreport".</para>
+        ///</remarks>
+        ///<param name="buildParameters">Configuration of the build.</param>
+        ///<returns>The manifest summarizing all AssetBundles generated by the build.</returns>
+        ///<example>
+        ///  <code><![CDATA[
+        ///using System.Collections.Generic;
+        ///using System.IO;
+        ///using System.Linq;
+        ///using UnityEngine;
+        ///using UnityEditor;
+        ///
+        ///public class BuildAssetBundlesExample
+        ///{
+        ///    [MenuItem("Example/Build AssetBundles")]
+        ///    static void BuildBundles()
+        ///    {
+        ///        List<AssetBundleBuild> assetBundleDefinitionList = new();
+        ///
+        ///        // Define two asset bundles, populated based on file system structure
+        ///
+        ///        // The first bundle is all the scene files in the Scenes directory (non-recursive)
+        ///        {
+        ///            AssetBundleBuild ab = new();
+        ///            ab.assetBundleName = "Scenes";
+        ///            ab.assetNames = Directory.EnumerateFiles("Assets/" + ab.assetBundleName, "*.unity", SearchOption.TopDirectoryOnly).ToArray();
+        ///            assetBundleDefinitionList.Add(ab);
+        ///        }
+        ///
+        ///        // The second bundle is all the asset files found recursively in the Meshes directory
+        ///        {
+        ///            AssetBundleBuild ab = new();
+        ///            ab.assetBundleName = "Meshes";
+        ///            ab.assetNames = RecursiveGetAllAssetsInDirectory("Assets/" + ab.assetBundleName).ToArray();
+        ///            assetBundleDefinitionList.Add(ab);
+        ///        }
+        ///
+        ///        string outputPath = "MyBuild";  // Subfolder of the current project
+        ///
+        ///        if (!Directory.Exists(outputPath))
+        ///            Directory.CreateDirectory(outputPath);
+        ///
+        ///        // Assemble all the input needed to perform the build in this structure.
+        ///        // The project's current build settings will be used because target and subtarget fields are not filled in
+        ///        BuildAssetBundlesParameters buildInput = new()
+        ///        {
+        ///            outputPath = outputPath,
+        ///            options = BuildAssetBundleOptions.AssetBundleStripUnityVersion,
+        ///            bundleDefinitions = assetBundleDefinitionList.ToArray()
+        ///        };
+        ///        AssetBundleManifest manifest = BuildPipeline.BuildAssetBundles(buildInput);
+        ///
+        ///        // Look at the results
+        ///        if (manifest != null)
+        ///        {
+        ///            foreach (var bundleName in manifest.GetAllAssetBundles())
+        ///            {
+        ///                string projectRelativePath = buildInput.outputPath + "/" + bundleName;
+        ///                Debug.Log($"Size of AssetBundle {projectRelativePath} is {new FileInfo(projectRelativePath).Length}");
+        ///            }
+        ///        }
+        ///        else
+        ///        {
+        ///            Debug.Log("Build failed, see Console and Editor log for details");
+        ///        }
+        ///    }
+        ///
+        ///    static List<string> RecursiveGetAllAssetsInDirectory(string path)
+        ///    {
+        ///        List<string> assets = new();
+        ///        foreach (var f in Directory.EnumerateFiles(path, "*", SearchOption.AllDirectories))
+        ///            if (Path.GetExtension(f) != ".meta" &&
+        ///                Path.GetExtension(f) != ".cs" &&  // Scripts are not supported in AssetBundles
+        ///                Path.GetExtension(f) != ".unity") // Scenes cannot be mixed with other file types in a bundle
+        ///                assets.Add(f);
+        ///
+        ///        return assets;
+        ///    }
+        ///}
+        ///]]></code>
+        ///</example>
+        ///<example>
+        ///  <code><![CDATA[
+        ///using System.IO;
+        ///using UnityEngine;
+        ///using UnityEditor;
+        ///
+        ///public class BuildAssetBundlesOutputFileExample
+        ///{
+        ///    [MenuItem("Example/AssetBundle Output File Example")]
+        ///    static void BuildAndPrintOutputFiles()
+        ///    {
+        ///        var bundleDefinitions = new AssetBundleBuild[]
+        ///        {
+        ///            new AssetBundleBuild
+        ///            {
+        ///                assetBundleName = "mybundle",
+        ///                assetNames = new string[] { "Assets/Scenes/Scene1.unity" }
+        ///            }
+        ///        };
+        ///
+        ///        string buildOutputDirectory = "build";
+        ///        Directory.CreateDirectory(buildOutputDirectory);
+        ///
+        ///        BuildAssetBundlesParameters buildInput = new()
+        ///        {
+        ///            outputPath = buildOutputDirectory,
+        ///            bundleDefinitions = bundleDefinitions
+        ///        };
+        ///
+        ///        AssetBundleManifest manifest = BuildPipeline.BuildAssetBundles(buildInput);
+        ///        if (manifest != null)
+        ///        {
+        ///            var outputFiles = Directory.EnumerateFiles(buildOutputDirectory, "*", SearchOption.TopDirectoryOnly);
+        ///
+        ///            //Expected output (on Windows):
+        ///            //  Output of the build:
+        ///            //      build\build
+        ///            //      build\build.manifest
+        ///            //      build\mybundle
+        ///            //      build\mybundle.manifest
+        ///            Debug.Log("Output of the build:\n\t" + string.Join("\n\t", outputFiles));
+        ///        }
+        ///    }
+        ///}
+        ///]]></code>
+        ///</example>
+        ///<seealso href="xref:AssetBundlesIntro">AssetBundles</seealso>
         public static AssetBundleManifest BuildAssetBundles(BuildAssetBundlesParameters buildParameters)
         {
             if (buildParameters.targetPlatform == 0 || buildParameters.targetPlatform == BuildTarget.NoTarget)
@@ -446,9 +713,37 @@ namespace UnityEditor
         [FreeFunction("GetPlayerDataSessionId")]
         internal static extern string GetSessionIdForBuildTarget(BuildTarget target, int subtarget);
 
+        ///<summary>Extract the CRC checksum for the given AssetBundle.</summary>
+        ///<remarks>A 32-bit checksum is generated during the AssetBundle build process and recorded in the .manifest file and exposed by this method.</remarks>
+        ///<param name="targetPath">Asset bundle path.</param>
+        ///<param name="crc">A resulting checksum of the given asset bundle.</param>
+        ///<returns>True if the method successfully reads the manifest file and extracts the CRC value. False if it cannot find the .manifest file associated to the <c>targetPath</c> or fails to parse the CRC value, which might happen due to incorrect paths.</returns>
+        ///<example>
+        ///  <code><![CDATA[
+        ///using UnityEngine;
+        ///using UnityEditor;
+        ///
+        ///public class CheckAssetBundleCRCExample
+        ///{
+        ///    [MenuItem("Debug/Check AssetBundle CRC")]
+        ///    static public void CheckAssetBundleCRC()
+        ///    {
+        ///        string targetPath = EditorUtility.OpenFilePanel("Pick AssetBundle", "", "");
+        ///        uint crc;
+        ///        if (targetPath.Length == 0 || !BuildPipeline.GetCRCForAssetBundle(targetPath, out crc))
+        ///            return;
+        ///
+        ///        Debug.Log($"AssetBundle {targetPath} has CRC equal to {crc}");
+        ///    }
+        ///}
+        ///]]></code>
+        ///</example>
+        ///<seealso href="xref:AssetBundles-Integrity">CRC Checksums</seealso>
+        ///<seealso cref="AssetBundleManifest.GetAssetBundleHash" />
         [FreeFunction("ExtractCRCFromAssetBundleManifestFile")]
         public static extern bool GetCRCForAssetBundle(string targetPath, out uint crc);
 
+        ///<summary>Extract the hash for the given AssetBundle.</summary>
         [FreeFunction("ExtractHashFromAssetBundleManifestFile")]
         public static extern bool GetHashForAssetBundle(string targetPath, out Hash128 hash);
 
@@ -456,12 +751,20 @@ namespace UnityEditor
         internal static extern bool LicenseCheck(BuildTarget target);
 
         // TODO: remove, superseded by IsBuildPlatformSupported()
+        ///<summary>Returns true if the specified build target is currently available in the Editor.</summary>
+        ///<param name="buildTargetGroup">build target group</param>
+        ///<param name="target">build target</param>
         [FreeFunction]
         public static extern bool IsBuildTargetSupported(BuildTargetGroup buildTargetGroup, BuildTarget target);
 
         [FreeFunction]
         internal static extern bool IsBuildPlatformSupported(BuildTarget target);
 
+        ///<summary>Returns the path of a player directory. For ex., Editor\Data\PlaybackEngines\AndroidPlayer.</summary>
+        ///<remarks>In some cases the player directory path can be affected by <see cref="BuildOptions.Development" />.</remarks>
+        ///<param name="target">Build target.</param>
+        ///<param name="options">Build options.</param>
+        ///<param name="buildTargetGroup">Build target group.</param>
         public static string GetPlaybackEngineDirectory(BuildTarget target, BuildOptions options)
         {
             return GetPlaybackEngineDirectory(target, options, true);
@@ -520,6 +823,7 @@ namespace UnityEditor
         [FreeFunction]
         internal static extern string GetBuildTargetGroupName(BuildTargetGroup buildTargetGroup);
 
+        ///<summary>Returns the mode currently used by players to initiate a connect to the host.</summary>
         [RequiredByNativeCode]
         public static PlayerConnectionInitiateMode GetPlayerConnectionInitiateMode(BuildTarget targetPlatform, BuildOptions buildOptions)
         {

@@ -11,7 +11,8 @@ namespace UnityEditor
 #pragma warning disable 649
     [StructLayout(LayoutKind.Sequential)]
     [Serializable]
-    [NativeType(CodegenOptions.Custom, "MonoImportPackageItem", Header = "Editor/Mono/PackageUtility.bindings.h")]
+    [NativeType(CodegenOptions.Custom, "MonoImportPackageItem")]
+    [NativeHeader("Editor/Src/PackageUtility.h")]
     [NativeAsStruct]
     internal class ImportPackageItem
     {
@@ -33,7 +34,8 @@ namespace UnityEditor
     [StructLayout(LayoutKind.Sequential)]
     [Serializable]
     [NativeAsStruct]
-    [NativeType(CodegenOptions.Custom, "MonoExportPackageItem", Header = "Editor/Mono/PackageUtility.bindings.h")]
+    [NativeType(CodegenOptions.Custom, "MonoExportPackageItem")]
+    [NativeHeader("Editor/Src/PackageUtility.h")]
     internal class ExportPackageItem
     {
         public string assetPath;
@@ -44,7 +46,8 @@ namespace UnityEditor
 
     //*undocumented*
     [StructLayout(LayoutKind.Sequential)]
-    [NativeType(CodegenOptions.Custom, "MonoPackageInfo", Header = "Editor/Src/PackageUtility.h")]
+    [NativeType(CodegenOptions.Custom, "MonoPackageInfo")]
+    [NativeHeader("Editor/Src/PackageUtility.h")]
     public struct PackageInfo
     {
         public string packagePath;

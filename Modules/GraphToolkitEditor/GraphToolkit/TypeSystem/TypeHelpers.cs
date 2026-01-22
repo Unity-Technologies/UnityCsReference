@@ -74,7 +74,7 @@ namespace Unity.GraphToolkit
 
             if (type.IsArray)
             {
-                return GetFriendlyName(type.GetElementType()) + "[]";
+                return "Array of " + GetFriendlyName(type.GetElementType());
             }
 
             return friendlyName;

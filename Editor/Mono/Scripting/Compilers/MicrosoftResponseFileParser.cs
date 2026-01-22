@@ -118,11 +118,11 @@ namespace UnityEditor.Scripting.Compilers
             {
                 var empty = new ResponseFileData
                 {
-                    Defines = new string[0],
-                    FullPathReferences = new string[0],
+                    Defines = Array.Empty<string>(),
+                    FullPathReferences = Array.Empty<string>(),
                     Unsafe = false,
-                    Errors = new string[0],
-                    OtherArguments = new string[0],
+                    Errors = Array.Empty<string>(),
+                    OtherArguments = Array.Empty<string>(),
                 };
 
                 return empty;

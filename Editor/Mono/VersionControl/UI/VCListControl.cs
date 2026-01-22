@@ -1079,7 +1079,7 @@ namespace UnityEditorInternal.VersionControl
         {
             selectList.Clear();
             Selection.activeObject = null;
-            Selection.entityIds = new EntityId[0];
+            Selection.entityIds = Array.Empty<EntityId>();
         }
 
         // Single selection - clears all previous selections

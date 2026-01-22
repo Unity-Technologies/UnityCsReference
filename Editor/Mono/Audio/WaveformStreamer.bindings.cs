@@ -8,7 +8,7 @@ using UnityEngine.Bindings;
 
 namespace UnityEditor
 {
-    [NativeType(Header = "Editor/Mono/Audio/WaveformStreamer.bindings.h")]
+    [NativeHeader("Editor/Mono/Audio/WaveformStreamer.bindings.h")]
     internal sealed partial class WaveformStreamer
     {
         internal IntPtr m_Data;

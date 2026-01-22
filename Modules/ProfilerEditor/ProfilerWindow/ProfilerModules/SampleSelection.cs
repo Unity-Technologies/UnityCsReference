@@ -5,15 +5,11 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using UnityEditor;
-using UnityEditor.Profiling;
-using UnityEngine;
-using UnityEngine.Profiling;
-using System.Globalization;
+using System.Runtime.CompilerServices;
 using System.Text;
 using Unity.Profiling.LowLevel;
-using System.Runtime.CompilerServices;
 using UnityEditorInternal;
+using UnityEngine;
 
 namespace UnityEditor.Profiling
 {
@@ -148,8 +144,7 @@ namespace UnityEditor.Profiling
 
             if (selection.rawSampleIndices != null)
             {
-                m_RawSampleIndices = new List<int>(selection.rawSampleIndices.Count);
-                m_RawSampleIndices.AddRange(selection.rawSampleIndices);
+                m_RawSampleIndices = new List<int>(selection.rawSampleIndices);
             }
             else
             {

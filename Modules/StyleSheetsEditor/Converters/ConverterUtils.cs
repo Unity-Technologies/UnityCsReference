@@ -685,7 +685,7 @@ namespace UnityEditor.StyleSheets
             var skin = ScriptableObject.CreateInstance<GUISkin>();
             // For some strange reason, the default GUISkin is created with a customStyles array of a single null element.
             // Remove this null element for testing purpose.
-            skin.customStyles = new GUIStyle[0];
+            skin.customStyles = Array.Empty<GUIStyle>();
             return skin;
         }
 

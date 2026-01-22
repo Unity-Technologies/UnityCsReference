@@ -155,7 +155,7 @@ internal class UxmlAttributeFieldDecorator : VisualElement, ITrackablePropertyPr
         [Conditional("UNITY_EDITOR")]
         public new static void Register()
         {
-            UxmlDescriptionCache.RegisterType(typeof(UxmlSerializedData), new UxmlAttributeNames[] { }, true);
+            UxmlDescriptionCache.RegisterType(typeof(UxmlSerializedData), Array.Empty<UxmlAttributeNames>(), true);
         }
         public override object CreateInstance() => new UxmlAttributeFieldDecorator();
     }

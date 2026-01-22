@@ -418,7 +418,7 @@ namespace UnityEditor
                 evt.Use();
                 EditorUtility.DisplayCustomMenu(position, fullFlagNames.ToArray(),
                     // Only show selections if we are not multi-editing
-                    EditorGUI.showMixedValue ? new int[] {} : selectedFlags.ToArray(),
+                    EditorGUI.showMixedValue ? Array.Empty<int>() : selectedFlags.ToArray(),
                     MaskCallbackInfo.m_Instance.SetMaskValueDelegate, flagValues);
                 EditorGUIUtility.keyboardControl = controlID;
             }

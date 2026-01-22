@@ -120,5 +120,42 @@ namespace Unity.GraphToolkit.Editor
         /// <returns>The output port with the specified name, or null if no match is found.</returns>
         /// <remarks>The output port's name is unique within the node's output ports.</remarks>
         public IPort GetOutputPortByName(string name) => ((NodeModel)this).OutputsById.GetValueOrDefault(name);
+
+        /// <summary>
+        /// The number of node options defined in the node.
+        /// </summary>
+        public int NodeOptionCount => this is InputOutputPortsNodeModel ioNodeModel ? ioNodeModel.NodeOptions.Count : 0;
+
+        /// <summary>
+        /// Retrieves a node option using its zero-based index.
+        /// </summary>
+        /// <param name="index">Index of the node option, based on display order.</param>
+        /// <returns>The node option at the specified index.</returns>
+        /// <remarks>
+        /// The index is zero-based.
+        /// </remarks>
+        /// <exception cref="IndexOutOfRangeException">
+        /// Thrown if the index is out of bounds.
+        /// </exception>
+        public INodeOption GetNodeOption(int index)
+        {
+            if (this is InputOutputPortsNodeModel ioNodeModel)
+                return ioNodeModel.NodeOptions[index];
+
+            throw new ArgumentOutOfRangeException(nameof(index), index, "Index is out of range for the node options in this node.");
+        }
+
+        /// <summary>
+        /// The node options defined on this node.
+        /// </summary>
+        public IEnumerable<INodeOption> NodeOptions => this is InputOutputPortsNodeModel ioNodeModel ? ioNodeModel.NodeOptions : Array.Empty<INodeOption>();
+
+        /// <summary>
+        /// Retrieves a node option using its name.
+        /// </summary>
+        /// <param name="name">The unique name of the node option.</param>
+        /// <returns>The node option with the specified name, or null if none is found.</returns>
+        /// <remarks>The node option's name is unique within the node's input ports and node options.</remarks>
+        public INodeOption GetNodeOptionByName(string name) => this is InputOutputPortsNodeModel ioNodeModel ? ioNodeModel.NodeOptionsByName.GetValueOrDefault(name) : null;
     }
 }

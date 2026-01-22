@@ -51,7 +51,7 @@ namespace UnityEngine.TextCore.Text
             Font sourceFont_editorRef = null;
             sourceFont_editorRef = SourceFont_EditorRef;
 
-            m_NativeFontAsset = Create(faceInfo, sourceFontFile, sourceFont_editorRef, m_SourceFontFilePath, entityId, fallbacks, weightFallbacks.Item1, weightFallbacks.Item2, m_AtlasRenderMode);
+            m_NativeFontAsset = Create(faceInfo, sourceFontFile, sourceFont_editorRef, m_SourceFontFilePath, entityId, fallbacks, weightFallbacks.Item1, weightFallbacks.Item2, m_AtlasRenderMode, MarshalledUnityObject.MarshalNotNull(this));
         }
 
 
@@ -228,12 +228,12 @@ namespace UnityEngine.TextCore.Text
         static extern void UpdateFallbacks(IntPtr ptr, IntPtr[] fallbacks);
         static extern void UpdateWeightFallbacks(IntPtr ptr, IntPtr[] regularFallbacks, IntPtr[] italicFallbacks);
 
-        static extern IntPtr Create(FaceInfo faceInfo, Font sourceFontFile, Font sourceFont_EditorRef, string sourceFontFilePath, EntityId fontEntityId, IntPtr[] fallbacks, IntPtr[] weightFallbacks, IntPtr[] italicFallbacks, GlyphRenderMode renderMode);
+        static extern IntPtr Create(FaceInfo faceInfo, Font sourceFontFile, Font sourceFont_EditorRef, string sourceFontFilePath, EntityId fontEntityId, IntPtr[] fallbacks, IntPtr[] weightFallbacks, IntPtr[] italicFallbacks, GlyphRenderMode renderMode, IntPtr managedObject);
         static extern void UpdateFaceInfo(IntPtr ptr, FaceInfo faceInfo);
         static extern void UpdateRenderMode(IntPtr ptr, GlyphRenderMode renderMode);
 
         [FreeFunction("FontAsset::Destroy")]
-        static extern void Destroy(IntPtr ptr);
+        static extern void Destroy(IntPtr ptr, IntPtr managedObject);
 
         internal static class BindingsMarshaller
         {

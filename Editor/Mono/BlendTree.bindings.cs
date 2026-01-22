@@ -22,7 +22,7 @@ namespace UnityEditor.Animations
         Direct = 4
     }
 
-    [NativeType("Editor/Src/Animation/BlendTree.h")]
+    [NativeHeader("Editor/Src/Animation/BlendTree.h")]
     [StructLayout(LayoutKind.Sequential)]
     public struct ChildMotion
     {
@@ -44,7 +44,7 @@ namespace UnityEditor.Animations
     }
 
     [NativeHeader("Editor/Src/Animation/BlendTree.bindings.h")]
-    [NativeType("Editor/Src/Animation/BlendTree.h")]
+    [NativeHeader("Editor/Src/Animation/BlendTree.h")]
     public partial class BlendTree : Motion
     {
         public BlendTree()

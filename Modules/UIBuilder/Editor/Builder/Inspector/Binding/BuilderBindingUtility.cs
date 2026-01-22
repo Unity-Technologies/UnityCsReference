@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using Unity.Properties;
+using Unity.UIToolkit.Editor;
 using UnityEditor;
 using UnityEditor.UIElements;
 using UnityEngine;
@@ -21,42 +22,6 @@ namespace Unity.UI.Builder
         private const float k_WindowWidth = 560;
         private const float k_WindowHeight = 460;
         private const float k_Spacing = 10;
-
-        public static UxmlObjectAsset FindUxmlBinding(VisualElementAsset element, string property)
-        {
-            using var _ = ListPool<UxmlObjectAsset>.Get(out var uxmlObjectAssets);
-            element.GetChildrenUxmlObjectAssets(uxmlObjectAssets);
-
-            if (uxmlObjectAssets.Count == 0)
-                return null;
-
-            var description = UxmlSerializedDataRegistry.GetDescription(typeof(VisualElement).FullName);
-            var attributeDescription = description.FindAttributeWithPropertyName("bindings");
-
-            foreach (var obj in uxmlObjectAssets)
-            {
-                var fullType = obj.fullTypeName;
-                var rootName = (attributeDescription as UxmlSerializedUxmlObjectAttributeDescription)?.rootName ?? attributeDescription.name;
-
-                if (obj.isField && fullType == rootName)
-                {
-                    using var listPool = ListPool<UxmlObjectAsset>.Get(out var bindingsUxmlObjectAssets);
-                    obj.GetChildrenUxmlObjectAssets(bindingsUxmlObjectAssets);
-
-                    foreach (var bindingObj in bindingsUxmlObjectAssets)
-                    {
-                        if (bindingObj.GetAttributeValue("property") == property)
-                            return bindingObj;
-                    }
-                }
-                else if (obj.GetAttributeValue("property") == property)
-                {
-                    return obj;
-                }
-            }
-
-            return null;
-        }
 
         /// <summary>
         /// Finds the binding that binds the specified property of the selected VisualElement to a data source.
@@ -82,7 +47,7 @@ namespace Unity.UI.Builder
             if (DataBindingUtility.TryGetBinding(builder.inspector.currentVisualElement, new PropertyPath(property), out var bindingInfo))
             {
                 binding = bindingInfo.binding;
-                uxmlBindingAsset = FindUxmlBinding(vea, property);
+                uxmlBindingAsset = vea.FindUxmlBinding(property);
             }
 
             return uxmlBindingAsset != null;

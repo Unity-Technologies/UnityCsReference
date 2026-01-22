@@ -381,9 +381,9 @@ namespace UnityEditor.Search
                 providersContainer.Add(b.CreateGUI());
             }
 
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable RS0031 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             if (!m_Areas.selectedBlocks.Any())
-#pragma warning restore RS0030
+#pragma warning restore RS0031
             {
                 allArea.selected = true;
                 SetCurrentArea(allArea);

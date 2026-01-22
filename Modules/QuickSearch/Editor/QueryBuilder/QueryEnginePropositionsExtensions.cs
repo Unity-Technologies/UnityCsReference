@@ -195,17 +195,13 @@ namespace UnityEditor.Search
             // 1. Global proposition
             // 2. Custom propositions
             if (filter.metaInfo == null || filter.metaInfo.Count == 0)
-                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                return Enumerable.Empty<SearchProposition>();
-#pragma warning restore RS0030
+                return Array.Empty<SearchProposition>();
 
             #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var propositionKeys = filter.metaInfo.Keys.Where(key => key.StartsWith(k_BaseSearchPropositionDataKey, StringComparison.Ordinal)).ToList();
 #pragma warning restore RS0030
             if (propositionKeys.Count == 0)
-                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                return Enumerable.Empty<SearchProposition>();
-#pragma warning restore RS0030
+                return Array.Empty<SearchProposition>();
 
             var globalProposition = GetGlobalProposition(filter);
             if (!globalProposition.valid)
@@ -280,9 +276,7 @@ namespace UnityEditor.Search
             if (type.IsEnum)
                 return SearchUtils.FetchEnumPropositions(type, category, filterId, defaultOperator, blockType, priority, icon, color);
 
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            return Enumerable.Empty<SearchProposition>();
-#pragma warning restore RS0030
+            return Array.Empty<SearchProposition>();
         }
 
         static string GetPropositionKey(string label)

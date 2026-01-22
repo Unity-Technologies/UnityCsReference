@@ -5,22 +5,23 @@
 using System;
 using System.Collections.Generic;
 using Unity.Hierarchy;
+using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEngine;
 using UnityEngine.Assertions;
+using UnityEngine.Pool;
 using UnityEngine.UIElements;
 
 namespace Unity.UIToolkit.Editor;
 
 internal class VisualElementEditingNodeHandler : VisualElementNodeTypeHandler, IVisualElementEditingManager
 {
-    private const string k_DraggedVisualElementKey = "VisualElementHandler__DraggedVisualElements";
-
     private VisualElementEditingStage m_Stage;
-    private VisualTreeAssetEditingContext m_Context;
     private Panel m_Panel;
     private VisualElement m_LocalRoot;
     private bool m_ExpandOnInitialize = false;
+
+    VisualTreeAssetEditingContext Context => m_Stage?.Context ?? default;
 
     public VisualElementEditingNodeHandler()
         : base(new HierarchySelectionHandler())
@@ -43,8 +44,6 @@ internal class VisualElementEditingNodeHandler : VisualElementNodeTypeHandler, I
 
     public void SetContextForEditing(VisualTreeAssetEditingContext context, Panel panel)
     {
-        m_Context = context;
-
         if (m_Panel == panel)
             return;
 
@@ -82,7 +81,7 @@ internal class VisualElementEditingNodeHandler : VisualElementNodeTypeHandler, I
         CacheLocalRoot();
     }
 
-    protected override bool AcceptRootAsParent() => m_Context.SubDocumentOptions != SubDocumentOptions.InContext;
+    protected override bool AcceptRootAsParent() => Context.SubDocumentOptions != SubDocumentOptions.InContext;
 
     static bool CanReceiveChildren(VisualElement element) => element.contentContainer != null;
 
@@ -98,15 +97,9 @@ internal class VisualElementEditingNodeHandler : VisualElementNodeTypeHandler, I
 
     protected override void InitializeDrag(in HierarchyViewDragAndDropSetupData data)
     {
-        var list = new List<VisualElement>();
-        foreach (var node in data.Nodes)
-        {
-            if (TryGetElementFromNode(in node, out var element))
-            {
-                list.Add(element);
-            }
-        }
-        data.SetGenericData(k_DraggedVisualElementKey, list);
+        if (StageUtility.GetCurrentStage() != m_Stage)
+            return;
+        base.InitializeDrag(data);
     }
 
     protected override DragVisualMode HandleDrop(in HierarchyViewDragAndDropHandlingData data, bool performDrop)
@@ -116,12 +109,20 @@ internal class VisualElementEditingNodeHandler : VisualElementNodeTypeHandler, I
         if (visualMode != DragVisualMode.None)
             return visualMode;
 
+        visualMode = HandleUIAssetsBeingDragged(in data, performDrop);
+        if (visualMode != DragVisualMode.None)
+            return visualMode;
+
+        visualMode = HandleLibraryItemBeingDragged(in data, performDrop);
+        if (visualMode != DragVisualMode.None)
+            return visualMode;
+
         return DragVisualMode.None;
     }
 
     DragVisualMode HandleVisualElementBeingDragged(in HierarchyViewDragAndDropHandlingData data, bool performDrop)
     {
-        var draggedVisualElements = (List<VisualElement>)data.GetGenericData(k_DraggedVisualElementKey);
+        var draggedVisualElements = (List<VisualElement>)data.GetGenericData(DraggedVisualElementKey);
         if (draggedVisualElements == null)
             return DragVisualMode.None;
 
@@ -173,7 +174,7 @@ internal class VisualElementEditingNodeHandler : VisualElementNodeTypeHandler, I
             default:
                 throw new ArgumentOutOfRangeException();
         }
-        return DoPerformDrop(in data, draggedVisualElements);
+        return DoPerformVisualElementsDrop(in data, draggedVisualElements);
     }
 
     bool CheckIfElementCanBeInsertedAtIndex(HierarchyView view, in HierarchyNode parent, int childIndex, int insertIndex)
@@ -188,7 +189,7 @@ internal class VisualElementEditingNodeHandler : VisualElementNodeTypeHandler, I
 
         // Root level elements are either all editable or all non-editable, depending on the context.
         var droppingOnRoot = parent == Hierarchy.Root;
-        var inContextEditing = m_Context.SubDocumentOptions == SubDocumentOptions.InContext;
+        var inContextEditing = Context.SubDocumentOptions == SubDocumentOptions.InContext;
         if (droppingOnRoot)
             return !inContextEditing;
 
@@ -233,7 +234,7 @@ internal class VisualElementEditingNodeHandler : VisualElementNodeTypeHandler, I
         return true;
     }
 
-    private DragVisualMode DoPerformDrop(in HierarchyViewDragAndDropHandlingData data, List<VisualElement> draggedVisualElements)
+    private DragVisualMode DoPerformVisualElementsDrop(in HierarchyViewDragAndDropHandlingData data, List<VisualElement> draggedVisualElements)
     {
         var parentElement = m_LocalRoot;
 
@@ -294,6 +295,268 @@ internal class VisualElementEditingNodeHandler : VisualElementNodeTypeHandler, I
         return DragVisualMode.Move;
     }
 
+    DragVisualMode HandleUIAssetsBeingDragged(in HierarchyViewDragAndDropHandlingData data, bool performDrop)
+    {
+        if (data.Paths is null or { Length: 0 })
+            return DragVisualMode.None;
+
+        var totalDragCount = data.Paths.Length;
+
+        using var ssHandle = ListPool<StyleSheet>.Get(out var styleSheets);
+        using var vtaHandle = ListPool<VisualTreeAsset>.Get(out var visualTreeAssets);
+
+        foreach (var path in data.Paths)
+        {
+            if (string.IsNullOrEmpty(path))
+                continue;
+            var assetType = AssetDatabase.GetMainAssetTypeAtPath(path);
+
+            if (typeof(StyleSheet).IsAssignableFrom(assetType))
+            {
+                var styleSheet = AssetDatabase.LoadAssetAtPath<StyleSheet>(path);
+                if (styleSheet)
+                    styleSheets.Add(styleSheet);
+            }
+            else if (typeof(VisualTreeAsset).IsAssignableFrom(assetType))
+            {
+                var visualTreeAsset = AssetDatabase.LoadAssetAtPath<VisualTreeAsset>(path);
+                if (visualTreeAsset)
+                    visualTreeAssets.Add(visualTreeAsset);
+            }
+        }
+
+        // Only dragging style sheets.
+        if (styleSheets.Count == totalDragCount)
+            return HandleStyleSheetsBeingDropped(in data, styleSheets, performDrop);
+
+        // Only dragging visual tree assets.
+        if (visualTreeAssets.Count == totalDragCount)
+            return HandleVisualTreeAssetsBeingDropped(in data, visualTreeAssets, performDrop);
+
+        // A mix of different asset types
+        if (styleSheets.Count > 0 || visualTreeAssets.Count > 0)
+        {
+            return DragVisualMode.Rejected;
+        }
+        // Contains assets we do not care about here.
+        return DragVisualMode.None;
+    }
+
+    private DragVisualMode HandleStyleSheetsBeingDropped(in HierarchyViewDragAndDropHandlingData data, List<StyleSheet> styleSheets, bool performDrop)
+    {
+        if (data.DropPosition != DragAndDropPosition.OverItem)
+            return DragVisualMode.Rejected;
+
+        if (data.Parent != data.Target)
+            return DragVisualMode.Rejected;
+
+        if (!TryGetElementFromNode(data.Target, out var element))
+            return DragVisualMode.Rejected;
+
+        if (!IsEditable(element))
+            return DragVisualMode.Rejected;
+
+        return performDrop
+            ? DoPerformStyleSheetsDrop(in data, styleSheets)
+            : DragVisualMode.Copy;
+    }
+
+    private DragVisualMode DoPerformStyleSheetsDrop(in HierarchyViewDragAndDropHandlingData data, List<StyleSheet> styleSheets)
+    {
+        // Only support "OverItem" for now, so the target and parent should be the same.
+        Assert.IsTrue(data.Parent == data.Target);
+
+        if (!TryGetElementFromNode(data.Target, out var element))
+            return DragVisualMode.Rejected;
+
+        var visualElementAsset = element.visualElementAsset;
+        new AddStyleSheetsToElementCommand(visualElementAsset, styleSheets.ToArray()).Execute();
+
+        foreach (var styleSheet in styleSheets)
+            element.styleSheets.Remove(styleSheet);
+        foreach (var styleSheet in styleSheets)
+            element.styleSheets.Add(styleSheet);
+        return DragVisualMode.Copy;
+    }
+
+    private DragVisualMode HandleVisualTreeAssetsBeingDropped(in HierarchyViewDragAndDropHandlingData data, List<VisualTreeAsset> visualTreeAssets, bool performDrop)
+    {
+        foreach (var visualTreeAsset in visualTreeAssets)
+        {
+            if (!visualTreeAsset)
+                return DragVisualMode.Rejected;
+
+            if (string.IsNullOrEmpty(AssetDatabase.GetAssetPath(visualTreeAsset)))
+                return DragVisualMode.Rejected;
+
+            // Check for cyclic dependencies
+            if (Context.WillCauseCircularDependency(visualTreeAsset))
+                return DragVisualMode.Rejected;
+        }
+
+        switch (data.DropPosition)
+        {
+            case DragAndDropPosition.OverItem:
+            {
+                if (!TryGetElementFromNode(data.Target, out var parent)
+                    || !IsEditable(parent))
+                    return DragVisualMode.Rejected;
+
+                if (!performDrop)
+                    return DragVisualMode.Copy;
+            }
+                break;
+            case DragAndDropPosition.BetweenItems:
+            {
+                var accept = CheckIfElementCanBeInsertedAtIndex(data.View, data.Parent, data.ChildIndex, data.InsertAtIndex);
+                if (!accept)
+                    return DragVisualMode.Rejected;
+                if (!performDrop)
+                    return DragVisualMode.Copy;
+            }
+                break;
+            case DragAndDropPosition.OutsideItems:
+            {
+                // Here, we return `None` because the default handle drop behaviour will already handle it for us
+                // using AcceptParent/AcceptChild. We're using the same rules as dropping elements here, because we'll
+                // create elements.
+                if (!performDrop)
+                    return DragVisualMode.None;
+            }
+                break;
+            default:
+                throw new ArgumentOutOfRangeException();
+        }
+        return DoPerformVisualTreeAssetDrop(in data, visualTreeAssets);
+    }
+
+    private DragVisualMode DoPerformVisualTreeAssetDrop(in HierarchyViewDragAndDropHandlingData data, List<VisualTreeAsset> visualTreeAssets)
+    {
+        var parentElement = m_LocalRoot;
+
+        if (data.Parent != Hierarchy.Root)
+            if (!TryGetElementFromNode(data.Parent, out parentElement))
+                return DragVisualMode.Rejected;
+
+        if (parentElement == null)
+            return DragVisualMode.Rejected;
+
+        var childIndex = data.ChildIndex < 0 ? Hierarchy.GetChildrenCount(data.Parent) : data.ChildIndex;
+
+        var logicalParent = GetLogicalParentFromPhysicalParent(parentElement);
+        if (logicalParent != m_LocalRoot)
+            Assert.IsNotNull(logicalParent.visualElementAsset);
+
+        var parentAsset = logicalParent != m_LocalRoot
+            ? logicalParent.visualElementAsset
+            : m_Stage.EditedVisualTreeAsset.visualTree;
+        Assert.IsNotNull(parentAsset);
+
+        if (data.DropPosition == DragAndDropPosition.OverItem)
+        {
+            Assert.IsTrue(data.ChildIndex == -1);
+            new AddTemplatesToElementCommand(parentAsset, -1, visualTreeAssets.ToArray()).Execute();
+            m_Stage.RequestRefresh();
+            return DragVisualMode.Move;
+        }
+
+        var adjustedIndex = logicalParent.IndexOf(logicalParent[childIndex]);
+        for (var i = 0; i < adjustedIndex; ++i)
+        {
+            if (logicalParent[i].visualElementAsset == null)
+                --adjustedIndex;
+        }
+        new AddTemplatesToElementCommand(parentAsset, adjustedIndex, visualTreeAssets.ToArray()).Execute();
+        m_Stage.RequestRefresh();
+
+        return DragVisualMode.Copy;
+    }
+
+    DragVisualMode HandleLibraryItemBeingDragged(in HierarchyViewDragAndDropHandlingData data, bool performDrop)
+    {
+        if (DragAndDrop.GetGenericData("LibraryItem") is not LibraryItem libraryItem)
+            return DragVisualMode.None;
+
+        var elementType = libraryItem.libraryType.type;
+        switch (data.DropPosition)
+        {
+            case DragAndDropPosition.OverItem:
+            {
+                if (!TryGetElementFromNode(data.Target, out var parent) || !IsEditable(parent))
+                    return DragVisualMode.Rejected;
+
+                if (!performDrop)
+                    return DragVisualMode.Copy;
+            }
+            break;
+
+            case DragAndDropPosition.BetweenItems:
+            {
+                var accept = CheckIfElementCanBeInsertedAtIndex(data.View, data.Parent, data.ChildIndex, data.InsertAtIndex);
+                if (!accept)
+                    return DragVisualMode.Rejected;
+                if (!performDrop)
+                    return DragVisualMode.Copy;
+            }
+            break;
+
+            case DragAndDropPosition.OutsideItems:
+            {
+                if (Context.SubDocumentOptions == SubDocumentOptions.InContext)
+                    return DragVisualMode.Rejected;
+
+                if (!performDrop)
+                    return DragVisualMode.Copy;
+            }
+            break;
+
+            default:
+                throw new ArgumentOutOfRangeException();
+        }
+
+        return DoPerformLibraryItemDrop(in data, elementType);
+    }
+
+    DragVisualMode DoPerformLibraryItemDrop(in HierarchyViewDragAndDropHandlingData data, Type elementType)
+    {
+        var parentElement = m_LocalRoot;
+
+        if (data.Parent != Hierarchy.Root)
+        {
+            if (!TryGetElementFromNode(data.Parent, out parentElement))
+                return DragVisualMode.Rejected;
+        }
+
+        if (parentElement == null)
+            return DragVisualMode.Rejected;
+
+        var logicalParent = GetLogicalParentFromPhysicalParent(parentElement);
+        var parentAsset = logicalParent != m_LocalRoot ? logicalParent.visualElementAsset : m_Stage.EditedVisualTreeAsset.visualTree;
+        var adjustedIndex = -1;
+        if (data.DropPosition == DragAndDropPosition.BetweenItems)
+        {
+            var childIndex = data.ChildIndex < 0 ? Hierarchy.GetChildrenCount(data.Parent) : data.ChildIndex;
+
+            // Check if we're inserting at the end
+            if (childIndex < logicalParent.childCount)
+            {
+                adjustedIndex = logicalParent.IndexOf(logicalParent[childIndex]);
+                for (var i = 0; i < adjustedIndex; ++i)
+                {
+                    if (logicalParent[i].visualElementAsset == null)
+                        --adjustedIndex;
+                }
+            }
+        }
+
+        var command = new AddElementCommand(elementType, m_Stage.EditedVisualTreeAsset, parentAsset, adjustedIndex);
+        command.Execute();
+
+        m_Stage.RequestRefresh();
+
+        return DragVisualMode.Copy;
+    }
+
     protected override bool CanStartDrag(HierarchyView view, in SelectionContext selection) => true;
 
     protected override void OnBindView(HierarchyView view)
@@ -316,7 +579,7 @@ internal class VisualElementEditingNodeHandler : VisualElementNodeTypeHandler, I
 
     private void ForceDisplayInContextPanel(HierarchyViewModel viewModel)
     {
-        if (m_Context.SubDocumentPath == null)
+        if (Context.SubDocumentPath == null)
             return;
 
         if (m_LocalRoot == null)
@@ -385,23 +648,28 @@ internal class VisualElementEditingNodeHandler : VisualElementNodeTypeHandler, I
 
     public VisualElementEditFlags GetEditFlags(VisualElement element)
     {
-        return m_Context.GetElementEditFlags(element);
+        return Context.GetElementEditFlags(element);
     }
 
     internal void CacheLocalRoot()
     {
         m_LocalRoot = m_Panel.visualTree;
 
-        if (m_Context.SubDocumentOptions is SubDocumentOptions.None or SubDocumentOptions.Isolation)
+        if (Context.SubDocumentOptions is SubDocumentOptions.None or SubDocumentOptions.Isolation)
             return;
 
-        if (m_Context.SubDocumentPath == null)
+        if (Context.SubDocumentPath == null)
             return;
 
-        for (var i = 0; i < m_Context.SubDocumentPath.Length; ++i)
+        for (var i = 0; i < Context.SubDocumentPath.Length; ++i)
         {
-            var template = m_Context.SubDocumentPath[i];
-            m_LocalRoot = m_LocalRoot?.Query<TemplateContainer>().Where(tc => tc.visualElementAsset.id == template.id).First();
+            var template = Context.SubDocumentPath[i];
+            m_LocalRoot = m_LocalRoot?.Query<TemplateContainer>()
+                .Where(tc =>
+                {
+                    var templateAsset = (TemplateAsset)tc.visualElementAsset;
+                    return templateAsset == template && templateAsset.id == template.id;
+                }).First();
         }
 
         // We couldn't find the correct local root, so we go out of the current staging mode.
@@ -410,5 +678,10 @@ internal class VisualElementEditingNodeHandler : VisualElementNodeTypeHandler, I
             Debug.LogWarning("Current stage could not be recreated correctly.");
             StageUtility.GoBackToPreviousStage();
         }
+    }
+
+    protected override void PopulateContextMenu(in HierarchyNode node, VisualElement element, DropdownMenu menu)
+    {
+        StageContextMenuUtility.PopulateMenu(menu);
     }
 }

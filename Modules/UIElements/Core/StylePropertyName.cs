@@ -11,7 +11,7 @@ namespace UnityEngine.UIElements
     /// <summary>
     /// Defines the name of a style property.
     /// </summary>
-    public partial struct StylePropertyName : IEquatable<StylePropertyName>
+    public partial struct StylePropertyName : IEquatable<StylePropertyName>, IEquatable<StylePropertyId>
     {
         internal StylePropertyId id
         {
@@ -101,6 +101,11 @@ namespace UnityEngine.UIElements
         public bool Equals(StylePropertyName other)
         {
             return this == other;
+        }
+
+        bool IEquatable<StylePropertyId>.Equals(StylePropertyId other)
+        {
+            return id == other;
         }
 
         public override string ToString()

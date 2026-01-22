@@ -16,7 +16,7 @@ namespace UnityEngine.UIElements
     /// world-space rendering. This Component is added automatically by the UIDocument when
     /// the PanelSettings asset is configured in world-space.
     /// </summary>
-    [NativeType(Header = "Modules/UIElements/Core/Native/Renderer/UIRenderer.h")]
+    [NativeHeader("Modules/UIElements/Core/Native/Renderer/UIRenderer.h")]
     public sealed class UIRenderer : Renderer
     {
         internal volatile List<CommandList>[] commandLists;

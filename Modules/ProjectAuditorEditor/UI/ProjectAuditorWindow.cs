@@ -50,6 +50,7 @@ namespace Unity.ProjectAuditor.Editor.UI
         }
 
         ProjectAuditor m_ProjectAuditor;
+        IProgress m_Progress;
         bool m_ShouldRefresh;
         AnalyticsReporter.Analytic m_AnalyzeButtonAnalytic;
         AnalyticsReporter.Analytic m_LoadButtonAnalytic;
@@ -81,12 +82,12 @@ namespace Unity.ProjectAuditor.Editor.UI
         AnalysisView activeView => m_ViewManager.GetActiveView();
 
         [SerializeField] int m_ActiveTabIndex = 0;
-        int m_TabButtonControlID;
 
         [SerializeField] TreeViewState m_ViewSelectionTreeState;
         ViewSelectionTreeView m_ViewSelectionTreeView;
 
         [SerializeField] bool m_IsNonAnalyzedViewSelected;
+        [SerializeField] bool m_IsPendingAnalysisViewSelected;
         [SerializeField] Tab m_SelectedNonAnalyzedTab;
 
         Vector2 m_PreviousWindowSize;
@@ -300,6 +301,7 @@ namespace Unity.ProjectAuditor.Editor.UI
                 SyncTabOnViewChange(viewDesc.Category);
 
                 m_IsNonAnalyzedViewSelected = false;
+                m_IsPendingAnalysisViewSelected = false;
 
                 m_ViewSelectionTreeView.SelectItemByCategory(viewDesc.Category);
 
@@ -354,6 +356,7 @@ namespace Unity.ProjectAuditor.Editor.UI
             m_ViewManager.OnAnalysisRequested += category =>
             {
                 AuditCategories(ProjectAreaFlags.None, [category]);
+                OnSelectedNonAnalyzedTab(m_Tabs[m_ActiveTabIndex], false);
                 GUIUtility.ExitGUI();
             };
 
@@ -412,46 +415,55 @@ namespace Unity.ProjectAuditor.Editor.UI
             m_ViewSelectionTreeView.SelectNonAnalyzedCategory(category);
         }
 
-        public void OnSelectedNonAnalyzedTab(Tab selectedTab)
+        public void OnSelectedNonAnalyzedTab(Tab selectedTab, bool changeView)
         {
-            foreach (var tab in m_Tabs)
+            bool hasAnyAnalyzedCategory = false;
+            bool hasAnyPendingCategory = false;
+            foreach (var cat in selectedTab.categories)
             {
-                // If this tab's categories haven't been analyzed, override view with analyze info/button
-                if (tab == selectedTab)
-                {
-                    bool hasAnyAnalyzedCategory = false;
-                    foreach (var cat in tab.categories)
-                    {
-                        if (m_Report.HasCategory(cat))
-                        {
-                            hasAnyAnalyzedCategory = true;
-                            break;
-                        }
-                    }
+                if (m_ViewManager.HasPendingCategory(cat))
+                    hasAnyPendingCategory = true;
+                else if (m_ViewManager.Report?.HasCategory(cat) ?? false)
+                    hasAnyAnalyzedCategory = true;
+            }
 
-                    if (!hasAnyAnalyzedCategory)
-                    {
-                        // Change view anyway, even if overridden, to get into a proper view state, not the previous view
-                        m_ViewManager.ChangeView(tab.categories[0]);
+            if (!hasAnyAnalyzedCategory)
+            {
+                // Change view anyway, even if overridden, to get into a proper view state, not the previous view
+                if (changeView) // If reanalyzing the same view, don't change the sub-tab we are viewing
+                    m_ViewManager.ChangeView(selectedTab.categories[0]);
 
-                        // Override view to show info and analyze button
-                        m_IsNonAnalyzedViewSelected = true;
-                        m_SelectedNonAnalyzedTab = selectedTab;
-                    }
-                }
+                // Override view to show info and analyze button
+                m_IsNonAnalyzedViewSelected = true;
+                m_IsPendingAnalysisViewSelected = hasAnyPendingCategory;
+                m_SelectedNonAnalyzedTab = selectedTab;
             }
         }
 
         void OnDisable()
         {
+            CancelAnalysis();
             AutosaveReport();
+
             // Make sure 'dirty' scriptable objects are saved to their corresponding assets
             AssetDatabase.SaveAssets();
 
             m_ViewManager?.SaveSettings();
         }
 
-        void OnGUI()
+        // Called when the EditorWindow is closed
+        void OnDestroy()
+        {
+            CancelAnalysis();
+        }
+
+        void CancelAnalysis()
+        {
+            if (m_AnalysisState == AnalysisState.InProgress)
+                m_Progress.Cancel();
+        }
+
+            void OnGUI()
         {
             using (new EditorGUILayout.VerticalScope())
             {
@@ -480,7 +492,7 @@ namespace Unity.ProjectAuditor.Editor.UI
                         }
                         else
                         {
-                            DrawAnalysisPanel();
+                            DrawAnalysisPanel(m_IsPendingAnalysisViewSelected);
                         }
                     }
                     else
@@ -492,7 +504,7 @@ namespace Unity.ProjectAuditor.Editor.UI
         }
 
         // Draw the panel that appears when you click on a tab that has not yet been analyzed.
-        void DrawAnalysisPanel()
+        void DrawAnalysisPanel(bool analysisPending)
         {
             using (new EditorGUILayout.VerticalScope(GUI.skin.box, GUILayout.ExpandHeight(true)))
             {
@@ -500,53 +512,56 @@ namespace Unity.ProjectAuditor.Editor.UI
 
                 using (new EditorGUILayout.HorizontalScope())
                 {
-                    var info = string.Format(Contents.AnalyzeInfoText, tabName);
+                    var content = analysisPending ? Contents.PendingAnalyzeInfoText : Contents.AnalyzeInfoText;
+                    var info = string.Format(content, tabName);
 
                     GUILayout.FlexibleSpace();
                     EditorGUILayout.HelpBox(info, MessageType.Info);
                     GUILayout.FlexibleSpace();
                 }
-
-                GUILayout.Space(10);
-
-                using (new EditorGUILayout.HorizontalScope())
+                if (!analysisPending)
                 {
-                    GUILayout.FlexibleSpace();
-                    if (GUILayout.Button(string.Format(Contents.AnalyzeButtonText, tabName), GUILayout.Width(200)))
-                    {
-                        bool validPreferences = true;
-                        if (m_SelectedNonAnalyzedTab.id == TabId.Code)
-                            validPreferences = ValidateCodeAnalysisWithPopup();
-
-                        if (validPreferences)
-                        {
-                            var area = GetTabProjectArea(m_SelectedNonAnalyzedTab.id);
-                            var categories = GetTabCategories(m_SelectedNonAnalyzedTab);
-                            AuditCategories(area, categories);
-
-                            m_ViewSelectionTreeView.Reload();
-                            m_ViewSelectionTreeView.SelectItemByCategory(categories[0]);
-
-                            m_IsNonAnalyzedViewSelected = false;
-                        }
-                    }
-                    GUILayout.FlexibleSpace();
-                }
-
-                if (m_SelectedNonAnalyzedTab.id == TabId.Code)
-                {
-                    const int k_SpacingHeight = 12;
+                    GUILayout.Space(10);
 
                     using (new EditorGUILayout.HorizontalScope())
                     {
                         GUILayout.FlexibleSpace();
-                        using (new EditorGUILayout.VerticalScope(GUILayout.MaxWidth(350)))
+                        GUI.enabled = !m_ViewManager.HasPendingCategories();
+
+                        if (GUILayout.Button(string.Format(Contents.AnalyzeButtonText, tabName), GUILayout.Width(200)))
                         {
-                            GUILayout.Space(k_SpacingHeight);
-                            UserPreferences.CodeAnalysisGUI();
-                            GUILayout.Space(k_SpacingHeight);
-                        }
+                            bool validPreferences = true;
+                            if (m_SelectedNonAnalyzedTab.id == TabId.Code)
+                                validPreferences = ValidateCodeAnalysisWithPopup();
+
+                            if (validPreferences)
+                            {
+                                var area = GetTabProjectArea(m_SelectedNonAnalyzedTab.id);
+                                var categories = GetTabCategories(m_SelectedNonAnalyzedTab);
+                                AuditCategories(area, categories);
+                                OnSelectedNonAnalyzedTab(m_SelectedNonAnalyzedTab, false);
+                            }
+						}
+						
+						GUI.enabled = true;
                         GUILayout.FlexibleSpace();
+                    }
+
+                    if (m_SelectedNonAnalyzedTab.id == TabId.Code)
+                    {
+                        const int k_SpacingHeight = 12;
+
+                        using (new EditorGUILayout.HorizontalScope())
+                        {
+                            GUILayout.FlexibleSpace();
+                            using (new EditorGUILayout.VerticalScope(GUILayout.MaxWidth(350)))
+                            {
+                                GUILayout.Space(k_SpacingHeight);
+                                UserPreferences.CodeAnalysisGUI();
+                                GUILayout.Space(k_SpacingHeight);
+                            }
+                            GUILayout.FlexibleSpace();
+                        }
                     }
                 }
             }
@@ -559,11 +574,15 @@ namespace Unity.ProjectAuditor.Editor.UI
 
             m_ViewSelectionTreeView = null;
             m_IsNonAnalyzedViewSelected = false;
+            m_IsPendingAnalysisViewSelected = false;
+
+            if (m_ActiveTabIndex != 0)
+                OnSelectedNonAnalyzedTab(m_Tabs[m_ActiveTabIndex], false);
         }
 
         void DrawViewSelection()
         {
-            using (new EditorGUI.DisabledScope(m_AnalysisState != AnalysisState.Valid))
+            using (new EditorGUI.DisabledScope(m_AnalysisState == AnalysisState.Initialized))
             {
                 using (new EditorGUILayout.VerticalScope())
                 {
@@ -574,10 +593,7 @@ namespace Unity.ProjectAuditor.Editor.UI
 
                     if (m_ViewSelectionTreeView == null)
                     {
-                        m_ViewSelectionTreeView = new ViewSelectionTreeView(m_ViewSelectionTreeState, m_Tabs,
-                            m_ViewManager,
-                            m_Report);
-
+                        m_ViewSelectionTreeView = new ViewSelectionTreeView(m_ViewSelectionTreeState, m_Tabs, m_ViewManager);
                         m_ViewSelectionTreeView.OnSelectedNonAnalyzedTab += OnSelectedNonAnalyzedTab;
                     }
 
@@ -674,8 +690,11 @@ namespace Unity.ProjectAuditor.Editor.UI
                 {
                     GUILayout.FlexibleSpace();
 
-                    AnalysisView.DrawToolbarButton(Contents.Refresh, () => Instance.AnalyzeShaderVariants());
-                    AnalysisView.DrawToolbarButton(Contents.Clear, () => Instance.ClearShaderVariants());
+                    using (new EditorGUI.DisabledScope(Instance.IsAnalysisInProgress()))
+                    {
+                        AnalysisView.DrawToolbarButton(Contents.Refresh, () => Instance.AnalyzeShaderVariants());
+                        AnalysisView.DrawToolbarButton(Contents.Clear, () => Instance.ClearShaderVariants());
+                    }
 
                     GUILayout.FlexibleSpace();
                 },
@@ -951,7 +970,12 @@ namespace Unity.ProjectAuditor.Editor.UI
 
         bool IsAnalysisValid()
         {
-            return m_AnalysisState != AnalysisState.Initializing && m_AnalysisState != AnalysisState.Initialized && m_AnalysisState != AnalysisState.InProgress;
+            return m_AnalysisState != AnalysisState.Initializing && m_AnalysisState != AnalysisState.Initialized;
+        }
+
+        bool IsAnalysisInProgress()
+        {
+            return m_AnalysisState == AnalysisState.InProgress;
         }
 
         void Analyze()
@@ -977,7 +1001,25 @@ namespace Unity.ProjectAuditor.Editor.UI
                 OnIncomingIssues = issues =>
                 {
                     // add batch of issues
-                    m_ViewManager.AddIssues(new List<ReportItem>(issues));
+                    m_ViewManager.AddIssues(issues);
+                },
+                OnStarted = (report, moduleNames, categories) =>
+                {
+                    m_ViewManager.OnAnalysisStarted(report, moduleNames, categories);
+                    m_ViewManager.ClearSearch();
+                },
+                OnModuleCompleted = (moduleName, analysisResult, extraAnalysisTimeMs) =>
+                {
+                    m_ViewManager.PendingModuleNames.Remove(moduleName);
+
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                    var remainingModules = m_ProjectAuditor.GetModules().Where(m => m_ViewManager.PendingModuleNames.Contains(m.Name));
+                    var remainingCategories = remainingModules.SelectMany(m => m.Categories).ToHashSet();
+#pragma warning restore RS0030
+                    m_ViewManager.PendingCategories = remainingCategories;
+
+                    var summaryView = m_ViewManager.GetView(IssueCategory.Metadata);
+                    summaryView?.MarkDirty();
                 },
                 OnCompleted = report =>
                 {
@@ -986,10 +1028,11 @@ namespace Unity.ProjectAuditor.Editor.UI
                         m_AnalysisState = AnalysisState.Initialized;
                         return;
                     }
-                    m_ViewManager.OnAnalysisCompleted(report);
+                    m_ViewManager.OnAnalysisCompleted();
 
                     m_ShouldRefresh = true;
                     m_AnalysisState = AnalysisState.Completed;
+                    m_Progress = null;
 
                     m_Report = report;
                     m_Report.DisplayName = reportDisplayName;
@@ -1003,7 +1046,8 @@ namespace Unity.ProjectAuditor.Editor.UI
 
             InitializeViews(analysisParams.Rules, false);
 
-            m_ProjectAuditor.AuditAsync(analysisParams, new ProgressBar());
+            m_Progress = new ProgressBar();
+            m_ProjectAuditor.AuditAsync(analysisParams, m_Progress);
         }
 
         void Update()
@@ -1035,6 +1079,8 @@ namespace Unity.ProjectAuditor.Editor.UI
                 view.Clear();
             }
 
+            m_AnalysisState = AnalysisState.InProgress;
+
             var analysisParams = new AnalysisParams
             {
                 Categories = actualCategories.ToSerializableArray(),
@@ -1050,6 +1096,23 @@ namespace Unity.ProjectAuditor.Editor.UI
                         view.AddIssues(issues);
                     }
                 },
+                OnStarted = (report, moduleNames, categories) =>
+                {
+                    m_ViewManager.OnAnalysisStarted(report, moduleNames, categories);
+                },
+                OnModuleCompleted = (moduleName, analysisResult, extraAnalysisTimeMs) =>
+                {
+                    m_ViewManager.PendingModuleNames.Remove(moduleName);
+
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                    var remainingModules = m_ProjectAuditor.GetModules().Where(m => m_ViewManager.PendingModuleNames.Contains(m.Name));
+                    var remainingCategories = remainingModules.SelectMany(m => m.Categories).ToHashSet();
+#pragma warning restore RS0030
+                    m_ViewManager.PendingCategories = remainingCategories;
+
+                    var summaryView = m_ViewManager.GetView(IssueCategory.Metadata);
+                    summaryView?.MarkDirty();
+                },
                 OnCompleted = report =>
                 {
                     if (!report.IsValid())
@@ -1057,30 +1120,28 @@ namespace Unity.ProjectAuditor.Editor.UI
                         m_AnalysisState = AnalysisState.Initialized;
                         return;
                     }
-                    m_ViewManager.OnAnalysisCompleted(report);
+                    m_ViewManager.OnAnalysisCompleted();
 
                     m_ShouldRefresh = true;
                     m_AnalysisState = AnalysisState.Completed;
+                    m_Progress = null;
 
                     m_Report.NeedsSaving = true;
 
                     EditorApplication.delayCall += AutosaveReport;
+
+                    InitializeViewSelection(true);
                 }
             };
 
-            m_ProjectAuditor.Audit(analysisParams, new ProgressBar());
-
-            var summaryView = m_ViewManager.GetView(IssueCategory.Metadata);
-            if (summaryView != null)
-            {
-                summaryView.Clear();
-                summaryView.AddIssues(m_Report.GetAllIssues());
-            }
+            m_Progress = new ProgressBar();
+            m_ProjectAuditor.AuditAsync(analysisParams, m_Progress);
         }
 
         public void AnalyzeShaderVariants()
         {
             AuditCategories(GetTabProjectArea(TabId.Shaders), GetTabCategories(TabId.Shaders));
+            OnSelectedNonAnalyzedTab(m_Tabs[m_ActiveTabIndex], false);
             GUIUtility.ExitGUI();
         }
 
@@ -1683,7 +1744,7 @@ namespace Unity.ProjectAuditor.Editor.UI
 
         void UpdateAssemblyNames()
         {
-            if (m_Report == null)
+            if (m_Report == null || m_ViewManager.HasPendingCategory(IssueCategory.Assembly))
                 return;
 
 #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
@@ -1781,19 +1842,22 @@ namespace Unity.ProjectAuditor.Editor.UI
                 GUILayout.Label(Utility.GetPlatformIconWithName(analysisTarget), SharedStyles.IconLabelLeft);
 
                 if (m_AnalysisState == AnalysisState.InProgress)
-                {
                     GUILayout.Label(Utility.GetIcon(Utility.IconType.StatusWheel), SharedStyles.IconLabel, GUILayout.Width(AnalysisView.ToolbarIconSize));
-                }
 
                 GUILayout.FlexibleSpace();
 
                 // right-end buttons
-                const int discardButtonWidth = 110;
+                const int discardButtonWidth = 120;
                 const int loadSaveButtonWidth = 40;
 
-                using (new EditorGUI.DisabledScope(m_AnalysisState != AnalysisState.Valid))
+                using (new EditorGUI.DisabledScope(m_AnalysisState != AnalysisState.Valid && m_AnalysisState != AnalysisState.InProgress))
                 {
-                    if (GUILayout.Button(Contents.DiscardButton, EditorStyles.toolbarButton, GUILayout.Width(discardButtonWidth)))
+                    if (m_AnalysisState == AnalysisState.InProgress)
+                    {
+                        if (GUILayout.Button(Contents.CancelButton, EditorStyles.toolbarButton, GUILayout.Width(discardButtonWidth)))
+                            m_Progress.Cancel();
+                    }
+                    else if (GUILayout.Button(Contents.DiscardButton, EditorStyles.toolbarButton, GUILayout.Width(discardButtonWidth)))
                     {
                         DialogResult response = DialogResult.DefaultAction;
                         if (m_Report.NeedsSaving)
@@ -1825,7 +1889,7 @@ namespace Unity.ProjectAuditor.Editor.UI
                     }
                 }
 
-                using (new EditorGUI.DisabledScope(!ProjectAuditorRulesPackage.IsInstalled))
+                using (new EditorGUI.DisabledScope(m_AnalysisState == AnalysisState.InProgress || !ProjectAuditorRulesPackage.IsInstalled))
                 {
                     var loadContent = ProjectAuditorRulesPackage.IsInstalled ? Contents.LoadButton : Contents.LoadButtonDisabled;
                     if (GUILayout.Button(loadContent, EditorStyles.toolbarButton, GUILayout.Width(loadSaveButtonWidth)))
@@ -1853,113 +1917,6 @@ namespace Unity.ProjectAuditor.Editor.UI
             }
         }
 
-        void DrawTabs()
-        {
-            int tabToAudit = -1;
-
-            using (new EditorGUILayout.VerticalScope(SharedStyles.TabBackground))
-            {
-                const int tabButtonWidth = 80;
-                const int tabButtonHeight = 27;
-
-                EditorGUILayout.BeginHorizontal(SharedStyles.TabBackground);
-
-                for (var i = 0; i < m_Tabs.Length; i++)
-                {
-                    GUI.enabled = m_Report != null;
-
-                    if (DrawTabButton(new GUIContent(m_Tabs[i].name), m_ActiveTabIndex == i,
-                        tabButtonWidth, tabButtonHeight))
-                    {
-                        var tab = m_Tabs[i];
-
-                        var hasAnyCategories = false;
-                        foreach (var category in tab.categories)
-                        {
-                            if (m_Report.HasCategory(category))
-                            {
-                                hasAnyCategories = true;
-                            }
-                        }
-
-                        if (!hasAnyCategories)
-                        {
-                            tabToAudit = i;
-                        }
-                        else
-                        {
-                            if (tab.categories.Length > tab.currentCategoryIndex)
-                                m_ViewManager.ChangeView(tab.categories[tab.currentCategoryIndex]);
-                        }
-                    }
-
-                    GUI.enabled = true;
-                }
-
-                GUILayout.FlexibleSpace();
-                EditorGUILayout.EndHorizontal();
-            }
-
-            if (tabToAudit != -1)
-            {
-                var tab = m_Tabs[tabToAudit];
-
-                // Change view anyway, even if overridden, to get into a proper view state, not the previous view
-                m_ViewManager.ChangeView(tab.categories[0]);
-
-                // Override view to show info and analyze button
-                m_IsNonAnalyzedViewSelected = true;
-                m_SelectedNonAnalyzedTab = tab;
-            }
-        }
-
-        bool DrawTabButton(GUIContent content, bool isActive, int width, int height)
-        {
-            EditorGUILayout.BeginVertical();
-
-            bool wasButtonClicked = GUILayout.Button(content, SharedStyles.TabButton, GUILayout.Width(width), GUILayout.Height(height));
-            int id = GUIUtility.GetControlID(content, FocusType.Passive);
-            var isHoverState = GUILayoutUtility.GetLastRect().Contains(Event.current.mousePosition);
-
-            if (Event.current.type == EventType.MouseMove)
-            {
-                if (isHoverState)
-                {
-                    if (m_TabButtonControlID != id)
-                    {
-                        m_TabButtonControlID = id;
-                        if (mouseOverWindow != null)
-                        {
-                            mouseOverWindow.Repaint();
-                        }
-                    }
-                }
-                else
-                {
-                    if (m_TabButtonControlID == id)
-                    {
-                        m_TabButtonControlID = 0;
-                        if (mouseOverWindow != null)
-                        {
-                            mouseOverWindow.Repaint();
-                        }
-                    }
-                }
-            }
-
-            var rect = EditorGUILayout.GetControlRect(false, 3, SharedStyles.TabBackground, GUILayout.Width(width), GUILayout.Height(2));
-            if ((isActive || isHoverState) && m_Draw2D.DrawStart(rect))
-            {
-                var color = isActive ? SharedStyles.TabBottomActiveColor : SharedStyles.TabBottomHoverColor;
-
-                m_Draw2D.DrawFilledBox(0, 0, width, 2.5f, color);
-                m_Draw2D.DrawEnd();
-            }
-
-            EditorGUILayout.EndVertical();
-
-            return wasButtonClicked;
-        }
 
         bool SaveReport(out string path)
         {
@@ -2062,7 +2019,8 @@ namespace Unity.ProjectAuditor.Editor.UI
 
         void AutosaveReport()
         {
-            m_Report?.Save(GetAutosaveFilename());
+            if (m_Report?.IsValid() ?? false)
+                m_Report.Save(GetAutosaveFilename());
         }
 
         void TryLoadAutosavedReport()
@@ -2161,6 +2119,7 @@ namespace Unity.ProjectAuditor.Editor.UI
             public static readonly GUIContent LoadButton = Utility.GetIcon(Utility.IconType.Load, "Load report from projectauditor file");
             public static readonly GUIContent LoadButtonDisabled = Utility.GetIcon(Utility.IconType.Load, $"Please install the rules package to load reports ({ProjectAuditorRulesPackage.Name}).");
             public static readonly GUIContent DiscardButton = EditorGUIUtility.TrTextContentWithIcon("New Analysis", "Discard the current report and return to the Welcome view.", "Refresh");
+            public static readonly GUIContent CancelButton = EditorGUIUtility.TrTextContentWithIcon("Cancel Analysis", "Cancel the in-progress analysis", "Clear");
 
             public static readonly GUIContent HelpButton = Utility.GetIcon(Utility.IconType.Help, "Open Manual (in a web browser)");
             public static readonly GUIContent PreferencesMenuItem = EditorGUIUtility.TrTextContent("Preferences", $"Open User Preferences for {ProjectAuditor.DisplayName}");
@@ -2191,6 +2150,7 @@ namespace Unity.ProjectAuditor.Editor.UI
 
             public static readonly GUIContent ShaderVariants = new GUIContent("Variants", "Inspect Shader Variants");
 
+            public static readonly string PendingAnalyzeInfoText = "{0} analysis is still in progress. Please wait until it has finished.";
             public static readonly string AnalyzeInfoText = "{0} analysis is not yet included in this report. Run analysis now?";
             public static readonly string AnalyzeButtonText = "Start {0} Analysis";
 

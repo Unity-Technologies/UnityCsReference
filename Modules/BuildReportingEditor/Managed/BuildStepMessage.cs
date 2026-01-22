@@ -13,7 +13,7 @@ namespace UnityEditor.Build.Reporting
     ///
     ///</summary>
     ///<seealso cref="Build.Reporting.BuildStep.messages" />
-    [NativeType(Header = "Modules/BuildReportingEditor/Public/BuildReport.h")]
+    [NativeHeader("Modules/BuildReportingEditor/Public/BuildReport.h")]
     public struct BuildStepMessage
     {
         ///<summary>The <see cref="LogType" /> of the log message.</summary>

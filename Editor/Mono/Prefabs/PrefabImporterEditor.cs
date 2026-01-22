@@ -50,11 +50,6 @@ namespace UnityEditor
         internal override bool CanOpenMultipleObjects() { return false; }
         internal override bool ShouldTryToMakeEditableOnOpen() { return false; }
 
-        bool isTextFieldCaretShowing
-        {
-            get { return EditorGUI.IsEditingTextField() && !EditorGUIUtility.textFieldHasSelection; }
-        }
-
         bool hasMissingScripts
         {
             get { return m_PrefabsWithMissingScript.Count > 0; }
@@ -152,15 +147,20 @@ namespace UnityEditor
         /// Auto-saving is disabled if a UI field is focused or the CurveEditorWindow, ColorPicker or GradientPicker is visible.
         /// </summary>
         /// <returns>Returns true if auto-saving is allowed; otherwise, returns false.</returns>
-        internal bool CanAutoSave() => !EditorFocusMonitor.AreBindableElementsSelected() &&
-            !m_SavingHasFailed &&
-            !hasMissingScripts &&
+        internal bool CanAutoSave() => !m_SavingHasFailed && !hasMissingScripts && IsAutoSaveAllowed();
+
+        internal static bool IsAutoSaveAllowed()
+        {
+            bool isTextFieldCaretShowing = EditorGUI.IsEditingTextField() && !EditorGUIUtility.textFieldHasSelection;
+
+            return !EditorFocusMonitor.AreBindableElementsSelected() &&
             GUIUtility.hotControl == 0 &&
             !isTextFieldCaretShowing &&
             !EditorApplication.isCompiling &&
             !CurveEditorWindow.visible &&
             !ColorPicker.visible &&
             !GradientPicker.visible;
+        }
 
         void WaitToApplyChanges()
         {

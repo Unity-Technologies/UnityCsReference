@@ -67,10 +67,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 ++imagesLoaded;
             }
 
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            var images = productDetail.GetList<IDictionary<string, object>>("images") ?? Enumerable.Empty<IDictionary<string, object>>();
-#pragma warning restore RS0030
-
+            var images = productDetail.GetList<IDictionary<string, object>>("images") ?? Array.Empty<IDictionary<string, object>>();
             foreach (var image in images)
             {
                 if (imagesLoaded >= imageLimit)

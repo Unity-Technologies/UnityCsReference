@@ -31,7 +31,7 @@ sealed class VisualElementAttributesInspectorElement : VisualElement
         [Conditional("UNITY_EDITOR"), RegisterUxmlCache]
         public new static void Register()
         {
-            UxmlDescriptionCache.RegisterType(typeof(UxmlSerializedData), new UxmlAttributeNames[] { }, true);
+            UxmlDescriptionCache.RegisterType(typeof(UxmlSerializedData), Array.Empty<UxmlAttributeNames>(), true);
         }
 
         [ExcludeFromDocs]

@@ -74,6 +74,11 @@ namespace Unity.ProjectAuditor.Editor
         public Action<IEnumerable<ReportItem>> OnIncomingIssues;
 
         /// <summary>
+        /// Notifies that an analysis has started.
+        /// </summary>
+        public Action<Report, string[], IssueCategory[]> OnStarted;
+
+        /// <summary>
         /// Notifies that all Modules completed their analysis.
         /// </summary>
         public Action<Report> OnCompleted;
@@ -81,7 +86,7 @@ namespace Unity.ProjectAuditor.Editor
         /// <summary>
         /// Notifies that a Module completed its analysis.
         /// </summary>
-        public Action<AnalysisResult> OnModuleCompleted;
+        public Action<string, AnalysisResult, long> OnModuleCompleted;
 
         /// <summary>
         /// The DiagnosticParams object which defines the customizable thresholds for reporting certain diagnostics.

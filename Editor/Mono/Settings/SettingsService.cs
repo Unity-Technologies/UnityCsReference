@@ -188,7 +188,7 @@ namespace UnityEditor
                     Debug.LogError("Cannot create Settings Providers for: " + method.info.Name);
                 }
 
-                return new SettingsProvider[0];
+                return Array.Empty<SettingsProvider>();
             });
         }
     }

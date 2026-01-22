@@ -15,7 +15,7 @@ namespace UnityEditor
 {
     // Representation of Script assets.
     [NativeClass(null)]
-    [NativeType("Editor/Mono/MonoScript.bindings.h")]
+    [NativeHeader("Editor/Mono/MonoScript.bindings.h")]
     [ExcludeFromPreset]
     public class MonoScript : TextAsset
     {

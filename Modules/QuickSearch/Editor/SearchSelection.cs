@@ -159,9 +159,7 @@ namespace UnityEditor.Search
                 if (index < 0 || index >= m_List.Count)
                     continue;
                 m_ActualSelection.Add(index);
-                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                m_Items.Add(m_List.ElementAt(index));
-#pragma warning restore RS0030
+                m_Items.Add(m_List[index]);
             }
 
             m_InitialSelectionCount = m_Selection.Count;

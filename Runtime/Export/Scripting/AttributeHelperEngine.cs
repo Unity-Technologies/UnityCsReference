@@ -48,7 +48,7 @@ namespace UnityEngine
             Type retVal = null;
             while (currentType != null && !currentType.Equals(typeof(Component)))
             {
-                if (currentType.GetCustomAttributes(typeof(ExtensionOfNativeClassAttribute), true).Length != 0)
+                if (currentType.IsDefined(typeof(ExtensionOfNativeClassAttribute), true))
                     retVal = currentType;
                 currentType = currentType.BaseType;
             }
@@ -98,12 +98,12 @@ namespace UnityEngine
 
         static int GetExecuteMode(Type klass)
         {
-            var executeAlwaysAttributes = klass.GetCustomAttributes(typeof(ExecuteAlways), false);
-            if (executeAlwaysAttributes.Length != 0)
+            var executeAlwaysAttributes = klass.IsDefined(typeof(ExecuteAlways), false);
+            if (executeAlwaysAttributes)
                 return 2;
 
-            var executeInEditModeAttributes = klass.GetCustomAttributes(typeof(ExecuteInEditMode), false);
-            if (executeInEditModeAttributes.Length != 0)
+            var executeInEditModeAttributes = klass.IsDefined(typeof(ExecuteInEditMode), false);
+            if (executeInEditModeAttributes)
                 return 1;
 
             return 0;

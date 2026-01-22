@@ -21,7 +21,7 @@ namespace Unity.Audio
         public int FenceCount;
     }
 
-    [NativeType(Header = "Modules/DSPGraph/Public/DSPGraph.bindings.h")]
+    [NativeHeader("Modules/DSPGraph/Public/DSPGraph.bindings.h")]
     internal struct DSPGraphInternal
     {
         [NativeMethod(IsFreeFunction = true, ThrowsException = true)]

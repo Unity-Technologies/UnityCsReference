@@ -97,11 +97,41 @@ namespace Unity.GraphToolkit.Editor
         /// Use this method to enumerate all <see cref="IVariable"/>s declared in the graph.
         /// This list does not include variable nodes that reference variables.
         /// The collection reflects the variables as declared, in their order of creation.
+        /// To get the variables in a specific order, use <see cref="GetVariables(SortMethod)"/>.
         /// </remarks>
         public IEnumerable<IVariable> GetVariables()
         {
             CheckImplementation();
             return m_Implementation.VariableModels;
+        }
+
+        /// <summary>
+        /// Retrieves all variables declared in the graph in a specific order using <see cref="SortMethod"/>.
+        /// </summary>
+        /// <param name="sort">The sorting method.</param>
+        /// <returns>An <c>IEnumerable</c> of all <see cref="IVariable"/>s declared in the graph, ordered using the provided <see cref="SortMethod"/>.</returns>
+        /// <remarks>
+        /// Use this method to enumerate all <see cref="IVariable"/>s declared in the graph.
+        /// This list does not include variable nodes that reference variables.
+        /// The collection reflects the variables ordered using the provided <see cref="SortMethod"/>.
+        /// <list>
+        /// <item> The <see cref="SortMethod.Creation"/> option returns variables in their order of creation. </item>
+        /// <item> The <see cref="SortMethod.Display"/> option returns variables in the order they are displayed in the blackboard. </item>
+        /// </list>
+        /// </remarks>
+        public IEnumerable<IVariable> GetVariables(SortMethod sort)
+        {
+            CheckImplementation();
+
+            switch (sort)
+            {
+                case SortMethod.Creation:
+                    return m_Implementation.VariableModels;
+                case SortMethod.Display:
+                    return m_Implementation.VariableModelsByDisplayOrder;
+                default:
+                    throw new ArgumentException("Not expected sort method", nameof(sort));
+            }
         }
 
         /// <summary>
@@ -182,5 +212,30 @@ namespace Unity.GraphToolkit.Editor
         /// Do not modify the graph within this method, as it may cause instability or recursive updates.
         /// </remarks>
         public virtual void OnGraphChanged(GraphLogger graphLogger) { }
+
+        /// <summary>
+        /// Called to define the <see cref="INodeOption"/>s available on subgraph nodes that reference this type of graph.
+        /// Similar in function to <see cref="Node.OnDefineOptions"/>.
+        /// </summary>
+        /// <param name="context">Provides methods for defining node options.</param>
+        /// <remarks>
+        /// Override this method to add options to all subgraph nodes that point to this type of graph using the provided <see cref="Node.IOptionDefinitionContext"/>.
+        /// This method is only applicable to graphs that can act as subgraphs. If the graph is not a subgraph, this method has no effect. To qualify as a subgraph, the graph must be marked with <see cref="SubgraphAttribute"/>.
+        /// </remarks>
+        /// <example>
+        /// <code>
+        /// protected override void OnDefineSubgraphNodeOptions(Node.IOptionDefinitionContext context)
+        /// {
+        ///     context.AddOption&lt;int&gt;("ID")
+        ///         .WithTooltip("The ID of the subgraph.")
+        ///         .Delayed();
+        ///
+        ///     context.AddOption&lt;string&gt;("Description")
+        ///         .WithDefaultValue("What is the purpose of this subgraph?")
+        ///         .Delayed();
+        /// }
+        /// </code>
+        /// </example>
+        protected virtual void OnDefineSubgraphNodeOptions(Node.IOptionDefinitionContext context) { }
     }
 }

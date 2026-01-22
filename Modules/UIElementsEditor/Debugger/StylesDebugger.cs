@@ -175,6 +175,7 @@ namespace UnityEditor.UIElements.Debugger
         private class AttributesSection : DebuggerFoldout
         {
             readonly TextField m_name;
+            readonly IntegerField m_IdField;
             readonly ObjectField m_VisualTreeAsset;
             readonly TextField m_tooltip;
             readonly TextAttributesSection m_text;
@@ -198,6 +199,8 @@ namespace UnityEditor.UIElements.Debugger
 
                 Add(m_name = new TextField("Name"));
                 m_name.RegisterValueChangedCallback((v) => { if (m_SelectedElement != null) { m_SelectedElement.name = v.newValue; } });
+
+                Add(m_IdField = new IntegerField("Authoring Id") { isReadOnly = true });
 
                 Add(m_VisualTreeAsset = new("Visual Tree Asset") { enabledSelf = false });
 
@@ -265,6 +268,12 @@ namespace UnityEditor.UIElements.Debugger
                     return;
 
                 m_name.text = selectedElement.name;
+
+                if (selectedElement.visualElementAsset?.hasAuthoringId == true)
+                    m_IdField.value = selectedElement.visualElementAsset.id;
+                else
+                    m_IdField.value = 0;
+
                 m_VisualTreeAsset.value = selectedElement.visualTreeAssetSource;
                 m_tooltip.text = selectedElement.tooltip;
                 m_text.RefreshIfNeeded();

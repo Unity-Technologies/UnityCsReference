@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -257,30 +258,34 @@ namespace Unity.ProjectAuditor.Editor.Modules
             k_ShaderCompilerMessageLayout
         };
 
-        public override AnalysisResult Audit(AnalysisParams analysisParams, IProgress progress = null)
+        public override IEnumerator Audit(AnalysisParams analysisParams, IProgress progress)
         {
             var context = new AnalysisContext()
             {
                 Params = analysisParams
             };
 
-            var shaderPathMap = CollectShaders(context);
-            ProcessShaders(analysisParams, shaderPathMap);
-
-            ProcessComputeShaders(analysisParams);
+            var shaderPathMap = new Dictionary<Shader, string>();
+            yield return CollectShaders(context, (shader, path) => shaderPathMap.TryAdd(shader, path), progress);
+            yield return ProcessShaders(context, shaderPathMap, progress);
+            yield return ProcessComputeShaders(context, progress);
 
             // clear collected variants before next build
             ClearBuildData();
 
-            return AnalysisResult.Success;
+            analysisParams.OnModuleCompleted?.Invoke(Name, AnalysisResult.Success, 0);
         }
 
-        Dictionary<Shader, string> CollectShaders(AnalysisContext context)
+        IEnumerator CollectShaders(AnalysisContext context, Action<Shader, string> onShaderFound, IProgress progress)
         {
-            var shaderPathMap = new Dictionary<Shader, string>();
             var assetPaths = GetAssetPathsByFilter("t:shader", context);
+            AsyncProgressState progressState = progress?.Start("Finding Shaders", assetPaths.Length);
+
             foreach (var assetPath in assetPaths)
             {
+                if (AdvanceAsyncProgress(progress, progressState, Path.GetFileName(assetPath)) == false)
+                    break;
+
                 // skip editor shaders
                 if (assetPath.IndexOf("/editor/", StringComparison.OrdinalIgnoreCase) != -1)
                     continue;
@@ -298,20 +303,16 @@ namespace Unity.ProjectAuditor.Editor.Modules
                     continue;
                 }
 
-                shaderPathMap.Add(shader, assetPath);
+                onShaderFound.Invoke(shader, assetPath);
+                yield return null;
             }
 
             var builtShaderPaths = GetBuiltShaderPaths();
 
             foreach (var builtShader in builtShaderPaths)
-            {
-                if (!shaderPathMap.ContainsKey(builtShader.Key))
-                {
-                    shaderPathMap.Add(builtShader.Key, builtShader.Value);
-                }
-            }
+                onShaderFound.Invoke(builtShader.Key, builtShader.Value);
 
-            return shaderPathMap;
+            progress?.Clear(progressState);
         }
 
         static Dictionary<Shader, string> GetBuiltShaderPaths()
@@ -350,13 +351,15 @@ namespace Unity.ProjectAuditor.Editor.Modules
             return alwaysIncludedShaders;
         }
 
-        void ProcessShaders(AnalysisParams analysisParams, Dictionary<Shader, string> shaderPathMap)
+        IEnumerator ProcessShaders(AnalysisContext context, Dictionary<Shader, string> shaderPathMap, IProgress progress)
         {
-            var platform = analysisParams.Platform;
+            AsyncProgressState progressState = progress?.Start("Processing Shaders", shaderPathMap.Count);
+
+            var platform = context.Params.Platform;
             var alwaysIncludedShaders = GetAlwaysIncludedShaders();
             var buildReportInfoAvailable = false;
 
-            var packetAssetInfos = new PackedAssetInfo[0];
+            var packetAssetInfos = Array.Empty<PackedAssetInfo>();
             var buildReport = BuildReportModule.BuildReportProvider.GetBuildReport(platform);
             if (buildReport != null)
             {
@@ -371,11 +374,14 @@ namespace Unity.ProjectAuditor.Editor.Modules
             var sortedShaders = new List<Shader>(shaderPathMap.Keys);
             sortedShaders.Sort((s1, s2) => string.Compare(s1.name, s2.name));
 
-            var analyzers = GetCompatibleAnalyzers(analysisParams);
+            var analyzers = GetCompatibleAnalyzers(context.Params);
             foreach (var shader in sortedShaders)
             {
                 var assetPath = shaderPathMap[shader];
                 var assetSize = buildReportInfoAvailable ? k_Unknown : k_NotAvailable;
+
+                if (AdvanceAsyncProgress(progress, progressState, Path.GetFileName(assetPath)) == false)
+                    break;
 
                 if (!assetPath.Equals("Resources/unity_builtin_extra"))
                 {
@@ -397,33 +403,38 @@ namespace Unity.ProjectAuditor.Editor.Modules
                 {
                     AssetPath = assetPath,
                     Shader = shader,
-                    Params = analysisParams
+                    Params = context.Params
                 };
 
-                analysisParams.OnIncomingIssues(ProcessShader(shaderAnalysisContext, assetSize, alwaysIncludedShaders.Contains(shader)));
-                analysisParams.OnIncomingIssues(ProcessVariants(shaderAnalysisContext));
+                context.Params.OnIncomingIssues(ProcessShader(shaderAnalysisContext, assetSize, alwaysIncludedShaders.Contains(shader)));
+                context.Params.OnIncomingIssues(ProcessVariants(shaderAnalysisContext));
 
                 foreach (var analyzer in analyzers)
                 {
-                    analysisParams.OnIncomingIssues(analyzer.Analyze(shaderAnalysisContext));
+                    context.Params.OnIncomingIssues(analyzer.Analyze(shaderAnalysisContext));
                 }
+
+                yield return null;
             }
+
+            progress?.Clear(progressState);
         }
 
-        void ProcessComputeShaders(AnalysisParams analysisParams)
+        IEnumerator ProcessComputeShaders(AnalysisContext context, IProgress progress)
         {
-            var context = new AnalysisContext()
-            {
-                Params = analysisParams
-            };
+            AsyncProgressState progressState = progress?.Start("Processing Compute Shaders", s_ComputeShaderVariantData.Count);
+
             var issues = new List<ReportItem>();
 
             foreach (var shaderCompilerData in s_ComputeShaderVariantData)
             {
                 var computeShaderName = shaderCompilerData.Key.name;
+                if (AdvanceAsyncProgress(progress, progressState, computeShaderName) == false)
+                    break;
+
                 foreach (var shaderVariantData in shaderCompilerData.Value)
                 {
-                    if (shaderVariantData.BuildTarget != BuildTarget.NoTarget && shaderVariantData.BuildTarget != analysisParams.Platform)
+                    if (shaderVariantData.BuildTarget != BuildTarget.NoTarget && shaderVariantData.BuildTarget != context.Params.Platform)
                         continue;
 
                     issues.Add(context.CreateInsight(k_ComputeShaderVariantLayout.Category, computeShaderName)
@@ -437,9 +448,13 @@ namespace Unity.ProjectAuditor.Editor.Modules
                             CombineKeywords(shaderVariantData.PlatformKeywords)
                         ]));
                 }
+
+                yield return null;
             }
             if (issues.Count > 0)
-                analysisParams.OnIncomingIssues(issues);
+                context.Params.OnIncomingIssues(issues);
+
+            progress?.Clear(progressState);
         }
 
         IEnumerable<ReportItem> ProcessShader(ShaderAnalysisContext context, string assetSize, bool isAlwaysIncluded)
@@ -694,7 +709,7 @@ namespace Unity.ProjectAuditor.Editor.Modules
             AssetDatabase.CreateAsset(svc, path);
         }
 
-        public static ParseLogResult ParsePlayerLog(string logFile, ReportItem[] builtVariants, IProgress progress = null)
+        public static ParseLogResult ParsePlayerLog(string logFile, ReportItem[] builtVariants)
         {
             var compiledVariants = new Dictionary<string, List<CompiledVariantData>>();
             var lines = GetCompiledShaderLines(logFile);

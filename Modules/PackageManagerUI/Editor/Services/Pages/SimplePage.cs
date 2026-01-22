@@ -127,9 +127,9 @@ namespace UnityEditor.PackageManager.UI.Internal
         public override bool GetDefaultLockState(IPackage package)
         {
             return package.versions.installed?.isDirectDependency != true &&
-               #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable RS0031 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                m_PackageDatabase.GetFeaturesThatUseThisPackage(package.versions.installed)?.Any() == true;
-#pragma warning restore RS0030
+#pragma warning restore RS0031
         }
 
         // All the following load functions do nothing, because for a SimplePage we already know the complete list and there's no more to load

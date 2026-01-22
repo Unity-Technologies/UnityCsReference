@@ -41,13 +41,13 @@ namespace UnityEditor.PackageManager.UI.Internal
         private void InitializeHeader()
         {
             m_HeaderContainer = new VisualElement();
-            m_HeaderContainer.AddClasses("container row headerContainer");
+            m_HeaderContainer.AddToClassList("container", "row", "headerContainer");
 
             m_TabHeaderContainer = new VisualElement();
-            m_TabHeaderContainer.AddClasses("tabsHeaderContainer container row");
+            m_TabHeaderContainer.AddToClassList("tabsHeaderContainer", "container", "row");
 
             m_TabHeaderDropdown = new DropdownButton();
-            m_TabHeaderDropdown.AddClasses("tabsHeaderDropdown");
+            m_TabHeaderDropdown.AddToClassList("tabsHeaderDropdown");
             m_TabHeaderDropdown.menu = new DropdownMenu();
 
             m_HeaderContainer.Add(m_TabHeaderContainer);
@@ -57,7 +57,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         public BaseTabView()
         {
             m_BodyContainer = new VisualElement();
-            m_BodyContainer.AddClasses("tabsBodyContainer");
+            m_BodyContainer.AddToClassList("tabsBodyContainer");
 
             InitializeHeader();
 
@@ -268,7 +268,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 UIUtils.SetElementDisplay(previousSelectedTab, false);
             }
 
-            m_HeaderButtons[tabToSelect.id].AddClasses("tabHeaderSelected");
+            m_HeaderButtons[tabToSelect.id].AddToClassList("tabHeaderSelected");
             UIUtils.SetElementDisplay(tabToSelect, true);
             m_SelectedTabId = tabToSelect.id;
 

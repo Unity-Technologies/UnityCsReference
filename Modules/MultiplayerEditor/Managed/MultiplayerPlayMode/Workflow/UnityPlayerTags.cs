@@ -56,7 +56,7 @@ namespace Unity.Multiplayer.PlayMode.Editor
         public bool Remove(string tag, out PlayerIdentifier[] playersWhoLostTags, out TagError error)
         {
             error = TagError.None;
-            playersWhoLostTags = new PlayerIdentifier[] { };
+            playersWhoLostTags = Array.Empty<PlayerIdentifier>();
 
             if (EditorApplication.isPlaying)
             {

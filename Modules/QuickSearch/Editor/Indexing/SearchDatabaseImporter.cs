@@ -140,8 +140,7 @@ namespace UnityEditor.Search
 
         public static bool NeedTestProjectTemplate()
         {
-            return Unsupported.IsSourceBuild(checkHumanControllingUs: false) ||
-                   Application.isTestRun;
+            return Search.Utils.UseDeveloperPreferences();
         }
 
         public static string CreateTemplateIndex(string template, string path, string name = null, string settings = null)

@@ -297,7 +297,7 @@ namespace UnityEngine.Android
         {
             IApplicationExitInfo[] result = null;
             if (result == null)
-                result = new IApplicationExitInfo[0];
+                result = Array.Empty<IApplicationExitInfo>();
 
             return result;
         }

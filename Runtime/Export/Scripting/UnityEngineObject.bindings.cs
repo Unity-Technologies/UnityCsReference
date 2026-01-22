@@ -17,6 +17,7 @@ using System.Threading;
 using Unity.DataModel;
 using NotNullWhenAttribute = System.Diagnostics.CodeAnalysis.NotNullWhenAttribute;
 using MaybeNullWhenAttribute = System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute;
+using Unity.Scripting.LifecycleManagement;
 
 namespace UnityEngine
 {
@@ -173,10 +174,10 @@ namespace UnityEngine
 
         public bool Equals(int other) => m_Data == (int)other;
 
-        [Obsolete("Use GetRawData() instead. This will be removed in a future version.", false)]
+        [Obsolete("EntityId will not be representable by an int in the future. This casting operator will be removed in a future version.", false)]
         public static implicit operator int(EntityId entityId) => entityId.m_Data;
 
-        [Obsolete("Use From(int) instead. This will be removed in a future version.", false)]
+        [Obsolete("EntityId will not be representable by an int in the future. This casting operator will be removed in a future version.", false)]
         public static implicit operator EntityId(int intValue) => new EntityId {m_Data = intValue};
 
         [Obsolete("",false)]
@@ -953,7 +954,7 @@ namespace UnityEngine
         internal static class MarshalledUnityObject
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public static IntPtr Marshal<T>(T obj) where T: Object
+            public static IntPtr Marshal<T>(T obj) where T : Object
             {
                 // Do not to an == null or .Equals(null) check in here or anything that would make an icall
                 // This may be called during AppDomain shutdown and there is code called during shutdown
@@ -973,7 +974,7 @@ namespace UnityEngine
                 return MarshalFromInstanceId(obj);
             }
 
-            private static IntPtr MarshalFromInstanceId<T>(T obj) where T:Object
+            private static IntPtr MarshalFromInstanceId<T>(T obj) where T : Object
             {
                 if (obj.m_EntityId == EntityId.None)
                     return IntPtr.Zero;
@@ -985,7 +986,7 @@ namespace UnityEngine
                 if (!isNativeInstanceMonoBehaviour)
                     return retPtr;
 
-                if(IsMonoBehaviourOrScriptableObjectOrParentClass(obj))
+                if (IsMonoBehaviourOrScriptableObjectOrParentClass(obj))
                     return retPtr;
 
                 return IntPtr.Zero;
@@ -1008,6 +1009,7 @@ namespace UnityEngine
                 return Array.IndexOf(m_MonoBehaviorBaseClasses, objClass) >= 0;
             }
 
+            [NoAutoStaticsCleanup] // m_MonoBehaviourBaseClasses can be reused accross code reloads
             private static readonly Type[] m_MonoBehaviorBaseClasses;
 
             static MarshalledUnityObject()
@@ -1027,6 +1029,8 @@ namespace UnityEngine
                 }
                 m_MonoBehaviorBaseClasses = baseClassList.ToArray();
             }
+
+            public static void TryThrowEditorNullExceptionObject(Object unityObj) => TryThrowEditorNullExceptionObject(unityObj, null);
 
             public static void TryThrowEditorNullExceptionObject(Object unityObj, string parameterName)
             {
@@ -1056,6 +1060,74 @@ namespace UnityEngine
                 }
             }
 
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public static T Unmarshal<T>(IntPtr gcHandlePtr) where T : UnityEngine.Object
+            {
+                if (gcHandlePtr == IntPtr.Zero)
+                    return null;
+
+                var gcHandle = GCHandle.FromIntPtr(gcHandlePtr);
+                var target = (T)gcHandle.Target;
+
+                return target;
+            }
+
+
+            public unsafe static void Marshal<T, TCollectionAccessor>(in TCollectionAccessor collectionAccessor, ref MarshalledArray marshalledArray)
+                where T : UnityEngine.Object
+                where TCollectionAccessor : struct, ICollectionMarshallingAccessor<T>
+            {
+                // In the editor we may need to send the instanceID's to native.
+                // There are some cases where we have a valid instanceID but, but the native pointer will be null.
+                // See IsMonoBehaviourOrScriptableObjectOrParentClass
+                marshalledArray.size = marshalledArray.size / 2; // If preallocated we're only preallocated for the size of an IntPtr
+                MarshalledArray.Allocate<T, TCollectionAccessor>(collectionAccessor, ref marshalledArray, sizeof(IntPtr) + sizeof(EntityId), elementCleanupRequired: false);
+
+                var pointerSpan = marshalledArray.AsSpan<IntPtr>();
+                var entityIdSpan = new Span<EntityId>((IntPtr*)marshalledArray.data + pointerSpan.Length, pointerSpan.Length);
+
+                for (int i = 0; i < pointerSpan.Length; i++)
+                {
+                    var obj = collectionAccessor[i];
+                    if (ReferenceEquals(obj, null))
+                    {
+                        pointerSpan[i] = IntPtr.Zero;
+                        entityIdSpan[i] = EntityId.None;
+                    }
+                    else
+                    {
+                        pointerSpan[i] = MarshalNotNull(obj);
+                        entityIdSpan[i] = obj.m_EntityId;
+                    }
+                }
+            }
+
+            public static void Unmarshal<T, TCollectionAccessor>(in MarshalledArray marshalledArray, ref TCollectionAccessor collectionAccessor)
+                where T : UnityEngine.Object
+                where TCollectionAccessor : struct, ICollectionMarshallingAccessor<T>
+            {
+                var span = marshalledArray.GetDataForUnmarshal<T, IntPtr, TCollectionAccessor>(ref collectionAccessor);
+
+                for (int i = 0; i < span.Length; i++)
+                    collectionAccessor[i] = Unmarshal<T>(span[i]);
+            }
+
+            [System.Diagnostics.CodeAnalysis.DoesNotReturn]
+            public static void ThrowArgumentNullException(object obj, string parameterName)
+            {
+                if (obj is UnityEngine.Object unityObj)
+                    TryThrowEditorNullExceptionObject(unityObj, parameterName);
+                throw new ArgumentNullException(parameterName);
+            }
+
+            [System.Diagnostics.CodeAnalysis.DoesNotReturn]
+            public static void ThrowNullReferenceException(object obj)
+            {
+                if (obj is UnityEngine.Object unityObj)
+                    TryThrowEditorNullExceptionObject(unityObj, null);
+                throw new NullReferenceException();
+            }
         }
     }
 }

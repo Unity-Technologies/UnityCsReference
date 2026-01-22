@@ -254,8 +254,8 @@ namespace TreeEditor
             CopyFields(g, g2);
 
             // Don't do stuff with kids
-            g2.childGroupIDs = new int[0];
-            g2.nodeIDs = new int[0];
+            g2.childGroupIDs = System.Array.Empty<int>();
+            g2.nodeIDs = System.Array.Empty<int>();
 
             // Create nodes and clone stuff
             for (int i = 0; i < g.nodeIDs.Length; i++)
@@ -494,9 +494,9 @@ namespace TreeEditor
         {
             if (root == null)
             {
-                branchGroups = new TreeGroupBranch[0];
-                leafGroups = new TreeGroupLeaf[0];
-                nodes = new TreeNode[0];
+                branchGroups = System.Array.Empty<TreeGroupBranch>();
+                leafGroups = System.Array.Empty<TreeGroupLeaf>();
+                nodes = System.Array.Empty<TreeNode>();
 
                 // set unique id counter...
                 _uniqueID = 1;

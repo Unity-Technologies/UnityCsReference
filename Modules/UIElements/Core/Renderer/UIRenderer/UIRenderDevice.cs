@@ -583,6 +583,8 @@ namespace UnityEngine.UIElements.UIR
             }
             s_MarkerBeforeDraw.End();
 
+            AdvanceFrame();
+
             // UUM-101410: We must update the fence now in case that multiple calls to Update() are performed without
             // Render() being called. Otherwise, the previous fence (which has already passed) won't be updated and we
             // might be modifying the update ranges buffer, or the vertex/index buffers while they're already being
@@ -1195,7 +1197,7 @@ namespace UnityEngine.UIElements.UIR
         unsafe void UpdateFenceValue()
         {
             uint newFenceVal = Utility.InsertCPUFence();
-            fixed(uint* fence = &m_Fences[(int)(m_FrameIndex % m_Fences.Length)])
+            fixed(uint* fence = &m_Fences[(int)((m_FrameIndex - 1) % m_Fences.Length)])
             {
                 for (;;)
                 {
@@ -1264,7 +1266,10 @@ namespace UnityEngine.UIElements.UIR
             }
         }
 
-        public void AdvanceFrame()
+        // Advances to the next frame after the current frame's data has been finalized.
+        // Waits for the GPU to finish using previous frame data, frees deferred allocations,
+        // processes pending mesh updates, and prunes unused pages to prepare for new rendering.
+        void AdvanceFrame()
         {
             s_MarkerAdvanceFrame.Begin();
 

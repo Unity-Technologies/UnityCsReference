@@ -44,5 +44,10 @@ namespace Unity.Multiplayer.PlayMode.Editor
             controller.m_Settings = settings;
             return controller;
         }
+
+        internal static TSettings GetDefaultSettings()
+        {
+            return Activator.CreateInstance<TSettings>();
+        }
     }
 }

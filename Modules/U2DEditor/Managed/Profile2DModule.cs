@@ -139,7 +139,7 @@ namespace UnityEditor.U2D.Profiling
     /// A custom Profiler module for 2D profiling data.
     /// </summary>
     [Serializable]
-    [ProfilerModuleMetadata("2D", typeof(ProfilerModule.LocalizationResource), IconPath = "Profiler.Custom")]
+    [ProfilerModuleMetadata("2D", typeof(ProfilerModule.LocalizationResource), IconPath = "Profiler.2D")]
     internal class Profile2DModule : ProfilerModuleBase
     {
 

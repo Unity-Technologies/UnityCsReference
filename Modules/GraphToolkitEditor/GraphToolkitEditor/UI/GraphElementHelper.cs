@@ -177,9 +177,19 @@ namespace Unity.GraphToolkit.Editor
         public static readonly string iconUssClassName = "ge-icon";
 
         /// <summary>
+        /// The generic USS class name for icons.
+        /// </summary>
+        public static readonly string colorLineUssClassName = "ge-node__color-line";
+
+        /// <summary>
         /// The prefix for the data type USS class name to add on icons.
         /// </summary>
         public static readonly string iconDataTypeClassPrefix = iconUssClassName.WithUssModifier(dataTypeClassUssModifierPrefix);
+
+        /// <summary>
+        /// The prefix for the data type USS class name to add on color lines.
+        /// </summary>
+        public static readonly string colorLineDatatTypeClassPrefix = colorLineUssClassName.WithUssModifier(dataTypeClassUssModifierPrefix);
 
         /// <summary>
         /// Adds a stylesheet from the package to a visual element.

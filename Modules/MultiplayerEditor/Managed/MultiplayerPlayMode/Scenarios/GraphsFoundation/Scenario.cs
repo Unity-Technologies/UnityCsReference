@@ -138,19 +138,27 @@ namespace Unity.Multiplayer.PlayMode.Editor
             return null;
         }
 
-        internal bool HasActiveFreeRunInstance(string name = null, Type type = null)
+        internal bool HasActiveFreeRunInstance()
         {
             foreach (var instance in m_Instances)
             {
                 if (instance.IsFreeRunMode() && instance.HasStartedAsFreeRunning())
                 {
-                    if (name == null || type == null)
-                        return true;
+                    return true;
+                }
+            }
 
-                    var instanceDescriptType = instance.GetInstanceDescription();
-                    if (name.Equals(instance.Name) &&
-                        instanceDescriptType != null &&
-                        instanceDescriptType.GetType() == type)
+            return false;
+        }
+
+        internal bool HasActiveFreeRunInstance<TController>(string name)
+            where TController : InstanceController
+        {
+            foreach (var instance in m_Instances)
+            {
+                if (instance.IsFreeRunMode() && instance.HasStartedAsFreeRunning())
+                {
+                    if (name.Equals(instance.Name) && instance.Controller is TController)
                         return true;
                 }
             }
@@ -158,17 +166,14 @@ namespace Unity.Multiplayer.PlayMode.Editor
             return false;
         }
 
-        internal bool HasActiveFreeRunInstanceOfType(Type descriptType)
+        internal bool HasActiveFreeRunInstanceOfType<TController>()
+            where TController : InstanceController
         {
             foreach (var instance in m_Instances)
             {
-                InstanceDescription currDescript = instance.GetInstanceDescription();
-                if (currDescript == null)
-                    continue;
-
                 if (instance.IsFreeRunMode()
                     && instance.HasStartedAsFreeRunning()
-                    && currDescript.GetType() == descriptType)
+                    && instance.Controller is TController)
                     return true;
             }
 
@@ -249,8 +254,8 @@ namespace Unity.Multiplayer.PlayMode.Editor
                 if (!instance.IsFreeRunMode() || !instance.IsActive())
                     continue;
 
-                var isVirtual = instance.GetInstanceDescription() is VirtualEditorInstanceDescription;
-                if (!isVirtual && instance.HasDeployedAndRun())
+                var isClone = instance.Controller is CloneEditorController;
+                if (!isClone && instance.HasDeployedAndRun())
                     instance.Drifted = true;
             }
         }

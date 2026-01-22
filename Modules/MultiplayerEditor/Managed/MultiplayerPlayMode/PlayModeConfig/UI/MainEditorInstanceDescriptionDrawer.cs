@@ -15,7 +15,9 @@ namespace Unity.Multiplayer.PlayMode.Editor
     [CustomPropertyDrawer(typeof(MainEditorInstanceDescription))]
     class MainEditorInstanceDescriptionDrawer : PropertyDrawer
     {
+        internal const string k_MultiplayerRolePopupName = "main-multiplayer-role-field";
         const string k_MultiplayerRoleTooltip = "Indicates the multiplayer role for this instance. The role is determined by the selected build profile: Server build profiles assign the Server role, while Standalone build profiles assign the Client role.";
+
         public override VisualElement CreatePropertyGUI(SerializedProperty property)
         {
             var container = new VisualElement();
@@ -31,7 +33,7 @@ namespace Unity.Multiplayer.PlayMode.Editor
         private static VisualElement CreateRoleField(SerializedProperty property)
         {
             property = property.FindPropertyRelative("m_Role");
-            var dropdown = new PopupField<MultiplayerRoleFlags>() { label = "Multiplayer Role", name= InstanceDescriptionDrawer.k_MultiplayerRolePopupName };
+            var dropdown = new PopupField<MultiplayerRoleFlags>() { label = "Multiplayer Role", name = k_MultiplayerRolePopupName };
 
             dropdown.choices = new((MultiplayerRoleFlags[])Enum.GetValues(typeof(MultiplayerRoleFlags)));
             MultiplayerRoleFlags currentSelected = (MultiplayerRoleFlags)property.enumValueFlag;

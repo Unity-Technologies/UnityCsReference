@@ -303,7 +303,7 @@ namespace UnityEditor.IMGUI.Controls
 
         public void CollapseAll()
         {
-            SetExpanded(new TIdentifier[0]);
+            SetExpanded(Array.Empty<TIdentifier>());
         }
 
         public void SetExpandedRecursive(TIdentifier id, bool expanded)

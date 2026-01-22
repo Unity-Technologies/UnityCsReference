@@ -50,7 +50,7 @@ namespace UnityEngine.Bindings
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void Resize(int newSize)
+        public void CollectionChanged(int newSize)
         {
             AssertArraySize(newSize);
             if (array != null && RuntimeHelpers.IsReferenceOrContainsReferences<TMarshalledElementType>() && newSize < array.Length)
@@ -58,10 +58,10 @@ namespace UnityEngine.Bindings
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void SetNull() => Resize(0);
+        public void SetNull() => CollectionChanged(0);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void SetEmpty() => Resize(0);
+        public void SetEmpty() => CollectionChanged(0);
 
         #region Error and Asserts
 
@@ -120,7 +120,7 @@ namespace UnityEngine.Bindings
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void Resize(int newSize) => array = UnsafeUtility.As<TMarshalledElementType[]>(new TManagedElementType[newSize]);
+        public void CollectionChanged(int newSize) => array = UnsafeUtility.As<TMarshalledElementType[]>(new TManagedElementType[newSize]);
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void SetNull() => array = null;
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -161,7 +161,7 @@ namespace UnityEngine.Bindings
         public Span<TMarshalledElementType> AsSpan() => array.AsSpan().Slice(0, list.Count);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void Resize(int newSize)
+        public void CollectionChanged(int newSize)
         {
             if (list == null)
                 list = new List<TManagedElementType>(newSize);
@@ -170,6 +170,8 @@ namespace UnityEngine.Bindings
 
             if (list.Count != newSize)
                 NoAllocHelpers.ResetListSize(list, newSize);
+            else // We assume that a marshaller could have modified the contents in place - so always invalid the enumerators
+                NoAllocHelpers.InvalidateListEnumerators(list);
 
             array = UnsafeUtility.As<TMarshalledElementType[]>(NoAllocHelpers.ExtractArrayFromList(list));
         }

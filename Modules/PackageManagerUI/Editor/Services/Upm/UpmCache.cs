@@ -442,8 +442,8 @@ namespace UnityEditor.PackageManager.UI.Internal
 
             m_SearchPackageInfos.Clear();
 
-            m_SerializedInstalledPackageInfos = new PackageInfo[0];
-            m_SerializedSearchPackageInfos = new PackageInfo[0];
+            m_SerializedInstalledPackageInfos = Array.Empty<PackageInfo>();
+            m_SerializedSearchPackageInfos = Array.Empty<PackageInfo>();
 
             ClearProductCache();
             ClearExtraInfoCache();
@@ -452,13 +452,13 @@ namespace UnityEditor.PackageManager.UI.Internal
         public void ClearProductCache()
         {
             m_ProductIdToProductSearchInfosMap.Clear();
-            m_SerializedProductSearchPackageInfos = new PackageInfo[0];
+            m_SerializedProductSearchPackageInfos = Array.Empty<PackageInfo>();
         }
 
         public void ClearExtraInfoCache()
         {
             m_ExtraPackageInfo.Clear();
-            m_SerializedExtraPackageInfos = new PackageInfo[0];
+            m_SerializedExtraPackageInfos = Array.Empty<PackageInfo>();
         }
     }
 }

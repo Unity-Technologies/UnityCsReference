@@ -50,7 +50,7 @@ namespace UnityEngine
             {
                 PrintErrorCantAccessChannel(channel);
             }
-            return new T[0];
+            return Array.Empty<T>();
         }
 
         private T[] GetAllocArrayFromChannel<T>(VertexAttribute channel)
@@ -912,7 +912,7 @@ namespace UnityEngine
             {
                 if (canAccess)  return GetTrianglesImpl(-1, true, 0);
                 else            PrintErrorCantAccessIndices();
-                return new int[0];
+                return Array.Empty<int>();
             }
             set
             {
@@ -934,7 +934,7 @@ namespace UnityEngine
         public int[] GetTriangles(int submesh, int meshLod, bool applyBaseVertex)
         {
             if (!CheckCanAccessSubmeshTriangles(submesh))
-                return new int[0];
+                return Array.Empty<int>();
 
             if (meshLod >= lodCount)
                 throw new IndexOutOfRangeException($"The Mesh LOD index ({meshLod}) must be less than the lodCount value ({lodCount}).");
@@ -1001,7 +1001,7 @@ namespace UnityEngine
         public int[] GetIndices(int submesh, int meshLod, bool applyBaseVertex = true)
         {
             if (!CheckCanAccessSubmeshIndices(submesh))
-                return new int[0];
+                return Array.Empty<int>();
 
             if (meshLod >= lodCount)
                 throw new IndexOutOfRangeException($"The Mesh LOD index ({meshLod}) must be less than the lodCount value ({lodCount}).");

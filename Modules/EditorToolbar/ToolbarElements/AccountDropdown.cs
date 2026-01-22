@@ -106,7 +106,7 @@ namespace UnityEditor.Toolbars
             #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             nameElements = nameElements.Where(element => !string.IsNullOrEmpty(element) &&
 #pragma warning restore RS0030
-            Regex.IsMatch(element[0].ToString(), @"[A-Za-z\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF]")).ToArray() ?? new string[0];
+            Regex.IsMatch(element[0].ToString(), @"[A-Za-z\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF]")).ToArray() ?? Array.Empty<string>();
 
             if (nameElements.Length > 1)
                 return $"{nameElements[0][0]}{nameElements[nameElements.Length - 1][0]}".ToUpper();

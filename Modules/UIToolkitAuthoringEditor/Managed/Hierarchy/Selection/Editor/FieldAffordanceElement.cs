@@ -54,10 +54,6 @@ namespace Unity.UIToolkit.Editor
         internal const string BindingNotDefinedAttributeString = "Not Defined";
         internal static string NotDefinedString = L10n.Tr(BindingNotDefinedAttributeString);
 
-        private const string k_UssPath = "UIToolkitAuthoring/Inspector/FieldAffordanceElement.uss";
-        private const string k_UssDarkSkinPath = "UIToolkitAuthoring/Inspector/FieldAffordanceElementDark.uss";
-        private const string k_UssLightSkinPath = "UIToolkitAuthoring/Inspector/FieldAffordanceElementLight.uss";
-
         /// <summary>
         /// USS class name of elements of this type.
         /// </summary>
@@ -114,13 +110,6 @@ namespace Unity.UIToolkit.Editor
 
         public FieldAffordanceElement()
         {
-            styleSheets.Add(EditorGUIUtility.Load(k_UssPath) as StyleSheet);
-
-            if (EditorGUIUtility.isProSkin)
-                styleSheets.Add(EditorGUIUtility.Load(k_UssDarkSkinPath) as StyleSheet);
-            else
-                styleSheets.Add(EditorGUIUtility.Load(k_UssLightSkinPath) as StyleSheet);
-
             AddToClassList(s_UssClassName);
             AddToClassList(InspectorLocalStyleDefaultStatusClassName);
             var contextMenuManipulator = new ContextualMenuManipulator((evt) =>
@@ -130,6 +119,8 @@ namespace Unity.UIToolkit.Editor
                 // Stop immediately to not propagate the event to the row.
                 evt.StopImmediatePropagation();
             });
+
+            contextMenuManipulator.acceptClicksIfDisabled = true;
 
             // Show menu also on left-click
             contextMenuManipulator.activators.Add(new ManipulatorActivationFilter { button = MouseButton.LeftMouse });

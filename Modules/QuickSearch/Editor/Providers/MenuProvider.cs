@@ -57,7 +57,7 @@ namespace UnityEditor.Search.Providers
                 #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 onEnable = () => shortcutIds = ShortcutManager.instance.GetAvailableShortcutIds().ToArray(),
 #pragma warning restore RS0030
-                onDisable = () => shortcutIds = new string[0],
+                onDisable = () => shortcutIds = Array.Empty<string>(),
 
                 fetchItems = FetchItems,
 
@@ -164,9 +164,9 @@ namespace UnityEditor.Search.Providers
                     return menuName;
             }
             var shortcutBinding = ShortcutManager.instance.GetShortcutBinding(shortcutId);
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable RS0031 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             if (!shortcutBinding.keyCombinationSequence.Any())
-#pragma warning restore RS0030
+#pragma warning restore RS0031
                 return menuName;
 
             return $"{menuName} ({shortcutBinding})";

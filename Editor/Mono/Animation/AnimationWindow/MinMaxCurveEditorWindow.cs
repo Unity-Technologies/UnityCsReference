@@ -206,7 +206,7 @@ namespace UnityEditor
                 }
             }
 
-            return new CurveWrapper[] {};
+            return Array.Empty<CurveWrapper>();
         }
 
         Rect GetCurveEditorRect()

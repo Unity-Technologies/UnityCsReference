@@ -75,19 +75,19 @@ namespace UnityEngine.WSA
             item();
         }
 
-        [ThreadAndSerializationSafe]
+        [ThreadSafe]
         [NativeConditional("PLATFORM_WINRT")]
         internal static extern void InternalInvokeOnAppThread(object item, bool waitUntilDone);
 
-        [ThreadAndSerializationSafe]
+        [ThreadSafe]
         [NativeConditional("PLATFORM_WINRT")]
         internal static extern void InternalInvokeOnUIThread(object item, bool waitUntilDone);
 
-        [ThreadAndSerializationSafe]
+        [ThreadSafe]
         [NativeConditional("PLATFORM_WINRT", StubReturnStatement = "true")]
         public static extern bool RunningOnAppThread();
 
-        [ThreadAndSerializationSafe]
+        [ThreadSafe]
         [NativeConditional("PLATFORM_WINRT", StubReturnStatement = "true")]
         public static extern bool RunningOnUIThread();
     }

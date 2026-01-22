@@ -13,7 +13,7 @@ using UnityEngine.Scripting;
 
 namespace UnityEditor.XR
 {
-    [NativeType(Header = "Modules/XREditor/Build/XRBuildSystem.h")]
+    [NativeHeader("Modules/XREditor/Build/XRBuildSystem.h")]
     [StaticAccessor("XRBuildSystem", StaticAccessorType.DoubleColon)]
     internal class BuildUtilities
     {

@@ -47,7 +47,7 @@ namespace Unity.Multiplayer.PlayMode.Editor
                              VirtualProjectsApiDelegates virtualProjectsApi, string vpPrefix,
                              string[] workflowLaunchArgs)
         {
-            m_WorkflowLaunchArgs = workflowLaunchArgs ?? new string[] { };
+            m_WorkflowLaunchArgs = workflowLaunchArgs ?? Array.Empty<string>();
             m_PlayerStateJson = playerStateJson ?? throw new ArgumentNullException(nameof(playerStateJson));
             m_SystemDataStore = systemDataStore ?? throw new ArgumentNullException(nameof(systemDataStore));
             m_VirtualProjectsApi = virtualProjectsApi;

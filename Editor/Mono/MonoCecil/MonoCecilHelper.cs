@@ -4,7 +4,6 @@
 
 using System;
 using System.IO;
-using System.Linq;
 using System.Reflection;
 using Mono.Cecil;
 using Mono.Cecil.Cil;
@@ -22,9 +21,7 @@ namespace UnityEditor
                 return null;
             }
 
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            if (!methodDefinition.HasBody || !methodDefinition.Body.Instructions.Any() || methodDefinition.DebugInformation == null)
-#pragma warning restore RS0030
+            if (!methodDefinition.HasBody || methodDefinition.Body.Instructions.Count == 0 || methodDefinition.DebugInformation == null)
             {
                 Debug.Log(string.Concat("To get SequencePoints MethodDefinition for ", methodDefinition.Name, " must have MethodBody, DebugInformation and Instructions."));
                 return null;

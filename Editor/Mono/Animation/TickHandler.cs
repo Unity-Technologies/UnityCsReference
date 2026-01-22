@@ -14,8 +14,8 @@ namespace UnityEditor
     internal class TickHandler
     {
         // Variables related to drawing tick markers
-        [SerializeField] private float[] m_TickModulos = new float[] {}; // array with possible modulo numbers to choose from
-        [SerializeField] private float[] m_TickStrengths = new float[] {}; // array with current strength of each modulo number
+        [SerializeField] private float[] m_TickModulos = Array.Empty<float>(); // array with possible modulo numbers to choose from
+        [SerializeField] private float[] m_TickStrengths = Array.Empty<float>(); // array with current strength of each modulo number
         [SerializeField] private int m_SmallestTick = 0; // index of the currently smallest modulo number used to draw ticks
         [SerializeField] private int m_BiggestTick = -1; // index of the currently biggest modulo number used to draw ticks
         [SerializeField] private float m_MinValue = 0; // shownArea min (in curve space)
@@ -140,7 +140,7 @@ namespace UnityEditor
         public float[] GetTicksAtLevel(int level, bool excludeTicksFromHigherlevels)
         {
             if (level < 0)
-                return new float[0] {};
+                return Array.Empty<float>();
 
             m_TickList.Clear();
             GetTicksAtLevel(level, excludeTicksFromHigherlevels, m_TickList);

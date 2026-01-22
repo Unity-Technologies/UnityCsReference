@@ -256,12 +256,9 @@ namespace UnityEditor.Search
         /// </summary>
         public override void Stop()
         {
-            if (m_CancelSource != null)
-            {
-                m_CancelSource.Cancel();
-                m_CancelSource.Dispose();
-                m_CancelSource = null;
-            }
+            m_CancelSource?.Cancel();
+            m_CancelSource?.Dispose();
+            m_CancelSource = null;
 
             if (searchInProgress)
                 sessionEnded?.Invoke(m_Context.searchContext);

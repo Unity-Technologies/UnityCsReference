@@ -250,7 +250,7 @@ namespace UnityEditor
             Handles.color = oldColor;
         }
 
-        static Vector3[] s_TempVectors = new Vector3[0];
+        static Vector3[] s_TempVectors = System.Array.Empty<Vector3>();
         public static void DrawPolyLineWithShadow(Color shadowColor, Vector2 screenOffset, params Vector3[] points)
         {
             Camera cam = Camera.current;

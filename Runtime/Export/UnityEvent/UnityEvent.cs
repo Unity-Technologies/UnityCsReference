@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Reflection;
 using UnityEngine.Scripting;
 using UnityEngine.Serialization;
+using Unity.Scripting.LifecycleManagement;
 
 namespace UnityEngine.Events
 {
@@ -689,9 +690,6 @@ namespace UnityEngine.Events
 
         private bool m_NeedsUpdate = true;
 
-#pragma warning disable RS0030 // This [Preserve] usage be addressed by https://jira.unity3d.com/browse/UUM-128404
-        [Preserve]
-#pragma warning restore RS0030
         public int Count
         {
             get { return m_PersistentCalls.Count + m_RuntimeCalls.Count; }
@@ -763,12 +761,15 @@ namespace UnityEngine.Events
     [UsedByNativeCode]
     public abstract class UnityEventBase : ISerializationCallbackReceiver
     {
+        [AutoStaticsCleanupOnCodeReload(CleanupStrategy = CleanupStrategy.Clear)]
         static readonly List<WeakReference<UnityEventBase>> s_UnityEvents = new();
 
         // ISerializationCallbackReceiver.OnAfterDeserialize executes before entering playmode
         // thus persistent calls can be cached incorrectly if initially called very early.
         // This callback invalidates caches after actual entering of playmode.
-#pragma warning disable RS0030 // This [RuntimeInitializeOnLoadMethod] usage be addressed by https://jira.unity3d.com/browse/UUM-128404
+// This is a quirky situation.  The `UNITY_EDITOR` works for editor and player assembly builds.  However, when building the monolithic editor assemblies, that logic causes the monolithic to inherit the analyzer from CoreModule and then 
+// also inherit the UNITY_EDITOR define from one of the editor assemblies.  This leads to both the `RuntimeInitializeOnLoadMethod` ban being active and UNITY_EDITOR being defined which then leads to needing a pragma here
+#pragma warning disable RS0030
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
 #pragma warning restore RS0030
         static void OnPlayModeStateChange()
@@ -802,7 +803,6 @@ namespace UnityEngine.Events
         void ISerializationCallbackReceiver.OnBeforeSerialize()
         {
             DirtyPersistentCalls();
-            s_UnityEvents.Add(new WeakReference<UnityEventBase>(this));
         }
 
         void ISerializationCallbackReceiver.OnAfterDeserialize()
@@ -836,7 +836,7 @@ namespace UnityEngine.Events
                 case PersistentListenerMode.EventDefined:
                     return FindMethod_Impl(name, listenerType);
                 case PersistentListenerMode.Void:
-                    return GetValidMethodInfo(listenerType, name, new Type[0]);
+                    return GetValidMethodInfo(listenerType, name, Array.Empty<Type>());
                 case PersistentListenerMode.Float:
                     return GetValidMethodInfo(listenerType, name, new[] { typeof(float) });
                 case PersistentListenerMode.Int:

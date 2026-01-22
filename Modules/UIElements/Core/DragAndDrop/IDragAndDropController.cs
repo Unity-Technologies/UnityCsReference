@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
@@ -21,9 +22,7 @@ namespace UnityEngine.UIElements
 
         void DragCleanup() { }
         void HandleAutoExpand(ReusableCollectionItem item, Vector2 pointerPosition) { }
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-        IEnumerable<int> GetSortedSelectedIds() => Enumerable.Empty<int>();
-#pragma warning restore RS0030
+        IReadOnlyList<int> GetSortedSelectedIds() => Array.Empty<int>();
     }
 
     /// <summary>
@@ -106,7 +105,7 @@ namespace UnityEngine.UIElements
         /// </summary>
         public readonly StartDragArgs startDragArgs;
 
-        internal SetupDragAndDropArgs(VisualElement draggedElement, IEnumerable<int> selectedIds, StartDragArgs startDragArgs)
+        internal SetupDragAndDropArgs(VisualElement draggedElement, IReadOnlyList<int> selectedIds, StartDragArgs startDragArgs)
         {
             this.draggedElement = draggedElement;
             this.selectedIds = selectedIds;

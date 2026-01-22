@@ -6,11 +6,13 @@ using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using Unity.Collections;
+using Unity.Collections.LowLevel.Unsafe;
 using Unity.Profiling;
 using Unity.Properties;
 using UnityEngine.Bindings;
 using UnityEngine.Pool;
 using UnityEngine.UIElements.StyleSheets;
+using UnityEngine.UIElements.Unmanaged;
 
 namespace UnityEngine.UIElements
 {
@@ -109,7 +111,6 @@ namespace UnityEngine.UIElements
     internal struct StylePropertyData<
         TInline,         /* .style */
         TComputedValue>  /* .computedStyle */
-        : IEquatable<StylePropertyData<TInline, TComputedValue>>
     {
         public StylePropertyId id { get; internal set; }
 
@@ -131,42 +132,7 @@ namespace UnityEngine.UIElements
         [CreateProperty(ReadOnly = true)]
         public bool isUxmlOverridden => uxmlValue.isInlined || binding != null;
 
-        EqualityComparer<TComputedValue> m_ComputedValueComparer;
-        public EqualityComparer<TComputedValue> computedValueComparer
-        {
-            get => m_ComputedValueComparer ?? EqualityComparer<TComputedValue>.Default;
-            set => m_ComputedValueComparer = value;
-        }
-
-        public bool Equals(StylePropertyData<TInline, TComputedValue> other)
-        {
-            return id == other.id &&
-                   EqualityComparer<TInline>.Default.Equals(inlineValue, other.inlineValue) &&
-                   uxmlValue.Equals(other.uxmlValue) &&
-                   computedValueComparer.Equals(computedValue, other.computedValue) &&
-                   binding == other.binding &&
-                   selector.Equals(other.selector);
-        }
-
-        public override bool Equals(object obj)
-        {
-            return obj is StylePropertyData<StyleLength, Length> other && Equals(other);
-        }
-
-        public override int GetHashCode()
-        {
-            return HashCode.Combine((int)id, inlineValue, uxmlValue, computedValue, binding, selector);
-        }
-
-        public static bool operator ==(StylePropertyData<TInline, TComputedValue> lhs, StylePropertyData<TInline, TComputedValue> rhs)
-        {
-            return lhs.Equals(rhs);
-        }
-
-        public static bool operator !=(StylePropertyData<TInline, TComputedValue> lhs, StylePropertyData<TInline, TComputedValue> rhs)
-        {
-            return !(lhs == rhs);
-        }
+        public StylePropertyData(StylePropertyId id) { this.id = id; }
     }
 
     internal readonly struct UxmlData
@@ -213,35 +179,187 @@ namespace UnityEngine.UIElements
     [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
     internal sealed partial class StyleDiff : INotifyBindablePropertyChanged, IDataSourceViewHashProvider, IDisposable
     {
-        class ListEqualityComparer<T, V> : EqualityComparer<T>
-            where T : List<V>
+        private bool SetInlineValue<TInline, TComputed>(ref StylePropertyData<TInline, TComputed> property,
+            TInline inlineValue)
+            where TInline : struct, IEquatable<TInline>
         {
-            public new static ListEqualityComparer<T, V> Default = new ListEqualityComparer<T, V>();
-
-            public override bool Equals(T x, T y)
+            if (!property.inlineValue.Equals(inlineValue))
             {
-                if (x == null ^ y == null)
-                    return false;
-
-                if (x == null)
-                    return true;
-
-                if (x.Count != y.Count)
-                    return false;
-
-                for (var i = 0; i < x.Count; ++i)
-                {
-                    if (!EqualityComparer<V>.Default.Equals(x[i], y[i]))
-                        return false;
-                }
-
+                property.inlineValue = inlineValue;
                 return true;
             }
 
-            public override int GetHashCode(T obj)
+            return false;
+        }
+
+        private bool SetComputedValue<TInline, TComputed>(ref StylePropertyData<TInline, TComputed> property,
+            TComputed computedValue)
+            where TComputed : struct, IEquatable<TComputed>
+        {
+            if (!property.computedValue.Equals(computedValue))
             {
-                return obj.GetHashCode();
+                property.computedValue = computedValue;
+                return true;
             }
+
+            return false;
+        }
+
+        private bool SetComputedValue<TInline, TComputed>(ref StylePropertyData<StyleEnum<TInline>, TComputed> property,
+            TComputed computedValue)
+            where TInline : struct, IConvertible
+            where TComputed : struct, IConvertible
+        {
+            if (UnsafeUtility.EnumToInt(property.computedValue) != UnsafeUtility.EnumToInt(computedValue))
+            {
+                property.computedValue = computedValue;
+                return true;
+            }
+
+            return false;
+        }
+
+        private bool SetComputedValue(ref StylePropertyData<StyleBackground, Background> property,
+            EntityId unmanagedValue)
+        {
+            var computedValue = Background.From(unmanagedValue);
+            if (!property.computedValue.Equals(computedValue))
+            {
+                property.computedValue = computedValue;
+                return true;
+            }
+
+            return false;
+        }
+
+        private bool SetComputedValue(ref StylePropertyData<StyleFontDefinition, FontDefinition> property,
+            EntityId unmanagedValue)
+        {
+            var computedValue = FontDefinition.From(unmanagedValue);
+            if (!property.computedValue.Equals(computedValue))
+            {
+                property.computedValue = computedValue;
+                return true;
+            }
+
+            return false;
+        }
+
+        private bool SetComputedValue(ref StylePropertyData<StyleFont, Font> property, EntityId unmanagedValue)
+        {
+            var computedValue = (Font)Resources.EntityIdToObject(unmanagedValue);
+            if (property.computedValue != computedValue)
+            {
+                property.computedValue = computedValue;
+                return true;
+            }
+
+            return false;
+        }
+
+        private bool SetComputedValue<TComputed>(ref StylePropertyData<StyleList<TComputed>, List<TComputed>> property,
+            ReadOnlySpan<TComputed> computedValue)
+            where TComputed : unmanaged, IEquatable<TComputed>
+        {
+            if (ValueEquals(computedValue, property.computedValue))
+                return false;
+
+            var result = property.computedValue;
+            computedValue.CopyTo(ref result);
+            property.computedValue = result;
+            return true;
+        }
+
+        private bool SetComputedValue(ref StylePropertyData<StyleList<FilterFunction>, List<FilterFunction>> property,
+            ReadOnlySpan<UnmanagedFilterFunction> computedValue)
+        {
+            if (ValueEquals(computedValue, property.computedValue, (a, b) => a.Equals(b)))
+                return false;
+
+            var result = property.computedValue;
+            computedValue.CopyTo(ref result, f => f);
+            property.computedValue = result;
+            return true;
+        }
+
+        private bool SetComputedValue(ref StylePropertyData<StyleList<StylePropertyName>, List<StylePropertyName>> property,
+            ReadOnlySpan<StylePropertyId> computedValue)
+        {
+            if (ValueEquals(computedValue, property.computedValue, (a, b) => a == b.id))
+                return false;
+
+            var result = property.computedValue;
+            computedValue.CopyTo(ref result, id => new StylePropertyName(id));
+            property.computedValue = result;
+            return true;
+        }
+
+        private bool SetComputedValue(ref StylePropertyData<StyleMaterialDefinition, MaterialDefinition> property,
+            UnmanagedMaterialDefinition computedValue)
+        {
+            if (ValueEquals(computedValue, property.computedValue))
+                return false;
+
+            property.computedValue = MaterialDefinition.From(computedValue);
+            return true;
+        }
+
+        private bool ApplyContext<TInline, TComputed>(ref StylePropertyData<TInline, TComputed> property, in ResolutionContext context)
+        {
+            UxmlStyleProperty uxmlValue =
+                context.uxmlData.TryGetValue(property.id, out var uxmlData) && null != uxmlData.inlineProperty
+                    ? new UxmlStyleProperty(uxmlData.inlineProperty)
+                    : new UxmlStyleProperty(null);
+
+            var notify = false;
+            if (!property.uxmlValue.Equals(uxmlValue))
+            {
+                property.uxmlValue = uxmlValue;
+                notify = true;
+            }
+            if (property.binding != uxmlData.bindingInfo.binding)
+            {
+                property.binding = uxmlData.bindingInfo.binding;
+                notify = true;
+            }
+            if (!property.selector.Equals(uxmlData.selector))
+            {
+                property.selector = uxmlData.selector;
+                notify = true;
+            }
+
+            return notify;
+        }
+
+        private static bool ValueEquals<T>(ReadOnlySpan<T> a, List<T> b)
+            where T : unmanaged, IEquatable<T>
+        {
+            if (b == null) return false; // As long as ToList(empty) doesn't return null, we need them to differ
+            if (a.IsEmpty) return b.Count == 0;
+            if (a.Length != b.Count) return false;
+            for (var i = 0; i < a.Length; i++)
+                if (!a[i].Equals(b[i]))
+                    return false;
+            return true;
+        }
+
+        private static bool ValueEquals<T, TOther>(ReadOnlySpan<T> a, List<TOther> b, Func<T, TOther, bool> equals)
+            where T : unmanaged
+        {
+            if (b == null) return false; // As long as ToList(empty) doesn't return null, we need them to differ
+            if (a.IsEmpty) return b.Count == 0;
+            if (a.Length != b.Count) return false;
+            for (var i = 0; i < a.Length; i++)
+                if (!equals(a[i], b[i]))
+                    return false;
+            return true;
+        }
+
+        private static bool ValueEquals(UnmanagedMaterialDefinition a, MaterialDefinition b)
+        {
+            return a.material == (b.material != null ? b.material.GetEntityId() : EntityId.None) &&
+                   (b.propertyValues == null ? a.propertyValues.IsEmpty :
+                   ValueEquals(a.propertyValues.ToReadOnlySpan(), b.propertyValues, (p1, p2) => p1.Equals(p2)));
         }
 
         static readonly ProfilerMarker s_StyleDiffRefreshProfilerMarker = new ProfilerMarker("StyleDiff.Refresh()");
@@ -399,36 +517,6 @@ namespace UnityEngine.UIElements
                     propertyToMatchRecord[property.id] = record;
                 }
             }
-        }
-
-        static StylePropertyData<TInline, TComputed> ComputeStyleProperty<TInline, TComputed>(
-            StylePropertyId id,
-            string propertyName,
-            in TInline inlineStyle,
-            in TComputed computedStyle,
-            in ResolutionContext context,
-            EqualityComparer<TComputed> computedValueEqualityComparer = null)
-        {
-            var property = new StylePropertyData<TInline, TComputed>
-            {
-                id = id,
-                inlineValue = inlineStyle,
-                computedValue = computedStyle,
-                computedValueComparer = computedValueEqualityComparer
-            };
-
-            if (!context.uxmlData.TryGetValue(id, out var uxmlData))
-                return property;
-
-            var inlined = null != uxmlData.inlineProperty;
-            property.uxmlValue = inlined
-                ? new UxmlStyleProperty(uxmlData.inlineProperty)
-                : new UxmlStyleProperty(null);
-
-            property.binding = uxmlData.bindingInfo.binding;
-
-            property.selector = uxmlData.selector;
-            return property;
         }
 
         static ShortHandStylePropertyData ComputeStyleProperty(

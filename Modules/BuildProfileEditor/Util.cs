@@ -15,47 +15,52 @@ namespace UnityEditor.Build.Profile
     {
         internal const string k_StyleSheet = "BuildProfile/StyleSheets/BuildProfile.uss";
         internal const string k_PY_MediumUssClass = "py-medium";
-        const int k_HelBoxChildItemCount = 2;
 
         /// <summary>
         /// Helper function for setting the platform settings helpbox based on
         /// license and module installation status.
         /// </summary>
-        internal static bool UpdatePlatformRequirementsWarningHelpBox(HelpBox target, GUID platformId)
+        internal static bool UpdatePlatformRequirementsWarningHelpBox(HelpBox helpbox, GUID platformId)
         {
-            if (target.childCount > k_HelBoxChildItemCount)
-            {
-                // Remove extra element added by this method. HelpBox default is
-                // two elements.
-                target[2].RemoveFromHierarchy();
-            }
+            if (helpbox == null)
+                return false;
 
-            var licenseNotFoundElement = BuildProfileModuleUtil.CreateLicenseNotFoundElement(platformId);
-            if (licenseNotFoundElement is not null)
+            ClearHelpBox(helpbox);
+
+            if (!BuildProfileModuleUtil.IsBuildProfileLicensed(platformId))
             {
-                target.text = string.Empty;
-                target.Add(licenseNotFoundElement);
-                target.Show();
+                BuildProfileModuleUtil.UpdateHelpBoxForLicenseNotFound(helpbox, platformId);
+                helpbox.Show();
                 return true;
             }
 
             if (!BuildProfileModuleUtil.IsModuleInstalled(platformId))
             {
-                target.text = string.Empty;
-                target.Add(BuildProfileModuleUtil.CreateModuleNotInstalledElement(platformId));
-                target.Show();
+                BuildProfileModuleUtil.UpdateHelpBoxForModuleNotInstalled(helpbox, platformId);
+                helpbox.Show();
                 return true;
             }
 
             if (!BuildProfileModuleUtil.IsBuildProfileSupported(platformId))
             {
-                target.text = TrText.notSupportedWarning;
-                target.Show();
+                helpbox.text = TrText.notSupportedWarning;
+                helpbox.Show();
                 return true;
             }
 
-            target.Hide();
+            helpbox.Hide();
             return false;
+        }
+
+        static void ClearHelpBox(HelpBox helpbox)
+        {
+            if (helpbox == null)
+                return;
+
+            helpbox.text = string.Empty;
+            helpbox.buttonText = string.Empty;
+            helpbox.linkText = string.Empty;
+            helpbox.linkHref = string.Empty;
         }
 
         internal static void ApplyActionState(this VisualElement elem, ActionState state)

@@ -20,6 +20,26 @@ namespace UnityEditorInternal
 {
     internal class AssemblyStripper
     {
+        /// <summary>
+        /// Escapes XML special characters to prevent XML parsing errors.
+        /// This is necessary for compiler-generated names (e.g., lambda methods like &lt;OnEnable&gt;b__1_1)
+        /// and generic type names (e.g., List&lt;int&gt;).
+        /// </summary>
+        /// <param name="value">The string value to escape.</param>
+        /// <returns>The escaped string safe for use in XML attributes and content.</returns>
+        private static string EscapeXmlString(string value)
+        {
+            if (string.IsNullOrEmpty(value))
+                return value;
+
+            return value
+                .Replace("&", "&amp;")   // Must be first to avoid double-escaping
+                .Replace("<", "&lt;")
+                .Replace(">", "&gt;")
+                .Replace("\"", "&quot;")
+                .Replace("'", "&apos;");
+        }
+
         static List<NPath> ProcessBuildPipelineGenerateAdditionalLinkXmlFiles(BuildPostProcessArgs args)
         {
             var results = new List<NPath>();
@@ -140,7 +160,7 @@ namespace UnityEditorInternal
                 foreach (var type in assemblyTypePair.Value.OrderBy(s => s))
 #pragma warning restore RS0030
                 {
-                    sb.AppendLine($"\t\t<type fullname=\"{type}\" preserve=\"nothing\"/>");
+                    sb.AppendLine($"\t\t<type fullname=\"{EscapeXmlString(type)}\" preserve=\"nothing\"/>");
                 }
                 sb.AppendLine("\t</assembly>");
             }
@@ -173,7 +193,7 @@ namespace UnityEditorInternal
 #pragma warning restore RS0030
                 {
                     oneOrMoreItemsWritten = true;
-                    sb.AppendLine($"\t\t<type fullname=\"{type}\" preserve=\"nothing\" serialized=\"true\"/>");
+                    sb.AppendLine($"\t\t<type fullname=\"{EscapeXmlString(type)}\" preserve=\"nothing\" serialized=\"true\"/>");
                 }
                 sb.AppendLine("\t</assembly>");
             }
@@ -412,12 +432,12 @@ namespace UnityEditorInternal
 #pragma warning restore RS0030
                 {
 #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                    sb.AppendLine(string.Format("\t\t<type fullname=\"{0}\">", type.Key));
+                    sb.AppendLine(string.Format("\t\t<type fullname=\"{0}\">", EscapeXmlString(type.Key)));
 #pragma warning restore RS0030
 #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     foreach (var method in type.OrderBy(m => m.methodName))
 #pragma warning restore RS0030
-                        sb.AppendLine(string.Format("\t\t\t<method name=\"{0}\"/>", method.methodName));
+                        sb.AppendLine(string.Format("\t\t\t<method name=\"{0}\"/>", EscapeXmlString(method.methodName)));
                     sb.AppendLine("\t\t</type>");
                 }
                 sb.AppendLine("\t</assembly>");

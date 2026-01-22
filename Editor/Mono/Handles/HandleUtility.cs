@@ -1130,8 +1130,8 @@ namespace UnityEditor
             s_RendererExcludeBuffer.Clear();
             s_EntityIncludeBuffer.Clear();
             s_EntityExcludeBuffer.Clear();
-            GetPickingIds(s_PickingInclude, s_RendererIncludeBuffer, s_EntityIncludeBuffer);
-            GetPickingIds(s_PickingExclude, s_RendererExcludeBuffer, s_EntityExcludeBuffer);
+            ExtractRenderersAndEntities(s_PickingInclude, s_RendererIncludeBuffer, s_EntityIncludeBuffer);
+            ExtractRenderersAndEntities(s_PickingExclude, s_RendererExcludeBuffer, s_EntityExcludeBuffer);
             return new PickingIncludeExcludeEntityIdList(s_RendererIncludeBuffer, s_RendererExcludeBuffer, s_EntityIncludeBuffer, s_EntityExcludeBuffer, allocator);
         }
 
@@ -1141,7 +1141,9 @@ namespace UnityEditor
             s_RendererExcludeBuffer.Clear();
             s_EntityIncludeBuffer.Clear();
             s_EntityExcludeBuffer.Clear();
-            GetPickingIds(Selection.objects, s_RendererIncludeBuffer, s_EntityIncludeBuffer);
+            Renderer[] deepSelection = Selection.GetFiltered<Renderer>(SelectionMode.Deep);
+            ExtractRenderersEntityIds(deepSelection, s_RendererIncludeBuffer);
+            ExtractEntities(Selection.objects, s_EntityIncludeBuffer);
             return new PickingIncludeExcludeEntityIdList(s_RendererIncludeBuffer, null, s_EntityIncludeBuffer, null, allocator);
         }
 
@@ -1152,8 +1154,8 @@ namespace UnityEditor
             s_RendererExcludeBuffer.Clear();
             s_EntityIncludeBuffer.Clear();
             s_EntityExcludeBuffer.Clear();
-            GetPickingIds(s_PickingInclude, s_RendererIncludeBuffer, s_EntityIncludeBuffer);
-            GetPickingIds(s_PickingExclude, s_RendererExcludeBuffer, s_EntityExcludeBuffer);
+            ExtractRenderersAndEntities(s_PickingInclude, s_RendererIncludeBuffer, s_EntityIncludeBuffer);
+            ExtractRenderersAndEntities(s_PickingExclude, s_RendererExcludeBuffer, s_EntityExcludeBuffer);
             return new PickingIncludeExcludeList(s_RendererIncludeBuffer.ToIntList(), s_RendererExcludeBuffer.ToIntList(), s_EntityIncludeBuffer.ToIntList(), s_EntityExcludeBuffer.ToIntList(), allocator);
         }
 
@@ -1164,7 +1166,9 @@ namespace UnityEditor
             s_RendererExcludeBuffer.Clear();
             s_EntityIncludeBuffer.Clear();
             s_EntityExcludeBuffer.Clear();
-            GetPickingIds(Selection.objects, s_RendererIncludeBuffer, s_EntityIncludeBuffer);
+            Renderer[] deepSelection = Selection.GetFiltered<Renderer>(SelectionMode.Deep);
+            ExtractRenderersEntityIds(deepSelection, s_RendererIncludeBuffer);
+            ExtractEntities(Selection.objects, s_EntityIncludeBuffer);
             return new PickingIncludeExcludeList(s_RendererIncludeBuffer.ToIntList(), null, s_EntityIncludeBuffer.ToIntList(), null, allocator);
         }
 
@@ -1284,7 +1288,7 @@ namespace UnityEditor
             return picked;
         }
 
-        static void GetPickingIds(List<PickingObject> objects, List<EntityId> ren, List<EntityId> ent)
+        static void ExtractRenderersAndEntities(List<PickingObject> objects, List<EntityId> renderers, List<EntityId> entities)
         {
             if (objects == null)
                 return;
@@ -1295,16 +1299,16 @@ namespace UnityEditor
                     continue;
 
                 // If the object is represented by entities, they take priority
-                if (GetEntitiesForAuthoringObject(objects[i].target, ent) > 0)
+                if (GetEntitiesForAuthoringObject(objects[i].target, entities) > 0)
                     continue;
 
                 // Otherwise, use the Renderer component, if any
                 if (objects[i].target is GameObject gameObject && gameObject.TryGetComponent<Renderer>(out var renderer))
-                    ren.Add(renderer.GetEntityId());
+                    renderers.Add(renderer.GetEntityId());
             }
         }
 
-        static void GetPickingIds(UnityEngine.Object[] objects, List<EntityId> ren, List<EntityId> ent)
+        static void ExtractEntities(UnityEngine.Object[] objects, List<EntityId> entities)
         {
             if (objects == null)
                 return;
@@ -1314,13 +1318,21 @@ namespace UnityEditor
                 if (objects[i] == null)
                     continue;
 
-                // If the object is represented by entities, they take priority
-                if (GetEntitiesForAuthoringObject(objects[i], ent) > 0)
+                GetEntitiesForAuthoringObject(objects[i], entities);
+            }
+        }
+
+        static void ExtractRenderersEntityIds(Renderer[] renderers, List<EntityId> entityIds)
+        {
+            if (renderers == null)
+                return;
+
+            for (int i = 0; i < renderers.Length; ++i)
+            {
+                if (renderers[i] == null)
                     continue;
 
-                // Otherwise, use the Renderer component, if any
-                if (objects[i] is GameObject gameObject && gameObject.TryGetComponent<Renderer>(out var renderer))
-                    ren.Add(renderer.GetEntityId());
+                entityIds.Add(renderers[i].GetEntityId());
             }
         }
 
@@ -1937,8 +1949,8 @@ namespace UnityEditor
             if (renderers == null)
             {
                 Debug.LogWarning("The Renderer array is null. Handles.DrawOutline will not be rendered.");
-                parentRendererIDs = new EntityId[0];
-                childRendererIDs = new EntityId[0];
+                parentRendererIDs = Array.Empty<EntityId>();
+                childRendererIDs = Array.Empty<EntityId>();
                 return;
             }
 
@@ -1971,8 +1983,8 @@ namespace UnityEditor
             if (gameObjects.Count() == 0)
 #pragma warning restore RS0030
             {
-                parentEntityIds = new EntityId[0];
-                childEntityIds = new EntityId[0];
+                parentEntityIds = Array.Empty<EntityId>();
+                childEntityIds = Array.Empty<EntityId>();
                 childEntityIdsHashSet = null;
                 return;
             }

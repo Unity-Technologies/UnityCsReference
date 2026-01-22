@@ -596,9 +596,9 @@ namespace UnityEditor
             var difference = differenceA.Union(differenceB).Distinct();
 #pragma warning restore RS0030
 
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable RS0031 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             if (!difference.Any())
-#pragma warning restore RS0030
+#pragma warning restore RS0031
                 return true;
 
             // If normals are the only difference, ignore them, because the default particle streams include normals, to make it easy for users to switch between lit and unlit

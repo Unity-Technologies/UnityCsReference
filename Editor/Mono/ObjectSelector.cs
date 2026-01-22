@@ -313,7 +313,7 @@ namespace UnityEditor
 
             if (s_IMGUIPriorityKeyboardEvents == null)
             {
-                s_IMGUIPriorityKeyboardEvents = new HashSet<Event>
+                s_IMGUIPriorityKeyboardEvents = new HashSet<Event>(new[]
                 {
                     Event.KeyboardEvent("up"),
                     Event.KeyboardEvent("down"),
@@ -321,7 +321,7 @@ namespace UnityEditor
                     Event.KeyboardEvent("page down"),
                     Event.KeyboardEvent("[enter]"),
                     Event.KeyboardEvent("return"),
-                };
+                });
             }
 
             AssetPreview.ClearTemporaryAssetPreviews();
@@ -1053,7 +1053,7 @@ namespace UnityEditor
             Undo.RevertAllDownToGroup(m_ModalUndoGroup);
 
             // Clear selection so that object field doesn't grab it
-            m_ListArea?.InitSelection(new EntityId[0]);
+            m_ListArea?.InitSelection(Array.Empty<EntityId>());
             m_ObjectTreeWithSearch.Clear();
             SetSelectedInstanceID(EntityId.None);
             m_SelectionCancelled = true;

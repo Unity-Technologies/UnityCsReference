@@ -176,7 +176,7 @@ namespace UnityEditor
                 throw new System.ArgumentNullException("gameObjects array is null");
 
             if (gameObjects.Length == 0)
-                return new GameObject[0];
+                return Array.Empty<GameObject>();
 
             foreach (GameObject go in gameObjects)
             {

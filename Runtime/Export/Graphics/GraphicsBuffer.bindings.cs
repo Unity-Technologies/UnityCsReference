@@ -151,7 +151,7 @@ namespace UnityEngine
 
         static bool HasVertexOrIndex(Target target)
         {
-            return (target & (Target.Vertex | target & Target.Index)) != 0;
+            return (target & (Target.Vertex | Target.Index)) != 0;
         }
 
         [FreeFunction("GraphicsBuffer_Bindings::InitBuffer")]

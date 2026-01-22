@@ -146,9 +146,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             var purchases = new AssetStorePurchases();
             purchases.total = (long)rawList["total"];
 
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            var results = rawList.GetList<Dictionary<string, object>>("results") ?? Enumerable.Empty<Dictionary<string, object>>();
-#pragma warning restore RS0030
+            var results = rawList.GetList<Dictionary<string, object>>("results") ?? Array.Empty<Dictionary<string, object>>();
             foreach (var item in results)
             {
                 var purchase = ParsePurchaseInfo(item);
@@ -156,9 +154,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                     purchases.list.Add(purchase);
             }
 
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            var categories = rawList.GetList<Dictionary<string, object>>("category") ?? Enumerable.Empty<Dictionary<string, object>>();
-#pragma warning restore RS0030
+            var categories = rawList.GetList<Dictionary<string, object>>("category") ?? Array.Empty<Dictionary<string, object>>();
             foreach (var item in categories)
             {
                 var categoryName = item.GetString("name");

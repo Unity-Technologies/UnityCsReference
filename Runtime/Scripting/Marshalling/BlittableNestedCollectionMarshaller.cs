@@ -9,7 +9,8 @@ using Unity.Collections.LowLevel.Unsafe;
 
 namespace UnityEngine.Bindings
 {
-    [NativeType(CodegenOptions = CodegenOptions.Custom, IntermediateScriptingStructName = "Marshalling::NestedCollectionData", Header = "Runtime/Scripting/Marshalling/BlittableNestedCollectionMarshaller.h")]
+    [NativeType(CodegenOptions = CodegenOptions.Custom, IntermediateScriptingStructName = "Marshalling::NestedCollectionData")]
+    [NativeHeader("Runtime/Scripting/Marshalling/BlittableNestedCollectionMarshaller.h")]
     internal unsafe struct NestedCollectionData
     {
         public void* Data;

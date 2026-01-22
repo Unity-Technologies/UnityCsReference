@@ -94,6 +94,9 @@ namespace Unity.Profiling.Editor.UI
                         : k_SelectionAssistantPrompt;
 
                     ((UnityEditorInternal.IProfilerWindowController)m_ProfilerWindow).RequestCpuProfilerAssistance(screenRect, attachment, prompt);
+
+                    const string k_LinkDescription_AskAssistant= "Ask Assistant";
+                    UnityEditor.Profiling.Analytics.ProfilerWindowAnalytics.SendBottleneckLinkSelectedEvent(k_LinkDescription_AskAssistant);
                 };
             }
         }

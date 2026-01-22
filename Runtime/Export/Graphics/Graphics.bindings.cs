@@ -177,7 +177,7 @@ namespace UnityEngine
         Windowed = 3,
     }
 
-    [NativeType("Runtime/Graphics/RefreshRate.h")]
+    [NativeHeader("Runtime/Graphics/RefreshRate.h")]
     public struct RefreshRate : IEquatable<RefreshRate>, IComparable<RefreshRate>
     {
         [RequiredMember]
@@ -222,7 +222,7 @@ namespace UnityEngine
     }
 
     [UsedByNativeCode]
-    [NativeType("Runtime/Graphics/DisplayInfo.h")]
+    [NativeHeader("Runtime/Graphics/DisplayInfo.h")]
     public struct DisplayInfo : IEquatable<DisplayInfo>
     {
         [RequiredMember]
@@ -608,7 +608,7 @@ namespace UnityEngineInternal
 
 namespace UnityEngine
 {
-    [NativeType("Runtime/GfxDevice/GfxDeviceTypes.h")]
+    [NativeHeader("Runtime/GfxDevice/GfxDeviceTypes.h")]
     public enum ComputeBufferMode
     {
         Immutable = 0,
@@ -1051,21 +1051,90 @@ namespace UnityEngine
 
 namespace UnityEngine
 {
-    [NativeType("Runtime/GI/SceneData.h")]
-    internal unsafe partial struct LightProbeOcclusion
+    // Mirrors native-side LightProbeOcclusion struct.
+    [NativeHeader("Runtime/GI/SceneData.h")]
+    public unsafe struct LightProbeOcclusion
     {
-        internal fixed int     m_ProbeOcclusionLightIndex[4];
-        internal fixed float   m_Occlusion[4];
-        internal fixed sbyte   m_OcclusionMaskChannel[4];
+        public const int MaxLightsPerProbe = 4;
+
+        private fixed int ProbeOcclusionLightIndex[MaxLightsPerProbe];
+        private fixed float Occlusion[MaxLightsPerProbe];
+        private fixed sbyte OcclusionMaskChannel[MaxLightsPerProbe];
+
+        private bool IsIndexValid(int index)
+        {
+            return index >= 0 && index < MaxLightsPerProbe;
+        }
+
+        public bool GetProbeOcclusionLightIndex(int index, out int lightIndex)
+        {
+            lightIndex = -1;
+            if (!IsIndexValid(index))
+                return false;
+            lightIndex = ProbeOcclusionLightIndex[index];
+            return true;
+        }
+
+        public bool SetProbeOcclusionLightIndex(int index, int value)
+        {
+            if (!IsIndexValid(index))
+                return false;
+            ProbeOcclusionLightIndex[index] = value;
+            return true;
+        }
+
+        public bool GetOcclusion(int index, out float occlusion)
+        {
+            occlusion = 0.0f;
+            if (!IsIndexValid(index))
+                return false;
+            occlusion = Occlusion[index];
+            return true;
+        }
+
+        public bool SetOcclusion(int index, float value)
+        {
+            if (!IsIndexValid(index))
+                return false;
+            Occlusion[index] = value;
+            return true;
+        }
+
+        public bool GetOcclusionMaskChannel(int index, out sbyte maskChannel)
+        {
+            maskChannel = -1;
+            if (!IsIndexValid(index))
+                return false;
+            maskChannel = OcclusionMaskChannel[index];
+            return true;
+        }
+
+        public bool SetOcclusionMaskChannel(int index, sbyte value)
+        {
+            if (!IsIndexValid(index))
+                return false;
+            OcclusionMaskChannel[index] = value;
+            return true;
+        }
+
+        public void SetDefaultValues()
+        {
+            for (int i = 0; i < MaxLightsPerProbe; ++i)
+            {
+                ProbeOcclusionLightIndex[i] = -1;
+                Occlusion[i] = 0.0f;
+                OcclusionMaskChannel[i] = -1;
+            }
+        }
     }
     
-    [NativeType("Runtime/Camera/LightProbeStructs.h")]
+    [NativeHeader("Runtime/Camera/LightProbeStructs.h")]
     unsafe internal partial struct Matrix3x4f
     {
         internal fixed float m_Data[12];
     }
     
-    [NativeType("Runtime/Camera/LightProbeStructs.h")]
+    [NativeHeader("Runtime/Camera/LightProbeStructs.h")]
     internal unsafe partial struct Tetrahedron
     {
         internal fixed int indices[4];
@@ -1074,14 +1143,14 @@ namespace UnityEngine
         internal bool isValid;
     }
 
-    [NativeType("Runtime/Camera/ProbeSetIndex.h")]
+    [NativeHeader("Runtime/Camera/ProbeSetIndex.h")]
     internal partial struct ProbeSetIndex {
         internal Hash128 m_Hash;
         internal int m_Offset;
         internal int m_Size;
     }
 
-    [NativeType("Runtime/Graphics/ProbeSetTetrahedralization.h")]
+    [NativeHeader("Runtime/Graphics/ProbeSetTetrahedralization.h")]
     internal sealed partial class ProbeSetTetrahedralization
     {
         internal Vector3[] hullRays { get; set; }

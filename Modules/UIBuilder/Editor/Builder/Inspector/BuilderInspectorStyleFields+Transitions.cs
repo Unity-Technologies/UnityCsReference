@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEditor;
@@ -38,17 +39,17 @@ namespace Unity.UI.Builder
 
         public void RefreshInlineEditedTransitionField(TransitionsListView transitionsListView, StylePropertyId inlinedEditedProperty)
         {
-            var computedData = currentVisualElement.computedStyle.transitionData.Read();
+            ref var computedData = ref currentVisualElement.computedStyle;
             using var setData = GetBuilderTransitionData();
 
-            var max = Mathf.Max(computedData.MaxCount(), setData.MaxCount());
+            var max = Mathf.Max(computedData.TransitionMaxCount(), setData.MaxCount());
             var builderTransitions = ListPool<BuilderTransition>.Get();
             try
             {
                 for (var i = 0; i < max; i++)
                     builderTransitions.Add(default);
 
-                RefreshTransitionStyleProperties(builderTransitions, setData, computedData, inlinedEditedProperty);
+                RefreshTransitionStyleProperties(builderTransitions, setData, ref computedData, inlinedEditedProperty);
 
                 transitionsListView.TrimToCount(max);
                 for (var i = 0; i < builderTransitions.Count; ++i)
@@ -68,10 +69,10 @@ namespace Unity.UI.Builder
 
         public void RefreshStyleField(TransitionsListView transitionsListView)
         {
-            var computedData = currentVisualElement.computedStyle.transitionData.Read();
+            ref var computedData = ref currentVisualElement.computedStyle;
             using var setData = GetBuilderTransitionData();
 
-            var max = Mathf.Max(computedData.MaxCount(), setData.MaxCount());
+            var max = Mathf.Max(computedData.TransitionMaxCount(), setData.MaxCount());
             var builderTransitions = ListPool<BuilderTransition>.Get();
             try
             {
@@ -80,7 +81,7 @@ namespace Unity.UI.Builder
 
                 ClearTransitionStyleFieldLists();
 
-                RefreshTransitionStyleProperties(builderTransitions, setData, computedData, StylePropertyId.Unknown);
+                RefreshTransitionStyleProperties(builderTransitions, setData, ref computedData, StylePropertyId.Unknown);
 
                 transitionsListView.TrimToCount(max);
                 for (var i = 0; i < builderTransitions.Count; ++i)
@@ -113,7 +114,7 @@ namespace Unity.UI.Builder
             GetOrCreateFieldListForStyleName(TransitionConstants.Delay).Clear();
         }
 
-        static void RefreshTransitionStyleProperties(List<BuilderTransition> transitions, BuilderTransitionData setData, TransitionData computedData, StylePropertyId inlineEditedProperty)
+        static void RefreshTransitionStyleProperties(List<BuilderTransition> transitions, BuilderTransitionData setData, ref ComputedStyle computedData, StylePropertyId inlineEditedProperty)
         {
             RefreshTransitionProperty(transitions, setData.transitionProperty, computedData.transitionProperty, setData.GetBindings(), inlineEditedProperty == StylePropertyId.TransitionProperty);
             RefreshTransitionDuration(transitions, setData.transitionDuration, computedData.transitionDuration, setData.GetBindings(), inlineEditedProperty == StylePropertyId.TransitionDuration);
@@ -129,10 +130,10 @@ namespace Unity.UI.Builder
             SetVariableEditor(foldoutTransitionField.delayField, index);
         }
 
-        static void RefreshTransitionProperty(List<BuilderTransition> transitions, StylePropertyManipulator manipulator, List<StylePropertyName> computedData, TransitionChangeType bindings, bool forceInlineValue)
+        static void RefreshTransitionProperty(List<BuilderTransition> transitions, StylePropertyManipulator manipulator, ReadOnlySpan<StylePropertyId> computedData, TransitionChangeType bindings, bool forceInlineValue)
         {
             var showInlineValue = null != manipulator.styleProperty && ((bindings & TransitionChangeType.Property) == 0 || forceInlineValue);
-            var valueCount = showInlineValue ? manipulator.GetValuesCount() : computedData.Count;
+            var valueCount = showInlineValue ? manipulator.GetValuesCount() : computedData.Length;
 
             for (var i = 0; i < transitions.Count; ++i)
             {
@@ -161,17 +162,17 @@ namespace Unity.UI.Builder
                 else
                 {
                     transition.property = i < valueCount
-                        ? computedData[i].ToString() ?? BuilderTransition.IgnoredProperty
+                        ? new StylePropertyName(computedData[i]).ToString() ?? BuilderTransition.IgnoredProperty
                         : BuilderTransition.IgnoredProperty;
                 }
                 transitions[i] = transition;
             }
         }
 
-        static void RefreshTransitionDuration(List<BuilderTransition> transitions, StylePropertyManipulator manipulator, List<TimeValue> computedData, TransitionChangeType bindings, bool forceInlineValue)
+        static void RefreshTransitionDuration(List<BuilderTransition> transitions, StylePropertyManipulator manipulator, ReadOnlySpan<TimeValue> computedData, TransitionChangeType bindings, bool forceInlineValue)
         {
             var showInlineValue = null != manipulator.styleProperty && ((bindings & TransitionChangeType.Duration) == 0 || forceInlineValue);
-            var valueCount = showInlineValue ? manipulator.GetValuesCount() : computedData.Count;
+            var valueCount = showInlineValue ? manipulator.GetValuesCount() : computedData.Length;
 
             for (var i = 0; i < transitions.Count; ++i)
             {
@@ -193,7 +194,7 @@ namespace Unity.UI.Builder
                 {
                     transition.duration = i < valueCount
                             ? computedData[i]
-                            : computedData.Count > 0
+                            : computedData.Length > 0
                                 ? computedData[i % valueCount]
                                 : BuilderTransition.DefaultDuration;
                 }
@@ -202,10 +203,10 @@ namespace Unity.UI.Builder
             }
         }
 
-        static void RefreshTransitionTimingFunction(List<BuilderTransition> transitions, StylePropertyManipulator manipulator, List<EasingFunction> computedData, TransitionChangeType bindings, bool forceInlineValue)
+        static void RefreshTransitionTimingFunction(List<BuilderTransition> transitions, StylePropertyManipulator manipulator, ReadOnlySpan<EasingFunction> computedData, TransitionChangeType bindings, bool forceInlineValue)
         {
             var showInlineValue = null != manipulator.styleProperty && ((bindings & TransitionChangeType.TimingFunction) == 0 || forceInlineValue);
-            var valueCount = showInlineValue ? manipulator.GetValuesCount() : computedData.Count;
+            var valueCount = showInlineValue ? manipulator.GetValuesCount() : computedData.Length;
 
             for (var i = 0; i < transitions.Count; ++i)
             {
@@ -225,7 +226,7 @@ namespace Unity.UI.Builder
                 {
                     transition.timingFunction = i < valueCount
                         ? computedData[i]
-                        : computedData.Count > 0
+                        : computedData.Length > 0
                             ? computedData[i % valueCount]
                             : BuilderTransition.DefaultTimingFunction;
                 }
@@ -234,10 +235,10 @@ namespace Unity.UI.Builder
             }
         }
 
-        static void RefreshTransitionDelay(List<BuilderTransition> transitions, StylePropertyManipulator manipulator, List<TimeValue> computedData, TransitionChangeType bindings, bool forceInlineValue)
+        static void RefreshTransitionDelay(List<BuilderTransition> transitions, StylePropertyManipulator manipulator, ReadOnlySpan<TimeValue> computedData, TransitionChangeType bindings, bool forceInlineValue)
         {
             var showInlineValue = null != manipulator.styleProperty && ((bindings & TransitionChangeType.Delay) == 0 || forceInlineValue);
-            var valueCount = showInlineValue ? manipulator.GetValuesCount() : computedData.Count;
+            var valueCount = showInlineValue ? manipulator.GetValuesCount() : computedData.Length;
 
             for (var i = 0; i < transitions.Count; ++i)
             {
@@ -259,7 +260,7 @@ namespace Unity.UI.Builder
                 {
                     transition.delay = i < valueCount
                         ? computedData[i]
-                        : computedData.Count > 0
+                        : computedData.Length > 0
                             ? computedData[i % valueCount]
                             : BuilderTransition.DefaultDelay;
                 }
@@ -320,37 +321,37 @@ namespace Unity.UI.Builder
             return foldoutField;
         }
 
-        static void UnpackTransitionProperty(StylePropertyManipulator manipulator, List<StylePropertyName> computedData, int maxCount)
+        static void UnpackTransitionProperty(StylePropertyManipulator manipulator, ReadOnlySpan<StylePropertyId> computedData, int maxCount)
         {
             manipulator.ClearValues();
             for (var i = 0; i < maxCount; ++i)
             {
-                if (i < computedData.Count)
-                    manipulator.AddStylePropertyName(computedData[i]);
+                if (i < computedData.Length)
+                    manipulator.AddStylePropertyName(new StylePropertyName(computedData[i]));
                 else
                     manipulator.AddEnumAsString(BuilderTransition.IgnoredProperty);
             }
         }
 
-        static  void UnpackTransitionDurationOrDelay(StylePropertyManipulator manipulator, List<TimeValue> computedData, int maxCount)
+        static  void UnpackTransitionDurationOrDelay(StylePropertyManipulator manipulator, ReadOnlySpan<TimeValue> computedData, int maxCount)
         {
             manipulator.ClearValues();
             for (var i = 0; i < maxCount; ++i)
             {
-                manipulator.AddTimeValue(computedData[i%computedData.Count]);
+                manipulator.AddTimeValue(computedData[i%computedData.Length]);
             }
         }
 
-        static void UnpackTransitionTimingFunction(StylePropertyManipulator manipulator, List<EasingFunction> computedData, int maxCount)
+        static void UnpackTransitionTimingFunction(StylePropertyManipulator manipulator, ReadOnlySpan<EasingFunction> computedData, int maxCount)
         {
             manipulator.ClearValues();
             for (var i = 0; i < maxCount; ++i)
             {
-                manipulator.AddEasingFunction(computedData[i%computedData.Count]);
+                manipulator.AddEasingFunction(computedData[i%computedData.Length]);
             }
         }
 
-        static bool OnTransitionPropertyChanged(StylePropertyManipulator manipulator, List<StylePropertyName> computedData, UIStyleValue<string> property, int index, int maxCount)
+        static bool OnTransitionPropertyChanged(StylePropertyManipulator manipulator, ReadOnlySpan<StylePropertyId> computedData, UIStyleValue<string> property, int index, int maxCount)
         {
             UnpackTransitionProperty(manipulator, computedData, maxCount);
 
@@ -377,7 +378,7 @@ namespace Unity.UI.Builder
             return requiresRefresh;
         }
 
-        static bool OnTransitionTimeValueChanged(StylePropertyManipulator manipulator, List<TimeValue> computedData, UIStyleValue<TimeValue> value, int index, int maxCount)
+        static bool OnTransitionTimeValueChanged(StylePropertyManipulator manipulator, ReadOnlySpan<TimeValue> computedData, UIStyleValue<TimeValue> value, int index, int maxCount)
         {
             UnpackTransitionDurationOrDelay(manipulator, computedData, maxCount);
 
@@ -405,7 +406,7 @@ namespace Unity.UI.Builder
             return requiresRefresh;
         }
 
-        static bool OnTransitionTimingFunctionChanged(StylePropertyManipulator manipulator, List<EasingFunction> computedData, UIStyleValue<EasingFunction> uiValue, int index, int maxCount)
+        static bool OnTransitionTimingFunctionChanged(StylePropertyManipulator manipulator, ReadOnlySpan<EasingFunction> computedData, UIStyleValue<EasingFunction> uiValue, int index, int maxCount)
         {
             UnpackTransitionTimingFunction(manipulator, computedData, maxCount);
 
@@ -436,10 +437,10 @@ namespace Unity.UI.Builder
         {
             Undo.RegisterCompleteObjectUndo(styleSheet, BuilderConstants.ChangeUIStyleValueUndoMessage);
             var foldout = evt.field;
-            var computedData = currentVisualElement.computedStyle.transitionData.Read();
+            ref var computedData = ref currentVisualElement.computedStyle;
             using var setData = GetBuilderTransitionData();
 
-            var maxCount = Mathf.Max(computedData.MaxCount(), setData.MaxCount());
+            var maxCount = Mathf.Max(computedData.TransitionMaxCount(), setData.MaxCount());
 
             var index = evt.index;
             var transition = evt.transition;
@@ -518,13 +519,13 @@ namespace Unity.UI.Builder
         {
             Undo.RegisterCompleteObjectUndo(styleSheet, BuilderConstants.ChangeUIStyleValueUndoMessage);
 
-            var computedData = currentVisualElement.computedStyle.transitionData.Read();
+            ref var computedData = ref currentVisualElement.computedStyle;
             using var setData = GetBuilderTransitionData();
 
             var changeType = setData.GetOverrides();
             if (changeType == TransitionChangeType.None)
                 changeType = TransitionChangeType.All;
-            var maxCount = Mathf.Max(computedData.MaxCount(), setData.MaxCount());
+            var maxCount = Mathf.Max(computedData.TransitionMaxCount(), setData.MaxCount());
 
             if ((changeType & TransitionChangeType.Property) == TransitionChangeType.Property)
             {
@@ -616,10 +617,10 @@ namespace Unity.UI.Builder
         {
             Undo.RegisterCompleteObjectUndo(styleSheet, BuilderConstants.ChangeUIStyleValueUndoMessage);
 
-            var computedData = currentVisualElement.computedStyle.transitionData.Read();
+            ref var computedData = ref currentVisualElement.computedStyle;
             var setData = GetBuilderTransitionData();
 
-            var maxCount = Mathf.Max(computedData.MaxCount(), setData.MaxCount());
+            var maxCount = Mathf.Max(computedData.TransitionMaxCount(), setData.MaxCount());
             var index = evt.index;
 
             var changeType = setData.GetOverrides();

@@ -1401,7 +1401,7 @@ namespace UnityEditor
 
         protected void AddCreateGameObjectItemsToSubSceneMenu(GenericMenu menu, Scene scene)
         {
-            MenuUtils.AddCreateGameObjectItemsToMenu(menu, new UnityEngine.Object[0], false, true, true, scene.handle,
+            MenuUtils.AddCreateGameObjectItemsToMenu(menu, Array.Empty<UnityEngine.Object>(), false, true, true, scene.handle,
                 MenuUtils.ContextMenuOrigin.Subscene, BeforeCreateGameObjectMenuItemWasExecuted, AfterCreateGameObjectMenuItemWasExecuted);
         }
 
@@ -1945,7 +1945,7 @@ namespace UnityEditor
 
         void DeselectAll()
         {
-            var instanceIDs = new EntityId[0];
+            var instanceIDs = Array.Empty<EntityId>();
             treeView.SetSelection(instanceIDs, false);
             TreeViewSelectionChanged(instanceIDs);
         }

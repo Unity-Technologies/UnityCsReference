@@ -135,11 +135,11 @@ namespace UnityEditor.Search
         [FormerlySerializedAs("searchQuery")]
         public string text;
 
-        [Multiline]
+        [TextArea]
         public string description;
         public ICollection<string> providerIds
         {
-            get => viewState?.providerIds ?? new string[0];
+            get => viewState?.providerIds ?? Array.Empty<string>();
             set
             {
                 if (viewState != null)
@@ -434,9 +434,7 @@ namespace UnityEditor.Search
 
         public IEnumerable<string> GetProviderIds()
         {
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            return providerIds ?? Enumerable.Empty<string>();
-#pragma warning restore RS0030
+            return providerIds ?? Array.Empty<string>();
         }
 
         public IEnumerable<string> GetProviderTypes()

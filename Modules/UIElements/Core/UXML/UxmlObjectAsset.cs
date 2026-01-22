@@ -67,6 +67,7 @@ namespace UnityEngine.UIElements
     [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
     internal abstract class UxmlAsset : IUxmlAttributes
     {
+        [Flags]
         enum Flags
         {
             None = 0,
@@ -565,7 +566,7 @@ namespace UnityEngine.UIElements
     }
 
     [Serializable]
-    [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+    [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
     internal class UxmlObjectAsset : UxmlAsset
     {
         public override bool HasParent()

@@ -36,7 +36,7 @@ namespace UnityEditor
             {
                 m_GroupSeparatorTitle = groupTitle;
                 if (s_Empty == null)
-                    s_Empty = new int[0];
+                    s_Empty = System.Array.Empty<int>();
                 m_Owner = owner;
                 Visible = visiblePreference;
             }

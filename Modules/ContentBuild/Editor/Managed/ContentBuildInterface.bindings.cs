@@ -15,7 +15,7 @@ namespace UnityEditor.Build.Content
 {
     ///<summary>Dependency calculation flags to control what is returned, and how it operates.</summary>
     [Flags]
-    [NativeType("Modules/ContentBuild/Editor/Public/ContentDependencyCollector.h")]
+    [NativeHeader("Modules/ContentBuild/Editor/Public/ContentDependencyCollector.h")]
     public enum DependencyType
     {
         ///<summary>Depencency calculation is recursive. For each new valid reference discovered during calculation, the dependencies of those references will also be included in the returned results.</summary>
@@ -33,6 +33,7 @@ namespace UnityEditor.Build.Content
     [NativeHeader("Modules/ContentBuild/Editor/SBPSupport/ContentBuildTypes.h")]
     [NativeHeader("Modules/ContentBuild/Editor/SBPSupport/ContentBuildInterface.bindings.h")]
     [NativeHeader("Modules/ContentBuild/Editor/SBPSupport/ContentBuildInterfaceProfile.h")]
+    [NativeHeader("Modules/ContentBuild/Editor/SBPSupport/TypeTreeExtractionUtilities.h")]
     [NativeHeader("Modules/ContentBuild/Editor/Public/BuildUtilities.h")]
     [NativeHeader("Modules/ContentBuild/Editor/Public/TraceEventProfile.h")]
     [StaticAccessor("BuildPipeline", StaticAccessorType.DoubleColon)]
@@ -324,6 +325,9 @@ namespace UnityEditor.Build.Content
                 throw new ArgumentNullException("parameters.writeCommand");
             if (parameters.referenceMap == null)
                 throw new ArgumentNullException("parameters.referenceMap");
+            if (parameters.settings.buildFlags.HasFlag(ContentBuildFlags.ExtractTypeTree) &&
+                parameters.settings.buildFlags.HasFlag(ContentBuildFlags.DisableWriteTypeTree))
+                throw new ArgumentException("Incompatible ContentBuildFlags - ExtractTypeTree cannot be used with DisableWriteTypeTree.");
 
             return WriteSerializedFile_Internal(outputFolder, parameters.writeCommand, parameters.settings, parameters.globalUsage, parameters.usageSet, parameters.referenceMap, parameters.preloadInfo, parameters.bundleInfo);
         }
@@ -346,6 +350,9 @@ namespace UnityEditor.Build.Content
                 throw new ArgumentNullException("parameters.writeCommand");
             if (parameters.referenceMap == null)
                 throw new ArgumentNullException("parameters.referenceMap");
+            if (parameters.settings.buildFlags.HasFlag(ContentBuildFlags.ExtractTypeTree) &&
+                parameters.settings.buildFlags.HasFlag(ContentBuildFlags.DisableWriteTypeTree))
+                throw new ArgumentException("Incompatible ContentBuildFlags - ExtractTypeTree cannot be used with DisableWriteTypeTree.");
 
             return WriteSceneSerializedFile_Internal(outputFolder, parameters.scenePath, parameters.writeCommand, parameters.settings, parameters.globalUsage, parameters.usageSet, parameters.referenceMap, parameters.preloadInfo, parameters.sceneBundleInfo);
         }
@@ -366,6 +373,9 @@ namespace UnityEditor.Build.Content
                 throw new ArgumentException("String is null or empty.", "outputFolder");
             if (parameters.referenceMap == null)
                 throw new ArgumentNullException("parameters.referenceMap");
+            if (parameters.settings.buildFlags.HasFlag(ContentBuildFlags.ExtractTypeTree) &&
+                parameters.settings.buildFlags.HasFlag(ContentBuildFlags.DisableWriteTypeTree))
+                throw new ArgumentException("Incompatible ContentBuildFlags - ExtractTypeTree cannot be used with DisableWriteTypeTree.");
 
             return WriteGameManagersSerializedFileRaw(outputFolder, parameters.settings, parameters.globalUsage, parameters.referenceMap);
         }
@@ -429,5 +439,44 @@ namespace UnityEditor.Build.Content
         extern internal static bool IsTraceEventProfileCaptureRunning();
         extern internal static int BeginTraceProfileBlock(string name);
         extern internal static void EndTraceProfileBlock(int index);
+
+        /// <summary>
+        /// Combines multiple TypeTree archive files into a single archive.  All duplicated entries are removed.
+        /// </summary>
+        /// <param name="paths">The paths of the files to combine.</param>
+        /// <param name="ouputPath">The path of the combined archive.</param>
+        /// <returns>True if the operations succeeds.</returns>
+        public static extern bool CombineExtractedTypeTreeDataFiles(string[] paths, string ouputPath);
+
+        /// <summary>
+        /// Creates a new TypeTree archive that contains only the hashes and data from the source file that are not in the array of hashes passed in.
+        /// </summary>
+        /// <param name="hashes">The hashes of the data to exclude.</param>
+        /// <param name="srcPath">The path of the source file.</param>
+        /// <param name="ouputPath">The path of new file that will contain the stripped set of TypeTree data.</param>
+        /// <returns>True if the operation was successful.</returns>
+        public static extern bool StripTypeTreeDataFromFile(Hash128[] hashes, string srcPath, string ouputPath);
+
+        /// <summary>
+        /// Loads the content hashes from a TypeTree archive file.
+        /// </summary>
+        /// <param name="srcPath">The path of the TypeTree archive.</param>
+        /// <returns>An array of Hash128 hashes.</returns>
+        public static extern Hash128[] LoadTypeTreeDataHashesFromFile(string srcPath);
+    }
+
+    internal struct ScopeTraceProfileBlock : IDisposable
+    {
+        private readonly int m_Index;
+
+        public ScopeTraceProfileBlock(string name)
+        {
+            m_Index = ContentBuildInterface.BeginTraceProfileBlock(name);
+        }
+
+        public void Dispose()
+        {
+            ContentBuildInterface.EndTraceProfileBlock(m_Index);
+        }
     }
 }

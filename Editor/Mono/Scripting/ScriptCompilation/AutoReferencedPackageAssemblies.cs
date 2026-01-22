@@ -65,9 +65,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
 
             // If none of the automatic references package assemblies are in
             // the project, do not add anything.
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            if (!additionalReferences.Any())
-#pragma warning restore RS0030
+            if (additionalReferences.Count == 0)
             {
                 return;
             }

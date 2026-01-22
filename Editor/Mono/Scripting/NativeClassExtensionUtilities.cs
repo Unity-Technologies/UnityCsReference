@@ -16,7 +16,7 @@ namespace UnityEditor
     {
         public static bool ExtendsANativeType(Type type)
         {
-            return type.GetCustomAttributes(typeof(ExtensionOfNativeClassAttribute), true).Length != 0;
+            return type.IsDefined(typeof(ExtensionOfNativeClassAttribute), true);
         }
 
         public static bool ExtendsANativeType(UnityEngine.Object obj)

@@ -99,9 +99,7 @@ internal abstract class PackageAction
 
     // Temporary disable conditions refer to conditions that are temporary and not related to the state of a package
     // For example, when the network is lost or when there are scripting compiling
-    #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-    protected virtual IEnumerable<DisableCondition> GetAllTemporaryDisableConditions() => Enumerable.Empty<DisableCondition>();
-#pragma warning restore RS0030
+    protected virtual IEnumerable<DisableCondition> GetAllTemporaryDisableConditions() => Array.Empty<DisableCondition>();
     public virtual DisableCondition GetActiveTemporaryDisableCondition()
     {
         #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
@@ -109,9 +107,7 @@ internal abstract class PackageAction
 #pragma warning restore RS0030
     }
 
-    #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-    protected virtual IEnumerable<DisableCondition> GetAllDisableConditions(IPackageVersion version) => Enumerable.Empty<DisableCondition>();
-#pragma warning restore RS0030
+    protected virtual IEnumerable<DisableCondition> GetAllDisableConditions(IPackageVersion version) => Array.Empty<DisableCondition>();
 
     public virtual DisableCondition GetActiveDisableCondition(IPackageVersion version)
     {

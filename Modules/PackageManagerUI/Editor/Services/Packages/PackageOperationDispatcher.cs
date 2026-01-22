@@ -91,15 +91,16 @@ namespace UnityEditor.PackageManager.UI.Internal
             if (version == null || version.isInstalled)
                 return false;
 
-            m_UpmClient.AddById(version.packageId);
+            // When there is an IPackageVersion, we know for sure that the packageId is in the PackageDatabase
+            m_UpmClient.AddById(version.packageId, false);
             return true;
         }
 
         public bool Install(IEnumerable<IPackageVersion> versions)
         {
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable RS0031 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             if (versions == null || !versions.Any())
-#pragma warning restore RS0030
+#pragma warning restore RS0031
                 return false;
 
             #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
@@ -115,7 +116,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 Debug.LogWarning(InstallOrRemoveInProgressWarningMessage(packageId));
                 return false;
             }
-            m_UpmClient.AddById(packageId);
+            m_UpmClient.AddById(packageId, true);
             return true;
         }
 
@@ -160,14 +161,14 @@ namespace UnityEditor.PackageManager.UI.Internal
         public void InstallAndResetDependencies(IPackageVersion version, IEnumerable<IPackage> dependenciesToReset)
         {
             #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            m_UpmClient.AddAndResetDependencies(version.packageId, dependenciesToReset?.Select(package => package.name) ?? Enumerable.Empty<string>());
+            m_UpmClient.AddAndResetDependencies(version.packageId, dependenciesToReset?.Select(package => package.name) ?? Array.Empty<string>());
 #pragma warning restore RS0030
         }
 
         public void ResetDependencies(IPackageVersion version, IEnumerable<IPackage> dependenciesToReset)
         {
             #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            m_UpmClient.ResetDependencies(version.packageId, dependenciesToReset?.Select(package => package.name) ?? Enumerable.Empty<string>());
+            m_UpmClient.ResetDependencies(version.packageId, dependenciesToReset?.Select(package => package.name) ?? Array.Empty<string>());
 #pragma warning restore RS0030
         }
 

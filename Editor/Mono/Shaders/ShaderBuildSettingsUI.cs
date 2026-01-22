@@ -13,7 +13,7 @@ namespace UnityEditor.Shaders
     internal class ShaderBuildSettingsUI
     {
         private List<ShaderBuildSettings.KeywordDeclarationOverride> m_KeywordDeclarationOverrides = new();
-        private bool[] m_LoadedItemInitialized = {};
+        private bool[] m_LoadedItemInitialized = Array.Empty<bool>();
         private SerializedObject m_SettingsDataStore = null;
         private SerializedProperty m_SettingsProperty = null;
         private bool m_IsTargetingBuildProfile = false;

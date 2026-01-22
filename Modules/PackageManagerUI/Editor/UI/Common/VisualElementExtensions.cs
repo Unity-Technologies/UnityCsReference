@@ -35,17 +35,5 @@ namespace UnityEditor.PackageManager.UI.Internal
             else
                 element.AddToClassList(classnameB);
         }
-
-        /// <summary>
-        /// Utility method to add multiple classes at once
-        /// </summary>
-        /// <param name="element">Extension element</param>
-        /// <param name="classnames">Space-separated list of classes to add</param>
-        public static void AddClasses(this VisualElement element, string classnames)
-        {
-            if (!string.IsNullOrEmpty(classnames))
-                foreach (var classname in classnames.Split(' '))
-                    element.AddToClassList(classname);
-        }
     }
 }

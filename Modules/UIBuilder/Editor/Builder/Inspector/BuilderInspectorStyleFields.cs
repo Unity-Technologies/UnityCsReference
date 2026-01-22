@@ -1910,20 +1910,20 @@ namespace Unity.UI.Builder
                     && StylePropertyUtil.propertyNameToStylePropertyId.TryGetValue(styleName, out var id)
                     && id.IsTransitionId())
                 {
-                    var transitionData = m_Inspector.currentVisualElement.computedStyle.transitionData.Read();
+                    ref var computedStyle = ref m_Inspector.currentVisualElement.computedStyle;
                     switch (id)
                     {
                         case StylePropertyId.TransitionProperty:
-                            UnpackTransitionProperty(manipulator, transitionData.transitionProperty, transitionData.MaxCount());
+                            UnpackTransitionProperty(manipulator, computedStyle.transitionProperty, computedStyle.TransitionMaxCount());
                             break;
                         case StylePropertyId.TransitionDuration:
-                            UnpackTransitionDurationOrDelay(manipulator, transitionData.transitionDuration, transitionData.MaxCount());
+                            UnpackTransitionDurationOrDelay(manipulator, computedStyle.transitionDuration, computedStyle.TransitionMaxCount());
                             break;
                         case StylePropertyId.TransitionTimingFunction:
-                            UnpackTransitionTimingFunction(manipulator, transitionData.transitionTimingFunction, transitionData.MaxCount());
+                            UnpackTransitionTimingFunction(manipulator, computedStyle.transitionTimingFunction, computedStyle.TransitionMaxCount());
                             break;
                         case StylePropertyId.TransitionDelay:
-                            UnpackTransitionDurationOrDelay(manipulator, transitionData.transitionDelay, transitionData.MaxCount());
+                            UnpackTransitionDurationOrDelay(manipulator, computedStyle.transitionDelay, computedStyle.TransitionMaxCount());
                             break;
                     }
                     manipulator.SetVariableAtIndex(index, newValue);
@@ -1938,15 +1938,15 @@ namespace Unity.UI.Builder
 
                 if (styleName != "transition-property" && null != GetLastStyleProperty(currentRule, "transition-property"))
                 {
-                    var transitionData = currentVisualElement.computedStyle.transitionData.Read();
+                    ref var transitionData = ref currentVisualElement.computedStyle;
                     using var propertyManipulator = GetStylePropertyManipulator("transition-property");
                     if (null == manipulator.styleProperty)
                     {
                         manipulator.ClearValues();
                         foreach (var value in transitionData.transitionProperty)
                         {
-                            if (value.id != StylePropertyId.Unknown)
-                                manipulator.AddStylePropertyName(value);
+                            if (value != StylePropertyId.Unknown)
+                                manipulator.AddStylePropertyName(new StylePropertyName(value));
                             else
                                 manipulator.AddEnumAsString("ignored");
                         }

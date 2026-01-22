@@ -131,8 +131,8 @@ namespace UnityEngine.UIElements
 
             generateVisualContent += OnGenerateVisualContent;
             edition.GetDefaultValueType = GetDefaultValueType;
-
         }
+
         string GetDefaultValueType() { return string.Empty; }
 
         /// <summary>
@@ -607,6 +607,12 @@ namespace UnityEngine.UIElements
         {
             IncrementVersion(VersionChangeType.Repaint | VersionChangeType.Layout);
             uitkTextHandle.SetDirty();
+        }
+
+        internal FontAsset cachedFontAsset { get; private set; }
+        internal void RefreshCachedFontAsset()
+        {
+            cachedFontAsset = TextUtilities.GetFontAssetFromStyle_MainThreadOnly(this);
         }
     }
 }

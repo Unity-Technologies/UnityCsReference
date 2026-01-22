@@ -7,6 +7,7 @@ using System.Reflection;
 using UnityEditor;
 using UnityEditor.U2D;
 using UnityEngine;
+using UnityEngine.Experimental.Rendering;
 using UnityEngine.U2D;
 using Debug = UnityEngine.Debug;
 using Object = UnityEngine.Object;
@@ -394,17 +395,22 @@ namespace Unity.ProjectAuditor.Editor.Utils
         /// Get the percent of empty space not used in a Texture2D
         /// </summary>
         /// <param name="texture2D">The Texture2D to check.</param>
-        /// <returns>The percent of empty space.</returns>
-        public static float GetEmptyPixelsPercent(Texture2D texture2D)
+        /// <param name="outPercent">The percentage of empty space.</param>
+        /// <param name="outBytes">The empty space in bytes.</param>
+        public static void GetEmptyPixelsPercent(Texture2D texture2D, out float outPercent, out ulong outBytes)
         {
+            outPercent = -1;
+            outBytes = 0;
+
             if (texture2D == null)
-                return -1;
+                return;
 
             Color32[] pixels;
 
             if (texture2D.width == 0 || texture2D.height == 0)
             {
-                return 0;
+                outPercent = 0;
+                return;
             }
 
             if (texture2D.isReadable)
@@ -417,7 +423,7 @@ namespace Unity.ProjectAuditor.Editor.Utils
                 if (copyTexture == null)
                 {
                     Debug.LogWarning($"Could not copy {texture2D.name}");
-                    return -1;
+                    return;
                 }
 
                 try
@@ -431,7 +437,7 @@ namespace Unity.ProjectAuditor.Editor.Utils
                     //Release texture from Memory
                     Object.DestroyImmediate(copyTexture);
 
-                    return -1;
+                    return;
                 }
 
                 //Release texture from Memory
@@ -442,7 +448,7 @@ namespace Unity.ProjectAuditor.Editor.Utils
             if (pixels == null)
             {
                 Debug.LogWarning($"Could not read {texture2D.name}");
-                return -1;
+                return;
             }
 
             // It is unlikely, but possible that we got this far and there are no pixels.
@@ -450,7 +456,8 @@ namespace Unity.ProjectAuditor.Editor.Utils
             if (pixelCount == 0)
             {
                 Debug.LogWarning($"No pixels in {texture2D.name}");
-                return 0;
+                outPercent = 0;
+                return;
             }
 
             int transparencyPixelsCount = 0;
@@ -463,8 +470,9 @@ namespace Unity.ProjectAuditor.Editor.Utils
                 }
             }
 
-            var percent = (float)transparencyPixelsCount / (float)pixelCount;
-            return Mathf.Round(percent * 100);
+            var percent = (float)transparencyPixelsCount / pixelCount;
+            outPercent = Mathf.Round(percent * 100);
+            outBytes = (ulong)(transparencyPixelsCount * GetBytesPerPixel(texture2D));
         }
 
         static Texture2D CopyTexture(Texture2D texture)
@@ -564,6 +572,20 @@ namespace Unity.ProjectAuditor.Editor.Utils
             }
 
             return localFormat;
+        }
+
+        static float GetBytesPerPixel(Texture2D tex)
+        {
+            // Calculate the total size of the texture in bytes, including mipmaps
+            long totalBytes = GraphicsFormatUtility.ComputeMipChainSize(
+                tex.width,
+                tex.height,
+                tex.graphicsFormat,
+                tex.mipmapCount
+            );
+
+            // Divide by total pixels to get bytes per pixel
+            return (float)totalBytes / (tex.width * tex.height);
         }
 
         public static int GetTextureDepth(Texture texture)

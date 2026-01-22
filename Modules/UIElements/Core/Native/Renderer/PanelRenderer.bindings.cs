@@ -15,10 +15,13 @@ namespace UnityEngine.UIElements
     /// <summary>
     /// Defines a component that connects <see cref="VisualElement"/> to <see cref="GameObject"/>.
     /// </summary>
-    [NativeType(Header = "Modules/UIElements/Core/Native/Renderer/PanelRenderer.h")]
+    [NativeHeader("Modules/UIElements/Core/Native/Renderer/PanelRenderer.h")]
     public sealed class PanelRenderer : Renderer, IPanelComponent
     {
         #region Fields
+
+        internal static Func<IPanelComponent, ILiveReloadAssetTracker<VisualTreeAsset>> CreateLiveReloadVisualTreeAssetTracker;
+        ILiveReloadAssetTracker<VisualTreeAsset> m_LiveReloadVisualTreeAssetTracker;
 
         /// <summary>
         /// Specifies the PanelSettings instance to connect this PanelRenderer component to.
@@ -45,6 +48,9 @@ namespace UnityEngine.UIElements
             {
                 if (nativePanelSettings != value)
                 {
+                    if (nativePanelSettings != null)
+                        RemoveVisualTreeAssetTracker();
+
                     nativePanelSettings = value;
                     isAssetDirty = true;
 
@@ -76,7 +82,7 @@ namespace UnityEngine.UIElements
         internal PanelRendererRootElement rootVisualElement
         {
             get => m_RootVisualElement;
-            set { m_RootVisualElement = value; }
+            set => m_RootVisualElement = value;
         }
 
         VisualElementReferenceProvider m_ReferenceProvider;
@@ -84,6 +90,7 @@ namespace UnityEngine.UIElements
         /// <summary>
         /// The VisualElementReferenceProvider used to resolve <see cref="VisualElementReference"/> instances.
         /// </summary>
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
         internal VisualElementReferenceProvider referenceProvider
         {
             get
@@ -356,7 +363,10 @@ namespace UnityEngine.UIElements
         void OnPanelRendererDeactivated()
         {
             if (rootVisualElement != null)
+            {
+                RemoveVisualTreeAssetTracker();
                 RemoveFromHierarchy();
+            }
 
             UIElementsRuntimeUtility.RemovePanelRenderer(this);
         }
@@ -398,7 +408,10 @@ namespace UnityEngine.UIElements
             if (visualTreeAssetChanged || rootVisualElement == null)
             {
                 if (rootVisualElement != null)
+                {
+                    RemoveVisualTreeAssetTracker();
                     referenceProvider.UnloadReferences();
+                }
 
                 if (visualTreeAsset == null)
                 {
@@ -414,14 +427,21 @@ namespace UnityEngine.UIElements
                     referenceProvider.ResolveReferences(referenceTable);
                 }
 
+                SetupFromHierarchy();
+
+                SetupVisualTreeAssetTracker();
+
                 requiresReinsertion = true;
 
                 m_OnUIReloadCallback?.Invoke(this, rootVisualElement);
             }
+            else
+            {
+                SetupFromHierarchy();
+            }
 
             firstChildInsertIndex = rootVisualElement.hierarchy.childCount;
 
-            SetupFromHierarchy();
             SetupRootClassList();
         }
 
@@ -507,6 +527,36 @@ namespace UnityEngine.UIElements
             // if we're part of the content-container or not.
             requiresReinsertion = true;
         }
+
+        void SetupVisualTreeAssetTracker()
+        {
+            if (rootVisualElement == null || panelSettings == null)
+                return;
+
+            m_LiveReloadVisualTreeAssetTracker ??= CreateLiveReloadVisualTreeAssetTracker?.Invoke(this);
+
+            panelSettings.panel.liveReloadSystem.RegisterVisualTreeAssetTracker(m_LiveReloadVisualTreeAssetTracker, m_RootVisualElement);
+        }
+
+        void RemoveVisualTreeAssetTracker()
+        {
+            if (rootVisualElement == null || panelSettings?.isInitialized != true)
+                return;
+
+            panelSettings.panel.liveReloadSystem.UnregisterVisualTreeAssetTracker(rootVisualElement);
+        }
+
+        void IPanelComponent.HandleLiveReload()
+        {
+            if (rootVisualElement == null)
+                return;
+
+            InitRootVisualElement(true);
+            AddRootVisualElementToTree();
+        }
+
+        void IPanelComponent.OnLiveReloadOptionChanged() => ((IPanelComponent)this).HandleLiveReload();
+
         #endregion
 
         #region Update

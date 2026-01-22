@@ -22,7 +22,7 @@ namespace Unity.UIElements.Editor
         }
 
         static void UpdateUIDocument(UIDocument doc) => doc.ReactToHierarchyChanged();
-        static void UpdateUIDocument(PanelRenderer pr) => pr.RefreshAssets();
+        static void UpdatePanelRenderer(PanelRenderer pr) => pr.RefreshAssets();
 
         static void OnHierarchyChanged()
         {
@@ -34,7 +34,7 @@ namespace Unity.UIElements.Editor
             }
 
             bool updatedUIDocuments = UpdatePanelComponents<UIDocument>(ref previousUIDocumentCount, UpdateUIDocument);
-            bool updatedRenderers = UpdatePanelComponents<PanelRenderer>(ref previousPanelRendererCount, UpdateUIDocument);
+            bool updatedRenderers = UpdatePanelComponents<PanelRenderer>(ref previousPanelRendererCount, UpdatePanelRenderer);
 
             if (updatedUIDocuments || updatedRenderers)
                 EditorApplication.QueuePlayerLoopUpdate();

@@ -12,7 +12,7 @@ using UnityEngine.Scripting;
 namespace UnityEditor.VFX
 {
     [RequiredByNativeCode]
-    [NativeType(Header = "Modules/VFX/Public/VFXExpressionMeshFunctions.h")]
+    [NativeHeader("Modules/VFX/Public/VFXExpressionMeshFunctions.h")]
     [StaticAccessor("VFXExpressionMeshFunctions", StaticAccessorType.DoubleColon)]
     internal class VFXExpressionMesh
     {

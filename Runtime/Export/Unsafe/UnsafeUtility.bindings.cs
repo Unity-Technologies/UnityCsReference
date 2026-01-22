@@ -61,7 +61,7 @@ namespace Unity.Collections.LowLevel.Unsafe
         [ThreadSafe]
         unsafe public static extern void ReleaseGCObject(ulong gcHandle);
 
-        [ThreadSafe(ThrowsException = true)]
+        [ThreadSafe, NativeThrows]
         unsafe public static extern void CopyObjectAddressToPtr(object target, void* dstPtr);
 
         public static unsafe bool IsBlittable<T>() where T : struct
@@ -69,26 +69,26 @@ namespace Unity.Collections.LowLevel.Unsafe
             return IsBlittable(typeof(T));
         }
 
-        [ThreadSafe(ThrowsException = false)]
+        [ThreadSafe]
         public static extern int CheckForLeaks();
 
-        [ThreadSafe(ThrowsException = false)]
+        [ThreadSafe]
         public static extern int ForgiveLeaks();
 
-        [ThreadSafe(ThrowsException = false)]
+        [ThreadSafe]
         [BurstAuthorizedExternalMethod]
         public static extern NativeLeakDetectionMode GetLeakDetectionMode();
 
-        [ThreadSafe(ThrowsException = false)]
+        [ThreadSafe]
         [BurstAuthorizedExternalMethod]
         public static extern void SetLeakDetectionMode(NativeLeakDetectionMode value);
 
-        [ThreadSafe(ThrowsException = false)]
+        [ThreadSafe]
         [BurstAuthorizedExternalMethod]
         [VisibleToOtherModules("UnityEngine.AIModule")]
         unsafe internal static extern int LeakRecord(IntPtr handle, LeakCategory category, int callstacksToSkip);
 
-        [ThreadSafe(ThrowsException = false)]
+        [ThreadSafe]
         [BurstAuthorizedExternalMethod]
         [VisibleToOtherModules("UnityEngine.AIModule")]
         unsafe internal static extern int LeakErase(IntPtr handle, LeakCategory category);
@@ -105,10 +105,10 @@ namespace Unity.Collections.LowLevel.Unsafe
             return MallocTracked(size, alignment, label.allocator, callstacksToSkip + 1, label.pointer);
         }
 
-        [ThreadSafe(ThrowsException = true)]
+        [ThreadSafe, NativeThrows]
         unsafe internal static extern void* MallocTracked(long size, int alignment, Allocator allocator, int callstacksToSkip, IntPtr label);
 
-        [ThreadSafe(ThrowsException = true)]
+        [ThreadSafe, NativeThrows]
         unsafe public static extern void FreeTracked(void* memory, Allocator allocator);
 
         unsafe public static void FreeTracked(void* memory, MemoryLabel label)
@@ -127,10 +127,10 @@ namespace Unity.Collections.LowLevel.Unsafe
             return Malloc(size, alignment, label.allocator, label.pointer);
         }
 
-        [ThreadSafe(ThrowsException = true)]
+        [ThreadSafe, NativeThrows]
         unsafe static extern void* Malloc(long size, int alignment, Allocator allocator, IntPtr label);
 
-        [ThreadSafe(ThrowsException = true)]
+        [ThreadSafe, NativeThrows]
         unsafe public static extern void Free(void* memory, Allocator allocator);
 
         unsafe public static void Free(void* memory, MemoryLabel label)
@@ -142,22 +142,22 @@ namespace Unity.Collections.LowLevel.Unsafe
         public static bool IsValidAllocator(Allocator allocator) { return allocator > Allocator.None; }
 
 
-        [ThreadSafe(ThrowsException = true)]
+        [ThreadSafe, NativeThrows]
         unsafe public static extern void MemCpy(void* destination, void* source, long size);
 
-        [ThreadSafe(ThrowsException = true)]
+        [ThreadSafe, NativeThrows]
         unsafe public static extern void MemCpyReplicate(void* destination, void* source, int size, int count);
 
-        [ThreadSafe(ThrowsException = true)]
+        [ThreadSafe, NativeThrows]
         unsafe public static extern void MemCpyStride(void* destination, int destinationStride, void* source, int sourceStride, int elementSize, int count);
 
-        [ThreadSafe(ThrowsException = true)]
+        [ThreadSafe, NativeThrows]
         unsafe public static extern void MemMove(void* destination, void* source, long size);
 
-        [ThreadSafe(ThrowsException = true)]
+        [ThreadSafe, NativeThrows]
         unsafe public static extern void MemSwap(void* ptr1, void* ptr2, long size);
 
-        [ThreadSafe(ThrowsException = true)]
+        [ThreadSafe, NativeThrows]
         unsafe public static extern void MemSet(void* destination, byte value, long size);
 
         unsafe public static void MemClear(void* destination, long size)
@@ -165,7 +165,7 @@ namespace Unity.Collections.LowLevel.Unsafe
             MemSet(destination, 0, size);
         }
 
-        [ThreadSafe(ThrowsException = true)]
+        [ThreadSafe, NativeThrows]
         unsafe public static extern int MemCmp(void* ptr1, void* ptr2, long size);
 
         [ThreadSafe]

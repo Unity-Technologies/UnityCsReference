@@ -488,9 +488,9 @@ namespace UnityEditor.Search.Providers
 
             yield return new SearchProposition(category: "Filters", label: "Directory (Name)", replacement: "dir:\"folder name\"", help:"Assets in a specific folder",icon: Icons.quicksearch, color: QueryColors.filter);
             yield return new SearchProposition(category: "Filters", label: "File Size", replacement: "size>=8096", help: "Assets with a specific size in bytes", icon: Icons.quicksearch, color: QueryColors.filter);
-            yield return new SearchProposition(category: "Filters", label: "File Extension", replacement: "ext:png", help:"Assets with a specific extension", icon: Icons.quicksearch, color: QueryColors.filter);
+            yield return new SearchProposition(category: "Filters", label: "File Extension", replacement: "ext=png", help:"Assets with a specific extension", icon: Icons.quicksearch, color: QueryColors.filter);
             yield return new SearchProposition(category: "Filters", label: "Age", replacement: "age>=1.5", help: "In days, when was the file last modified?", icon: Icons.quicksearch, color: QueryColors.filter);
-            yield return new SearchProposition(category: "Filters", label: "Sub Asset", replacement: "is:subasset", help: "Yield nested assets (i.e. media from FBX files)", icon: Icons.quicksearch, color: QueryColors.filter);
+            yield return new SearchProposition(category: "Filters", label: "Sub Asset", replacement: "is=subasset", help: "Yield nested assets (i.e. media from FBX files)", icon: Icons.quicksearch, color: QueryColors.filter);
             yield return new SearchProposition(category: "Filters", label: "Name", replacement: "name=", help: "Search asset by object name", icon: Icons.quicksearch, color: QueryColors.filter);
 
             var sceneIcon = Utils.LoadIcon("SceneAsset Icon");
@@ -513,10 +513,17 @@ namespace UnityEditor.Search.Providers
             }
 
             yield return new SearchProposition(
-                category: "Area (Index)",
-                label: db.name,
-                replacement: $"a:{db.name}",
-                help: $"Search assets index by {db.name}.index",
+                category: "Area",
+                label: "Assets",
+                replacement: $"a=assets",
+                help: $"Search assets in projects",
+                color: QueryColors.type,
+                icon: Icons.quicksearch);
+            yield return new SearchProposition(
+                category: "Area",
+                label: "Packages",
+                replacement: $"a=packages",
+                help: $"Search assets in packages",
                 color: QueryColors.type,
                 icon: Icons.quicksearch);
             foreach (var prop in s_KeywordPropositions)
@@ -899,7 +906,19 @@ namespace UnityEditor.Search.Providers
                     enabled = (items) => CanAddScene(items),
                     handler = (item) => SceneManagement.EditorSceneManager.OpenScene(GetAssetPath(item), SceneManagement.OpenSceneMode.Additive)
                 },
-                new SearchAction(type, "reveal", null, Utils.GetRevealInFinderLabel(), item => EditorUtility.RevealInFinder(GetAssetPath(item))),
+                new SearchAction(type, "reveal", null, Utils.GetRevealInFinderLabel(), item =>
+                {
+                    var assetPath = GetAssetPath(item);
+                    if (string.IsNullOrEmpty(assetPath))
+                        return;
+
+                    // Reveal opens an explorer/finder window. However, on macOS especially, if KeepOpen is set to false and the SearchWindow
+                    // closes after the reveal, Unity will take the focus back, and it will seem like nothing happened. Therefore, we enqueue
+                    // the reveal to happen after the window closes. We chose 100ms as a reasonable delay to ensure the window is closed, as even 50ms
+                    // proved to be finicky (sometimes working sometimes not). We cannot use any API to detect when the window is closed because we don't
+                    // know if it's going to be closed or not, so a delay is the only viable solution for now.
+                    Dispatcher.Enqueue(() => EditorUtility.RevealInFinder(assetPath), 0.1);
+                }),
                 new SearchAction(type, "delete", null, "Delete", DeleteAssets),
                 new SearchAction(type, "copy_path", null, "Copy Path")
                 {

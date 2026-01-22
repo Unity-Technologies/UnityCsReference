@@ -79,5 +79,29 @@ namespace UnityEditor.Scripting.ScriptCompilation.MsBuild
         {
             return Instance.HaveScriptsForEditorBeenCompiledSinceLastDomainReload();
         }
+
+        [RequiredByNativeCode]
+        public static void SetAllCustomScriptAssemblyReferenceJsonsMsBuild(string[] allAssemblyReferenceJsons, string[] allAssemblyReferenceJsonContents)
+        {
+            Instance.SetAllCustomScriptAssemblyReferenceJsonsContents(allAssemblyReferenceJsons, allAssemblyReferenceJsonContents);
+        }
+
+        [RequiredByNativeCode]
+        public static void SetAllCustomScriptAssemblyJsonContentsMsBuild(string[] allAssemblyJsonPaths, string[] allAssemblyJsonContents, string[] guids)
+        {
+            Instance.SetAllCustomScriptAssemblyJsonContents(allAssemblyJsonPaths, allAssemblyJsonContents, guids);
+        }
+
+        [RequiredByNativeCode]
+        public static void ClearCustomScriptAssembliesMsBuild()
+        {
+            Instance.ClearCustomScriptAssemblies();
+        }
+
+        [RequiredByNativeCode]
+        public static void SetAllScriptsMsBuild(string[] allScripts)
+        {
+            Instance.SetAllScripts(allScripts);
+        }
     }
 }

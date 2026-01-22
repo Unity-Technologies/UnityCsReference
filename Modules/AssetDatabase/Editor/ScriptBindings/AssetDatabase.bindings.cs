@@ -1398,21 +1398,11 @@ namespace UnityEditor
         [PreventExecutionInState(AssetDatabasePreventExecution.kCodeReload, PreventExecutionSeverity.PreventExecution_ManagedException, kPreventExecutionDuringCodeReloadHowToFixMsg)]
         private extern static int DeleteAllNonPrimaryArtifacts_ImportAddress(ReadOnlySpan<ArtifactKey> artifactKeys, bool deleteUnusedContentFiles);
 
-        // Binding only created for testing
-        [FreeFunction("AssetDatabase::DeleteUnusedContentFiles")]
-        [PreventExecutionInState(AssetDatabasePreventExecution.kCodeReload, PreventExecutionSeverity.PreventExecution_ManagedException, kPreventExecutionDuringCodeReloadHowToFixMsg)]
-        internal extern static void TestOnlyDeleteUnusedContentFiles();
-
         internal enum ImportWorkerModeFlags
         {
             kNoFlags                        = 0,
             kProfile                        = 1 << 0,
             kSafeMode                       = 1 << 1,
-            // TODO: The subsequent four flags should be synched diagnostic switches
-            kSafeModeLogging                = 1 << 2,
-            kLogChainedImportStacktrace     = 1 << 3,
-            kLogForwardAllWorkerEditorLogs  = 1 << 4,
-            kLogImportRegistry              = 1 << 5,
         };
 
         // Import Worker Mode binding is just for testing

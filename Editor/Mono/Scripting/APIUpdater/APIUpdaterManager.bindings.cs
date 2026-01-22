@@ -317,9 +317,9 @@ namespace UnityEditorInternal.APIUpdating
 #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var noUpdatesRequiredAssemblies = tasks.Where(t => t.Result == APIUpdaterAssemblyHelper.Success); // Assemblies checked which does not requires updates.
 #pragma warning restore RS0030
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable RS0031 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             if (noUpdatesRequiredAssemblies.Any())
-#pragma warning restore RS0030
+#pragma warning restore RS0031
             {
                 APIUpdaterLogger.WriteToFile("Assemblies not requiring updates:");
                 foreach (var noUpdateRequired in noUpdatesRequiredAssemblies)
@@ -331,9 +331,9 @@ namespace UnityEditorInternal.APIUpdating
 #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var succeededUpdates = tasks.Where(t => t.Result == APIUpdaterAssemblyHelper.UpdatesApplied);
 #pragma warning restore RS0030
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable RS0031 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             if (!succeededUpdates.Any())
-#pragma warning restore RS0030
+#pragma warning restore RS0031
             {
                 assembliesToUpdate.Clear();
                 return 0;
@@ -375,9 +375,7 @@ namespace UnityEditorInternal.APIUpdating
 #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 var assembliesInAssetsFolder = assemblyPathsToCheck.Where(path => path.IndexOf("Assets/", StringComparison.OrdinalIgnoreCase) != -1).ToArray();
 #pragma warning restore RS0030
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                if (!assembliesInAssetsFolder.Any())
-#pragma warning restore RS0030
+                if (assembliesInAssetsFolder.Length == 0)
                     return true;
 
                 if (!WaitForVCSServerConnection())
@@ -584,9 +582,9 @@ namespace UnityEditorInternal.APIUpdating
 #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 var referencedAssembliesWithUpdaterConfigs = depInfo.Dependencies.Where(a => (depGraph.FindAssembly(a.Name)?.Status & AssemblyStatus.PublishesUpdaterConfigurations) == AssemblyStatus.PublishesUpdaterConfigurations);
 #pragma warning restore RS0030
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable RS0031 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 if (referencedAssembliesWithUpdaterConfigs.Any())
-#pragma warning restore RS0030
+#pragma warning restore RS0031
                 {
                     IEnumerable<string> updateConfigSources = ResolvePathOfAssembliesWithUpdaterConfigurations(referencedAssembliesWithUpdaterConfigs);
                     candidates.Add(new AssemblyUpdateCandidate
@@ -797,9 +795,9 @@ namespace UnityEditorInternal.APIUpdating
 
         public bool MayRequireUpdating
         {
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable RS0031 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             get { return UpdateConfigSources.Any(); }
-#pragma warning restore RS0030
+#pragma warning restore RS0031
         }
 
         public static implicit operator bool(AssemblyUpdateCandidate a)

@@ -765,7 +765,7 @@ namespace UnityEngine.UIElements.UIR
 
                 SetColorValues(renderTreeManager, renderData.owner);
 
-                if (renderData.owner is TextElement && !RenderEvents.UpdateTextCoreSettings(renderTreeManager, renderData.owner))
+                if (renderData.owner is TextElement te && !RenderEvents.UpdateTextCoreSettings(renderTreeManager, te))
                     shouldUpdateVisuals = true;
             }
             else
@@ -857,22 +857,22 @@ namespace UnityEngine.UIElements.UIR
             }
         }
 
-        public static bool UpdateTextCoreSettings(RenderTreeManager renderTreeManager, VisualElement ve)
+        public static bool UpdateTextCoreSettings(RenderTreeManager renderTreeManager, TextElement te)
         {
-            if (ve == null || !TextUtilities.IsFontAssigned(ve))
+            if (te == null || !TextUtilities.IsFontAssigned(te))
                 return false;
 
-            var renderData = ve.nestedRenderData ?? ve.renderData;
+            var renderData = te.nestedRenderData ?? te.renderData;
 
             bool allocatesID = RenderData.AllocatesID(renderData.textCoreSettingsID);
 
-            var settings = TextUtilities.GetTextCoreSettingsForElement(ve, false);
+            var settings = TextUtilities.GetTextCoreSettingsForElement(te, false);
 
             // If we aren't using a color ID (the DynamicColor flag), the text color will be stored in the vertex data,
             // so there's no need for a color match with the default TextCore settings.
-            bool useDefaultColor = !NeedsColorID(ve);
+            bool useDefaultColor = !NeedsColorID(te);
 
-            if (useDefaultColor && !NeedsTextCoreSettings(ve) && !allocatesID)
+            if (useDefaultColor && !NeedsTextCoreSettings(te) && !allocatesID)
             {
                 // Use default TextCore settings
                 renderData.textCoreSettingsID = UIRVEShaderInfoAllocator.defaultTextCoreSettings;
@@ -884,9 +884,9 @@ namespace UnityEngine.UIElements.UIR
 
             if (RenderData.AllocatesID(renderData.textCoreSettingsID))
             {
-                if (ve.panel.contextType == ContextType.Editor)
+                if (te.panel.contextType == ContextType.Editor)
                 {
-                    var playModeTintColor = ve.playModeTintColor;
+                    var playModeTintColor = te.playModeTintColor;
                     settings.faceColor *= playModeTintColor;
                     settings.outlineColor *= playModeTintColor;
                     settings.underlayColor *= playModeTintColor;
@@ -1075,10 +1075,10 @@ namespace UnityEngine.UIElements.UIR
             return (ve.renderHints & RenderHints.DynamicColor) == RenderHints.DynamicColor;
         }
 
-        internal static bool NeedsTextCoreSettings(VisualElement ve)
+        internal static bool NeedsTextCoreSettings(TextElement te)
         {
             // We may require a color ID when using non-trivial TextCore settings.
-            var settings = TextUtilities.GetTextCoreSettingsForElement(ve, true);
+            var settings = TextUtilities.GetTextCoreSettingsForElement(te, true);
             if (settings.outlineWidth != 0.0f || settings.underlayOffset != Vector2.zero || settings.underlaySoftness != 0.0f)
                 return true;
 

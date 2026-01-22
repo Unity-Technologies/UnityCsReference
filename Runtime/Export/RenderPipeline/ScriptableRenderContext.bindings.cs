@@ -11,7 +11,7 @@ using System.Runtime.InteropServices;
 
 namespace UnityEngine.Rendering
 {
-    [NativeType("Runtime/Graphics/ScriptableRenderLoop/ScriptableRenderContext.h")]
+    [NativeHeader("Runtime/Graphics/ScriptableRenderLoop/ScriptableRenderContext.h")]
     [NativeHeader("Runtime/Graphics/ScriptableRenderLoop/ScriptableDrawRenderersUtility.h")]
     [NativeHeader("Runtime/Export/RenderPipeline/ScriptableRenderContext.bindings.h")]
     [NativeHeader("Runtime/Export/RenderPipeline/ScriptableRenderPipeline.bindings.h")]

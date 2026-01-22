@@ -15,39 +15,45 @@ internal readonly record struct AddElementCommand
     const string CommandUndoName = "Add element";
 
     readonly Type ElementType;
-    readonly UIDocument UIDocument;
+    readonly VisualTreeAsset VisualTreeAsset;
+    readonly VisualElementAsset ParentVea;
+    readonly int Index;
 
-    public AddElementCommand(Type elementType, UIDocument uiDocument)
+    public AddElementCommand(
+        Type elementType,
+        VisualTreeAsset visualTreeAsset,
+        VisualElementAsset parentVea,
+        int index = -1)
     {
         ElementType = elementType;
-        UIDocument = uiDocument;
+        VisualTreeAsset = visualTreeAsset;
+        ParentVea = parentVea ?? visualTreeAsset.visualTree;
+        Index = index;
     }
 
     public void Execute()
     {
         Assert.IsNotNull(ElementType);
-        Assert.IsNotNull(UIDocument);
-        Assert.IsNotNull(UIDocument.visualTreeAsset);
+        Assert.IsNotNull(VisualTreeAsset);
 
-        var visualTreeAsset = UIDocument.visualTreeAsset;
-        Undo.RegisterCompleteObjectUndo(visualTreeAsset, CommandUndoName);
+        Undo.RegisterCompleteObjectUndo(VisualTreeAsset, CommandUndoName);
 
         var fullTypeName = ElementType.FullName;
-        var vea = visualTreeAsset.AddElementOfType(visualTreeAsset.visualTree, fullTypeName);
+        var vea = VisualTreeAsset.AddElementOfType(ParentVea, fullTypeName);
+        vea.serializedData = UxmlSerializedDataCreator.CreateUxmlSerializedData(ElementType);
 
-        // Create and attach the serialized data
-        var serializedData = UxmlSerializedDataCreator.CreateUxmlSerializedData(ElementType);
-        vea.serializedData = serializedData;
+        if (ParentVea[ParentVea.childCount - 1] is VisualElementAsset newVea)
+        {
+            HandlePositioning(newVea);
+        }
 
-        Undo.RegisterCompleteObjectUndo(UIDocument, CommandUndoName);
+        EditorUtility.SetDirty(VisualTreeAsset);
+    }
 
-        // Instantiate the element from the serialized data
-        var element = serializedData.CreateInstance() as VisualElement;
-        serializedData.Deserialize(element);
+    void HandlePositioning(VisualElementAsset newVea)
+    {
+        if (Index < 0 || Index >= ParentVea.childCount) return;
 
-        UIDocument.rootVisualElement.Add(element);
-
-        EditorUtility.SetDirty(visualTreeAsset);
-        EditorUtility.SetDirty(UIDocument);
+        VisualTreeAsset.ReparentElementInDocument(newVea, ParentVea, Index);
     }
 }

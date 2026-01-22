@@ -207,6 +207,12 @@ namespace UnityEngine.LowLevelPhysics2D
             public readonly PhysicsShape shapeB => m_ShapeB;
 
             /// <summary>
+	        /// The unique Id of the contact.
+            /// This contact is volatile and may be destroyed automatically when the world is modified or simulated therefore it should always be checked for validity with <see cref="LowLevelPhysics2D.PhysicsShape.ContactId.isValid"/>.
+            /// </summary>
+            public readonly PhysicsShape.ContactId contactId => m_ContactId;
+
+            /// <summary>
 	        /// Point where the shapes hit at the beginning of the time step.
 	        /// This is a mid-point between the two surfaces.
             /// It could be at speculative point where the two shapes were not touching at the beginning of the time step.
@@ -231,6 +237,7 @@ namespace UnityEngine.LowLevelPhysics2D
 
             readonly PhysicsShape m_ShapeA;
             readonly PhysicsShape m_ShapeB;
+            readonly PhysicsShape.ContactId m_ContactId;
             readonly Vector2 m_Point;
             readonly Vector2 m_Normal;
             readonly float m_ApproachSpeed;

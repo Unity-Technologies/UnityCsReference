@@ -5,6 +5,7 @@
 using System;
 using Unity.Profiling.Editor;
 using UnityEditor;
+using UnityEditor.Profiling;
 using UnityEngine.Profiling;
 
 namespace UnityEditorInternal.Profiling
@@ -15,8 +16,10 @@ namespace UnityEditorInternal.Profiling
     {
         const int k_DefaultOrderIndex = 11;
         const ProfilerModuleChartType k_ChartType = ProfilerModuleChartType.Line;
+        UISystemProfilerModelBuilder m_UIModelBuilder;
+        UISystemProfilerChartViewController m_UIChartView;
 
-        public UIDetailsProfilerModule() : base(k_ChartType) {}
+        public UIDetailsProfilerModule() : base(k_ChartType) { }
 
         internal override ProfilerArea area => ProfilerArea.UIDetails;
         public override bool usesCounters => false;
@@ -24,13 +27,30 @@ namespace UnityEditorInternal.Profiling
         private protected override int defaultOrderIndex => k_DefaultOrderIndex;
         private protected override string legacyPreferenceKey => "ProfilerChartUIDetails";
 
-        UISystemProfilerChart UISystemProfilerChart => m_Chart as UISystemProfilerChart;
-
-        private protected override ProfilerChart InstantiateChart(float defaultChartScale, float chartMaximumScaleInterpolationValue)
+        internal override ChartModelBuilder CreateChartModelBuilder()
         {
-            // [Coverity Defect 53724] Intentionally not calling the base class here to instantiate a custom chart type.
-            m_Chart = new UISystemProfilerChart(k_ChartType, defaultChartScale, chartMaximumScaleInterpolationValue, m_LegacyChartCounters.Count, DisplayName, DisplayName, IconPath);
-            return m_Chart;
+            m_UIModelBuilder = new UISystemProfilerModelBuilder(SettingsService, k_ChartType, ChartCounters.Length, Identifier, DisplayName, IconPath);
+            m_UIModelBuilder.SetArea(area);
+            m_UIModelBuilder.ConfigureChartSeries(ProfilerUserSettings.frameCount, ChartCounters);
+            return m_UIModelBuilder;
+        }
+
+        internal override ChartViewController CreateChartViewController()
+        {
+            var controller = base.CreateChartViewController();
+            controller.OnViewLoaded = () =>
+            {
+                m_UIChartView = new UISystemProfilerChartViewController(this, ChartViewController.Chart, m_UIModelBuilder.UIModel);
+            };
+            return controller;
+        }
+
+        internal override void Update()
+        {
+            base.Update();
+
+            if (active)
+                m_UIChartView?.Update();
         }
     }
 }

@@ -235,11 +235,11 @@ namespace UnityEditor.ShaderKeywordFilter
                 bool isConst = f.IsLiteral && !f.IsInitOnly;
 
                 // Only public fields, constants and private fields with [SerializeField] attribute are accepted sources
-                if (!f.IsPublic && !isConst && f.GetCustomAttributes(typeof(SerializeField), false).Length == 0)
+                if (!f.IsPublic && !isConst && !f.IsDefined(typeof(SerializeField), false))
                     continue;
 
                 // Drop deprecated fields
-                if (f.GetCustomAttributes(typeof(System.ObsoleteAttribute), false).Length != 0)
+                if (f.IsDefined(typeof(ObsoleteAttribute), false))
                     continue;
 
                 var value = f.GetValue(containerObject);

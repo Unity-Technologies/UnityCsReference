@@ -132,7 +132,7 @@ namespace UnityEditor.AnimationWindowBuiltin
                 Undo.RegisterCompleteObjectUndo(clip, "Delete Event");
 
                 AnimationUtility.SetAnimationEvents(clip, eventList.ToArray());
-                Selection.objects = new AnimationWindowEvent[] {};
+                Selection.objects = Array.Empty<AnimationWindowEvent>();
 
                 m_DirtyTooltip = true;
             }

@@ -59,6 +59,7 @@ namespace UnityEngine.AI
             set;
         }
 
+        [VisibleToOtherModules("UnityEditor.AIModule")]
         [FreeFunction("NavMeshObstacleScriptBindings::FitExtents", HasExplicitThis = true)]
         internal extern void FitExtents();
     }

@@ -26,6 +26,8 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
 
         [SerializeField] SerializableEnum<IssueCategory>[] m_Categories;
         [SerializeField] int m_ActiveViewIndex;
+        [SerializeField] HashSet<IssueCategory> m_PendingCategories;
+        [SerializeField] HashSet<string> m_PendingModuleNames;
 
         public Report Report => m_Report;
 
@@ -63,7 +65,7 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
             return m_Views != null && m_Views.Length > 0;
         }
 
-        public void AddIssues(IReadOnlyCollection<ReportItem> issues)
+        public void AddIssues(IEnumerable<ReportItem> issues)
         {
             foreach (var view in m_Views)
                 view.AddIssues(issues);
@@ -195,22 +197,32 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
             }
         }
 
-        public void OnAnalysisCompleted(Report report)
+        public void OnAnalysisCompleted()
         {
-            m_Report = report;
+            m_PendingCategories = null;
+            m_PendingModuleNames = null;
             MarkViewColumnWidthsAsDirty();
-
-            foreach (var view in m_Views)
-            {
-                view.SetSearch("");
-            }
         }
 
         public void OnAnalysisRestored(Report report)
         {
             AddIssues(report.GetAllIssues());
+            m_PendingCategories = null;
+            m_PendingModuleNames = null;
             m_Report = report;
 
+            ClearSearch();
+        }
+
+        public void OnAnalysisStarted(Report report, string[] moduleNames, IssueCategory[] pendingCategories)
+        {
+            m_PendingCategories = new HashSet<IssueCategory>(pendingCategories);
+            m_PendingModuleNames = new HashSet<string>(moduleNames);
+            m_Report = report;
+        }
+
+        public void ClearSearch()
+        {
             foreach (var view in m_Views)
             {
                 view.SetSearch("");
@@ -226,6 +238,26 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
             {
                 view.LoadSettings();
             }
+        }
+
+        public HashSet<IssueCategory> PendingCategories
+        {
+            set => m_PendingCategories = value;
+        }
+
+        public HashSet<string> PendingModuleNames
+        {
+            get => m_PendingModuleNames;
+        }
+
+        public bool HasPendingCategories()
+        {
+            return m_PendingCategories != null;
+        }
+
+        public bool HasPendingCategory(IssueCategory category)
+        {
+            return m_PendingCategories != null && m_PendingCategories.Contains(category);
         }
 
         public void SaveSettings()

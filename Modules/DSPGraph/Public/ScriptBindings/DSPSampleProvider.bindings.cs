@@ -7,7 +7,7 @@ using UnityEngine.Bindings;
 
 namespace Unity.Audio
 {
-    [NativeType(Header = "Modules/DSPGraph/Public/DSPSampleProvider.bindings.h")]
+    [NativeHeader("Modules/DSPGraph/Public/DSPSampleProvider.bindings.h")]
     internal partial struct DSPSampleProviderInternal
     {
         [NativeMethod(IsThreadSafe = true, IsFreeFunction = true, ThrowsException = true)]

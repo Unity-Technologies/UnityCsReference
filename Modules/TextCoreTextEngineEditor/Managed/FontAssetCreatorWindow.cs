@@ -144,7 +144,7 @@ namespace UnityEditor.TextCore.Text
         bool m_IsFontAtlasInvalid;
         Font m_SourceFont;
         int m_SourceFontFaceIndex;
-        private string[] m_SourceFontFaces = new string[0];
+        private string[] m_SourceFontFaces = Array.Empty<string>();
         FontAsset m_SelectedFontAsset;
         FontAsset m_LegacyFontAsset;
         FontAsset m_ReferencedFontAsset;

@@ -213,7 +213,7 @@ namespace UnityEditor
                     bool orgChanged = GUI.changed;
                     GUI.changed = false;
 
-                    var templateCustomKeys = new string[]{};
+                    var templateCustomKeys = System.Array.Empty<string>();
                     if (selectedTemplateIndex > -1)
                     {
                         templateCustomKeys = Templates[GetTemplateIndex(templateProp.stringValue)].CustomKeys;

@@ -20,12 +20,6 @@ namespace UnityEditorInternal.Profiling
     [ProfilerModuleMetadata("CPU Usage", typeof(LocalizationResource), IconPath = "Profiler.CPU")]
     internal class CPUProfilerModule : CPUOrGPUProfilerModule
     {
-        static class Styles
-        {
-            public static readonly GUIStyle whiteLabel = "ProfilerBadge";
-            public static readonly float labelDropShadowOpacity = 0.3f;
-        }
-
         const string k_SettingsKeyPrefix = "Profiler.CPUProfilerModule.";
         const int k_DefaultOrderIndex = 0;
 
@@ -41,7 +35,6 @@ namespace UnityEditorInternal.Profiling
         }
 
         GUIContent selectionHighlightLabel = new GUIContent();
-        GUIContent m_GPUModuleActivePerformanceWarning;
 
         [SerializeField]
         ProfilerTimelineGUI m_TimelineGUI;
@@ -83,8 +76,6 @@ namespace UnityEditorInternal.Profiling
 
             TryRestoringSelection();
             UpdateSelectionHighlightLabel();
-
-            m_GPUModuleActivePerformanceWarning = new GUIContent("", EditorGUIUtility.LoadIcon("console.warnicon.sml"), Content.gpuModulePerformanceWarning);
         }
 
         internal override void OnDisable()
@@ -122,32 +113,29 @@ namespace UnityEditorInternal.Profiling
 
         internal override void Update()
         {
+            // Disable chart overlay for inverted mode as it is not supported.
+            var hasCPUOverlay = false;
+            if (m_ViewType != ProfilerViewType.InvertedHierarchy)
+            {
+                var selectedName = ProfilerDriver.selectedPropertyPath;
+                var selectedModule = ProfilerWindow.selectedModule;
+                hasCPUOverlay = selectedName != string.Empty && Equals(selectedModule);
+            }
+            ChartModelBuilder.HasOverlay = hasCPUOverlay;
+
             base.Update();
 
             // Update warning message based on GPU module state
+            string currentMessage = ChartModelBuilder.Model.WarningMsg;
             var gpuModule = ProfilerWindow.GetProfilerModuleByType<GPUProfilerModule>();
-            m_Chart.WarningMsg = gpuModule.active ? m_GPUModuleActivePerformanceWarning : null;
-        }
-
-        private protected override void DrawChartOverlay(Rect chartRect)
-        {
-            // Show selected property name
-            if (selection == null)
-                return;
-
-            var content = selectionHighlightLabel;
-            var prevClipping = Styles.whiteLabel.clipping;
-            Styles.whiteLabel.clipping = TextClipping.Ellipsis;
-            var size = EditorStyles.whiteLabel.CalcSize(content);
-            const float marginLeft = 120;
-            const float marginRight = 3;
-            const float textMarginRight = 2;
-            var maxWidth = chartRect.width - (marginRight + marginLeft);
-            size.x = Mathf.Min(maxWidth, size.x + 1f);
-
-            var r = new Rect(chartRect.x + chartRect.width - size.x - marginRight - textMarginRight, chartRect.y + marginRight, size.x + textMarginRight, size.y);
-            EditorGUI.DoDropShadowLabel(r, content, Styles.whiteLabel, Styles.labelDropShadowOpacity);
-            Styles.whiteLabel.clipping = prevClipping;
+            if (gpuModule.active)
+            {
+                ChartViewController.SetWarningIconVisible(true, Content.gpuModulePerformanceWarning);
+            }
+            else
+            {
+                ChartViewController.SetWarningIconVisible(false, null);
+            }
         }
 
         public override void DrawToolbar(Rect position)
@@ -491,16 +479,25 @@ namespace UnityEditorInternal.Profiling
             return RawFrameDataView.invalidSampleIndex;
         }
 
-        private protected override ProfilerChart InstantiateChart(float defaultChartScale, float chartMaximumScaleInterpolationValue)
+        internal override ChartModelBuilder CreateChartModelBuilder()
         {
-            var chart = base.InstantiateChart(defaultChartScale, chartMaximumScaleInterpolationValue);
-            chart.SetOnSeriesToggleCallback(OnChartSeriesToggled);
-            return chart;
+            var builder = base.CreateChartModelBuilder();
+            builder.Model.WarningMsg = Content.gpuModulePerformanceWarning;
+            return builder;
+        }
+
+        internal override ChartViewController CreateChartViewController()
+        {
+            var chartView = base.CreateChartViewController();
+            chartView.SeriesEnabledStateChanged = OnChartSeriesToggled;
+            return chartView;
         }
 
         private protected override void ApplyActiveState()
         {
             // Opening/closing CPU chart should not set the CPU area as that would set Profiler.enabled.
+            Update();
+            ChartViewController.SetActiveState(active);
         }
 
         void OnChartSeriesToggled(bool wasToggled)
@@ -510,30 +507,7 @@ namespace UnityEditorInternal.Profiling
                 int firstEmptyFrame = firstFrameIndexWithHistoryOffset;
                 int firstFrame = Mathf.Max(ProfilerDriver.firstFrameIndex, firstEmptyFrame);
                 int frameCount = ProfilerUserSettings.frameCount;
-                m_Chart.ComputeChartScaleValue(firstEmptyFrame, firstFrame, frameCount);
-            }
-        }
-
-        private protected override void UpdateChartOverlay(int firstEmptyFrame, int firstFrame, int frameCount)
-        {
-            base.UpdateChartOverlay(firstEmptyFrame, firstFrame, frameCount);
-
-            //Temporarily disable chart overlay for inverted mode until theres support for it
-            var hasCPUOverlay = false;
-            if (m_ViewType != ProfilerViewType.InvertedHierarchy)
-            {
-                var selectedName = ProfilerDriver.selectedPropertyPath;
-                var selectedModule = ProfilerWindow.selectedModule;
-                hasCPUOverlay = selectedName != string.Empty && Equals(selectedModule);
-            }
-
-            if (hasCPUOverlay)
-            {
-                m_Chart.UpdateOverlayData(firstEmptyFrame);
-            }
-            else
-            {
-                m_Chart.m_Data.hasOverlay = false;
+                ChartModelBuilder.ComputeChartScaleValue(firstEmptyFrame, firstFrame, frameCount);
             }
         }
     }

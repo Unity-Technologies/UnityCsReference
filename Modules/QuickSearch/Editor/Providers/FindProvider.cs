@@ -88,9 +88,7 @@ namespace UnityEditor.Search.Providers
         {
             var searchQuery = context.searchQuery;
             if (string.IsNullOrEmpty(searchQuery) || searchQuery.Length < 2)
-                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                return Enumerable.Empty<SearchDocument>();
-#pragma warning restore RS0030
+                return Array.Empty<SearchDocument>();
 
             return Search(searchQuery, null, context, provider, options);
         }
@@ -116,9 +114,7 @@ namespace UnityEditor.Search.Providers
                         subset = subsetList;
                     }
 
-                    #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                    IEnumerable<SearchDocument> results = Enumerable.Empty<SearchDocument>();
-#pragma warning restore RS0030
+                    IEnumerable<SearchDocument> results = Array.Empty<SearchDocument>();
                     if (args.name == null && args.value is string word && word.Length > 0)
                         results = SearchWord(args.exclude, word, options, subset);
 
@@ -411,9 +407,7 @@ namespace UnityEditor.Search.Providers
         {
             if (options.flags.HasAny(SearchPropositionFlags.QueryBuilder))
                 return FetchQueryBuilderPropositions();
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            return Enumerable.Empty<SearchProposition>();
-#pragma warning restore RS0030
+            return Array.Empty<SearchProposition>();
         }
 
         private static IEnumerable<SearchProposition> FetchQueryBuilderPropositions()

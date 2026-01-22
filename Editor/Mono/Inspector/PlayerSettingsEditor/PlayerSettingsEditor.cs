@@ -786,6 +786,18 @@ namespace UnityEditor
 
             FindPlayerSettingsAttributeSections();
         }
+        
+        public static void DiscardPendingChangesForAllEditors(PlayerSettings target)
+        {
+            foreach (var editor in Resources.FindObjectsOfTypeAll<PlayerSettingsEditor>())
+            {
+                if (editor.target == target)
+                {
+                    editor.hasScriptingDefinesBeenModified = false;
+                    editor.hasAdditionalCompilerArgumentsBeenModified = false;
+                }
+            }
+        }
 
         void OnDisable()
         {
@@ -3203,7 +3215,7 @@ namespace UnityEditor
             if (m_Il2CppCodeGeneration.TryGetMapEntry(namedBuildTarget.TargetName, out var entry))
                 return (Il2CppCodeGeneration)entry.FindPropertyRelative("second").intValue;
             else
-                return PlayerSettings.GetDefaultIl2CppCodeGeneration(namedBuildTarget);
+                return Il2CppCodeGeneration.OptimizeSpeed;
         }
 
         private Il2CppStacktraceInformation GetCurrentIl2CppStacktraceInformationOptionForTarget(NamedBuildTarget namedBuildTarget)
@@ -3606,7 +3618,7 @@ namespace UnityEditor
                 return arguments;
             }
 
-            return new string[0];
+            return Array.Empty<string>();
         }
 
         void SetAdditionalCompilerArgumentsForGroup(NamedBuildTarget buildTarget, string[] arguments)

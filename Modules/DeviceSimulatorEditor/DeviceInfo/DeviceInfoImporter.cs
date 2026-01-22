@@ -130,9 +130,7 @@ namespace UnityEditor.DeviceSimulation
                 #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 var screenElements = screensElement.Elements("item").ToArray();
 #pragma warning restore RS0030
-                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                if (!screenElements.Any())
-#pragma warning restore RS0030
+                if (screenElements.Length == 0)
                 {
                     errorList.Add("[screens] array must contain at least one screen");
                 }

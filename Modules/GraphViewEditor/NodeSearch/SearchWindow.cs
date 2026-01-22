@@ -186,7 +186,7 @@ namespace UnityEditor.Experimental.GraphView
             if (tree != null)
                 m_Tree = tree.ToArray();
             else
-                m_Tree = new SearchTreeEntry[0];
+                m_Tree = Array.Empty<SearchTreeEntry>();
 
             // Rebuild stack
             if (m_SelectionStack.Count == 0)

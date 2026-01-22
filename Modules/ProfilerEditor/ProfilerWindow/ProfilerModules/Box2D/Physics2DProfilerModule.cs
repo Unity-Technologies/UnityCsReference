@@ -31,7 +31,7 @@ namespace UnityEditorInternal.Profiling
             Current = 1
         }
 
-        private PhysicsProfilerStatsView m_ShowStatsView;
+        private PhysicsProfilerStatsView m_ShowStatsView = PhysicsProfilerStatsView.Current;
         private PhysicsProfilerStatsView m_CachedShowStatsView;
 
         static Physics2DProfilerModule()
@@ -164,12 +164,7 @@ namespace UnityEditorInternal.Profiling
         }
         internal override void OnEnable()
         {
-            m_ShowStatsView = PhysicsProfilerStatsView.Current;
-
             ProfilerDriver.profileLoaded += OnLoadProfileData;
-
-            LegacyModuleInitialize();
-
             base.OnEnable();
         }
 
@@ -250,6 +245,9 @@ namespace UnityEditorInternal.Profiling
 
         private void UpdatePhysicsChart()
         {
+            if (m_CachedShowStatsView == m_ShowStatsView)
+                return;
+
             if (m_ShowStatsView == PhysicsProfilerStatsView.Current)
             {
                 InternalSetChartCounters(ProfilerCounterDataUtility.ConvertFromLegacyCounterDatas(
@@ -262,7 +260,8 @@ namespace UnityEditorInternal.Profiling
                     new List<ProfilerCounterData>(k_LegacyPhysicsAreaCounterNames)));
             }
 
-            RebuildChart();
+            Rebuild();
+            m_CachedShowStatsView = m_ShowStatsView;
         }
 
         private void DrawAlternateBackground(Rect region, Vector2 scrollPosition, int rowCount)
@@ -300,13 +299,7 @@ namespace UnityEditorInternal.Profiling
             EditorGUILayout.BeginHorizontal(EditorStyles.toolbar);
 
             m_ShowStatsView = (PhysicsProfilerStatsView)EditorGUILayout.EnumPopup(m_ShowStatsView, EditorStyles.toolbarDropDownLeft, GUILayout.Width(70f));
-
-            if (m_CachedShowStatsView != m_ShowStatsView)
-            {
-                m_CachedShowStatsView = m_ShowStatsView;
-
-                UpdatePhysicsChart();
-            }
+            UpdatePhysicsChart();
 
             GUILayout.Space(5f);
             GUILayout.FlexibleSpace();

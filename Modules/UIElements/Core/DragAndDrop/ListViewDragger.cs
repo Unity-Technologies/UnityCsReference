@@ -103,15 +103,15 @@ namespace UnityEngine.UIElements
             var recycledItem = GetRecycledItem(pointerPosition);
             if (recycledItem != null && targetView.HasCanStartDrag())
             {
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable RS0031 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 var ids = targetView.selectedIds.Any() ? targetView.selectedIds : new[] { recycledItem.id };
-#pragma warning restore RS0030
+#pragma warning restore RS0031
                 return targetView.RaiseCanStartDrag(recycledItem, ids, modifiers);
             }
 
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable RS0031 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             if (targetView.selectedIds.Any())
-#pragma warning restore RS0030
+#pragma warning restore RS0031
             {
                 return dragAndDropController.CanStartDrag(targetView.selectedIds);
             }
@@ -143,9 +143,9 @@ namespace UnityEngine.UIElements
             }
             else
             {
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                ids = targetView.selectedIds.Any() ? targetView.selectedIds : Enumerable.Empty<int>();
-#pragma warning restore RS0030
+#pragma warning disable RS0031 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                ids = targetView.selectedIds.Any() ? targetView.selectedIds : Array.Empty<int>();
+#pragma warning restore RS0031
             }
 
             var startDragArgs = dragAndDropController.SetupDragAndDrop(ids);

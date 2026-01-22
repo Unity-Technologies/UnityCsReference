@@ -793,17 +793,17 @@ namespace UnityEditor.Search
         {
             int queryItemCount = 0;
 
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable RS0031 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             if (activeProviderTypes == null || !activeProviderTypes.Any())
-#pragma warning restore RS0030
+#pragma warning restore RS0031
                 return TotalCount;
 
             foreach (var providerType in activeProviderTypes)
             {
                 var groupsWithType = GetGroupByType(providerType);
-                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable RS0031 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 if (groupsWithType == null || !groupsWithType.Any())
-#pragma warning restore RS0030
+#pragma warning restore RS0031
                     continue;
 
                 foreach (var group in groupsWithType)

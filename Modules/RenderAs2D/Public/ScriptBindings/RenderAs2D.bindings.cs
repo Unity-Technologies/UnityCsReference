@@ -13,7 +13,7 @@ namespace UnityEngine
 {
     [AddComponentMenu("")]                                              // This is just here for clarity. This is a builtin component and doesn't show in the editor because of changes made to ComponentRequirement.cpp.
     [RequireComponent(typeof(Transform))]
-    [NativeType(Header = "Modules/RenderAs2D/Public/RenderAs2D.h")]
+    [NativeHeader("Modules/RenderAs2D/Public/RenderAs2D.h")]
     internal sealed class RenderAs2D : Renderer
     {
         internal extern void Init(Component owner);

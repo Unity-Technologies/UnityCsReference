@@ -46,7 +46,7 @@ namespace UnityEditor
             return (EditorUtility.isInSafeMode && !IsAssetImported(assetId)) || AssetClipboardUtility.HasCutAsset(assetId) ? GUI.color * kFadedOutAssetsColor : GUI.color;
         }
 
-        private static readonly EntityId[] k_EmptySelection = new EntityId[0];
+        private static readonly EntityId[] k_EmptySelection = Array.Empty<EntityId>();
 
         private bool isFolderTreeViewContextClicked = false;
 
@@ -114,7 +114,7 @@ namespace UnityEditor
             public GUIContent m_FilterByLabel = EditorGUIUtility.TrIconContent("FilterByLabel", "Search by Label");
             public GUIContent m_FilterByType = EditorGUIUtility.TrIconContent("FilterByType", "Search by Type");
             public GUIContent m_FilterByImportLog = EditorGUIUtility.TrIconContent("d_console.erroricon.inactive.sml", "Search by Import Log Type");
-            public GUIContent m_CreateDropdownContent = EditorGUIUtility.TrIconContent("CreateAddNew", "Create new Asset");
+            public GUIContent m_CreateDropdownContent = EditorGUIUtility.TrIconContent("d_Toolbar Plus More", "Create new Asset");
             public GUIContent m_SaveFilterContent = EditorGUIUtility.TrIconContent("Favorite", "Save search");
             public GUIContent m_PackageContentDefault = new GUIContent("", "");
             public GUIContent m_PackagesContentNotVisible = EditorGUIUtility.TrIconContent("PBrowserPackagesNotVisible", "Number of hidden packages, click to display packages.");
@@ -151,7 +151,7 @@ namespace UnityEditor
         [SerializeField]
         int m_StartGridSize = 16;
         [SerializeField]
-        string[] m_LastFolders = new string[0];
+        string[] m_LastFolders = Array.Empty<string>();
         [SerializeField]
         float m_LastFoldersGridSize = -1f;
         [SerializeField]
@@ -749,7 +749,7 @@ namespace UnityEditor
             {
                 // Clear project specific serialized state
                 m_SearchFilter = new SearchFilter();
-                m_LastFolders = new string[0];
+                m_LastFolders = Array.Empty<string>();
                 SyncFilterGUI();
 
                 // If we have a selection try to frame it (could be a non asset object)
@@ -2444,8 +2444,8 @@ namespace UnityEditor
         {
             var isInReadOnlyContext = AssetsMenuUtility.SelectionHasImmutable() || SelectionIsPackagesRootFolder() || !ModeService.HasCapability(ModeCapability.AllowAssetCreation, true);
             EditorGUI.BeginDisabledGroup(isInReadOnlyContext);
-            Rect r = GUILayoutUtility.GetRect(s_Styles.m_CreateDropdownContent, EditorStyles.toolbarCreateAddNewDropDown);
-            if (EditorGUI.DropdownButton(r, s_Styles.m_CreateDropdownContent, FocusType.Passive, EditorStyles.toolbarCreateAddNewDropDown))
+            Rect r = GUILayoutUtility.GetRect(s_Styles.m_CreateDropdownContent, EditorStyles.toolbarButton);
+            if (EditorGUI.DropdownButton(r, s_Styles.m_CreateDropdownContent, FocusType.Passive, EditorStyles.toolbarButton))
             {
                 GUIUtility.hotControl = 0;
                 EditorUtility.DisplayPopupMenu(r, "Assets/Create", null);

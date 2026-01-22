@@ -10,7 +10,7 @@ using System.Runtime.InteropServices;
 
 namespace UnityEngine.Animations
 {
-    [NativeType("Modules/Animation/Constraints/ConstraintEnums.h")]
+    [NativeHeader("Modules/Animation/Constraints/ConstraintEnums.h")]
     [Flags]
     public enum Axis
     {
@@ -21,7 +21,8 @@ namespace UnityEngine.Animations
     }
 
     [System.Serializable]
-    [NativeType(CodegenOptions = CodegenOptions.Custom, Header = "Modules/Animation/Constraints/ConstraintSource.h", IntermediateScriptingStructName = "MonoConstraintSource")]
+    [NativeType(CodegenOptions = CodegenOptions.Custom, IntermediateScriptingStructName = "MonoConstraintSource")]
+    [NativeHeader("Modules/Animation/Constraints/ConstraintSource.h")]
     [NativeHeader("Modules/Animation/Constraints/Constraint.bindings.h")]
     [UsedByNativeCode]
     public struct ConstraintSource

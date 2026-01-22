@@ -126,9 +126,7 @@ namespace UnityEditor.Search
 
             m_IndexDetailsElement = new VisualElement() { name = "Details" };
             SearchDatabase.indexLoaded += OnIndexLoaded;
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            if (m_IndexSettings.Any())
-#pragma warning restore RS0030
+            if (m_IndexSettings.Count > 0)
                 CreateIndexDetailsElement();
 
             var showPackagesToggle = new Toggle(L10n.Tr("Show package indexes")) { name = "show-package-indexes-toggle", value = SearchSettings.showPackageIndexes };
@@ -236,9 +234,7 @@ namespace UnityEditor.Search
                 if (searchDatabase.GetEntityId() == s_SelectedAssetOnOpen)
                     indexToSelect = m_IndexSettings.Count - 1;
             }
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            if (indexToSelect == -1 && m_IndexSettings.Any())
-#pragma warning restore RS0030
+            if (indexToSelect == -1 && m_IndexSettings.Count > 0)
                 indexToSelect = 0;
             return indexToSelect;
         }
@@ -502,7 +498,7 @@ namespace UnityEditor.Search
 
         private void PingAsset(IEnumerable<object> obj)
         {
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable RS0031 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             if (obj.Any())
 #pragma warning restore RS0030
             {
@@ -925,7 +921,7 @@ namespace UnityEditor.Search
                 else
                 {
                     File.Delete(path);
-                    SearchMonitor.RaiseContentRefreshed(new string[0], new string[] { path }, new string[0]);
+                    SearchMonitor.RaiseContentRefreshed(Array.Empty<string>(), [path], Array.Empty<string>());
                     AssetDatabase.Refresh();
                 }
             }
@@ -1116,9 +1112,9 @@ namespace UnityEditor.Search
                     m_DocumentsListView.selectionChanged -= PingAsset;
                 m_IndexDetailsElement.Clear();
 
-                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable RS0031 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 if (obj.Any())
-#pragma warning restore RS0030
+#pragma warning restore RS0031
                 {
                     CreateIndexDetailsElement();
                 }

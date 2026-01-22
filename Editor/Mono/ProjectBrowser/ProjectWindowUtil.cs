@@ -149,9 +149,7 @@ namespace UnityEditor
                 string basePath = UseCustomPath ? ResourcesTemplatePath :
                     Path.Combine(EditorApplication.applicationContentsPath, ResourcesTemplatePath);
 
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                foreach (var template in templates ?? Enumerable.Empty<string>())
-#pragma warning restore RS0030
+                foreach (var template in templates ?? Array.Empty<string>())
                 {
                     var templateNameWithoutTxt = template.Replace(".txt", string.Empty);
                     var templateExtension = Path.GetExtension(templateNameWithoutTxt);
@@ -895,7 +893,7 @@ namespace UnityEditor
                     return new[] { dragPath };
                 }
             }
-            return new string[0];
+            return Array.Empty<string>();
         }
 
         // Returns instanceID of folders (and main asset if input is a subasset) up until and including the Assets folder

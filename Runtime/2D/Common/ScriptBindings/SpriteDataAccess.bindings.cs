@@ -18,7 +18,7 @@ namespace UnityEngine.U2D
     [NativeHeader("Runtime/2D/Common/SpriteDataAccess.h")]
     [MovedFrom("UnityEngine.Experimental.U2D")]
     [RequiredByNativeCode]
-    [NativeType(Header = "Runtime/2D/Common/SpriteTypes.h")]
+    [NativeHeader("Runtime/2D/Common/SpriteTypes.h")]
     [StructLayout(LayoutKind.Sequential)]
     [Serializable]
     public struct SpriteBone
@@ -266,5 +266,9 @@ namespace UnityEngine.U2D
         extern internal static bool IsGPUSkinningEnabled(SpriteRenderer spriteRenderer);
 
         extern internal static bool IsSRPBatchingEnabled([NotNull] this SpriteRenderer spriteRenderer);
+
+        extern public static void SetShaderUserValue([NotNull] this SpriteRenderer spriteRenderer, UInt32 v);
+
+        extern public static UInt32 GetShaderUserValue([NotNull] this SpriteRenderer spriteRenderer);
     }
 }

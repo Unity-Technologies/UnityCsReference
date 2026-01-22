@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using UnityEngine.Bindings;
 
 namespace UnityEngine.UIElements;
 
@@ -24,7 +25,11 @@ public struct AuthoringIdPath : IEquatable<AuthoringIdPath>
 
     internal bool isEmpty => path.Length == 0;
 
-    internal bool isRootReference => path.Length == 1 && path[0] == 0;
+    internal bool isRootReference
+    {
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
+        get => path.Length == 1 && path[0] == 0;
+    }
 
     /// <summary>
     /// Creates an empty AuthoringIdPath.

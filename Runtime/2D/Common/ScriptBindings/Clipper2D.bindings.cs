@@ -12,7 +12,7 @@ using System.Runtime.InteropServices;
 
 namespace UnityEngine.U2D
 {
-    [NativeType(Header = "Runtime/2D/Common/ClipperWrapper.h")]
+    [NativeHeader("Runtime/2D/Common/ClipperWrapper.h")]
     internal struct Clipper2D
     {
         public enum ClipType { ctIntersection, ctUnion, ctDifference, ctXor };
@@ -21,7 +21,7 @@ namespace UnityEngine.U2D
         public enum InitOptions { ioDefault = 0, oReverseSolution = 1, ioStrictlySimple = 2, ioPreserveCollinear = 4 };
 
         [StructLayout(LayoutKind.Sequential)]
-        [NativeType(Header = "Runtime/2D/Common/ClipperWrapper.h")]
+        [NativeHeader("Runtime/2D/Common/ClipperWrapper.h")]
         public struct PathArguments
         {
             // All members should be valid when their value is 0
@@ -37,7 +37,7 @@ namespace UnityEngine.U2D
         }
 
         [StructLayout(LayoutKind.Sequential)]
-        [NativeType(Header = "Runtime/2D/Common/ClipperWrapper.h")]
+        [NativeHeader("Runtime/2D/Common/ClipperWrapper.h")]
         public struct ExecuteArguments
         {
             // All members should be valid when their value is 0

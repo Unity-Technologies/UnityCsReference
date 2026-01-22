@@ -53,6 +53,16 @@ namespace Unity.GraphToolkit.Editor
         public static readonly string writeOnlyUssClassName = ussClassName.WithUssModifier(GraphElementHelper.writeOnlyUssModifier);
 
         /// <summary>
+        /// The USS class name added if any input port is connected.
+        /// </summary>
+        public static readonly string hasConnectedInputUssClassName = ussClassName.WithUssModifier("has-connected-input");
+
+        /// <summary>
+        /// The USS class name added if any output port is connected.
+        /// </summary>
+        public static readonly string hasConnectedOutputUssClassName = ussClassName.WithUssModifier("has-connected-output");
+
+        /// <summary>
         /// The name of the <see cref="ModelViewPart"/> for the title container.
         /// </summary>
         public static readonly string titleContainerPartName = GraphElementHelper.titleContainerName;
@@ -188,16 +198,29 @@ namespace Unity.GraphToolkit.Editor
 
             if (NodeModel is PortNodeModel portHolder && portHolder.GetPorts() != null)
             {
-                var noPortConnected = true;
+                var hasAnyConnected = false;
+                var hasInputConnected = false;
+                var hasOutputConnected = false;
+
                 foreach (var port in portHolder.GetPorts())
                 {
                     if (port.IsConnected())
                     {
-                        noPortConnected = false;
-                        break;
+                        hasAnyConnected = true;
+
+                        if (port.Direction == PortDirection.Input)
+                            hasInputConnected = true;
+                        else if (port.Direction == PortDirection.Output)
+                            hasOutputConnected = true;
+
+                        if (hasInputConnected && hasOutputConnected)
+                            break;
                     }
                 }
-                EnableInClassList(notConnectedUssClassName, noPortConnected);
+
+                EnableInClassList(notConnectedUssClassName, !hasAnyConnected);
+                EnableInClassList(hasConnectedInputUssClassName, hasInputConnected);
+                EnableInClassList(hasConnectedOutputUssClassName, hasOutputConnected);
             }
 
             if (Model is VariableNodeModel variableModel)

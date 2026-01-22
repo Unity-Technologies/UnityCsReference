@@ -36,7 +36,7 @@ namespace Unity.VectorGraphics
         public static BezierPathSegment[] BezierSegmentsToPath(BezierSegment[] segments)
         {
             if (segments.Length == 0)
-                return new BezierPathSegment[0];
+                return Array.Empty<BezierPathSegment>();
 
             int segmentCount = segments.Length;
             var path = new List<BezierPathSegment>(segments.Length*2 + 1);

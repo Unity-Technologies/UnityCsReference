@@ -287,8 +287,8 @@ namespace UnityEditor
 
         public static void GUILayerMask(GUIContent guiContent, SerializedProperty layerMaskProp, params GUILayoutOption[] layoutOptions)
         {
-            string[] m_FlagNames = new string[0];
-            int[] m_FlagValues = new int[0];
+            var m_FlagNames = System.Array.Empty<string>();
+            var m_FlagValues = System.Array.Empty<int>();
             TagManager.GetDefinedLayers(ref m_FlagNames, ref m_FlagValues);
             MaskFieldGUI.GetMaskButtonValue(layerMaskProp.intValue, m_FlagNames, m_FlagValues, out var toggleLabel, out var toggleLabelMixed);
 

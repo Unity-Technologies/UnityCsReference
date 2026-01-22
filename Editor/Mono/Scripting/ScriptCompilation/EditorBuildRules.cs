@@ -32,6 +32,63 @@ namespace UnityEditor.Scripting.ScriptCompilation
             public string[] RoslynAnalyzerDllPaths { get; set; }
         }
 
+        // Contextual container for compilation defines so we can track and check the various sources without having to combine arrays all the time.
+        internal struct SymbolDefinitionContext
+        {
+            string[] m_Defines;
+            string[] m_ExtraPlayerDefines;
+            string[] m_ResponseFileDefines;
+            bool m_Any;
+            bool m_IsEmpty;
+
+            public readonly bool HasAny() => m_Any;
+            public readonly bool IsEmpty() => m_IsEmpty;
+
+            public SymbolDefinitionContext(string[] defines, string[] extraPlayerDefines = null)
+            {
+                m_Defines = defines;
+                m_ExtraPlayerDefines = (defines != null) ? extraPlayerDefines : null;   // Extra player defines are ignored if there are no base defines.
+                m_ResponseFileDefines = null;
+                UpdateStatusFlags();
+            }
+
+            public void SetResponseFileDefines(string[] responseFileDefines)
+            {
+                m_ResponseFileDefines = responseFileDefines;
+                UpdateStatusFlags();
+            }
+
+            void UpdateStatusFlags()
+            {
+                m_Any = ((m_Defines != null) && (m_Defines.Length != 0)) || ((m_ExtraPlayerDefines != null) && (m_ExtraPlayerDefines.Length != 0)) || ((m_ResponseFileDefines != null) && (m_ResponseFileDefines.Length != 0));
+
+                // If m_Defines is null the contents of m_ExtraPlayerDefines are ignored for the empty check (the SymbolDefinitionContext() constructor sets m_ExtraPlayerDefines to null if m_Defines is null)
+                // In this context m_IsEmpty means the non-null arrays that have been supplied contain no defines rather than the arrays being null.
+                if (m_Defines == null)
+                    m_IsEmpty = (m_ResponseFileDefines != null) && (m_ResponseFileDefines.Length == 0);
+                else
+                    m_IsEmpty = (m_Defines.Length == 0) && ((m_ExtraPlayerDefines == null) || (m_ExtraPlayerDefines.Length == 0)) && ((m_ResponseFileDefines == null) || (m_ResponseFileDefines.Length == 0));
+            }
+
+            bool CheckArrayForDefine(string[] defineArray, string define)
+            {
+                if (defineArray != null)
+                {
+                    for (int defineNum = 0; defineNum < defineArray.Length; defineNum++)
+                    {
+                        if (String.Equals(defineArray[defineNum], define, StringComparison.Ordinal))
+                            return true;
+                    }
+                }
+                return false;
+            }
+
+            public bool Contains(string define)
+            {
+                return CheckArrayForDefine(m_Defines, define) || CheckArrayForDefine(m_ExtraPlayerDefines, define) || CheckArrayForDefine(m_ResponseFileDefines, define);
+            }
+        }
+
         public static Dictionary<string, TargetAssembly> predefinedTargetAssemblies { get; private set; }
 
         private static readonly string[] s_CSharpVersionDefines =
@@ -82,19 +139,6 @@ namespace UnityEditor.Scripting.ScriptCompilation
             return depth;
         }
 
-        private static string[] CombineDefineArrays(string[] defines, string[] extraPlayerDefines)
-        {
-            if (defines == null)
-                return null;
-
-            extraPlayerDefines = extraPlayerDefines ?? Array.Empty<string>();
-
-            var combined = new string[defines.Length + extraPlayerDefines.Length];
-            Array.Copy(defines, combined, defines.Length);
-            Array.Copy(extraPlayerDefines, 0, combined, defines.Length, extraPlayerDefines.Length);
-            return combined;
-        }
-
         public static Dictionary<string, TargetAssembly> CreateTargetAssemblies(IEnumerable<CustomScriptAssembly> customScriptAssemblies)
         {
             if (customScriptAssemblies == null)
@@ -117,7 +161,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
                     customAssembly.PathPrefix,
                     customAssembly.AdditionalPrefixes,
                     path => PathFilter(path, customAssembly.PathPrefix, lowerPathPrefix, customAssembly.AdditionalPrefixes, lowerAdditionalPathPrefixes),
-                    (settings, defines) => customAssembly.IsCompatibleWith(settings.BuildTarget, settings.Subtarget, settings.CompilationOptions, CombineDefineArrays(defines, settings.ExtraGeneralDefines)),
+                    (settings, defines) => customAssembly.IsCompatibleWith(settings.BuildTarget, settings.Subtarget, settings.CompilationOptions, new SymbolDefinitionContext(defines, settings.ExtraGeneralDefines)),
                     customAssembly.CompilerOptions)
                 {
 #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
@@ -181,7 +225,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
             ICompilationSetupWarningTracker warningSink = null)
         {
             if (allSourceFiles == null || allSourceFiles.Count == 0)
-                return new ScriptAssembly[0];
+                return Array.Empty<ScriptAssembly>();
 
             var targetAssemblyFiles = new Dictionary<TargetAssembly, DirtyTargetAssembly>();
 
@@ -364,9 +408,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
             bool noEngineReferences = (targetAssembly.Flags & AssemblyFlags.NoEngineReferences) == AssemblyFlags.NoEngineReferences;
 
             bool shouldProcessPredefinedCustomTargets = assemblies.CustomTargetAssemblies != null && (targetAssembly.Type & TargetAssemblyType.Predefined) == TargetAssemblyType.Predefined;
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            var predefinedCustomTargetReferences = Enumerable.Empty<TargetAssembly>();
-#pragma warning restore RS0030
+            var predefinedCustomTargetReferences = Array.Empty<TargetAssembly>();
             if (shouldProcessPredefinedCustomTargets && assemblies.PredefinedAssembliesCustomTargetReferences != null)
                 predefinedCustomTargetReferences = assemblies.PredefinedAssembliesCustomTargetReferences;
 

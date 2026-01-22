@@ -142,14 +142,18 @@ namespace UnityEditorInternal.Profiling
             base.DrawDetailsView(position);
         }
 
-        private protected override ProfilerChart InstantiateChart(float defaultChartScale, float chartMaximumScaleInterpolationValue)
+        internal override ChartModelBuilder CreateChartModelBuilder()
         {
-            var chart = base.InstantiateChart(defaultChartScale, chartMaximumScaleInterpolationValue);
-            chart.statisticsAvailabilityMessage = GetStatisticsAvailabilityStateReason;
+            var builder = base.CreateChartModelBuilder();
+            builder.Model.WarningMsg = k_PerformanceWarningMessage;
+            return builder;
+        }
 
-            var performanceWarningMsg = new GUIContent("", EditorGUIUtility.LoadIcon("console.warnicon.sml"), k_PerformanceWarningMessage);
-            chart.WarningMsg = performanceWarningMsg;
-            return chart;
+        internal override ChartViewController CreateChartViewController()
+        {
+            var controller = base.CreateChartViewController();
+            controller.StatisticsAvailabilityMessageFactory = GetStatisticsAvailabilityStateReason;
+            return controller;
         }
 
         private protected override bool ReadActiveState()

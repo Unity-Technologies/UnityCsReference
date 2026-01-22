@@ -274,8 +274,8 @@ namespace UnityEditor
 
             if (probeGroups == null)
             {
-                positions = new Vector3[0];
-                indices = new int[0];
+                positions = Array.Empty<Vector3>();
+                indices = Array.Empty<int>();
                 return;
             }
             var probePositions = new List<Vector3>();
@@ -292,8 +292,8 @@ namespace UnityEditor
 
             if (probePositions.Count == 0)
             {
-                positions = new Vector3[0];
-                indices = new int[0];
+                positions = Array.Empty<Vector3>();
+                indices = Array.Empty<int>();
                 return;
             }
 
@@ -481,7 +481,7 @@ namespace UnityEditor
 
             if (selectedProbeCount == totalProbeCount)
             {
-                return new Vector3[0];
+                return Array.Empty<Vector3>();
             }
             else if (selectedProbeCount == 0)
             {

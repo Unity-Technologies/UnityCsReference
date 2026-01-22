@@ -190,6 +190,8 @@ namespace UnityEditor
                 activeMode.position = newValue;
             }
         }
+        
+        internal static Transform lastRotationSampleTransform { get; set; }
 
         public Quaternion rotation
         {
@@ -208,6 +210,7 @@ namespace UnityEditor
                     return;
 
                 activeMode.rotation = newValue;
+                lastRotationSampleTransform = null;
             }
         }
 
@@ -298,6 +301,12 @@ namespace UnityEditor
 
             EditorSnapSettings.gridRotation = newRotation;
             SceneView.RepaintAll();
+        }
+        
+        internal void SampleTransformRotation(Transform transform)
+        {
+            ApplyCustomRotation(transform.rotation);
+            lastRotationSampleTransform = transform;
         }
 
         internal void ResetGridSettings()

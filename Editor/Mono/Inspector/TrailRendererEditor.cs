@@ -601,8 +601,10 @@ namespace UnityEditor
             {
                 // Check for count != 1
 #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable RS0031 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 if (targets.Skip(1).Any())
 #pragma warning restore RS0030
+#pragma warning restore RS0031
                     return false;
                 if (s_Inspectors == null || s_Inspectors.Count == 0)
                     return false;
@@ -612,9 +614,7 @@ namespace UnityEditor
 
             public override void OnToolGUI(EditorWindow window)
             {
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                if (s_Inspectors == null || !s_Inspectors.Any())
-#pragma warning restore RS0030
+                if (s_Inspectors == null || s_Inspectors.Count == 0)
                     return;
 
 #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.

@@ -12,7 +12,7 @@ using System.Runtime.InteropServices;
 
 namespace UnityEngine.U2D
 {
-    [NativeType(Header = "Runtime/2D/Common/ClipperOffsetWrapper.h")]
+    [NativeHeader("Runtime/2D/Common/ClipperOffsetWrapper.h")]
     internal struct ClipperOffset2D
     {
         public enum JoinType { jtSquare, jtRound, jtMiter };
@@ -20,7 +20,7 @@ namespace UnityEngine.U2D
 
 
         [StructLayout(LayoutKind.Sequential)]
-        [NativeType(Header = "Runtime/2D/Common/ClipperOffsetWrapper.h")]
+        [NativeHeader("Runtime/2D/Common/ClipperOffsetWrapper.h")]
         public struct PathArguments
         {
             // All members should be valid when their value is 0

@@ -28,6 +28,11 @@ namespace Unity.ProjectAuditor.Editor.Core
         public float EmptySpacePercentage;
 
         /// <summary>
+        /// The empty space of the sprite atlas in bytes.
+        /// </summary>
+        public ulong EmptySpaceBytes;
+
+        /// <summary>
         /// The path to a Sprite Atlas asset in the project.
         /// </summary>
         public string AssetPath;

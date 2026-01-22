@@ -281,9 +281,7 @@ namespace UnityEditor.TerrainTools
                 {
                     var klass = m_ToolToTypeDict[tool];
                     //if this tool is a builtin tool
-                    #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                    if (klass.Assembly.GetCustomAttributes(typeof(AssemblyIsEditorAssembly), false).Any())
-#pragma warning restore RS0030
+                    if (klass.Assembly.IsDefined(typeof(AssemblyIsEditorAssembly), false))
                         continue;
                     noRepeats.Add(tool); // if not a builtin tool, then add
                 }

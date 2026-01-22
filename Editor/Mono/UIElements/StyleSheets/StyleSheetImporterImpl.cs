@@ -547,9 +547,9 @@ namespace UnityEditor.UIElements.StyleSheets
 
                         // If no types were returned, it means this property doesn't support assets.
                         // Normal syntax validation should cover this.
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable RS0031 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                         if (!allowed.Any())
-#pragma warning restore RS0030
+#pragma warning restore RS0031
                             return;
 
                         var assetType = assetToStore.GetType();
@@ -1179,7 +1179,7 @@ namespace UnityEditor.UIElements.StyleSheets
                 }
                 else
                 {
-                    asset.imports = new UnityStyleSheet.ImportStruct[0];
+                    asset.imports = Array.Empty<UnityStyleSheet.ImportStruct>();
                     m_Errors.AddValidationWarning(glossary.circularImport, -1);
                 }
 

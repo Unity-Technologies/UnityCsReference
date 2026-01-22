@@ -10,7 +10,7 @@ using UnityEngine.Bindings;
 namespace UnityEditorInternal
 {
     //*undocumented*
-    [NativeType(Header = "Editor/Platform/Windows/VisualStudioUtilities.h")]
+    [NativeHeader("Editor/Platform/Windows/VisualStudioUtilities.h")]
     internal static class VisualStudioUtil
     {
         public class VisualStudio

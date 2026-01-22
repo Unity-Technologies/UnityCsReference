@@ -14,6 +14,7 @@ using UnityEditor.UIElements;
 using UnityEngine;
 using UnityEngine.Pool;
 using UnityEngine.UIElements.StyleSheets;
+using UnityEngine.TextCore.Text;
 
 namespace Unity.UI.Builder
 {
@@ -64,6 +65,8 @@ namespace Unity.UI.Builder
         EnumField m_TextGeneratorField;
         BuilderStyleRow m_AtgWarningRow;
         BuilderStyleRow m_AutoSizeWarningRow;
+        BuilderStyleRow m_BitmapWarningRow;
+        FontDefinitionStyleField m_FontDefinitionField;
 
         // Controllers
         public UxmlBatchedChangesController batchedChangesController { get; }
@@ -258,6 +261,7 @@ namespace Unity.UI.Builder
             template.CloneTree(this);
 
             BindAdvancedTextUI();
+            BindFontUI();
 
             // Get the scroll view.
             // HACK: ScrollView is not capable of remembering a scroll position for content that changes often.
@@ -372,6 +376,20 @@ namespace Unity.UI.Builder
             scaleModeWarningPlaceHolder.Add(helpBox);
 
             m_RefreshAttributesAction = RefreshAttributesSection;
+        }
+
+        void BindFontUI()
+        {
+            m_BitmapWarningRow = this.Q<BuilderStyleRow>("bitmap-warning-row");
+            m_FontDefinitionField = this.Q<FontDefinitionStyleField>("font-definition-field");
+            m_FontDefinitionField?.RegisterValueChangedCallback(_ => UpdateBitmapTextHelpBox());
+            UpdateBitmapTextHelpBox();
+        }
+
+        internal void UpdateBitmapTextHelpBox()
+        {
+            bool isBitmap = m_FontDefinitionField?.value != null && m_FontDefinitionField.value is FontAsset fa && fa.IsBitmap();
+            m_BitmapWarningRow.style.display = isBitmap ? DisplayStyle.Flex : DisplayStyle.None;
         }
 
         void BindAdvancedTextUI()

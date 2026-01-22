@@ -590,7 +590,7 @@ namespace UnityEditorInternal
             var wantedProperties = componentType.GetProperties().AsEnumerable();
 #pragma warning restore RS0030
 #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            wantedProperties = wantedProperties.Where(x => x.GetCustomAttributes(typeof(ObsoleteAttribute), true).Length == 0 && x.GetSetMethod() != null);
+            wantedProperties = wantedProperties.Where(x => !x.IsDefined(typeof(ObsoleteAttribute), true) && x.GetSetMethod() != null);
 #pragma warning restore RS0030
 #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             componentMethods.AddRange(wantedProperties.Select(x => x.GetSetMethod()));
@@ -605,7 +605,7 @@ namespace UnityEditorInternal
                     continue;
 
                 // Don't show obsolete methods.
-                if (componentMethod.GetCustomAttributes(typeof(ObsoleteAttribute), true).Length > 0)
+                if (componentMethod.IsDefined(typeof(ObsoleteAttribute), true))
                     continue;
 
                 if (componentMethod.ReturnType != typeof(void))
@@ -748,7 +748,7 @@ namespace UnityEditorInternal
             GetMethodsForTargetAndMode(target, new[] {typeof(string)}, methods, PersistentListenerMode.String);
             GetMethodsForTargetAndMode(target, new[] {typeof(bool)}, methods, PersistentListenerMode.Bool);
             GetMethodsForTargetAndMode(target, new[] {typeof(Object)}, methods, PersistentListenerMode.Object);
-            GetMethodsForTargetAndMode(target, new Type[] {}, methods, PersistentListenerMode.Void);
+            GetMethodsForTargetAndMode(target, Array.Empty<Type>(), methods, PersistentListenerMode.Void);
             if (methods.Count > 0)
             {
                 if (didAddDynamic)

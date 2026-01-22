@@ -43,7 +43,7 @@ namespace UnityEditorInternal.Profiling
             public static readonly GUIContent showDetailsDropdownContent = EditorGUIUtility.TrTextContent("Show");
             public static readonly GUIContent showFullDetailsForCallStacks = EditorGUIUtility.TrTextContent("Full details for Call Stacks");
             public static readonly GUIContent showSelectedSampleStacks = EditorGUIUtility.TrTextContent("Selected Sample Stack ...");
-            public static readonly GUIContent askAssistantTooltip = EditorGUIUtility.TrTextContent("Ask Assistant", "Ask the Profiler Assistant for help understanding this sample");
+            public static readonly GUIContent askAssistantTooltip = EditorGUIUtility.TrTextContent("Ask Assistant", "Ask the Profiler Assistant for help understanding this sample", EditorGUIUtility.LoadIcon("AISparkle"));
             public static readonly GUIStyle viewTypeToolbarDropDown = new GUIStyle(EditorStyles.toolbarDropDownLeft);
             public static readonly GUIStyle threadSelectionToolbarDropDown = new GUIStyle(EditorStyles.toolbarDropDown);
             public static readonly GUIStyle detailedViewTypeToolbarDropDown = new GUIStyle(EditorStyles.toolbarDropDown);
@@ -68,7 +68,7 @@ namespace UnityEditorInternal.Profiling
 
             static BaseStyles()
             {
-                viewTypeToolbarDropDown.fixedWidth = Chart.kSideWidth;
+                viewTypeToolbarDropDown.fixedWidth = ProfilerWindow.Styles.kSideWidth;
                 viewTypeToolbarDropDown.stretchWidth = false;
 
                 detailedViewTypeToolbarDropDown.fixedWidth = k_DetailedViewTypeToolbarDropDownWidth;

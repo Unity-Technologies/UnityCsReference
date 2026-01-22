@@ -17,7 +17,7 @@ namespace UnityEditor.EditorTools
     [CustomEditor(typeof(EditorToolContext), true)]
     class GameObjectToolContextCustomEditor : Editor, ICreateToolbar
     {
-        string[] k_ToolbarIds = new string [0];
+        string[] k_ToolbarIds = Array.Empty<string>();
 
         public IEnumerable<string> toolbarElements => k_ToolbarIds;
 
@@ -126,8 +126,6 @@ namespace UnityEditor.EditorTools
             }
         }
 
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-        public virtual IEnumerable<Type> GetAdditionalToolTypes() => Enumerable.Empty<Type>();
-#pragma warning restore RS0030
+        public virtual IEnumerable<Type> GetAdditionalToolTypes() => Array.Empty<Type>();
     }
 }

@@ -27,9 +27,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
             {
                 return Directory.GetFiles(NetStandardFinder.GetNetStandardEditorExtensionsDirectory(), "*.dll");
             }
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            return Enumerable.Empty<string>();
-#pragma warning restore RS0030
+            return System.Array.Empty<string>();
         }
 
 

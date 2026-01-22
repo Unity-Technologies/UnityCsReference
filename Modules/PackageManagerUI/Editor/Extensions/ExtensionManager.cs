@@ -221,9 +221,9 @@ namespace UnityEditor.PackageManager.UI.Internal
             {
                 var packageActionTooltip = extension.tooltip ?? string.Empty;
                 var packageActionText = !string.IsNullOrEmpty(extension.text) ? extension.text : packageActionTooltip;
-                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable RS0031 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 if (!extension.visibleDropdownItems.Any())
-#pragma warning restore RS0030
+#pragma warning restore RS0031
                     newDropdownMenu.AppendAction(packageActionText, a => { extension.action?.Invoke(m_Window.activeSelection); }, a =>
                     {
                         return extension.enabled ? DropdownMenuAction.Status.Normal : DropdownMenuAction.Status.Disabled;

@@ -442,9 +442,11 @@ namespace UnityEditor
                     .Select(x => x.name);
 
                 //Are there any embedded materials that *arent* in the AssetDatabase?
-                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable RS0031 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 if (namesOfEmbeddedMaterials.Except(namesOfMaterialsInAssetDatabase).Any())
 #pragma warning restore RS0030
+#pragma warning restore RS0031
                     return false;
             }
 

@@ -19,6 +19,7 @@ namespace Unity.Profiling.Editor
         // The identifier must be serialized as it is used by the ProfilerWindow to identify a deserialized module prior to calling Initialize() on it.
         [SerializeField] string m_Identifier;
 
+        ChartViewController m_ChartViewController;
         ProfilerModuleViewController m_DetailsViewController;
 
         protected ProfilerModule(ProfilerCounterDescriptor[] chartCounters, ProfilerModuleChartType defaultChartType = ProfilerModuleChartType.Line, string[] autoEnabledCategoryNames = null)
@@ -41,13 +42,37 @@ namespace Unity.Profiling.Editor
 
         protected ProfilerWindow ProfilerWindow { get; private set; }
 
+        internal IProfilerPersistentSettingsService SettingsService { get; private set; }
+
+        internal ChartViewController ChartViewController => m_ChartViewController;
+
         private protected string IconPath { get; private set; }
 
         // Must be non-serialized to prevent the value being overridden after it is set in the constructor during deserialization.
-        [field: NonSerialized] ProfilerModuleChartType ChartType { get; }
+        [field: NonSerialized] private protected ProfilerModuleChartType ChartType { get; }
 
         // Must be non-serialized to prevent the value being overridden after it is set in the constructor during deserialization.
         [field: NonSerialized] string[] AutoEnabledCategoryNames { get; set; }
+
+        internal virtual ChartModelBuilder CreateChartModelBuilder()
+        {
+            var builder = new ChartModelBuilder(SettingsService, ChartType, ChartCounters.Length, Identifier, DisplayName, IconPath);
+            builder.SetArea(area);
+            builder.ConfigureChartSeries(ProfilerUserSettings.frameCount, ChartCounters);
+            return builder;
+        }
+
+        internal virtual ChartViewController CreateChartViewController()
+        {
+            var controller = new ChartViewController(this, ChartType, m_ChartModelBuilder.Model)
+            {
+                ModuleSelected = () => ProfilerWindow.selectedModule = this,
+                CountersEnabledStateChanged = m_ChartModelBuilder.OnCountersEnableChange,
+                CountersOrderChanged = m_ChartModelBuilder.OnCountersOrderChange,
+                SelectedFrameChanged = (x) => ProfilerWindow.SetCurrentFrame(x)
+            };
+            return controller;
+        }
 
         public virtual ProfilerModuleViewController CreateDetailsViewController()
         {
@@ -65,6 +90,7 @@ namespace Unity.Profiling.Editor
             DisplayName = args.DisplayName;
             IconPath = args.IconPath;
             ProfilerWindow = args.ProfilerWindow;
+            SettingsService = args.SettingsService;
 
             // Give legacy modules a chance to setup their counters after construction.
             LegacyModuleInitialize();
@@ -93,8 +119,30 @@ namespace Unity.Profiling.Editor
             if (ChartCounters == null || ChartCounters.Length == 0)
                 throw new InvalidOperationException($"The Profiler module '{DisplayName}' cannot have no chart counters.");
 
-            if (ChartCounters.Length > ProfilerChart.k_MaximumSeriesCount)
-                throw new InvalidOperationException($"The Profiler module '{DisplayName}' cannot have more than {ProfilerChart.k_MaximumSeriesCount} chart counters.");
+            if (ChartCounters.Length > ChartModelBuilder.k_MaximumSeriesCount)
+                throw new InvalidOperationException($"The Profiler module '{DisplayName}' cannot have more than {ChartModelBuilder.k_MaximumSeriesCount} chart counters.");
+        }
+
+        internal VisualElement CreateChartView()
+        {
+            if (m_ChartModelBuilder == null)
+                m_ChartModelBuilder = CreateChartModelBuilder();
+
+            if (m_ChartViewController == null)
+            {
+                m_ChartViewController = CreateChartViewController();
+
+                // Update state outside of create chain, as it forces View
+                // to load and prevents overrides from initializing correctly
+                m_ChartViewController.SetSelected(ProfilerWindow.selectedModule == this);
+                m_ChartViewController.SetActiveState(active);
+                m_ChartViewController.NotifySelectedFrameIndexChanged(ProfilerWindow.selectedFrameIndex);
+            }
+
+            if (m_ChartViewController == null)
+                throw new InvalidOperationException($"A new chart view controller was requested for the module '{DisplayName}' but none was provided.");
+
+            return m_ChartViewController.View;
         }
 
         internal VisualElement CreateDetailsView()
@@ -141,12 +189,13 @@ namespace Unity.Profiling.Editor
 
         internal readonly struct InitializationArgs
         {
-            public InitializationArgs(string identifier, string name, string iconPath, ProfilerWindow profilerWindow)
+            public InitializationArgs(string identifier, string name, string iconPath, ProfilerWindow profilerWindow, IProfilerPersistentSettingsService settingsService)
             {
                 Identifier = identifier;
                 DisplayName = name;
                 IconPath = iconPath;
                 ProfilerWindow = profilerWindow;
+                SettingsService = settingsService;
             }
 
             public string Identifier { get; }
@@ -156,6 +205,8 @@ namespace Unity.Profiling.Editor
             public string IconPath { get; }
 
             public ProfilerWindow ProfilerWindow { get; }
+
+            public IProfilerPersistentSettingsService SettingsService { get; }
         }
 
         internal class LocalizationResource : ProfilerModuleMetadataAttribute.IResource
@@ -171,17 +222,18 @@ namespace Unity.Profiling.Editor
     public abstract partial class ProfilerModule
     {
         internal const int k_UndefinedOrderIndex = int.MaxValue;
+        internal const ProfilerArea k_InvalidProfilerArea = unchecked((ProfilerArea)Profiler.invalidProfilerArea);
 
         const string k_ProfilerModuleActiveStatePreferenceKeyFormat = "ProfilerModule.{0}.Active";
         const string k_ProfilerModuleOrderIndexPreferenceKeyFormat = "ProfilerModule.{0}.OrderIndex";
         const int k_NoFrameIndex = int.MinValue; // We cannot use -1 as the Profiler uses a frame index of -1 to signify 'no data'.
 
-        private protected ProfilerChart m_Chart;
+        ChartModelBuilder m_ChartModelBuilder;
 
         [NonSerialized] bool m_Active = false;
         int m_LastUpdatedFrameIndex = k_NoFrameIndex;
 
-        internal virtual ProfilerArea area => unchecked((ProfilerArea)Profiler.invalidProfilerArea);
+        internal virtual ProfilerArea area => k_InvalidProfilerArea;
 
         internal bool active
         {
@@ -189,18 +241,14 @@ namespace Unity.Profiling.Editor
             set
             {
                 if (value == active)
-                {
                     return;
-                }
 
                 m_Active = value;
                 ApplyActiveState();
                 SaveActiveState();
 
-                if (active == false && Chart != null)
-                {
-                    Chart.Close();
-                }
+                if (!active)
+                    ProfilerWindow.CloseModule(this);
             }
         }
 
@@ -211,7 +259,7 @@ namespace Unity.Profiling.Editor
         }
 
         // Used by ProfilerEditorTests.
-        internal ProfilerChart Chart => m_Chart;
+        internal ChartModelBuilder ChartModelBuilder => m_ChartModelBuilder;
 
         // Some modules might expose a warning message
         internal string WarningMsg { get; private protected set; }
@@ -234,61 +282,64 @@ namespace Unity.Profiling.Editor
 
         internal virtual void OnEnable()
         {
-            BuildChartIfNecessary();
             active = ReadActiveState();
+            SaveActiveState();
+            ProfilerWindow.SelectedFrameIndexChanged += SelectedFrameIndexChanged;
         }
 
         internal virtual void OnDisable()
         {
+            ProfilerWindow.SelectedFrameIndexChanged -= SelectedFrameIndexChanged;
             SaveViewSettings();
-        }
-
-        internal float GetMinimumChartHeight()
-        {
-            return m_Chart.GetMinimumHeight();
-        }
-
-        internal int DrawChartView(Rect chartRect, int currentFrame, bool isSelected, int lastVisibleFrameIndex)
-        {
-            using (Markers.drawChartView.Auto())
-            {
-                // Only update modules if repainting and the visible range has changed.
-                var visibleRangeHasChanged = (m_LastUpdatedFrameIndex != lastVisibleFrameIndex);
-                if (Event.current.type == EventType.Repaint && visibleRangeHasChanged)
-                {
-                    Update();
-                }
-
-                currentFrame = m_Chart.DoChartGUI(chartRect, currentFrame, isSelected);
-                if (isSelected)
-                    DrawChartOverlay(m_Chart.lastChartRect);
-                return currentFrame;
-            }
         }
 
         internal virtual void Update()
         {
+            if (!active || m_ChartModelBuilder == null)
+                return;
+
             using (Markers.updateModule.Auto())
             {
-                UpdateChart();
+                m_ChartModelBuilder.Update(ProfilerWindow.selectedFrameIndex);
+
+                int frameCount = ProfilerUserSettings.frameCount;
+                int firstEmptyFrame = firstFrameIndexWithHistoryOffset;
+                int firstFrame = Mathf.Max(ProfilerDriver.firstFrameIndex, firstEmptyFrame);
+                m_ChartModelBuilder.UpdateData(firstEmptyFrame, firstFrame, frameCount);
+                m_ChartModelBuilder.UpdateOverlayData(firstEmptyFrame);
+                m_ChartModelBuilder.UpdateScaleValuesIfNecessary(firstEmptyFrame, firstFrame, frameCount);
+                m_ChartModelBuilder.UpdateSelectedData(ProfilerWindow.selectedFrameIndex);
+
+                m_ChartViewController.Update();
+
                 m_LastUpdatedFrameIndex = ProfilerDriver.lastFrameIndex;
             }
         }
 
         internal virtual void Rebuild()
         {
-            RebuildChart();
-        }
+            if (m_ChartViewController == null)
+                return;
 
-        internal void OnLostFocus()
-        {
-            m_Chart.OnLostFocus();
+            // Keep current parent and dispose
+            var parent = m_ChartViewController.View.parent;
+            m_ChartViewController.Dispose();
+            m_ChartViewController = null;
+
+            m_ChartModelBuilder = null;
+
+            // Re-create and add
+            parent.Add(CreateChartView());
+            Update();
+
+            ProfilerWindow.UpdateVisualTreeModulesOrder();
         }
 
         internal virtual void Clear()
         {
             m_LastUpdatedFrameIndex = k_NoFrameIndex;
-            m_Chart?.ResetChartState();
+            m_ChartModelBuilder?.ResetChartState();
+            m_ChartViewController.Clear();
         }
 
         internal virtual void OnNativePlatformSupportModuleChanged() {}
@@ -311,7 +362,7 @@ namespace Unity.Profiling.Editor
         {
             DeleteActiveState();
             EditorPrefs.DeleteKey(orderIndexPreferenceKey);
-            m_Chart.DeleteSettings();
+            m_ChartModelBuilder.DeleteSettings();
         }
 
         // Used by ProfilerModuleBase, which cannot provide counters during construction.
@@ -326,13 +377,23 @@ namespace Unity.Profiling.Editor
             AutoEnabledCategoryNames = autoEnabledCategoryNames;
         }
 
-        private protected virtual void OnSelected() {}
+        private protected virtual void OnSelected()
+        {
+            m_ChartViewController.SetSelected(true);
+        }
 
-        private protected virtual void OnDeselected() {}
+        private protected virtual void OnDeselected()
+        {
+            m_ChartViewController.SetSelected(false);
+        }
 
         private protected virtual void ApplyActiveState()
         {
+            // Nb! CPU Module overrides this function w/o calling base class
             ProfilerWindow.SetCategoriesInUse(AutoEnabledCategoryNames, active);
+            // We need to update as in de-activated state model become out-of-sync
+            Update();
+            m_ChartViewController?.SetActiveState(active);
         }
 
         private protected virtual bool ReadActiveState()
@@ -350,73 +411,15 @@ namespace Unity.Profiling.Editor
             EditorPrefs.DeleteKey(activeStatePreferenceKey);
         }
 
-        private protected virtual ProfilerChart InstantiateChart(float defaultChartScale, float chartMaximumScaleInterpolationValue)
-        {
-            m_Chart = new ProfilerChart(area, ChartType, defaultChartScale, chartMaximumScaleInterpolationValue, ChartCounters.Length, Identifier, DisplayName, IconPath);
-            return m_Chart;
-        }
-
-        private protected virtual void UpdateChartOverlay(int firstEmptyFrame, int firstFrame, int frameCount) {}
-
-        private protected virtual void DrawChartOverlay(Rect chartRect) {}
-
-        private protected void RebuildChart()
-        {
-            var forceRebuild = true;
-            BuildChartIfNecessary(forceRebuild);
-        }
-
         private protected void SetName(string name)
         {
             DisplayName = name;
         }
 
-        void BuildChartIfNecessary(bool forceRebuild = false)
+        void SelectedFrameIndexChanged(long selectedFrameIndex)
         {
-            if (forceRebuild || m_Chart == null)
-            {
-                InitializeChart();
-                UpdateChart();
-            }
-
-            m_Chart.LoadAndBindSettings(legacyPreferenceKey);
-        }
-
-        void InitializeChart()
-        {
-            var isStackedTimeAreaChartType = ChartType == ProfilerModuleChartType.StackedTimeArea;
-            var chartScale = (isStackedTimeAreaChartType) ? 0.001f : 1f;
-            var chartMaximumScaleInterpolationValue = (isStackedTimeAreaChartType) ? -1f : 0f;
-            m_Chart = InstantiateChart(chartScale, chartMaximumScaleInterpolationValue);
-            m_Chart.ConfigureChartSeries(ProfilerUserSettings.frameCount, ChartCounters);
-            ConfigureChartSelectionCallbacks();
-        }
-
-        void ConfigureChartSelectionCallbacks()
-        {
-            m_Chart.selected += OnChartSelected;
-            m_Chart.closed += OnChartClosed;
-        }
-
-        void UpdateChart()
-        {
-            BuildChartIfNecessary();
-            int frameCount = ProfilerUserSettings.frameCount;
-            int firstEmptyFrame = firstFrameIndexWithHistoryOffset;
-            int firstFrame = Mathf.Max(ProfilerDriver.firstFrameIndex, firstEmptyFrame);
-            m_Chart.UpdateData(firstEmptyFrame, firstFrame, frameCount);
-            UpdateChartOverlay(firstEmptyFrame, firstFrame, frameCount);
-            m_Chart.UpdateScaleValuesIfNecessary(firstEmptyFrame, firstFrame, frameCount);
-        }
-
-        void OnChartSelected(Chart chart)
-        {
-            ProfilerWindow.selectedModule = this;
-        }
-
-        void OnChartClosed(Chart chart)
-        {
-            ProfilerWindow.CloseModule(this);
+            m_ChartModelBuilder.UpdateSelectedData(selectedFrameIndex);
+            m_ChartViewController.NotifySelectedFrameIndexChanged(selectedFrameIndex);
         }
 
         static class Markers

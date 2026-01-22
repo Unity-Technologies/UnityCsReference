@@ -142,7 +142,7 @@ namespace UnityEditor
 
             _assemblyDefinitions = new HashSet<AssemblyDefinition>();
 
-            var filePaths = Directory.Exists(path) ? Directory.GetFiles(path) : new string[0];
+            var filePaths = Directory.Exists(path) ? Directory.GetFiles(path) : Array.Empty<string>();
 
             using (var resolver = AssemblyResolverFor(path))
             {

@@ -49,7 +49,6 @@ namespace UnityEditor
 
         ~SerializedObject() { Dispose(); }
 
-        [ThreadAndSerializationSafe()]
         public void Dispose()
         {
             if (m_NativeObjectPtr != IntPtr.Zero)

@@ -159,14 +159,14 @@ namespace UnityEditor.Rendering
             where TSettingsInterfaceType : class, IRenderPipelineGraphicsSettings
         {
             if (!GraphicsSettings.TryGetCurrentRenderPipelineGlobalSettings(out RenderPipelineGlobalSettings asset))
-                return new TSettingsInterfaceType[] {};
+                return Array.Empty<TSettingsInterfaceType>();
 
             if (asset.GetSettingsImplementingInterface<TSettingsInterfaceType>(out var baseSettings))
             {
                 return baseSettings.ToArray();
             }
 
-            return new TSettingsInterfaceType[] {};
+            return Array.Empty<TSettingsInterfaceType>();
         }
 
         public static bool TryGetFirstRenderPipelineSettingsFromInterface<TSettingsInterfaceType>(out TSettingsInterfaceType settings)

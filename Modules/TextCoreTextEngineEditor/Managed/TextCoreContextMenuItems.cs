@@ -271,7 +271,7 @@ namespace UnityEditor.TextCore.Text
                 Unsupported.SmartReset(mat);
 
                 // Reset ShaderKeywords
-                mat.shaderKeywords = new string[0]; // { "BEVEL_OFF", "GLOW_OFF", "UNDERLAY_OFF" };
+                mat.shaderKeywords = System.Array.Empty<string>(); // { "BEVEL_OFF", "GLOW_OFF", "UNDERLAY_OFF" };
 
                 // Copy unique material properties back to the material.
                 mat.SetTexture(TextShaderUtilities.ID_MainTex, texture);

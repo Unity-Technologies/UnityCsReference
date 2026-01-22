@@ -15,8 +15,9 @@ namespace UnityEditor.PackageManager.UI.Internal
             public override object CreateInstance() => new CopyIconButton();
         }
 
+        private const string k_CopyIconName = "copyIcon";
         private const string k_ClickedClassName = "clicked";
-        public string textToCopy {get; set;}
+        public string textToCopy { get; private set; }
 
         private IApplicationProxy m_ApplicationProxy;
 
@@ -24,6 +25,8 @@ namespace UnityEditor.PackageManager.UI.Internal
         {
             var container = ServicesContainer.instance;
             m_ApplicationProxy = container.Resolve<IApplicationProxy>();
+            name = k_CopyIconName;
+            tooltip = L10n.Tr("Copy to clipboard");
 
             RegisterCallback<MouseDownEvent>(OnMouseDown);
         }

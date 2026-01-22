@@ -3,9 +3,11 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using Unity.ProjectAuditor.Editor.Core;
 using UnityEditor;
 using UnityEditor.Compilation;
 using UnityEditorInternal;
@@ -83,6 +85,18 @@ namespace Unity.ProjectAuditor.Editor.AssemblyUtils
 
         public void Compile(out List<AssemblyInfo> compiledEditorAssemblyPaths, out List<AssemblyInfo> compiledPlayerAssemblyPaths, IProgress progress = null)
         {
+            var editorAssemblyPaths = new List<AssemblyInfo>();
+            var playerAssemblyPaths = new List<AssemblyInfo>();
+
+            IEnumerator enumerator = Compile((editorPaths, playerPaths) => { editorAssemblyPaths = editorPaths; playerAssemblyPaths = playerPaths; }, progress);
+            AnalysisCoroutine.ExecuteSynchronously(enumerator, this);
+
+            compiledEditorAssemblyPaths = editorAssemblyPaths;
+            compiledPlayerAssemblyPaths = playerAssemblyPaths;
+        }
+
+        internal IEnumerator Compile(Action<List<AssemblyInfo>, List<AssemblyInfo>> onComplete, IProgress progress)
+        {
             GetAssemblies(out var editorAssemblies, out var playerAssemblies);
 
             if (AssemblyNames != null)
@@ -91,9 +105,10 @@ namespace Unity.ProjectAuditor.Editor.AssemblyUtils
                 playerAssemblies = CollectAssemblyDependencies(playerAssemblies);
             }
 
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            IEnumerable<string> compiledPlayerPaths = CompilePlayerAssemblies(playerAssemblies.ToArray(), progress);
+            IEnumerable<string> compiledPlayerPaths = null;
+            yield return CompilePlayerAssemblies(playerAssemblies, (paths) => compiledPlayerPaths = paths, progress);
 
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var editorPaths = editorAssemblies.Select(a => AssemblyInfoProvider.GetAssemblyInfoFromAssemblyPath(a.outputPath, true)).Distinct().ToList();
             var playerPaths = compiledPlayerPaths.Select(p => AssemblyInfoProvider.GetAssemblyInfoFromAssemblyPath(p, false)).Distinct().ToList();
 #pragma warning restore RS0030
@@ -117,8 +132,7 @@ namespace Unity.ProjectAuditor.Editor.AssemblyUtils
             if ((CodeOwnerFlags & CodeOwnerFlags.Unity) != 0)
                 FindUnityModuleDLLs(editorPaths, playerPaths);
 
-            compiledEditorAssemblyPaths = editorPaths;
-            compiledPlayerAssemblyPaths = playerPaths;
+            onComplete.Invoke(editorPaths, playerPaths);
         }
 
         private void FindUnityModuleDLLs(List<AssemblyInfo> editorPaths, List<AssemblyInfo> playerPaths)
@@ -228,36 +242,29 @@ namespace Unity.ProjectAuditor.Editor.AssemblyUtils
                 CollectAssemblyDependenciesRecursive(dependency, assembliesAndDependencies);
         }
 
-        IEnumerable<string> CompilePlayerAssemblies(Assembly[] assemblies, IProgress progress = null)
+        IEnumerator CompilePlayerAssemblies(IReadOnlyCollection<Assembly> assemblies, Action<IEnumerable<string>> onComplete, IProgress progress)
         {
-            if (progress != null)
-            {
-                var numAssemblies = assemblies.Length;
-                progress.Start("Assembly Compilation", "Compiling project scripts",
-                    numAssemblies);
-            }
+            AsyncProgressState progressState = progress?.Start("Compiling Assemblies", assemblies.Count);
 
             m_OutputFolder = FileUtil.GetUniqueTempPathInProject();
 
             if (!Directory.Exists(m_OutputFolder))
                 Directory.CreateDirectory(m_OutputFolder);
 
-            PrepareAssemblyBuilders(assemblies, progress);
+            PrepareAssemblyBuilders(assemblies, progress, progressState);
+            yield return null;
 
-            UpdateAssemblyBuilders(progress);
+            yield return UpdateAssemblyBuilders(progress);
 
-            if (progress?.IsCancelled ?? false)
-                return Array.Empty<string>();
+            progress?.Clear(progressState);
 
-            if (progress != null)
-                progress.Clear();
-
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            return m_AssemblyCompilationTasks.Where(pair => pair.Value.IsCompletedSuccessfully).Select(task => task.Value.AssemblyPath);
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            var paths = m_AssemblyCompilationTasks.Where(pair => pair.Value.IsCompletedSuccessfully).Select(task => task.Value.AssemblyPath);
 #pragma warning restore RS0030
+            onComplete.Invoke(paths);
         }
 
-        void PrepareAssemblyBuilders(Assembly[] assemblies, IProgress progress = null)
+        void PrepareAssemblyBuilders(IReadOnlyCollection<Assembly> assemblies, IProgress progress, AsyncProgressState progressState)
         {
             m_AssemblyCompilationTasks = new Dictionary<string, AssemblyCompilationTask>();
             // first pass: create all compilation tasks
@@ -317,8 +324,7 @@ namespace Unity.ProjectAuditor.Editor.AssemblyUtils
                 {
                     OnCompilationFinished = (result =>
                     {
-                        progress?.Advance(assemblyName);
-
+                        progress?.Advance(progressState, assemblyName);
                         OnAssemblyCompilationFinished?.Invoke(result);
                     })
                 });
@@ -339,25 +345,24 @@ namespace Unity.ProjectAuditor.Editor.AssemblyUtils
             }
         }
 
-        void UpdateAssemblyBuilders(IProgress progress)
+        IEnumerator UpdateAssemblyBuilders(IProgress progress)
         {
             while (true)
             {
                 if (progress?.IsCancelled ?? false)
-                    return; // compilation of assemblies will continue but we won't wait for it
+                    break; // compilation of assemblies will continue but we won't wait for it
 
-                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable RS0030
                 var pendingTasks = m_AssemblyCompilationTasks.Select(pair => pair.Value).Where(task => !task.IsCompleted).ToArray();
 #pragma warning restore RS0030
-                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                if (!pendingTasks.Any())
-#pragma warning restore RS0030
+                if (pendingTasks.Length == 0)
                     break;
+
                 foreach (var task in pendingTasks)
-                {
                     task.Update();
-                }
+
                 System.Threading.Thread.Sleep(10);
+                yield return null;
             }
         }
     }

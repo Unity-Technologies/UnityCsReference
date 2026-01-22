@@ -13,7 +13,7 @@ using UnityEngine.Internal;
 
 namespace UnityEditor
 {
-    [NativeType("AnimationClipSettings", Header = "Modules/Animation/AnimationClipSettings.h")]
+    [NativeHeader("Modules/Animation/AnimationClipSettings.h")]
     [NativeAsStruct]
     [StructLayout(LayoutKind.Sequential)]
     [RequiredByNativeCode]

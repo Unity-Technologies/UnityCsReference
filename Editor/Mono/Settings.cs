@@ -248,9 +248,7 @@ namespace UnityEditor
 
         static void Load()
         {
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            if (!m_AddedPrefs.Any())
-#pragma warning restore RS0030
+            if (m_AddedPrefs.Count == 0)
                 return;
 
             List<IPrefType> loadPrefs = new List<IPrefType>(m_AddedPrefs);

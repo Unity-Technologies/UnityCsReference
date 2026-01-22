@@ -53,10 +53,10 @@ namespace UnityEditor
         [SerializeField]
         MonoReloadableIntPtr   m_ViewPtr;
         [SerializeField]
-        View[] m_Children = new View[0];
-        [System.NonSerialized]
+        View[] m_Children = Array.Empty<View>();
+        [NonSerialized]
         View m_Parent;
-        [System.NonSerialized]
+        [NonSerialized]
         ContainerWindow m_Window;
 
         // Workaround for nonserialized stuff above

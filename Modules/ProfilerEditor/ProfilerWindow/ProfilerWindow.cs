@@ -90,13 +90,11 @@ namespace UnityEditor
             public static readonly GUIStyle profilerGraphBackground = "ProfilerScrollviewBackground";
 
             public static readonly int kButtonWidth = 25;
+            public const float kSideWidth = 180.0f;
             public static readonly GUILayoutOption buttonWidthOption = GUILayout.MaxWidth(kButtonWidth);
-            public static readonly GUILayoutOption chartWidthOption = GUILayout.Width(Chart.kSideWidth - 1 - kButtonWidth);
+            public static readonly GUILayoutOption chartWidthOption = GUILayout.Width(kSideWidth - 1 - kButtonWidth);
 
-            static Styles()
-            {
-                profilerGraphBackground.overflow.left = -(int)Chart.kSideWidth;
-            }
+            public static readonly GUIStyle whiteLabel = "ProfilerBadge";
         }
 
         static List<ProfilerWindow> s_ProfilerWindows = new List<ProfilerWindow>();
@@ -189,13 +187,13 @@ namespace UnityEditor
         // Data
         IProfilerCaptureDataService m_DataService;
         IProfilerPersistentSettingsService m_PersistentSettingsService;
-        bool? m_IsLegacyChartsGUIScrollBarVisible = false;
 
         // UI references.
         IMGUIContainer m_ToolbarIMGUIContainer;
-        IMGUIContainer m_ChartsIMGUIContainer;
+        VisualElement m_ChartsContainer;
         VisualElement m_BottlenecksViewContainer;
         VisualElement m_DetailsViewContainer;
+        MatchWidthLock m_Charts2BottlenecksWidthLock;
 
         BottlenecksChartViewController m_BottlenecksChartViewController;
         ViewController m_BottlenecksDetailsViewController;
@@ -435,9 +433,10 @@ namespace UnityEditor
 
         void OnEnable()
         {
-            Initialize();
             m_DataService = new LegacySingletonProfilerCaptureDataService();
             m_PersistentSettingsService = new LegacyGlobalProfilerPersistentSettingsService();
+
+            Initialize();
             m_CpuProfilerAssistantController = new CpuProfilerAssistantController();
             ConstructVisualTree(m_DataService, m_PersistentSettingsService);
             SubscribeToGlobalEvents();
@@ -563,7 +562,7 @@ namespace UnityEditor
                         module = Activator.CreateInstance(moduleType) as ProfilerModule;
                     }
 
-                    var args = new ProfilerModule.InitializationArgs(moduleIdentifier, moduleMetadata.DisplayName, moduleMetadata.IconPath, this);
+                    var args = new ProfilerModule.InitializationArgs(moduleIdentifier, moduleMetadata.DisplayName, moduleMetadata.IconPath, this, m_PersistentSettingsService);
                     module.Initialize(args);
 
                     if (moduleIdentifier == kJobsProfilerIdentifier)
@@ -597,7 +596,7 @@ namespace UnityEditor
                         module = new DynamicProfilerModule();
                     }
 
-                    var args = new ProfilerModule.InitializationArgs(moduleIdentifier, moduleData.m_Name, DynamicProfilerModule.iconPath, this);
+                    var args = new ProfilerModule.InitializationArgs(moduleIdentifier, moduleData.m_Name, DynamicProfilerModule.iconPath, this, m_PersistentSettingsService);
                     module.Initialize(args, moduleData.m_ChartCounters, moduleData.m_DetailCounters);
                     modules.Add(module);
                 }
@@ -684,8 +683,16 @@ namespace UnityEditor
             m_CapturesListViewContainer.Add(m_CapturesListViewController.View);
             ShowCapturesList(EditorPrefs.GetBool(k_CapturesSplitViewToggleIsVisibleStatePreferenceKey, true));
 
-            m_ChartsIMGUIContainer = rootVisualElement.Q<IMGUIContainer>(k_UxmlIdentifier_ChartsViewContainer);
-            m_ChartsIMGUIContainer.onGUIHandler = DoLegacyChartsGUI;
+            m_ChartsContainer = rootVisualElement.Q(k_UxmlIdentifier_ChartsViewContainer);
+            for (int i = 0; i < m_AllModules.Count; ++i)
+            {
+                var module = m_AllModules[i];
+                var chartView = module.CreateChartView();
+                m_ChartsContainer.Add(chartView);
+            }
+
+            m_Charts2BottlenecksWidthLock = new MatchWidthLock(m_BottlenecksViewContainer);
+            m_Charts2BottlenecksWidthLock.SetSource(m_ChartsContainer);
 
             MainSplitView = rootVisualElement.Q<TwoPaneSplitView>(k_UxmlIdentifier_SplitView);
             // TwoPaneSplitView.viewDataKey is not currently supported so we need to manually persist its state.
@@ -698,6 +705,12 @@ namespace UnityEditor
         void OnProfilerFrameRecorded(int _, int __)
         {
             CurrentLoadedCaptureFile = string.Empty;
+        }
+
+        internal void UpdateVisualTreeModulesOrder()
+        {
+            foreach (var module in m_AllModules)
+                module.ChartViewController.View.BringToFront();
         }
 
         void SubscribeToGlobalEvents()
@@ -935,20 +948,6 @@ namespace UnityEditor
             }
         }
 
-        void OnLostFocus()
-        {
-            if (GUIUtility.hotControl != 0)
-            {
-                // The chart may not have had the chance to release the hot control before we lost focus.
-                // This happens when changing the selected frame, which may pause the game and switch the focus to another view.
-                for (int i = 0; i < m_AllModules.Count; ++i)
-                {
-                    var module = m_AllModules[i];
-                    module.OnLostFocus();
-                }
-            }
-        }
-
         void IHasCustomMenu.AddItemsToMenu(GenericMenu menu)
         {
             menu.AddItem(Styles.accessibilityModeLabel, UserAccessiblitySettings.colorBlindCondition != ColorBlindCondition.Default, OnToggleColorBlindMode);
@@ -964,6 +963,13 @@ namespace UnityEditor
         void OnToggleShowStatsLabelsOnCurrentFrame()
         {
             ProfilerUserSettings.showStatsLabelsOnCurrentFrame = !ProfilerUserSettings.showStatsLabelsOnCurrentFrame;
+            if (ProfilerUserSettings.showStatsLabelsOnCurrentFrame)
+            {
+                SetCurrentFrame(FrameDataView.invalidOrCurrentFrameIndex);
+                SelectedFrameIndexChanged?.Invoke(selectedFrameIndex);
+            }
+            else
+                SetCurrentFrame((int)selectedFrameIndex);
         }
 
         // Used by Native method DoBuildPlayer_PostBuild() in BuildPlayer.cpp
@@ -1055,8 +1061,10 @@ namespace UnityEditor
                     if (ProfilerDriver.lastFrameIndex != window.m_LastFrameFromTick)
                     {
                         window.m_LastFrameFromTick = ProfilerDriver.lastFrameIndex;
-                        window.m_BottlenecksChartViewController.ReloadData();
-                        window.m_ChartsIMGUIContainer.MarkDirtyRepaint();
+                        if (window.m_BottlenecksViewContainer?.style.display != DisplayStyle.None)
+                            window.m_BottlenecksChartViewController.ReloadData();
+                        foreach (var module in window.m_AllModules)
+                            module.Update();
                         window.InvokeSelectedFrameIndexChangedEventIfNecessary(window.m_LastFrameFromTick);
                     }
                 }
@@ -1576,7 +1584,7 @@ namespace UnityEditor
             InvokeSelectedFrameIndexChangedEventIfNecessary(m_CurrentFrame);
         }
 
-        void SetCurrentFrame(int frame)
+        internal void SetCurrentFrame(int frame)
         {
             bool shouldPause = frame != FrameDataView.invalidOrCurrentFrameIndex && ProfilerDriver.enabled && !ProfilerDriver.profileEditor && m_CurrentFrame != frame;
             if (shouldPause && EditorApplication.isPlayingOrWillChangePlaymode)
@@ -1610,142 +1618,23 @@ namespace UnityEditor
             DrawMainToolbar();
         }
 
-        void DoLegacyChartsGUI()
-        {
-            m_GraphPos = EditorGUILayout.BeginScrollView(m_GraphPos, Styles.profilerGraphBackground);
-
-            // MainSplitView.fixedPane will be null on the first pass through here as MainSplitView picks up its children in its PostDisplaySetup.
-            var fixedPaneRect = (MainSplitView.fixedPane != null) ?  MainSplitView.fixedPane.layout : Rect.zero;
-            var verticalScrollbarStyle = GUI.skin.verticalScrollbar;
-            var scrollViewContentWidth = fixedPaneRect.width - verticalScrollbarStyle.fixedWidth - verticalScrollbarStyle.padding.horizontal;
-            var scrollViewViewportHeight = fixedPaneRect.height;
-            int newCurrentFrame = DrawModuleChartViews(new Vector2(scrollViewContentWidth, scrollViewViewportHeight));
-            if (newCurrentFrame != m_CurrentFrame)
-            {
-                SetCurrentFrame(newCurrentFrame);
-                Repaint();
-                if (Event.current.type != EventType.Repaint)
-                    GUIUtility.ExitGUI();
-            }
-
-            EditorGUILayout.EndScrollView();
-        }
-
-        int DrawModuleChartViews(Vector2 containerSize)
-        {
-            // Calculate the total minimum chart height of all active modules.
-            var totalMinimumChartHeight = 0f;
-            var activeModuleCount = 0;
-            var lastActiveModuleIndex = -1;
-            for (int i = 0; i < m_AllModules.Count; ++i)
-            {
-                var module = m_AllModules[i];
-                if (module.active)
-                {
-                    if (module.Identifier == kJobsProfilerIdentifier)
-                        continue;
-
-                    totalMinimumChartHeight += module.GetMinimumChartHeight();
-                    activeModuleCount++;
-                    lastActiveModuleIndex = i;
-                }
-            }
-
-            var newCurrentFrame = m_CurrentFrame;
-            if (activeModuleCount > 0)
-            {
-                // If there will be empty space below the charts, calculate how much to expand each chart by to fill this space.
-                var additionalChartHeight = 0f;
-                var requiresChartHeightExpansion = totalMinimumChartHeight < containerSize.y;
-                if (requiresChartHeightExpansion)
-                {
-                    var verticalSpaceToFill = containerSize.y - totalMinimumChartHeight;
-                    additionalChartHeight = GUIUtility.RoundToPixelGrid(verticalSpaceToFill / activeModuleCount);
-                }
-
-                var accumulatedExpandedChartHeight = 0f;
-                for (int i = 0; i < m_AllModules.Count; ++i)
-                {
-                    var module = m_AllModules[i];
-                    if (module.active)
-                    {
-                        if (module.Identifier == kJobsProfilerIdentifier)
-                            continue;
-
-                        // Calculate final chart height.
-                        var chartHeight = module.GetMinimumChartHeight();
-                        if (requiresChartHeightExpansion)
-                        {
-                            // Due to rounding additionalChartHeight to the pixel grid, we make the last chart fill the remaining space. This ensures that exactly the whole space is filled whilst maintaining that all expanded charts remain on the pixel grid.
-                            if (i == lastActiveModuleIndex)
-                            {
-                                var remainingHeightToFill = containerSize.y - accumulatedExpandedChartHeight;
-                                chartHeight = remainingHeightToFill;
-                            }
-                            else
-                            {
-                                chartHeight += additionalChartHeight;
-                                accumulatedExpandedChartHeight += chartHeight;
-                            }
-                        }
-
-                        // Reserve a chart rect with the layout system.
-                        var chartRect = GUILayoutUtility.GetRect(containerSize.x, chartHeight);
-
-                        // Don't draw or update any charts during the layout pass, where rects are not computed yet.
-                        if (Event.current.type != EventType.Layout)
-                        {
-                            // Only draw or update modules that will be visible in the scroll view's viewport.
-                            if (GUIClip.visibleRect.Overlaps(chartRect))
-                            {
-                                // DrawChartView also handles interaction so we can't only call it when repainting.
-                                bool isSelected = (m_SelectedModuleIndex == i);
-                                var lastVisibleFrameIndex = ProfilerDriver.lastFrameIndex;
-                                newCurrentFrame = module.DrawChartView(chartRect, newCurrentFrame, isSelected, lastVisibleFrameIndex);
-                            }
-                        }
-                    }
-                }
-            }
-            else
-            {
-                GUILayout.FlexibleSpace();
-                GUILayout.BeginHorizontal();
-                GUILayout.FlexibleSpace();
-                // Temporary workaround whilst Bottleneck is not a module due to upcoming transition to UIToolkit.
-                if (!m_BottlenecksViewContainer.visible)
-                    GUILayout.Label(Styles.noActiveModules);
-                GUILayout.FlexibleSpace();
-                GUILayout.EndHorizontal();
-                GUILayout.FlexibleSpace();
-            }
-
-            if (Event.current.type == EventType.Repaint)
-            {
-                var isScrollBarVisible = totalMinimumChartHeight > containerSize.y;
-                if (!m_IsLegacyChartsGUIScrollBarVisible.HasValue || m_IsLegacyChartsGUIScrollBarVisible != isScrollBarVisible)
-                {
-                    m_IsLegacyChartsGUIScrollBarVisible = isScrollBarVisible;
-                    OnLegacyChartsGUIScrollbarVisibilityChanged();
-                }
-            }
-
-            return newCurrentFrame;
-        }
-
-        void OnLegacyChartsGUIScrollbarVisibilityChanged()
-        {
-            var marginRight = m_IsLegacyChartsGUIScrollBarVisible.Value ? GUI.skin.verticalScrollbar.fixedWidth : 0f;
-            m_BottlenecksViewContainer.style.marginRight = marginRight;
-        }
-
         void ProfilerModulesDropdownWindow.IResponder.OnModuleActiveStateChanged()
         {
-            m_ChartsIMGUIContainer.MarkDirtyRepaint();
+            m_ChartsContainer.MarkDirtyRepaint();
 
             // If we have no module selected, including bottleneck, try to select the first one.
             if (m_SelectedModuleIndex == k_NoModuleSelected && m_BottlenecksDetailsViewController == null)
                 SelectFirstActiveModule();
+
+            // If GPU module state changed, force update CPU module
+            var gpuModule = this.GetProfilerModuleByType<GPUProfilerModule>();
+            if (gpuModule.active != m_LastGPUModuleActiveState)
+            {
+                m_LastGPUModuleActiveState = gpuModule.active;
+
+                var cpuModule = this.GetProfilerModuleByType<CPUProfilerModule>();
+                cpuModule.Update();
+            }
         }
 
         // Temporary workaround whilst Bottleneck is not a module due to upcoming transition to UIToolkit.
@@ -1763,16 +1652,6 @@ namespace UnityEditor
             // If the bottleneck view was disabled whilst it was selected (determined by its details view controller existing), select another module.
             if (!visible && m_BottlenecksDetailsViewController != null)
                 SelectFirstActiveModule();
-
-            // If GPU module state changed, force update CPU module
-            var gpuModule = this.GetProfilerModuleByType<GPUProfilerModule>();
-            if (gpuModule.active != m_LastGPUModuleActiveState)
-            {
-                m_LastGPUModuleActiveState = gpuModule.active;
-
-                var cpuModule = this.GetProfilerModuleByType<CPUProfilerModule>();
-                cpuModule.Update();
-            }
         }
 
         internal bool IsBottleneckViewVisible()
@@ -1813,6 +1692,7 @@ namespace UnityEditor
             }
 
             SortModuleCollectionInPlace(ref m_AllModules);
+            UpdateVisualTreeModulesOrder();
 
             PersistDynamicModulesToEditorPrefs();
             UpdateModules();
@@ -1868,6 +1748,7 @@ namespace UnityEditor
             }
 
             SortModuleCollectionInPlace(ref m_AllModules);
+            UpdateVisualTreeModulesOrder();
             PersistDynamicModulesToEditorPrefs();
             UpdateModules();
             Repaint();
@@ -1878,7 +1759,7 @@ namespace UnityEditor
             var identifier = moduleData.name; // Dynamic modules use their name as their identifier for legacy reasons.
             var module = new DynamicProfilerModule();
 
-            var args = new ProfilerModule.InitializationArgs(identifier, moduleData.name, DynamicProfilerModule.iconPath, this);
+            var args = new ProfilerModule.InitializationArgs(identifier, moduleData.name, DynamicProfilerModule.iconPath, this, m_PersistentSettingsService);
             var chartCounters = new List<ProfilerCounterData>(moduleData.chartCounters);
             var detailCounters = new List<ProfilerCounterData>(moduleData.detailCounters);
             module.Initialize(args, chartCounters, detailCounters);
@@ -1886,6 +1767,7 @@ namespace UnityEditor
             module.orderIndex = orderIndex;
 
             m_AllModules.Add(module);
+            m_ChartsContainer.Add(module.CreateChartView());
             module.OnEnable();
         }
 
@@ -1936,6 +1818,7 @@ namespace UnityEditor
             moduleToDelete.active = false;
             moduleToDelete.OnDisable();
             moduleToDelete.DeleteAllPreferences();
+            moduleToDelete.ChartViewController?.Dispose();
             m_AllModules.RemoveAt(index);
         }
 
@@ -2192,7 +2075,9 @@ namespace UnityEditor
             SetCurrentFrameRangeDontPause(frameRange);
         }
 
-        // Ideally we wouldn't need this method. However, the current IMGUI tangle means setting the current frame can occur an unpredictable number of times per frame. We want to ensure we only invoke this event once for the selected frame. Fully transitioning to UIToolkit (especially on the toolbar) should simplify this.
+        // Ideally we wouldn't need this method. However, the current IMGUI tangle means setting the current frame can 
+        // occur an unpredictable number of times per frame. We want to ensure we only invoke this event once for the 
+        // selected frame. Fully transitioning to UIToolkit (especially on the toolbar) should simplify this.
         Range? m_LastReportedSelectedFrameRange;
         void InvokeSelectedFrameIndexChangedEventIfNecessary(int newFrame)
         {

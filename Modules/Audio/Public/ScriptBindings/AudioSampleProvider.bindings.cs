@@ -14,7 +14,7 @@ using UnityEngine.Scripting;
 
 namespace UnityEngine.Experimental.Audio
 {
-    [NativeType(Header = "Modules/Audio/Public/ScriptBindings/AudioSampleProvider.bindings.h")]
+    [NativeHeader("Modules/Audio/Public/ScriptBindings/AudioSampleProvider.bindings.h")]
     [StaticAccessor("AudioSampleProviderBindings", StaticAccessorType.DoubleColon)]
     public class AudioSampleProvider : IDisposable
     {

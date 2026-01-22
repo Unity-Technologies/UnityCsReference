@@ -10,7 +10,7 @@ using UnityEngine.UIElements.Layout;
 
 namespace UnityEngine.UIElements
 {
-   
+
     internal static class UIElementsIMGUIUtility
     {
         private static Stack<IMGUIContainer> s_ContainerStack = new Stack<IMGUIContainer>();
@@ -209,7 +209,7 @@ namespace UnityEngine.UIElements
     }
 
     [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule", "UnityEditor.GraphToolkitModule")]
-    internal static class UIElementsUtility 
+    internal static class UIElementsUtility
     {
         [Obsolete("Please use public APIs from the ui test framework (com.unity.ui.test-framework)  to simulate events for tests")]
         internal static EventBase CreateEvent(Event systemEvent)
@@ -227,7 +227,6 @@ namespace UnityEngine.UIElements
         private static Dictionary<EntityId, Panel> s_UIElementsCache = new Dictionary<EntityId, Panel>();
 
         // When not in editor, this will be all white, so no impact on the overall color, except for the multiplication done on the color.
-        [VisibleToOtherModules("UnityEditor.GraphToolkitModule")]
         internal static Color editorPlayModeTintColor = Color.white;
         // The usual height used for a control, such as a one-line text field. See --unity-metrics-single_line-height and EditorGUIUtility.singleLineHeight.
         internal static float singleLineHeight = 18;
@@ -235,6 +234,7 @@ namespace UnityEngine.UIElements
         public const string hiddenClassName = "unity-hidden";
 
         internal static bool s_EnableOSXContextualMenuEventsOnNonOSXPlatforms;
+        [VisibleToOtherModules("UnityEditor.GraphToolkitModule")]
         public static bool isOSXContextualMenuPlatform
         {
             get
@@ -255,7 +255,7 @@ namespace UnityEngine.UIElements
         }
 
         static internal List<Panel> s_PanelsIterationList = new List<Panel>();
-       
+
         public static void RegisterCachedPanel(EntityId entityId, Panel panel)
         {
             s_UIElementsCache.Add(entityId, panel);
@@ -271,7 +271,7 @@ namespace UnityEngine.UIElements
             return s_UIElementsCache.TryGetValue(entityId, out panel);
         }
 
-      
+
         [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         internal static void UpdateSchedulers()
         {

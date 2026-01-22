@@ -2,16 +2,13 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System;
 using System.Collections.Generic;
 using UnityEditor;
 using UnityEngine.UIElements;
 using UnityEditor.UIElements;
-using UnityEditor.PackageManager;
 using UnityEngine;
-using System.Threading;
 using Unity.PlayMode.Editor;
-using UnityEditor.Multiplayer.Internal;
+using UnityEngine.Assertions;
 
 namespace Unity.Multiplayer.PlayMode.Editor
 {
@@ -32,6 +29,8 @@ namespace Unity.Multiplayer.PlayMode.Editor
         internal const string k_ListViewRemoveButton = "unity-list-view__remove-button";
         internal const string k_ListViewAddButton ="unity-list-view__add-button";
         internal const string k_VirtualEditorInstanceFoldoutName = "virtual-editor-instance-foldout";
+        internal const string k_DisabledInstanceHelpBoxName = "main-multiplayer-instance-DisabledHelpBox";
+        internal const string k_DisabledInstanceHelpBoxText = "An instance is currently running. To modify any settings for editor instances, please terminate this instance in the Active Scenario Window.";
 
         internal const int MaxServerCount = 1;
         internal const int MaxEditorInstanceCount = 3;
@@ -83,7 +82,8 @@ namespace Unity.Multiplayer.PlayMode.Editor
         }
 
         // We have to override the default behaviour of the list view, because we need some custom logic in it.
-        void SetupListView(ListView listView, SerializedProperty listProperty, Type instanceType, int maxInstanceCount, string tooltip)
+        void SetupListView<TController, TSettings>(ListView listView, SerializedProperty listProperty, int maxInstanceCount, string tooltip)
+            where TController : InstanceController<TController, TSettings>
         {
             if (listView == null)
             {
@@ -107,14 +107,15 @@ namespace Unity.Multiplayer.PlayMode.Editor
 
                 listProperty.InsertArrayElementAtIndex(listProperty.arraySize);
                 var instanceProperty = listProperty.GetArrayElementAtIndex(listProperty.arraySize - 1);
-                var instance = Activator.CreateInstance(instanceType) as InstanceDescription;
-                instance.Name = GenerateInstanceName(listProperty);
-                instanceProperty.boxedValue = instance;
+                var instanceSettings = InstanceController<TController, TSettings>.GetDefaultSettings() as InstanceDescription;
+                Assert.IsNotNull(instanceSettings, $"Default settings for {typeof(TController).Name} returned null or is not of type InstanceDescription.");
+                instanceSettings.Name = GenerateInstanceName(listProperty);
+                instanceProperty.boxedValue = instanceSettings;
                 listProperty.serializedObject.ApplyModifiedProperties();
                 listProperty.serializedObject.Update();
             };
 
-            RefreshListViewAddRemoveToggles(listView, instanceType, listProperty);
+            RefreshListViewAddRemoveToggles<TController>(listView, listProperty);
 
             var foldout = listView.Q<Foldout>();
             var toggle = foldout?.Q<Toggle>();
@@ -153,34 +154,6 @@ namespace Unity.Multiplayer.PlayMode.Editor
             }
 
             return configName;
-        }
-
-        /// <summary>
-        /// Hides the name field of the main Editor instance.
-        /// and adds a label to the top of the editor.
-        /// </summary>
-        /// <param name="property"></param>
-        /// <returns></returns>
-        VisualElement CreateMainEditorInstance(SerializedProperty property)
-        {
-            var container = new VisualElement();
-            container.name = "main-editor-instance";
-            container.AddToClassList("instances-group");
-
-            InstanceDescriptionDrawer mainDescriptionDrawer = new InstanceDescriptionDrawer();
-            var inspector = mainDescriptionDrawer.CreatePropertyGUI(property);
-            inspector.name = "main-editor-content";
-            var nameField = inspector.Q<TextField>(className: "instance-name-field");
-            nameField.style.display = new StyleEnum<DisplayStyle>(DisplayStyle.None);
-            // Initial scene
-            var initialSceneField = serializedObject.FindProperty("m_InitialScene");
-            var initialSceneUI = new PropertyField(initialSceneField) { name = "initial-scene" };
-            initialSceneUI.AddToClassList("unity-base-field__aligned");
-            inspector.Add(initialSceneUI);
-
-            container.Add(inspector);
-
-            return container;
         }
 
         private VisualElement CreateEditorInstancesElement()
@@ -223,7 +196,7 @@ namespace Unity.Multiplayer.PlayMode.Editor
                 if (listView == null || listView.reorderable == false)
                     return;
 
-                SetupListView(listView, serializedObject.FindProperty("m_EditorInstances"), typeof(VirtualEditorInstanceDescription), MaxEditorInstanceCount,
+                SetupListView<CloneEditorController, VirtualEditorInstanceDescription>(listView, serializedObject.FindProperty("m_EditorInstances"), MaxEditorInstanceCount,
                     "Initial Editor Instances when entering playmode. Editor Instances will only have limited authoring capabilities.");
             });
 
@@ -246,7 +219,7 @@ namespace Unity.Multiplayer.PlayMode.Editor
                 // Use the reorderable flag to check if the setup already happened.
                 if (listView == null || listView.reorderable == false)
                     return;
-                SetupListView(listView, serializedObject.FindProperty("m_LocalInstances"), typeof(LocalInstanceDescription), MaxLocalInstanceCount,
+                SetupListView<LocalPlayerController, LocalInstanceDescription>(listView, serializedObject.FindProperty("m_LocalInstances"), MaxLocalInstanceCount,
                     "Local Instances are builds that will run on the same machine as the editor.");
             });
 
@@ -254,7 +227,8 @@ namespace Unity.Multiplayer.PlayMode.Editor
             return container;
         }
 
-        private void RefreshListViewAddRemoveToggles(ListView listView, Type instanceType, SerializedProperty listProperty)
+        private void RefreshListViewAddRemoveToggles<TController>(ListView listView, SerializedProperty listProperty)
+            where TController : InstanceController
         {
             if (listProperty?.arraySize == 0)
                 return;
@@ -263,9 +237,9 @@ namespace Unity.Multiplayer.PlayMode.Editor
             var scenario = PlayModeScenarioManager.ActiveScenario as OrchestratedScenario;
             var isFreeRunningActive = scenario != null &&
                                       scenario.Scenario != null &&
-                                      scenario.Scenario.HasActiveFreeRunInstanceOfType(instanceType);
+                                      scenario.Scenario.HasActiveFreeRunInstanceOfType<TController>();
 
-            var toolTipText  = isFreeRunningActive ? InstanceDescriptionDrawer.k_DisabledInstanceHelpBoxText : "";
+            var toolTipText  = isFreeRunningActive ? k_DisabledInstanceHelpBoxText : "";
             listView.allowRemove = !isFreeRunningActive;
             listView.allowAdd = !isFreeRunningActive;
             listView.Q<Button>(k_ListViewRemoveButton).tooltip = toolTipText;

@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Collections;
 using UnityEngine;
 using UnityEngine.Assertions;
 using UnityEngine.UIElements;
@@ -64,7 +65,10 @@ namespace Unity.GraphToolkit.Editor
                     break;
                 case ISingleInputPortNodeModel:
                 case ISingleOutputPortNodeModel:
-                    ui = new CapsuleNodeView();
+                    if (model is ConstantNodeModel cst && cst.Value.Type.IsListOrArray())
+                        ui = new ConstantCollectionNodeView();
+                    else
+                        ui = new CapsuleNodeView();
                     break;
                 case PortNodeModel:
                     ui = new CollapsibleInOutNodeView();

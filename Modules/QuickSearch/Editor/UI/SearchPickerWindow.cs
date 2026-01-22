@@ -91,6 +91,11 @@ namespace UnityEditor.Search
             CloseSearchWindow();
         }
 
+        public override bool CanCloseWindowOnAction()
+        {
+            return true;
+        }
+
         protected override IEnumerable<SearchItem> FetchItems()
         {
             if (!viewState.excludeClearItem)

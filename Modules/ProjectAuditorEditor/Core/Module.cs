@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEditor;
@@ -88,6 +89,11 @@ namespace Unity.ProjectAuditor.Editor.Core
             return assets;
         }
 
+        public AnalysisCoroutine QueueAnalysisCoroutine(IEnumerator routine, Module owner, Action<long> elapsedTimeDelegate)
+        {
+            return new AnalysisCoroutine(routine, owner, elapsedTimeDelegate);
+        }
+
         public virtual void Initialize()
         {
             m_Ids = new HashSet<DescriptorId>();
@@ -108,11 +114,23 @@ namespace Unity.ProjectAuditor.Editor.Core
                 throw new Exception("Duplicate descriptor with Id: " + descriptor.Id);
         }
 
+        protected bool AdvanceAsyncProgress(IProgress progress, AsyncProgressState state, string description = "")
+        {
+            if (progress != null)
+            {
+                progress.Advance(state, description);
+                if (progress.IsCancelled)
+                    return false;
+            }
+
+            return true;
+        }
+
         /// <summary>
         /// This method audits the Unity project specific IssueCategory issues.
         /// </summary>
         /// <param name="analysisParams"> Project audit parameters  </param>
         /// <param name="progress"> Progress bar, if applicable </param>
-        public abstract AnalysisResult Audit(AnalysisParams analysisParams, IProgress progress = null);
+        public abstract IEnumerator Audit(AnalysisParams analysisParams, IProgress progress);
     }
 }

@@ -13,7 +13,7 @@ namespace UnityEngine
 {
     // Stores keyframe based animations.
     [NativeHeader("Modules/Animation/ScriptBindings/AnimationClip.bindings.h")]
-    [NativeType("Modules/Animation/AnimationClip.h")]
+    [NativeHeader("Modules/Animation/AnimationClip.h")]
     public sealed class AnimationClip : Motion
     {
         // Creates a new animation clip

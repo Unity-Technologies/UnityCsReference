@@ -182,6 +182,9 @@ namespace Unity.ProjectAuditor.Editor.UI
 
         void RefreshStats(Report report)
         {
+            if (report == null)
+                return;
+
             var allIssues = report.GetAllIssues();
 
             // Stats that also count issues by severity
@@ -261,11 +264,9 @@ namespace Unity.ProjectAuditor.Editor.UI
             if (m_ViewManager.Report == null)
             {
                 m_SkipRepaintPass = true;
-                return;
             }
-
             // Skip one repaint, after report just got valid
-            if (m_SkipRepaintPass && Event.current.type == EventType.Repaint)
+            else if (m_SkipRepaintPass && Event.current.type == EventType.Repaint)
             {
                 m_SkipRepaintPass = false;
                 return;
@@ -328,7 +329,7 @@ namespace Unity.ProjectAuditor.Editor.UI
                 Contents.SessionInformationContent);
 
             if (m_ShowSessionInformation)
-                DrawSessionInfo(m_ViewManager.Report.SessionInfo);
+                DrawSessionInfo();
 
             EditorGUILayout.EndVertical();
         }
@@ -400,26 +401,23 @@ namespace Unity.ProjectAuditor.Editor.UI
                     #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     m_TopTenIssues = m_ViewManager.Report.GetAllIssues()
                         .Where(i =>
-                            !IsIssueIgnoredOrFiltered(i)
+                            !m_ViewManager.HasPendingCategory(i.Category)
+                            && !IsIssueIgnoredOrFiltered(i)
                             && (i.Severity == Severity.Error || i.Severity == Severity.Critical || i.Severity == Severity.Major || i.Severity == Severity.Moderate)
                         ).GroupBy(i => i.DescriptorIdAsString)
-                        .OrderBy(group => GetHighestGroupSeverity(group))
+                        .OrderBy(GetHighestGroupSeverity)
                         .ThenByDescending(group => group.Count())
                         .ThenBy(group => GetTopTenAreasOrder(group.First().Id.GetDescriptor().Areas))
                         .ThenBy(group => group.First().Id.GetDescriptor().Title)
                         .Take(10)
                         .ToList();
 #pragma warning restore RS0030
-
                     int oldSize = m_TopTenFoldoutStates.Count;
 
                     #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     foreach (var key in m_TopTenFoldoutStates.Keys.ToArray().Where(key => !m_TopTenIssues.Any(group => group.First().DescriptorIdAsString == key)))
 #pragma warning restore RS0030
                         m_TopTenFoldoutStates.Remove(key);
-
-                    if (oldSize != m_TopTenFoldoutStates.Count)
-                        m_RefreshTopTenIssues = false;
 
                     m_RefreshTopTenIssues = false;
                 }
@@ -450,7 +448,8 @@ namespace Unity.ProjectAuditor.Editor.UI
 
                     DrawAdditionalInsightItem("Build Report", IssueCategory.BuildFile);
 
-                    if (m_ViewManager.Report.HasCategory(IssueCategory.Assembly))
+                    var assemblyView = m_ViewManager.GetView(IssueCategory.Assembly);
+                    if (assemblyView?.NumIssues > 0)
                         DrawAdditionalInsightItem("Compiled Assemblies", IssueCategory.Assembly);
                 }
             }
@@ -597,17 +596,16 @@ namespace Unity.ProjectAuditor.Editor.UI
 
                                 if (descriptor.Fixer != null)
                                 {
-                                    GUI.enabled = !firstIssue.WasFixed;
-
-                                    var content = string.IsNullOrEmpty(descriptor.FixerLabel) ? Contents.QuickFix : EditorGUIUtility.TrTempContent(descriptor.FixerLabel);
-                                    if (GUILayout.Button(GUI.enabled ? content : Contents.QuickFixDone, EditorStyles.miniButton,
-                                        GUILayout.Width(buttonWidth)))
+                                    using (new EditorGUI.DisabledScope(m_ViewManager.HasPendingCategories() || firstIssue.WasFixed))
                                     {
-                                        descriptor.Fix(firstIssue, m_ViewManager.Report.SessionInfo);
-                                        m_ViewManager.OnSelectedIssuesQuickFixRequested?.Invoke([firstIssue]);
+                                        var content = string.IsNullOrEmpty(descriptor.FixerLabel) ? Contents.QuickFix : EditorGUIUtility.TrTempContent(descriptor.FixerLabel);
+                                        if (GUILayout.Button(firstIssue.WasFixed ? Contents.QuickFixDone : content, EditorStyles.miniButton,
+                                            GUILayout.Width(buttonWidth)))
+                                        {
+                                            descriptor.Fix(firstIssue, m_ViewManager.Report.SessionInfo);
+                                            m_ViewManager.OnSelectedIssuesQuickFixRequested?.Invoke([firstIssue]);
+                                        }
                                     }
-
-                                    GUI.enabled = true;
                                 }
 
                                 var docUrls = new List<string>();
@@ -774,8 +772,10 @@ namespace Unity.ProjectAuditor.Editor.UI
             return res;
         }
 
-        void DrawSessionInfo(SessionInfo sessionInfo)
+        void DrawSessionInfo()
         {
+            SessionInfo sessionInfo = m_ViewManager.Report.SessionInfo;
+
             var keyValues = new List<KeyValuePair<string, string>>(
             [
                 new KeyValuePair<string, string>("Date and Time", Formatting.FormatDateTime(Utils.Json.DeserializeDateTime(sessionInfo.DateTime))),
@@ -861,34 +861,43 @@ namespace Unity.ProjectAuditor.Editor.UI
 
             if (newFoldoutState)
             {
-                if (value == 0)
+                if (value == 0 || m_ViewManager.HasPendingCategory(category))
                 {
                     using (new EditorGUILayout.HorizontalScope())
                     {
                         GUILayout.Space(20);
 
-                        if (m_ViewManager.Report.HasCategory(category))
+                        if (m_ViewManager.HasPendingCategory(category))
+                        {
+                            var text = $"{title} analysis still running...";
+                            var content = EditorGUIUtility.TrTextContent($"{text}|{Utility.GetStatusWheelFrame()}", text, string.Empty, Utility.GetIcon(Utility.IconType.StatusWheel).image);
+                            GUILayout.Label(content);
+                        }
+                        else if (m_ViewManager.Report.HasCategory(category))
+                        {
                             GUILayout.Label($"No {title} issues {time}.");
+                        }
                         else
+                        {
                             GUILayout.Label($"{title} analysis is not yet included in this report.");
+                        }
                     }
 
                     using (new EditorGUILayout.HorizontalScope())
                     {
                         GUILayout.Space(20);
 
-                        if (GUILayout.Button($"Go to {title}", GUILayout.Width(k_NavigationButtonWidth)))
+                        using (new EditorGUI.DisabledScope(m_ViewManager.HasPendingCategory(category)))
                         {
-                            if (!m_ViewManager.Report.HasCategory(category))
+                            if (GUILayout.Button($"Go to {title}", GUILayout.Width(k_NavigationButtonWidth)))
                             {
-                                m_ProjectAuditorWindow.GotoNonAnalyzedCategory(category);
-                            }
-                            else
-                            {
-                                m_ViewManager.ChangeView(category);
-                            }
+                                if (m_ViewManager.Report.HasCategory(category))
+                                    m_ViewManager.ChangeView(category);
+                                else
+                                    m_ProjectAuditorWindow.GotoNonAnalyzedCategory(category);
 
-                            GUIUtility.ExitGUI();
+                                GUIUtility.ExitGUI();
+                            }
                         }
 
                         GUILayout.FlexibleSpace();
@@ -944,15 +953,7 @@ namespace Unity.ProjectAuditor.Editor.UI
 
                 if (GUILayout.Button($"Go to {title}", GUILayout.Width(k_NavigationButtonWidth)))
                 {
-                    if (!m_ViewManager.Report.HasCategory(category))
-                    {
-                        m_ProjectAuditorWindow.GotoNonAnalyzedCategory(category);
-                    }
-                    else
-                    {
-                        m_ViewManager.ChangeView(category);
-                    }
-
+                    m_ViewManager.ChangeView(category);
                     GUIUtility.ExitGUI();
                 }
 
@@ -975,7 +976,10 @@ namespace Unity.ProjectAuditor.Editor.UI
 
                     if (GUILayout.Button($"Go to {title}", GUILayout.Width(k_NavigationButtonWidth)))
                     {
-                        m_ViewManager.ChangeView(category);
+                        if (m_ViewManager.Report.HasCategory(category))
+                            m_ViewManager.ChangeView(category);
+                        else
+                            m_ProjectAuditorWindow.GotoNonAnalyzedCategory(category);
 
                         GUIUtility.ExitGUI();
                     }

@@ -14,7 +14,7 @@ namespace UnityEngine.UIElements
         protected List<int> m_SortedSelectedIds = new ();
 
         // Sorted by index in the source.
-        public IEnumerable<int> GetSortedSelectedIds() => m_SortedSelectedIds;
+        public IReadOnlyList<int> GetSortedSelectedIds() => m_SortedSelectedIds;
 
         protected BaseReorderableDragAndDropController(BaseVerticalCollectionView view)
         {

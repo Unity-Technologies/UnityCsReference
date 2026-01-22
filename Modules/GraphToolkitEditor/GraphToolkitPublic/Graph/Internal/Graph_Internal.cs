@@ -11,6 +11,8 @@ namespace Unity.GraphToolkit.Editor
     {
         internal GraphModelImp m_Implementation;
 
+        static Node.OptionDefinitionContext s_OptionDefinitionContext = new();
+
         internal void SetImplementation(GraphModelImp implementation)
         {
             m_Implementation = implementation;
@@ -22,6 +24,13 @@ namespace Unity.GraphToolkit.Editor
             {
                 throw new InvalidOperationException("Only Graph instances returned by either GraphDatabase.LoadGraph or GraphDatabase.CreateGraph are valid.");
             }
+        }
+
+        internal void CallOnDefineSubgraphNodeOptions(IOptionsDefinition context)
+        {
+            s_OptionDefinitionContext.OptionsDefinition = context;
+            OnDefineSubgraphNodeOptions(s_OptionDefinitionContext);
+            s_OptionDefinitionContext.Finish();
         }
     }
 }

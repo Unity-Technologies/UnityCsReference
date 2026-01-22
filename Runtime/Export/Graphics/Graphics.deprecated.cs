@@ -159,7 +159,7 @@ namespace UnityEngine
         public void GetInterpolatedLightProbe(Vector3 position, Renderer renderer, float[] coefficients) {}
         [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         [Obsolete("Use bakedProbes instead.", true)]
-        public float[] coefficients { get { return new float[0]; } set {} }
+        public float[] coefficients { get { return Array.Empty<float>(); } set {} }
     }
 
     partial class TrailRenderer

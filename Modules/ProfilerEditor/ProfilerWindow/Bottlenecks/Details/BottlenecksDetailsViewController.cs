@@ -452,12 +452,14 @@ namespace Unity.Profiling.Editor.UI
             if (detailsProvider == null)
                 return;
 
-            if (evt.button == (int)MouseButton.RightMouse)
-            {
-                // Show assistant popup window on right mouse click
-                if (!((UnityEditorInternal.IProfilerWindowController)m_ProfilerWindow).CpuProfilerAssistantSupported)
-                    return;
+            // Show assistant popup window on right mouse click
+            if (!((UnityEditorInternal.IProfilerWindowController)m_ProfilerWindow).CpuProfilerAssistantSupported)
+                return;
 
+            // Create and show context menu
+            var dropdownMenu = new DropdownMenu();
+            dropdownMenu.AppendAction("Ask Assistant", (action) =>
+            {
                 try
                 {
                     IDetailsProvider.AssistantRequestContext context = detailsProvider.GetAssistantContext(m_DataService);
@@ -473,16 +475,18 @@ namespace Unity.Profiling.Editor.UI
                     string prompt = context.Prompt;
 
                     ((UnityEditorInternal.IProfilerWindowController)m_ProfilerWindow).RequestCpuProfilerAssistance(screenRect, attachment, prompt);
+
+                    const string k_LinkDescription_AskAssistant= "Ask Assistant (Context Menu)";
+                    UnityEditor.Profiling.Analytics.ProfilerWindowAnalytics.SendBottleneckLinkSelectedEvent(k_LinkDescription_AskAssistant);
                 }
                 catch (Exception e)
                 {
                     Debug.LogWarning($"Failed to launch Profiler Assistant: {e.Message}");
                 }
-                finally
-                {
-                    evt.StopPropagation();
-                }
-            }
+            });
+
+            View.panel.contextualMenuManager.DisplayMenu(evt, target, dropdownMenu);
+            evt.StopPropagation();
         }
     }
 }

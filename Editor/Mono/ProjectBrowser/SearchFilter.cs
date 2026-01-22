@@ -43,16 +43,16 @@ namespace UnityEditor
         private string m_NameFilter = "";
         [SerializeField]
         [DataMember]
-        private string[] m_ClassNames = new string[0];
+        private string[] m_ClassNames = Array.Empty<string>();
         [SerializeField]
         [DataMember]
-        private string[] m_AssetLabels = new string[0];
+        private string[] m_AssetLabels = Array.Empty<string>();
         [SerializeField]
         [DataMember]
-        private string[] m_AssetBundleNames = new string[0];
+        private string[] m_AssetBundleNames = Array.Empty<string>();
         [SerializeField]
         [DataMember]
-        private EntityId[] m_ReferencingEntityIds = new EntityId[0];
+        private EntityId[] m_ReferencingEntityIds = Array.Empty<EntityId>();
         [SerializeField]
         [DataMember]
         private SceneHandle[] m_SceneHandles;
@@ -68,14 +68,14 @@ namespace UnityEditor
         // Folder browsing
         [SerializeField]
         [DataMember]
-        private string[] m_Folders = new string[0];
+        private string[] m_Folders = Array.Empty<string>();
         [SerializeField]
         [DataMember]
-        private string[] m_Globs = new string[0];
+        private string[] m_Globs = Array.Empty<string>();
 
         [SerializeField]
         [DataMember]
-        private int[] m_ProductIds = new int[0];
+        private int[] m_ProductIds = Array.Empty<int>();
 
         [SerializeField]
         [DataMember]
@@ -118,13 +118,13 @@ namespace UnityEditor
         {
             m_NameFilter = "";
             m_OriginalText = "";
-            m_ClassNames = new string[0];
-            m_AssetLabels = new string[0];
-            m_AssetBundleNames = new string[0];
-            m_ReferencingEntityIds = new EntityId[0];
-            m_SceneHandles = new SceneHandle[0];
-            m_Globs = new string[0];
-            m_ProductIds = new int[0];
+            m_ClassNames = Array.Empty<string>();
+            m_AssetLabels = Array.Empty<string>();
+            m_AssetBundleNames = Array.Empty<string>();
+            m_ReferencingEntityIds = Array.Empty<EntityId>();
+            m_SceneHandles = Array.Empty<SceneHandle>();
+            m_Globs = Array.Empty<string>();
+            m_ProductIds = Array.Empty<int>();
             m_AnyWithAssetOrigin = false;
             m_ShowAllHits = false;
             m_SkipHidden = false;
@@ -415,7 +415,7 @@ namespace UnityEditor
         public static string[] Split(string text)
         {
             if (string.IsNullOrEmpty(text))
-                return new string[0];
+                return Array.Empty<string>();
 
             List<string> words = new List<string>();
             foreach (Match m in Regex.Matches(text, "\".+?\"|\\S+"))

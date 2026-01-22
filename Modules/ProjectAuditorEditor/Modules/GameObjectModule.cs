@@ -3,7 +3,9 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Collections;
 using System.Collections.Generic;
+using System.IO;
 using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEngine;
@@ -38,36 +40,35 @@ namespace Unity.ProjectAuditor.Editor.Core
 
         public override IReadOnlyCollection<IssueLayout> SupportedLayouts => [k_IssueLayout];
 
-        public override AnalysisResult Audit(AnalysisParams analysisParams, IProgress progress)
+        public override IEnumerator Audit(AnalysisParams analysisParams, IProgress progress)
         {
             var analyzers = GetCompatibleAnalyzers(analysisParams);
-            if (analyzers.Length == 0)
-                return AnalysisResult.Success;
-
-            var gameObjectTracker = new HashSet<EntityId>(); // Only analyze each GameObject once
-
-            AuditScenes(analyzers, gameObjectTracker, analysisParams, progress);
-            AuditPrefabs(analyzers, gameObjectTracker, analysisParams, progress);
-
-            if (progress != null)
+            if (analyzers.Length > 0)
             {
-                progress.Clear();
-                if (progress.IsCancelled)
-                    return AnalysisResult.Cancelled;
+                var gameObjectTracker = new HashSet<EntityId>(); // Only analyze each GameObject once
+
+                yield return AuditScenes(analyzers, gameObjectTracker, analysisParams, progress);
+                yield return AuditPrefabs(analyzers, gameObjectTracker, analysisParams, progress);
             }
 
-            return AnalysisResult.Success;
+            analysisParams.OnModuleCompleted?.Invoke(Name, AnalysisResult.Success, 0);
         }
 
-        void AuditScenes(GameObjectModuleAnalyzer[] analyzers, HashSet<EntityId> gameObjectTracker, AnalysisParams analysisParams, IProgress progress)
+        IEnumerator AuditScenes(GameObjectModuleAnalyzer[] analyzers, HashSet<EntityId> gameObjectTracker, AnalysisParams analysisParams, IProgress progress)
         {
             var context = new AnalysisContext { Params = analysisParams };
-            var scenePaths = GetAssetPathsByFilter("t:Scene", context);
-            
-            progress?.Start("Finding Scene Game Objects", "Search in Progress...", scenePaths.Length);
-            
+            var scenePaths = GetAssetPathsByFilter("t:scene", context);
+
+            AsyncProgressState progressState = progress?.Start("Analyzing Scene Game Objects", scenePaths.Length);
+
+            yield return null;
+
             foreach (string scenePath in scenePaths)
             {
+                // Progress
+                if (AdvanceAsyncProgress(progress, progressState, Path.GetFileName(scenePath)) == false)
+                    break;
+
                 var scene = SceneManager.GetSceneByPath(scenePath);
 
                 // If scene is not open, open a preview scene for it
@@ -96,25 +97,27 @@ namespace Unity.ProjectAuditor.Editor.Core
                     EditorUtility.UnloadUnusedAssetsImmediate();
                 }
 
-                // Progress
-                if (progress != null)
-                {
-                    if (progress.IsCancelled)
-                        return;
-                    progress.Advance();
-                }
+                yield return null;
             }
+
+            progress?.Clear(progressState);
         }
 
-        void AuditPrefabs(GameObjectModuleAnalyzer[] analyzers, HashSet<EntityId> gameObjectTracker, AnalysisParams analysisParams, IProgress progress)
+        IEnumerator AuditPrefabs(GameObjectModuleAnalyzer[] analyzers, HashSet<EntityId> gameObjectTracker, AnalysisParams analysisParams, IProgress progress)
         {
             var context = new AnalysisContext { Params = analysisParams };
             var allAssetPaths = GetAssetPathsByFilter("t:prefab", context);
 
-            progress?.Start("Finding Prefab Game Objects", "Search in Progress...", allAssetPaths.Length);
+            AsyncProgressState progressState = progress?.Start("Analyzing Prefab Game Objects", allAssetPaths.Length);
+
+            yield return null;
 
             foreach (var assetPath in allAssetPaths)
             {
+                // Progress
+                if (AdvanceAsyncProgress(progress, progressState, Path.GetFileName(assetPath)) == false)
+                    break;
+
                 // Iterate GameObjects
                 using (var editingScope = new ViewPrefabContentsScope(assetPath))
                 {
@@ -122,14 +125,10 @@ namespace Unity.ProjectAuditor.Editor.Core
                     IterateGameObjectHierarchy(analyzers, gameObjectTracker, analysisParams, loadedPrefabRoot, assetPath);
                 }
 
-                // Progress
-                if (progress != null)
-                {
-                    if (progress.IsCancelled)
-                        break;
-                    progress.Advance();
-                }
+                yield return null;
             }
+
+            progress?.Clear(progressState);
         }
 
         // Traverse a GameObject hierarchy and run the analyzers

@@ -55,6 +55,7 @@ namespace UnityEditor.Build.Profile.Elements
                 }
             }
 
+            PlayerSettingsEditor.DiscardPendingChangesForAllEditors(profile.playerSettings);
             BuildProfileModuleUtil.RemovePlayerSettings(profile);
             OnAdd(profile);
             EditorUtility.SetDirty(profile);

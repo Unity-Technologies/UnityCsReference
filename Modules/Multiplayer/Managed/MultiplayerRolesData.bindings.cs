@@ -9,7 +9,7 @@ using UnityEngine.Scripting;
 
 namespace UnityEngine
 {
-    [NativeType(Header = "Modules/Multiplayer/MultiplayerRolesData.h")]
+    [NativeHeader("Modules/Multiplayer/MultiplayerRolesData.h")]
     internal class MultiplayerRolesData : Component
     {
     }

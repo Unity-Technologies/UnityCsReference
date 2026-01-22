@@ -54,6 +54,8 @@ internal class StyleRotateAttributeConverter : UxmlAttributeStyleConverter<Style
 
 internal class StyleScaleAttributeConverter : UxmlAttributeStyleConverter<StyleScale, Scale, ScaleAttributeConverter> {};
 
+internal class StyleTextAutoSizeAttributeConverter : UxmlAttributeStyleConverter<StyleTextAutoSize, TextAutoSize, TextAutoSizeAttributeConverter> {};
+
 internal class StyleTextShadowAttributeConverter : UxmlAttributeStyleConverter<StyleTextShadow, TextShadow, TextShadowAttributeConverter> {};
 
 internal class StyleTransformOriginAttributeConverter : UxmlAttributeStyleConverter<StyleTransformOrigin, TransformOrigin, TransformOriginAttributeConverter> {};

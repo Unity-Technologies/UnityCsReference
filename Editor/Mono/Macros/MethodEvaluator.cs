@@ -311,8 +311,8 @@ namespace UnityEditor.Macros
 
         private static object GetActor(Type type)
         {
-            var ctorInfo = type.GetConstructor(new Type[] {});
-            return ctorInfo != null ? ctorInfo.Invoke(new object[] {}) : null;
+            var ctorInfo = type.GetConstructor(Array.Empty<Type>());
+            return ctorInfo != null ? ctorInfo.Invoke(Array.Empty<object>()) : null;
         }
 
         private static string ToCommaSeparatedString<T>(IEnumerable<T> items)

@@ -61,17 +61,22 @@ In order to be able to build the game, replace this call (APIUpdaterRuntimeServi
 
         private static bool IsMarkedAsObsolete(Type t)
         {
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            return t.GetCustomAttributes(typeof(ObsoleteAttribute), false).Any();
-#pragma warning restore RS0030
+            return t.IsDefined(typeof(ObsoleteAttribute), false);
         }
 
         static APIUpdaterRuntimeServices()
         {
             var componentType = typeof(Component);
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            ComponentsFromUnityEngine =  componentType.Assembly.GetTypes().Where(componentType.IsAssignableFrom).ToList();
+#pragma warning disable RS0030 // GetTypes is flagged by the Banned API Analyzer. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            var allTypes = componentType.Assembly.GetTypes();
 #pragma warning restore RS0030
+            ComponentsFromUnityEngine = new List<Type>(allTypes.Length);
+            for (int i = 0; i < allTypes.Length; i++)
+            {
+                var t = allTypes[i];
+                if (componentType.IsAssignableFrom(t))
+                    ComponentsFromUnityEngine.Add(t);
+            }
         }
 
         private static IList<Type> ComponentsFromUnityEngine;

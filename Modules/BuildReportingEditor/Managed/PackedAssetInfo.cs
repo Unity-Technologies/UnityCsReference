@@ -19,7 +19,7 @@ namespace UnityEditor.Build.Reporting
     ///</example>
     ///<seealso cref="BuildReport" />
     ///<seealso cref="PackedAssets.contents" />
-    [NativeType(Header = "Modules/BuildReportingEditor/Public/PackedAssets.h")]
+    [NativeHeader("Modules/BuildReportingEditor/Public/PackedAssets.h")]
     public struct PackedAssetInfo
     {
         ///<summary>Local file id of the object</summary>

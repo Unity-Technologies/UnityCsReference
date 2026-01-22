@@ -9,6 +9,7 @@ using System.Threading.Tasks;
 using Unity.BuildService;
 using UnityEditor.Compilation;
 using UnityEditor.MSBuild;
+using Unity.Scripting;
 using UnityEngine;
 
 namespace UnityEditor.Scripting.ScriptCompilation.MsBuild;
@@ -45,6 +46,14 @@ class MsBuildCompilation
 
         UnityEditorMSBuildPropsTargetsGeneration.UpdateGeneratedMSBuildFileIfNeeded(EditorUserBuildSettings.activeBuildTarget, compilationOptions);
 
+        EnsureCompilerClientInitialized();
+    }
+
+    private void EnsureCompilerClientInitialized()
+    {
+        if (_compilerClient != null)
+            return;
+
         var socketOrNamedPipe = _hostProgram.EnsureRunningAndGetSocketOrNamedPipe();
         _compilerClient = ClientFactory.CreateChannel(socketOrNamedPipe, _connectionTimeout);
     }
@@ -80,9 +89,13 @@ class MsBuildCompilation
 
     public bool TryGetLastBuildResult(CompileTarget target, out CompilationDoneResult? result)
     {
+        EnsureCompilerClientInitialized();
+
         var buildState = new MSBuildCompilationBuildState(_compilerClient);
         var disableNugetRestore = Application.HasARGV("disable-nuget-restore");
 
+        //throw new NotImplementedException();
+        result = new CompilationDoneResult();
         var buildResult = buildState
             .GetLastBuildResultAsync(GetMsBuildConfiguration(target, EditorUserBuildSettings.activeBuildTarget),
                 !disableNugetRestore).Result;
@@ -108,16 +121,18 @@ class MsBuildCompilation
         // Start a Build if requested
         if (_requestedBuild && _currentBuildTask == null)
         {
+            EnsureCompilerClientInitialized();
+
+            _currentBuildState = new MSBuildCompilationBuildState(_compilerClient);
             _requestedBuild = false;
 
             Console.WriteLine($"Beginning build. Restoring: {_shouldRestore}");
 
             UnityEditorMSBuildPropsTargetsGeneration.UpdateGeneratedMSBuildFileIfNeeded(buildTarget, compilationOptions);
 
-            var generateBinLog = (bool)Debug.GetDiagnosticSwitch("ScriptCompilationMsBuildBinlog").value;
+            var generateBinLog = (bool)UnityEngine.Debug.GetDiagnosticSwitch("ScriptCompilationMsBuildBinlog").value;
             var disableNugetRestore = Application.HasARGV("disable-nuget-restore");
 
-            _currentBuildState = new MSBuildCompilationBuildState(_compilerClient);
             _currentBuildTask = _currentBuildState.BuildAsync(_shouldRestore, generateBinLog, GetMsBuildConfiguration(target, buildTarget), !disableNugetRestore);
 
             _shouldRestore = false;
@@ -170,7 +185,7 @@ class MsBuildCompilation
         if (_currentBuildTask.IsCanceled || _currentBuildTask.IsFaulted)
         {
             if (_currentBuildTask.IsFaulted)
-                Debug.LogError("Internal BuildSystem Error: " + _currentBuildTask.Exception);
+                UnityEngine.Debug.LogError("Internal BuildSystem Error: " + _currentBuildTask.Exception);
 
             _currentBuildState = null;
             _currentBuildTask = null;
@@ -235,5 +250,52 @@ class MsBuildCompilation
             default:
                 throw new ArgumentOutOfRangeException(nameof(target), target, null);
         }
+    }
+
+    private string[] m_AllAssemblyReferenceJsons;
+    private string[] m_AllAssemblyReferenceJsonContents;
+    private string[] m_AllAssemblyJsonPaths;
+    private string[] m_AllAssemblyJsonContents;
+    private string[] m_AllAssemblyJsonGuids;
+
+    public void SetAllCustomScriptAssemblyReferenceJsonsContents(string[] allAssemblyReferenceJsons, string[] allAssemblyReferenceJsonContents)
+    {
+        m_AllAssemblyReferenceJsons = allAssemblyReferenceJsons;
+        m_AllAssemblyReferenceJsonContents = allAssemblyReferenceJsonContents;
+    }
+
+    public void SetAllCustomScriptAssemblyJsonContents(string[] allAssemblyJsonPaths, string[] allAssemblyJsonContents, string[] guids)
+    {
+        m_AllAssemblyJsonPaths = allAssemblyJsonPaths;
+        m_AllAssemblyJsonContents = allAssemblyJsonContents;
+        m_AllAssemblyJsonGuids = guids;
+    }
+
+    public void ClearCustomScriptAssemblies()
+    {
+        // No-op ?
+    }
+
+    public void SetAllScripts(string[] allScripts)
+    {
+        var allAssemblyReferenceJsons = new string[m_AllAssemblyReferenceJsons.Length];
+        for (int i = 0; i < m_AllAssemblyReferenceJsons.Length; i++)
+        {
+            allAssemblyReferenceJsons[i] = ConvertPath(m_AllAssemblyReferenceJsons[i]);
+        }
+
+        var allAssemblyJsonPaths = new string[m_AllAssemblyJsonPaths.Length];
+        for (int i = 0; i < m_AllAssemblyJsonPaths.Length; i++)
+        {
+            allAssemblyJsonPaths[i] = ConvertPath(m_AllAssemblyJsonPaths[i]);
+        }
+
+        // AsmDefToCSProj block removed: DLL not available in reference source
+    }
+
+    private string ConvertPath(string path)
+    {
+        // Work with full paths to not rely on auto resolved relative paths inside to converter library.
+        return AssetPath.GetFullPath(path);
     }
 }

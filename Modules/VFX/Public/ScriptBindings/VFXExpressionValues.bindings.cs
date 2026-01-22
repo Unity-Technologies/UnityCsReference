@@ -11,7 +11,7 @@ namespace UnityEngine.VFX
 {
     [RequiredByNativeCode]
     [StructLayout(LayoutKind.Sequential)]
-    [NativeType(Header = "Modules/VFX/Public/VFXExpressionValues.h")]
+    [NativeHeader("Modules/VFX/Public/VFXExpressionValues.h")]
     public class VFXExpressionValues
     {
         internal IntPtr m_Ptr;

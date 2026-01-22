@@ -3,7 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using System.Collections.Generic;
+using UnityEngine.Bindings;
 
 namespace UnityEngine.UIElements
 {
@@ -13,6 +13,29 @@ namespace UnityEngine.UIElements
     public class ContextualMenuManipulator : PointerManipulator
     {
         Action<ContextualMenuPopulateEvent> m_MenuBuilder;
+        private bool m_AcceptClicksIfDisabled;
+
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
+        internal bool acceptClicksIfDisabled
+        {
+            get => m_AcceptClicksIfDisabled;
+            set
+            {
+                if (m_AcceptClicksIfDisabled == value)
+                    return;
+
+                if (target != null)
+                    UnregisterCallbacksFromTarget();
+
+                m_AcceptClicksIfDisabled = value;
+
+                if (target != null)
+                    RegisterCallbacksOnTarget();
+            }
+        }
+
+        private InvokePolicy invokePolicy =>
+            acceptClicksIfDisabled ? InvokePolicy.IncludeDisabled : InvokePolicy.Default;
 
         /// <summary>
         /// Constructor.
@@ -34,18 +57,18 @@ namespace UnityEngine.UIElements
         {
             if (IsOSXContextualMenuPlatform())
             {
-                target.RegisterCallback<PointerDownEvent>(OnPointerDownEventOSX);
-                target.RegisterCallback<PointerUpEvent>(OnPointerUpEventOSX);
-                target.RegisterCallback<PointerMoveEvent>(OnPointerMoveEventOSX);
+                target.RegisterCallback<PointerDownEvent>(OnPointerDownEventOSX, invokePolicy);
+                target.RegisterCallback<PointerUpEvent>(OnPointerUpEventOSX, invokePolicy);
+                target.RegisterCallback<PointerMoveEvent>(OnPointerMoveEventOSX, invokePolicy);
             }
             else
             {
-                target.RegisterCallback<PointerUpEvent>(OnPointerUpEvent);
-                target.RegisterCallback<PointerMoveEvent>(OnPointerMoveEvent);
+                target.RegisterCallback<PointerUpEvent>(OnPointerUpEvent, invokePolicy);
+                target.RegisterCallback<PointerMoveEvent>(OnPointerMoveEvent, invokePolicy);
             }
 
-            target.RegisterCallback<KeyUpEvent>(OnKeyUpEvent);
-            target.RegisterCallback<ContextualMenuPopulateEvent>(OnContextualMenuEvent);
+            target.RegisterCallback<KeyUpEvent>(OnKeyUpEvent, invokePolicy);
+            target.RegisterCallback<ContextualMenuPopulateEvent>(OnContextualMenuEvent, invokePolicy);
         }
 
         /// <summary>

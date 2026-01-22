@@ -224,8 +224,7 @@ namespace Unity.Multiplayer.PlayMode.Editor
             var isScenarioRunning = ScenarioRunner.instance.IsRunning;
             var isInstanceRunning = IsInstanceRunning();
             var currInstance = GetInstanceForThisElement();
-            var isEditorInstance = currInstance != null && currInstance.GetInstanceDescription().InstanceTypeName
-                == VirtualEditorInstanceDescription.k_VirtualEditorInstanceDescription;
+            var isEditorInstance = currInstance != null && currInstance.Controller is CloneEditorController;
             var isButtonDisplayed = m_FreeRunButton.style.display == DisplayStyle.Flex;
 
             var shouldEnable = isEditorInstance || isInstanceRunning || !isScenarioRunning;

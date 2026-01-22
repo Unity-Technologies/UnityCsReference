@@ -52,10 +52,10 @@ namespace UnityEditor.PackageManager.UI.Internal
                 package_id = packageId ?? string.Empty,
                 package_tag = packageTag ?? string.Empty,
                 #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                package_ids = packageIds?.ToArray() ?? new string[0],
+                package_ids = packageIds?.ToArray() ?? Array.Empty<string>(),
 #pragma warning restore RS0030
                 #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                package_tags = packageTags?.ToArray() ?? new string[0],
+                package_tags = packageTags?.ToArray() ?? Array.Empty<string>(),
 #pragma warning restore RS0030
                 search_text = activePage.searchText,
                 filter_name = activePage.id,

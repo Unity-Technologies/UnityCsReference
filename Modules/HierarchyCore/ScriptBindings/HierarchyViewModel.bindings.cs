@@ -401,6 +401,24 @@ namespace Unity.Hierarchy
         public extern int DoesNotHaveFlagsCount(HierarchyNodeFlags flags);
 
         /// <summary>
+        /// Gets the first index of a node that has the specified flags set.
+        /// </summary>
+        /// <param name="flags">The hierarchy node flags.</param>
+        /// <returns>The first index with the flags set, or -1 if no node found.</returns>
+        [NativeMethod(IsThreadSafe = true, ThrowsException = true)]
+        [VisibleToOtherModules("UnityEngine.HierarchyModule")]
+        internal extern int GetFirstIndexWithFlags(HierarchyNodeFlags flags);
+
+        /// <summary>
+        /// Gets the last index of a node that has the specified flags set.
+        /// </summary>
+        /// <param name="flags">The hierarchy node flags.</param>
+        /// <returns>The last index with the flags set, or -1 if no node found.</returns>
+        [NativeMethod(IsThreadSafe = true, ThrowsException = true)]
+        [VisibleToOtherModules("UnityEngine.HierarchyModule")]
+        internal extern int GetLastIndexWithFlags(HierarchyNodeFlags flags);
+
+        /// <summary>
         /// Clears the specified flags on all hierarchy nodes.
         /// </summary>
         /// <param name="flags">The hierarchy node flags.</param>

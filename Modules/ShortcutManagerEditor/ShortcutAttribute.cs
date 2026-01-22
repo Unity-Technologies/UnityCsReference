@@ -82,10 +82,10 @@ namespace UnityEditor.ShortcutManagement
 
             // We instantiate this as the specific delegate type in advance,
             // because passing ShortcutArguments in object[] via MethodInfo.Invoke() causes boxing/allocation
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            if (methodParams.Any())
-#pragma warning restore RS0030
+            if (methodParams.Length > 0)
+            {
                 action = (Action<ShortcutArguments>)Delegate.CreateDelegate(typeof(Action<ShortcutArguments>), null, methodInfo);
+            }
             else
             {
                 m_NoArgumentsAction = (Action)Delegate.CreateDelegate(typeof(Action), null, methodInfo);
@@ -178,9 +178,7 @@ namespace UnityEditor.ShortcutManagement
 
             // We instantiate this as the specific delegate type in advance,
             // because passing ShortcutArguments in object[] via MethodInfo.Invoke() causes boxing/allocation
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            if (methodParams.Any())
-#pragma warning restore RS0030
+            if (methodParams.Length > 0)
                 action = (Action<ShortcutArguments>)Delegate.CreateDelegate(typeof(Action<ShortcutArguments>), null, methodInfo);
             else
             {

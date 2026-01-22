@@ -41,9 +41,10 @@ namespace Unity.Multiplayer.PlayMode.Editor
             settingsContainer.AddToClassList(k_InstanceDrawerClass);
 
             // When building UI for Free Run Instances, disable modifications if there are actively running ones.
+            // TODO: These meta options should be placed in the container of this drawer.
             var scenario = PlayModeScenarioManager.ActiveScenario as OrchestratedScenario;
             var instanceDescript = instanceProp.boxedValue as InstanceDescription;
-            if (scenario != null && scenario.Scenario != null && !scenario.Scenario.HasActiveFreeRunInstanceOfType(instanceDescript!.GetType()))
+            if (scenario != null && scenario.Scenario != null && !scenario.Scenario.HasActiveFreeRunInstanceOfType<LocalPlayerController>())
             {
                 settingsContainer.AddManipulator(new ContextualMenuManipulator(evt =>
                 {
@@ -364,8 +365,7 @@ namespace Unity.Multiplayer.PlayMode.Editor
                 return;
 
             // Find the specific instance Type + Name that we are looking for to make the comparison
-            if (!scenarioConfig.Scenario.HasActiveFreeRunInstance(name: instanceConfig.Name,
-                                                                  type: instanceConfig.GetType()))
+            if (!scenarioConfig.Scenario.HasActiveFreeRunInstance<LocalPlayerController>(name: instanceConfig.Name))
                 return;
 
             // Else we've found a player that is active and we should lock configurations

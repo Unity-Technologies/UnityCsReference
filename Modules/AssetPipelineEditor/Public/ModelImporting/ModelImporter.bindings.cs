@@ -31,7 +31,7 @@ namespace UnityEditor
     }
 
     [UsedByNativeCode]
-    [NativeType(CodegenOptions = CodegenOptions.Custom, Header = "Modules/Animation/AvatarMask.h", IntermediateScriptingStructName = "MonoTransformMaskElement")]
+    [NativeType(CodegenOptions = CodegenOptions.Custom, IntermediateScriptingStructName = "MonoTransformMaskElement")]
     [NativeHeader("Modules/AssetPipelineEditor/Public/ModelImporting/ModelImporter.bindings.h")]
     internal partial struct TransformMaskElement
     {
@@ -184,7 +184,7 @@ namespace UnityEditor
         }
     }
 
-    [NativeType(Header = "Modules/AssetPipelineEditor/Public/ModelImporting/ModelImporter.h")]
+    [NativeHeader("Modules/AssetPipelineEditor/Public/ModelImporting/ModelImporter.h")]
     public enum ModelImporterMaterialName
     {
         BasedOnTextureName = 0,
@@ -197,7 +197,7 @@ namespace UnityEditor
         BasedOnTextureName_Or_ModelNameAndMaterialName = 3,
     }
 
-    [NativeType(Header = "Modules/AssetPipelineEditor/Public/ModelImporting/ModelImporter.h")]
+    [NativeHeader("Modules/AssetPipelineEditor/Public/ModelImporting/ModelImporter.h")]
     public enum ModelImporterMaterialSearch
     {
         Local = 0,
@@ -207,7 +207,7 @@ namespace UnityEditor
         Everywhere = 2,
     }
 
-    [NativeType(Header = "Modules/AssetPipelineEditor/Public/ModelImporting/ModelImporter.h")]
+    [NativeHeader("Modules/AssetPipelineEditor/Public/ModelImporting/ModelImporter.h")]
     public enum ModelImporterMaterialLocation
     {
         [InspectorName("(OBSOLETE) Use External Materials (Legacy)")]
@@ -219,7 +219,7 @@ namespace UnityEditor
         InPrefab = 1
     }
 
-    [NativeType(Header = "Modules/AssetPipelineEditor/Public/ModelImporting/ModelImporter.h")]
+    [NativeHeader("Modules/AssetPipelineEditor/Public/ModelImporting/ModelImporter.h")]
     public enum ModelImporterMaterialImportMode
     {
         [Tooltip("Do not import materials")]
@@ -247,7 +247,7 @@ namespace UnityEditor
         None = 2,
     }
 
-    [NativeType(Header = "Modules/AssetPipelineEditor/Public/ModelImporting/ImportMesh.h")]
+    [NativeHeader("Modules/AssetPipelineEditor/Public/ModelImporting/ImportMesh.h")]
     public enum ModelImporterNormals
     {
         Import = 0,
@@ -257,7 +257,7 @@ namespace UnityEditor
         None = 2,
     }
 
-    [NativeType(Header = "Modules/AssetPipelineEditor/Public/ModelImporting/ImportMesh.h")]
+    [NativeHeader("Modules/AssetPipelineEditor/Public/ModelImporting/ImportMesh.h")]
     public enum ModelImporterNormalCalculationMode
     {
         [InspectorName("Unweighted (Legacy)")]
@@ -269,7 +269,7 @@ namespace UnityEditor
         AreaAndAngleWeighted
     }
 
-    [NativeType(Header = "Modules/AssetPipelineEditor/Public/ModelImporting/ImportMesh.h")]
+    [NativeHeader("Modules/AssetPipelineEditor/Public/ModelImporting/ImportMesh.h")]
     public enum ModelImporterNormalSmoothingSource
     {
         PreferSmoothingGroups = 0,
@@ -278,7 +278,7 @@ namespace UnityEditor
         None = 3
     }
 
-    [NativeType(Header = "Modules/AssetPipelineEditor/Public/ModelImporting/ImportMesh.h")]
+    [NativeHeader("Modules/AssetPipelineEditor/Public/ModelImporting/ImportMesh.h")]
     public enum ModelImporterTangents
     {
         Import = 0,
@@ -309,7 +309,7 @@ namespace UnityEditor
         UInt32 = 2,
     }
 
-    [NativeType(Header = "Modules/AssetPipelineEditor/Public/ModelImporting/ModelImporter.h")]
+    [NativeHeader("Modules/AssetPipelineEditor/Public/ModelImporting/ModelImporter.h")]
     public enum ModelImporterAnimationCompression
     {
         Off = 0,
@@ -321,7 +321,7 @@ namespace UnityEditor
         Optimal = 3
     }
 
-    [NativeType(Header = "Modules/AssetPipelineEditor/Public/ModelImporting/ModelImporter.h")]
+    [NativeHeader("Modules/AssetPipelineEditor/Public/ModelImporting/ModelImporter.h")]
     public enum ModelImporterGenerateAnimations
     {
         None = 0,
@@ -335,7 +335,7 @@ namespace UnityEditor
         InNodes = 2
     }
 
-    [NativeType(Header = "Modules/AssetPipelineEditor/Public/ModelImporting/ModelImporter.h")]
+    [NativeHeader("Modules/AssetPipelineEditor/Public/ModelImporting/ModelImporter.h")]
     public enum ModelImporterAnimationType
     {
         None = 0,
@@ -347,7 +347,7 @@ namespace UnityEditor
         Human = 3
     }
 
-    [NativeType(Header = "Modules/AssetPipelineEditor/Public/ModelImporting/ModelImporter.h")]
+    [NativeHeader("Modules/AssetPipelineEditor/Public/ModelImporting/ModelImporter.h")]
     public enum ModelImporterHumanoidOversampling
     {
         X1 = 1,
@@ -359,7 +359,7 @@ namespace UnityEditor
         X8 = 8
     }
 
-    [NativeType(Header = "Modules/AssetPipelineEditor/Public/ModelImporting/ModelImporter.h")]
+    [NativeHeader("Modules/AssetPipelineEditor/Public/ModelImporting/ModelImporter.h")]
     public enum ModelImporterSecondaryUVMarginMethod
     {
         Manual = 0,
@@ -367,7 +367,7 @@ namespace UnityEditor
         Calculate = 1,
     }
 
-    [NativeType(Header = "Modules/AssetPipelineEditor/Public/ModelImporting/ModelImporter.h")]
+    [NativeHeader("Modules/AssetPipelineEditor/Public/ModelImporting/ModelImporter.h")]
     public enum ModelImporterAvatarSetup
     {
         NoAvatar = 0,
@@ -385,7 +385,7 @@ namespace UnityEditor
     }
 
     [UsedByNativeCode]
-    [NativeType(Header = "Editor/Src/Animation/HumanTemplate.h")]
+    [NativeHeader("Editor/Src/Animation/HumanTemplate.h")]
     public sealed partial class HumanTemplate : Object
     {
         public HumanTemplate()
@@ -402,7 +402,7 @@ namespace UnityEditor
         extern public void ClearTemplate();
     }
 
-    [NativeType(Header = "Modules/AssetPipelineEditor/Public/ModelImporting/ModelImporter.h")]
+    [NativeHeader("Modules/AssetPipelineEditor/Public/ModelImporting/ModelImporter.h")]
     [StructLayoutAttribute(LayoutKind.Sequential)]
     [UsedByNativeCode]
     public partial struct TakeInfo
@@ -416,7 +416,7 @@ namespace UnityEditor
         public float sampleRate;
     }
 
-    [NativeType(Header = "Modules/AssetPipelineEditor/Public/ModelImporting/ModelImporter.h")]
+    [NativeHeader("Modules/AssetPipelineEditor/Public/ModelImporting/ModelImporter.h")]
     [NativeHeader("Modules/AssetPipelineEditor/Public/ModelImporting/ModelImporter.bindings.h")]
     [NativeHeader("Modules/Animation/ScriptBindings/AvatarBuilder.bindings.h")]
     public partial class ModelImporter : AssetImporter

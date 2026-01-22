@@ -767,9 +767,9 @@ namespace UnityEditor
 #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var objs = AssetDatabase.FindAllAssets(new SearchFilter() { classNames = classNames }).Select(property => property.pptrValue).ToList();
 #pragma warning restore RS0030
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable RS0031 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             if (objs.Any())
-#pragma warning restore RS0030
+#pragma warning restore RS0031
             {
                 objs.Sort((result1, result2) => EditorUtility.NaturalCompare(result1.name, result2.name));
                 foreach (var obj in objs)

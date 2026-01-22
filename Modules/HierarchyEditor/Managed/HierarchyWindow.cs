@@ -115,6 +115,14 @@ namespace Unity.Hierarchy.Editor
         }
         internal SearchFieldElement SearchField => m_SearchField;
 
+        internal static class TestHelper
+        {
+            public static HierarchyGlobalSelectionHandler GetSelectionHandler(HierarchyWindow hierarchyWindow)
+            {
+                return hierarchyWindow.m_SelectionHandler;
+            }
+        }
+
         string ISearchableContainer.SearchText
         {
             get
@@ -257,7 +265,6 @@ namespace Unity.Hierarchy.Editor
             m_HierarchyView.ListView.showAlternatingRowBackgrounds = HierarchyPreferences.AlternatingRowBackground
                 ? AlternatingRowBackground.All : AlternatingRowBackground.None;
             m_HierarchyView.ListViewLayoutConfiguration.headerContextMenuPopulateEvent += OnHeaderContextMenu;
-            m_HierarchyView.ListView.RegisterCallback<PointerUpEvent>(OnHierarchyWindowMouseUp);
             m_HierarchyView.ListView.RegisterCallback<PointerDownEvent>(OnHierarchyWindowMouseDown);
             m_HierarchyView.ListView.RegisterCallback<DragExitedEvent>(OnHierarchyWindowDragExited, TrickleDown.TrickleDown); // called when ESC, mouse leave window, or drag successfully finished
             m_HierarchyView.ListView.RegisterCallback<DragPerformEvent>(OnHierarchyWindowDragPerformed, TrickleDown.TrickleDown);
@@ -308,6 +315,8 @@ namespace Unity.Hierarchy.Editor
             PrefabStage.prefabStageReloaded += OnPrefabStageReloaded;
 
             rootVisualElement.RegisterCallback<KeyDownEvent>(OnKeyDown);
+            rootVisualElement.RegisterCallback<KeyUpEvent>(OnKeyUp);
+            rootVisualElement.RegisterCallback<PointerUpEvent>(OnPointerUp);
 
             EditorApplication.frameAndRenameNewGameObject += OnRequestFrameAndRenameNewGameObjectOrEntity;
             ClipboardUtility.cuttingGameObjects += OnCutGameObjects;
@@ -343,6 +352,11 @@ namespace Unity.Hierarchy.Editor
             });
         }
 
+        void OnPointerUp(PointerUpEvent evt)
+        {
+            m_SelectionHandler.SyncGlobalSelectionFromViewModel();
+        }
+
         void OnDisable()
         {
             HierarchyLogging.Log($"HierarchyWindow({GetHashCode():X}).OnDisable()");
@@ -375,6 +389,7 @@ namespace Unity.Hierarchy.Editor
             }
 
             rootVisualElement.UnregisterCallback<KeyDownEvent>(OnKeyDown);
+            rootVisualElement.UnregisterCallback<KeyUpEvent>(OnKeyUp);
 
             // Save in memory ViewState in case of domain reload
             SaveViewState(HierarchyViewState.Content.DomainReload);
@@ -396,7 +411,6 @@ namespace Unity.Hierarchy.Editor
 
             if (m_HierarchyView != null)
             {
-                m_HierarchyView.ListView?.UnregisterCallback<PointerUpEvent>(OnHierarchyWindowMouseUp);
                 m_HierarchyView.ListView?.UnregisterCallback<PointerDownEvent>(OnHierarchyWindowMouseDown);
                 m_HierarchyView.ListView?.UnregisterCallback<DragExitedEvent>(OnHierarchyWindowDragExited, TrickleDown.TrickleDown);
                 m_HierarchyView.ListView?.UnregisterCallback<DragPerformEvent>(OnHierarchyWindowDragPerformed, TrickleDown.TrickleDown);
@@ -426,13 +440,6 @@ namespace Unity.Hierarchy.Editor
         {
             if (HierarchyPreferences.UseQueryBuilder && m_SearchField?.queryBuilder != null)
                 m_SearchField.queryBuilder.blocksSupportExclude = false;
-        }
-
-        void OnHierarchyWindowMouseUp(PointerUpEvent evt)
-        {
-            if (!m_HierarchyView.ViewModel.HasFlags(HierarchyNodeFlags.Selected))
-                return;
-            m_SelectionHandler.SyncGlobalSelectionFromViewModel();
         }
 
         void OnHierarchyWindowMouseDown(PointerDownEvent evt)
@@ -825,6 +832,22 @@ namespace Unity.Hierarchy.Editor
             if (evt.keyCode == KeyCode.Escape && CutBoard.hasCutboardData)
             {
                 CutBoard.Reset();
+            }
+        }
+
+        void OnKeyUp(KeyUpEvent evt)
+        {
+            switch (evt.keyCode)
+            {
+                case KeyCode.UpArrow:
+                case KeyCode.DownArrow:
+                case KeyCode.Home:
+                case KeyCode.End:
+                case KeyCode.PageUp:
+                case KeyCode.PageDown:
+                case KeyCode.Escape:
+                    m_SelectionHandler.SyncGlobalSelectionFromViewModel();
+                    break;
             }
         }
 

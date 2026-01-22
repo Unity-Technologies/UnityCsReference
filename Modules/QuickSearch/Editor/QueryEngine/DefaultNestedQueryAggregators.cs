@@ -11,11 +11,11 @@ namespace UnityEditor.Search
     {
         public static IEnumerable<T> Aggregate(IEnumerable<T> enumerable)
         {
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable RS0031 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var empty = !enumerable.Any();
-#pragma warning restore RS0030
+#pragma warning restore RS0031
             #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            return empty ? new T[] {} : new T[] {enumerable.Max()};
+            return empty ? System.Array.Empty<T>() : [enumerable.Max()];
 #pragma warning restore RS0030
         }
     }
@@ -24,11 +24,11 @@ namespace UnityEditor.Search
     {
         public static IEnumerable<T> Aggregate(IEnumerable<T> enumerable)
         {
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable RS0031 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var empty = !enumerable.Any();
-#pragma warning restore RS0030
+#pragma warning restore RS0031
             #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            return empty ? new T[] {} : new T[] {enumerable.Min()};
+            return empty ? System.Array.Empty<T>() : [enumerable.Min()];
 #pragma warning restore RS0030
         }
     }
@@ -37,11 +37,11 @@ namespace UnityEditor.Search
     {
         public static IEnumerable<T> Aggregate(IEnumerable<T> enumerable)
         {
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable RS0031 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var empty = !enumerable.Any();
-#pragma warning restore RS0030
+#pragma warning restore RS0031
             #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            return empty ? new T[] {} : new T[] {enumerable.First()};
+            return empty ? System.Array.Empty<T>() : [enumerable.First()];
 #pragma warning restore RS0030
         }
     }
@@ -50,11 +50,11 @@ namespace UnityEditor.Search
     {
         public static IEnumerable<T> Aggregate(IEnumerable<T> enumerable)
         {
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable RS0031 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var empty = !enumerable.Any();
-#pragma warning restore RS0030
+#pragma warning restore RS0031
             #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            return empty ? new T[] {} : new T[] {enumerable.Last()};
+            return empty ? System.Array.Empty<T>() : [enumerable.Last()];
 #pragma warning restore RS0030
         }
     }

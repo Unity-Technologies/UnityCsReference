@@ -8,7 +8,7 @@ using UnityEngine.Bindings;
 namespace UnityEditor.Build.Reporting
 {
     ///<summary>Contains information about a single file produced by the build process.</summary>
-    [NativeType(Header = "Modules/BuildReportingEditor/Public/BuildReport.h")]
+    [NativeHeader("Modules/BuildReportingEditor/Public/BuildReport.h")]
     public struct BuildFile
     {
         ///<summary>The unique indentifier of the build file.</summary>

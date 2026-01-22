@@ -64,7 +64,7 @@ namespace UnityEditor.Scripting.Compilers
 
         public virtual IEnumerable<CompilerMessage> Parse(string[] errorOutput, bool compilationHadFailure)
         {
-            return Parse(errorOutput, new string[0], compilationHadFailure);
+            return Parse(errorOutput, Array.Empty<string>(), compilationHadFailure);
         }
 
         /* we want to remove the assemblyName_unused argument, but today burst uses internalsvisibleto and inherits from this class :( so we cannot change this signature*/

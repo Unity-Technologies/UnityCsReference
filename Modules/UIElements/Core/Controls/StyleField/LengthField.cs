@@ -165,7 +165,7 @@ namespace UnityEngine.UIElements
             m_OptionsPopup.AddToClassList(unitDropdownUssClass);
             popupContainer.Add(m_OptionsPopup);
 
-            lengthInput.parentLengthField = this;
+            lengthInput.parentField = this;
 
             lengthInput.AddToClassList(inputUssClassName);
             lengthInput.delegatesFocus = true;
@@ -488,7 +488,7 @@ namespace UnityEngine.UIElements
 
         class LengthInput : TextValueInput
         {
-            internal LengthField parentLengthField { get; set; }
+            internal LengthField parentField { get; set; }
 
             internal LengthInput()
             {
@@ -499,37 +499,30 @@ namespace UnityEngine.UIElements
 
             public override void ApplyInputDeviceDelta(Vector3 delta, DeltaSpeed speed, Length startValue)
             {
-                var v = StringToValue(text);
-                v.unit = startValue.unit;
-
-                if (v.IsAuto() || v.IsNone())
-                    v = new Length(0);
-
-                double value = v.value;
-
-                double sensitivity = NumericFieldDraggerUtility.CalculateIntDragSensitivity((long)startValue.value);
+                double sensitivity = NumericFieldDraggerUtility.CalculateIntDragSensitivity(startValue.value);
                 float acceleration = NumericFieldDraggerUtility.Acceleration(speed == DeltaSpeed.Fast, speed == DeltaSpeed.Slow);
-                value += NumericFieldDraggerUtility.NiceDelta(delta, acceleration) * sensitivity;
-                value = Mathf.RoundBasedOnMinimumDifference(value, sensitivity);
-
-                v = new Length((float)value, v.unit);
-
-                if (parentLengthField.isDelayed)
-                    parentLengthField.text = ValueToString(v);
+                var v = StringToValue(text).value;
+                v += (long)Math.Round(NumericFieldDraggerUtility.NiceDelta(delta, acceleration) * sensitivity);
+                if (parentField.isDelayed)
+                {
+                    text = ValueToString(Mathf.ClampToInt((long)v));
+                }
                 else
-                    parentLengthField.value = v;
+                {
+                    parentField.value = Mathf.ClampToInt((long)v);
+                }
             }
 
             protected override string ValueToString(Length v)
             {
-                return parentLengthField.showUnitAsDropdown
+                return parentField.showUnitAsDropdown
                     ? v.value.ToString(CultureInfo.InvariantCulture)
                     : v.ToString();
             }
 
             protected override Length StringToValue(string str)
             {
-                return Length.ParseString(str, parentLengthField.value);
+                return Length.ParseString(str, parentField.value);
             }
         }
     }

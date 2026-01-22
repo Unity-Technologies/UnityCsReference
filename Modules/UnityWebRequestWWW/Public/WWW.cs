@@ -157,12 +157,12 @@ namespace UnityEngine
             get
             {
                 if (!WaitUntilDoneIfPossible())
-                    return new byte[] {};
+                    return Array.Empty<byte>();
                 if (_uwr.result == UnityWebRequest.Result.ConnectionError)
-                    return new byte[] {};
+                    return Array.Empty<byte>();
                 var dh = _uwr.downloadHandler;
                 if (dh == null)
-                    return new byte[] {};
+                    return Array.Empty<byte>();
                 return dh.data;
             }
         }

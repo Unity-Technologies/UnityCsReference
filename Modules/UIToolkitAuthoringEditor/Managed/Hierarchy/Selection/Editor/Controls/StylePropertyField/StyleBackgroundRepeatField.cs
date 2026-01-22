@@ -47,6 +47,13 @@ namespace Unity.UIToolkit.Editor
             AddToClassList(ussClassName);
             labelElement.AddToClassList(labelUssClassName);
             visualInput.AddToClassList(inputUssClassName);
+
+            // If label is null, remove the labelElement added with the affordance
+            if (Contains(labelElement) && string.IsNullOrEmpty(labelElement.text))
+            {
+                AddToClassList(noLabelVariantUssClassName);
+                labelElement.RemoveFromHierarchy();
+            }
         }
 
         protected override BackgroundRepeatStyleField CreateValueField()

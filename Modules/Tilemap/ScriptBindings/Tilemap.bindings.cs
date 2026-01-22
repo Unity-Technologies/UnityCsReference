@@ -43,7 +43,7 @@ namespace UnityEngine.Tilemaps
     [NativeHeader("Runtime/Graphics/SpriteFrame.h")]
     [NativeHeader("Modules/Tilemap/Public/TilemapTile.h")]
     [NativeHeader("Modules/Tilemap/Public/TilemapMarshalling.h")]
-    [NativeType(Header = "Modules/Tilemap/Public/Tilemap.h")]
+    [NativeHeader("Modules/Tilemap/Public/Tilemap.h")]
     public sealed partial class Tilemap : GridLayout
     {
         public enum Orientation
@@ -809,7 +809,7 @@ namespace UnityEngine.Tilemaps
     [NativeHeader("Modules/Grid/Public/GridMarshalling.h")]
     [NativeHeader("Modules/Tilemap/TilemapRendererJobs.h")]
     [NativeHeader("Modules/Tilemap/Public/TilemapMarshalling.h")]
-    [NativeType(Header = "Modules/Tilemap/Public/TilemapRenderer.h")]
+    [NativeHeader("Modules/Tilemap/Public/TilemapRenderer.h")]
     public sealed partial class TilemapRenderer : Renderer
     {
         public enum SortOrder
@@ -897,11 +897,16 @@ namespace UnityEngine.Tilemaps
         }
 
         internal extern void OnSpriteAtlasRegistered(SpriteAtlas atlas);
+
+        [FreeFunction(Name = "TilemapRendererBindings::SetShaderUserValue", HasExplicitThis = true)] extern internal void Internal_SetShaderUserValueUInt(UInt32 v);
+        public void SetShaderUserValue(UInt32 v) => Internal_SetShaderUserValueUInt(v);
+        [FreeFunction(Name = "TilemapRendererBindings::GetShaderUserValue", HasExplicitThis = true)] extern internal UInt32 Internal_GetShaderUserValueUInt();
+        public UInt32 GetShaderUserValue() { return Internal_GetShaderUserValueUInt(); }
     }
 
     [RequiredByNativeCode]
     [StructLayoutAttribute(LayoutKind.Sequential)]
-    [NativeType(Header = "Modules/Tilemap/TilemapScripting.h")]
+    [NativeHeader("Modules/Tilemap/TilemapScripting.h")]
     public partial struct TileData
     {
         public Sprite sprite { get { return Object.ForceLoadFromInstanceID(m_Sprite) as Sprite; } set { m_Sprite = value != null ? value.GetEntityId() : EntityId.None; } }
@@ -937,7 +942,7 @@ namespace UnityEngine.Tilemaps
     [Serializable]
     [RequiredByNativeCode]
     [StructLayoutAttribute(LayoutKind.Sequential)]
-    [NativeType(Header = "Modules/Tilemap/TilemapScripting.h")]
+    [NativeHeader("Modules/Tilemap/TilemapScripting.h")]
     public partial struct TileChangeData
     {
         public Vector3Int position { get { return m_Position; } set { m_Position = value; } }
@@ -965,7 +970,7 @@ namespace UnityEngine.Tilemaps
 
     [RequiredByNativeCode]
     [StructLayoutAttribute(LayoutKind.Sequential)]
-    [NativeType(Header = "Modules/Tilemap/TilemapScripting.h")]
+    [NativeHeader("Modules/Tilemap/TilemapScripting.h")]
     public partial struct TileAnimationData
     {
         public Sprite[] animatedSprites { get { return m_AnimatedSprites; } set { m_AnimatedSprites = value; } }
@@ -981,7 +986,7 @@ namespace UnityEngine.Tilemaps
 
     [RequiredByNativeCode]
     [StructLayoutAttribute(LayoutKind.Sequential)]
-    [NativeType(Header = "Modules/Tilemap/TilemapScripting.h")]
+    [NativeHeader("Modules/Tilemap/TilemapScripting.h")]
     public partial struct TileAnimationEntityIdData
     {
         public NativeArray<EntityId> animatedSpritesEntityIds
@@ -1032,7 +1037,7 @@ namespace UnityEngine.Tilemaps
     };
 
     [RequireComponent(typeof(Tilemap))]
-    [NativeType(Header = "Modules/Tilemap/Public/TilemapCollider2D.h")]
+    [NativeHeader("Modules/Tilemap/Public/TilemapCollider2D.h")]
     public sealed partial class TilemapCollider2D : Collider2D
     {
         // Get/Set Delaunay mesh usage.

@@ -138,6 +138,9 @@ namespace UnityEditor
         [FreeFunction(IsThreadSafe = true)]
         public static extern string GetPhysicalPath(string path);
 
+        [FreeFunction]
+        internal static extern UInt64 GetSize(string path);
+
         // Replaces a file.
         public static void ReplaceFile(string src, string dst)
         {

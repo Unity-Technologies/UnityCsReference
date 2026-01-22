@@ -335,9 +335,7 @@ namespace UnityEditor.Experimental.GraphView
 
         public override void SetPosition(Rect newPos)
         {
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            if ((!IsValidRect(newPos) && m_ContainedElements.Any()) || m_Position == newPos.position)
-#pragma warning restore RS0030
+            if ((!IsValidRect(newPos) && m_ContainedElements.Count > 0) || m_Position == newPos.position)
                 return;
 
             if (m_ContainedElements.Count == 0)

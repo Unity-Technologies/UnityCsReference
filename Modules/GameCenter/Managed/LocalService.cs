@@ -17,7 +17,7 @@ namespace UnityEngine.SocialPlatforms.Impl
 
         public LocalUser()
         {
-            m_Friends = new UserProfile[0];
+            m_Friends = Array.Empty<UserProfile>();
             m_Authenticated = false;
             m_Underage = false;
         }
@@ -364,9 +364,9 @@ namespace UnityEngine.SocialPlatforms.Impl
             m_Loading = false;
             m_LocalUserScore = new Score("Invalid", 0);
             m_MaxRange = 0;
-            m_Scores = new Score[0];
+            m_Scores = Array.Empty<Score>();
             m_Title = "Invalid";
-            m_UserIDs = new string[0];
+            m_UserIDs = Array.Empty<string>();
         }
 
         // TODO: Implement different behaviour when this is populated
@@ -594,7 +594,7 @@ namespace UnityEngine.SocialPlatforms
             }
             Debug.LogError("Leaderboard not found");
             if (callback != null)
-                callback(new Score[0]);
+                callback(Array.Empty<Score>());
         }
 
         void ISocialPlatform.LoadScores(ILeaderboard board, System.Action<bool> callback)

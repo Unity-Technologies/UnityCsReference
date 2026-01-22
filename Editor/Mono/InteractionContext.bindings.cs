@@ -9,7 +9,7 @@ using UnityEngine.Assertions;
 
 namespace UnityEditor
 {
-    [NativeType(Header = "Editor/Src/InteractionContext.h")]
+    [NativeHeader("Editor/Src/InteractionContext.h")]
     internal partial class InteractionContext: IDisposable
     {
         [Flags]

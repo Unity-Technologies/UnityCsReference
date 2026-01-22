@@ -156,6 +156,13 @@ namespace UnityEngine.UIElements
             return true;
         }
 
+        public void ClearProperties()
+        {
+            m_Properties = Array.Empty<StyleProperty>();
+            customPropertiesCount = 0;
+            styleSheet.RequestRebuild();
+        }
+
         public StyleProperty FindLastProperty(string propertyName)
         {
             for (var i = properties.Length - 1; i >= 0; --i)

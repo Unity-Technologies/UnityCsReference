@@ -11,8 +11,9 @@ using System.Runtime.InteropServices;
 
 namespace UnityEditor.Build
 {
+    ///<summary>Get a BuildCallbackContext object from a <see cref="Build.IPreprocessBuildWithContext.OnPreprocessBuild" /> or <see cref="Build.IPostprocessBuildWithContext.OnPostprocessBuild" /> callback.</summary>
     [RequiredByNativeCode]
-    [NativeType(Header = "Modules/ContentBuild/Editor/Public/BuildCallbackContext.h")]
+    [NativeHeader("Modules/ContentBuild/Editor/Public/BuildCallbackContext.h")]
     [NativeClass("BuildPipeline::BuildCallbackContext")]
     public class BuildCallbackContext
     {
@@ -36,6 +37,7 @@ namespace UnityEditor.Build
         [FreeFunction("BuildCallbackContextBindings::GetReport")]
         private static extern BuildReport GetReportInternal(IntPtr self);
 
+        ///<summary>The build report associated with this build.</summary>
         public BuildReport Report
         {
             get
@@ -51,6 +53,7 @@ namespace UnityEditor.Build
         [FreeFunction("BuildCallbackContextBindings::IsPlayerBuild")]
         private static extern bool IsPlayerBuildInternal(IntPtr self);
 
+        ///<summary>Returns true if the build is a player build type.</summary>
         public bool IsPlayerBuild
         {
             get
@@ -66,6 +69,7 @@ namespace UnityEditor.Build
         [FreeFunction("BuildCallbackContextBindings::IsContentOnlyBuild")]
         private static extern bool IsContentOnlyBuildInternal(IntPtr self);
 
+        ///<summary>Returns true if the build is a content only build type like an AssetBundle build.</summary>
         public bool IsContentOnlyBuild
         {
             get

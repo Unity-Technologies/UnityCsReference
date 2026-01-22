@@ -33,7 +33,7 @@ namespace UnityEditor.Profiling
         public static ProfilerCounterDescriptor[] ConvertFromLegacyCounterDatas(List<ProfilerCounterData> legacyCounters)
         {
             if (legacyCounters == null)
-                return new ProfilerCounterDescriptor[0];
+                return System.Array.Empty<ProfilerCounterDescriptor>();
 
             var counters = new List<ProfilerCounterDescriptor>(legacyCounters.Count);
             foreach (var legacyCounter in legacyCounters)

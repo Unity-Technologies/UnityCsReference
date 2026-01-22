@@ -73,7 +73,7 @@ namespace UnityEditor
         [SerializeField] bool m_VSyncEnabled;
         [SerializeField] bool m_Gizmos;
         [SerializeField] bool m_Stats;
-        [SerializeField] int[] m_SelectedSizes = new int[0]; // We have a selection for each game view size group (e.g standalone, android etc)
+        [SerializeField] int[] m_SelectedSizes = Array.Empty<int>(); // We have a selection for each game view size group (e.g standalone, android etc)
 
         [SerializeField] ZoomableArea m_ZoomArea;
         [SerializeField] float m_defaultScale = -1f;
@@ -83,7 +83,7 @@ namespace UnityEditor
 
         [SerializeField] bool m_ClearInEditMode = true;
         [SerializeField] bool m_NoCameraWarning = true;
-        [SerializeField] bool[] m_LowResolutionForAspectRatios = new bool[0];
+        [SerializeField] bool[] m_LowResolutionForAspectRatios = Array.Empty<bool>();
         [SerializeField] int m_XRRenderMode = 0;
         [SerializeField] RenderTexture m_RenderTexture;
         [SerializeField] bool m_showToolbar = true;

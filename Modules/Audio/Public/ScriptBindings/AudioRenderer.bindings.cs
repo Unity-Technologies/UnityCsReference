@@ -11,7 +11,7 @@ using Unity.Collections.LowLevel.Unsafe;
 
 namespace UnityEngine
 {
-    [NativeType(Header = "Modules/Audio/Public/ScriptBindings/AudioRenderer.bindings.h")]
+    [NativeHeader("Modules/Audio/Public/ScriptBindings/AudioRenderer.bindings.h")]
     public class AudioRenderer
     {
         public static bool Start()

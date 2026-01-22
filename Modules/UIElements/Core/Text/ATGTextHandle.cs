@@ -43,9 +43,9 @@ namespace UnityEngine.UIElements
             pixelPreferedSize = textLib.MeasureText(nativeSettings, textGenerationInfo);
         }
 
-        public (NativeTextInfo, bool) UpdateNative(bool generateNativeSettings = true)
+        public (NativeTextInfo, bool) UpdateNative()
         {
-            if (generateNativeSettings && !ConvertUssToNativeTextGenerationSettings())
+            if (!ConvertUssToNativeTextGenerationSettings())
                 return (default, false);
 
             if (nativeSettings.hasLink)
@@ -134,7 +134,13 @@ namespace UnityEngine.UIElements
         internal void EnsureIsReadyForJobs()
         {
             InitTextLib();
-            var fa = TextUtilities.GetFontAsset(m_TextElement);
+            var fa = m_TextElement.cachedFontAsset;
+
+            if (fa == null)
+            {
+                var textSettings = TextUtilities.GetTextSettingsFrom(m_TextElement);
+                fa = textSettings.GetFontAsset();
+            }
 
             if (fa == null)
                 return;
@@ -146,7 +152,6 @@ namespace UnityEngine.UIElements
                 nativeSettings.fontSize = effectiveFontsize * 64;
                 fa = GetCorrespondingBitmapFontAsset(fa, effectiveFontsize);
             }
-
             TextUtilities.GetTextSettingsFrom(m_TextElement).UpdateNativeTextSettings();
             fa.EnsureNativeFontAssetIsCreated();
         }
@@ -156,6 +161,7 @@ namespace UnityEngine.UIElements
         {
             var scale = GetPixelsPerPoint();
             ref var style = ref m_TextElement.computedStyle;
+            var textSettings = TextUtilities.GetTextSettingsFrom(m_TextElement);
 
             nativeSettings.preProcessFlags = PreProcessFlags.None;
             nativeSettings.text = m_TextElement.isElided && !TextLibraryCanElide() ? m_TextElement.elidedText : m_TextElement.renderedTextString;
@@ -214,8 +220,13 @@ namespace UnityEngine.UIElements
             nativeSettings.screenWidth = Mathf.RoundToInt(size.x * 64.0f * scale);
             nativeSettings.screenHeight =  Mathf.RoundToInt(size.y * 64.0f * scale);
 
-            var fa = TextUtilities.GetFontAsset(m_TextElement);
+            var fa = m_TextElement.cachedFontAsset;
             if (fa == null)
+            {
+                fa = textSettings.GetFontAsset();
+            }
+
+            if (fa ==  null)
                 return false;
 
             if (style.unityEditorTextRenderingMode == EditorTextRenderingMode.Bitmap)
@@ -231,17 +242,17 @@ namespace UnityEngine.UIElements
             nativeSettings.fontAsset = fa.nativeFontAsset;
             if (fa.nativeFontAsset == IntPtr.Zero)
                 return false;
-            nativeSettings.textSettings = TextUtilities.GetTextSettingsFrom(m_TextElement).nativeTextSettings;
+            nativeSettings.textSettings = textSettings.nativeTextSettings;
             // TODO: We should expose this to user. Possibly disable it by default.
             nativeSettings.disableAdvancedFontFeatures = false;
 
             if (m_TextElement.enableRichText && RichTextTagParser.MayNeedParsing(nativeSettings.text))
             {
                 // If we're not using richTextTags, we're doing this on the native side to avoid allocations.
-                TextPreprocessor.PreProcessString(ref nativeSettings.text, nativeSettings.preProcessFlags);
+                TextPreprocessor.PreProcessString(ref nativeSettings.text, nativeSettings.preProcessFlags, TextUtilities.GetTextSettingsFrom(m_TextElement));
                 nativeSettings.preProcessFlags = PreProcessFlags.None;
                 //TODO GetBlurryFontAssetMapping for other fonts in the rich text tags
-                CreateTextGenerationSettingsArray(ref nativeSettings, Links, GetPixelsPerPoint(), TextUtilities.GetTextSettingsFrom(m_TextElement), m_HoveredTag);
+                CreateTextGenerationSettingsArray(ref nativeSettings, Links, GetPixelsPerPoint(), textSettings, m_HoveredTag);
             }
             else
                 nativeSettings.textSpans = null;
@@ -252,7 +263,12 @@ namespace UnityEngine.UIElements
 
         internal void EnsureFontAssetsAreCreatedOnTheMainThread()
         {
-            var fa = TextUtilities.GetFontAsset(m_TextElement);
+            var fa = m_TextElement.cachedFontAsset;
+            if (fa == null)
+            {
+                var textSettings = TextUtilities.GetTextSettingsFrom(m_TextElement);
+                fa = textSettings.GetFontAsset();
+            }
             fa.EnsureNativeFontAssetIsCreated();
             ref var style = ref m_TextElement.computedStyle;
 

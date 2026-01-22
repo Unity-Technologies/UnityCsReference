@@ -453,6 +453,11 @@ namespace UnityEngine
             get { return SupportsDynamicResolution(); }
         }
 
+        public static bool supportsBackbufferInMultipleRenderTargets
+        {
+            get { return SupportsBackbufferInMultipleRenderTargets(); }
+        }
+
         // The enums are only marked as obsolete in the editor.
         /// <summary>
         /// Determine if enum value is obsolete.
@@ -465,7 +470,7 @@ namespace UnityEngine
             {
                 if (!object.Equals(enumMember.GetValue(null), value)) continue;
 
-                var isObsolete = enumMember.GetCustomAttributes(typeof(ObsoleteAttribute), false).Length != 0;
+                var isObsolete = enumMember.IsDefined(typeof(ObsoleteAttribute), false);
                 if (!isObsolete)
                 {
                     return false;
@@ -1141,5 +1146,8 @@ namespace UnityEngine
 
         [FreeFunction("ScriptingGraphicsCaps::SupportsDynamicResolution")]
         static extern bool SupportsDynamicResolution();
+
+        [FreeFunction("ScriptingGraphicsCaps::SupportsBackbufferInMultipleRenderTargets")]
+        static extern bool SupportsBackbufferInMultipleRenderTargets();
     }
 }

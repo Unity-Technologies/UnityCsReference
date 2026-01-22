@@ -12,7 +12,7 @@ using RefId = System.Int64;
 namespace UnityEditor
 {
     //Must match declaration in EditorSerializationUtility.h
-    [NativeType(Header = "Editor/Src/Utility/EditorSerializationUtility.h")]
+    [NativeHeader("Editor/Src/Utility/EditorSerializationUtility.h")]
     public readonly struct ManagedReferenceMissingType : IEquatable<ManagedReferenceMissingType>, IComparable<ManagedReferenceMissingType>
     {
         public readonly String assemblyName { get { return m_AssemblyName; } }

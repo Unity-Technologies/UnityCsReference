@@ -174,7 +174,7 @@ namespace Unity.Profiling.Editor.UI
                 usedIds.Add(sessionTreeItemId);
             }
 
-            var oldItemEntries = new HashSet<int>(SessionState.GetIntArray(k_TreePersistencyItemIdsKey, new int[0]));
+            var oldItemEntries = new HashSet<int>(SessionState.GetIntArray(k_TreePersistencyItemIdsKey, Array.Empty<int>()));
             var sessionsToExpand = new HashSet<int>();
             foreach (var sessionId in fullCaptureList.SortedSessionIds)
             {

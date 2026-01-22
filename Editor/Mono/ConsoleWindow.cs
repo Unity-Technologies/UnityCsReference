@@ -520,6 +520,11 @@ namespace UnityEditor
                 m_LineHeight = Mathf.RoundToInt(Constants.ErrorStyle.lineHeight);
                 m_BorderHeight = Constants.ErrorStyle.border.top + Constants.ErrorStyle.border.bottom;
                 UpdateListView();
+
+                // Initializing flags concerning the log level
+                SetFlag(ConsoleFlags.LogLevelLog, HasFlag(ConsoleFlags.LogLevelLog));
+                SetFlag(ConsoleFlags.LogLevelWarning, HasFlag(ConsoleFlags.LogLevelWarning));
+                SetFlag(ConsoleFlags.LogLevelError, HasFlag(ConsoleFlags.LogLevelError));
             }
 
             GUILayout.BeginHorizontal(Constants.Toolbar);
@@ -605,13 +610,13 @@ namespace UnityEditor
             // Active entry index may no longer be valid
             if (EditorGUI.EndChangeCheck())
             {
-                SetActiveEntry(null);
-                DestroyLatestRestoreEntry();
-            }
+                ResetActiveEntry();
 
-            SetFlag(ConsoleFlags.LogLevelLog, setLogFlag);
-            SetFlag(ConsoleFlags.LogLevelWarning, setWarningFlag);
-            SetFlag(ConsoleFlags.LogLevelError, setErrorFlag);
+                // Only setting flags when one of the values have been modified
+                SetFlag(ConsoleFlags.LogLevelLog, setLogFlag);
+                SetFlag(ConsoleFlags.LogLevelWarning, setWarningFlag);
+                SetFlag(ConsoleFlags.LogLevelError, setErrorFlag);
+            }
 
             GUILayout.EndHorizontal();
 
@@ -994,7 +999,7 @@ namespace UnityEditor
                 return null;
 
             var parametersString = match.Groups[match.Groups.Count - 1].Value;
-                
+
             if (parametersString == string.Empty)
                 parametersString = null;
 
@@ -1144,7 +1149,10 @@ namespace UnityEditor
         public void AddItemsToMenu(GenericMenu menu)
         {
             menu.AddItem(EditorGUIUtility.TrTextContent("Open Player Log"), false, UnityEditorInternal.InternalEditorUtility.OpenPlayerConsole);
-            menu.AddItem(EditorGUIUtility.TrTextContent("Open Editor Log"), false, UnityEditorInternal.InternalEditorUtility.OpenEditorConsole);
+            if (string.IsNullOrEmpty(Application.consoleLogPath))
+                menu.AddDisabledItem(EditorGUIUtility.TrTextContent("Open Editor Log"), false);
+            else
+                menu.AddItem(EditorGUIUtility.TrTextContent("Open Editor Log"), false, UnityEditorInternal.InternalEditorUtility.OpenEditorConsole);
 
             menu.AddItem(EditorGUIUtility.TrTextContent("Show Timestamp"), HasFlag(ConsoleFlags.ShowTimestamp), SetTimestamp);
 
@@ -1248,7 +1256,17 @@ namespace UnityEditor
             EditorPrefs.SetInt("ConsoleWindowLogLineCount", count);
             Constants.LogStyleLineCount = count;
 
-            UpdateListView();
+            m_ListView.rowHeight = RowHeight;
+
+            if (m_LastActiveEntryIndex == -1)
+            {
+                SetScrollPosYFromRow(LogEntries.GetCount());
+                return;
+            }
+
+            // Refocusing the console window on the selected element when possible or to the end of the list
+            var index = LogEntries.GetEntryRowIndex(m_LastActiveEntryIndex);
+            SetScrollPosY(index * m_ListView.rowHeight);
         }
 
         private void AddStackTraceLoggingMenu(GenericMenu menu)

@@ -23,6 +23,8 @@ internal class VisualElementEditingStage : PreviewSceneStage, ISerializationCall
 
     private GUIContent m_HeaderContent;
 
+    private ScopedMenuItemGenerator m_MenuScope;
+
     private VisualTreeAssetEditingContext m_Context;
 
     private VisualTreeAssetExporter m_Exporter;
@@ -72,6 +74,11 @@ internal class VisualElementEditingStage : PreviewSceneStage, ISerializationCall
         m_HeaderContent = new GUIContent();
         m_Exporter = new VisualTreeAssetExporter();
         m_ExporterOptions = new VisualTreeAssetExporter.ExportOptions();
+    }
+
+    public void RequestRefresh()
+    {
+        CloneTree();
     }
 
     internal override Scene GetSceneAt(int index)
@@ -126,6 +133,7 @@ internal class VisualElementEditingStage : PreviewSceneStage, ISerializationCall
     {
         m_PanelElement.PanelSettings = Context.PanelSettings;
         CloneTree();
+        m_MenuScope = new ScopedMenuItemGenerator();
         return true;
     }
 
@@ -147,13 +155,15 @@ internal class VisualElementEditingStage : PreviewSceneStage, ISerializationCall
     {
         m_PanelElement?.DestroyNestedPanel();
         m_PanelElement = null;
+        m_MenuScope?.Dispose();
+        m_MenuScope = null;
         base.OnCloseStage();
     }
 
     protected internal override void OnReturnToStage()
     {
         base.OnReturnToStage();
-        ReimportAsset();
+        ReimportAssets();
         CloneTree();
     }
 
@@ -177,11 +187,13 @@ internal class VisualElementEditingStage : PreviewSceneStage, ISerializationCall
             return false;
         }
 
+        EditedVisualTreeAsset.visualTree.hasAuthoringId = true;
+        EditedVisualTreeAsset.visualTree.SetAttribute(UxmlAsset.AuthoringIdAttribute, EditedVisualTreeAsset.visualTree.id.ToString());
         var assetStr =  m_Exporter.ToUxmlString(EditedVisualTreeAsset, m_ExporterOptions);
         var written = WriteTextFileToDisk(assetStr);
         if (written)
         {
-            ReimportAsset();
+            ReimportAssets();
             CloneTree();
         }
         return written;
@@ -189,7 +201,7 @@ internal class VisualElementEditingStage : PreviewSceneStage, ISerializationCall
 
     internal override void DiscardChanges()
     {
-        ReimportAsset();
+        ReimportAssets();
         CloneTree();
     }
 
@@ -260,7 +272,7 @@ internal class VisualElementEditingStage : PreviewSceneStage, ISerializationCall
 
         if (success)
         {
-            ReimportAsset();
+            ReimportAssets();
         }
         else
         {
@@ -270,7 +282,7 @@ internal class VisualElementEditingStage : PreviewSceneStage, ISerializationCall
         return success;
     }
 
-    private void ReimportAsset()
+    private void ReimportAssets()
     {
         Context = VisualTreeAssetEditingContext.Reimport(Context);
     }

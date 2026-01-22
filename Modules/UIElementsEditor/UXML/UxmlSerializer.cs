@@ -457,7 +457,7 @@ namespace UnityEditor.UIElements
         public override string ToString() => $"{serializedField.DeclaringType.ReflectedType.Name}.{serializedField.Name} ({serializedField.FieldType})";
     }
 
-    [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+    [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
     internal class UxmlSerializedUxmlObjectAttributeDescription : UxmlSerializedAttributeDescription
     {
         internal const string k_MultipleUxmlObjectsWarning = "Multiple UxmlObjects found for UxmlObjectReference field {0}. " +

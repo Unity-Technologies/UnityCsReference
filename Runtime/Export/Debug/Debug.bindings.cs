@@ -36,9 +36,9 @@ namespace UnityEngine
     [NativeHeader("Runtime/Export/Debug/Debug.bindings.h")]
     internal sealed partial class DebugLogHandler
     {
-        [ThreadAndSerializationSafe]
+        [ThreadSafe]
         internal static extern void Internal_Log(LogType level, LogOption options, string msg, Object obj);
-        [ThreadAndSerializationSafe]
+        [ThreadSafe]
         internal static extern void Internal_LogException(Exception ex, Object obj);
     }
 
@@ -183,13 +183,13 @@ namespace UnityEngine
             LogInformation(message, fileName, lineNumber, columnNumber);
         }
 
-        [ThreadAndSerializationSafe]
+        [ThreadSafe]
         internal static extern void LogCompilerMessage(string message, string fileName, int lineNumber, int columnNumber, bool forEditor, bool isError, int identifier, EntityId instanceId);
-        [ThreadAndSerializationSafe]
+        [ThreadSafe]
         private static extern void LogCompilerWarning(string message, string fileName, int lineNumber, int columnNumber);
-        [ThreadAndSerializationSafe]
+        [ThreadSafe]
         private static extern void LogCompilerError(string message, string fileName, int lineNumber, int columnNumber);
-        [ThreadAndSerializationSafe]
+        [ThreadSafe]
         private static extern void LogInformation(string message, string fileName, int lineNumber, int columnNumber);
 
         // Clears errors from the developer console.
@@ -208,7 +208,7 @@ namespace UnityEngine
         public static void LogException(Exception exception, Object context) { unityLogger.LogException(exception, context); }
 
         [VisibleToOtherModules("UnityEditor.BurstModule")]
-        [ThreadAndSerializationSafe]
+        [ThreadSafe]
         internal static extern void LogPlayerBuildError(string message, string file, int line, int column);
 
         [VisibleToOtherModules("UnityEditor.BurstModule")]

@@ -50,9 +50,10 @@ namespace Unity.GraphToolkit.Editor
             m_CustomUssNames[typeHandle.Identification] = ussName;
         }
 
-        static string GetTypeName(TypeHandle typeHandle)
+        string GetTypeName(TypeHandle typeHandle)
         {
             var typeName = typeHandle.Name;
+            var resolvedType = typeHandle.Resolve();
 
             if (typeHandle.IsCustomTypeHandle())
             {
@@ -101,6 +102,16 @@ namespace Unity.GraphToolkit.Editor
                     return typeName.ToLowerInvariant();
                 }
             }
+            else if (resolvedType.IsGenericType && typeof(IList).IsAssignableFrom(resolvedType))
+            {
+                typeName = GetUssName(resolvedType.GetGenericArguments()[0].GenerateTypeHandle());
+            }
+            else if (resolvedType.IsArray)
+            {
+                typeName = GetUssName(resolvedType.GetElementType().GenerateTypeHandle());
+            }
+            else if (resolvedType.IsEnum)
+                return "enum";
 
             return typeName;
         }
@@ -128,6 +139,8 @@ namespace Unity.GraphToolkit.Editor
                 return "component";
             if (type.IsSubclassOf(typeof(Texture)) && type != typeof(Texture))
                 return "texture";
+            if (type.IsArray)
+                return "array";
             if (typeof(IList).IsAssignableFrom(type))
                 return "list";
             if (typeof(IDictionary).IsAssignableFrom(type))

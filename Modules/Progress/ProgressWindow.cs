@@ -136,7 +136,7 @@ namespace UnityEditor
             m_TreeView.unbindItem = UnbindTreeViewItem;
             m_TreeView.destroyItem = DestroyTreeViewItem;
             m_TreeView.fixedItemHeight = 50;
-            m_TreeView.SetRootItems(new TreeViewItemData<Progress.Item>[] { });
+            m_TreeView.SetRootItems(System.Array.Empty<TreeViewItemData<Progress.Item>>());
 
             var scrollView = m_TreeView.Q<ScrollView>();
             if (scrollView != null)

@@ -28,7 +28,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         bool IsAnyExperimentalPackagesInUse();
         bool IsRemoveInProgress(string packageName);
         bool IsAddInProgress(string packageId);
-        void AddById(string packageId);
+        void AddById(string packageId, bool isUnlisted);
         bool AddByPath(string path, out string tempPackageId);
         void AddByUrl(string url);
         void AddByIds(IEnumerable<string> versionIds);
@@ -120,7 +120,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         public void OnBeforeSerialize()
         {
             #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            m_SerializedInProgressExtraFetchOperations = m_ExtraFetchOperations?.Values.Where(i => i.isInProgress).ToArray() ?? new UpmSearchOperation[0];
+            m_SerializedInProgressExtraFetchOperations = m_ExtraFetchOperations?.Values.Where(i => i.isInProgress).ToArray() ?? Array.Empty<UpmSearchOperation>();
 #pragma warning restore RS0030
         }
 
@@ -162,12 +162,12 @@ namespace UnityEditor.PackageManager.UI.Internal
 #pragma warning restore RS0030
         }
 
-        public void AddById(string packageId)
+        public void AddById(string packageId, bool isUnlisted)
         {
             if (isAddOrRemoveInProgress)
                 return;
 
-            addAndRemoveOperation.AddById(packageId);
+            addAndRemoveOperation.AddById(packageId, isUnlisted);
             SetupAddAndRemoveOperation();
         }
 

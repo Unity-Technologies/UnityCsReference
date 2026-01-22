@@ -974,7 +974,7 @@ namespace UnityEditor.IMGUI.Controls
                     }
                     if (deselectOnUnhandledMouseDown && containsMouse && Event.current.button == 0 && state.selectedIDs.Count > 0)
                     {
-                        SetSelection(new TIdentifier[0], false);
+                        SetSelection(Array.Empty<TIdentifier>(), false);
                         NotifyListenersThatSelectionChanged();
                     }
 

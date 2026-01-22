@@ -87,12 +87,11 @@ namespace Unity.Hierarchy
         readonly HierarchyViewItemColumn m_NameColumn;
         readonly HierarchyViewDragHandler m_DragHandler;
         readonly VisualElement m_ListViewScrollView;
+        readonly HierarchyViewSelection m_Selection;
 
         // UX update state
         VisualElement m_StyleContainer;
         IVisualElementScheduledItem m_ScheduledItem;
-        readonly List<int> m_SelectedIndices = new(); // Used as a temporary buffer for converting indices to nodes
-        bool m_SelectedIndicesChangedFromPointerDown;
         int m_LastMouseUpSelectionIndex;
         internal bool m_IsRenamingItem => m_RenamingItem != null;
         HierarchyViewItem m_RenamingItem;
@@ -275,7 +274,7 @@ namespace Unity.Hierarchy
         internal bool DisplayUpdateNeeded => m_Version != m_HierarchyViewModel.Version;
         internal bool ExecutePostUpdateActionsNeeded => m_PostUpdateActionQueue.Count > 0;
         internal HierarchyViewDragHandler DragHandler => m_DragHandler;
-        internal HierarchyViewItemColumn NameColumn => m_NameColumn;
+        internal HierarchyViewItemColumn NameColumn { [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")] get => m_NameColumn; }
 
         /// <summary>
         /// Create a new instance of the <see cref="HierarchyView"/>.
@@ -292,25 +291,24 @@ namespace Unity.Hierarchy
             {
                 columns = { stretchMode = Columns.StretchMode.Grow }
             };
-            m_CollectionView = new CollectionView
+            m_Selection = new HierarchyViewSelection();
+            m_CollectionView = new CollectionView(m_Selection)
             {
                 name = k_ListViewName,
                 fixedItemHeight = k_ItemHeight,
                 selectionType = SelectionType.Multiple,
                 reorderMode = ListViewReorderMode.Simple,
                 reorderable = true,
-                itemsSource = null,
+                itemsSource = null
             };
 
             m_NameColumn = new HierarchyViewItemColumn(this);
             m_DragHandler = new HierarchyViewDragHandler(this);
 
-            m_CollectionView.selectedIndicesChanged += OnSelectedIndicesChanged;
             m_CollectionView.AddToClassList(k_ListViewName);
-            m_CollectionView.RegisterCallback<PointerUpEvent>(OnPointerUp);
             m_CollectionView.RegisterCallback<KeyDownEvent>(OnKeyDown, TrickleDown.TrickleDown);
             m_CollectionView.RegisterCallback<NavigationMoveEvent>(OnNavigationMove);
-            m_CollectionView.scrollView.RegisterCallback<ClickEvent>(OnListViewClick);
+            m_CollectionView.scrollView.RegisterCallback<PointerDownEvent>(OnListViewPointerDown);
             m_MultiColumnLayoutConfiguration.columns.Add(m_NameColumn);
             m_NameColumn.stretchable = true;
             m_NameColumn.OnBindItem += OnBindItem;
@@ -378,8 +376,6 @@ namespace Unity.Hierarchy
             // Reset UX update state
             SetRenamingItem(null);
             m_LastMouseUpSelectionIndex = -1;
-            m_SelectedIndicesChangedFromPointerDown = false;
-            m_SelectedIndices.Clear();
             m_ScheduledItem = null;
 
             // Reset UX elements
@@ -419,6 +415,9 @@ namespace Unity.Hierarchy
 
             // Update the list view items source
             m_CollectionView.itemsSource = m_HierarchyViewModel.AsReadOnlyList();
+
+            // Update view model content for selection container.
+            m_Selection.SetSourceViewModel(m_HierarchyViewModel);
 
             // Update other UX elements
             BindColumns();
@@ -1259,7 +1258,7 @@ namespace Unity.Hierarchy
             // not specific to any one view item if the view item == null.
             if (item == null)
             {
-                m_CollectionView.ClearSelection();
+                m_Selection.Clear();
                 foreach (var handler in m_Hierarchy.EnumerateNodeTypeHandlers())
                 {
                     if (handler is IHierarchyEditorNodeTypeHandler editorHandler)
@@ -1492,15 +1491,6 @@ namespace Unity.Hierarchy
             m_LastMouseUpSelectionIndex = itemIndex;
         }
 
-        void OnPointerUp(PointerUpEvent evt)
-        {
-            if (!m_SelectedIndicesChangedFromPointerDown)
-                return;
-
-            FlagsChanged?.Invoke(HierarchyNodeFlags.Selected);
-            m_SelectedIndicesChangedFromPointerDown = false;
-        }
-
         void OnKeyDown(KeyDownEvent evt)
         {
             HierarchyLogging.Log($"HierarchyView({GetHashCode():X}).OnKeyDown(evt.keyCode={evt.keyCode})");
@@ -1523,8 +1513,7 @@ namespace Unity.Hierarchy
                     break;
                 case KeyCode.Escape:
                     // Reset selected indices state
-                    m_SelectedIndices.Clear();
-                    m_SelectedIndicesChangedFromPointerDown = false;
+                    m_CollectionView.ClearSelection();
                     break;
                 default:
                     shouldStopPropagation = false;
@@ -1543,7 +1532,9 @@ namespace Unity.Hierarchy
                 return;
 
             var shouldStopPropagation = true;
-            var selectedIndex = m_CollectionView.selectedIndex;
+            using var outIndices = new RentSpanUnmanaged<int>(m_Selection.indexCount);
+            m_HierarchyViewModel.GetIndicesWithFlags(HierarchyNodeFlags.Selected, outIndices);
+            var selectedIndex = outIndices.Span[0];
 
             if (selectedIndex == -1)
             {
@@ -1593,7 +1584,7 @@ namespace Unity.Hierarchy
         }
 
         // Clear selection when left clicking on the empty space.
-        void OnListViewClick(ClickEvent evt)
+        void OnListViewPointerDown(PointerDownEvent evt)
         {
             var target = evt.target as VisualElement;
             if (target != m_CollectionView.scrollView.contentContainer)
@@ -1625,57 +1616,6 @@ namespace Unity.Hierarchy
             var root = m_CollectionView.GetRootElementForIndex(index);
             var item = root?.Q<HierarchyViewItem>();
             return item;
-        }
-
-        void OnSelectedIndicesChanged()
-        {
-            HierarchyLogging.Log($"HierarchyView({GetHashCode():X}).OnSelectedIndicesChanged(indices={HierarchyLogging.ToString(m_CollectionView.selectedIndices)})");
-
-            // Convert enumerable to list and check if the LastSelected index is still valid
-            var lastMouseSelectionValid = false;
-            m_SelectedIndices.Clear();
-            foreach (var index in m_CollectionView.selectedIndices)
-            {
-                if (index < 0)
-                    continue;
-
-                if (index == m_LastMouseUpSelectionIndex)
-                    lastMouseSelectionValid = true;
-
-                m_SelectedIndices.Add(index);
-            }
-            if (!lastMouseSelectionValid)
-                m_LastMouseUpSelectionIndex = -1;
-
-            // Convert indices to nodes
-            using var nodes = new RentSpanUnmanaged<HierarchyNode>(m_SelectedIndices.Count, clear: true);
-            for (var i = 0; i < m_SelectedIndices.Count; ++i)
-            {
-                var index = m_SelectedIndices[i];
-                if (index < 0 || index >= m_HierarchyViewModel.Count)
-                    continue;
-
-                nodes.Span[i] = m_HierarchyViewModel[index];
-            }
-            m_SelectedIndices.Clear();
-
-            // Override hierarchy view model selection
-            using (var _ = new HierarchyViewModelFlagsChangeScope(m_HierarchyViewModel, notify: false))
-            {
-                m_HierarchyViewModel.ClearFlags(HierarchyNodeFlags.Selected);
-                m_HierarchyViewModel.SetFlags(nodes.Span, HierarchyNodeFlags.Selected);
-            }
-
-            // If called from pointer down event, wait for pointer up to change the global selection unless it's a right click.
-            if (m_CollectionView.pointerProcessingState == CollectionView.pointerProcessingStateEnum.PointerDown
-                && m_CollectionView.currentPointerButton != (int)MouseButton.RightMouse)
-            {
-                m_SelectedIndicesChangedFromPointerDown = true;
-                return;
-            }
-
-            // Change global selection
-            FlagsChanged?.Invoke(HierarchyNodeFlags.Selected);
         }
 
         void OnBindItem(HierarchyViewItem item)
@@ -1734,47 +1674,9 @@ namespace Unity.Hierarchy
                 m_CollectionView.RefreshItems();
             }
 
-            using (m_SetSelectionMarker.Auto())
-            {
-                // Refresh selected items
-                var selectedCount = m_HierarchyViewModel.HasFlagsCount(HierarchyNodeFlags.Selected);
-                if (selectedCount == 0)
-                {
-                    SetListViewSelectionWithoutNotify(Array.Empty<int>());
-                }
-                else
-                {
-                    using var indices = new RentSpanUnmanaged<int>(selectedCount);
-                    m_HierarchyViewModel.GetIndicesWithFlags(HierarchyNodeFlags.Selected, indices);
-                    SetListViewSelectionWithoutNotify(indices);
-                }
-            }
-
             // Store last version
             m_Version = m_HierarchyViewModel.Version;
             return false;
-        }
-
-        void SetListViewSelectionWithoutNotify(Span<int> selection)
-        {
-            HierarchyLogging.Log($"HierarchyView({GetHashCode():X}).SetListViewSelectionWithoutNotify(selection={HierarchyLogging.ToString<int>(selection)})");
-
-            if (selection.Length == 0)
-            {
-                m_CollectionView.SetSelectionWithoutNotify(new ReadOnlySpan<int>());
-                return;
-            }
-
-            using var filteredSelection = new RentSpanUnmanaged<int>(selection.Length);
-            var filteredSelectionLength = 0;
-            for (var i = 0; i < selection.Length; i++)
-            {
-                var value = selection[i];
-                if (value >= 0 && value < m_HierarchyViewModel.Count)
-                    filteredSelection.Span[filteredSelectionLength++] = value;
-            }
-
-            m_CollectionView.SetSelectionWithoutNotify(filteredSelection.Span[..filteredSelectionLength]);
         }
 
         void SetColumnState(HierarchyViewState state)

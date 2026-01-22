@@ -4,6 +4,8 @@
 
 using System;
 using System.Runtime.InteropServices;
+using System.Runtime.CompilerServices;
+using Unity.Scripting.LifecycleManagement;
 
 namespace UnityEngine.Bindings
 {
@@ -22,7 +24,9 @@ namespace UnityEngine.Bindings
 
         // GetFunctionPointerForDelegate can not target a generic method on CoreCLR
         // For CoreCLR we use function pointers from emitted methods instead
+        [NoAutoStaticsCleanup]
         static ArrayHandleOnStack.CreateArrayDelegate s_createArrayDelegate;
+        [NoAutoStaticsCleanup]
         static IntPtr s_createArrayFcnPtr;
 
         unsafe static ArrayHandleOnStack()

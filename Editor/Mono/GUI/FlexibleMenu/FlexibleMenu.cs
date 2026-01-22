@@ -56,7 +56,7 @@ namespace UnityEditor
             m_ShowAddNewPresetItem = m_ModifyItemUI != null;
 
             if (m_SeperatorIndices == null)
-                m_SeperatorIndices = new int[0];
+                m_SeperatorIndices = Array.Empty<int>();
         }
 
         public override Vector2 GetWindowSize()

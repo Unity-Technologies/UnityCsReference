@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -167,7 +168,7 @@ namespace Unity.ProjectAuditor.Editor.Modules
                 });
         }
 
-        public override AnalysisResult Audit(AnalysisParams analysisParams, IProgress progress = null)
+        public override IEnumerator Audit(AnalysisParams analysisParams, IProgress progress)
         {
             if (m_Ids == null)
                 throw new Exception("Descriptors Database not initialized.");
@@ -208,6 +209,8 @@ namespace Unity.ProjectAuditor.Editor.Modules
             if (precompiledAssemblies.Length > 0)
                 analysisParams.OnIncomingIssues(precompiledAssemblies);
 
+            yield return null;
+
             // find all roslyn analyzer DLLs by label
             #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var roslynAnalyzerAssets = new List<string>(AssetDatabase.FindAssets("l:RoslynAnalyzer").Select(AssetDatabase.GUIDToAssetPath));
@@ -239,7 +242,8 @@ namespace Unity.ProjectAuditor.Editor.Modules
 
             analysisParams.OnIncomingIssues(roslynAnalyzerIssues);
 
-            var assemblyDirectories = new List<string>();
+            yield return null;
+
             var compilationPipeline = new AssemblyCompilation
             {
                 OnAssemblyCompilationFinished = (compilationResult) =>
@@ -255,16 +259,18 @@ namespace Unity.ProjectAuditor.Editor.Modules
                 AssemblyNames = analysisParams.AssemblyNames
             };
 
-            compilationPipeline.Compile(out var compiledEditorAssemblyPaths, out var compiledPlayerAssemblyPaths, progress);
+            // Assembly compilation
+            List<AssemblyInfo> compiledEditorAssemblyPaths = null;
+            List<AssemblyInfo> compiledPlayerAssemblyPaths = null;
+            yield return compilationPipeline.Compile(
+                (editorPaths, playerPaths) => { compiledEditorAssemblyPaths = editorPaths; compiledPlayerAssemblyPaths = playerPaths; },
+                progress);
 
             if ((analysisParams.CodeAnalysisFlags & CodeAnalysisFlags.Editor) != 0)
             {
                 var editorCompilerIssues = ProcessEditorCompilerMessages(context);
                 analysisParams.OnIncomingIssues(editorCompilerIssues);
             }
-
-            if (progress?.IsCancelled ?? false)
-                return AnalysisResult.Cancelled;
 
             if (analysisParams.AssemblyNames != null)
             {
@@ -311,18 +317,28 @@ namespace Unity.ProjectAuditor.Editor.Modules
                     analysisParams.OnIncomingIssues(issues);
             }
 
-            // process successfully compiled assemblies
             #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            var assemblyInfos = compiledEditorAssemblyPaths.Concat(compiledPlayerAssemblyPaths);
-            assemblyInfos = assemblyInfos.Where(a => AssemblyPackageFilter(a, analysisParams));
+            var assemblyInfos = compiledEditorAssemblyPaths.Concat(compiledPlayerAssemblyPaths)
+                .Where(a => AssemblyPackageFilter(a, analysisParams)).ToArray();
+            #pragma warning restore RS0030
 
+            if (progress?.IsCancelled ?? false)
+            {
+                analysisParams.OnModuleCompleted?.Invoke(Name, AnalysisResult.Cancelled, 0);
+                yield break;
+            }
+            
+            AsyncProgressState progressState = progress?.Start("Analyzing Assemblies", assemblyInfos.Length);
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            // Process successfully compiled assemblies
             var localAssemblyInfos = assemblyInfos.Where(info => !info.IsReadOnly).ToArray();
             var readOnlyAssemblyInfos = assemblyInfos.Where(info => info.IsReadOnly).ToArray();
 #pragma warning restore RS0030
             var foundIssues = new List<ReportItem>();
             var callCrawler = new CallCrawler();
             var onIssueFoundInternal = new Action<ReportItem>(foundIssues.Add);
-            var onCompleteInternal = new Action<IProgress>(bar =>
+
+            var onCompleteInternal = new Action<IProgress, long>((bar, threadExecutionTimeMs) =>
             {
                 // remove issues if platform does not match
                 foundIssues.RemoveAll(i => i.Id.IsValid() &&
@@ -351,28 +367,40 @@ namespace Unity.ProjectAuditor.Editor.Modules
                 // workaround for empty 'relativePath' strings which are not all available when 'onIssueFoundInternal' is called
                 if (foundIssues.Count > 0)
                     analysisParams.OnIncomingIssues(foundIssues);
-                analysisParams.OnModuleCompleted?.Invoke(AnalysisResult.Success);
+
+                bar?.Clear(progressState);
+                analysisParams.OnModuleCompleted?.Invoke(Name, AnalysisResult.Success, threadExecutionTimeMs);
             });
 
+            var assemblyDirectories = new List<string>();
             assemblyDirectories.AddRange(AssemblyInfoProvider.GetPrecompiledAssemblyDirectories(PrecompiledAssemblyTypes.UserAssembly | PrecompiledAssemblyTypes.UnityEngine | PrecompiledAssemblyTypes.SystemAssembly));
             if ((analysisParams.CodeAnalysisFlags & CodeAnalysisFlags.Editor) != 0)
                 assemblyDirectories.AddRange(AssemblyInfoProvider.GetPrecompiledAssemblyDirectories(PrecompiledAssemblyTypes.UnityEditor));
 
-            // first phase: analyze assemblies generated from editable scripts
-            AnalyzeAssemblies(localAssemblyInfos, analysisParams, assemblyDirectories, callCrawler, onIssueFoundInternal, null, progress);
-            if (progress?.IsCancelled ?? false)
-                return AnalysisResult.Cancelled;
+            yield return null;
 
-            // second phase: analyze all remaining assemblies, in a separate thread
+            long executionTimeMs = 0;
+
+            // first phase: analyze assemblies generated from editable scripts
+            // second phase: analyze all remaining assemblies
             m_AssemblyAnalysisThread = new Thread(() =>
-                AnalyzeAssemblies(readOnlyAssemblyInfos, analysisParams, assemblyDirectories, callCrawler, onIssueFoundInternal, onCompleteInternal));
+            {
+                // Run analysis on the background thread
+                var startTime = DateTime.UtcNow;
+
+                AnalyzeAssemblies(localAssemblyInfos, analysisParams, assemblyDirectories, callCrawler, onIssueFoundInternal, progress, progressState);
+                AnalyzeAssemblies(readOnlyAssemblyInfos, analysisParams, assemblyDirectories, callCrawler, onIssueFoundInternal, progress, progressState);
+
+                executionTimeMs = (long)(DateTime.UtcNow - startTime).TotalMilliseconds;
+            });
             m_AssemblyAnalysisThread.Name = "Assembly Analysis";
             m_AssemblyAnalysisThread.Priority = ThreadPriority.BelowNormal;
             m_AssemblyAnalysisThread.Start();
 
-            if (progress?.IsCancelled ?? false)
-                return AnalysisResult.Cancelled;
-            return AnalysisResult.InProgress;
+            while (m_AssemblyAnalysisThread.IsAlive)
+                yield return new WaitForEndOfFrame();
+
+            onCompleteInternal?.Invoke(progress, executionTimeMs);
         }
 
         bool AssemblyPackageFilter(AssemblyInfo assemblyInfo, AnalysisParams analysisParams)
@@ -430,7 +458,7 @@ namespace Unity.ProjectAuditor.Editor.Modules
             return true;
         }
 
-        void AnalyzeAssemblies(IReadOnlyCollection<AssemblyInfo> assemblyInfos, AnalysisParams analysisParams, IReadOnlyCollection<string> assemblyDirectories, CallCrawler callCrawler, Action<ReportItem> onIssueFound, Action<IProgress> onComplete, IProgress progress = null)
+        void AnalyzeAssemblies(IReadOnlyCollection<AssemblyInfo> assemblyInfos, AnalysisParams analysisParams, IReadOnlyCollection<string> assemblyDirectories, CallCrawler callCrawler, Action<ReportItem> onIssueFound, IProgress progress, AsyncProgressState progressState)
         {
             using (var assemblyResolver = new DefaultAssemblyResolver())
             {
@@ -442,18 +470,11 @@ namespace Unity.ProjectAuditor.Editor.Modules
 #pragma warning restore RS0030
                     assemblyResolver.AddSearchDirectory(dir);
 
-                if (progress != null)
-                    progress.Start("Analyzing Assemblies", string.Empty, assemblyInfos.Count);
-
                 // Analyze all assemblies
                 foreach (var assemblyInfo in assemblyInfos)
                 {
-                    if (progress != null)
-                    {
-                        if (progress.IsCancelled)
-                            return;
-                        progress.Advance(assemblyInfo.Name);
-                    }
+                    if (AdvanceAsyncProgress(progress, progressState, assemblyInfo.Name) == false)
+                        break;
 
                     if (!File.Exists(assemblyInfo.Path))
                     {
@@ -465,9 +486,6 @@ namespace Unity.ProjectAuditor.Editor.Modules
                     AnalyzeAssembly(assemblyInfo, analysisParams, assemblyResolver, callCrawler, onIssueFoundFiltered);
                 }
             }
-
-            progress?.Clear();
-            onComplete?.Invoke(progress);
         }
 
         void AnalyzeAssembly(AssemblyInfo assemblyInfo, AnalysisParams analysisParams, IAssemblyResolver assemblyResolver, CallCrawler callCrawler, Action<ReportItem> onIssueFound)

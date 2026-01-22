@@ -67,7 +67,7 @@ namespace UnityEditor.UIElements
             private readonly StyleSheet m_StyleSheet;
             private readonly UssExportOptions m_Options;
 
-            [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+            [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
             internal ExportContext(StyleSheet styleSheet, StringBuilder builder, UssExportOptions options = null)
             {
                 m_StyleSheet = styleSheet;

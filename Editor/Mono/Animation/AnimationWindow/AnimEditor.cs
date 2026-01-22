@@ -1207,7 +1207,7 @@ namespace UnityEditor
         private void InitializeCurveEditor()
         {
             // The rect here is only for initialization and will be overriden at layout
-            m_CurveEditor = new CurveEditor(new Rect(0, 0, contentWidth, 100), new CurveWrapper[0], false);
+            m_CurveEditor = new CurveEditor(new Rect(0, 0, contentWidth, 100), Array.Empty<CurveWrapper>(), false);
 
             CurveEditorSettings settings = new CurveEditorSettings();
             settings.hTickStyle.distMin = 30; // min distance between vertical lines before they disappear completely

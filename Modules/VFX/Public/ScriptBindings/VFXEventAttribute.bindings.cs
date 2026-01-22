@@ -11,7 +11,7 @@ namespace UnityEngine.VFX
 {
     [RequiredByNativeCode]
     [StructLayout(LayoutKind.Sequential)]
-    [NativeType(Header = "Modules/VFX/Public/VFXEventAttribute.h")]
+    [NativeHeader("Modules/VFX/Public/VFXEventAttribute.h")]
     public sealed class VFXEventAttribute : IDisposable
     {
         private IntPtr m_Ptr;

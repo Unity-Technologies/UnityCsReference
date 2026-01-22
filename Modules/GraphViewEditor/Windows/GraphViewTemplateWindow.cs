@@ -3,50 +3,202 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.IO;
 using System.Collections.Generic;
 using System.Threading;
 
 using Unity.UI.Builder;
+using UnityEditor.Search;
 using UnityEditor.PackageManager;
 using UnityEditor.PackageManager.UI;
-
 using UnityEngine;
-using UnityEngine.Rendering;
+using UnityEngine.Search;
 using UnityEngine.UIElements;
+using UnityEditor.Search.Providers;
 
 namespace UnityEditor.Experimental.GraphView
 {
-    internal interface ITemplateHelper
+    internal interface ITemplateSorter : IComparer<GraphViewTemplateDescriptor>
     {
-        string packageInfoName { get; }
-        string learningSampleName { get; }
-        string templateWindowDocUrl { get; }
-        string builtInTemplatePath { get; }
-        string builtInCategory { get; }
-        string assetType { get; }
-        string emptyTemplateName { get; }
-        string emptyTemplateDescription { get; }
-        string lastSelectedGuidKey { get; }
-        string createNewAssetTitle { get; }
-        string insertTemplateTitle { get; }
-        string emptyTemplateIconPath { get; }
-        string emptyTemplateScreenshotPath { get; }
-        string customTemplateIcon { get; }
-        GraphViewTemplateWindow.ISaveFileDialogHelper saveFileDialogHelper { get; set; }
-
-        void RaiseImportSampleDependencies(PackageManager.PackageInfo packageInfo, Sample sample);
-        void RaiseTemplateUsed(GraphViewTemplateDescriptor usedTemplate);
-        bool TryGetTemplate(string assetPath, out GraphViewTemplateDescriptor graphViewTemplate);
-        bool TrySetTemplate(string assetPath, GraphViewTemplateDescriptor graphViewTemplate);
+        string Label { get; }
     }
 
-    internal interface ITemplateDescriptor
+    internal class ByNameTemplateSorter : ITemplateSorter
     {
-        string header { get; }
+        public string Label => "Name";
+        public int Compare(GraphViewTemplateDescriptor x, GraphViewTemplateDescriptor y)
+        {
+            return x.header.CompareTo(y.header);
+        }
+    }
+
+    internal class ByDateTemplateSorter : ITemplateSorter
+    {
+        public string Label => "Moditication Date";
+
+        public int Compare(GraphViewTemplateDescriptor x, GraphViewTemplateDescriptor y)
+        {
+            // Reverse order: most recent first
+            return y.GetModificationDate().CompareTo(x.GetModificationDate());
+        }
+    }
+
+    internal class ByOrderTemplateSorter : ITemplateSorter
+    {
+        public string Label => "Order";
+
+        public int Compare(GraphViewTemplateDescriptor x, GraphViewTemplateDescriptor y)
+        {
+            return x.order.CompareTo(y.order);
+        }
+    }
+
+    internal class ByLastUsedTemplateSorter : ITemplateSorter
+    {
+        private GraphViewTemplateWindowPrefs m_GraphiViewTemplateWindowPrefs;
+
+        public ByLastUsedTemplateSorter(GraphViewTemplateWindowPrefs graphiViewTemplateWindowPrefs)
+        {
+            this.m_GraphiViewTemplateWindowPrefs= graphiViewTemplateWindowPrefs;
+        }
+
+        public string Label => "Last Used";
+
+        public int Compare(GraphViewTemplateDescriptor a, GraphViewTemplateDescriptor b)
+        {
+            var aLastUsed = this.m_GraphiViewTemplateWindowPrefs.FindHistoryItem(a.assetGuid);
+            var bLastUsed = this.m_GraphiViewTemplateWindowPrefs.FindHistoryItem(b.assetGuid);
+
+            return bLastUsed.CompareTo(aLastUsed);
+        }
+    }
+
+    internal class ByFavoriteTemplateSorter : ITemplateSorter
+    {
+        public string Label => "Favorite";
+
+        public int Compare(GraphViewTemplateDescriptor a, GraphViewTemplateDescriptor b)
+        {
+            var isFavoriteA = GraphViewTemplateWindow.IsFavorite(a);
+            var isFavoriteB = GraphViewTemplateWindow.IsFavorite(b);
+
+            if (isFavoriteA == isFavoriteB)
+            {
+                return string.Compare(a.name, b.name, StringComparison.OrdinalIgnoreCase);
+            }
+
+            return isFavoriteA ? -1 : 1;
+        }
+    }
+
+    class TemplateCategorySorter : IComparer<List<GraphViewTemplateDescriptor>>
+    {
+        public int Compare(List<GraphViewTemplateDescriptor> x, List<GraphViewTemplateDescriptor> y)
+        {
+            var internalSort = x[0].internalOrder.CompareTo(y[0].internalOrder);
+
+            return internalSort != 0
+                ? internalSort
+                : x[0].category.CompareTo(y[0].category);
+        }
+    }
+
+    [Serializable]
+    internal struct TemplateUseHistoryItem
+    {
+        public string toolKey;
+        public string assetGuid;
+        public long lastUsedTicks;
+
+        public TemplateUseHistoryItem(string key, string guid)
+        {
+            this.toolKey = key;
+            this.assetGuid = guid;
+            this.lastUsedTicks = DateTime.UtcNow.Ticks;
+        }
+    }
+
+    [Serializable]
+    internal class GraphViewTemplateWindowPrefs
+    {
+        [SerializeField] private string m_LastUsedTemplateGuid;
+        [SerializeField] private List<TemplateUseHistoryItem> m_UseHistoryItems = new ();
+        [SerializeField] private string m_LastUsedSorter;
+        [SerializeField] private List<string> m_CollapsedCategories = new ();
+
+        public string LastUsedTemplateGuid
+        {
+            get => this.m_LastUsedTemplateGuid;
+            set => this.m_LastUsedTemplateGuid = value;
+        }
+
+        public string LastUsedSorter
+        {
+            get => this.m_LastUsedSorter;
+            set => this.m_LastUsedSorter = value;
+        }
+
+
+        public void AddHistoryItem(string toolKey, string guid)
+        {
+            if (m_UseHistoryItems.Find(x => x.assetGuid == guid) is {} historyItem && !string.IsNullOrEmpty(historyItem.assetGuid))
+            {
+                m_UseHistoryItems.Remove(historyItem);
+            }
+            m_UseHistoryItems.Add(new TemplateUseHistoryItem(toolKey, guid));
+        }
+
+        public long FindHistoryItem(string guid)
+        {
+            return this.m_UseHistoryItems.Find(x => x.assetGuid == guid).lastUsedTicks;
+        }
+
+        public void ClearPrefs(string toolKey)
+        {
+            EditorPrefs.DeleteKey(GetPrefsKey(toolKey));
+        }
+
+        public void SavePrefs(string toolKey)
+        {
+            var prefs = EditorJsonUtility.ToJson(this);
+            EditorPrefs.SetString(GetPrefsKey(toolKey), prefs);
+        }
+
+        public void LoadPrefs(string toolKey)
+        {
+            var prefs = EditorPrefs.GetString(GetPrefsKey(toolKey));
+
+            if (!string.IsNullOrEmpty(prefs))
+            {
+                EditorJsonUtility.FromJsonOverwrite(prefs, this);
+            }
+        }
+
+        public void SetCategoryCollapsedState(string toolkey, string category, bool isCollapsed)
+        {
+            var key =  $"{toolkey}.{category}";
+            if (isCollapsed && !m_CollapsedCategories.Contains(key))
+            {
+                m_CollapsedCategories.Add(key);
+            }
+            else if (!isCollapsed)
+            {
+                m_CollapsedCategories.Remove(key);
+            }
+        }
+
+        // Returns true if expanded, false if collapsed
+        public bool GetCategoryCollapsedState(string toolkey, string category) => m_CollapsedCategories.Contains($"{toolkey}.{category}");
+
+        private string GetPrefsKey(string toolKey) => $"gvtw_{toolKey}";
     }
 
     internal class GraphViewTemplateWindow : EditorWindow
     {
+        private const string k_FavoriteUssClass = "favorite";
+        private const string k_TemplateItemUssClass = "template-item";
+        private const string k_TemplateSectionUssClass = "template-section";
+
         internal interface ISaveFileDialogHelper
         {
             string OpenSaveFileDialog();
@@ -56,7 +208,7 @@ namespace UnityEditor.Experimental.GraphView
         {
             public TemplateSection(string text)
             {
-                header = text;
+                header = string.IsNullOrEmpty(text.Trim()) ? TemplateSearchProvider.kUncategorized : text;
             }
             public string header { get; }
         }
@@ -68,19 +220,25 @@ namespace UnityEditor.Experimental.GraphView
 
         private TreeView m_ListOfTemplates;
         private Texture2D m_CustomTemplateIcon;
-        private Image m_DetailsScreenshot;
+        private VisualElement m_DetailsScreenshot;
         private Label m_DetailsTitle;
         private Label m_DetailsDescription;
+        private VisualElement m_TitleAndDoc;
+        private Button m_CreateButton;
         private VisualTreeAsset m_ItemTemplate;
         private Action<string> m_AssetCreationCallback;
         private string m_LastSelectedTemplatePath;
-        private int m_LastSelectedIndex;
         private CreateMode m_CurrentMode;
         private Action<string, string> m_UserCallback;
-        private string m_LastSelectedTemplateGuid;
         private GraphViewTemplateDescriptor m_SelectedTemplate;
         private Button m_InstallButton;
+        private SearchFieldElement m_SearchField;
+        private TemplateSearchViewModel m_ViewModel;
+        private TemplateSearchProvider m_SearchProvider;
         private ITemplateHelper m_TemplateHelper;
+        private ITemplateSorter m_TemplateSorter;
+        private ITemplateSorter[] m_DefaultTemplateSorter;
+        private GraphViewTemplateWindowPrefs m_templateWindowPrefs;
 
         private enum CreateMode
         {
@@ -89,30 +247,85 @@ namespace UnityEditor.Experimental.GraphView
             None,
         }
 
-        public static void ShowCreateFromTemplate(ITemplateHelper templateHelper, Action<string, string> callback, bool showSaveDialog = true) => ShowInternal(showSaveDialog ? CreateMode.CreateNew : CreateMode.None, templateHelper, callback);
-        public static void ShowInsertTemplate(ITemplateHelper templateHelper, Action<string, string> callback) => ShowInternal(CreateMode.Insert, templateHelper, callback);
+        /// <summary>
+        /// Opens a template window to create a new asset from a template
+        /// </summary>
+        /// <param name="templateHelper">This object provides all relevant information to customize the template window</param>
+        /// <param name="callback">This callback will be called when the user validates the asset creation</param>
+        /// <param name="showSaveDialog">If true, a save file dialog will be prompt to let the user pick a path to save the new asset</param>
+        /// <param name="filters">A collection of filters to apply to the found templates</param>
+        public static void ShowCreateFromTemplate(
+            ITemplateHelper templateHelper,
+            Action<string, string> callback,
+            bool showSaveDialog = true,
+            string hiddenSearchQuery = null,
+            string initialSearchQuery = null) => ShowInternal(showSaveDialog ? CreateMode.CreateNew : CreateMode.None, templateHelper, callback, hiddenSearchQuery, initialSearchQuery, false);
 
-        private static void ShowInternal(CreateMode mode, ITemplateHelper templateHelper, Action<string, string> callback)
+        /// <summary>
+        /// Opens a template window to insert a template into an existing asset
+        /// </summary>
+        /// <param name="templateHelper">This object provides all relevant information to customize the template window</param>
+        /// <param name="callback">This callback will be called when the user validates the asset creation</param>
+        /// <param name="filters">A collection of filters to apply to the found templates</param>
+        public static void ShowInsertTemplate(
+            ITemplateHelper templateHelper,
+            Action<string, string> callback,
+            string hiddenSearchQuery = null,
+            string intialSearchQuery = null) => ShowInternal(CreateMode.Insert, templateHelper, callback, hiddenSearchQuery, intialSearchQuery, false);
+
+
+        // For testing purpose only
+        internal static void ShowCreateFromTemplateAdbOnly(
+            ITemplateHelper templateHelper,
+            Action<string, string> callback,
+            bool showSaveDialog = true,
+            string hiddenSearchQuery = null,
+            string initialSearchQuery = null) => ShowInternal(showSaveDialog ? CreateMode.CreateNew : CreateMode.None, templateHelper, callback, hiddenSearchQuery, initialSearchQuery, true);
+
+        // For testing purpose only
+        internal static void ShowInsertTemplateAdbOnly(
+            ITemplateHelper templateHelper,
+            Action<string, string> callback,
+            string hiddenSearchQuery = null,
+            string intialSearchQuery = null) => ShowInternal(CreateMode.Insert, templateHelper, callback, hiddenSearchQuery, intialSearchQuery, true);
+
+        private static void ShowInternal(CreateMode mode, ITemplateHelper templateHelper, Action<string, string> callback, string hiddenSearchQuery, string initialSearchQuery, bool adbOnly)
         {
+            if (EditorWindow.HasOpenInstances<GraphViewTemplateWindow>())
+            {
+                Debug.LogWarning("A template window is already open, close it before opening a new one.");
+                return;
+            }
+
             var templateWindow = EditorWindow.GetWindow<GraphViewTemplateWindow>(true, string.Empty, false);
             templateWindow.titleContent = new GUIContent(mode == CreateMode.Insert ? templateHelper.insertTemplateTitle : templateHelper.createNewAssetTitle);
-            templateWindow.Setup(mode, templateHelper, callback);
+            templateWindow.Setup(mode, templateHelper, callback, hiddenSearchQuery, initialSearchQuery, adbOnly);
         }
 
-        private void Setup(CreateMode mode, ITemplateHelper templateHelper, Action<string, string> callback)
+        private void Setup(CreateMode mode, ITemplateHelper templateHelper, Action<string, string> callback, string hiddenSearchQuery, string initialSearchQuery, bool adbOnly)
         {
             minSize = new Vector2(800, 300);
             m_UserCallback = callback;
             m_CurrentMode = mode;
             m_TemplateHelper = templateHelper;
             m_CustomTemplateIcon = EditorGUIUtility.LoadIcon(m_TemplateHelper.customTemplateIcon);
+            m_SearchProvider = new TemplateSearchProvider(m_TemplateHelper, hiddenSearchQuery, adbOnly);
+            m_templateWindowPrefs = new GraphViewTemplateWindowPrefs();
+            m_templateWindowPrefs.LoadPrefs(m_TemplateHelper.toolKey);
+            m_DefaultTemplateSorter = new ITemplateSorter[] {
+                new ByNameTemplateSorter(),
+                new ByOrderTemplateSorter(),
+                new ByDateTemplateSorter(),
+                new ByLastUsedTemplateSorter(m_templateWindowPrefs),
+                new ByFavoriteTemplateSorter()
+            };
             SetCallBack();
-            LoadTemplates();
+            SetupSearchAndFilter(hiddenSearchQuery, initialSearchQuery);
 
             // Handle the install button here because we need the template helper
             m_InstallButton = rootVisualElement.Q<Button>("InstallButton");
             if (!string.IsNullOrEmpty(m_TemplateHelper.learningSampleName)
-                && !s_HideInstallSampleButtonByTool.Contains(m_TemplateHelper.assetType)
+                && !s_HideInstallSampleButtonByTool.Contains(m_TemplateHelper.toolKey)
                 && TryFindSample(m_TemplateHelper.learningSampleName, out var packageInfo, out var sample) && !sample.isImported)
             {
                 m_InstallButton.clicked += OnInstall;
@@ -125,6 +338,20 @@ namespace UnityEditor.Experimental.GraphView
                 m_InstallButton.parent.style.display = DisplayStyle.None;
             }
 
+            // Handle the package indexing banner here because it needs the template helper
+            if (SearchDatabase.GetDefaultSearchDatabase().settings.IsPackagesIndexingEnabled() || !m_TemplateHelper.showPackageIndexingBanner)
+            {
+                HidePackageIndexingBanner();
+            }
+            else
+            {
+                var packageIndexingButton = rootVisualElement.Q<Button>("PackageIndexingButton");
+                packageIndexingButton.clicked += OnEnablePackageIndexing;
+
+                var closeIndexingBannerButton = rootVisualElement.Q<Button>("CloseBannerButton");
+                closeIndexingBannerButton.clicked += OnClosePackageIndexingBanner;
+            }
+
             var actionButton = rootVisualElement.Q<Button>("CreateButton");
             if (m_CurrentMode == CreateMode.Insert)
             {
@@ -132,22 +359,27 @@ namespace UnityEditor.Experimental.GraphView
             }
         }
 
+
         private void CreateGUI()
         {
             m_ItemTemplate = (VisualTreeAsset)EditorGUIUtility.Load("UXML/GraphView/TemplateItem.uxml");
             var tpl = (VisualTreeAsset)EditorGUIUtility.Load("UXML/GraphView/TemplateWindow.uxml");
             tpl.CloneTree(rootVisualElement);
+
             rootVisualElement.AddStyleSheetPath("StyleSheets/GraphView/TemplateWindow.uss");
             rootVisualElement.AddToClassList(EditorGUIUtility.isProSkin ? "dark" : "light");
+            SearchElement.AppendStyleSheets(rootVisualElement);
 
-            rootVisualElement.name = "VFXTemplateWindowRoot";
-            rootVisualElement.Q<Button>("CreateButton").clicked += OnCreate;
+            rootVisualElement.name = "TemplateWindowRoot";
+
+            m_CreateButton = rootVisualElement.Q<Button>("CreateButton");
+            m_CreateButton.clicked += OnCreate;
             rootVisualElement.Q<Button>("CancelButton").clicked += OnCancel;
 
-            m_DetailsScreenshot = rootVisualElement.Q<Image>("Screenshot");
-            m_DetailsScreenshot.scaleMode = ScaleMode.ScaleAndCrop;
+            m_DetailsScreenshot = rootVisualElement.Q<VisualElement>("Screenshot");
             m_DetailsTitle = rootVisualElement.Q<Label>("Title");
             m_DetailsDescription = rootVisualElement.Q<Label>("Description");
+            m_TitleAndDoc = rootVisualElement.Q<VisualElement>("TitleAndDoc");
 
             var helpButton = rootVisualElement.Q<Button>("HelpButton");
             helpButton.clicked += OnOpenHelp;
@@ -161,6 +393,8 @@ namespace UnityEditor.Experimental.GraphView
             m_ListOfTemplates.bindItem = BindTemplateItem;
             m_ListOfTemplates.unbindItem = UnbindTemplateItem;
             m_ListOfTemplates.selectionChanged += OnSelectionChanged;
+
+            Dispatcher.On(SearchEvent.ItemFavoriteStateChanged, OnFavoriteStateChanged, SearchEventManager.GetSearchEventHandlerHashCode(OnFavoriteStateChanged));
         }
 
         private void SetCallBack()
@@ -183,13 +417,6 @@ namespace UnityEditor.Experimental.GraphView
 
         private void OnOpenHelp() => Help.BrowseURL(m_TemplateHelper.templateWindowDocUrl);
 
-        private void LoadTemplates()
-        {
-            m_LastSelectedTemplateGuid = EditorPrefs.GetString(m_TemplateHelper.lastSelectedGuidKey);
-            CollectTemplates();
-            m_ListOfTemplates.ExpandAll();
-        }
-
         private void OnEnable()
         {
             AssemblyReloadEvents.beforeAssemblyReload += OnBeforeAssemblyReload;
@@ -207,7 +434,26 @@ namespace UnityEditor.Experimental.GraphView
 
         private void OnDestroy()
         {
-            EditorPrefs.SetString(m_TemplateHelper.lastSelectedGuidKey, m_LastSelectedTemplateGuid);
+            Dispatcher.Off(SearchEvent.ItemFavoriteStateChanged, SearchEventManager.GetSearchEventHandlerHashCode(OnFavoriteStateChanged));
+            this.m_templateWindowPrefs?.SavePrefs(this.m_TemplateHelper.toolKey);
+        }
+
+        private void HidePackageIndexingBanner()
+        {
+            rootVisualElement.Q<VisualElement>("PackageIndexingBanner").style.display = DisplayStyle.None;
+        }
+
+        private void OnClosePackageIndexingBanner()
+        {
+            this.HidePackageIndexingBanner();
+            m_TemplateHelper.showPackageIndexingBanner = false;
+        }
+
+        private void OnEnablePackageIndexing()
+        {
+            SearchDatabase.GetDefaultSearchDatabase().settings.EnablePackagesIndexing(true);
+            SearchDatabase.GetDefaultSearchDatabase().SaveSettingsOptions(startIndexing: true);
+            HidePackageIndexingBanner();
         }
 
         private void OnCancel()
@@ -231,7 +477,7 @@ namespace UnityEditor.Experimental.GraphView
         {
             m_InstallButton.parent.style.display = DisplayStyle.None;
             // Todo: replace assetType by toolKey when the search PR has landed
-            s_HideInstallSampleButtonByTool.Add(m_TemplateHelper.assetType);
+            s_HideInstallSampleButtonByTool.Add(m_TemplateHelper.toolKey);
         }
 
         private void OnCreate()
@@ -240,9 +486,10 @@ namespace UnityEditor.Experimental.GraphView
             {
                 m_LastSelectedTemplatePath = AssetDatabase.GUIDToAssetPath(template.assetGuid);
                 m_AssetCreationCallback?.Invoke(m_LastSelectedTemplatePath);
-                Close();
                 m_TemplateHelper.RaiseTemplateUsed(template);
                 m_AssetCreationCallback = null;
+                this.m_templateWindowPrefs.AddHistoryItem(this.m_TemplateHelper.toolKey, template.assetGuid);
+                Close();
             }
         }
 
@@ -314,20 +561,38 @@ namespace UnityEditor.Experimental.GraphView
                 if (item is GraphViewTemplateDescriptor template)
                 {
                     m_SelectedTemplate = template;
-                    m_DetailsTitle.text = template.name;
-                    m_DetailsDescription.text = template.description;
-                    m_LastSelectedTemplateGuid = template.assetGuid;
-                    m_LastSelectedIndex = m_ListOfTemplates.selectedIndex;
-                    // Maybe set a placeholder screenshot when null
-                    m_DetailsScreenshot.image = template.thumbnail;
+                    m_DetailsTitle.text = string.IsNullOrEmpty(template.name.Trim()) ? "No name" : template.name;
+                    m_DetailsDescription.text = string.IsNullOrEmpty(template.description.Trim()) ? "No Description" : template.description;
+                    m_templateWindowPrefs.LastUsedTemplateGuid = template.assetGuid;
+                    if (template.thumbnail != null)
+                    {
+                        m_DetailsScreenshot.style.backgroundImage = template.thumbnail;
+                        m_DetailsScreenshot.RemoveFromClassList("fallback-image");
+                    }
+                    else
+                    {
+                        m_DetailsScreenshot.style.backgroundImage = m_CustomTemplateIcon;
+                        m_DetailsScreenshot.AddToClassList("fallback-image");
+                    }
+
+                    m_TitleAndDoc.style.display = DisplayStyle.Flex;
+                    m_CreateButton.SetEnabled(true);
 
                     // We expect only one item to be selected
                     return;
                 }
+
+                // We expect only one item to be selected
+                return;
             }
 
-            // Reach here when the selection is empty
-            m_ListOfTemplates.selectedIndex = m_LastSelectedIndex;
+            // Empty selection, disable the create button and empty the details panel
+            m_SelectedTemplate = default;
+            m_DetailsTitle.text = null;
+            m_DetailsDescription.text = null;
+            m_DetailsScreenshot.style.backgroundImage = null;
+            m_TitleAndDoc.style.display = DisplayStyle.None;
+            m_CreateButton.SetEnabled(false);
         }
 
         private void BindTemplateItem(VisualElement item, int index)
@@ -337,26 +602,95 @@ namespace UnityEditor.Experimental.GraphView
             label.text = data.header;
 
             string ussClass;
+            string userData = null;
+            var isFavorite = false;
+            var parent = item.GetFirstAncestorWithClass("unity-tree-view__item");
+
             if (data is GraphViewTemplateDescriptor template)
             {
+                userData = GetGlobalId(template);
+                isFavorite = IsFavorite(userData);
+
                 item.Q<Image>("TemplateIcon").image = template.icon != null ? template.icon : m_CustomTemplateIcon;
-                if (template.assetGuid == m_LastSelectedTemplateGuid)
+                if (template.assetGuid == m_templateWindowPrefs.LastUsedTemplateGuid)
                     m_ListOfTemplates.SetSelection(index);
-                ussClass = "vfxtemplate-item";
+                ussClass = k_TemplateItemUssClass;
 
                 item.RegisterCallback<ClickEvent>(OnClickItem);
+
+                var favoriteButton = item.Q<Button>("Favorite");
+                favoriteButton.RegisterCallback<ClickEvent>(OnFavorite);
             }
             else
             {
                 // This is a hack to put the expand/collapse button above the item so that we can interact with it
                 var toggle = item.parent.parent.Q<Toggle>();
                 toggle.BringToFront();
-                ussClass = "vfxtemplate-section";
+                toggle.RegisterCallback<ChangeEvent<bool>, ITemplateDescriptor>(OnToggleExpandCategory, data);
+                ussClass = k_TemplateSectionUssClass;
             }
 
-            if (item.GetFirstAncestorWithClass("unity-tree-view__item") is { } parent)
+            if (parent != null)
             {
                 parent.AddToClassList(ussClass);
+                parent.userData = userData;
+                ToggleFavorite(parent, isFavorite);
+            }
+        }
+
+        private void OnToggleExpandCategory(ChangeEvent<bool> evt, ITemplateDescriptor item)
+        {
+            if (evt.target is Toggle toggle)
+            {
+                m_templateWindowPrefs.SetCategoryCollapsedState(m_TemplateHelper.toolKey, item.header, !toggle.value);
+            }
+        }
+
+        private void OnFavorite(ClickEvent evt)
+        {
+            var item = ((VisualElement)evt.target).GetFirstAncestorWithClass("unity-tree-view__item");
+            var globalId = (string)item.userData;
+            var searchItem = new SearchItem(globalId);
+            var isFavorite = IsFavorite(globalId);
+            ToggleFavorite(item, isFavorite);
+            if (isFavorite)
+            {
+                SearchSettings.RemoveItemFavorite(searchItem);
+            }
+            else
+            {
+                SearchSettings.AddItemFavorite(searchItem);
+            }
+            SearchSettings.Save();
+        }
+
+        private void OnFavoriteStateChanged(ISearchEvent evt)
+        {
+            var id = string.Empty;
+            if (evt.argumentCount == 1)
+                id = (string)evt.GetArgument(0);
+            else
+                return;
+
+            TreeViewItemData<ITemplateDescriptor> foundItem = default;
+
+            foreach (var item in m_TemplatesTree)
+            {
+                foreach (var child in item.children)
+                {
+                    if (child.data is GraphViewTemplateDescriptor template && GetGlobalId(template) == id)
+                    {
+                        foundItem = child;
+                        break;
+                    }
+                }
+                if (foundItem.data != null)
+                    break;
+            }
+
+            if (m_ListOfTemplates.GetRootElementForId(foundItem.id) is { } element)
+            {
+                ToggleFavorite(element, IsFavorite(id));
             }
         }
 
@@ -364,9 +698,15 @@ namespace UnityEditor.Experimental.GraphView
         {
             if (item.GetFirstAncestorWithClass("unity-tree-view__item") is { } parent)
             {
-                parent.RemoveFromClassList("vfxtemplate-item");
-                parent.RemoveFromClassList("vfxtemplate-section");
+                if (parent.ClassListContains(k_TemplateSectionUssClass))
+                {
+                    var toggle = item.parent.parent.Q<Toggle>();
+                    toggle.UnregisterCallback<ChangeEvent<bool>, ITemplateDescriptor>(OnToggleExpandCategory);
+                }
+                parent.RemoveFromClassList(k_TemplateItemUssClass);
+                parent.RemoveFromClassList(k_TemplateSectionUssClass);
             }
+            item.RemoveFromClassList(k_FavoriteUssClass);
             item.UnregisterCallback<ClickEvent>(OnClickItem);
         }
 
@@ -380,36 +720,89 @@ namespace UnityEditor.Experimental.GraphView
 
         private VisualElement CreateTemplateItem() => m_ItemTemplate.Instantiate();
 
-        private void CollectTemplates()
+        private void SetupSearchAndFilter(string hiddenSearchQuery, string initialSearchQuery)
+        {
+            var searchPanel = rootVisualElement.Q<VisualElement>("SearchPanel");
+            var context = Search.SearchService.CreateContext(m_SearchProvider);
+            context.useExplicitProvidersAsNormalProviders = true;
+            var searchViewState = new SearchViewState(context);
+            searchViewState.flags = SearchViewFlags.None;
+            searchViewState.queryBuilderEnabled = true;
+            m_ViewModel = new TemplateSearchViewModel(searchViewState);
+            m_ViewModel.queryChanged += OnQueryChanged;
+            context.searchView = m_ViewModel;
+            m_SearchField = new SearchFieldElement("SearchField", m_ViewModel, SearchQueryBuilderViewFlags.Default);
+
+            searchPanel.Add(m_SearchField);
+
+            var allSorters = new List<ITemplateSorter>(m_DefaultTemplateSorter);
+            allSorters.AddRange(this.m_TemplateHelper.GetTemplateSorter());
+
+            var choices = new List<string>(allSorters.Count);
+            allSorters.ForEach(x => choices.Add(x.Label));
+            var lastUsedSorter = Math.Max(0, choices.IndexOf(this.m_templateWindowPrefs.LastUsedSorter));
+            var dropDown = new DropdownField(choices, lastUsedSorter, this.FormatSortByLabel, this.FormatSortByLabel);
+            dropDown.RegisterCallback<ChangeEvent<string>>(this.OnSortChanged);
+            searchPanel.Add(dropDown);
+
+            m_TemplateSorter = allSorters[lastUsedSorter];
+            SetQuery(initialSearchQuery);
+        }
+
+        private string FormatSortByLabel(string label) => $"Sort By {label}";
+
+        private void OnSortChanged(ChangeEvent<string> ev)
+        {
+            m_TemplateSorter = Array.Find(m_DefaultTemplateSorter, x => string.Compare(x.Label, ev.newValue, StringComparison.OrdinalIgnoreCase) == 0);
+            if (m_TemplateSorter == null)
+            {
+                m_TemplateSorter = Array.Find(m_TemplateHelper.GetTemplateSorter(), x => string.Compare(x.Label, ev.newValue, StringComparison.OrdinalIgnoreCase) == 0);
+            }
+
+            this.m_templateWindowPrefs.LastUsedSorter = m_TemplateSorter?.Label;
+            this.CollectTemplates(true);
+        }
+
+        private void CollectTemplates(IEnumerable<SearchItem> newItems)
+        {
+            CollectTemplates(false);
+        }
+
+        private void CollectTemplates(bool isSearchCompleted)
         {
             m_TemplatesTree.Clear();
 
-            var assetsGuid = AssetDatabase.FindAssets($"t:{m_TemplateHelper.assetType}");
-            var allTemplates = new List<GraphViewTemplateDescriptor>(assetsGuid.Length);
-
-            foreach (var guid in assetsGuid)
+            var allTemplates = new Dictionary<string, GraphViewTemplateDescriptor>();
+            // Note: the viewModel.results list takes care of removing duplicates.
+            foreach (var item in m_ViewModel.results)
             {
+                var guid = ((AssetProvider.AssetMetaInfo)item.data).guid;
                 var assetPath = AssetDatabase.GUIDToAssetPath(guid);
+                if (allTemplates.ContainsKey(assetPath))
+                    continue;
+
+                if (m_CurrentMode == CreateMode.Insert && guid == m_TemplateHelper.emptyTemplateGuid)
+                    continue;
+
                 if (m_TemplateHelper.TryGetTemplate(assetPath, out var template))
                 {
-                    var isBuiltIn = assetPath.StartsWith(m_TemplateHelper.builtInTemplatePath);
+                    var isBuiltIn = !string.IsNullOrEmpty(m_TemplateHelper.builtInTemplatePath) && assetPath.StartsWith(m_TemplateHelper.builtInTemplatePath);
                     template.category = isBuiltIn ? m_TemplateHelper.builtInCategory : template.category;
-                    template.order =  isBuiltIn ? 0 : 1;
+                    template.internalOrder =  isBuiltIn ? 0 : 1;
                     template.assetGuid = guid;
+                    if (string.IsNullOrEmpty(template.name.Trim()))
+                    {
+                        template.name = Path.GetFileNameWithoutExtension(assetPath);
+                    }
 
                     var skinIcon = GetSkinIcon(template.icon);
                     template.icon = skinIcon == null ? template.icon : skinIcon;
-                    allTemplates.Add(template);
+                    allTemplates[assetPath] = template;
                 }
             }
 
-            if (m_CurrentMode != CreateMode.Insert)
-            {
-                allTemplates.Add(MakeEmptyTemplate());
-            }
-
             var templatesGroupedByCategory = new Dictionary<string, List<GraphViewTemplateDescriptor>>();
-            foreach (var template in allTemplates)
+            foreach (var template in allTemplates.Values)
             {
                 if (templatesGroupedByCategory.TryGetValue(template.category, out var list))
                 {
@@ -433,7 +826,7 @@ namespace UnityEditor.Experimental.GraphView
             }
 
             var templates = new List<List<GraphViewTemplateDescriptor>>(templatesGroupedByCategory.Values);
-            templates.Sort((listA, listB) => listA[0].order.CompareTo(listB[0].order));
+            templates.Sort(new TemplateCategorySorter());
 
             var id = 0;
             var lastSelectedTemplateFound = false;
@@ -443,11 +836,13 @@ namespace UnityEditor.Experimental.GraphView
             {
                 var groupId = id++;
                 var children = new List<TreeViewItemData<ITemplateDescriptor>>(group.Count);
+                group.Sort(this.m_TemplateSorter);
                 foreach (var child in group)
                 {
+                    // Check id == 2 because it corresponds to the first item in the list
                     if (id == 2)
                         fallBackTemplateAssetGuid = child.assetGuid;
-                    if (child.assetGuid == m_LastSelectedTemplateGuid)
+                    if (child.assetGuid == m_templateWindowPrefs.LastUsedTemplateGuid)
                     {
                         lastSelectedTemplateFound = true;
                         indexToSelect = id;
@@ -457,12 +852,70 @@ namespace UnityEditor.Experimental.GraphView
                 var section = new TreeViewItemData<ITemplateDescriptor>(groupId, new TemplateSection(group[0].category), children);
                 m_TemplatesTree.Add(section);
             }
+
             m_ListOfTemplates.SetRootItems(m_TemplatesTree);
-            m_ListOfTemplates.ScrollToItem(indexToSelect);
             if (!lastSelectedTemplateFound)
+                m_ListOfTemplates.ScrollToItem(indexToSelect);
+            if (!lastSelectedTemplateFound)
+                m_ListOfTemplates.RefreshItems();
+            if (isSearchCompleted && !lastSelectedTemplateFound)
             {
-                m_LastSelectedTemplateGuid = fallBackTemplateAssetGuid;
+                m_templateWindowPrefs.LastUsedTemplateGuid = fallBackTemplateAssetGuid;
             }
+            if (allTemplates.Count > 0)
+            {
+                rootVisualElement.RemoveFromClassList("no-result");
+            }
+            else
+            {
+                rootVisualElement.AddToClassList("no-result");
+            }
+
+            m_ListOfTemplates.ExpandAll();
+            // Only collapse categories when there are more than one
+            if (templatesGroupedByCategory.Count > 1)
+            {
+                SynchronizeExpandState();
+            }
+        }
+
+        private void SynchronizeExpandState()
+        {
+            bool needRefresh = false;
+            foreach(var id in m_ListOfTemplates.viewController.GetAllItemIds())
+            {
+                var item = m_ListOfTemplates.GetItemDataForId<ITemplateDescriptor>(id);
+                if (item is TemplateSection section)
+                {
+                    if (m_templateWindowPrefs.GetCategoryCollapsedState(m_TemplateHelper.toolKey, section.header))
+                    {
+                        m_ListOfTemplates.viewController.CollapseItem(id, false);
+                        needRefresh = true;
+                    }
+                }
+            }
+
+            if (needRefresh)
+            {
+                m_ListOfTemplates.RefreshItems();
+            }
+        }
+
+        public void OnQueryChanged(TemplateSearchViewModel viewModel, string searchText)
+        {
+            SetQuery(searchText);
+        }
+
+        public void SetQuery(string query)
+        {
+            m_SearchField.searchTextInput.SetValueWithoutNotify(query);
+            m_ViewModel.context.searchText = query;
+            Refresh();
+        }
+
+        public void Refresh()
+        {
+            m_ViewModel.RefreshItems(CollectTemplates, () => CollectTemplates(true));
         }
 
         private Texture2D GetSkinIcon(Texture2D templateIcon)
@@ -476,17 +929,32 @@ namespace UnityEditor.Experimental.GraphView
             return EditorGUIUtility.LoadIcon(path);
         }
 
-        private GraphViewTemplateDescriptor MakeEmptyTemplate()
+        private void ToggleFavorite(VisualElement item, bool isFavorite)
         {
-            return new GraphViewTemplateDescriptor
+            if (isFavorite)
             {
-                name = m_TemplateHelper.emptyTemplateName,
-                icon = EditorGUIUtility.LoadIcon(m_TemplateHelper.emptyTemplateIconPath),
-                thumbnail = EditorGUIUtility.LoadIcon(m_TemplateHelper.emptyTemplateScreenshotPath),
-                category = m_TemplateHelper.builtInCategory,
-                description = m_TemplateHelper.emptyTemplateDescription,
-                assetGuid = "empty",
-            };
+                item.AddToClassList(k_FavoriteUssClass);
+            }
+            else
+            {
+                item.RemoveFromClassList(k_FavoriteUssClass);
+            }
+        }
+
+        internal static string GetGlobalId(GraphViewTemplateDescriptor descriptor)
+        {
+            var assetObject = AssetDatabase.LoadMainAssetAtGUID(new GUID(descriptor.assetGuid));
+            return GlobalObjectId.GetGlobalObjectIdSlow(assetObject).ToString();
+        }
+
+        internal static bool IsFavorite(GraphViewTemplateDescriptor descriptor)
+        {
+            return SearchSettings.searchItemFavorites.Contains(GetGlobalId(descriptor));
+        }
+
+        internal static bool IsFavorite(string globalId)
+        {
+            return SearchSettings.searchItemFavorites.Contains(globalId);
         }
     }
 }

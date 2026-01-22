@@ -632,6 +632,8 @@ namespace UnityEditor
             {
                 EditorGUILayout.Space();
                 GUIObject(s_Texts.texture, m_Texture, typeof(Texture2D));
+                ValidateTexture(m_Texture, true);
+
                 GUIPopup(s_Texts.textureClipChannel, m_TextureClipChannel, s_Texts.textureClipChannels);
                 GUIFloat(s_Texts.textureClipThreshold, m_TextureClipThreshold);
                 GUIToggle(s_Texts.textureColorAffectsParticles, m_TextureColorAffectsParticles);
@@ -647,6 +649,39 @@ namespace UnityEditor
             else
             {
                 GUIObject(s_Texts.texture, m_Texture, typeof(Texture2D));
+            }
+        }
+
+        private void ValidateTexture(SerializedProperty prop, bool forceFixImmutable)
+        {
+            if (prop.hasMultipleDifferentValues)
+                return;
+
+            Texture texture = prop.objectReferenceValue as Texture;
+            if (texture == null)
+                return;
+
+            if (!texture.isReadableRaw)
+            {
+                string texturePath = AssetDatabase.GetAssetPath(texture);
+                if (AssetModificationProcessorInternal.IsOpenForEdit(texturePath, out string message, StatusQueryOptions.UseCachedIfPossible))
+                {
+                    if (InternalEditorUtility.DrawWarningHelpBoxWithButton(
+                        EditorGUIUtility.TrTextContent("Read/Write is disabled on the Particle System's Texture."),
+                        EditorGUIUtility.TrTextContent("Enable")))
+                    {
+                        InternalEditorUtility.ImportTextureAsReadable(texture);
+                    }
+                }
+                else
+                {
+                    if (InternalEditorUtility.DrawWarningHelpBoxWithButton(
+                        EditorGUIUtility.TrTextContent("Read/Write is disabled on the Particle System's Texture. Modify a copy of the Texture because it is not editable."),
+                        EditorGUIUtility.TrTextContent("View")))
+                    {
+                        Selection.objects = new UnityEngine.Object[] { texture };
+                    }
+                }
             }
         }
 

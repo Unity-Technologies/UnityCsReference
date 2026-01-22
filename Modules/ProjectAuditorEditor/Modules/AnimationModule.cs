@@ -3,7 +3,9 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Collections;
 using System.Collections.Generic;
+using System.IO;
 using Unity.ProjectAuditor.Editor.Core;
 using Unity.ProjectAuditor.Editor.Utils;
 using UnityEditor;
@@ -168,47 +170,38 @@ namespace Unity.ProjectAuditor.Editor.Modules
                 });
         }
 
-        public override AnalysisResult Audit(AnalysisParams analysisParams, IProgress progress = null)
+        public override IEnumerator Audit(AnalysisParams analysisParams, IProgress progress)
         {
             var context = new AnalysisContext
             {
                 Params = analysisParams
             };
-            ProcessAnimatorControllers(context, progress);
-            if (progress?.IsCancelled ?? false)
-                return AnalysisResult.Cancelled;
+            yield return ProcessAnimatorControllers(context, progress);
+            yield return ProcessAnimationClips(context, progress);
+            yield return ProcessAvatars(context, progress);
+            yield return ProcessAvatarMasks(context, progress);
 
-            ProcessAnimationClips(context, progress);
-            if (progress?.IsCancelled ?? false)
-                return AnalysisResult.Cancelled;
-
-            ProcessAvatars(context, progress);
-            if (progress?.IsCancelled ?? false)
-                return AnalysisResult.Cancelled;
-
-            ProcessAvatarMasks(context, progress);
-            if (progress?.IsCancelled ?? false)
-                return AnalysisResult.Cancelled;
-
-            return AnalysisResult.Success;
+            analysisParams.OnModuleCompleted?.Invoke(Name, AnalysisResult.Success, 0);
         }
 
-        void ProcessAnimatorControllers(AnalysisContext context, IProgress progress)
+        IEnumerator ProcessAnimatorControllers(AnalysisContext context, IProgress progress)
         {
             var issues = new List<ReportItem>();
 
             var assetPaths = GetAssetPathsByFilter("t:animatorcontroller, a:assets", context);
-            progress?.Start("Finding Animator Controllers", "Search in Progress...", assetPaths.Length);
+            AsyncProgressState progressState = progress?.Start("Analyzing Animator Controllers", assetPaths.Length);
+
+            yield return null;
+
             foreach (var assetPath in assetPaths)
             {
-                if (progress?.IsCancelled ?? false)
-                    return;
+                if (AdvanceAsyncProgress(progress, progressState, Path.GetFileName(assetPath)) == false)
+                    break;
 
                 var controller = AssetDatabase.LoadAssetAtPath<AnimatorController>(assetPath);
                 if (controller == null)
                 {
                     Debug.LogError(assetPath + " is not an Animator Controller.");
-
                     continue;
                 }
 
@@ -226,26 +219,28 @@ namespace Unity.ProjectAuditor.Editor.Modules
                     .WithLocation(assetPath)
                 );
 
-                progress?.Advance();
+                yield return null;
             }
 
             if (issues.Count > 0)
                 context.Params.OnIncomingIssues(issues);
 
-            progress?.Clear();
+            progress?.Clear(progressState);
         }
 
-        void ProcessAnimationClips(AnalysisContext context, IProgress progress)
+        IEnumerator ProcessAnimationClips(AnalysisContext context, IProgress progress)
         {
             var issues = new List<ReportItem>();
             var assetPaths = GetAssetPathsByFilter("t:animationclip, a:assets", context);
 
-            progress?.Start("Finding Animation Clips", "Search in Progress...", assetPaths.Length);
+            AsyncProgressState progressState = progress?.Start("Analyzing Animation Clips", assetPaths.Length);
+
+            yield return null;
 
             foreach (var assetPath in assetPaths)
             {
-                if (progress?.IsCancelled ?? false)
-                    return;
+                if (AdvanceAsyncProgress(progress, progressState, Path.GetFileName(assetPath)) == false)
+                    break;
 
                 var clip = AssetDatabase.LoadAssetAtPath<AnimationClip>(assetPath);
                 if (clip == null)
@@ -278,26 +273,28 @@ namespace Unity.ProjectAuditor.Editor.Modules
                     .WithLocation(assetPath)
                 );
 
-                progress?.Advance();
+                yield return null;
             }
 
             if (issues.Count > 0)
                 context.Params.OnIncomingIssues(issues);
 
-            progress?.Clear();
+            progress?.Clear(progressState);
         }
 
-        void ProcessAvatars(AnalysisContext context, IProgress progress)
+        IEnumerator ProcessAvatars(AnalysisContext context, IProgress progress)
         {
             var issues = new List<ReportItem>();
             var assetPaths = GetAssetPathsByFilter("t:avatar, a:assets", context);
 
-            progress?.Start("Finding Avatars", "Search in Progress...", assetPaths.Length);
+            AsyncProgressState progressState = progress?.Start("Analyzing Avatars", assetPaths.Length);
+
+            yield return null;
 
             foreach (var assetPath in assetPaths)
             {
-                if (progress?.IsCancelled ?? false)
-                    return;
+                if (AdvanceAsyncProgress(progress, progressState, Path.GetFileName(assetPath)) == false)
+                    break;
 
                 var avatar = AssetDatabase.LoadAssetAtPath<Avatar>(assetPath);
                 if (avatar == null)
@@ -330,26 +327,28 @@ namespace Unity.ProjectAuditor.Editor.Modules
                     .WithLocation(assetPath)
                 );
 
-                progress?.Advance();
+                yield return null;
             }
 
             if (issues.Count > 0)
                 context.Params.OnIncomingIssues(issues);
 
-            progress?.Clear();
+            progress?.Clear(progressState);
         }
 
-        void ProcessAvatarMasks(AnalysisContext context, IProgress progress)
+        IEnumerator ProcessAvatarMasks(AnalysisContext context, IProgress progress)
         {
             var issues = new List<ReportItem>();
             var assetPaths = GetAssetPathsByFilter("t:avatarmask, a:assets", context);
 
-            progress?.Start("Finding Avatar Masks", "Search in Progress...", assetPaths.Length);
+            AsyncProgressState progressState = progress?.Start("Analyzing Avatar Masks", assetPaths.Length);
+
+            yield return null;
 
             foreach (var assetPath in assetPaths)
             {
-                if (progress?.IsCancelled ?? false)
-                    return;
+                if (AdvanceAsyncProgress(progress, progressState, Path.GetFileName(assetPath)) == false)
+                    break;
 
                 var mask = AssetDatabase.LoadAssetAtPath<AvatarMask>(assetPath);
                 if (mask == null)
@@ -371,13 +370,13 @@ namespace Unity.ProjectAuditor.Editor.Modules
                     .WithLocation(assetPath)
                 );
 
-                progress?.Advance();
+                yield return null;
             }
 
             if (issues.Count > 0)
                 context.Params.OnIncomingIssues(issues);
 
-            progress?.Clear();
+            progress?.Clear(progressState);
         }
     }
 }

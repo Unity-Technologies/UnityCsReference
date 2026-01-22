@@ -69,6 +69,8 @@ namespace UnityEditor.Search
                 m_Icon.style.backgroundImage = new StyleBackground(icon);
 
             m_Label.text = label;
+            var query = GetQuery();
+            tooltip = query != null ? query.details : "";
 
             m_CountLabel.style.display = count < 0 ? DisplayStyle.None : DisplayStyle.Flex;
             SetFormattedCount(count < 0 ? 0 : count);
@@ -106,13 +108,18 @@ namespace UnityEditor.Search
         {
             get
             {
-                if (Handler == null)
-                    return true;
-                var query = Handler.GetQuery(Data.QueryId) ?? Handler.GetQuery(Data.TreeId);
+                var query = GetQuery();
                 if (query == null)
                     return true;
                 return Handler.SupportsRename(query);
             }
+        }
+
+        public ISearchQuery GetQuery()
+        {
+            if (Handler == null)
+                return null;
+            return Handler.GetQuery(Data.QueryId) ?? Handler.GetQuery(Data.TreeId);
         }
 
         public void Rename()
@@ -338,7 +345,7 @@ namespace UnityEditor.Search
                 if (m_LastSelectedQuery != null && m_LastSelectedQuery.GetTreeId() == selectedItem.Data.TreeId)
                     return;
 
-                m_LastSelectedQuery = selectedItem.Handler.GetQuery(selectedItem.Data.TreeId);
+                m_LastSelectedQuery = selectedItem.GetQuery();
                 selectedItem.Handler.ActivateItem(m_TreeView, selectedItem);
             }
         }

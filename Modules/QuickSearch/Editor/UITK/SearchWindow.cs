@@ -161,7 +161,7 @@ namespace UnityEditor.Search
             if (guiCreated && m_SearchView != null)
                 m_SearchView.UpdateIncrementalTimed(k_MaxUpdateTime);
         }
-        
+
         EntityId ISearchView.GetViewId()
         {
             return ((ISearchView)m_SearchView).GetViewId();
@@ -441,7 +441,7 @@ namespace UnityEditor.Search
             if (possibleTextQuery == null || !possibleTextQuery.isTextOnlyQuery)
             {
                 // TODO OptimSearchEvents: this might rebuild the table + RefreshViewContent
-                
+
                 // If our current state has a "locked" panel we do not want to assign over it:
                 needToRebindCustomPanel = state.CanAssignCustomPanelConfig();
                 viewState.Assign(queryViewState);
@@ -514,7 +514,7 @@ namespace UnityEditor.Search
             var item = selection.First();
             if (item.provider.actions.Count > actionIndex)
                 #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                ExecuteAction(item.provider.actions.Skip(actionIndex).First(), selection.ToArray(), !SearchSettings.keepOpen);
+                ExecuteAction(item.provider.actions.Skip(actionIndex).First(), selection.ToArray(), true);
 #pragma warning restore RS0030
         }
 
@@ -956,6 +956,11 @@ namespace UnityEditor.Search
             if (s_FocusedWindow)
                 s_FocusedWindow.Focus();
             Utils.CallDelayed(Close);
+        }
+
+        public virtual bool CanCloseWindowOnAction()
+        {
+            return !SearchSettings.keepOpen && (!context.options.HasFlag(SearchFlags.Dockable) || !docked);
         }
 
         IEnumerable<IGroup> ISearchView.EnumerateGroups()
@@ -1547,9 +1552,7 @@ namespace UnityEditor.Search
 
         protected virtual IEnumerable<SearchItem> FetchItems()
         {
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            return Enumerable.Empty<SearchItem>();
-#pragma warning restore RS0030
+            return Array.Empty<SearchItem>();
         }
 
         IEnumerable<SearchItem> ISearchWindow.FetchItems()

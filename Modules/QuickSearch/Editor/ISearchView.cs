@@ -193,7 +193,7 @@ namespace UnityEditor.Search
         /// </summary>
         /// <param name="action">Action to execute.</param>
         /// <param name="items">Items to apply the action on.</param>
-        /// <param name="endSearch">If true, executing this action will close the Quicksearch window.</param>
+        /// <param name="endSearch">If true, executing this action will close the QuickSearch window if the action and the state of the window permit it.</param>
         void ExecuteAction(SearchAction action, SearchItem[] items, bool endSearch = true);
 
         /// <summary>

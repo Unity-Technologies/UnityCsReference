@@ -10,6 +10,7 @@ using Unity.ProjectAuditor.Editor.Utils;
 using Unity.ProjectAuditor.Editor.Build;
 using UnityEditor;
 using UnityEditor.Build.Reporting;
+using System.Collections;
 
 namespace Unity.ProjectAuditor.Editor.Modules
 {
@@ -102,9 +103,11 @@ namespace Unity.ProjectAuditor.Editor.Modules
             k_StepLayout
         ];
 
-        public override AnalysisResult Audit(AnalysisParams analysisParams, IProgress progress = null)
+        public override IEnumerator Audit(AnalysisParams analysisParams, IProgress progress)
         {
             var buildReport = BuildReportProvider.GetBuildReport(analysisParams.Platform);
+            yield return null;
+
             if (buildReport != null)
             {
                 var context = new BuildAnalysisContext()
@@ -126,7 +129,8 @@ namespace Unity.ProjectAuditor.Editor.Modules
                 analysisParams.OnIncomingIssues(AnalyzeBuildSteps(context));
                 analysisParams.OnIncomingIssues(AnalyzePackedAssets(context));
             }
-            return AnalysisResult.Success;
+
+            analysisParams.OnModuleCompleted?.Invoke(Name, AnalysisResult.Success, 0);
         }
 
         IEnumerable<ReportItem> AnalyzeBuildSteps(BuildAnalysisContext context)

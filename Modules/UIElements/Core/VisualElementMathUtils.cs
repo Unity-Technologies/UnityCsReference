@@ -572,7 +572,7 @@ namespace UnityEngine.UIElements
         /// <returns>The root IPanelComponent, or null if none is found.</returns>
         public static IPanelComponent FindRootPanelComponent(this VisualElement element)
         {
-            var pr = element.GetFirstOfType<IPanelComponentRootElement>().panelComponent;
+            var pr = element.GetFirstOfType<IPanelComponentRootElement>()?.panelComponent;
             while (pr?.parentUI != null)
                 pr = pr.parentUI;
             return pr;

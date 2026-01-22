@@ -740,9 +740,7 @@ namespace UnityEditorInternal
                             activeCurveWrappers.Add(wrapper);
 
                     // If there are no active curves, we would end up with empty curve editor so we just give all curves insteads
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                    if (!activeCurveWrappers.Any())
-#pragma warning restore RS0030
+                    if (activeCurveWrappers.Count == 0)
                         foreach (AnimationWindowCurve curve in filteredCurves)
                             if (AnimationWindowUtility.GetCurveWrapper(this, curve) is CurveWrapper wrapper)
                                 activeCurveWrappers.Add(wrapper);
@@ -1259,7 +1257,7 @@ namespace UnityEditorInternal
             List<AnimationWindowCurve> clipboardCurves = new List<AnimationWindowCurve>();
             foreach (AnimationWindowKeyframe keyframe in s_KeyframeClipboard)
 #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                if (!clipboardCurves.Any() || clipboardCurves.Last() != keyframe.curve)
+                if (clipboardCurves.Count == 0 || clipboardCurves.Last() != keyframe.curve)
 #pragma warning restore RS0030
                     clipboardCurves.Add(keyframe.curve);
 
@@ -1384,7 +1382,7 @@ namespace UnityEditorInternal
             if (m_ActiveCurveWrappersCache == null)
                 return;
 
-            Dictionary<int, AnimationWindowCurve> updateList = new Dictionary<int, AnimationWindowCurve>();
+            var updateList = new List<(int Index, AnimationWindowCurve Curve)>();
 
             for (int i = 0; i < m_ActiveCurveWrappersCache.Length; ++i)
             {
@@ -1403,25 +1401,21 @@ namespace UnityEditorInternal
                         }
                         else
                         {
-                            updateList[i] = curve;
+                            updateList.Add((i, curve));
                         }
                     }
                 }
             }
 
-            //  Only update curve wrappers that were modified.
-            for (int i = 0; i < updateList.Count; ++i)
+            // Only update curve wrappers that were modified.
+            foreach (var entry in updateList)
             {
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                var entry = updateList.ElementAt(i);
-#pragma warning restore RS0030
-
-                CurveWrapper curveWrapper = m_ActiveCurveWrappersCache[entry.Key];
+                CurveWrapper curveWrapper = m_ActiveCurveWrappersCache[entry.Index];
                 if (curveWrapper.renderer != null)
                     curveWrapper.renderer.FlushCache();
 
                 // Recreate curve wrapper only if curve has been modified.
-                m_ActiveCurveWrappersCache[entry.Key] = AnimationWindowUtility.GetCurveWrapper(this, entry.Value);
+                m_ActiveCurveWrappersCache[entry.Index] = AnimationWindowUtility.GetCurveWrapper(this, entry.Curve);
             }
         }
 

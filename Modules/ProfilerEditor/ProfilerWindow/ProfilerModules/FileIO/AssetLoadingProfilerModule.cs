@@ -54,12 +54,12 @@ namespace UnityEditorInternal.Profiling
             EditorPrefs.SetBool(activeStatePreferenceKey, active);
         }
 
-        private protected override ProfilerChart InstantiateChart(float defaultChartScale, float chartMaximumScaleInterpolationValue)
+        internal override ChartModelBuilder CreateChartModelBuilder()
         {
-            var chart = base.InstantiateChart(defaultChartScale, chartMaximumScaleInterpolationValue);
+            var builder = base.CreateChartModelBuilder();
             var localizedTooltipFormat = LocalizationDatabase.GetLocalizedString("A chart showing performance counters related to '{0}'. These only include bytes read through the AsyncReadManager.");
-            chart.Tooltip = string.Format(localizedTooltipFormat, DisplayName);
-            return chart;
+            builder.Model.Tooltip = string.Format(localizedTooltipFormat, DisplayName);
+            return builder;
         }
 
         public override void DrawToolbar(Rect position)

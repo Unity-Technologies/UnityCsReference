@@ -101,6 +101,23 @@ namespace UnityEditor.Search
             base.OnDetachFromPanel(evt);
         }
 
+        public override void AddSaveQueryMenuItems(SearchContext context, GenericMenu menu)
+        {
+            menu.AddSeparator("");
+            menu.AddItem(EditorGUIUtility.TrTextContent("Export Report..."), false, () => ExportJson(context));
+            menu.AddItem(EditorGUIUtility.TrTextContent("Export CSV..."), false, () => ExportCsv(context));
+        }
+
+        private void ExportJson(SearchContext context)
+        {
+            SearchReport.Export(tableConfig.name, GetColumns(), m_ViewModel.results, context);
+        }
+
+        private void ExportCsv(SearchContext context)
+        {
+            SearchReport.ExportAsCsv(tableConfig.name, GetColumns(), m_ViewModel.results, context);
+        }
+
         private bool IsTableViewRow(VisualElement ve)
         {
             return ve.ClassListContains("unity-multi-column-view__row-container");
@@ -126,9 +143,7 @@ namespace UnityEditor.Search
 
         public IEnumerable<SearchItem> GetElements()
         {
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            return m_ViewModel.results ?? Enumerable.Empty<SearchItem>();
-#pragma warning restore RS0030
+            return m_ViewModel.results ?? (IEnumerable<SearchItem>)Array.Empty<SearchItem>();
         }
 
         float ITableView.GetRowHeight() => m_ListView.fixedItemHeight;
@@ -652,9 +667,7 @@ namespace UnityEditor.Search
         public IEnumerable<SearchColumn> GetColumns()
         {
             if (tableConfig == null || tableConfig.columns == null)
-                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                return Enumerable.Empty<SearchColumn>();
-#pragma warning restore RS0030
+                return Array.Empty<SearchColumn>();
             return tableConfig.columns;
         }
 

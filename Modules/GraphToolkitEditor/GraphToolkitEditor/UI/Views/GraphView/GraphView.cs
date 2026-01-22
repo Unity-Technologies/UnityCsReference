@@ -4115,6 +4115,7 @@ namespace Unity.GraphToolkit.Editor
                     var view = changedModel.GetView<GraphElement>(this, context);
                     if (view == null)
                         continue;
+
                     AddViewToSpacePartitioningByContainer(view, newContainer, elementsToRepartitionByContainer);
 
                     if (view is Placemat)
@@ -4401,7 +4402,10 @@ namespace Unity.GraphToolkit.Editor
                     elementsToRepartition = ListPool<BaseBoundingBoxSpacePartitioning<GraphElementSpacePartitioningKey>.BoundingBoxElement>.Get();
                     elementsToRepartitionByContainer[container] = elementsToRepartition;
                 }
-                elementsToRepartition.Add(elementToRepartition);
+
+                // Add the element if not already present.
+                if (!elementsToRepartition.Contains(elementToRepartition))
+                    elementsToRepartition.Add(elementToRepartition);
             }
         }
 
@@ -4536,9 +4540,7 @@ namespace Unity.GraphToolkit.Editor
         public IEnumerable<GraphElement> GetGraphElementsInRegion(Rect region, PartitioningMode partitioningMode, bool allowOverlap = true)
         {
             if (m_SpacePartitioningByContainer == null)
-                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                return Enumerable.Empty<GraphElement>();
-#pragma warning restore RS0030
+                return Array.Empty<GraphElement>();
 
             var elementsInRegion = new List<GraphElement>();
             GetGraphElementsInRegion(region, elementsInRegion, partitioningMode, allowOverlap);

@@ -59,7 +59,6 @@ namespace UnityEngine.UIElements
         internal static Func<int, FontAsset, bool, FontAsset> GetBlurryFontAssetMapping;
         internal static Func<int, bool, bool> GenerateBitmapFallbackFontAssets;
         internal TextEventHandler m_TextEventHandler;
-
         protected TextElement m_TextElement;
 
         public Vector2 ComputeTextSize(string textToMeasure, float width, VisualElement.MeasureMode widthMode, float height, VisualElement.MeasureMode heightMode, float? fontsize = null)
@@ -197,7 +196,12 @@ namespace UnityEngine.UIElements
             if (tgs.textSettings == null)
                 return false;
 
-            tgs.fontAsset = TextUtilities.GetFontAsset(m_TextElement);
+            tgs.fontAsset = m_TextElement.cachedFontAsset;
+            if (tgs.fontAsset == null)
+            {
+                tgs.fontAsset = tgs.textSettings.GetFontAsset();
+            }
+
             if (tgs.fontAsset == null)
                 return false;
 

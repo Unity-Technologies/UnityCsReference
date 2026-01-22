@@ -8,7 +8,7 @@ using UnityEngine.Bindings;
 
 namespace UnityEditor
 {
-    [NativeType("Modules/SketchUpEditor/SketchUpImporter.h")]
+    [NativeHeader("Modules/SketchUpEditor/SketchUpImporter.h")]
     [System.Serializable]
     [StructLayout(LayoutKind.Sequential)]
     public struct SketchUpImportCamera
@@ -24,7 +24,7 @@ namespace UnityEditor
         public bool isPerspective;
     }
 
-    [NativeType("Modules/SketchUpEditor/SketchUpImporter.h")]
+    [NativeHeader("Modules/SketchUpEditor/SketchUpImporter.h")]
     [System.Serializable]
     [StructLayout(LayoutKind.Sequential)]
     public struct SketchUpImportScene
@@ -33,7 +33,7 @@ namespace UnityEditor
         public string name;
     }
 
-    [NativeType("Modules/SketchUpEditor/SketchUpNodeInfo.h")]
+    [NativeHeader("Modules/SketchUpEditor/SketchUpNodeInfo.h")]
     [System.Serializable]
     [StructLayout(LayoutKind.Sequential)]
     internal struct SketchUpNodeInfo

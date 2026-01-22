@@ -79,14 +79,14 @@ internal sealed partial class HierarchySelectionHandler : IVisualElementSelectio
             visualElementSelection.Element = element;
         }
 
-        SelectionMapping[element] = new RefCountedSelection(instance, 0);
+        SelectionMapping[element] = new RefCountedSelection(instance, 1);
     }
 
     private bool Release(VisualElement element)
     {
         if (SelectionMapping.TryGetValue(element, out var refCounted))
         {
-            if (refCounted.Count == 1)
+            if (refCounted.Count == 1 || !refCounted.Alive)
             {
                 if (refCounted.Alive)
                 {
@@ -141,6 +141,7 @@ internal sealed partial class HierarchySelectionHandler : IVisualElementSelectio
             {
                 SelectionMapping[remap.Previous] = selection.Kill();
                 Remap(remap.Remapped, selection.SelectionObject);
+                Release(remap.Previous);
             }
         }
     }

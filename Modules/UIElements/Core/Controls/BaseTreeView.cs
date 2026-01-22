@@ -574,17 +574,14 @@ namespace UnityEngine.UIElements
                         return;
                     }
 
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                    for (var i = 0; i < viewController.GetChildrenIds(sourceId).Count(); i++)
-#pragma warning restore RS0030
+                    using (var targetIds = viewController.GetChildrenIds(targetId).GetEnumerator())
                     {
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                        var sourceChild = viewController.GetChildrenIds(sourceId).ElementAt(i);
-#pragma warning restore RS0030
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                        var targetChild = viewController.GetChildrenIds(targetId).ElementAt(i);
-#pragma warning restore RS0030
-                        CopyExpandedStates(sourceChild, targetChild);
+                        foreach (var sourceChild in viewController.GetChildrenIds(sourceId))
+                        {
+                            targetIds.MoveNext();
+                            var targetChild = targetIds.Current;
+                            CopyExpandedStates(sourceChild, targetChild);
+                        }
                     }
                 }
             }

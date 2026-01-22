@@ -169,7 +169,7 @@ sealed partial class StylePropertyBinding : CustomBinding, ITrackablePropertyPro
         {
             if (authoringContext.IsReadOnly)
             {
-                binding.Update(bindingId, binding.stylePropertyId, authoringContext.StyleDiff, element);
+                binding.Update(bindingId, binding.stylePropertyId, authoringContext, element);
                 return false;
             }
 
@@ -306,7 +306,7 @@ sealed partial class StylePropertyBinding : CustomBinding, ITrackablePropertyPro
             return new BindingResult(BindingStatus.Failure, "Expected a style property as the target. Shorthand and custom properties are not supported.");
 
         var targetElement = context.targetElement;
-        return Update(context.bindingId, stylePropertyId, ctx.StyleDiff, targetElement);
+        return Update(context.bindingId, stylePropertyId, ctx, targetElement);
     }
 
     static void ProcessChange<T>(T value, StyleDiff styleDiff, StylePropertyBinding binding, Action<StyleProperty, StyleSheet, T> setter)
@@ -349,7 +349,106 @@ sealed partial class StylePropertyBinding : CustomBinding, ITrackablePropertyPro
             ProcessChange(evt.NewValue, ctx.authoringContext.StyleDiff, ctx.binding, setter);
     }
 
-    BindingResult Update<TInline, TComputed>(in BindingId id, StylePropertyData<TInline, TComputed> value, StyleDiff diff, VisualElement targetElement)
+    void SetupContextMenu<TInline, TComputed>(FieldAffordanceElement fieldAffordanceElement,
+        StyleInspectorElement.AuthoringContext authoringContext, StylePropertyData<TInline, TComputed> value)
+    {
+        fieldAffordanceElement.populateMenuItems = menu =>
+        {
+            var isOverridden = value.uxmlValue.isInlined || value.binding != null || value.uxmlValue.requireVariableResolve;
+
+            var status = isOverridden && !authoringContext.IsReadOnly ? DropdownMenuAction.Status.Normal : DropdownMenuAction.Status.Disabled;
+            menu.AppendAction("Unset", _ => UnsetStyleProperty(authoringContext.StyleDiff), status);
+
+            var hasAnyProperties = HasAnyProperties(authoringContext.StyleDiff);
+            var unsetAllStatus = hasAnyProperties && !authoringContext.IsReadOnly ? DropdownMenuAction.Status.Normal : DropdownMenuAction.Status.Disabled;
+            menu.AppendAction("Unset All", _ => UnsetAllStyleProperties(authoringContext.StyleDiff), unsetAllStatus);
+        };
+    }
+
+    void UnsetStyleProperty(StyleDiff styleDiff)
+    {
+        switch (styleDiff.currentContextType)
+        {
+            case StyleDiff.ContextType.VisualElement:
+                UnsetInlineStyleProperty(styleDiff.currentTarget);
+                break;
+            case StyleDiff.ContextType.StyleSheet:
+                UnsetStyleSheetProperty(styleDiff.currentStyleSheet, styleDiff.currentRule);
+                break;
+        }
+    }
+
+    void UnsetInlineStyleProperty(VisualElement element)
+    {
+        var command = new UnsetInlineStylePropertyCommand(element, stylePropertyId);
+        command.Execute();
+    }
+
+    void UnsetStyleSheetProperty(StyleSheet styleSheet, StyleRule rule)
+    {
+        var command = new UnsetStyleSheetPropertyCommand(styleSheet, rule, stylePropertyId);
+        command.Execute();
+    }
+
+    bool HasAnyProperties(StyleDiff styleDiff)
+    {
+        switch (styleDiff.currentContextType)
+        {
+            case StyleDiff.ContextType.VisualElement:
+            {
+                var element = styleDiff.currentTarget;
+                if (element?.visualTreeAssetSource == null)
+                    return false;
+
+                var visualTreeAsset = element.visualTreeAssetSource;
+                var inlineStyleSheet = visualTreeAsset.inlineSheet;
+                if (inlineStyleSheet == null)
+                    return false;
+
+                var vea = element.visualElementAsset;
+                if (vea == null || vea.ruleIndex < 0)
+                    return false;
+
+                var rule = inlineStyleSheet.rules[vea.ruleIndex];
+                return rule.properties.Length > 0;
+            }
+            case StyleDiff.ContextType.StyleSheet:
+            {
+                var rule = styleDiff.currentRule;
+                return rule != null && rule.properties.Length > 0;
+            }
+            default:
+                return false;
+        }
+    }
+
+    void UnsetAllStyleProperties(StyleDiff styleDiff)
+    {
+        switch (styleDiff.currentContextType)
+        {
+            case StyleDiff.ContextType.VisualElement:
+                UnsetAllInlineStyleProperties(styleDiff.currentTarget);
+                break;
+            case StyleDiff.ContextType.StyleSheet:
+                UnsetAllStyleSheetProperties(styleDiff.currentStyleSheet, styleDiff.currentRule);
+                break;
+        }
+    }
+
+    void UnsetAllInlineStyleProperties(VisualElement element)
+    {
+        var command = new UnsetAllInlineStylePropertiesCommand(element);
+        command.Execute();
+    }
+
+    void UnsetAllStyleSheetProperties(StyleSheet styleSheet, StyleRule rule)
+    {
+        var command = new UnsetAllStyleSheetPropertiesCommand(styleSheet, rule);
+        command.Execute();
+    }
+
+    BindingResult Update<TInline, TComputed>(in BindingId id, StylePropertyData<TInline, TComputed> value,
+        StyleInspectorElement.AuthoringContext authoringContext, VisualElement targetElement)
     {
         var currentState = new State
         {
@@ -382,7 +481,13 @@ sealed partial class StylePropertyBinding : CustomBinding, ITrackablePropertyPro
 
         var fieldAffordanceElement = (targetElement as IAffordanceField)?.affordanceElement;
         if (fieldAffordanceElement != null)
-            FieldAffordanceController.UpdateFieldAffordanceData(fieldAffordanceElement.fieldAffordanceData, diff.currentTarget, diff.currentContextType, value);
+        {
+            FieldAffordanceController.UpdateFieldAffordanceData(fieldAffordanceElement.fieldAffordanceData,
+                authoringContext.StyleDiff.currentTarget, authoringContext.StyleDiff.currentContextType, value);
+            SetupContextMenu(fieldAffordanceElement, authoringContext, value);
+            var hasResolvedBinding = fieldAffordanceElement.fieldAffordanceData.sourceTypeInfo == FieldAffordanceSourceInfoType.ResolvedBinding;
+            targetElement.SetEnabled(!hasResolvedBinding);
+        }
 
         using var _ = new IgnoreChangeScope(this);
         switch (targetElement)

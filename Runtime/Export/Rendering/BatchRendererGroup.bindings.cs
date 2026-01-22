@@ -217,7 +217,7 @@ namespace UnityEngine.Rendering
     [StructLayout(LayoutKind.Sequential)]
     public struct BatchPackedCullingViewID : IEquatable<BatchPackedCullingViewID>
     {
-        internal ulong handle;
+        internal readonly ulong handle;
 
         public override int GetHashCode()
         {
@@ -226,7 +226,7 @@ namespace UnityEngine.Rendering
 
         public bool Equals(BatchPackedCullingViewID other)
         {
-            return handle == other.handle;
+            return this.handle == other.handle;
         }
 
         public override bool Equals(object obj)
@@ -248,19 +248,32 @@ namespace UnityEngine.Rendering
             return !lhs.Equals(rhs);
         }
 
+        [Obsolete("BatchPackedCullingViewID(int instanceID, int sliceIndex) is obsolete use BatchPackedCullingViewID(EntityId entityId).", true)]
         public BatchPackedCullingViewID(int instanceID, int sliceIndex)
         {
-            handle = (uint) instanceID | ((ulong)sliceIndex << 32);
         }
 
+        internal BatchPackedCullingViewID(ulong viewID)
+        {
+            this.handle = viewID;
+        }
+
+        [Obsolete("GetInstanceID() is obsolete, use GetEntityId() instead.", true)]
         public int GetInstanceID()
         {
-            return (int)(handle & 0xffffffff);
+            return (int)GetEntityId().GetRawData();
         }
 
+        public readonly EntityId GetEntityId()
+        {
+            int val = (int)(handle & 0xffffffff);
+            return EntityId.From((ulong)val);
+        }
+
+        [Obsolete("GetSliceIndex() is obsolete.", true)]
         public int GetSliceIndex()
         {
-            return (int)(handle >> 32);
+            return 0;
         }
     }
 
@@ -439,7 +452,7 @@ namespace UnityEngine.Rendering
         // TempJob allocated by C#, released by C++
         public EntityId* drawCommandPickingEntityIds;
 
-        [Obsolete("drawCommandPickingInstanceIDs is deprecated. Use drawCommandPickingEntityIds instead.")]
+        [Obsolete("drawCommandPickingInstanceIDs is deprecated. Use drawCommandPickingEntityIds instead.", true)]
         public int* drawCommandPickingInstanceIDs
         {
             get => (int*)drawCommandPickingEntityIds;
@@ -476,8 +489,6 @@ namespace UnityEngine.Rendering
     }
 
     [StructLayout(LayoutKind.Sequential)]
-    [NativeHeader("Runtime/Camera/BatchRendererGroup.h")]
-    [UsedByNativeCode]
     unsafe public struct BatchCullingContext
     {
         internal BatchCullingContext(
@@ -503,7 +514,7 @@ namespace UnityEngine.Rendering
             viewType = inViewType;
             projectionType = inProjectionType;
             cullingFlags = inBatchCullingFlags;
-            viewID = new BatchPackedCullingViewID { handle = inViewID };
+            viewID = new BatchPackedCullingViewID(inViewID);
             cullingLayerMask = inCullingLayerMask;
             sceneCullingMask = inSceneCullingMask;
             splitExclusionMask = inExclusionSplitMask;
@@ -621,6 +632,8 @@ namespace UnityEngine.Rendering
         OnPerformCulling m_PerformCulling;
         OnFinishedCulling m_FinishedCulling;
 
+        internal IntPtr Handle => m_GroupHandle;
+
         unsafe public delegate JobHandle OnPerformCulling(BatchRendererGroup rendererGroup, BatchCullingContext cullingContext, BatchCullingOutput cullingOutput, IntPtr userContext);
         unsafe public delegate void OnFinishedCulling(IntPtr customCullingResult);
 
@@ -665,14 +678,10 @@ namespace UnityEngine.Rendering
         public void SetBatchBuffer(BatchID batchID, GraphicsBufferHandle buffer) { SetDrawCommandBatchBuffer(batchID, buffer); }
 
         public extern BatchMaterialID RegisterMaterial(Material material);
-        internal extern void RegisterMaterials(ReadOnlySpan<EntityId> materialID, Span<BatchMaterialID> batchMaterialID);
-
         public extern void UnregisterMaterial(BatchMaterialID material);
         public extern Material GetRegisteredMaterial(BatchMaterialID material);
 
         public extern BatchMeshID RegisterMesh(Mesh mesh);
-        internal extern void RegisterMeshes(ReadOnlySpan<EntityId> meshID, Span<BatchMeshID> batchMeshID);
-
         public extern void UnregisterMesh(BatchMeshID mesh);
         public extern Mesh GetRegisteredMesh(BatchMeshID mesh);
 

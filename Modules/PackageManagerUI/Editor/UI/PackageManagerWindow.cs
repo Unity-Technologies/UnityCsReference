@@ -206,17 +206,8 @@ namespace UnityEditor.PackageManager.UI
 #pragma warning restore RS0030
 
             SelectPackageStatic(packageToSelect, pageId);
-            if (isWindowAlreadyVisible)
-                return;
-
-            string packageId = null;
-            if (!string.IsNullOrEmpty(packageToSelect))
-            {
-                var packageDatabase = ServicesContainer.instance.Resolve<IPackageDatabase>();
-                packageDatabase.GetPackageAndVersionByIdOrName(packageToSelect, out var package, out var version, true);
-                packageId = version?.uniqueId ?? package?.versions.primary.uniqueId ?? $"{packageToSelect}@primary";
-            }
-            PackageManagerWindowAnalytics.SendEvent("openWindow", packageId);
+            if (!isWindowAlreadyVisible)
+                PackageManagerWindowAnalytics.SendEvent("openWindow", packageToSelect);
         }
 
         [UsedByNativeCode]

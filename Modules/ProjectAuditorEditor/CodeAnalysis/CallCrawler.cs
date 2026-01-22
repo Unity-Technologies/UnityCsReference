@@ -65,18 +65,12 @@ namespace Unity.ProjectAuditor.Editor.CodeAnalysis
             calls.Add(new CallInfo(callee, caller, location, isPerfCriticalContext));
         }
 
-        public void BuildCallHierarchies(List<ReportItem> issues, IProgress progress = null)
+        public void BuildCallHierarchies(List<ReportItem> issues, IProgress progress)
         {
             if (issues.Count > 0)
             {
-                if (progress != null)
-                    progress.Start("Analyzing Method calls", string.Empty, issues.Count);
-
                 foreach (var issue in issues)
                 {
-                    if (progress != null)
-                        progress.Advance();
-
                     const int depth = 0;
                     var root = issue.Dependencies;
                     BuildHierarchy(root as CallTreeNode, depth);
@@ -85,8 +79,6 @@ namespace Unity.ProjectAuditor.Editor.CodeAnalysis
                     if (issue.Location == null)
                         issue.Location = root.Location;
                 }
-                if (progress != null)
-                    progress.Clear();
             }
         }
 

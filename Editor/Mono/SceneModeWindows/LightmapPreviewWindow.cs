@@ -288,13 +288,9 @@ namespace UnityEditor
                 for (int i = 0; i < options.Length; i++)
                 {
                     if (LightmapVisualizationUtility.IsTextureTypeEnabled(types[i]))
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                        menu.AddItem(options[i], m_SelectedPreviewTextureOptionIndex == i, SelectPreviewTextureIndex, options.ElementAt(i));
-#pragma warning restore RS0030
+                        menu.AddItem(options[i], m_SelectedPreviewTextureOptionIndex == i, SelectPreviewTextureIndex, options[i]);
                     else
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                        menu.AddDisabledItem(options.ElementAt(i));
-#pragma warning restore RS0030
+                        menu.AddDisabledItem(options[i]);
                 }
                 menu.DropDown(dropRect);
             }
@@ -506,7 +502,7 @@ namespace UnityEditor
 
                             LightmapVisualizationUtility.DrawTextureWithUVOverlay(texture,
                                 (m_ShowUVOverlay && IsActiveGameObjectInLightmap(textureType)) ? Selection.activeGameObject : null,
-                                m_ShowUVOverlay ? m_CachedTextureObjects : new GameObject[] { }, drawableArea, textureRect, textureType, exposure, useInteractiveLightBakingData);
+                                m_ShowUVOverlay ? m_CachedTextureObjects : Array.Empty<GameObject>(), drawableArea, textureRect, textureType, exposure, useInteractiveLightBakingData);
                             texture.filterMode = prevMode;
                         }
                         // Handle clicking on a UV chart to select the renderer
@@ -681,7 +677,7 @@ namespace UnityEditor
             else if (LightmapVisualizationUtility.IsAtlasTextureType(textureType))
                 m_CachedTextureObjects = LightmapVisualizationUtility.GetBakedGITextureRenderers(m_LightmapIndex, useInteractiveLightBakingData);
             else // if it's an instance based baked lightmap, we only have 1 object in it
-                m_CachedTextureObjects = new GameObject[] {};
+                m_CachedTextureObjects = Array.Empty<GameObject>();
         }
 
         private Rect ResizeRectToFit(Rect rect, Rect to)

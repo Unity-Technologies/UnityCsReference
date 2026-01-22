@@ -8,7 +8,7 @@ using UnityEngine.Rendering;
 namespace UnityEngine
 {
     [RejectDragAndDropMaterial]
-    [NativeType(Header = "Modules/SpriteMask/Public/SpriteMask.h")]
+    [NativeHeader("Modules/SpriteMask/Public/SpriteMask.h")]
     public sealed partial class SpriteMask : Renderer
     {
         public enum MaskSource

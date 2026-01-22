@@ -19,7 +19,7 @@ namespace UnityEditorInternal.Profiling
             public static readonly GUIContent emptyText = new GUIContent("");
             public static readonly GUIContent selectLineText = EditorGUIUtility.TrTextContent("Select Line for the detailed information");
 
-            public static readonly GUIContent askAssistantTooltip = EditorGUIUtility.TrTextContent("Ask Assistant", "Ask the Profiler Assistant for help understanding this sample");
+            public static readonly GUIContent askAssistantTooltip = EditorGUIUtility.TrTextContent("Ask Assistant", "Ask the Profiler Assistant for help understanding this sample", EditorGUIUtility.LoadIcon("AISparkle"));
 
             public static readonly GUIStyle expandedArea = new GUIStyle();
             public static readonly GUIStyle callstackScroll = new GUIStyle("CN Box");

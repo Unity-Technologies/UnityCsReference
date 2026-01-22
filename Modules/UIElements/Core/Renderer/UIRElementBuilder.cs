@@ -66,8 +66,8 @@ namespace UnityEngine.UIElements.UIR
             if (isGroupTransform)
                 mgc.entryRecorder.PushGroupMatrix(mgc.parentEntry);
 
-            var matDef = ve.resolvedStyle.unityMaterial;
-            bool setsMaterial = matDef.material != null;
+            var matDef = ve.computedStyle.unityMaterial;
+            bool setsMaterial = matDef.material != EntityId.None;
             bool mustPopClipping = false;
 
             if (ve.visible)

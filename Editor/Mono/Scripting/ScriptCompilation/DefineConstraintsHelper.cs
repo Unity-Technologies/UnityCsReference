@@ -30,24 +30,19 @@ namespace UnityEditor.Scripting.ScriptCompilation
         [RequiredByNativeCode]
         public static bool IsDefineConstraintsCompatible(string[] defines, string[] defineConstraints)
         {
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            return IsDefineConstraintsCompatible_Enumerable(defines.AsEnumerable<string>(), defineConstraints.AsEnumerable<string>());
-#pragma warning restore RS0030
+            return IsDefineConstraintsCompatibleContext(new EditorBuildRules.SymbolDefinitionContext(defines), defineConstraints);
         }
 
-        // This is not called IsDefineConstraintsCompatible because the bindings generator does not support overloads
-        public static bool IsDefineConstraintsCompatible_Enumerable(IEnumerable<string> defines, IEnumerable<string> defineConstraints)
+        internal static bool IsDefineConstraintsCompatibleContext(EditorBuildRules.SymbolDefinitionContext symbolDefinitionContext, string[] defineConstraints)
         {
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            if (defines == null && defineConstraints == null || defineConstraints == null || !defineConstraints.Any())
-#pragma warning restore RS0030
+            if ((defineConstraints == null) || (defineConstraints.Length == 0))
             {
                 return true;
             }
 
-            foreach (var constraint in defineConstraints)
+            foreach (string constraint in defineConstraints)
             {
-                if (GetDefineConstraintCompatibility(defines, constraint) != DefineConstraintStatus.Compatible)
+                if (GetDefineConstraintCompatibility(symbolDefinitionContext, constraint) != DefineConstraintStatus.Compatible)
                 {
                     return false;
                 }
@@ -56,7 +51,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
             return true;
         }
 
-        internal static DefineConstraintStatus GetDefineConstraintCompatibility(IEnumerable<string> defines, string defineConstraints)
+        internal static DefineConstraintStatus GetDefineConstraintCompatibility(EditorBuildRules.SymbolDefinitionContext symbolDefinitionContext, string defineConstraints)
         {
             if (string.IsNullOrEmpty(defineConstraints))
             {
@@ -91,9 +86,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
             var expectedDefines = new HashSet<string>(splitDefineConstraints.Where(x => !x.StartsWith(Not, StringComparison.Ordinal) && x != Or));
 #pragma warning restore RS0030
 
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            if (defines == null || !defines.Any())
-#pragma warning restore RS0030
+            if (!symbolDefinitionContext.HasAny())
             {
                 if (expectedDefines.Count > 0)
                 {
@@ -134,9 +127,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
             var expectedDefinesResult = DefineConstraintStatus.Incompatible;
             foreach (var define in expectedDefines)
             {
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                if (defines.Contains(define))
-#pragma warning restore RS0030
+                if (symbolDefinitionContext.Contains(define))
                 {
                     expectedDefinesResult = DefineConstraintStatus.Compatible;
                     break;
@@ -151,9 +142,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
             var notExpectedDefinesResult = DefineConstraintStatus.Compatible;
             foreach (var define in notExpectedDefines)
             {
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                if (defines.Contains(define))
-#pragma warning restore RS0030
+                if (symbolDefinitionContext.Contains(define))
                 {
                     notExpectedDefinesResult = DefineConstraintStatus.Incompatible;
                     break;

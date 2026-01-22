@@ -127,6 +127,7 @@ namespace UnityEditor
         internal const float kIndentPerLevel = 15;
         internal const int kControlVerticalSpacingLegacy = 2;
         internal const int kDefaultSpacing = 6;
+        [VisibleToOtherModules("UnityEditor.AIModule")]
         internal static readonly SVC<float> kControlVerticalSpacing = new SVC<float>("--theme-control-vertical-spacing", 2.0f);
         internal static readonly SVC<float> kVerticalSpacingMultiField = new SVC<float>("--theme-multifield-vertical-spacing", 0.0f);
 
@@ -3264,9 +3265,9 @@ namespace UnityEditor
 
                                 ReorderableList.InvalidateExistingListCaches();
                             }
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable RS0031 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                             else if (listView != null && listView.selectedIndices.Any())
-#pragma warning restore RS0030
+#pragma warning restore RS0031
                             {
                                 DuplicateListViewItems(listView, parentArrayProperty);
                             }
@@ -3328,9 +3329,9 @@ namespace UnityEditor
                                     list.onChangedCallback(list);
                                 ReorderableList.InvalidateExistingListCaches();
                             }
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable RS0031 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                             else if (listView != null && listView.selectedIndices.Any())
-#pragma warning restore RS0030
+#pragma warning restore RS0031
                             {
                                 DeleteListViewItems(listView, parentArrayProperty);
                             }
@@ -3415,9 +3416,7 @@ namespace UnityEditor
 
             for (int i = previousSelectedIndices.Count - 1; i >= 0; i--)
             {
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                var index = previousSelectedIndices.ElementAt(i);
-#pragma warning restore RS0030
+                var index = previousSelectedIndices[i];
                 if (index >= baseListView.itemsSource.Count) continue;
 
                 SerializedProperty resolvedProperty = parentArrayProperty.GetArrayElementAtIndex(index);
@@ -3437,9 +3436,7 @@ namespace UnityEditor
 
             for (int i = previousSelectedIndices.Count - 1; i >= 0; i--)
             {
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                var index = previousSelectedIndices.ElementAt(i);
-#pragma warning restore RS0030
+                var index = previousSelectedIndices[i];
                 if (index >= baseListView.itemsSource.Count) continue;
 
                 SerializedProperty resolvedProperty = parentArrayProperty.GetArrayElementAtIndex(index);
@@ -3861,6 +3858,7 @@ namespace UnityEditor
             return PopupInternal(position, label, selectedIndex, EditorGUIUtility.TempContent(displayedOptions), null, style);
         }
 
+        [VisibleToOtherModules("UnityEditor.AIModule")]
         internal static int Popup(Rect position, GUIContent label, int selectedIndex, string[] displayedOptions)
         {
             return Popup(position, label, selectedIndex, displayedOptions, EditorStyles.popup);
@@ -4595,6 +4593,7 @@ namespace UnityEditor
             return go;
         }
 
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
         internal static bool CheckForCrossSceneReferencing(Object obj1, Object obj2)
         {
             // If either object is not a component nor gameobject: cannot become a cross scene reference
@@ -9225,8 +9224,8 @@ namespace UnityEditor
                 if (s_IsEnumTypeUsingFlagsAttribute.TryGetValue(type, out result))
                     return result;
 
-                // GetCustomAttributes allocates a new List on every call so we cache the result
-                result = type.GetCustomAttributes(typeof(FlagsAttribute), false).Length > 0;
+                // Cache the result
+                result = type.IsDefined(typeof(FlagsAttribute), false);
                 s_IsEnumTypeUsingFlagsAttribute[type] = result;
                 return result;
             }

@@ -568,9 +568,9 @@ namespace UnityEditor.Experimental.GraphView
                         return DropdownMenuAction.Status.Disabled;
                     });
 
-                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable RS0031 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 var status = placemat.Container.Placemats.Any() ? DropdownMenuAction.Status.Normal : DropdownMenuAction.Status.Disabled;
-#pragma warning restore RS0030
+#pragma warning restore RS0031
 
                 evt.menu.AppendAction("Order/Bring To Front", a => Container.BringToFront(placemat), status);
                 evt.menu.AppendAction("Order/Bring Forward", a => Container.CyclePlacemat(placemat, PlacematContainer.CycleDirection.Up), status);

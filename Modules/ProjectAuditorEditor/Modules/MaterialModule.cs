@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using Unity.ProjectAuditor.Editor.Core;
@@ -37,7 +38,7 @@ namespace Unity.ProjectAuditor.Editor.Modules
             AssetsModule.k_IssueLayout
         ];
 
-        public override AnalysisResult Audit(AnalysisParams analysisParams, IProgress progress = null)
+        public override IEnumerator Audit(AnalysisParams analysisParams, IProgress progress)
         {
             var analyzers = GetCompatibleAnalyzers(analysisParams);
 
@@ -53,14 +54,16 @@ namespace Unity.ProjectAuditor.Editor.Modules
 
             var assetPaths = GetAssetPathsByFilter("t:material, a:assets", context);
 
-            progress?.Start("Finding Materials", "Search in Progress...", assetPaths.Length);
+            AsyncProgressState progressState = progress?.Start("Analyzing Materials", assetPaths.Length);
+
+            yield return null;
 
             var issues = new List<ReportItem>();
 
             foreach (var assetPath in assetPaths)
             {
-                if (progress?.IsCancelled ?? false)
-                    return AnalysisResult.Cancelled;
+                if (AdvanceAsyncProgress(progress, progressState, Path.GetFileName(assetPath)) == false)
+                    break;
 
                 context.Material = AssetDatabase.LoadAssetAtPath<Material>(assetPath);
 
@@ -81,15 +84,14 @@ namespace Unity.ProjectAuditor.Editor.Modules
                     analysisParams.OnIncomingIssues(analyzer.Analyze(context));
                 }
 
-                progress?.Advance();
+                yield return null;
             }
 
             if (issues.Count > 0)
                 context.Params.OnIncomingIssues(issues);
 
-            progress?.Clear();
-
-            return AnalysisResult.Success;
+            progress?.Clear(progressState);
+            analysisParams.OnModuleCompleted?.Invoke(Name, AnalysisResult.Success, 0);
         }
     }
 }

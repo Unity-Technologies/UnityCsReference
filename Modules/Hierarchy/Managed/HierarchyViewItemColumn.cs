@@ -12,7 +12,7 @@ namespace Unity.Hierarchy
     /// <summary>
     /// Represents the default column in the hierarchy view, which contains the icon and name of nodes.
     /// </summary>
-    [VisibleToOtherModules("UnityEditor.HierarchyModule")]
+    [VisibleToOtherModules("UnityEditor.HierarchyModule", "UnityEditor.UIToolkitAuthoringModule")]
     class HierarchyViewItemColumn : Column
     {
         internal const string k_HierarchyNameColumnName = "HierarchyViewColumn Name";

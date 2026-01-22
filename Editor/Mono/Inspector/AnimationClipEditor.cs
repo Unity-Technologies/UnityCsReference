@@ -33,9 +33,7 @@ namespace UnityEditor
 
                 int clipIndex = 0;
                 //The ModelImporter handles "ClipAnimations" and "DefaultClipAnimations" independently, where there are no user specified clips, this clip must be a default clip.
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                var clipAnimations = importer.clipAnimations.Any() ? importer.clipAnimations : importer.defaultClipAnimations;
-#pragma warning restore RS0030
+                var clipAnimations = importer.clipAnimations.Length > 0 ? importer.clipAnimations : importer.defaultClipAnimations;
                 for (int i = 0; i < clipAnimations.Length; i++)
                 {
                     if (clipAnimations[i].name == clip.name)
@@ -1776,7 +1774,7 @@ namespace UnityEditor
     // TODO merge this with AnimationWindow once its re-done for 2D
     internal class EventManipulationHandler
     {
-        private Rect[] m_EventRects = new Rect[0];
+        private Rect[] m_EventRects = Array.Empty<Rect>();
         private static AnimationEvent[] m_EventsAtMouseDown;
         private static float[] m_EventTimes;
         private int m_HoverEvent = -1;

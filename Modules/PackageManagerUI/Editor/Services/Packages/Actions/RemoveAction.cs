@@ -109,9 +109,9 @@ internal class RemoveAction : PackageAction
 
         // If the user is removing a package that is part of a feature set, lock it after removing from manifest
         // Having this check condition should be more optimal once we implement caching of Feature Set Dependents for each package
-        #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable RS0031 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
         if (m_PackageDatabase.GetFeaturesThatUseThisPackage(version.package.versions.installed)?.Any() == true)
-#pragma warning restore RS0030
+#pragma warning restore RS0031
             m_PageManager.activePage.SetPackagesUserUnlockedState(new List<string> { version.package.uniqueId }, false);
 
         // Remove

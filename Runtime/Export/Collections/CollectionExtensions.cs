@@ -5,7 +5,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
-using System.Linq;
+using System.Text;
 using UnityEngine.Bindings;
 
 namespace Unity.Collections
@@ -84,6 +84,49 @@ namespace Unity.Collections
         }
 
         /// <summary>
+        /// Gets the minimum element from the list.
+        /// </summary>
+        /// <typeparam name="T">The item type.</typeparam>
+        /// <param name="list">The list.</param>
+        [VisibleToOtherModules("UnityEngine.UIElementsModule", "UnityEditor.UIBuilderModule")]
+        internal static T Min<T>([DisallowNull]this IList<T> list, IComparer<T> comparer = null)
+        {
+            if (list.Count == 0)
+                throw new InvalidOperationException("list contains no elements");
+
+            T min = list[0];
+            comparer ??= Comparer<T>.Default;
+
+            for (int i = 1; i < list.Count; i++)
+            {
+                if (comparer.Compare(list[i], min) < 0)
+                    min = list[i];
+            }
+            return min;
+        }
+        /// <summary>
+        /// Gets the minimum element from the list.
+        /// </summary>
+        /// <typeparam name="T">The item type.</typeparam>
+        /// <param name="list">The list.</param>
+        [VisibleToOtherModules("UnityEngine.UIElementsModule", "UnityEditor.UIBuilderModule")]
+        internal static T Max<T>([DisallowNull]this IList<T> list, IComparer<T> comparer = null)
+        {
+            if (list.Count == 0)
+                throw new InvalidOperationException("list contains no elements");
+
+            T max = list[0];
+            comparer ??= Comparer<T>.Default;
+
+            for (int i = 1; i < list.Count; i++)
+            {
+                if (comparer.Compare(list[i], max) > 0)
+                    max = list[i];
+            }
+            return max;
+        }
+
+        /// <summary>
         /// Add element to the correct position in presorted List. This methods reduce a need to call Sort() on the List.
         /// </summary>
         /// <param name="list">Presorted List</param>
@@ -153,7 +196,7 @@ namespace Unity.Collections
         /// <typeparam name="T"></typeparam>
         /// <returns>The first element if the list was sorted or default</returns>
         /// <exception cref="ArgumentNullException">Can throw exception if list is null</exception>
-        public static T FirstOrDefaultSorted<T>(this IEnumerable<T> collection, IComparer<T> comparer = null)
+        internal static T FirstOrDefaultSorted<T>(this IEnumerable<T> collection, IComparer<T> comparer = null)
         {
             if (collection == null)
                 throw new ArgumentNullException($"{nameof(collection)} must not be null.");
@@ -194,9 +237,23 @@ namespace Unity.Collections
             if (serializeElement == null)
                 throw new ArgumentNullException($"Argument {nameof(serializeElement)} must not be null.");
 
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            return "[" + string.Join(",", collection.Select(t => t == null ? "null" : serializeElement.Invoke(t))) + "]";
-#pragma warning restore RS0030
+            var builder = new StringBuilder();
+            builder.Append("[");
+            foreach (var item in collection)
+            {
+                if (item == null)
+                    builder.Append("null");
+                else
+                    builder.Append(serializeElement.Invoke(item));
+                builder.Append(',');
+            }
+
+            // remove trailing comma if we added any items
+            if (builder.Length > 1)
+                builder.Length--;
+
+            builder.Append("]");
+            return builder.ToString();
         }
 
         /// <summary>
@@ -212,13 +269,23 @@ namespace Unity.Collections
             if (collection == null)
                 throw new ArgumentNullException($"{nameof(collection)} must not be null.");
 
+            var comparer = EqualityComparer<T>.Default;
             foreach (var e in collection)
             {
-                if (e.Equals(element))
+                if (comparer.Equals(e, element))
                     return true;
             }
 
             return false;
         }
+
+        /// <summary>
+        /// Returns whether the array contains the specified item.
+        /// </summary>
+        /// <typeparam name="T">The item type.</typeparam>
+        /// <param name="array">The array.</param>
+        /// <param name="item">The item to locate in the array.</param>
+        [VisibleToOtherModules("UnityEngine.UIElementsModule", "UnityEditor.UIBuilderModule")]
+        internal static bool Contains<T>([DisallowNull]this T[] array, T item) => Array.IndexOf(array, item) != -1;
     }
 }

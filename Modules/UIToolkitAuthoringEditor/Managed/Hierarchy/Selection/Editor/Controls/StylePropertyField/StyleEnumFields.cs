@@ -25,7 +25,7 @@ namespace Unity.UIToolkit.Editor
             public override object CreateInstance() => new DisplayStyleEnumField();
         }
 
-        DisplayStyleEnumField()
+        public DisplayStyleEnumField()
             : base(true)
         {
             valueField.SetTooltipForEnumValue(DisplayStyle.Flex, "Turns the element into a flexible container for aligning and distributing items.");

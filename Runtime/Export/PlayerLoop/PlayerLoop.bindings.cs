@@ -339,7 +339,7 @@ namespace UnityEngine.PlayerLoop
 
 namespace UnityEngine.LowLevel
 {
-    [NativeType(Header = "Runtime/Misc/PlayerLoop.h")]
+    [NativeHeader("Runtime/Misc/PlayerLoop.h")]
     [RequiredByNativeCode]
     [MovedFrom("UnityEngine.Experimental.LowLevel")]
     struct PlayerLoopSystemInternal

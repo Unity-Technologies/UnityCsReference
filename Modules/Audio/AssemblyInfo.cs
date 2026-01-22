@@ -5,3 +5,4 @@
 using System.Runtime.CompilerServices;
 
 [assembly: InternalsVisibleTo("Unity.Video.PlayModeTests")]
+[assembly: InternalsVisibleTo("Unity.Audio.Tests")]

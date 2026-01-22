@@ -265,7 +265,7 @@ namespace Unity.UI.Builder
             {
                 evt.menu.AppendAction(
                     BuilderConstants.ExplorerHierarchyPaneOpenSubDocumentInPlace,
-                    action => BuilderHierarchyUtilities.OpenAsSubDocument(paneWindow, linkedInstancedVTA, linkedTemplateVEA));
+                    action => BuilderHierarchyUtilities.OpenAsSubDocument(paneWindow, linkedInstancedVTA, linkedTemplateVEA, paneWindow.document.GetTemplateAssetIndex(linkedTemplateVEA)));
             }
 
             if (showSiblingOpenActions)
@@ -283,7 +283,7 @@ namespace Unity.UI.Builder
                     action =>
                     {
                         document.GoToSubdocument(documentElement, paneWindow, activeOpenUXML.openSubDocumentParent);
-                        BuilderHierarchyUtilities.OpenAsSubDocument(paneWindow, linkedInstancedVTA, linkedTemplateVEA);
+                        BuilderHierarchyUtilities.OpenAsSubDocument(paneWindow, linkedInstancedVTA, linkedTemplateVEA, paneWindow.document.GetTemplateAssetIndex(linkedTemplateVEA));
                     });
             }
 

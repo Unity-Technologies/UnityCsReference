@@ -17,11 +17,9 @@ namespace UnityEngine.InputForUI
 
         public void Reset()
         {
-            _sanitizers = new IEventSanitizer[]
-            {
-// Removed from release builds for the time being as it currently only logs issues rather
-// than ensuring any runtime behavior (https://jira.unity3d.com/browse/ISX-1388).
-            };
+            // Removed from release builds for the time being as it currently only logs issues rather
+            // than ensuring any runtime behavior (https://jira.unity3d.com/browse/ISX-1388).
+            _sanitizers = Array.Empty<IEventSanitizer>();
 
             foreach (var sanitizer in _sanitizers)
                 sanitizer.Reset();

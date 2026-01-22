@@ -251,7 +251,7 @@ namespace UnityEngine.UIElements
         /// <summary>
         /// Returns the list of visible columns.
         /// </summary>
-        internal IEnumerable<Column> visibleList
+        internal IReadOnlyList<Column> visibleList
         {
             get
             {

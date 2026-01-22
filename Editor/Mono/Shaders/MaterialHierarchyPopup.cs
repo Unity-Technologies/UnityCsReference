@@ -505,7 +505,7 @@ namespace UnityEditor
 
             listArea.Init(rect, HierarchyType.Assets, new SearchFilter(), true, SearchService.SearchSessionOptions.Default);
             enumerator = FindInAllAssets(searchFilter);
-            results = new EntityId[0];
+            results = System.Array.Empty<EntityId>();
         }
 
         void Search()

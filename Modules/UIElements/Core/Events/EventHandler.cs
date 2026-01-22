@@ -320,6 +320,7 @@ namespace UnityEngine.UIElements
         protected virtual void HandleEventBubbleUp(EventBase evt) {}
 
         [EventInterest(EventInterestOptions.Inherit)]
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
         internal virtual void HandleEventBubbleUpDisabled(EventBase evt) {}
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal void HandleEventBubbleUpInternal(EventBase evt) => HandleEventBubbleUp(evt);

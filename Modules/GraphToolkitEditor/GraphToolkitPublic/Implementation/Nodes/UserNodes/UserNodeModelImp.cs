@@ -21,9 +21,6 @@ namespace Unity.GraphToolkit.Editor.Implementation
         Node IUserNodeModelImp.Node => m_Node;
         public Node Node => m_Node;
 
-        Dictionary<string, INodeOption> m_NodeOptionsByName = new();
-        Dictionary<string, INodeOption> IUserNodeModelImp.NodeOptionsByName => m_NodeOptionsByName;
-
         public override string Title => m_Node?.GetType().Name ?? "Missing Node";
 
         string m_CustomTooltip;
@@ -95,9 +92,6 @@ namespace Unity.GraphToolkit.Editor.Implementation
 
         Node IUserNodeModelImp.Node => m_Node;
         public BlockNode Node => m_Node;
-
-        Dictionary<string, INodeOption> m_NodeOptionsByName = new();
-        Dictionary<string, INodeOption> IUserNodeModelImp.NodeOptionsByName => m_NodeOptionsByName;
 
         public override string Title => m_Node?.GetType().Name ?? "Missing Node";
 
@@ -172,9 +166,6 @@ namespace Unity.GraphToolkit.Editor.Implementation
 
         Node IUserNodeModelImp.Node => m_Node;
         public ContextNode Node => m_Node;
-
-        Dictionary<string, INodeOption> m_NodeOptionsByName = new();
-        Dictionary<string, INodeOption> IUserNodeModelImp.NodeOptionsByName => m_NodeOptionsByName;
 
         public override string Title => m_Node?.GetType().Name ?? "Missing Node";
 

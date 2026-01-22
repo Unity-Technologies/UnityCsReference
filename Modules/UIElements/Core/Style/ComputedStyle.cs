@@ -172,18 +172,5 @@ namespace UnityEngine.UIElements
             var to = backgroundSize.keyword == StyleKeyword.Initial ? InitialStyle.backgroundSize : backgroundSize.value;
             return element.styleAnimation.Start(StylePropertyId.BackgroundSize, computedStyle.visualData.Read().backgroundSize, to, durationMs, delayMs, easingCurve);
         }
-
-        public static bool StartAnimationInlineFilter(VisualElement element, ref ComputedStyle computedStyle, StyleList<FilterFunction> filter, int durationMs, int delayMs, Func<float, float> easingCurve)
-        {
-            var to = filter.keyword == StyleKeyword.Initial ? InitialStyle.filter : filter.value;
-            return element.styleAnimation.Start(StylePropertyId.Filter, computedStyle.rareData.Read().filter, to, durationMs, delayMs, easingCurve);
-        }
-
-        public static bool StartAnimationInlineFilter(VisualElement element, ref ComputedStyle computedStyle, StyleMaterialDefinition matDef, int durationMs, int delayMs, Func<float, float> easingCurve)
-        {
-            var to = matDef.keyword == StyleKeyword.Initial ? InitialStyle.unityMaterial : matDef.value;
-            return element.styleAnimation.Start(StylePropertyId.Filter, computedStyle.inheritedData.Read().unityMaterial, to, durationMs, delayMs, easingCurve);
-        }
-
     }
 }

@@ -104,7 +104,7 @@ namespace UnityEditor.Search
             this.outerText = outerText;
             this.innerText = innerText.valid ? innerText : outerText;
             this.alias = alias;
-            this.parameters = parameters ?? new SearchExpression[0];
+            this.parameters = parameters ?? Array.Empty<SearchExpression>();
             this.evaluator = evaluator;
             this.hasEscapedNestedExpressions = hasEscapedNestedExpressions;
         }

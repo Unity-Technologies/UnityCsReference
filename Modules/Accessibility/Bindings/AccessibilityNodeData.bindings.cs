@@ -607,7 +607,7 @@ namespace UnityEngine.Accessibility
         {
             nodeId = AccessibilityNodeManager.k_InvalidNodeId;
             parentId = AccessibilityNodeManager.k_InvalidNodeId;
-            childIds = new int[] { };
+            childIds = Array.Empty<int>();
 
             isActive = true;
 

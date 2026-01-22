@@ -7,6 +7,7 @@ using UnityEngine.Scripting;
 
 namespace UnityEditor.Build
 {
+    ///<summary>An exception class that represents a failed build.</summary>
     [RequiredByNativeCode]
     public class BuildFailedException : Exception
     {
@@ -22,6 +23,9 @@ namespace UnityEditor.Build
             m_Silent = silent;
         }
 
+        ///<summary>Constructs a BuildFailedException object.</summary>
+        ///<param name="message">A string of text describing the error that caused the build to fail.</param>
+        ///<param name="innerException">The exception that caused the build to fail.</param>
         public BuildFailedException(string message) :
             base(message)
         {

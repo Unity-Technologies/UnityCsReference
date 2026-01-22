@@ -120,8 +120,8 @@ namespace UnityEditor.Profiling.Memory.Experimental
                 }
                 else
                 {
-                    writer.WriteEntryArray(EntryType.TypeDescriptions_FieldIndices, new int[0]);
-                    writer.WriteEntryArray(EntryType.TypeDescriptions_StaticFieldBytes, new byte[0]);
+                    writer.WriteEntryArray(EntryType.TypeDescriptions_FieldIndices, Array.Empty<int>());
+                    writer.WriteEntryArray(EntryType.TypeDescriptions_StaticFieldBytes, Array.Empty<byte>());
                 }
 
                 writer.WriteEntry(EntryType.TypeDescriptions_Name, type.name);

@@ -7,7 +7,7 @@ using UnityEngine.Bindings;
 namespace UnityEditor
 {
     // Embedded Linux && QNX Architecture
-    [NativeType(Header = "Editor/Src/EditorUserBuildSettings.h")]
+    [NativeHeader("Editor/Src/EditorUserBuildSettings.h")]
     public enum EmbeddedArchitecture
     {
         [UnityEngine.InspectorName("Arm64")]

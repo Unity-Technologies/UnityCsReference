@@ -233,15 +233,11 @@ namespace Unity.GraphToolkit.Editor
                         m_ConnectedWireDragHelper.HandleMouseUp(evt, true, m_AdditionalWireDragHelpers.Select(t => t.OriginalWire), m_AdditionalWireDragHelpers.Select(t => t.DraggedPort));
 #pragma warning restore RS0030
                         foreach (var dragHelper in m_AdditionalWireDragHelpers)
-                            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                            dragHelper.HandleMouseUp(evt, false, Enumerable.Empty<Wire>(), Enumerable.Empty<PortModel>());
-#pragma warning restore RS0030
+                            dragHelper.HandleMouseUp(evt, false, Array.Empty<Wire>(), Array.Empty<PortModel>());
                     }
                     else
                     {
-                        #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                        m_ConnectedWireDragHelper.HandleMouseUp(evt, true, Enumerable.Empty<Wire>(), Enumerable.Empty<PortModel>());
-#pragma warning restore RS0030
+                        m_ConnectedWireDragHelper.HandleMouseUp(evt, true, Array.Empty<Wire>(), Array.Empty<PortModel>());
                     }
 
                     evt.StopPropagation();

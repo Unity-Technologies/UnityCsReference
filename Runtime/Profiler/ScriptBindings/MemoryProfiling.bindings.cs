@@ -94,7 +94,7 @@ namespace Unity.Profiling.Memory
         {
             if (CreatingMetadata == null)
             {
-                return new byte[0];
+                return Array.Empty<byte>();
             }
 
             MemorySnapshotMetadata data = new MemorySnapshotMetadata();

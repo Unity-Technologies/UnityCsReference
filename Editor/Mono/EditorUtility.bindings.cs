@@ -81,10 +81,10 @@ namespace UnityEditor
             RemapAssetReferences(objects, assetPathMap.Keys.ToArray(), assetPathMap.Values.ToArray(),
 #pragma warning restore RS0030
 #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                idMap == null ? new EntityId[0] : idMap.Keys.ToArray(),
+                idMap == null ? Array.Empty<EntityId>() : idMap.Keys.ToArray(),
 #pragma warning restore RS0030
 #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                idMap == null ? new EntityId[0] : idMap.Values.ToArray()
+                idMap == null ? Array.Empty<EntityId>() : idMap.Values.ToArray()
 #pragma warning restore RS0030
             );
         }

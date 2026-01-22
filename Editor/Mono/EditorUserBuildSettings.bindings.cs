@@ -16,7 +16,7 @@ using UnityEngine.Assertions;
 
 namespace UnityEditor
 {
-    [NativeType(Header = "Runtime/Serialize/BuildTarget.h")]
+    [NativeHeader("Runtime/Serialize/BuildTarget.h")]
     public enum StandaloneBuildSubtarget
     {
         // *undocumented*
@@ -28,7 +28,7 @@ namespace UnityEditor
 
     namespace Build
     {
-        [NativeType(Header = "Editor/Src/EditorUserBuildSettings.h")]
+        [NativeHeader("Editor/Src/EditorUserBuildSettings.h")]
         public enum OverrideTextureCompression
         {
             NoOverride = 0,
@@ -37,7 +37,7 @@ namespace UnityEditor
             ForceNoCrunchCompression = 3,
         }
 
-        [NativeType(Header = "Editor/Src/EditorUserBuildSettings.h")]
+        [NativeHeader("Editor/Src/EditorUserBuildSettings.h")]
         public enum Il2CppCodeGeneration
         {
             OptimizeSpeed = 0,
@@ -48,7 +48,7 @@ namespace UnityEditor
     /// Target PS4 build platform.
     ///
     /// SA: EditorUserBuildSettings.ps4BuildSubtarget.
-    [NativeType(Header = "Editor/Src/EditorUserBuildSettings.h")]
+    [NativeHeader("Editor/Src/EditorUserBuildSettings.h")]
     public enum PS4BuildSubtarget
     {
         /// Build package that it's hosted on the PC
@@ -63,7 +63,7 @@ namespace UnityEditor
 
 
     /// Target PS4 build Hardware Target.
-    [NativeType(Header = "Editor/Src/EditorUserBuildSettings.h")]
+    [NativeHeader("Editor/Src/EditorUserBuildSettings.h")]
     public enum PS4HardwareTarget
     {
         /// Target only Base hardware (works identically on Neo hardware)
@@ -80,7 +80,7 @@ namespace UnityEditor
 
 
     // Target Xbox build type.
-    [NativeType(Header = "Runtime/Serialize/BuildTarget.h")]
+    [NativeHeader("Runtime/Serialize/BuildTarget.h")]
     public enum XboxBuildSubtarget
     {
         // Development player
@@ -91,7 +91,7 @@ namespace UnityEditor
         Debug = 2,
     }
 
-    [NativeType(Header = "Runtime/Serialize/BuildTarget.h")]
+    [NativeHeader("Runtime/Serialize/BuildTarget.h")]
     [Obsolete("The XDK Xbox One platform was removed in 2021.1", true)]
     public enum XboxOneDeployMethod
     {
@@ -105,7 +105,7 @@ namespace UnityEditor
         PackageStreaming = 4,
     }
 
-    [NativeType(Header = "Runtime/Serialize/BuildTarget.h")]
+    [NativeHeader("Runtime/Serialize/BuildTarget.h")]
     [Obsolete("The XDK Xbox One platform was removed in 2021.1", false)]
     public enum XboxOneDeployDrive
     {
@@ -123,7 +123,7 @@ namespace UnityEditor
 
     [EditorBrowsable(EditorBrowsableState.Never)]
     [Obsolete("UnityEditor.AndroidBuildSubtarget has been deprecated. Use UnityEditor.MobileTextureSubtarget instead (UnityUpgradable)", true)]
-    [NativeType(Header = "Editor/Src/EditorUserBuildSettings.h")]
+    [NativeHeader("Editor/Src/EditorUserBuildSettings.h")]
     public enum AndroidBuildSubtarget
     {
         Generic = -1,
@@ -144,7 +144,7 @@ namespace UnityEditor
     }
 
     // Target texture build platform.
-    [NativeType(Header = "Runtime/Serialize/BuildTarget.h")]
+    [NativeHeader("Runtime/Serialize/BuildTarget.h")]
     public enum MobileTextureSubtarget
     {
         // Don't override texture compression.
@@ -177,7 +177,7 @@ namespace UnityEditor
     }
 
     // Target texture build platform.
-    [NativeType(Header = "Runtime/Serialize/BuildTarget.h")]
+    [NativeHeader("Runtime/Serialize/BuildTarget.h")]
     public enum WebGLTextureSubtarget
     {
         // Don't override texture compression.
@@ -191,7 +191,7 @@ namespace UnityEditor
     }
 
     // Client browser type
-    [NativeType(Header = "Runtime/Serialize/BuildTarget.h")]
+    [NativeHeader("Runtime/Serialize/BuildTarget.h")]
     public enum WebGLClientBrowserType
     {
         Default = 0,
@@ -203,7 +203,7 @@ namespace UnityEditor
     }
 
      // Client browser type
-     [NativeType(Header = "Runtime/Serialize/BuildTarget.h")]
+     [NativeHeader("Runtime/Serialize/BuildTarget.h")]
      internal enum WebGLClientPlatform
      {
          Desktop = 0,
@@ -211,7 +211,7 @@ namespace UnityEditor
          iOS = 2
      }
 
-    [NativeType(Header = "Runtime/Serialize/BuildTarget.h")]
+    [NativeHeader("Runtime/Serialize/BuildTarget.h")]
     [Obsolete("WSASubtarget is obsolete and has no effect. It will be removed in a subsequent Unity release.")]
     public enum WSASubtarget
     {
@@ -222,7 +222,7 @@ namespace UnityEditor
     }
 
     // *undocumented*
-    [NativeType(Header = "Editor/Src/EditorUserBuildSettings.h")]
+    [NativeHeader("Editor/Src/EditorUserBuildSettings.h")]
     public enum WSASDK
     {
         // *undocumented*
@@ -238,7 +238,7 @@ namespace UnityEditor
     }
 
     // *undocumented*
-    [NativeType(Header = "Editor/Src/EditorUserBuildSettings.h")]
+    [NativeHeader("Editor/Src/EditorUserBuildSettings.h")]
     public enum WSAUWPBuildType
     {
         XAML = 0,
@@ -247,7 +247,7 @@ namespace UnityEditor
     }
 
     // *undocumented*
-    [NativeType(Header = "Editor/Src/EditorUserBuildSettings.h")]
+    [NativeHeader("Editor/Src/EditorUserBuildSettings.h")]
     public enum WSABuildAndRunDeployTarget
     {
         /// *undocumented*
@@ -259,14 +259,14 @@ namespace UnityEditor
         DevicePortal = 2
     }
 
-    [NativeType(Header = "Editor/Src/EditorUserBuildSettings.h")]
+    [NativeHeader("Editor/Src/EditorUserBuildSettings.h")]
     public enum WindowsBuildAndRunDeployTarget
     {
         LocalMachine = 0,
         DevicePortal = 2
     }
 
-    [NativeType(Header = "Editor/Src/EditorUserBuildSettings.h")]
+    [NativeHeader("Editor/Src/EditorUserBuildSettings.h")]
     public enum WSABuildType
     {
         Debug = 0,
@@ -274,7 +274,7 @@ namespace UnityEditor
         Master = 2
     }
 
-    [NativeType(Header = "Editor/Src/EditorUserBuildSettings.h")]
+    [NativeHeader("Editor/Src/EditorUserBuildSettings.h")]
     public enum XcodeBuildConfig
     {
         Debug = 0,
@@ -282,13 +282,14 @@ namespace UnityEditor
     }
 
     [Obsolete("iOSBuildType is obsolete. Use XcodeBuildConfig instead (UnityUpgradable) -> XcodeBuildConfig", true)]
+    [NativeHeader("Runtime/Serialize/BuildTarget.h")]
     public enum iOSBuildType
     {
         Debug = 0,
         Release = 1,
     }
 
-    [NativeType(Header = "Runtime/Serialize/BuildTarget.h")]
+    [NativeHeader("Runtime/Serialize/BuildTarget.h")]
     internal enum Compression
     {
         None = 0,
@@ -296,7 +297,7 @@ namespace UnityEditor
         Lz4HC = 3,
     }
 
-    [NativeType(Header = "Editor/Src/EditorUserBuildSettings.h")]
+    [NativeHeader("Editor/Src/EditorUserBuildSettings.h")]
     public enum AndroidBuildSystem
     {
         [System.ComponentModel.EditorBrowsable(EditorBrowsableState.Never)]
@@ -310,7 +311,7 @@ namespace UnityEditor
         VisualStudio = 3,
     }
 
-    [NativeType(Header = "Editor/Src/EditorUserBuildSettings.h")]
+    [NativeHeader("Editor/Src/EditorUserBuildSettings.h")]
     public enum AndroidBuildType
     {
         Debug = 0,
@@ -319,7 +320,7 @@ namespace UnityEditor
     }
 
     // *undocumented*
-    [NativeType(Header = "Editor/Src/EditorUserBuildSettings.h")]
+    [NativeHeader("Editor/Src/EditorUserBuildSettings.h")]
     internal enum AppleBuildAndRunType
     {
         Xcode = 0,
@@ -338,7 +339,7 @@ namespace UnityEditor
     }
 
     // *undocumented*
-    [NativeType(Header = "Editor/Src/EditorOnlyPlayerSettings.h")]
+    [NativeHeader("Editor/Src/EditorOnlyPlayerSettings.h")]
     internal struct SwitchShaderCompilerConfig
     {
         internal int glslcDebugLevel;
@@ -346,7 +347,7 @@ namespace UnityEditor
     }
 
     // *undocumented*
-    [NativeType(Header = "Editor/Src/EditorUserBuildSettings.h")]
+    [NativeHeader("Editor/Src/EditorUserBuildSettings.h")]
     public enum SwitchRomCompressionType
     {
         None = 0,
@@ -888,21 +889,19 @@ namespace UnityEditor
         // Set a new location for the build.
         public static extern void SetBuildLocation(BuildTarget target, string location);
 
-        public static void SetPlatformSettings(string platformName, string name, string value)
+        public static extern void SetPlatformSettings(string platformName, string name, string value);
+
+        public static void SetPlatformSettings(string buildTargetGroup, string buildTarget, string name, string value)
         {
-            string buildTargetGroup = BuildPipeline.GetBuildTargetGroupName(BuildPipeline.GetBuildTargetByName(platformName));
-            SetPlatformSettings(buildTargetGroup, platformName, name, value);
+            SetPlatformSettings(buildTarget, name, value);
         }
 
-        public static extern void SetPlatformSettings(string buildTargetGroup, string buildTarget, string name, string value);
+        public static extern string GetPlatformSettings(string platformName, string name);
 
-        public static string GetPlatformSettings(string platformName, string name)
+        public static string GetPlatformSettings(string buildTargetGroup, string platformName, string name)
         {
-            string buildTargetGroup = BuildPipeline.GetBuildTargetGroupName(BuildPipeline.GetBuildTargetByName(platformName));
-            return GetPlatformSettings(buildTargetGroup, platformName, name);
+            return GetPlatformSettings(platformName, name);
         }
-
-        public static extern string GetPlatformSettings(string buildTargetGroup, string platformName, string name);
 
         // Enables a development build.
         public static extern bool development { get; set; }

@@ -4,9 +4,7 @@
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using UnityEngine.Bindings;
-using UnityEngine.Scripting;
 
 namespace UnityEngine.Android
 {
@@ -208,9 +206,11 @@ namespace UnityEngine.Android
 
         internal DownloadAssetPackAsyncOperation(string[] assetPackNames)
         {
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            m_AssetPackInfos = assetPackNames.ToDictionary<string, string, AndroidAssetPackInfo>(name => name, name => null);
-#pragma warning restore RS0030
+            m_AssetPackInfos = new Dictionary<string, AndroidAssetPackInfo>(assetPackNames.Length);
+            foreach (var name in assetPackNames)
+            {
+                m_AssetPackInfos.Add(name, null);
+            }
         }
 
         internal void OnUpdate(AndroidAssetPackInfo info)
@@ -334,7 +334,7 @@ namespace UnityEngine.Android
         [NativeConditional("PLATFORM_ANDROID")]
         private static extern bool CoreUnityAssetPacksDownloaded();
 
-        public static string[] GetCoreUnityAssetPackNames() { return new string[0]; }
+        public static string[] GetCoreUnityAssetPackNames() { return Array.Empty<string>(); }
         public static void GetAssetPackStateAsync(string[] assetPackNames, Action<ulong, AndroidAssetPackState[]> callback) {}
         public static GetAssetPackStateAsyncOperation GetAssetPackStateAsync(string[] assetPackNames) { return null; }
         public static void DownloadAssetPackAsync(string[] assetPackNames, Action<AndroidAssetPackInfo> callback) {}

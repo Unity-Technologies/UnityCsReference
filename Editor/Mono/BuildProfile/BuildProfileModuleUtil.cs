@@ -4,9 +4,9 @@
 
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Text;
 using UnityEditor.Modules;
-using UnityEditor.PackageManager.UI.Internal;
 using UnityEditor.Rendering;
 using UnityEditor.Profiling;
 using UnityEngine;
@@ -302,41 +302,47 @@ namespace UnityEditor.Build.Profile
         }
 
         /// <summary>
-        /// Generate button and label for downloading a platform module.
+        /// Returns true if the build profile for the specified platform is licensed.
         /// </summary>
-        /// <see cref="BuildPlayerWindow.ShowNoModuleLabel"/>
-        public static VisualElement CreateModuleNotInstalledElement(GUID platformId)
+        public static bool IsBuildProfileLicensed(GUID platformId)
         {
-            var buildProfileWindowUss = EditorGUIUtility.LoadRequired(k_StyleSheet) as StyleSheet;
-            VisualElement container = new VisualElement();
+            var buildTarget = GetBuildTargetAndSubtarget(platformId).Item1;
+            return BuildPipeline.LicenseCheck(buildTarget);
+        }
 
-            container.styleSheets.Add(buildProfileWindowUss);
-            container.AddClasses("flex-row align-items-center flex-wrap full-width");
-
+        /// <summary>
+        /// Updates the UI to reflect the platform's state, such as pending restart, disabled settings, or missing installation.
+        /// </summary>
+        public static void UpdateHelpBoxForModuleNotInstalled(HelpBox helpbox, GUID platformId)
+        {
             // Check if module was just installed and needs restart
             if (IsPlatformPendingRestart(platformId))
             {
-                return GetPlatformPendingRestartElement(platformId, container);
+                UpdateHelpBoxForPlatformPendingRestart(platformId, helpbox);
+                return;
             }
 
             if (BuildTargetDiscovery.BuildPlatformIsInstalled(platformId) && BuildTargetDiscovery.BuildPlatformIsDerivedPlatform(platformId))
             {
-                return GetPlatformNotEnabledElement(platformId, container);
+                UpdateHelpBoxForPlatformNotEnabled(platformId, helpbox);
+                return;
             }
 
             // TODO: this is a workaround for onboarding instructions to fix EmbeddedLinux and QNX
             // needs to be removed when https://jira.unity3d.com/browse/PLAT-7721 is implemented
             if (BuildTargetDiscovery.BuildPlatformTryGetCustomInstallLinkAndText(platformId, out var url, out var text))
             {
-                return GetPlatformContactSalesElement(container, text, url);
+                UpdateHelpBoxForPlatformContactSales(helpbox, text, url);
+                return;
             }
 
             if (IsBuildProfileDisabledViaArguments(platformId))
             {
-                return GetPlatformDisabledViaArgumentsElement(platformId, container);
+                UpdateHelpBoxForPlatformDisabledViaArguments(platformId, helpbox);
+                return;
             }
 
-            return GetPlatformNotInstalledElement(platformId, container);
+            UpdateHelpBoxForPlatformNotInstalled(platformId, helpbox);
         }
 
         static bool IsBuildProfileDisabledViaArguments(GUID platformId)
@@ -352,16 +358,11 @@ namespace UnityEditor.Build.Profile
         }
 
         /// <summary>
-        /// Exported from <see cref="BuildPlayerWindow"/>, UI code specifically for when current license does not cover
-        /// BuildTarget.
+        /// Updates the HelpBox with localized text and action buttons specific to a missing platform license.
         /// </summary>
-        /// <returns>null when no license errors, else license check UI</returns>
-        public static VisualElement CreateLicenseNotFoundElement(GUID platformId)
+        public static void UpdateHelpBoxForLicenseNotFound(HelpBox helpbox, GUID platformId)
         {
             var buildTarget = GetBuildTargetAndSubtarget(platformId).Item1;
-            if (BuildPipeline.LicenseCheck(buildTarget))
-                return null;
-
             string displayName = GetModuleDisplayName(platformId);
             string licenseMsg = L10n.Tr("Your license does not cover {0} Publishing.");
             string buttonMsg = L10n.Tr("Go to Our Online Store");
@@ -374,19 +375,12 @@ namespace UnityEditor.Build.Profile
             }
             licenseMsg = L10n.Tr(licenseMsg);
 
-            var root = new VisualElement();
-            root.style.flexDirection = FlexDirection.Column;
-            var label = new Label(string.Format(licenseMsg, displayName));
-            label.style.whiteSpace = WhiteSpace.Normal;
-            root.Add(label);
+            helpbox.text = string.Format(licenseMsg, displayName);
             if (!IsStandalonePlatform(buildTarget))
             {
-                var button = new Button(() => Application.OpenURL(url));
-                button.style.width = 200;
-                button.text = buttonMsg;
-                root.Add(button);
+                helpbox.buttonText = buttonMsg;
+                helpbox.onButtonClicked += () => Application.OpenURL(url);
             }
-            return root;
         }
 
         public static bool IsStandalonePlatform(BuildTarget buildTarget) =>
@@ -467,7 +461,6 @@ namespace UnityEditor.Build.Profile
             options.targetGroup = buildTargetGroup;
             options.locationPathName = buildLocation;
             options.assetBundleManifestPath = assetBundleManifestPath ?? PostprocessBuildPlayer.GetStreamingAssetsBundleManifestPath();
-            options.previousBuildMetadataLocations = PostprocessBuildPlayer.GetPreviousContentBuildMetadataLocations();
             options.scenes = EditorBuildSettingsScene.GetActiveSceneList(activeProfile.GetScenesForBuild());
             options.previousBuildMetadataLocations = PostprocessBuildPlayer.GetPreviousContentBuildMetadataLocations();
 
@@ -771,6 +764,7 @@ namespace UnityEditor.Build.Profile
             return string.IsNullOrEmpty(assetPath) ? string.Empty : $"{baseKey}{k_LastRunnableBuildPathSeparator}{assetPath}";
         }
 
+        /// <summary>
         /// On the next editor update recompile scripts.
         /// </summary>
         public static void RequestScriptCompilation(BuildProfile profile)
@@ -1193,128 +1187,91 @@ namespace UnityEditor.Build.Profile
             PackageManager.Client.AddAndRemove(neededPackages.ToArray());
         }
 
-        static VisualElement GetPlatformNotInstalledElement(GUID platformGuid, VisualElement container)
+        static void UpdateHelpBoxForPlatformNotInstalled(GUID platformGuid, HelpBox helpbox)
         {
             var basePlatformGuid = BuildTargetDiscovery.GetBasePlatformGUID(platformGuid);
             var displayName = BuildTargetDiscovery.BuildPlatformDisplayName(basePlatformGuid);
 
-            var platformNotLoadedLabel = new Label(string.Format(k_NoModuleLoaded, displayName));
-            var editorReloadNeededLabel = new Label(k_EditorWillNeedToBeReloaded);
-            var labels = new VisualElement();
-
-            labels.AddClasses("flex-column flex-grow-1");
-            editorReloadNeededLabel.AddClasses("text-small wrap");
-
-            labels.Add(platformNotLoadedLabel);
-            labels.Add(editorReloadNeededLabel);
-
-            var url = string.Empty;
-            Button button;
+            helpbox.text = string.Format(k_NoModuleLoaded, displayName) + "\n" + k_EditorWillNeedToBeReloaded;
 
             if (!BuildPlayerWindow.IsEditorInstalledWithHub() || !BuildTargetDiscovery.BuildPlatformCanBeInstalledWithHub(platformGuid))
             {
-                button = new Button(() =>
-                {
-                    url = BuildPlayerWindow.GetPlaybackEngineDownloadURL(platformGuid);
-                    Help.BrowseURL(url);
-                })
-                {
-                    text = k_OpenDownloadPage.ToString()
-                };
+                var url = BuildPlayerWindow.GetPlaybackEngineDownloadURL(platformGuid);
+                helpbox.buttonText = k_OpenDownloadPage.ToString();
+                helpbox.onButtonClicked += () => Help.BrowseURL(url);
             }
             else
             {
-                button = new Button(() =>
-                {
-                    url = BuildPlayerWindow.GetUnityHubModuleDownloadURL(platformGuid);
-                    Help.BrowseURL(url);
-                })
-                {
-                    text = k_InstallModuleWithHub.ToString()
-                };
+                var url = BuildPlayerWindow.GetUnityHubModuleDownloadURL(platformGuid);
+                helpbox.buttonText = k_InstallModuleWithHub.ToString();
+                helpbox.onButtonClicked += () => Help.BrowseURL(url);
             }
-
-            container.Add(labels);
-            container.Add(button);
-
-            return container;
         }
 
-        private static VisualElement GetPlatformDisabledViaArgumentsElement(GUID platformId, VisualElement container)
+        private static void UpdateHelpBoxForPlatformDisabledViaArguments(GUID platformId, HelpBox helpbox)
         {
-            container.Add(new Label(string.Format(k_DerivedPlatformDisabled,
-                BuildTargetDiscovery.BuildPlatformDisplayName(platformId))));
-
-            return container;
+            helpbox.text = string.Format(k_DerivedPlatformDisabled, BuildTargetDiscovery.BuildPlatformDisplayName(platformId));
         }
 
-        private static VisualElement GetPlatformPendingRestartElement(GUID platformId, VisualElement container)
+        private static void UpdateHelpBoxForPlatformPendingRestart(GUID platformId, HelpBox target)
         {
             var displayName = BuildTargetDiscovery.BuildPlatformDisplayName(platformId);
-            var moduleInstalledLabel = new Label(string.Format(k_ModuleInstalled, displayName));
-            var restartNeededLabel = new Label(k_RestartNeeded);
-            var labels = new VisualElement();
+            target.text = string.Format(k_ModuleInstalled, displayName) + "\n" + k_RestartNeeded;
 
-            labels.AddClasses("flex-column flex-grow-1");
-            restartNeededLabel.AddClasses("text-small wrap");
-
-            labels.Add(moduleInstalledLabel);
-            labels.Add(restartNeededLabel);
-
-            var button = new Button(() =>
-            {
-                EditorApplication.RestartEditorAndRecompileScripts();
-            })
-            {
-                text = k_RestartEditor
-            };
-
-            container.Add(labels);
-            container.Add(button);
-
-            return container;
+            target.buttonText = k_RestartEditor;
+            target.onButtonClicked += EditorApplication.RestartEditorAndRecompileScripts; 
         }
 
-        private static VisualElement GetPlatformContactSalesElement(VisualElement container, string text, string url)
+        private static void UpdateHelpBoxForPlatformContactSales(HelpBox helpbox, string text, string url)
         {
-            var label = new Label(text);
+            helpbox.text = text;
 
-            label.AddClasses("flex-grow-1 flex-shrink-1 wrap");
-
-            container.Add(label);
-            container.Add(new Button(() =>
-            {
-                Help.BrowseURL(url);
-            })
-            {
-                text = "Contact Sales"
-            });
-
-            return container;
+            helpbox.buttonText = "Contact Sales";
+            helpbox.onButtonClicked += () => Help.BrowseURL(url);
         }
 
-        private static VisualElement GetPlatformNotEnabledElement(GUID platformId, VisualElement container)
+        private static void UpdateHelpBoxForPlatformNotEnabled(GUID platformId, HelpBox helpbox)
         {
-            var label = new Label(string.Format(k_DerivedPlatformInactive,
-                BuildTargetDiscovery.BuildPlatformDisplayName(platformId)));
+            var displayName = BuildTargetDiscovery.BuildPlatformDisplayName(platformId);
+            helpbox.text = string.Format(k_DerivedPlatformInactive, displayName);
 
-            label.AddToClassList("flex-grow-1");
-
-            container.Add(label);
-            container.Add(new Button(() =>
+            helpbox.buttonText = k_ActivateDerivedPlatform.ToString();
+            helpbox.onButtonClicked += () =>
             {
                 EditorPrefs.SetInt(platformId.ToString(), 1);
 
-                // Store the platformId to reselect this platform after recompilation
                 EditorPrefs.SetString("LastEnabledPlatformGUID", platformId.ToString());
 
                 RequestScriptCompilation(BuildProfileContext.activeProfile);
-            })
-            {
-                text = k_ActivateDerivedPlatform.ToString()
-            });
+            }; 
+        }
 
-            return container;
+        /// <summary>
+        /// Truncates a string to fit within a specified UTF-8 byte count while preserving
+        /// grapheme clusters (user-perceived characters).
+        /// </summary>
+        public static string TruncateUtf8StringByBytes(string input, int maxBytes)
+        {
+            if (string.IsNullOrEmpty(input) || maxBytes < 0)
+                return string.Empty;
+
+            var enumerator = StringInfo.GetTextElementEnumerator(input);
+            var stringBuilder = new StringBuilder(input.Length);
+            int byteCount = 0;
+
+            while (enumerator.MoveNext())
+            {
+                var elem = enumerator.GetTextElement();
+                var elemBytes = Encoding.UTF8.GetByteCount(elem);
+
+                if (byteCount + elemBytes > maxBytes)
+                    break;
+
+                stringBuilder.Append(elem);
+                byteCount += elemBytes;
+            }
+
+            return stringBuilder.ToString();
         }
     }
 }

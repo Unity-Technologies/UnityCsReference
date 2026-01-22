@@ -125,8 +125,8 @@ namespace UnityEditor.PackageManager.UI.Internal
             if (string.IsNullOrEmpty(packageUniqueId) || !long.TryParse(packageUniqueId, out var productId))
                 return;
 
-            m_PackageDatabase.GetPackageAndVersionByIdOrName(packageUniqueId, out var package, out var version, true);
-            if (package == null || (version ?? package.versions.primary).HasTag(PackageTag.Placeholder))
+            var package = m_PackageDatabase.GetPackage(packageUniqueId);
+            if (package == null || package.versions.primary.HasTag(PackageTag.Placeholder))
             {
                 if (m_UnityConnect.isUserLoggedIn)
                     m_AssetStoreClient.ExtraFetch(productId);

@@ -75,9 +75,7 @@ namespace UnityEditor.Search
             {
                 try
                 {
-                    #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                    var attr = mi.GetCustomAttributes(typeof(SearchTemplateAttribute), false).Cast<SearchTemplateAttribute>().First();
-#pragma warning restore RS0030
+                    var attr = (SearchTemplateAttribute)mi.GetCustomAttributes(typeof(SearchTemplateAttribute), false)[0];
                     if (mi.ReturnType == typeof(string))
                     {
                         var singleEntryHandler = Delegate.CreateDelegate(typeof(Func<string>), mi) as Func<string>;

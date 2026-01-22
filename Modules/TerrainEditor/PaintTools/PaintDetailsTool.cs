@@ -6,8 +6,8 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.TerrainTools;
 using System;
-using UnityEngine.Rendering;
 using UnityEditor.ShortcutManagement;
+using UnityEditorInternal;
 
 namespace UnityEditor.TerrainTools
 {
@@ -232,14 +232,140 @@ namespace UnityEditor.TerrainTools
             {
                 EditorGUILayout.HelpBox(msg, MessageType.Error);
             }
-            else if ((detailPrototype.renderMode != DetailRenderMode.VertexLit || !detailPrototype.useInstancing)
-                     && detailPrototype.usePrototypeMesh && detailPrototype.prototype != null
-                     && detailPrototype.prototype.TryGetComponent<MeshFilter>(out var meshFilter)
-                     && meshFilter.sharedMesh != null)
+            else // check warnings
             {
-                var maxVertCount = meshFilter.sharedMesh.vertexCount * PaintDetailsToolUtility.GetMaxDetailInstancesPerPatch(terrain.terrainData) * terrain.detailObjectDensity;
-                if (maxVertCount >= 65536)
-                    EditorGUILayout.HelpBox(s_Styles.detailVertexWarning.text, MessageType.Warning);
+                if ((detailPrototype.renderMode != DetailRenderMode.VertexLit || !detailPrototype.useInstancing)
+                         && detailPrototype.usePrototypeMesh && detailPrototype.prototype != null
+                         && detailPrototype.prototype.TryGetComponent<MeshFilter>(out var meshFilter)
+                         && meshFilter.sharedMesh != null)
+                {
+                    var maxVertCount = meshFilter.sharedMesh.vertexCount * PaintDetailsToolUtility.GetMaxDetailInstancesPerPatch(terrain.terrainData) * terrain.detailObjectDensity;
+                    if (maxVertCount >= 65536)
+                        EditorGUILayout.HelpBox(s_Styles.detailVertexWarning.text, MessageType.Warning);
+                }
+
+                ValidateTextures(detailPrototype, true);
+            }
+        }
+
+        private void ValidateTextures(DetailPrototype detailPrototype, bool forceFixImmutable)
+        {
+            if (detailPrototype.usePrototypeMesh) // validate prototype mesh
+            {
+                if (!detailPrototype.useInstancing
+                    && detailPrototype.usePrototypeMesh && detailPrototype.prototype != null
+                    && detailPrototype.prototype.TryGetComponent<MeshRenderer>(out var renderer)
+                    && renderer.sharedMaterial != null)
+                {
+                    // get the non-readable texture dependencies from the material
+                    Material mat = renderer.sharedMaterial;
+                    var propertyNameIds = mat.GetTexturePropertyNameIDs();
+                    var mutableTextures = new HashSet<Texture>();
+                    var immutableTextures = new HashSet<Texture>();
+                    var allTextures = new HashSet<Texture>();
+                    var allTexturePaths = new List<string>();
+                    
+                    foreach (var propertyNameId in propertyNameIds)
+                    {
+                        Texture tex = mat.GetTexture(propertyNameId);
+                        if (tex != null && !tex.isReadableRaw && !allTextures.Contains(tex))
+                        {
+                            allTextures.Add(tex);
+                            allTexturePaths.Add(AssetDatabase.GetAssetPath(tex));
+
+                            // Check if texture is open for editing
+                            string texturePath = AssetDatabase.GetAssetPath(tex);
+                            if (AssetModificationProcessorInternal.IsOpenForEdit(texturePath, out string message, StatusQueryOptions.UseCachedIfPossible))
+                            {
+                                mutableTextures.Add(tex);
+                            }
+                            else
+                            {
+                                immutableTextures.Add(tex);
+                            }
+                        }
+                    }
+
+                    if (mutableTextures.Count > 0)
+                    {
+                        string errorMessage = $"Read/Write is disabled on the {mutableTextures.Count} Textures referenced by the Terrain Detail Prototype.";
+                        string buttonMessage = "Enable All";
+                        foreach (Texture tex in mutableTextures)
+                        {
+                            if (mutableTextures.Count == 1)
+                            {
+                                errorMessage = $"Read/Write is disabled on the Texture referenced by the Terrain Detail Prototype '{tex.name}'.";
+                                buttonMessage = "Enable";
+                                break;
+                            }
+                            errorMessage += $"\n'{tex.name}'";
+                        }
+
+                        if (InternalEditorUtility.DrawWarningHelpBoxWithButton(
+                            EditorGUIUtility.TrTextContent(errorMessage),
+                            EditorGUIUtility.TrTextContent(buttonMessage)))
+                        {
+                            foreach (Texture tex in mutableTextures)
+                            {
+                                InternalEditorUtility.ImportTextureAsReadable(tex);
+                            }
+                        }
+                    }
+
+                    if (immutableTextures.Count > 0)
+                    {
+                        string errorMessage = $"Read/Write is disabled on the {immutableTextures.Count} Textures referenced by the Terrain Detail Prototype. Modify a copy of the Textures because they are not editable.";
+                        string buttonMessage = "View All";
+                        var selectionObjs = new Texture[immutableTextures.Count];
+                        immutableTextures.CopyTo(selectionObjs);
+
+                        if (selectionObjs.Length == 1)
+                        {
+                            errorMessage = $"Read/Write is disabled on the Texture referenced by the Terrain Detail Prototype '{selectionObjs[0].name}'. Modify a copy of the Texture because it is not editable.";
+                            buttonMessage = "View";
+                        }
+                        else
+                        {
+                            foreach (Texture tex in immutableTextures)
+                            {
+                                errorMessage += $"\n'{tex.name}'";
+                            }
+                        }
+
+                        if (InternalEditorUtility.DrawWarningHelpBoxWithButton(
+                            EditorGUIUtility.TrTextContent(errorMessage),
+                            EditorGUIUtility.TrTextContent(buttonMessage)))
+                        {
+                            Selection.objects = selectionObjs;
+                        }
+                    }
+                }
+            }
+            else // validate prototype texture
+            {
+                if (detailPrototype.prototypeTexture != null && !detailPrototype.prototypeTexture.isReadableRaw)
+                {
+                    string texturePath = AssetDatabase.GetAssetPath(detailPrototype.prototypeTexture);
+                    if (AssetModificationProcessorInternal.IsOpenForEdit(texturePath, out string message, StatusQueryOptions.UseCachedIfPossible))
+                    {
+                        string errorMessage = "Read/Write is disabled on the Texture referenced by the Terrain Detail Prototype";
+                        if (InternalEditorUtility.DrawWarningHelpBoxWithButton(
+                            EditorGUIUtility.TrTextContent(errorMessage),
+                            EditorGUIUtility.TrTextContent("Enable")))
+                        {
+                            InternalEditorUtility.ImportTextureAsReadable(detailPrototype.prototypeTexture);
+                        }
+                    }
+                    else
+                    {
+                        if (InternalEditorUtility.DrawWarningHelpBoxWithButton(
+                           EditorGUIUtility.TrTextContent("Read/Write is disabled on the Texture referenced by the Terrain Detail Prototype. Modify a copy of the Texture because it is not editable."),
+                           EditorGUIUtility.TrTextContent("View")))
+                        {
+                            Selection.objects = new UnityEngine.Object[] { detailPrototype.prototypeTexture };
+                        }
+                    }
+                }
             }
         }
 
@@ -380,7 +506,7 @@ namespace UnityEditor.TerrainTools
                         EditorGUI.indentLevel = 2;
                         if (EditorGUILayout.LinkButton("Read more about formats"))
                         {
-                            Help.BrowseURL($"https://docs.unity3d.com//{Application.unityVersionVer}.{Application.unityVersionMaj}/Documentation/ScriptReference/Texture2D.PackTextures.html");
+                            Help.BrowseURL($"https://docs.unity3d.com//{UnityEngine.Application.unityVersionVer}.{UnityEngine.Application.unityVersionMaj}/Documentation/ScriptReference/Texture2D.PackTextures.html");
                         }
                         EditorGUI.indentLevel = oldIndent;
                         GUILayout.Space(3);

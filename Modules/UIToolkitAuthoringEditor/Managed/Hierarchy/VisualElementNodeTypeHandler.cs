@@ -13,6 +13,7 @@ using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEditor.Search;
 using UnityEngine;
+using UnityEngine.Assertions;
 using UnityEngine.Pool;
 using UnityEngine.UIElements;
 
@@ -26,6 +27,8 @@ internal abstract class VisualElementNodeTypeHandler :
     IHierarchyEditorNodeTypeHandler
 {
     protected const string VisualElementDisabledUssClass = "unity-disabled";
+
+    public const string DraggedVisualElementKey = "VisualElementHandler__DraggedVisualElements";
 
     // Used for tests
     internal MappingsAccess GetMappings() => new(this);
@@ -93,6 +96,8 @@ internal abstract class VisualElementNodeTypeHandler :
         private readonly Dictionary<EntityId, HierarchyNode> m_ReversedSelectionHandles = new();
 
         public int Count => m_Map.Count;
+
+        public Dictionary<VisualElement, HierarchyNode>.KeyCollection MappedElements => m_ReversedMap.Keys;
 
         public bool TryAdd(in HierarchyNode node, VisualElement element, in EntityId selectionHandle)
         {
@@ -172,6 +177,20 @@ internal abstract class VisualElementNodeTypeHandler :
             }
 
             return false;
+        }
+
+        public void Remap(List<VisualElementRemap> remappings)
+        {
+            foreach (var remap in remappings)
+            {
+                if (TryGetValue(remap.Previous, out var node))
+                {
+                    m_Map[node] = remap.Remapped;
+                    m_ReversedMap[remap.Remapped] = node;
+                    m_ReversedMap.Remove(remap.Previous);
+                    // Intentionally not remapping selection, because it's based on the node.
+                }
+            }
         }
     }
 
@@ -540,6 +559,15 @@ internal abstract class VisualElementNodeTypeHandler :
 
     protected virtual void InitializeDrag(in HierarchyViewDragAndDropSetupData data)
     {
+        var list = new List<VisualElement>();
+        foreach (var node in data.Nodes)
+        {
+            if (TryGetElementFromNode(in node, out var element))
+            {
+                list.Add(element);
+            }
+        }
+        data.SetGenericData(DraggedVisualElementKey, list);
     }
 
     DragVisualMode IHierarchyEditorNodeTypeHandler.CanDrop(in HierarchyViewDragAndDropHandlingData data) => HandleDrop(in data, false);
@@ -683,7 +711,7 @@ internal abstract class VisualElementNodeTypeHandler :
     /// <param name="view">The <see cref="HierarchyView"/>.</param>
     /// <param name="selection">The selection.</param>
     /// <returns><see langword="true"/> if the dragging operation can be started, <see langword="false"/> otherwise.</returns>
-    protected virtual bool CanStartDrag(HierarchyView view, in SelectionContext selection) => false;
+    protected virtual bool CanStartDrag(HierarchyView view, in SelectionContext selection) => true;
 
     protected virtual bool CanSetEnabled(HierarchyView view, in HierarchyNode node, VisualElement element) => false;
 
@@ -763,9 +791,17 @@ internal abstract class VisualElementNodeTypeHandler :
                 using var _ = ListPool<TemplateAsset>.Get(out var subDocumentPath);
                 GenerateSubDocumentPath(container, subDocumentPath);
 
+
+                var rootVisualTreeAsset = GetRootVisualTreeAsset(container);
+                if (!VisualTreeAssetEditingContext.ValidateSubDocumentIsPartOrMainAssetHierarchy(rootVisualTreeAsset, NoAllocHelpers.CreateSpan(subDocumentPath)))
+                {
+                    UnsetStageNodeNavigation(item);
+                    break;
+                }
+
                 var panelSettings = GetPanelSettings(container);
                 var context = new VisualTreeAssetEditingContext(
-                    GetRootVisualTreeAsset(container),
+                    rootVisualTreeAsset,
                     subDocumentPath.ToArray(),
                     SubDocumentOptions.InContext,
                     panelSettings
@@ -781,10 +817,16 @@ internal abstract class VisualElementNodeTypeHandler :
 
     private void GenerateSubDocumentPath(VisualElement element, List<TemplateAsset> path)
     {
+        VisualTreeAsset currentVisualTreeAsset = null;
         while (element != null)
         {
-            if (element is { visualElementAsset: TemplateAsset subDocument })
+
+            if (element is { visualElementAsset: TemplateAsset subDocument } && currentVisualTreeAsset != element.visualTreeAssetSource)
+            {
                 path.Add(subDocument);
+                currentVisualTreeAsset = element.visualTreeAssetSource;
+            }
+
             element = element.hierarchy.parent;
         }
         path.Reverse();
@@ -1042,12 +1084,9 @@ internal abstract class VisualElementNodeTypeHandler :
 
         if (remappings.Count > 0)
         {
+            m_Mappings.Remap(remappings);
             m_SelectionHandler.Remap(remappings);
 
-            foreach (var remap in remappings)
-            {
-                m_Mappings.RemoveSelection(remap.Previous);
-            }
         }
 
         // We process the elements that were added or moved before the elements that were removed
@@ -1128,6 +1167,16 @@ internal abstract class VisualElementNodeTypeHandler :
             Clear(panel);
             UnregisterPanel(panel);
         }
+
+        UnregisterOrphanedElements();
+    }
+
+    void UnregisterOrphanedElements()
+    {
+        using var _ = ListPool<VisualElement>.Get(out var mappedChildren);
+        mappedChildren.AddRange(m_Mappings.MappedElements);
+        foreach(var child in mappedChildren)
+            Clear(child);
     }
 
     private void Rebuild(BaseVisualElementPanel panel)
@@ -1206,9 +1255,9 @@ internal abstract class VisualElementNodeTypeHandler :
         if (!m_Mappings.TryGetValue(element, out var removedNode))
             return;
 
-        m_SelectionHandler?.ReleaseInstanceId(element);
         CommandList.Remove(removedNode);
         m_Mappings.TryRemove(removedNode);
+        m_SelectionHandler?.ReleaseInstanceId(element);
     }
 
     private void RefreshChildrenSortingIndices(HierarchyNode node)

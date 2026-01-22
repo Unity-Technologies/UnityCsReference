@@ -32,7 +32,7 @@ internal readonly record struct VisualTreeAssetEditingContext
     /// </summary>
     /// <param name="visualTreeAsset">The main <see cref="VisualTreeAsset"/> asset.</param>
     /// <param name="subDocumentPath">The path of <see cref="TemplateAsset"/> assets leading to the asset that will be edited.</param>
-    /// <param name="subDocumentOptions">Options to open the edition in context or in isolation, when a valid <paramref name="subDocument"/> is provided.</param>
+    /// <param name="subDocumentOptions">Options to open the edition in context or in isolation, when a valid <paramref name="subDocumentPath"/> is provided.</param>
     /// <param name="panelSettings">The panel settings that should be used for previewing purposes.</param>
     public VisualTreeAssetEditingContext(VisualTreeAsset visualTreeAsset, TemplateAsset[] subDocumentPath, SubDocumentOptions subDocumentOptions = SubDocumentOptions.InContext, PanelSettings panelSettings = null)
     {
@@ -66,7 +66,7 @@ internal readonly record struct VisualTreeAssetEditingContext
         }
     }
 
-    private static bool ValidateSubDocumentIsPartOrMainAssetHierarchy(VisualTreeAsset visualTreeAsset, Span<TemplateAsset> subDocumentPath)
+    internal static bool ValidateSubDocumentIsPartOrMainAssetHierarchy(VisualTreeAsset visualTreeAsset, Span<TemplateAsset> subDocumentPath)
     {
         if (subDocumentPath == null || subDocumentPath.Length == 0)
             return false;
@@ -170,6 +170,37 @@ internal readonly record struct VisualTreeAssetEditingContext
             default:
                 throw new ArgumentOutOfRangeException();
         }
+    }
+
+    public bool WillCauseCircularDependency(VisualTreeAsset visualTreeAsset)
+    {
+        using var _ = HashSetPool<string>.Get(out var visitedSet);
+        visitedSet.Add(AssetDatabase.GetAssetPath(RootVisualTreeAsset));
+        if (SubDocumentPath != null)
+        {
+            for (var i = 0; i < SubDocumentPath.Length; ++i)
+            {
+                var subDocument = SubDocumentPath[i];
+                var template = subDocument.ResolveTemplate();
+                visitedSet.Add(AssetDatabase.GetAssetPath(template));
+            }
+        }
+
+        return WillCauseCircularDependency(visualTreeAsset, visitedSet);
+    }
+
+    private bool WillCauseCircularDependency(VisualTreeAsset visualTreeAsset, HashSet<string> visitedPaths)
+    {
+        if (!visitedPaths.Add(AssetDatabase.GetAssetPath(visualTreeAsset)))
+            return true;
+
+        foreach (var template in visualTreeAsset.templateDependencies)
+        {
+            if (WillCauseCircularDependency(template, visitedPaths))
+                return true;
+        }
+
+        return false;
     }
 
     private VisualElementEditFlags GetInContextElementEditFlags(VisualElement element)

@@ -122,8 +122,6 @@ namespace Unity.ProjectAuditor.Editor
             public SerializableEnum<IssueCategory>[] categories;
             public IssueLayout[] layouts;
 
-            public string startTime;
-            public string endTime;
             public long durationMs;
 
             public AnalysisResult result;
@@ -429,7 +427,7 @@ namespace Unity.ProjectAuditor.Editor
         }
 
         // Internal only: Data written by ProjectAuditor during analysis
-        internal void RecordModuleInfo(Module module, DateTime startTime, DateTime endTime, AnalysisResult analysisResult)
+        internal void RecordModuleInfo(Module module, long moduleAnalysisTimeMs, AnalysisResult analysisResult)
         {
             var name = module.Name;
             #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
@@ -448,9 +446,7 @@ namespace Unity.ProjectAuditor.Editor
                 moduleMetadata.Add(info);
             }
 
-            info.startTime = Utils.Json.SerializeDateTime(startTime);
-            info.endTime = Utils.Json.SerializeDateTime(endTime);
-            info.durationMs = (long)(endTime - startTime).TotalMilliseconds;
+            info.durationMs = moduleAnalysisTimeMs;
             info.result = analysisResult;
         }
 

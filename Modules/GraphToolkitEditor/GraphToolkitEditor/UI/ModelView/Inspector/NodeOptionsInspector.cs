@@ -17,6 +17,12 @@ namespace Unity.GraphToolkit.Editor
         /// </summary>
         public new static readonly string ussClassName = "ge-node-options-inspector-part";
 
+
+        /// <summary>
+        /// The USS class name added to the first node option field. Used to create a space between the different field groups.
+        /// </summary>
+        public static readonly string firstOptionSeparatorUssClassName = "first-node-option-separator";
+
         /// <summary>
         /// The USS class name when the node is collapsed.
         /// </summary>
@@ -70,11 +76,19 @@ namespace Unity.GraphToolkit.Editor
 
             var inspectorOrderFields = new SortedDictionary<int, List<BaseModelPropertyField>>();
 
-            AddFieldsFromNodeOptions(inspectorOrderFields, fieldList);
             AddFieldsFromTypes(targets, inspectorOrderFields, fieldList);
+            AddFieldsFromNodeOptions(inspectorOrderFields, fieldList);
             GetCustomFields(fieldList);
+
+            var addSeparator = fieldList.Count > 0;
             foreach (var fieldAtPositionList in inspectorOrderFields.Values)
             {
+                if (addSeparator)
+                {
+                    fieldAtPositionList[0].AddToClassList(firstOptionSeparatorUssClassName);
+                    addSeparator = false;
+                }
+
                 fieldList.AddRange(fieldAtPositionList);
             }
 
@@ -83,6 +97,7 @@ namespace Unity.GraphToolkit.Editor
 
         void AddFieldsFromNodeOptions(SortedDictionary<int, List<BaseModelPropertyField>> inspectorOrderFields, List<BaseModelPropertyField> outFieldList)
         {
+            var addSeparator = outFieldList.Count > 0;
             var nodeOptionLists = GetNodeOptionsToDisplay();
             if (nodeOptionLists != null)
             {
@@ -95,7 +110,15 @@ namespace Unity.GraphToolkit.Editor
                         continue;
                     }
 
-                    outFieldList.Add(GetFieldFromNodeOptions(nodeOptionList));
+                    var field = GetFieldFromNodeOptions(nodeOptionList);
+
+                    if (addSeparator)
+                    {
+                        field.AddToClassList(firstOptionSeparatorUssClassName);
+                        addSeparator = false;
+                    }
+
+                    outFieldList.Add(field);
                 }
             }
 

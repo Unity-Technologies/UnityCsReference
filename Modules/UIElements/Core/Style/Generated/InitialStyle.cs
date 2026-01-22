@@ -9,7 +9,9 @@
 //              See InitialStyleCsGenerator class for details
 //
 /******************************************************************************/
+using System;
 using System.Collections.Generic;
+using UnityEngine.UIElements.Unmanaged;
 
 namespace UnityEngine.UIElements.StyleSheets
 {
@@ -35,7 +37,7 @@ namespace UnityEngine.UIElements.StyleSheets
             s_InitialStyle.layoutData.Write().alignSelf = Align.Auto;
             s_InitialStyle.layoutData.Write().aspectRatio = StyleKeyword.Auto.ToStyleRatio();
             s_InitialStyle.visualData.Write().backgroundColor = Color.clear;
-            s_InitialStyle.visualData.Write().backgroundImage = default(EntityId);
+            s_InitialStyle.visualData.Write().backgroundImage = default;
             s_InitialStyle.visualData.Write().backgroundPositionX = BackgroundPosition.Initial();
             s_InitialStyle.visualData.Write().backgroundPositionY = BackgroundPosition.Initial();
             s_InitialStyle.visualData.Write().backgroundRepeat = BackgroundRepeat.Initial();
@@ -54,9 +56,9 @@ namespace UnityEngine.UIElements.StyleSheets
             s_InitialStyle.layoutData.Write().borderTopWidth = 0f;
             s_InitialStyle.layoutData.Write().bottom = StyleKeyword.Auto.ToLength();
             s_InitialStyle.inheritedData.Write().color = Color.black;
-            s_InitialStyle.rareData.Write().cursor = default(Cursor);
+            s_InitialStyle.rareData.Write().cursor = default;
             s_InitialStyle.layoutData.Write().display = DisplayStyle.Flex;
-            s_InitialStyle.rareData.Write().filter = new List<FilterFunction>();
+            s_InitialStyle.rareData.Write().filter.CopyFrom(new ReadOnlySpan<UnmanagedFilterFunction>());
             s_InitialStyle.layoutData.Write().flexBasis = StyleKeyword.Auto.ToLength();
             s_InitialStyle.layoutData.Write().flexDirection = FlexDirection.Column;
             s_InitialStyle.layoutData.Write().flexGrow = 0f;
@@ -86,20 +88,20 @@ namespace UnityEngine.UIElements.StyleSheets
             s_InitialStyle.transformData.Write().rotate = StyleKeyword.None.ToRotate();
             s_InitialStyle.transformData.Write().scale = StyleKeyword.None.ToScale();
             s_InitialStyle.rareData.Write().textOverflow = TextOverflow.Clip;
-            s_InitialStyle.inheritedData.Write().textShadow = default(TextShadow);
+            s_InitialStyle.inheritedData.Write().textShadow = default;
             s_InitialStyle.layoutData.Write().top = StyleKeyword.Auto.ToLength();
             s_InitialStyle.transformData.Write().transformOrigin = TransformOrigin.Initial();
-            s_InitialStyle.transitionData.Write().transitionDelay = new List<TimeValue>{0};
-            s_InitialStyle.transitionData.Write().transitionDuration = new List<TimeValue>{0};
-            s_InitialStyle.transitionData.Write().transitionProperty = new List<StylePropertyName>{"all"};
-            s_InitialStyle.transitionData.Write().transitionTimingFunction = new List<EasingFunction>{EasingMode.Ease};
+            s_InitialStyle.transitionData.Write().transitionDelay.CopyFrom(new List<TimeValue> { 0 });
+            s_InitialStyle.transitionData.Write().transitionDuration.CopyFrom(new List<TimeValue> { 0 });
+            s_InitialStyle.transitionData.Write().transitionProperty.CopyFrom(new List<StylePropertyId> { StylePropertyId.All });
+            s_InitialStyle.transitionData.Write().transitionTimingFunction.CopyFrom(new List<EasingFunction> { EasingMode.Ease });
             s_InitialStyle.transformData.Write().translate = StyleKeyword.None.ToTranslate();
             s_InitialStyle.rareData.Write().unityBackgroundImageTintColor = Color.white;
             s_InitialStyle.inheritedData.Write().unityEditorTextRenderingMode = EditorTextRenderingMode.SDF;
-            s_InitialStyle.inheritedData.Write().unityFont = default(Font);
-            s_InitialStyle.inheritedData.Write().unityFontDefinition = default(FontDefinition);
+            s_InitialStyle.inheritedData.Write().unityFont = default;
+            s_InitialStyle.inheritedData.Write().unityFontDefinition = default;
             s_InitialStyle.inheritedData.Write().unityFontStyleAndWeight = FontStyle.Normal;
-            s_InitialStyle.inheritedData.Write().unityMaterial = default(MaterialDefinition);
+            s_InitialStyle.inheritedData.Write().unityMaterial = default;
             s_InitialStyle.rareData.Write().unityOverflowClipBox = OverflowClipBox.PaddingBox;
             s_InitialStyle.inheritedData.Write().unityParagraphSpacing = 0f;
             s_InitialStyle.rareData.Write().unitySliceBottom = 0;
@@ -147,7 +149,7 @@ namespace UnityEngine.UIElements.StyleSheets
         public static Color color => s_InitialStyle.inheritedData.Read().color;
         public static Cursor cursor => s_InitialStyle.rareData.Read().cursor;
         public static DisplayStyle display => s_InitialStyle.layoutData.Read().display;
-        public static List<FilterFunction> filter => s_InitialStyle.rareData.Read().filter;
+        public static ReadOnlySpan<UnmanagedFilterFunction> filter => s_InitialStyle.rareData.Read().filter;
         public static Length flexBasis => s_InitialStyle.layoutData.Read().flexBasis;
         public static FlexDirection flexDirection => s_InitialStyle.layoutData.Read().flexDirection;
         public static float flexGrow => s_InitialStyle.layoutData.Read().flexGrow;
@@ -180,17 +182,17 @@ namespace UnityEngine.UIElements.StyleSheets
         public static TextShadow textShadow => s_InitialStyle.inheritedData.Read().textShadow;
         public static Length top => s_InitialStyle.layoutData.Read().top;
         public static TransformOrigin transformOrigin => s_InitialStyle.transformData.Read().transformOrigin;
-        public static List<TimeValue> transitionDelay => s_InitialStyle.transitionData.Read().transitionDelay;
-        public static List<TimeValue> transitionDuration => s_InitialStyle.transitionData.Read().transitionDuration;
-        public static List<StylePropertyName> transitionProperty => s_InitialStyle.transitionData.Read().transitionProperty;
-        public static List<EasingFunction> transitionTimingFunction => s_InitialStyle.transitionData.Read().transitionTimingFunction;
+        public static ReadOnlySpan<TimeValue> transitionDelay => s_InitialStyle.transitionData.Read().transitionDelay;
+        public static ReadOnlySpan<TimeValue> transitionDuration => s_InitialStyle.transitionData.Read().transitionDuration;
+        public static ReadOnlySpan<StylePropertyId> transitionProperty => s_InitialStyle.transitionData.Read().transitionProperty;
+        public static ReadOnlySpan<EasingFunction> transitionTimingFunction => s_InitialStyle.transitionData.Read().transitionTimingFunction;
         public static Translate translate => s_InitialStyle.transformData.Read().translate;
         public static Color unityBackgroundImageTintColor => s_InitialStyle.rareData.Read().unityBackgroundImageTintColor;
         public static EditorTextRenderingMode unityEditorTextRenderingMode => s_InitialStyle.inheritedData.Read().unityEditorTextRenderingMode;
-        public static Font unityFont => s_InitialStyle.inheritedData.Read().unityFont;
-        public static FontDefinition unityFontDefinition => s_InitialStyle.inheritedData.Read().unityFontDefinition;
+        public static EntityId unityFont => s_InitialStyle.inheritedData.Read().unityFont;
+        public static EntityId unityFontDefinition => s_InitialStyle.inheritedData.Read().unityFontDefinition;
         public static FontStyle unityFontStyleAndWeight => s_InitialStyle.inheritedData.Read().unityFontStyleAndWeight;
-        public static MaterialDefinition unityMaterial => s_InitialStyle.inheritedData.Read().unityMaterial;
+        public static UnmanagedMaterialDefinition unityMaterial => s_InitialStyle.inheritedData.Read().unityMaterial;
         public static OverflowClipBox unityOverflowClipBox => s_InitialStyle.rareData.Read().unityOverflowClipBox;
         public static Length unityParagraphSpacing => s_InitialStyle.inheritedData.Read().unityParagraphSpacing;
         public static int unitySliceBottom => s_InitialStyle.rareData.Read().unitySliceBottom;

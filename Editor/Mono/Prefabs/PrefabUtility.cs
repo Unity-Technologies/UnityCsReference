@@ -643,106 +643,12 @@ namespace UnityEditor
             if (WarnIfInAnimationMode(OverrideOperation.Apply, action))
                 return;
 
-            ApplyPropertyOverrides(prefabInstanceObject, instanceProperty, assetPath, true, action);
-
-            Analytics.SendApplyEvent(
-                Analytics.ApplyScope.PropertyOverride,
-                prefabInstanceObject,
-                assetPath,
-                action,
-                startTime,
-                IsPropertyOverrideDefaultOverrideComparedToAnySource(instanceProperty)
-            );
-        }
-
-        // This method is called from ApplyPropertyOverride with a single instanceProperty to process.
-        // An alternative approach was considered where the method takes an array of SerializedProperties,
-        // but since there can be thousands of those in a component, and they would each have to be copied from the iterator,
-        // it's better to handle properties inline as the iterator iterates over them.
-        // This does mean that we need to cache the SerializedObjects that end up being touched.
-        // Those are that of the prefabInstanceObject itself, and the chain of corresponding object
-        // all the way to the Prefab at the specified assetPath.
-        // Since calling ApplyModifiedProperties on a SerializedObject can trigger a whole chain of imports,
-        // we don't want to create and call ApplyModifiedProperties more than once for each SerializedObject, hence the caching.
-        static void ApplyPropertyOverrides(Object prefabInstanceObject, SerializedProperty instanceProperty, string assetPath, bool allowApplyDefaultOverride, InteractionMode action)
-        {
-            if (WarnIfInAnimationMode(OverrideOperation.Apply, action))
-                return;
-
             Object prefabSourceObject = GetCorrespondingObjectFromSourceAtPath(prefabInstanceObject, assetPath);
             if (prefabSourceObject == null)
                 return;
 
+            // Check for array size mismatches (handles user dialogs)
             SerializedObject prefabSourceSerializedObject = new SerializedObject(prefabSourceObject);
-
-            // Cache SerializedObjects used.
-            var serializedObjects = new List<SerializedObject>();
-            var changedObjects = new HashSet<SerializedObject>();
-
-            HandleApplySingleProperties(prefabInstanceObject, instanceProperty, assetPath, prefabSourceObject, prefabSourceSerializedObject, serializedObjects, changedObjects, allowApplyDefaultOverride, action);
-
-            // Ensure importing of saved Prefab Assets only kicks in after all Prefab Asset have been saved
-            AssetDatabase.StartAssetEditing();
-
-            try
-            {
-                Action<SerializedObject> saveIfChanged = (SerializedObject serializedObject) =>
-                {
-                    if (changedObjects.Contains(serializedObject))
-                    {
-                        bool applySuccess = action == InteractionMode.UserAction ? serializedObject.ApplyModifiedProperties() : serializedObject.ApplyModifiedPropertiesWithoutUndo();
-                        if (applySuccess)
-                        {
-                            SaveChangesToPrefabFileIfPersistent(serializedObject);
-
-                            if (action == InteractionMode.UserAction)
-                            {
-                                Undo.FlushUndoRecordObjects(); // flush'es ensure that SavePrefab() on undo/redo on the source happens in the right order
-                            }
-                        }
-                    }
-                };
-
-                // Case 1292519
-                // The Prefab to which the changes are applied is added first in serializedObjects by ApplySingleProperty - it must be saved first
-                // The rest of the objects are collected in reverse dependency order in ApplySingleProperty - starting from the instance where the changes are made down to the original Prefab
-                // Apply the changes and save them in dependency order (reversed array order) to make sure dependent values are saved after the values they depend upon
-                if (serializedObjects.Count > 0)
-                {
-                    saveIfChanged(serializedObjects[0]);
-                    for (int i = serializedObjects.Count - 1; i > 0; i--)
-                    {
-                        saveIfChanged(serializedObjects[i]);
-                    }
-                }
-            }
-            finally
-            {
-                AssetDatabase.StopAssetEditing();
-            }
-
-            foreach (var serializedObject in serializedObjects)
-            {
-                if (changedObjects.Contains(serializedObject))
-                {
-                    RaiseAppliedEvent(serializedObject);
-                }
-            }
-        }
-
-        static void HandleApplySingleProperties(
-            Object prefabInstanceObject,
-            SerializedProperty instanceProperty,
-            string assetPath, Object prefabSourceObject,
-            SerializedObject prefabSourceSerializedObject,
-            List<SerializedObject> serializedObjects,
-            HashSet<SerializedObject> changedObjects,
-            bool allowApplyDefaultOverride,
-            InteractionMode action
-        )
-        {
-            bool isObjectOnRootInAsset = IsObjectOnRootInAsset(prefabInstanceObject, assetPath);
-
             bool cancel;
             SerializedProperty property = GetArrayPropertyIfGivenPropertyIsPartOfArrayElementInInstanceWhichDoesNotExistInAsset(
                 instanceProperty,
@@ -758,72 +664,57 @@ namespace UnityEditor
                 // We didn't find any mismatching array so just use the property the user supplied.
                 property = instanceProperty.Copy();
             }
-            SerializedProperty endProperty = property.GetEndProperty();
 
-            bool allowWarnAboutApplyingPartsOfManagedReferences = property.isReferencingAManagedReferenceField;
+            string propertyPath = property.propertyPath;
 
-            if (!property.hasVisibleChildren)
+            // Check for managed reference type mismatches - reject the entire apply operation if found
+            // This matches the behavior of the old C# implementation
+            if (property.isReferencingAManagedReferenceField)
             {
-                if (property.prefabOverride)
-                    ApplySinglePropertyAndRemoveOverride(property, prefabSourceSerializedObject, prefabSourceObject, isObjectOnRootInAsset, true, allowWarnAboutApplyingPartsOfManagedReferences, allowApplyDefaultOverride, serializedObjects, changedObjects, action, out _);
+                SerializedProperty sourceProperty = prefabSourceSerializedObject.FindProperty(propertyPath);
+                if (WarnIfApplyingManagedReferenceFieldIsNotPossible(property, sourceProperty, action))
+                {
+                    // Validation failed - the error/dialog was already shown by WarnIfApplyingManagedReferenceFieldIsNotPossible
+                    return;
+                }
             }
-            else
+
+            // Check for external scene references - reject the entire apply operation if found
+            // This matches the behavior of the old C# implementation
+            if (property.propertyType == SerializedPropertyType.ObjectReference)
             {
-                if (property.prefabOverride && property.propertyType == SerializedPropertyType.ManagedReference)
+                if (!CanPropertyBeAppliedToTarget(property, prefabSourceObject))
                 {
-                    bool skipRestOfProperties = false;
-                    ApplySinglePropertyAndRemoveOverride(property, prefabSourceSerializedObject, prefabSourceObject, isObjectOnRootInAsset, false, allowWarnAboutApplyingPartsOfManagedReferences, allowApplyDefaultOverride, serializedObjects, changedObjects, action, out skipRestOfProperties);
-                    if (skipRestOfProperties)
-                        return;
-
-                    allowWarnAboutApplyingPartsOfManagedReferences = false; // The managed reference was applied to the Asset so do not check for sub properties
-                }
-
-                var visitedManagedReferenceProperties = new HashSet<long>();
-                bool visitChildren = property.hasVisibleChildren;
-
-                while (property.Next(visitChildren) && !SerializedProperty.EqualContents(property, endProperty))
-                {
-                    // If we apply a property that has child properties that are object references, and if they
-                    // reference non-asset objects, those references will get lost, since ApplySingleProperty
-                    // only patches up references in the provided property; not its children.
-                    // This could be fixed by letting ApplySingleProperty patch up all its child properties as well,
-                    // but then calling ApplySingleProperty n times would result in time complexity n*log(n).
-                    // Instead we only call ApplySingleProperty for visible leaf properties - the ones that actually
-                    // contain the data.
-                    // Technically, leaf properties contain the data, but we're using visible leafs here, which
-                    // corresponds to leaf nodes as shown in the Inspector. Note, this is not related to foldout
-                    // expanded state; it's related to the fact that some nodes can have flags that hide them.
-                    // Furthermore, special property types - like object references, which is what we're particularly
-                    // interested in - are hardcoded to have their child nodes hidden. We need to call
-                    // ApplySingleProperty on the object reference property and not its hidden children, so we use
-                    // hasHiddenChildren, not hasChildren, to determine which properties to call the method on.
-                    // Applying all visible leaf properties applies all data only once and ensures that when an
-                    // object reference is applied, it's via its own property and not a parent property.
-
-                    // NOTE: all property modifications are leafs except in the context of managed references.
-                    // Managed references can be overriden (and have visible children).
-                    bool isManagedReferenceRoot = property.propertyType == SerializedPropertyType.ManagedReference;
-                    bool skipRestOfProperties = false;
-                    if (property.prefabOverride && (isManagedReferenceRoot || !property.hasVisibleChildren))
-                        ApplySinglePropertyAndRemoveOverride(property, prefabSourceSerializedObject, prefabSourceObject, isObjectOnRootInAsset, false, allowWarnAboutApplyingPartsOfManagedReferences, allowApplyDefaultOverride, serializedObjects, changedObjects, action, out skipRestOfProperties);
-
-                    if (skipRestOfProperties)
-                        break;
-
-                    // Avoid cyclic mangaged references
-                    if (isManagedReferenceRoot)
-                    {
-                        if (visitedManagedReferenceProperties.Add(property.managedReferenceId))
-                            visitChildren = property.hasVisibleChildren; // First time seeing managed reference, so allow entering children if needed
-                        else
-                            visitChildren = false;
-                    }
+                    // The property is a reference to a non-persistent object (scene object) which could not be mapped to the asset.
+                    // It can not be applied.
+                    if (action == InteractionMode.AutomatedAction)
+                        Debug.LogWarning("Cannot apply reference to scene object that is not part of apply target prefab.");
                     else
-                    {
-                        visitChildren = property.hasVisibleChildren;
-                    }
+                        EditorUtility.DisplayDialog(
+                            L10n.Tr("Cannot apply reference to object in scene"),
+                            L10n.Tr("A reference to an object in the scene cannot be applied to the Prefab asset."),
+                            L10n.Tr("OK"));
+                    return;
                 }
+            }
+
+            // Call native implementation
+            bool success;
+            if (action == InteractionMode.UserAction)
+                success = ApplyPropertyOverride(prefabInstanceObject, propertyPath, assetPath);
+            else
+                success = ApplyPropertyOverrideWithoutUndo(prefabInstanceObject, propertyPath, assetPath);
+
+            if (success)
+            {
+                Analytics.SendApplyEvent(
+                    Analytics.ApplyScope.PropertyOverride,
+                    prefabInstanceObject,
+                    assetPath,
+                    action,
+                    startTime,
+                    IsPropertyOverrideDefaultOverrideComparedToAnySource(instanceProperty)
+                );
             }
         }
 
@@ -892,25 +783,6 @@ namespace UnityEditor
             }
 
             return new PropertyValueOriginInfo("The property does not have a source");
-        }
-
-        static void SaveChangesToPrefabFileIfPersistent(SerializedObject serializedObject)
-        {
-            if (!EditorUtility.IsPersistent(serializedObject.targetObject))
-                return;
-
-            GameObject go = serializedObject.targetObject as GameObject;
-            if (go == null)
-            {
-                var cmp = serializedObject.targetObject as Component;
-                if (cmp != null)
-                    go = cmp.gameObject;
-            }
-
-            if (go != null)
-            {
-                SavePrefabAsset(go.transform.root.gameObject);
-            }
         }
 
         // Returns null if property is not part of array where whole array needs to be appled.
@@ -990,201 +862,6 @@ namespace UnityEditor
                 startSearchIndex = arrayPropertySplitIndex + arrayElementIndexPrefix.Length + arrayElementIndexLength + 1;
             }
             return null;
-        }
-
-        // Since method is called for each overridden property in a component.
-        // That may be thousands of times if a component has lots of array data.
-        // We provide as much information as possible to the method as parameters
-        // so we don't have to recalculate it for each call.
-        static void ApplySinglePropertyAndRemoveOverride(
-            SerializedProperty instanceProperty,
-            SerializedObject prefabSourceSerializedObject,
-            Object applyTarget,
-            bool isObjectOnRootInAsset,
-            bool singlePropertyOnly,
-            bool allowWarnAboutApplyingPartsOfManagedReferences,
-            bool allowApplyDefaultOverride,
-            List<SerializedObject> serializedObjects,
-            HashSet<SerializedObject> changedObjects,
-            InteractionMode action,
-            out bool skipRestOfProperties)
-        {
-            skipRestOfProperties = false;
-
-            if (!allowApplyDefaultOverride && isObjectOnRootInAsset && IsPropertyOverrideDefaultOverrideComparedToAnySource(instanceProperty))
-            {
-                if (singlePropertyOnly)
-                {
-                    // Neither of these will not happen from our own editor interface since we don't display
-                    // any menus to apply for default-override properties in the first place.
-                    if (action == InteractionMode.AutomatedAction)
-                        Debug.LogWarning("Cannot apply default-override property, since it is protected from being applied or reverted.");
-                    else
-                        EditorUtility.DisplayDialog(
-                            L10n.Tr("Cannot apply default-override property"),
-                            L10n.Tr("Default-override properties are protected from being applied or reverted."),
-                            L10n.Tr("OK"));
-                }
-                return;
-            }
-
-            var sourceSerializedObjInChangedSet = changedObjects.Contains(prefabSourceSerializedObject);
-            SerializedProperty sourceProperty = prefabSourceSerializedObject.FindProperty(instanceProperty.propertyPath);
-            if (sourceProperty == null)
-            {
-                // Special handling for arrays
-                bool cancel;
-                var instanceArrayProperty = GetArrayPropertyIfGivenPropertyIsPartOfArrayElementInInstanceWhichDoesNotExistInAsset(instanceProperty, prefabSourceSerializedObject, InteractionMode.AutomatedAction, out cancel);
-                if (instanceArrayProperty != null)
-                {
-                    if (!sourceSerializedObjInChangedSet)
-                        RaiseApplyingEvent(instanceArrayProperty.serializedObject);
-
-                    prefabSourceSerializedObject.CopyFromSerializedProperty(instanceArrayProperty);
-
-                    if (!sourceSerializedObjInChangedSet)
-                    {
-                        changedObjects.Add(prefabSourceSerializedObject);
-                        sourceSerializedObjInChangedSet = true;
-                    }
-
-                    sourceProperty = prefabSourceSerializedObject.FindProperty(instanceProperty.propertyPath);
-                    if (sourceProperty == null)
-                    {
-                        Debug.LogError($"ApplySingleProperty full array copy error: SerializedProperty could not be found for {instanceProperty.propertyPath}. Please report a bug.");
-                        return;
-                    }
-                }
-            }
-
-            if (allowWarnAboutApplyingPartsOfManagedReferences && WarnIfApplyingManagedReferenceFieldIsNotPossible(instanceProperty, sourceProperty, action))
-            {
-                skipRestOfProperties = true;
-                return;
-            }
-
-            if (sourceProperty == null)
-            {
-                // If we reach here we need to investigate the situation in which it happens and fix it
-                Debug.LogError($"ApplySinglePropertyAndRemoveOverride error: Unhandled situation for {instanceProperty.propertyPath}. Please report a bug.");
-                skipRestOfProperties = true;
-                return;
-            }
-
-            if (!sourceSerializedObjInChangedSet)
-                RaiseApplyingEvent(instanceProperty.serializedObject);
-
-            // Copy overridden property value to asset
-            if (instanceProperty.propertyType == SerializedPropertyType.ManagedReference)
-            {
-                // For a managed reference root property we cannot use CopyFromSerializedProperty as we do for normal properties, since the Asset value could be null
-                // if the refID does not exist in the prefab asset.
-
-                // We take advantage of the fact that the refID of the managed object in the instance is the same as the refID of the managed object in the prefab asset.
-                // If the refID does exist in the prefab asset we know that the managed object is the corresponding object to the instance object and we can reuse the managed
-                // object from the prefab asset.
-
-                // Get the refID from the instance property
-                var refID = ManagedReferenceUtility.GetManagedReferenceIdForObject(instanceProperty.serializedObject.targetObject, instanceProperty.managedReferenceValue);
-                // Does this refID exist in the prefab asset?
-                var refObject = ManagedReferenceUtility.GetManagedReference(prefabSourceSerializedObject.targetObject, refID);
-                if (refObject != null)
-                {
-                    // The refID exists which means we changing a reference in the asset to point to another object in the asset.
-                    // In this case the corresponding object of the prefab instance object
-                    sourceProperty.managedReferenceValue = refObject;
-                }
-                else
-                {
-                    // The refID does not exist which means we are assigning a new managed object to the asset.
-                    // Since this is assigning the managed object to a different managed host object it automatically triggers a deep copy of the managed object,
-                    // once we call ApplyModifiedProperties on the prefabSourceSerializedObject
-                    // But this will not remap any object references in the managed object to the source assets so all references will be lost after saving the prefab asset.
-                    // We will need to fix this some day by adding a remapping step to the deep copy.
-                    sourceProperty.managedReferenceValue = instanceProperty.managedReferenceValue;
-                }
-            }
-            else
-            {
-                prefabSourceSerializedObject.CopyFromSerializedProperty(instanceProperty);
-            }
-
-            if (!sourceSerializedObjInChangedSet)
-                changedObjects.Add(prefabSourceSerializedObject);
-
-            // Abort if property has reference to object in scene.
-            if (sourceProperty.propertyType == SerializedPropertyType.ObjectReference)
-            {
-                if (PrefabUtility.CanPropertyBeAppliedToTarget(instanceProperty, applyTarget))
-                    MapObjectReferencePropertyToSourceIfApplicable(sourceProperty, applyTarget);
-                else
-                {
-                    // The property is a reference to a non-persistent object (scene object which could not be mapped to the asset.
-                    // It can not be applied.
-
-                    // Give a warning if the user tried to specifically apply this property.
-                    if (singlePropertyOnly)
-                    {
-                        if (action == InteractionMode.AutomatedAction)
-                            Debug.LogWarning("Cannot apply reference to scene object that is not part of apply target prefab.");
-                        else
-                            EditorUtility.DisplayDialog(
-                                L10n.Tr("Cannot apply reference to object in scene"),
-                                L10n.Tr("A reference to an object in the scene cannot be applied to the Prefab asset."),
-                                L10n.Tr("OK"));
-                    }
-                    return;
-                }
-            }
-
-            // Apply target SerializedObject should get ApplyModifiedProperties called first.
-            if (serializedObjects.Count == 0)
-                serializedObjects.Add(prefabSourceSerializedObject);
-
-            // Clear overrides for property in Prefab instance and outer Prefabs that are using(nesting) the Prefab source.
-            // Otherwise applied modification would appear to jump back to the value it had before applying.
-            Object prefabInstanceObject = instanceProperty.serializedObject.targetObject;
-            Object prefabSourceObject = prefabSourceSerializedObject.targetObject;
-            Object outerPrefabObject = prefabInstanceObject;
-            int sourceIndex = 1;
-            while (outerPrefabObject != prefabSourceObject)
-            {
-                SerializedObject outerPrefabSerializedObject;
-                if (sourceIndex >= serializedObjects.Count)
-                {
-                    outerPrefabSerializedObject = new SerializedObject(outerPrefabObject);
-                    serializedObjects.Add(outerPrefabSerializedObject);
-                }
-                else
-                {
-                    outerPrefabSerializedObject = serializedObjects[sourceIndex];
-                }
-
-                // Case 1172835: When applying a new array size to an inner Prefab, this change won't yet have propagated to the outer Prefabs.
-                // This means properties inside the array may not yet exist here.
-                // To handle this, we first copy the serialized value (which correctly handles array size changes)
-                // before we clear the overrides below (by setting outerPrefabProp.prefabOverride = false).
-                var propertyType = instanceProperty.propertyType;
-                if (propertyType == SerializedPropertyType.ArraySize)
-                {
-                    // Do not add outerPrefabSerializedObject to changedObjects
-                    // CopyFromSerializedProperty is necessary to make "index" propertyPaths out of original bounds valid to be able to clear dangling prefabOverrides
-                    // as noted in the comment for Case 1172835, but it should not be applied/saved if there are no prefabOverrides
-                    outerPrefabSerializedObject.CopyFromSerializedProperty(instanceProperty);
-                }
-
-                SerializedProperty outerPrefabProp = outerPrefabSerializedObject.FindProperty(instanceProperty.propertyPath);
-                if (outerPrefabProp != null && outerPrefabProp.prefabOverride)
-                {
-                    outerPrefabProp.prefabOverride = false;
-                    changedObjects.Add(outerPrefabSerializedObject);
-                }
-                if (outerPrefabProp == null)
-                    Debug.LogError($"ApplySingleProperty clear overrides error: SerializedProperty could not be found for {instanceProperty.propertyPath}. Please report a bug.");
-
-                outerPrefabObject = PrefabUtility.GetCorrespondingObjectFromSource(outerPrefabObject);
-                sourceIndex++;
-            }
         }
 
         internal static void RevertPropertyOverrides(SerializedProperty[] instanceProperties, InteractionMode action)
@@ -1948,9 +1625,7 @@ namespace UnityEditor
             if (gameObjects == null)
                 throw new ArgumentNullException(nameof(gameObjects), "Cannot apply added GameObjects. GameObjects array is null.");
 
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            if (!gameObjects.Any())
-#pragma warning restore RS0030
+            if (gameObjects.Length == 0)
                 throw new ArgumentException(nameof(gameObjects), "No GameObjects in array.");
 
             foreach (GameObject go in gameObjects)
@@ -2035,9 +1710,7 @@ namespace UnityEditor
 
         internal static bool HasSameParent(GameObject[] gameObjects)
         {
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            if (gameObjects == null || !gameObjects.Any() || gameObjects[0] == null)
-#pragma warning restore RS0030
+            if (gameObjects == null || gameObjects.Length == 0 || gameObjects[0] == null)
                 throw new ArgumentException(nameof(gameObjects), "Array is invalid.");
 
             Transform goParent = gameObjects[0].transform.parent;
@@ -3787,9 +3460,7 @@ namespace UnityEditor
 
         internal static bool HavePrefabInstancesUnusedOverrides(GameObject[] gameObjects)
         {
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            if (gameObjects == null || !gameObjects.Any())
-#pragma warning restore RS0030
+            if (gameObjects == null || gameObjects.Length == 0)
                 return false;
 
             foreach (GameObject go in gameObjects)
@@ -3806,7 +3477,7 @@ namespace UnityEditor
         internal static InstanceOverridesInfo[] GetPrefabInstancesOverridesInfos(GameObject[] selectedGameObjects)
         {
             if (selectedGameObjects == null || selectedGameObjects.Length == 0)
-                return new InstanceOverridesInfo[] {};
+                return Array.Empty<InstanceOverridesInfo>();
 
             List<InstanceOverridesInfo> allInstanceMods = new List<InstanceOverridesInfo>();
 
@@ -3839,9 +3510,7 @@ namespace UnityEditor
             string title = titleCheckForUnusedOverrides;
             string message = string.Empty;
 
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            if (instanceOverridesInfos == null || !instanceOverridesInfos.Any())
-#pragma warning restore RS0030
+            if (instanceOverridesInfos == null || instanceOverridesInfos.Length == 0)
             {
                 title = titleCheckForUnusedOverrides;
                 message = msgNoOverridesWereFound;

@@ -11,7 +11,7 @@ using System.Runtime.InteropServices;
 
 namespace UnityEditor.AssetImporters
 {
-    [NativeType(Header = "Editor/Src/AssetPipeline/ModelImporting/MaterialDescription.h")]
+    [NativeHeader("Editor/Src/AssetPipeline/ModelImporting/MaterialDescription.h")]
     public struct TexturePropertyDescription
     {
         public Vector2 offset;

@@ -492,7 +492,7 @@ namespace UnityEngine
             }
             else
             {
-                return new RaycastHit[0];
+                return Array.Empty<RaycastHit>();
             }
         }
 
@@ -605,7 +605,7 @@ namespace UnityEngine
             }
             else
             {
-                return new RaycastHit[0];
+                return Array.Empty<RaycastHit>();
             }
         }
 
@@ -641,7 +641,7 @@ namespace UnityEngine
             }
             else
             {
-                return new RaycastHit[0];
+                return Array.Empty<RaycastHit>();
             }
         }
 
@@ -1016,7 +1016,7 @@ namespace UnityEngine
             }
             else
             {
-                return new RaycastHit[0];
+                return Array.Empty<RaycastHit>();
             }
         }
 

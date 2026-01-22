@@ -118,7 +118,7 @@ namespace UnityEditor.Search
     public class SearchContext : IDisposable, ISerializationCallbackReceiver
     {
         private static volatile int s_NextSessionId = 0;
-        private static readonly string[] k_Empty = new string[0];
+        private static readonly string[] k_Empty = Array.Empty<string>();
 
         private string m_CachedPhrase;
         private bool m_Disposed = false;

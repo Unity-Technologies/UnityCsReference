@@ -132,10 +132,8 @@ namespace UnityEditor.Experimental.GraphView
                             MethodInfo[] methodInfos = temptype.GetMethods(BindingFlags.Public | BindingFlags.Static);
                             foreach (MethodInfo i in methodInfos)
                             {
-                                object[] allAttrs = i.GetCustomAttributes(typeof(TypeAdapter), false);
-                                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                                if (allAttrs.Any())
-#pragma warning restore RS0030
+                                bool hasAttr = i.IsDefined(typeof(TypeAdapter), false);
+                                if (hasAttr)
                                 {
                                     s_TypeAdapters.Add(i);
                                 }

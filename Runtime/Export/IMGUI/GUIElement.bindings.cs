@@ -15,10 +15,10 @@ namespace UnityEngine
     [UsedByNativeCode]
     public partial class RectOffset
     {
-        [ThreadAndSerializationSafe]
+        [ThreadSafe]
         private static extern IntPtr InternalCreate();
 
-        [ThreadAndSerializationSafe]
+        [ThreadSafe]
         private static extern void InternalDestroy(IntPtr ptr);
 
         // Left edge size.

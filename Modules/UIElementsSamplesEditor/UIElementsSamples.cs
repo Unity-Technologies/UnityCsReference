@@ -198,9 +198,9 @@ namespace UnityEditor.UIElements.Samples
 
             Action<IEnumerable<int>> onSelectionChanged = selectedIndices =>
             {
-                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable RS0031 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 if (!selectedIndices.Any())
-#pragma warning restore RS0030
+#pragma warning restore RS0031
                     return;
 
                 #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.

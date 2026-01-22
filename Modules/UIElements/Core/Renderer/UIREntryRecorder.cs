@@ -255,11 +255,11 @@ namespace UnityEngine.UIElements.UIR
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void PushDefaultMaterial(Entry parentEntry, MaterialDefinition matDef)
+        public void PushDefaultMaterial(Entry parentEntry, UnmanagedMaterialDefinition matDef)
         {
             var entry = m_EntryPool.Get();
             entry.type = EntryType.PushDefaultMaterial;
-            entry.material = matDef.material;
+            entry.material = (Material)Resources.EntityIdToObject(matDef.material);
             entry.userProps = matDef.BuildPropertyBlock();
             Append(parentEntry, entry);
         }

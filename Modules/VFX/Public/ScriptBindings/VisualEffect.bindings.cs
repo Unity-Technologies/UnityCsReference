@@ -103,6 +103,9 @@ namespace UnityEngine.VFX
             set;
         }
 
+        extern public bool allowInstancing { get; set; }
+        extern public bool releaseInstanceWhenDisabled { get; set; }
+
         extern public bool culled { get; }
 
         extern public VisualEffectAsset visualEffectAsset { get; set; }
@@ -178,6 +181,7 @@ namespace UnityEngine.VFX
 
         extern internal void RecreateData();
 
+        extern internal void RecreateBatchInstance();
 
         internal enum VFXCPUEffectMarkers
         {
@@ -657,7 +661,7 @@ namespace UnityEngine.VFX
     // The public constructor with [RequiredMember] is necessary for the same reason.
     // See UUM-99927 for details.
     [RequiredByNativeCode]
-    [NativeType(Header = "Modules/VFX/Public/VFXRenderer.h"), RejectDragAndDropMaterial]
+    [NativeHeader("Modules/VFX/Public/VFXRenderer.h"), RejectDragAndDropMaterial]
     public sealed partial class VFXRenderer : Renderer
     {
         [UnityEngine.Scripting.RequiredMember]

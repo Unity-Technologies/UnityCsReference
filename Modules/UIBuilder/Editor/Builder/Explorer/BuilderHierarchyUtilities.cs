@@ -8,7 +8,7 @@ namespace Unity.UI.Builder
 {
     internal static class BuilderHierarchyUtilities
     {
-        public static bool OpenAsSubDocument(BuilderPaneWindow paneWindow, VisualTreeAsset vta, TemplateAsset vea = null)
+        public static bool OpenAsSubDocument(BuilderPaneWindow paneWindow, VisualTreeAsset vta, TemplateAsset vea = null, int templateIndex = -1)
         {
             bool didSaveChanges = paneWindow.document.CheckForUnsavedChanges();
             if (!didSaveChanges)
@@ -23,9 +23,16 @@ namespace Unity.UI.Builder
             // staying open and usable in the UI Builder.
             paneWindow.document.activeOpenUXMLFile.PostLoadDocumentStyleSheetCleanup();
 
-            paneWindow.document.AddSubDocument(vea);
-            paneWindow.LoadDocument(vta, false);
+            if (vea == null)
+            {
+                paneWindow.document.AddSubDocumentInIsolation();
+            }
+            else
+            {
+                paneWindow.document.AddSubDocumentInContext(vea, templateIndex);
+            }
 
+            paneWindow.LoadDocument(vta, false);
             return true;
         }
     }

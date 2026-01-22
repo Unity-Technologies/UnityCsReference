@@ -31,7 +31,7 @@ namespace UnityEngine.XR
     }
 
     [NativeHeader("Modules/XR/XRPrefix.h")]
-    [NativeType(Header = "Modules/XR/Subsystems/Display/XRDisplaySubsystemDescriptor.h")]
+    [NativeHeader("Modules/XR/Subsystems/Display/XRDisplaySubsystemDescriptor.h")]
     [StructLayout(LayoutKind.Sequential)]
     public struct XRMirrorViewBlitModeDesc
     {
@@ -39,7 +39,7 @@ namespace UnityEngine.XR
         public String blitModeDesc;
     }
 
-    [NativeType(Header = "Modules/XR/Subsystems/Display/XRDisplaySubsystemDescriptor.h")]
+    [NativeHeader("Modules/XR/Subsystems/Display/XRDisplaySubsystemDescriptor.h")]
     [UsedByNativeCode]
     public class XRDisplaySubsystemDescriptor : IntegratedSubsystemDescriptor<XRDisplaySubsystem>
     {

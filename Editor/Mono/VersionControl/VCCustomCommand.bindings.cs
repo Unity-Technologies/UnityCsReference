@@ -9,7 +9,7 @@ using System.Runtime.InteropServices;
 
 namespace UnityEditor.VersionControl
 {
-    [NativeType("Editor/Src/VersionControl/VCCustomCommand.h")]
+    [NativeHeader("Editor/Src/VersionControl/VCCustomCommand.h")]
     internal enum CommandContext
     {
         Global = 1

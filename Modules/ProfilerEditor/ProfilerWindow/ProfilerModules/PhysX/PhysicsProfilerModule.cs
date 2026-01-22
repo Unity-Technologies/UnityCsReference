@@ -37,7 +37,7 @@ namespace UnityEditorInternal.Profiling
         static readonly string k_PhysicsCountersCategoryName = ProfilerCategory.Physics.Name;
         static readonly string k_MemoryCountersCategoryName = ProfilerCategory.Memory.Name;
 
-        private PhysicsProfilerStatsView m_ShowStatsView;
+        private PhysicsProfilerStatsView m_ShowStatsView = PhysicsProfilerStatsView.Current;
         private PhysicsProfilerStatsView m_CachedShowStatsView;
 
         private static int k_labelWidthTitle = 220;
@@ -133,9 +133,7 @@ namespace UnityEditorInternal.Profiling
 
         internal override void OnEnable()
         {
-            m_ShowStatsView = PhysicsProfilerStatsView.Current;
             ProfilerDriver.profileLoaded += OnLoadProfileData;
-            LegacyModuleInitialize();
             base.OnEnable();
         }
 
@@ -160,12 +158,17 @@ namespace UnityEditorInternal.Profiling
                     {
                         m_ShowStatsView = PhysicsProfilerStatsView.Legacy;
                     }
+
+                    UpdatePhysicsChart();
                 }
             }
         }
 
         void UpdatePhysicsChart()
         {
+            if (m_CachedShowStatsView == m_ShowStatsView)
+                return;
+
             if (m_ShowStatsView == PhysicsProfilerStatsView.Current)
             {
                 InternalSetChartCounters(ProfilerCounterDataUtility.ConvertFromLegacyCounterDatas(
@@ -177,7 +180,9 @@ namespace UnityEditorInternal.Profiling
                 InternalSetChartCounters(ProfilerCounterDataUtility.ConvertFromLegacyCounterDatas(
                     new List<ProfilerCounterData>(k_LegacyPhysicsAreaCounterNames)));
             }
-            RebuildChart();
+
+            Rebuild();
+            m_CachedShowStatsView = m_ShowStatsView;
         }
 
         public override void DrawToolbar(Rect position)
@@ -185,12 +190,8 @@ namespace UnityEditorInternal.Profiling
             EditorGUILayout.BeginHorizontal(EditorStyles.toolbar);
 
             m_ShowStatsView = (PhysicsProfilerStatsView)EditorGUILayout.EnumPopup(m_ShowStatsView, EditorStyles.toolbarDropDownLeft, GUILayout.Width(70f));
+            UpdatePhysicsChart();
 
-            if (m_CachedShowStatsView != m_ShowStatsView)
-            {
-                m_CachedShowStatsView = m_ShowStatsView;
-                UpdatePhysicsChart();
-            }
             GUILayout.Space(5f);
 
             GUILayout.FlexibleSpace();

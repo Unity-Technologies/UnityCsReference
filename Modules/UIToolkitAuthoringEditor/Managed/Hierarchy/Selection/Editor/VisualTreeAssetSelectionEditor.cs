@@ -33,6 +33,8 @@ internal class VisualTreeAssetSelectionEditor : UnityEditor.Editor
         };
 
         binding.sourceToUiConverters.AddConverter((ref UIDocument document) => document.visualTreeAsset);
+        binding.sourceToUiConverters.AddConverter((ref PanelRenderer renderer) => renderer.visualTreeAsset);
+        binding.sourceToUiConverters.AddConverter((ref IPanelComponent panelComponent) => panelComponent.visualTreeAsset);
 
         inspector.SetBinding(VisualTreeAssetInspector.VisualTreeAssetProperty, binding);
         return inspector;

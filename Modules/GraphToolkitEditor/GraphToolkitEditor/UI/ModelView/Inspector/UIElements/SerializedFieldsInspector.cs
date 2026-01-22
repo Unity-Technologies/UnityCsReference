@@ -188,12 +188,10 @@ namespace Unity.GraphToolkit.Editor
                 foreach (var fieldInfo in fields.Where(m_Filter))
 #pragma warning restore RS0030
                 {
-                    #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                    if (fieldInfo.GetCustomAttributes<OverrideForFieldAttribute>().Count() > 0)
-#pragma warning restore RS0030
+                    if (fieldInfo.IsDefined(typeof(OverrideForFieldAttribute)))
                         continue;
-                    var moveAfter = fieldInfo.GetCustomAttribute<InspectorFieldOrderAttribute>();
 
+                    var moveAfter = fieldInfo.GetCustomAttribute<InspectorFieldOrderAttribute>();
 
                     BaseModelPropertyField field;
 

@@ -59,9 +59,9 @@ namespace UnityEditor.Compilation
             AllowUnsafeCode = false;
             ApiCompatibilityLevel = ApiCompatibilityLevel.NET_Unity_4_8;
             EditorAssembliesCompatibilityLevel = EditorAssembliesCompatibilityLevel.Default;
-            ResponseFiles = new string[0];
-            RoslynAnalyzerDllPaths = new string[0];
-            RoslynAdditionalFilePaths = new string[0];
+            ResponseFiles = Array.Empty<string>();
+            RoslynAnalyzerDllPaths = Array.Empty<string>();
+            RoslynAdditionalFilePaths = Array.Empty<string>();
             LanguageVersion = "9.0";
         }
 

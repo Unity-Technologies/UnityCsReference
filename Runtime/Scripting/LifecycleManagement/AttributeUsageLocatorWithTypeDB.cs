@@ -4,7 +4,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using Unity.Scripting.LifecycleManagement;
@@ -84,9 +83,7 @@ namespace UnityEngine
 
                 foreach (var assemblyData in data.assemblyData)
                 {
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                    catalog.Add(assemblyData.assemblyName, assemblyData.methodInfos.ToList());
-#pragma warning restore RS0030
+                    catalog.Add(assemblyData.assemblyName, new List<MethodInfo>(assemblyData.methodInfos));
                 }
             }
         }

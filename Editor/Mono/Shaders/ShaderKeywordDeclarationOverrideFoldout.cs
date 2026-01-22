@@ -77,7 +77,7 @@ namespace UnityEditor.Shaders
         {
             var dataItem = DataSource[DataIndex];
             if (keywords == null)
-                keywords = new ShaderBuildSettings.KeywordOverrideInfo[0];
+                keywords = System.Array.Empty<ShaderBuildSettings.KeywordOverrideInfo>();
 
             dataItem.keywords = keywords;
             DataSource[DataIndex] = dataItem;

@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Unity.UIToolkit.Editor;
 using UnityEditor;
 using UnityEditor.UIElements;
 using UnityEngine;
@@ -472,7 +473,7 @@ namespace Unity.UI.Builder
 
         public static void RemoveBinding(this VisualTreeAsset vta, VisualElementAsset element, string property)
         {
-            var uxmlBinding = BuilderBindingUtility.FindUxmlBinding(element, property);
+            var uxmlBinding = element.FindUxmlBinding(property);
             uxmlBinding?.RemoveAssetAndFieldParentIfEmpty();
         }
 

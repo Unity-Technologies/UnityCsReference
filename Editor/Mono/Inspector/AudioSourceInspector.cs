@@ -75,7 +75,7 @@ namespace UnityEditor
         internal static Color kLowPassCurveColor  = new Color(0.80f, 0.25f, 0.90f, 1.0f);
         internal static Color kReverbZoneMixCurveColor = new Color(0.70f, 0.70f, 0.20f, 1.0f);
 
-        internal bool[] m_SelectedCurves = new bool[0];
+        internal bool[] m_SelectedCurves = System.Array.Empty<bool>();
 
         private enum AudioCurveType { Volume, SpatialBlend, Lowpass, Spread, ReverbZoneMix }
 
@@ -163,7 +163,7 @@ namespace UnityEditor
 
             m_CurveEditorSettings.undoRedoSelection = true;
 
-            m_CurveEditor = new CurveEditor(new Rect(0, 0, 1000, 100), new CurveWrapper[0], false);
+            m_CurveEditor = new CurveEditor(new Rect(0, 0, 1000, 100), System.Array.Empty<CurveWrapper>(), false);
             m_CurveEditor.settings = m_CurveEditorSettings;
             m_CurveEditor.margin = 25;
             m_CurveEditor.SetShownHRangeInsideMargins(0.0f, 1.0f);

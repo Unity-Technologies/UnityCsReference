@@ -97,6 +97,7 @@ namespace Unity.GraphToolkit.Editor.Implementation
         }
 
         public IReadOnlyList<IVariable> VariableModels => this.VariableDeclarations;
+        public IReadOnlyList<IVariable> VariableModelsByDisplayOrder => GetVariableDeclarationsByDisplayOrder();
 
         protected override Type VariableNodeType => typeof(VariableNodeModelImp);
         protected override Type SubgraphNodeType => typeof(SubgraphNodeModelImp);
@@ -418,6 +419,11 @@ namespace Unity.GraphToolkit.Editor.Implementation
             }
 
             base.RemoveNode(nodeModel);
+        }
+
+        public override bool CanExpandPort(PortModel port)
+        {
+            return port.IsExpandable;
         }
 
         public IReadOnlyList<Type> SupportedTypes

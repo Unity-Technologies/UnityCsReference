@@ -177,7 +177,7 @@ namespace UnityEditor.Search
 #pragma warning restore RS0030
             if (args.Count < 2)
             {
-                m_Choices = new string[]{};
+                m_Choices = Array.Empty<string>();
                 return;
             }
 
@@ -227,9 +227,7 @@ namespace UnityEditor.Search
         static IEnumerable<string> ExtractChoices(object choiceArg)
         {
             if (choiceArg == null || !(choiceArg is IEnumerable<object> enumerable))
-                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                return Enumerable.Empty<string>();
-#pragma warning restore RS0030
+                return Array.Empty<string>();
 
             #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return enumerable.Cast<string>();
@@ -237,7 +235,7 @@ namespace UnityEditor.Search
         }
     }
 
-    [QueryListBlock("Types", "type", "t", ":")]
+    [QueryListBlock("Types", "type", "t")]
     class QueryTypeBlock : QueryListBlock
     {
         private Type type;
@@ -273,6 +271,13 @@ namespace UnityEditor.Search
                 SetType(t);
                 ApplyChanges();
             }
+            else if (!string.IsNullOrEmpty(searchProposition.replacement))
+            {
+                value = searchProposition.replacement.Replace("t:", "").Replace("t=", "");
+                icon = searchProposition.icon;
+                label = searchProposition.label;
+                ApplyChanges();
+            }
         }
 
         public override IEnumerable<SearchProposition> GetPropositions(SearchPropositionFlags flags)
@@ -294,7 +299,7 @@ namespace UnityEditor.Search
         }
     }
 
-    [QueryListBlock("Components", "component", "t", ":", 1)]
+    [QueryListBlock("Components", "component", "t", "=", 1)]
     class QueryComponentBlock : QueryTypeBlock
     {
         public QueryComponentBlock(IQuerySource source, string id, string value, QueryListBlockAttribute attr)
@@ -308,7 +313,7 @@ namespace UnityEditor.Search
         }
     }
 
-    [QueryListBlock("Labels", "label", "l", ":")]
+    [QueryListBlock("Labels", "label", "l")]
     class QueryLabelBlock : QueryListBlock
     {
         static readonly Texture2D kLabelIcon = Utils.LoadIcon("QuickSearch/AssetLabelIconSquare");
@@ -350,7 +355,7 @@ namespace UnityEditor.Search
         }
     }
 
-    [QueryListBlock("Layers", "layer", new[] { "layer", "#m_layer" })]
+    [QueryListBlock("Layers", "layer", new[] { "layer", "#m_layer" }, op:"=")]
     class QueryLayerBlock : QueryListBlock
     {
         const int k_MaxLayerCount = 32;
@@ -406,7 +411,7 @@ namespace UnityEditor.Search
         }
     }
 
-    [QueryListBlock("Rendering Layers", "renderinglayer", "renderinglayer", ":")]
+    [QueryListBlock("Rendering Layers", "renderinglayer", "renderinglayer")]
     class QueryRenderingLayerBlock : QueryListBlock
     {
         public QueryRenderingLayerBlock(IQuerySource source, string id, string value, QueryListBlockAttribute attr)
@@ -444,7 +449,7 @@ namespace UnityEditor.Search
         }
     }
 
-    [QueryListBlock("Prefabs", "prefab", "prefab", ":")]
+    [QueryListBlock("Prefabs", "prefab", "prefab")]
     class QueryPrefabFilterBlock : QueryListBlock
     {
         public QueryPrefabFilterBlock(IQuerySource source, string id, string value, QueryListBlockAttribute attr)
@@ -470,7 +475,7 @@ namespace UnityEditor.Search
         }
     }
 
-    [QueryListBlock("Scene Filters", "is", "is", ":")]
+    [QueryListBlock("Scene Filters", "is", "is")]
     class QueryIsFilterBlock : QueryListBlock
     {
         public QueryIsFilterBlock(IQuerySource source, string id, string value, QueryListBlockAttribute attr)
@@ -493,7 +498,7 @@ namespace UnityEditor.Search
         }
     }
 
-    [QueryListBlock("Scenes", "scene", "scene", "=")]
+    [QueryListBlock("Scenes", "scene", "scene")]
     class QuerySceneFilterBlock : QueryListBlock
     {
         public QuerySceneFilterBlock(IQuerySource source, string id, string value, QueryListBlockAttribute attr)
@@ -539,7 +544,7 @@ namespace UnityEditor.Search
         }
     }
 
-    [QueryListBlock("Missing", "missing", "missing", ":")]
+    [QueryListBlock("Missing", "missing", "missing")]
     class QueryMissingBlock : QueryListBlock
     {
         public QueryMissingBlock(IQuerySource source, string id, string value, QueryListBlockAttribute attr)

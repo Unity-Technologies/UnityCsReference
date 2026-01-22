@@ -9,7 +9,8 @@ using UnityEngine.Bindings;
 namespace UnityEditor.Build.Reporting
 {
     ///<summary>Contains overall summary information about a build.</summary>
-    [NativeType(Header = "Modules/BuildReportingEditor/Managed/BuildSummary.bindings.h", CodegenOptions = CodegenOptions.Custom)]
+    [NativeType(CodegenOptions.Custom)]
+    [NativeHeader("Modules/BuildReportingEditor/Managed/BuildSummary.bindings.h")]
     public struct BuildSummary
     {
         internal Int64 buildStartTimeTicks;
@@ -66,6 +67,10 @@ namespace UnityEditor.Build.Reporting
 		// TODO: This should be deprecated, it was tracking use of Multi-process assetbundle building, removed in 6.4
         ///<summary>Whether the multi-process option was enabled for the build.</summary>
         public bool multiProcessEnabled { get; }
+
+        ///<summary>For ContentDirectory builds this returns the Hash128 of the build manifest. For other build types this returns a default Hash128.</summary>
+        /*UCBP-PUBLIC*/
+        internal Hash128 buildManifestHash { get; }
 
         private T ParseSubtarget<T, S>() where T : Enum where S : Enum
         {

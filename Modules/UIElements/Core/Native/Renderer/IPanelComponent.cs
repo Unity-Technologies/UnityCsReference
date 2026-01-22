@@ -15,6 +15,7 @@ namespace UnityEngine.UIElements
     /// <summary>
     /// Interface for UI panel components, <see cref="PanelRenderer"/> and <see cref="UIDocument"/>.
     /// </summary>
+    [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
     public interface IPanelComponent
     {
         /// <summary>
@@ -77,5 +78,13 @@ namespace UnityEngine.UIElements
         /// Updates the panel component.
         /// </summary>
         public void PerformUpdate();
+
+        /// <summary>
+        /// Handles live reload of the visual tree asset.
+        /// </summary>
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
+        internal void HandleLiveReload();
+
+        internal void OnLiveReloadOptionChanged();
     }
 }

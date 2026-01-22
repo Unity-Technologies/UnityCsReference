@@ -1027,9 +1027,11 @@ namespace UnityEditor.Search
                 return null;
             }
 
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable RS0031 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             if (!validationOptions.validateSyntaxOnly && filter.supportedOperators.Any() && !filter.supportedOperators.Any(filterOp => filterOp.Equals(op.token)))
 #pragma warning restore RS0030
+#pragma warning restore RS0031
             {
                 args.errors.Add(new QueryError(args.filterOperatorIndex, args.filterOperator.length, $"The operator \"{op.token}\" is not supported for this filter."));
                 return null;
@@ -1193,9 +1195,11 @@ namespace UnityEditor.Search
                 }
 
                 var opToken = op.token;
-                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable RS0031 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 if (!validationOptions.validateSyntaxOnly && filter.supportedOperators.Any() && !filter.supportedOperators.Any(filterOp => filterOp.Equals(opToken)))
 #pragma warning restore RS0030
+#pragma warning restore RS0031
                 {
                     args.errors.Add(new QueryError(args.filterOperatorIndex, args.filterOperator.length, $"The operator \"{op.token}\" is not supported for this filter."));
                     return null;
@@ -1757,9 +1761,7 @@ namespace UnityEditor.Search
             where TFilterAttribute : QueryEngineFilterAttribute
             where TTransformerAttribute : QueryEngineParameterTransformerAttribute
         {
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            var attr = mi.GetCustomAttributes(typeof(TFilterAttribute), false).Cast<TFilterAttribute>().First();
-#pragma warning restore RS0030
+            var attr = (TFilterAttribute)mi.GetCustomAttributes(typeof(TFilterAttribute), false)[0];
             var creationParams = new FilterCreationParams(
                 attr.token,
                 new Regex(attr.token),
@@ -2092,9 +2094,7 @@ namespace UnityEditor.Search
 
         static bool FilterHasCustomTokenHandlers(IFilter filter)
         {
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            return filter.usesRegularExpressionToken || filter.operators.Any();
-#pragma warning restore RS0030
+            return filter.usesRegularExpressionToken || filter.operators.Count > 0;
         }
 
         void AddFilterQuoteTokenHandlers(IFilter filter, in QueryTextDelimiter textDelimiter, bool sort = true)

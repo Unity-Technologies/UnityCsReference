@@ -150,9 +150,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         public void Uninstall(IEnumerable<long> productIds)
         {
             var assetsToRemove = new List<Asset>();
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            foreach (var productId in productIds ?? Enumerable.Empty<long>())
-#pragma warning restore RS0030
+            foreach (var productId in productIds ?? System.Array.Empty<long>())
             {
                 var importedPackage = m_AssetStoreCache.GetImportedPackage(productId);
                 if (importedPackage != null)

@@ -12,7 +12,7 @@ namespace UnityEditor.Build.Reporting
     ///
     ///</summary>
     ///<seealso cref="Build.Reporting.BuildReport.steps" />
-    [NativeType(Header = "Modules/BuildReportingEditor/Public/BuildReport.h")]
+    [NativeHeader("Modules/BuildReportingEditor/Public/BuildReport.h")]
     public struct BuildStep
     {
         ///<summary>The name of this build step.</summary>

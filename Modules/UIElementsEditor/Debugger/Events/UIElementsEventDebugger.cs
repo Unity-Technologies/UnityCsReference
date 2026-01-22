@@ -910,9 +910,7 @@ namespace UnityEditor.UIElements.Experimental.Debugger
             EventDebuggerEventRecord eventBase = null;
             IEventHandler focused = null;
             IEventHandler capture = null;
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            if (m_SelectedEvents.Any())
-#pragma warning restore RS0030
+            if (m_SelectedEvents.Count > 0)
             {
                 var line = m_SelectedEvents[0];
                 var calls = m_Debugger.GetBeginEndProcessedEvents(panel);
@@ -1233,9 +1231,7 @@ namespace UnityEditor.UIElements.Experimental.Debugger
 
                 m_EventPropagationPaths.text += "Trickle Down Path:\n";
                 var pathsTrickleDownPath = propagationPath.paths?.trickleDownPath;
-                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                if (pathsTrickleDownPath != null && pathsTrickleDownPath.Any())
-#pragma warning restore RS0030
+                if (pathsTrickleDownPath?.Count > 0)
                 {
                     foreach (var trickleDownPathElement in pathsTrickleDownPath)
                     {
@@ -1252,9 +1248,7 @@ namespace UnityEditor.UIElements.Experimental.Debugger
 
                 m_EventPropagationPaths.text += "Bubble Up Path:\n";
                 var pathsBubblePath = propagationPath.paths.bubbleUpPath;
-                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                if (pathsBubblePath != null && pathsBubblePath.Any())
-#pragma warning restore RS0030
+                if (pathsBubblePath?.Count > 0)
                 {
                     foreach (var bubblePathElement in pathsBubblePath)
                     {
@@ -1440,9 +1434,7 @@ namespace UnityEditor.UIElements.Experimental.Debugger
             m_SaveReplayButton?.EnableInClassList("light", !isProSkin);
             m_LoadReplayButton?.EnableInClassList("light", !isProSkin);
 
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            var anySelected = m_SelectedEvents != null && m_SelectedEvents.Any();
-#pragma warning restore RS0030
+            var anySelected = m_SelectedEvents?.Count > 0;
             m_TogglePlayback?.SetEnabled(m_Debugger.isReplaying);
             m_StopPlaybackButton?.SetEnabled(m_Debugger.isReplaying);
             m_SaveReplayButton?.SetEnabled(anySelected);

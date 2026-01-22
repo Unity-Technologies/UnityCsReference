@@ -246,7 +246,7 @@ namespace Unity.GraphToolkit.Editor
         /// <param name="corners">The radii (top,left,right,bottom) of the border corners.</param>
         protected virtual void DrawBorder(MeshGenerationContext mgc, Rect localRect, float wantedWidth, Color[] colors, Vector2[] corners)
         {
-            MeshDrawingHelpers.Border(mgc, localRect, colors, wantedWidth, corners, ContextType.Editor);
+            MeshDrawingHelpers.Border(mgc, localRect, colors[0], wantedWidth, corners);
         }
 
         void OnGenerateVisualContent(MeshGenerationContext mgc)

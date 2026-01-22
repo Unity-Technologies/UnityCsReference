@@ -4,7 +4,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
 
 namespace UnityEngine
 {
@@ -16,17 +15,13 @@ namespace UnityEngine
         private static List<SystemInfoShimBase> s_ActiveSystemInfoShim = new List<SystemInfoShimBase>(new [] { new SystemInfoShimBase() } );
         private static List<ApplicationShimBase> s_ActiveApplicationShim = new List<ApplicationShimBase>(new [] { new ApplicationShimBase() } );
 
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-        internal static ScreenShimBase screenShim => s_ActiveScreenShim.Last();
-        internal static SystemInfoShimBase systemInfoShim => s_ActiveSystemInfoShim.Last();
-        internal static ApplicationShimBase applicationShim => s_ActiveApplicationShim.Last();
-#pragma warning restore RS0030
+        internal static ScreenShimBase screenShim => s_ActiveScreenShim[^1];
+        internal static SystemInfoShimBase systemInfoShim => s_ActiveSystemInfoShim[^1];
+        internal static ApplicationShimBase applicationShim => s_ActiveApplicationShim[^1];
 
         internal static void UseShim(ScreenShimBase shim)
         {
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            if (s_ActiveScreenShim.Last() == shim)
-#pragma warning restore RS0030
+            if (s_ActiveScreenShim[^1] == shim)
             {
                 return;
             }
@@ -38,9 +33,7 @@ namespace UnityEngine
 
         internal static void UseShim(SystemInfoShimBase shim)
         {
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            if (s_ActiveSystemInfoShim.Last() == shim)
-#pragma warning restore RS0030
+            if (s_ActiveSystemInfoShim[^1] == shim)
             {
                 return;
             }
@@ -52,9 +45,7 @@ namespace UnityEngine
 
         internal static void UseShim(ApplicationShimBase shim)
         {
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            if (s_ActiveApplicationShim.Last() == shim)
-#pragma warning restore RS0030
+            if (s_ActiveApplicationShim[^1] == shim)
             {
                 return;
             }
@@ -93,23 +84,17 @@ namespace UnityEngine
 
         internal static bool IsShimActive(ScreenShimBase shim)
         {
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            return s_ActiveScreenShim.Last() == shim;
-#pragma warning restore RS0030
+            return s_ActiveScreenShim[^1] == shim;
         }
 
         internal static bool IsShimActive(SystemInfoShimBase shim)
         {
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            return s_ActiveSystemInfoShim.Last() == shim;
-#pragma warning restore RS0030
+            return s_ActiveSystemInfoShim[^1] == shim;
         }
 
         internal static bool IsShimActive(ApplicationShimBase shim)
         {
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            return s_ActiveApplicationShim.Last() == shim;
-#pragma warning restore RS0030
+            return s_ActiveApplicationShim[^1] == shim;
         }
 
         // For the following functions, only return true if shims besides the default are in the collection

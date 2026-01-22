@@ -7,7 +7,7 @@ using UnityEngine.Bindings;
 
 namespace Unity.Audio
 {
-    [NativeType(Header = "Modules/DSPGraph/Public/AudioOutputHookManager.bindings.h")]
+    [NativeHeader("Modules/DSPGraph/Public/AudioOutputHookManager.bindings.h")]
     internal struct AudioOutputHookManager
     {
         [NativeMethod(IsFreeFunction = true, ThrowsException = true)]

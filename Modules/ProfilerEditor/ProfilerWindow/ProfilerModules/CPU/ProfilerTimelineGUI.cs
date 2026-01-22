@@ -20,6 +20,8 @@ namespace UnityEditorInternal
     [Serializable]
     internal class ProfilerTimelineGUI : ProfilerFrameDataViewBase
     {
+        const float k_LabelDropShadowOpacity = 0.3f;
+
         const float k_TextFadeStartWidth = 50.0f;
         const float k_TextFadeOutWidth = 20.0f;
         const float k_LineHeight = 16.0f;
@@ -460,11 +462,11 @@ namespace UnityEditorInternal
 
             const int indentSize = 10;
             bool stripped = false;
-            if ((styles.leftPane.CalcSize(content).x + (indent ? indentSize : 0)) > Chart.kSideWidth)
+            if ((styles.leftPane.CalcSize(content).x + (indent ? indentSize : 0)) > ProfilerWindow.Styles.kSideWidth)
             {
                 stripped = true;
                 content.text += "...";
-                while ((styles.leftPane.CalcSize(content).x + (indent ? indentSize : 0)) > Chart.kSideWidth)
+                while ((styles.leftPane.CalcSize(content).x + (indent ? indentSize : 0)) > ProfilerWindow.Styles.kSideWidth)
                 {
                     content.text = content.text.Remove(content.text.Length - 4, 1);
                 }
@@ -695,7 +697,7 @@ namespace UnityEditorInternal
 
         bool DrawBar(Rect r, float y, float height, GUIContent content, bool group, bool expanded, bool indent)
         {
-            Rect leftRect = new Rect(r.x - Chart.kSideWidth, y, Chart.kSideWidth, height);
+            Rect leftRect = new Rect(r.x - ProfilerWindow.Styles.kSideWidth, y, ProfilerWindow.Styles.kSideWidth, height);
             Rect rightRect = new Rect(r.x, y, r.width, height);
             if (Event.current.type == EventType.Repaint)
             {
@@ -2178,7 +2180,19 @@ namespace UnityEditorInternal
 
             // Duration label
             var labelText = string.Format(k_TickFormatMilliseconds, m_RangeSelection.duration.ToString("N3", CultureInfo.InvariantCulture.NumberFormat));
-            Chart.DoLabel(startPixel + (endPixel - startPixel) / 2, rect.yMin + 3, labelText, -0.5f);
+            DoLabel(startPixel + (endPixel - startPixel) / 2, rect.yMin + 3, labelText, -0.5f);
+        }
+
+        internal static void DoLabel(float x, float y, string text, float alignment)
+        {
+            if (string.IsNullOrEmpty(text))
+                return;
+
+            GUIContent content = EditorGUIUtility.TempContent(text);
+            Vector2 size = ProfilerWindow.Styles.whiteLabel.CalcSize(content);
+            Rect r = new Rect(x + size.x * alignment, y, size.x, size.y);
+
+            EditorGUI.DoDropShadowLabel(r, content, ProfilerWindow.Styles.whiteLabel, k_LabelDropShadowOpacity);
         }
 
         void DoTimeArea()
@@ -2445,7 +2459,7 @@ namespace UnityEditorInternal
 
                     position.yMin -= 1; // Workaround: Adjust the y position as a temporary fix to a 1px vertical offset that need to be investigated.
                     Rect fullRect = position;
-                    float sideWidth = Chart.kSideWidth;
+                    float sideWidth = ProfilerWindow.Styles.kSideWidth;
 
                     Rect timeRulerRect = new Rect(fullRect.x + sideWidth, fullRect.y, fullRect.width - sideWidth, k_LineHeight);
 

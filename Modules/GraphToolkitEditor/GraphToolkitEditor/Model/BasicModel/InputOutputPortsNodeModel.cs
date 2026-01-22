@@ -15,6 +15,7 @@ namespace Unity.GraphToolkit.Editor
     internal abstract class InputOutputPortsNodeModel : PortNodeModel
     {
         protected List<NodeOption> m_NodeOptions = new List<NodeOption>();
+        protected Dictionary<string, INodeOption> m_NodeOptionsByName = new Dictionary<string, INodeOption>();
 
         /// <summary>
         /// Gets all the models of the input ports of this node, indexed by a string unique to the node.
@@ -71,6 +72,12 @@ namespace Unity.GraphToolkit.Editor
         /// </summary>
         /// <remarks>The options in this list are created without the use of the <see cref="NodeOptionAttribute"/>.</remarks>
         public IReadOnlyList<NodeOption> NodeOptions => m_NodeOptions;
+
+        /// <summary>
+        /// The list of <see cref="NodeOption"/> indexed by a string unique to the option.
+        /// </summary>
+        /// <remarks>The options in this dictionary are created without the use of the <see cref="NodeOptionAttribute"/>.</remarks>
+        public IReadOnlyDictionary<string, INodeOption> NodeOptionsByName => m_NodeOptionsByName;
 
         /// <inheritdoc />
         public override PortModel GetPortFitToConnectTo(PortModel portModel)

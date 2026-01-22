@@ -670,6 +670,7 @@ namespace Unity.GraphToolkit.Editor
             m_InputPortInfos.orderedVisiblePorts.Clear();
             m_OutputPortInfos.orderedVisiblePorts.Clear();
             m_NodeOptions.Clear();
+            m_NodeOptionsByName.Clear();
 
             m_InputPortInfos.portsById = new OrderedPorts(m_InputPortInfos.portsById?.Count ?? 0);
             m_OutputPortInfos.portsById = new OrderedPorts(m_OutputPortInfos.portsById?.Count ?? 0);
@@ -1080,6 +1081,7 @@ namespace Unity.GraphToolkit.Editor
         NodeOption AddNodeOption(NodeOption nodeOption)
         {
             m_NodeOptions.Add(nodeOption);
+            m_NodeOptionsByName[nodeOption.Id] = nodeOption;
             return m_NodeOptions[^1];
         }
 

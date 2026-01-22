@@ -276,7 +276,7 @@ namespace UnityEditor.Overlays
 
         internal virtual IEnumerable<OverlayDropZoneBase> GetDropZones()
         {
-            return new OverlayDropZoneBase[0];
+            return Array.Empty<OverlayDropZoneBase>();
         }
     }
 }

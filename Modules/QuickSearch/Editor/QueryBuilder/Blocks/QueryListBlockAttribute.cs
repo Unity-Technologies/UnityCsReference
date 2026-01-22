@@ -38,7 +38,7 @@ namespace UnityEditor.Search
 
         internal QueryListBlockAttribute(string category, string name, string[] ids, string op, int priority = 0)
         {
-            this.ids = ids ?? new string[] { };
+            this.ids = ids ?? Array.Empty<string>();
             this.category = category;
             this.name = name;
             this.op = op;
@@ -115,9 +115,7 @@ namespace UnityEditor.Search
             {
                 try
                 {
-                    #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                    var attr = ti.GetCustomAttributes(typeof(QueryListBlockAttribute), false).Cast<QueryListBlockAttribute>().First();
-#pragma warning restore RS0030
+                    var attr = (QueryListBlockAttribute)ti.GetCustomAttributes(typeof(QueryListBlockAttribute), false)[0];
                     attr.type = ti;
                     if (!typeof(QueryListBlock).IsAssignableFrom(ti))
                         continue;

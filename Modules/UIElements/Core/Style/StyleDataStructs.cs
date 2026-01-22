@@ -8,6 +8,14 @@ using UnityEngine.UIElements.StyleSheets;
 
 namespace UnityEngine.UIElements;
 
+internal interface IStyleDataGroup<T>
+{
+    T GetDefault();
+    T Copy();
+    void CopyFrom(ref T other);
+    void Dispose() { }
+}
+
 internal struct CustomData : IStyleDataGroup<CustomData>, IEquatable<CustomData>
 {
     public Dictionary<string, StylePropertyValue> customProperties;

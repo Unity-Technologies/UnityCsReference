@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System.Collections.Generic;
+using System.Linq;
 using Unity.GraphToolkit.ItemLibrary.Editor;
 using UnityEngine;
 using UnityEngine.UIElements;
@@ -230,7 +231,9 @@ namespace Unity.GraphToolkit.Editor
         {
             int index = GetBlockIndex(posInContext);
 
-            GraphView.Dispatch(new InsertBlocksInContextCommand(ContextNodeModel, index, blocks, true, copy));
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            GraphView.Dispatch(new InsertBlocksInContextCommand(ContextNodeModel, index, blocks?.ToList(), true, copy));
+#pragma warning restore RS0030
 
             StopBlockDragging();
         }

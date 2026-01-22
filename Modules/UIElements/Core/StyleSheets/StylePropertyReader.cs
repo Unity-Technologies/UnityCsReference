@@ -8,8 +8,10 @@ using System.Drawing;
 using System.Globalization;
 using UnityEngine;
 using UnityEngine.Bindings;
+using UnityEngine.Pool;
 using UnityEngine.TextCore.Text;
 using UnityEngine.UIElements.Layout;
+using UnityEngine.UIElements.Unmanaged;
 
 namespace UnityEngine.UIElements.StyleSheets
 {
@@ -234,7 +236,7 @@ namespace UnityEngine.UIElements.StyleSheets
             return o;
         }
 
-        public FontDefinition ReadFontDefinition(int index)
+        public EntityId ReadFontDefinition(int index)
         {
             FontAsset fontAsset = null;
             Font font = null;
@@ -283,10 +285,12 @@ namespace UnityEngine.UIElements.StyleSheets
                 sfd = FontDefinition.FromSDFFont(fontAsset);
             else
                 sfd = new FontDefinition();
-            return sfd;
+
+            FontDefinition.To(in sfd, out var entityId);
+            return entityId;
         }
 
-        public Font ReadFont(int index)
+        public EntityId ReadFont(int index)
         {
             Font font = null;
             var value = m_Values[m_CurrentValueIndex + index];
@@ -321,15 +325,15 @@ namespace UnityEngine.UIElements.StyleSheets
                     break;
             }
 
-            return font;
+            return font != null ? font.GetEntityId() : EntityId.None;
         }
 
-        public MaterialDefinition ReadMaterialDefinition(int index)
+        public void ReadMaterialDefinition(ref UnmanagedMaterialDefinition data, int index)
         {
-            if (property.TryGetMaterialDefinition(m_Sheet, out var value))
-                return value;
-
-            return default;
+            if (!property.TryGetMaterialDefinition(m_Sheet, ref data))
+            {
+                data.CopyFrom(UnmanagedMaterialDefinition.Empty);
+            }
         }
 
         public EntityId ReadBackground(int index)
@@ -426,9 +430,9 @@ namespace UnityEngine.UIElements.StyleSheets
             return ReadBackgroundSize(valueCount, val1, val2);
         }
 
-        public void ReadListEasingFunction(List<EasingFunction> list, int index)
+        public void ReadListEasingFunction(ref UnmanagedRefCountedList<EasingFunction> result, int index)
         {
-            list.Clear();
+            using var _ = ListPool<EasingFunction>.Get(out var list);
             do
             {
                 var value = m_Values[m_CurrentValueIndex + index];
@@ -449,11 +453,12 @@ namespace UnityEngine.UIElements.StyleSheets
                 }
             }
             while (index < valueCount);
+            result.CopyFrom(list);
         }
 
-        public void ReadListTimeValue(List<TimeValue> list, int index)
+        public void ReadListTimeValue(ref UnmanagedRefCountedList<TimeValue> result, int index)
         {
-            list.Clear();
+            using var _ = ListPool<TimeValue>.Get(out var list);
             do
             {
                 var value = m_Values[m_CurrentValueIndex + index];
@@ -469,11 +474,13 @@ namespace UnityEngine.UIElements.StyleSheets
                 }
             }
             while (index < valueCount);
+
+            result.CopyFrom(list);
         }
 
-        public void ReadListFilterFunction(List<FilterFunction> list, int index)
+        public void ReadListUnmanagedFilterFunction(ref UnmanagedRefCountedList<UnmanagedFilterFunction> result, int index)
         {
-            list.Clear();
+            using var _ = ListPool<FilterFunction>.Get(out var list);
             do
             {
                 var filterType = (StyleValueFunction)GetValue(index++).handle.valueIndex;
@@ -528,11 +535,13 @@ namespace UnityEngine.UIElements.StyleSheets
                     list.Add(new FilterFunction(StyleProperty.ToFilterFunctionType(filterType), args, argCount));
             }
             while (index < valueCount);
+
+            result.CopyFrom(list);
         }
 
-        public void ReadListStylePropertyName(List<StylePropertyName> list, int index)
+        public void ReadListStylePropertyId(ref UnmanagedRefCountedList<StylePropertyId> result, int index)
         {
-            list.Clear();
+            using var _ = ListPool<StylePropertyId>.Get(out var list);
             do
             {
                 var value = m_Values[m_CurrentValueIndex + index];
@@ -547,7 +556,7 @@ namespace UnityEngine.UIElements.StyleSheets
                 {
                     propertyName = value.sheet.ReadStylePropertyName(value.handle);
                 }
-                list.Add(propertyName);
+                list.Add(propertyName.id);
                 ++index;
 
                 if (index < valueCount)
@@ -558,6 +567,8 @@ namespace UnityEngine.UIElements.StyleSheets
                 }
             }
             while (index < valueCount);
+
+            result.CopyFrom(list);
         }
 
         public void ReadListString(List<string> list, int index)

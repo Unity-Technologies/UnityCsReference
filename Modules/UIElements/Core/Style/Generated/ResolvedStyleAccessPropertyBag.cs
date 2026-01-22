@@ -11,6 +11,7 @@
 /******************************************************************************/
 using System.Collections.Generic;
 using Unity.Properties;
+using UnityEngine.UIElements.StyleSheets;
 
 namespace UnityEngine.UIElements
 {
@@ -21,6 +22,7 @@ namespace UnityEngine.UIElements
             public override string Name => nameof(IResolvedStyle.alignContent);
             public override string ussName => "align-content";
             public override bool IsReadOnly => true;
+
             public override Align GetValue(ref ResolvedStyleAccess container) => ((IResolvedStyle)container).alignContent;
             public override void SetValue(ref ResolvedStyleAccess container, Align value) => throw new System.InvalidOperationException();
         }
@@ -30,6 +32,7 @@ namespace UnityEngine.UIElements
             public override string Name => nameof(IResolvedStyle.alignItems);
             public override string ussName => "align-items";
             public override bool IsReadOnly => true;
+
             public override Align GetValue(ref ResolvedStyleAccess container) => ((IResolvedStyle)container).alignItems;
             public override void SetValue(ref ResolvedStyleAccess container, Align value) => throw new System.InvalidOperationException();
         }
@@ -39,6 +42,7 @@ namespace UnityEngine.UIElements
             public override string Name => nameof(IResolvedStyle.alignSelf);
             public override string ussName => "align-self";
             public override bool IsReadOnly => true;
+
             public override Align GetValue(ref ResolvedStyleAccess container) => ((IResolvedStyle)container).alignSelf;
             public override void SetValue(ref ResolvedStyleAccess container, Align value) => throw new System.InvalidOperationException();
         }
@@ -48,6 +52,7 @@ namespace UnityEngine.UIElements
             public override string Name => nameof(IResolvedStyle.aspectRatio);
             public override string ussName => "aspect-ratio";
             public override bool IsReadOnly => true;
+
             public override Ratio GetValue(ref ResolvedStyleAccess container) => ((IResolvedStyle)container).aspectRatio;
             public override void SetValue(ref ResolvedStyleAccess container, Ratio value) => throw new System.InvalidOperationException();
         }
@@ -57,6 +62,7 @@ namespace UnityEngine.UIElements
             public override string Name => nameof(IResolvedStyle.backgroundColor);
             public override string ussName => "background-color";
             public override bool IsReadOnly => true;
+
             public override Color GetValue(ref ResolvedStyleAccess container) => ((IResolvedStyle)container).backgroundColor;
             public override void SetValue(ref ResolvedStyleAccess container, Color value) => throw new System.InvalidOperationException();
         }
@@ -66,6 +72,7 @@ namespace UnityEngine.UIElements
             public override string Name => nameof(IResolvedStyle.backgroundImage);
             public override string ussName => "background-image";
             public override bool IsReadOnly => true;
+
             public override Background GetValue(ref ResolvedStyleAccess container) => ((IResolvedStyle)container).backgroundImage;
             public override void SetValue(ref ResolvedStyleAccess container, Background value) => throw new System.InvalidOperationException();
         }
@@ -75,6 +82,7 @@ namespace UnityEngine.UIElements
             public override string Name => nameof(IResolvedStyle.backgroundPositionX);
             public override string ussName => "background-position-x";
             public override bool IsReadOnly => true;
+
             public override BackgroundPosition GetValue(ref ResolvedStyleAccess container) => ((IResolvedStyle)container).backgroundPositionX;
             public override void SetValue(ref ResolvedStyleAccess container, BackgroundPosition value) => throw new System.InvalidOperationException();
         }
@@ -84,6 +92,7 @@ namespace UnityEngine.UIElements
             public override string Name => nameof(IResolvedStyle.backgroundPositionY);
             public override string ussName => "background-position-y";
             public override bool IsReadOnly => true;
+
             public override BackgroundPosition GetValue(ref ResolvedStyleAccess container) => ((IResolvedStyle)container).backgroundPositionY;
             public override void SetValue(ref ResolvedStyleAccess container, BackgroundPosition value) => throw new System.InvalidOperationException();
         }
@@ -93,6 +102,7 @@ namespace UnityEngine.UIElements
             public override string Name => nameof(IResolvedStyle.backgroundRepeat);
             public override string ussName => "background-repeat";
             public override bool IsReadOnly => true;
+
             public override BackgroundRepeat GetValue(ref ResolvedStyleAccess container) => ((IResolvedStyle)container).backgroundRepeat;
             public override void SetValue(ref ResolvedStyleAccess container, BackgroundRepeat value) => throw new System.InvalidOperationException();
         }
@@ -102,6 +112,7 @@ namespace UnityEngine.UIElements
             public override string Name => nameof(IResolvedStyle.backgroundSize);
             public override string ussName => "background-size";
             public override bool IsReadOnly => true;
+
             public override BackgroundSize GetValue(ref ResolvedStyleAccess container) => ((IResolvedStyle)container).backgroundSize;
             public override void SetValue(ref ResolvedStyleAccess container, BackgroundSize value) => throw new System.InvalidOperationException();
         }
@@ -111,6 +122,7 @@ namespace UnityEngine.UIElements
             public override string Name => nameof(IResolvedStyle.borderBottomColor);
             public override string ussName => "border-bottom-color";
             public override bool IsReadOnly => true;
+
             public override Color GetValue(ref ResolvedStyleAccess container) => ((IResolvedStyle)container).borderBottomColor;
             public override void SetValue(ref ResolvedStyleAccess container, Color value) => throw new System.InvalidOperationException();
         }
@@ -120,6 +132,7 @@ namespace UnityEngine.UIElements
             public override string Name => nameof(IResolvedStyle.borderBottomLeftRadius);
             public override string ussName => "border-bottom-left-radius";
             public override bool IsReadOnly => true;
+
             public override float GetValue(ref ResolvedStyleAccess container) => ((IResolvedStyle)container).borderBottomLeftRadius;
             public override void SetValue(ref ResolvedStyleAccess container, float value) => throw new System.InvalidOperationException();
         }
@@ -129,6 +142,7 @@ namespace UnityEngine.UIElements
             public override string Name => nameof(IResolvedStyle.borderBottomRightRadius);
             public override string ussName => "border-bottom-right-radius";
             public override bool IsReadOnly => true;
+
             public override float GetValue(ref ResolvedStyleAccess container) => ((IResolvedStyle)container).borderBottomRightRadius;
             public override void SetValue(ref ResolvedStyleAccess container, float value) => throw new System.InvalidOperationException();
         }
@@ -138,6 +152,7 @@ namespace UnityEngine.UIElements
             public override string Name => nameof(IResolvedStyle.borderBottomWidth);
             public override string ussName => "border-bottom-width";
             public override bool IsReadOnly => true;
+
             public override float GetValue(ref ResolvedStyleAccess container) => ((IResolvedStyle)container).borderBottomWidth;
             public override void SetValue(ref ResolvedStyleAccess container, float value) => throw new System.InvalidOperationException();
         }
@@ -147,6 +162,7 @@ namespace UnityEngine.UIElements
             public override string Name => nameof(IResolvedStyle.borderLeftColor);
             public override string ussName => "border-left-color";
             public override bool IsReadOnly => true;
+
             public override Color GetValue(ref ResolvedStyleAccess container) => ((IResolvedStyle)container).borderLeftColor;
             public override void SetValue(ref ResolvedStyleAccess container, Color value) => throw new System.InvalidOperationException();
         }
@@ -156,6 +172,7 @@ namespace UnityEngine.UIElements
             public override string Name => nameof(IResolvedStyle.borderLeftWidth);
             public override string ussName => "border-left-width";
             public override bool IsReadOnly => true;
+
             public override float GetValue(ref ResolvedStyleAccess container) => ((IResolvedStyle)container).borderLeftWidth;
             public override void SetValue(ref ResolvedStyleAccess container, float value) => throw new System.InvalidOperationException();
         }
@@ -165,6 +182,7 @@ namespace UnityEngine.UIElements
             public override string Name => nameof(IResolvedStyle.borderRightColor);
             public override string ussName => "border-right-color";
             public override bool IsReadOnly => true;
+
             public override Color GetValue(ref ResolvedStyleAccess container) => ((IResolvedStyle)container).borderRightColor;
             public override void SetValue(ref ResolvedStyleAccess container, Color value) => throw new System.InvalidOperationException();
         }
@@ -174,6 +192,7 @@ namespace UnityEngine.UIElements
             public override string Name => nameof(IResolvedStyle.borderRightWidth);
             public override string ussName => "border-right-width";
             public override bool IsReadOnly => true;
+
             public override float GetValue(ref ResolvedStyleAccess container) => ((IResolvedStyle)container).borderRightWidth;
             public override void SetValue(ref ResolvedStyleAccess container, float value) => throw new System.InvalidOperationException();
         }
@@ -183,6 +202,7 @@ namespace UnityEngine.UIElements
             public override string Name => nameof(IResolvedStyle.borderTopColor);
             public override string ussName => "border-top-color";
             public override bool IsReadOnly => true;
+
             public override Color GetValue(ref ResolvedStyleAccess container) => ((IResolvedStyle)container).borderTopColor;
             public override void SetValue(ref ResolvedStyleAccess container, Color value) => throw new System.InvalidOperationException();
         }
@@ -192,6 +212,7 @@ namespace UnityEngine.UIElements
             public override string Name => nameof(IResolvedStyle.borderTopLeftRadius);
             public override string ussName => "border-top-left-radius";
             public override bool IsReadOnly => true;
+
             public override float GetValue(ref ResolvedStyleAccess container) => ((IResolvedStyle)container).borderTopLeftRadius;
             public override void SetValue(ref ResolvedStyleAccess container, float value) => throw new System.InvalidOperationException();
         }
@@ -201,6 +222,7 @@ namespace UnityEngine.UIElements
             public override string Name => nameof(IResolvedStyle.borderTopRightRadius);
             public override string ussName => "border-top-right-radius";
             public override bool IsReadOnly => true;
+
             public override float GetValue(ref ResolvedStyleAccess container) => ((IResolvedStyle)container).borderTopRightRadius;
             public override void SetValue(ref ResolvedStyleAccess container, float value) => throw new System.InvalidOperationException();
         }
@@ -210,6 +232,7 @@ namespace UnityEngine.UIElements
             public override string Name => nameof(IResolvedStyle.borderTopWidth);
             public override string ussName => "border-top-width";
             public override bool IsReadOnly => true;
+
             public override float GetValue(ref ResolvedStyleAccess container) => ((IResolvedStyle)container).borderTopWidth;
             public override void SetValue(ref ResolvedStyleAccess container, float value) => throw new System.InvalidOperationException();
         }
@@ -219,6 +242,7 @@ namespace UnityEngine.UIElements
             public override string Name => nameof(IResolvedStyle.bottom);
             public override string ussName => "bottom";
             public override bool IsReadOnly => true;
+
             public override float GetValue(ref ResolvedStyleAccess container) => ((IResolvedStyle)container).bottom;
             public override void SetValue(ref ResolvedStyleAccess container, float value) => throw new System.InvalidOperationException();
         }
@@ -228,6 +252,7 @@ namespace UnityEngine.UIElements
             public override string Name => nameof(IResolvedStyle.color);
             public override string ussName => "color";
             public override bool IsReadOnly => true;
+
             public override Color GetValue(ref ResolvedStyleAccess container) => ((IResolvedStyle)container).color;
             public override void SetValue(ref ResolvedStyleAccess container, Color value) => throw new System.InvalidOperationException();
         }
@@ -237,6 +262,7 @@ namespace UnityEngine.UIElements
             public override string Name => nameof(IResolvedStyle.display);
             public override string ussName => "display";
             public override bool IsReadOnly => true;
+
             public override DisplayStyle GetValue(ref ResolvedStyleAccess container) => ((IResolvedStyle)container).display;
             public override void SetValue(ref ResolvedStyleAccess container, DisplayStyle value) => throw new System.InvalidOperationException();
         }
@@ -246,6 +272,7 @@ namespace UnityEngine.UIElements
             public override string Name => nameof(IResolvedStyle.filter);
             public override string ussName => "filter";
             public override bool IsReadOnly => true;
+
             public override IEnumerable<FilterFunction> GetValue(ref ResolvedStyleAccess container) => ((IResolvedStyle)container).filter;
             public override void SetValue(ref ResolvedStyleAccess container, IEnumerable<FilterFunction> value) => throw new System.InvalidOperationException();
         }
@@ -255,6 +282,7 @@ namespace UnityEngine.UIElements
             public override string Name => nameof(IResolvedStyle.flexBasis);
             public override string ussName => "flex-basis";
             public override bool IsReadOnly => true;
+
             public override StyleFloat GetValue(ref ResolvedStyleAccess container) => ((IResolvedStyle)container).flexBasis;
             public override void SetValue(ref ResolvedStyleAccess container, StyleFloat value) => throw new System.InvalidOperationException();
         }
@@ -264,6 +292,7 @@ namespace UnityEngine.UIElements
             public override string Name => nameof(IResolvedStyle.flexDirection);
             public override string ussName => "flex-direction";
             public override bool IsReadOnly => true;
+
             public override FlexDirection GetValue(ref ResolvedStyleAccess container) => ((IResolvedStyle)container).flexDirection;
             public override void SetValue(ref ResolvedStyleAccess container, FlexDirection value) => throw new System.InvalidOperationException();
         }
@@ -273,6 +302,7 @@ namespace UnityEngine.UIElements
             public override string Name => nameof(IResolvedStyle.flexGrow);
             public override string ussName => "flex-grow";
             public override bool IsReadOnly => true;
+
             public override float GetValue(ref ResolvedStyleAccess container) => ((IResolvedStyle)container).flexGrow;
             public override void SetValue(ref ResolvedStyleAccess container, float value) => throw new System.InvalidOperationException();
         }
@@ -282,6 +312,7 @@ namespace UnityEngine.UIElements
             public override string Name => nameof(IResolvedStyle.flexShrink);
             public override string ussName => "flex-shrink";
             public override bool IsReadOnly => true;
+
             public override float GetValue(ref ResolvedStyleAccess container) => ((IResolvedStyle)container).flexShrink;
             public override void SetValue(ref ResolvedStyleAccess container, float value) => throw new System.InvalidOperationException();
         }
@@ -291,6 +322,7 @@ namespace UnityEngine.UIElements
             public override string Name => nameof(IResolvedStyle.flexWrap);
             public override string ussName => "flex-wrap";
             public override bool IsReadOnly => true;
+
             public override Wrap GetValue(ref ResolvedStyleAccess container) => ((IResolvedStyle)container).flexWrap;
             public override void SetValue(ref ResolvedStyleAccess container, Wrap value) => throw new System.InvalidOperationException();
         }
@@ -300,6 +332,7 @@ namespace UnityEngine.UIElements
             public override string Name => nameof(IResolvedStyle.fontSize);
             public override string ussName => "font-size";
             public override bool IsReadOnly => true;
+
             public override float GetValue(ref ResolvedStyleAccess container) => ((IResolvedStyle)container).fontSize;
             public override void SetValue(ref ResolvedStyleAccess container, float value) => throw new System.InvalidOperationException();
         }
@@ -309,6 +342,7 @@ namespace UnityEngine.UIElements
             public override string Name => nameof(IResolvedStyle.height);
             public override string ussName => "height";
             public override bool IsReadOnly => true;
+
             public override float GetValue(ref ResolvedStyleAccess container) => ((IResolvedStyle)container).height;
             public override void SetValue(ref ResolvedStyleAccess container, float value) => throw new System.InvalidOperationException();
         }
@@ -318,6 +352,7 @@ namespace UnityEngine.UIElements
             public override string Name => nameof(IResolvedStyle.justifyContent);
             public override string ussName => "justify-content";
             public override bool IsReadOnly => true;
+
             public override Justify GetValue(ref ResolvedStyleAccess container) => ((IResolvedStyle)container).justifyContent;
             public override void SetValue(ref ResolvedStyleAccess container, Justify value) => throw new System.InvalidOperationException();
         }
@@ -327,6 +362,7 @@ namespace UnityEngine.UIElements
             public override string Name => nameof(IResolvedStyle.left);
             public override string ussName => "left";
             public override bool IsReadOnly => true;
+
             public override float GetValue(ref ResolvedStyleAccess container) => ((IResolvedStyle)container).left;
             public override void SetValue(ref ResolvedStyleAccess container, float value) => throw new System.InvalidOperationException();
         }
@@ -336,6 +372,7 @@ namespace UnityEngine.UIElements
             public override string Name => nameof(IResolvedStyle.letterSpacing);
             public override string ussName => "letter-spacing";
             public override bool IsReadOnly => true;
+
             public override float GetValue(ref ResolvedStyleAccess container) => ((IResolvedStyle)container).letterSpacing;
             public override void SetValue(ref ResolvedStyleAccess container, float value) => throw new System.InvalidOperationException();
         }
@@ -345,6 +382,7 @@ namespace UnityEngine.UIElements
             public override string Name => nameof(IResolvedStyle.marginBottom);
             public override string ussName => "margin-bottom";
             public override bool IsReadOnly => true;
+
             public override float GetValue(ref ResolvedStyleAccess container) => ((IResolvedStyle)container).marginBottom;
             public override void SetValue(ref ResolvedStyleAccess container, float value) => throw new System.InvalidOperationException();
         }
@@ -354,6 +392,7 @@ namespace UnityEngine.UIElements
             public override string Name => nameof(IResolvedStyle.marginLeft);
             public override string ussName => "margin-left";
             public override bool IsReadOnly => true;
+
             public override float GetValue(ref ResolvedStyleAccess container) => ((IResolvedStyle)container).marginLeft;
             public override void SetValue(ref ResolvedStyleAccess container, float value) => throw new System.InvalidOperationException();
         }
@@ -363,6 +402,7 @@ namespace UnityEngine.UIElements
             public override string Name => nameof(IResolvedStyle.marginRight);
             public override string ussName => "margin-right";
             public override bool IsReadOnly => true;
+
             public override float GetValue(ref ResolvedStyleAccess container) => ((IResolvedStyle)container).marginRight;
             public override void SetValue(ref ResolvedStyleAccess container, float value) => throw new System.InvalidOperationException();
         }
@@ -372,6 +412,7 @@ namespace UnityEngine.UIElements
             public override string Name => nameof(IResolvedStyle.marginTop);
             public override string ussName => "margin-top";
             public override bool IsReadOnly => true;
+
             public override float GetValue(ref ResolvedStyleAccess container) => ((IResolvedStyle)container).marginTop;
             public override void SetValue(ref ResolvedStyleAccess container, float value) => throw new System.InvalidOperationException();
         }
@@ -381,6 +422,7 @@ namespace UnityEngine.UIElements
             public override string Name => nameof(IResolvedStyle.maxHeight);
             public override string ussName => "max-height";
             public override bool IsReadOnly => true;
+
             public override StyleFloat GetValue(ref ResolvedStyleAccess container) => ((IResolvedStyle)container).maxHeight;
             public override void SetValue(ref ResolvedStyleAccess container, StyleFloat value) => throw new System.InvalidOperationException();
         }
@@ -390,6 +432,7 @@ namespace UnityEngine.UIElements
             public override string Name => nameof(IResolvedStyle.maxWidth);
             public override string ussName => "max-width";
             public override bool IsReadOnly => true;
+
             public override StyleFloat GetValue(ref ResolvedStyleAccess container) => ((IResolvedStyle)container).maxWidth;
             public override void SetValue(ref ResolvedStyleAccess container, StyleFloat value) => throw new System.InvalidOperationException();
         }
@@ -399,6 +442,7 @@ namespace UnityEngine.UIElements
             public override string Name => nameof(IResolvedStyle.minHeight);
             public override string ussName => "min-height";
             public override bool IsReadOnly => true;
+
             public override StyleFloat GetValue(ref ResolvedStyleAccess container) => ((IResolvedStyle)container).minHeight;
             public override void SetValue(ref ResolvedStyleAccess container, StyleFloat value) => throw new System.InvalidOperationException();
         }
@@ -408,6 +452,7 @@ namespace UnityEngine.UIElements
             public override string Name => nameof(IResolvedStyle.minWidth);
             public override string ussName => "min-width";
             public override bool IsReadOnly => true;
+
             public override StyleFloat GetValue(ref ResolvedStyleAccess container) => ((IResolvedStyle)container).minWidth;
             public override void SetValue(ref ResolvedStyleAccess container, StyleFloat value) => throw new System.InvalidOperationException();
         }
@@ -417,6 +462,7 @@ namespace UnityEngine.UIElements
             public override string Name => nameof(IResolvedStyle.opacity);
             public override string ussName => "opacity";
             public override bool IsReadOnly => true;
+
             public override float GetValue(ref ResolvedStyleAccess container) => ((IResolvedStyle)container).opacity;
             public override void SetValue(ref ResolvedStyleAccess container, float value) => throw new System.InvalidOperationException();
         }
@@ -426,6 +472,7 @@ namespace UnityEngine.UIElements
             public override string Name => nameof(IResolvedStyle.paddingBottom);
             public override string ussName => "padding-bottom";
             public override bool IsReadOnly => true;
+
             public override float GetValue(ref ResolvedStyleAccess container) => ((IResolvedStyle)container).paddingBottom;
             public override void SetValue(ref ResolvedStyleAccess container, float value) => throw new System.InvalidOperationException();
         }
@@ -435,6 +482,7 @@ namespace UnityEngine.UIElements
             public override string Name => nameof(IResolvedStyle.paddingLeft);
             public override string ussName => "padding-left";
             public override bool IsReadOnly => true;
+
             public override float GetValue(ref ResolvedStyleAccess container) => ((IResolvedStyle)container).paddingLeft;
             public override void SetValue(ref ResolvedStyleAccess container, float value) => throw new System.InvalidOperationException();
         }
@@ -444,6 +492,7 @@ namespace UnityEngine.UIElements
             public override string Name => nameof(IResolvedStyle.paddingRight);
             public override string ussName => "padding-right";
             public override bool IsReadOnly => true;
+
             public override float GetValue(ref ResolvedStyleAccess container) => ((IResolvedStyle)container).paddingRight;
             public override void SetValue(ref ResolvedStyleAccess container, float value) => throw new System.InvalidOperationException();
         }
@@ -453,6 +502,7 @@ namespace UnityEngine.UIElements
             public override string Name => nameof(IResolvedStyle.paddingTop);
             public override string ussName => "padding-top";
             public override bool IsReadOnly => true;
+
             public override float GetValue(ref ResolvedStyleAccess container) => ((IResolvedStyle)container).paddingTop;
             public override void SetValue(ref ResolvedStyleAccess container, float value) => throw new System.InvalidOperationException();
         }
@@ -462,6 +512,7 @@ namespace UnityEngine.UIElements
             public override string Name => nameof(IResolvedStyle.position);
             public override string ussName => "position";
             public override bool IsReadOnly => true;
+
             public override Position GetValue(ref ResolvedStyleAccess container) => ((IResolvedStyle)container).position;
             public override void SetValue(ref ResolvedStyleAccess container, Position value) => throw new System.InvalidOperationException();
         }
@@ -471,6 +522,7 @@ namespace UnityEngine.UIElements
             public override string Name => nameof(IResolvedStyle.right);
             public override string ussName => "right";
             public override bool IsReadOnly => true;
+
             public override float GetValue(ref ResolvedStyleAccess container) => ((IResolvedStyle)container).right;
             public override void SetValue(ref ResolvedStyleAccess container, float value) => throw new System.InvalidOperationException();
         }
@@ -480,6 +532,7 @@ namespace UnityEngine.UIElements
             public override string Name => nameof(IResolvedStyle.rotate);
             public override string ussName => "rotate";
             public override bool IsReadOnly => true;
+
             public override Rotate GetValue(ref ResolvedStyleAccess container) => ((IResolvedStyle)container).rotate;
             public override void SetValue(ref ResolvedStyleAccess container, Rotate value) => throw new System.InvalidOperationException();
         }
@@ -489,6 +542,7 @@ namespace UnityEngine.UIElements
             public override string Name => nameof(IResolvedStyle.scale);
             public override string ussName => "scale";
             public override bool IsReadOnly => true;
+
             public override Scale GetValue(ref ResolvedStyleAccess container) => ((IResolvedStyle)container).scale;
             public override void SetValue(ref ResolvedStyleAccess container, Scale value) => throw new System.InvalidOperationException();
         }
@@ -498,6 +552,7 @@ namespace UnityEngine.UIElements
             public override string Name => nameof(IResolvedStyle.textOverflow);
             public override string ussName => "text-overflow";
             public override bool IsReadOnly => true;
+
             public override TextOverflow GetValue(ref ResolvedStyleAccess container) => ((IResolvedStyle)container).textOverflow;
             public override void SetValue(ref ResolvedStyleAccess container, TextOverflow value) => throw new System.InvalidOperationException();
         }
@@ -507,6 +562,7 @@ namespace UnityEngine.UIElements
             public override string Name => nameof(IResolvedStyle.top);
             public override string ussName => "top";
             public override bool IsReadOnly => true;
+
             public override float GetValue(ref ResolvedStyleAccess container) => ((IResolvedStyle)container).top;
             public override void SetValue(ref ResolvedStyleAccess container, float value) => throw new System.InvalidOperationException();
         }
@@ -516,6 +572,7 @@ namespace UnityEngine.UIElements
             public override string Name => nameof(IResolvedStyle.transformOrigin);
             public override string ussName => "transform-origin";
             public override bool IsReadOnly => true;
+
             public override Vector3 GetValue(ref ResolvedStyleAccess container) => ((IResolvedStyle)container).transformOrigin;
             public override void SetValue(ref ResolvedStyleAccess container, Vector3 value) => throw new System.InvalidOperationException();
         }
@@ -525,6 +582,7 @@ namespace UnityEngine.UIElements
             public override string Name => nameof(IResolvedStyle.transitionDelay);
             public override string ussName => "transition-delay";
             public override bool IsReadOnly => true;
+
             public override IEnumerable<TimeValue> GetValue(ref ResolvedStyleAccess container) => ((IResolvedStyle)container).transitionDelay;
             public override void SetValue(ref ResolvedStyleAccess container, IEnumerable<TimeValue> value) => throw new System.InvalidOperationException();
         }
@@ -534,6 +592,7 @@ namespace UnityEngine.UIElements
             public override string Name => nameof(IResolvedStyle.transitionDuration);
             public override string ussName => "transition-duration";
             public override bool IsReadOnly => true;
+
             public override IEnumerable<TimeValue> GetValue(ref ResolvedStyleAccess container) => ((IResolvedStyle)container).transitionDuration;
             public override void SetValue(ref ResolvedStyleAccess container, IEnumerable<TimeValue> value) => throw new System.InvalidOperationException();
         }
@@ -543,6 +602,7 @@ namespace UnityEngine.UIElements
             public override string Name => nameof(IResolvedStyle.transitionProperty);
             public override string ussName => "transition-property";
             public override bool IsReadOnly => true;
+
             public override IEnumerable<StylePropertyName> GetValue(ref ResolvedStyleAccess container) => ((IResolvedStyle)container).transitionProperty;
             public override void SetValue(ref ResolvedStyleAccess container, IEnumerable<StylePropertyName> value) => throw new System.InvalidOperationException();
         }
@@ -552,6 +612,7 @@ namespace UnityEngine.UIElements
             public override string Name => nameof(IResolvedStyle.transitionTimingFunction);
             public override string ussName => "transition-timing-function";
             public override bool IsReadOnly => true;
+
             public override IEnumerable<EasingFunction> GetValue(ref ResolvedStyleAccess container) => ((IResolvedStyle)container).transitionTimingFunction;
             public override void SetValue(ref ResolvedStyleAccess container, IEnumerable<EasingFunction> value) => throw new System.InvalidOperationException();
         }
@@ -561,6 +622,7 @@ namespace UnityEngine.UIElements
             public override string Name => nameof(IResolvedStyle.translate);
             public override string ussName => "translate";
             public override bool IsReadOnly => true;
+
             public override Vector3 GetValue(ref ResolvedStyleAccess container) => ((IResolvedStyle)container).translate;
             public override void SetValue(ref ResolvedStyleAccess container, Vector3 value) => throw new System.InvalidOperationException();
         }
@@ -570,6 +632,7 @@ namespace UnityEngine.UIElements
             public override string Name => nameof(IResolvedStyle.unityBackgroundImageTintColor);
             public override string ussName => "-unity-background-image-tint-color";
             public override bool IsReadOnly => true;
+
             public override Color GetValue(ref ResolvedStyleAccess container) => ((IResolvedStyle)container).unityBackgroundImageTintColor;
             public override void SetValue(ref ResolvedStyleAccess container, Color value) => throw new System.InvalidOperationException();
         }
@@ -579,6 +642,7 @@ namespace UnityEngine.UIElements
             public override string Name => nameof(IResolvedStyle.unityEditorTextRenderingMode);
             public override string ussName => "-unity-editor-text-rendering-mode";
             public override bool IsReadOnly => true;
+
             public override EditorTextRenderingMode GetValue(ref ResolvedStyleAccess container) => ((IResolvedStyle)container).unityEditorTextRenderingMode;
             public override void SetValue(ref ResolvedStyleAccess container, EditorTextRenderingMode value) => throw new System.InvalidOperationException();
         }
@@ -588,6 +652,7 @@ namespace UnityEngine.UIElements
             public override string Name => nameof(IResolvedStyle.unityFont);
             public override string ussName => "-unity-font";
             public override bool IsReadOnly => true;
+
             public override Font GetValue(ref ResolvedStyleAccess container) => ((IResolvedStyle)container).unityFont;
             public override void SetValue(ref ResolvedStyleAccess container, Font value) => throw new System.InvalidOperationException();
         }
@@ -597,6 +662,7 @@ namespace UnityEngine.UIElements
             public override string Name => nameof(IResolvedStyle.unityFontDefinition);
             public override string ussName => "-unity-font-definition";
             public override bool IsReadOnly => true;
+
             public override FontDefinition GetValue(ref ResolvedStyleAccess container) => ((IResolvedStyle)container).unityFontDefinition;
             public override void SetValue(ref ResolvedStyleAccess container, FontDefinition value) => throw new System.InvalidOperationException();
         }
@@ -606,6 +672,7 @@ namespace UnityEngine.UIElements
             public override string Name => nameof(IResolvedStyle.unityFontStyleAndWeight);
             public override string ussName => "-unity-font-style";
             public override bool IsReadOnly => true;
+
             public override FontStyle GetValue(ref ResolvedStyleAccess container) => ((IResolvedStyle)container).unityFontStyleAndWeight;
             public override void SetValue(ref ResolvedStyleAccess container, FontStyle value) => throw new System.InvalidOperationException();
         }
@@ -615,6 +682,7 @@ namespace UnityEngine.UIElements
             public override string Name => nameof(IResolvedStyle.unityMaterial);
             public override string ussName => "-unity-material";
             public override bool IsReadOnly => true;
+
             public override MaterialDefinition GetValue(ref ResolvedStyleAccess container) => ((IResolvedStyle)container).unityMaterial;
             public override void SetValue(ref ResolvedStyleAccess container, MaterialDefinition value) => throw new System.InvalidOperationException();
         }
@@ -624,6 +692,7 @@ namespace UnityEngine.UIElements
             public override string Name => nameof(IResolvedStyle.unityParagraphSpacing);
             public override string ussName => "-unity-paragraph-spacing";
             public override bool IsReadOnly => true;
+
             public override float GetValue(ref ResolvedStyleAccess container) => ((IResolvedStyle)container).unityParagraphSpacing;
             public override void SetValue(ref ResolvedStyleAccess container, float value) => throw new System.InvalidOperationException();
         }
@@ -633,6 +702,7 @@ namespace UnityEngine.UIElements
             public override string Name => nameof(IResolvedStyle.unitySliceBottom);
             public override string ussName => "-unity-slice-bottom";
             public override bool IsReadOnly => true;
+
             public override int GetValue(ref ResolvedStyleAccess container) => ((IResolvedStyle)container).unitySliceBottom;
             public override void SetValue(ref ResolvedStyleAccess container, int value) => throw new System.InvalidOperationException();
         }
@@ -642,6 +712,7 @@ namespace UnityEngine.UIElements
             public override string Name => nameof(IResolvedStyle.unitySliceLeft);
             public override string ussName => "-unity-slice-left";
             public override bool IsReadOnly => true;
+
             public override int GetValue(ref ResolvedStyleAccess container) => ((IResolvedStyle)container).unitySliceLeft;
             public override void SetValue(ref ResolvedStyleAccess container, int value) => throw new System.InvalidOperationException();
         }
@@ -651,6 +722,7 @@ namespace UnityEngine.UIElements
             public override string Name => nameof(IResolvedStyle.unitySliceRight);
             public override string ussName => "-unity-slice-right";
             public override bool IsReadOnly => true;
+
             public override int GetValue(ref ResolvedStyleAccess container) => ((IResolvedStyle)container).unitySliceRight;
             public override void SetValue(ref ResolvedStyleAccess container, int value) => throw new System.InvalidOperationException();
         }
@@ -660,6 +732,7 @@ namespace UnityEngine.UIElements
             public override string Name => nameof(IResolvedStyle.unitySliceScale);
             public override string ussName => "-unity-slice-scale";
             public override bool IsReadOnly => true;
+
             public override float GetValue(ref ResolvedStyleAccess container) => ((IResolvedStyle)container).unitySliceScale;
             public override void SetValue(ref ResolvedStyleAccess container, float value) => throw new System.InvalidOperationException();
         }
@@ -669,6 +742,7 @@ namespace UnityEngine.UIElements
             public override string Name => nameof(IResolvedStyle.unitySliceTop);
             public override string ussName => "-unity-slice-top";
             public override bool IsReadOnly => true;
+
             public override int GetValue(ref ResolvedStyleAccess container) => ((IResolvedStyle)container).unitySliceTop;
             public override void SetValue(ref ResolvedStyleAccess container, int value) => throw new System.InvalidOperationException();
         }
@@ -678,6 +752,7 @@ namespace UnityEngine.UIElements
             public override string Name => nameof(IResolvedStyle.unitySliceType);
             public override string ussName => "-unity-slice-type";
             public override bool IsReadOnly => true;
+
             public override SliceType GetValue(ref ResolvedStyleAccess container) => ((IResolvedStyle)container).unitySliceType;
             public override void SetValue(ref ResolvedStyleAccess container, SliceType value) => throw new System.InvalidOperationException();
         }
@@ -687,6 +762,7 @@ namespace UnityEngine.UIElements
             public override string Name => nameof(IResolvedStyle.unityTextAlign);
             public override string ussName => "-unity-text-align";
             public override bool IsReadOnly => true;
+
             public override TextAnchor GetValue(ref ResolvedStyleAccess container) => ((IResolvedStyle)container).unityTextAlign;
             public override void SetValue(ref ResolvedStyleAccess container, TextAnchor value) => throw new System.InvalidOperationException();
         }
@@ -696,6 +772,7 @@ namespace UnityEngine.UIElements
             public override string Name => nameof(IResolvedStyle.unityTextGenerator);
             public override string ussName => "-unity-text-generator";
             public override bool IsReadOnly => true;
+
             public override TextGeneratorType GetValue(ref ResolvedStyleAccess container) => ((IResolvedStyle)container).unityTextGenerator;
             public override void SetValue(ref ResolvedStyleAccess container, TextGeneratorType value) => throw new System.InvalidOperationException();
         }
@@ -705,6 +782,7 @@ namespace UnityEngine.UIElements
             public override string Name => nameof(IResolvedStyle.unityTextOutlineColor);
             public override string ussName => "-unity-text-outline-color";
             public override bool IsReadOnly => true;
+
             public override Color GetValue(ref ResolvedStyleAccess container) => ((IResolvedStyle)container).unityTextOutlineColor;
             public override void SetValue(ref ResolvedStyleAccess container, Color value) => throw new System.InvalidOperationException();
         }
@@ -714,6 +792,7 @@ namespace UnityEngine.UIElements
             public override string Name => nameof(IResolvedStyle.unityTextOutlineWidth);
             public override string ussName => "-unity-text-outline-width";
             public override bool IsReadOnly => true;
+
             public override float GetValue(ref ResolvedStyleAccess container) => ((IResolvedStyle)container).unityTextOutlineWidth;
             public override void SetValue(ref ResolvedStyleAccess container, float value) => throw new System.InvalidOperationException();
         }
@@ -723,6 +802,7 @@ namespace UnityEngine.UIElements
             public override string Name => nameof(IResolvedStyle.unityTextOverflowPosition);
             public override string ussName => "-unity-text-overflow-position";
             public override bool IsReadOnly => true;
+
             public override TextOverflowPosition GetValue(ref ResolvedStyleAccess container) => ((IResolvedStyle)container).unityTextOverflowPosition;
             public override void SetValue(ref ResolvedStyleAccess container, TextOverflowPosition value) => throw new System.InvalidOperationException();
         }
@@ -732,6 +812,7 @@ namespace UnityEngine.UIElements
             public override string Name => nameof(IResolvedStyle.visibility);
             public override string ussName => "visibility";
             public override bool IsReadOnly => true;
+
             public override Visibility GetValue(ref ResolvedStyleAccess container) => ((IResolvedStyle)container).visibility;
             public override void SetValue(ref ResolvedStyleAccess container, Visibility value) => throw new System.InvalidOperationException();
         }
@@ -741,6 +822,7 @@ namespace UnityEngine.UIElements
             public override string Name => nameof(IResolvedStyle.whiteSpace);
             public override string ussName => "white-space";
             public override bool IsReadOnly => true;
+
             public override WhiteSpace GetValue(ref ResolvedStyleAccess container) => ((IResolvedStyle)container).whiteSpace;
             public override void SetValue(ref ResolvedStyleAccess container, WhiteSpace value) => throw new System.InvalidOperationException();
         }
@@ -750,6 +832,7 @@ namespace UnityEngine.UIElements
             public override string Name => nameof(IResolvedStyle.width);
             public override string ussName => "width";
             public override bool IsReadOnly => true;
+
             public override float GetValue(ref ResolvedStyleAccess container) => ((IResolvedStyle)container).width;
             public override void SetValue(ref ResolvedStyleAccess container, float value) => throw new System.InvalidOperationException();
         }
@@ -759,6 +842,7 @@ namespace UnityEngine.UIElements
             public override string Name => nameof(IResolvedStyle.wordSpacing);
             public override string ussName => "word-spacing";
             public override bool IsReadOnly => true;
+
             public override float GetValue(ref ResolvedStyleAccess container) => ((IResolvedStyle)container).wordSpacing;
             public override void SetValue(ref ResolvedStyleAccess container, float value) => throw new System.InvalidOperationException();
         }

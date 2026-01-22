@@ -574,11 +574,11 @@ namespace UnityEditor
             var textFieldValue = EditorGUI.TextField(textFieldRect, mixed ? L10n.Tr("(Multiple Values)") : label);
             EditorGUI.showMixedValue = false;
 
-            var defines = InternalEditorUtility.GetCompilationDefines(EditorScriptCompilationOptions.BuildingForEditor, EditorUserBuildSettings.activeBuildTarget, EditorUserBuildSettings.GetActiveSubtargetFor(EditorUserBuildSettings.activeBuildTarget));
+            string[] defines = InternalEditorUtility.GetCompilationDefines(EditorScriptCompilationOptions.BuildingForEditor, EditorUserBuildSettings.activeBuildTarget, EditorUserBuildSettings.GetActiveSubtargetFor(EditorUserBuildSettings.activeBuildTarget));
 
             if (defines != null)
             {
-                var status = DefineConstraintsHelper.GetDefineConstraintCompatibility(defines, defineConstraint.name);
+                var status = DefineConstraintsHelper.GetDefineConstraintCompatibility(new EditorBuildRules.SymbolDefinitionContext(defines), defineConstraint.name);
                 var image = status == DefineConstraintsHelper.DefineConstraintStatus.Compatible ? Styles.validDefineConstraint : Styles.invalidDefineConstraint;
 
                 var content = new GUIContent(image, Styles.GetIndividualTooltipFromDefineConstraintStatus(status));
@@ -780,11 +780,12 @@ namespace UnityEditor
 
                         if (defines != null)
                         {
+                            EditorBuildRules.SymbolDefinitionContext symbolDefinitionContext = new EditorBuildRules.SymbolDefinitionContext(defines);
                             for (var i = 0; i < m_DefineConstraints.list.Count && defineConstraintsCompatible; ++i)
                             {
                                 var defineConstraint = ((DefineConstraint)m_DefineConstraints.list[i]).name;
 
-                                if (DefineConstraintsHelper.GetDefineConstraintCompatibility(defines, defineConstraint) != DefineConstraintsHelper.DefineConstraintStatus.Compatible)
+                                if (DefineConstraintsHelper.GetDefineConstraintCompatibility(symbolDefinitionContext, defineConstraint) != DefineConstraintsHelper.DefineConstraintStatus.Compatible)
                                 {
                                     defineConstraintsCompatible = false;
                                 }

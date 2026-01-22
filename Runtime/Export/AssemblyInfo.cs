@@ -66,6 +66,7 @@ using System.Runtime.CompilerServices;
 [assembly: InternalsVisibleTo("UnityEditor.UIElementsModule")]
 [assembly: InternalsVisibleTo("UnityEditor.UIElementsGameObjectsModule")]
 [assembly: InternalsVisibleTo("Unity.UI.TestFramework.Editor")] // for UI Test Framework
+[assembly: InternalsVisibleTo("Unity.Modules.UIToolkitAuthoring.Tests.Editor")]
 [assembly: InternalsVisibleTo("Unity.Tiny.Rendering.Authoring")]
 [assembly: InternalsVisibleTo("Unity.Tiny.Authoring")]
 [assembly: InternalsVisibleTo("Unity.ImageConversionTests")]
@@ -102,6 +103,7 @@ using System.Runtime.CompilerServices;
 [assembly: InternalsVisibleTo("Unity.Modules.CoreEditor.TextureGenerator.Tests.Editor")]
 [assembly: InternalsVisibleTo("Unity.Modules.Streaming.Tests.Editor")]
 [assembly: InternalsVisibleTo("Unity.Modules.PackageManagerUI.Tests.Editor")]
+[assembly: InternalsVisibleTo("Unity.Modules.ProfilerEditor.MemorySnapshot.Tests.Editor")]
 
 
 [assembly: InternalsVisibleTo("UnityEngine.Networking")]
@@ -130,6 +132,7 @@ using System.Runtime.CompilerServices;
 [assembly: InternalsVisibleTo("Unity.IntegrationTests.Builds")]
 [assembly: InternalsVisibleTo("Unity.IntegrationTests.CommandLine")]
 [assembly: InternalsVisibleTo("Unity.IntegrationTests.EditorUI")]
+[assembly: InternalsVisibleTo("Unity.IntegrationTests.IncrementalBuilds")]
 [assembly: InternalsVisibleTo("Unity.IntegrationTests.Lightmapping")]
 [assembly: InternalsVisibleTo("Unity.IntegrationTests.Mecanim")]
 [assembly: InternalsVisibleTo("Unity.IntegrationTests.Misc")]
@@ -251,6 +254,7 @@ using System.Runtime.CompilerServices;
 [assembly: InternalsVisibleTo("Unity.Modules.Core.Pool.Tests.Playmode")]
 [assembly: InternalsVisibleTo("Unity.Modules.Core.Rendering.Meshes.Tests.Runtime")]
 [assembly: InternalsVisibleTo("Unity.Modules.Core.UnsafeUtility.Tests.Editor")]
+[assembly: InternalsVisibleTo("Unity.Modules.ProfilerEditor.MemorySnapshot.Tests.Playmode")]
 [assembly: InternalsVisibleTo("Unity.CrossModule.ScriptableRenderPipeline.Tests.Editor")]
 [assembly: InternalsVisibleTo("Unity.CrossModule.ScriptableRenderPipeline.Tests.Runtime")]
 [assembly: InternalsVisibleTo("Unity.Modules.PlayableGraph.Tests.Editor")]
@@ -269,6 +273,8 @@ using System.Runtime.CompilerServices;
 [assembly: InternalsVisibleTo("ContentDirectoryUtilities")]
 [assembly: InternalsVisibleTo("ContentBuildTests")]
 [assembly: InternalsVisibleTo("Unity.Modules.Core.EditorUtils.Tests.Editor")]
+[assembly: InternalsVisibleTo("Unity.Modules.Umpe.Tests.Editor")]
+
 [assembly: InternalsVisibleTo("Unity.Modules.SceneTemplateEditor.Tests.Editor")]
 [assembly: InternalsVisibleTo("UnityEngine.SchemaManagerManaged")]
 // Tests/SRPTests/Projects/MultipleSRP_Tests - needed for DiagnosticSwitch class

@@ -125,9 +125,7 @@ namespace Unity.GraphToolkit.ItemLibrary.Editor
                 return PerformSearch(query, filteredItems);
             }
 
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            return Enumerable.Empty<ItemLibraryItem>();
-#pragma warning restore RS0030
+            return Array.Empty<ItemLibraryItem>();
         }
 
         /// <summary>

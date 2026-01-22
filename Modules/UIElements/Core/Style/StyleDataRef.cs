@@ -4,7 +4,6 @@
 
 using System;
 using System.Collections.Generic;
-using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
 using UnityEngine.Bindings;
 
@@ -63,6 +62,7 @@ namespace UnityEngine.UIElements
 
             public static void Dispose(RefCounted* self)
             {
+                k_Pool.GetData(self->m_ValueIndex).Dispose();
                 k_Pool.Free(self->m_ValueIndex);
                 StyleDataAllocator.Free((IntPtr)self, StyleDataType.ManagedDataType);
             }
@@ -125,7 +125,7 @@ namespace UnityEngine.UIElements
             }
         }
 
-        public ref readonly T Read() => ref m_Ref->GetValueRef();
+        public readonly ref readonly T Read() => ref m_Ref->GetValueRef();
 
         public ref T Write()
         {
@@ -202,6 +202,7 @@ namespace UnityEngine.UIElements
 
             public static void Dispose(RefCounted* self)
             {
+                self->value.Dispose();
                 StyleDataAllocator.Free((IntPtr)self, k_Type);
             }
 
@@ -279,7 +280,7 @@ namespace UnityEngine.UIElements
 
         public readonly T* GetValuePtr() => &m_Ref->value;
 
-        public ref readonly T Read() => ref m_Ref->value;
+        public readonly ref readonly T Read() => ref m_Ref->value;
 
         public ref T Write()
         {

@@ -10,7 +10,7 @@ using System.Runtime.InteropServices;
 
 namespace UnityEngine.Subsystems
 {
-    [NativeType(Header = "Modules/Subsystems/Example/ExampleSubsystemDescriptor.h")]
+    [NativeHeader("Modules/Subsystems/Example/ExampleSubsystemDescriptor.h")]
     [UsedByNativeCode]
     public class ExampleSubsystemDescriptor : IntegratedSubsystemDescriptor<ExampleSubsystem>
     {

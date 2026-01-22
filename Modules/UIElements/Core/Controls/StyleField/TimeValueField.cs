@@ -149,7 +149,7 @@ namespace UnityEngine.UIElements
             m_OptionsPopup.AddToClassList(unitDropdownUssClass);
             popupContainer.Add(m_OptionsPopup);
 
-            timeValueInput.parentTimeValueField = this;
+            timeValueInput.parentField = this;
 
             timeValueInput.AddToClassList(inputUssClassName);
             timeValueInput.delegatesFocus = true;
@@ -259,7 +259,7 @@ namespace UnityEngine.UIElements
 
         class TimeValueInput : TextValueInput
         {
-            internal TimeValueField parentTimeValueField { get; set; }
+            internal TimeValueField parentField { get; set; }
 
             internal TimeValueInput()
             {
@@ -270,34 +270,30 @@ namespace UnityEngine.UIElements
 
             public override void ApplyInputDeviceDelta(Vector3 delta, DeltaSpeed speed, TimeValue startValue)
             {
-                var v = StringToValue(text);
-                v.unit = startValue.unit;
-
-                double value = v.value;
-
-                double sensitivity = NumericFieldDraggerUtility.CalculateIntDragSensitivity((long)startValue.value);
+                double sensitivity = NumericFieldDraggerUtility.CalculateIntDragSensitivity(startValue.value);
                 float acceleration = NumericFieldDraggerUtility.Acceleration(speed == DeltaSpeed.Fast, speed == DeltaSpeed.Slow);
-                value += NumericFieldDraggerUtility.NiceDelta(delta, acceleration) * sensitivity;
-                value = Mathf.RoundBasedOnMinimumDifference(value, sensitivity);
-
-                v = new TimeValue((float)value, v.unit);
-
-                if (parentTimeValueField.isDelayed)
-                    parentTimeValueField.text = ValueToString(v);
+                var v = StringToValue(text).value;
+                v += (long)Math.Round(NumericFieldDraggerUtility.NiceDelta(delta, acceleration) * sensitivity);
+                if (parentField.isDelayed)
+                {
+                    text = ValueToString(Mathf.ClampToInt((long)v));
+                }
                 else
-                    parentTimeValueField.value = v;
+                {
+                    parentField.value = Mathf.ClampToInt((long)v);
+                }
             }
 
             protected override string ValueToString(TimeValue v)
             {
-                return parentTimeValueField.showUnitAsDropdown
+                return parentField.showUnitAsDropdown
                     ? v.value.ToString(CultureInfo.InvariantCulture)
                     : v.ToString();
             }
 
             protected override TimeValue StringToValue(string str)
             {
-                return TimeValue.TryParseString(str, out var v) ? v : parentTimeValueField.value;
+                return TimeValue.TryParseString(str, out var v) ? v : parentField.value;
             }
         }
     }

@@ -25,37 +25,6 @@ namespace UnityEngine.Bindings
     {
     }
 
-    interface IBindingsNameProviderAttribute : IBindingsAttribute
-    {
-        string Name { get; set; }
-    }
-
-    interface IBindingsHeaderProviderAttribute : IBindingsAttribute
-    {
-        string Header { get; set; }
-    }
-
-    interface IBindingsIsThreadSafeProviderAttribute : IBindingsAttribute
-    {
-        bool IsThreadSafe { get; set; }
-    }
-
-    interface IBindingsIsFreeFunctionProviderAttribute : IBindingsAttribute
-    {
-        bool IsFreeFunction { get; set; }
-        bool HasExplicitThis { get; set; }
-    }
-
-    interface IBindingsThrowsProviderAttribute : IBindingsAttribute
-    {
-        bool ThrowsException { get; set; }
-    }
-
-    interface IBindingsGenerateMarshallingTypeAttribute : IBindingsAttribute
-    {
-        CodegenOptions CodegenOptions { get; set; }
-    }
-
     // This is a set of attributes used to override conventional behaviour in the bindings generator.
     // Please refer to bindings generator documentation.
 
@@ -64,9 +33,15 @@ namespace UnityEngine.Bindings
     [VisibleToOtherModules]
     class NativeConditionalAttribute : Attribute, IBindingsAttribute
     {
+        /// <summary>
+        /// Native conditional define
+        /// </summary>
         public string Condition { get; set; }
+
+        /// <summary>
+        /// Custom value to return when the condition is not met.
+        /// </summary>
         public string StubReturnStatement { get; set; }
-        public bool Enabled { get; set; }
 
         public NativeConditionalAttribute()
         {
@@ -75,22 +50,6 @@ namespace UnityEngine.Bindings
         public NativeConditionalAttribute(string condition)
         {
             Condition = condition;
-            Enabled = true;
-        }
-
-        public NativeConditionalAttribute(bool enabled)
-        {
-            Enabled = enabled;
-        }
-
-        public NativeConditionalAttribute(string condition, bool enabled) : this(condition)
-        {
-            Enabled = enabled;
-        }
-
-        public NativeConditionalAttribute(string condition, string stubReturnStatement, bool enabled) : this(condition, stubReturnStatement)
-        {
-            Enabled = enabled;
         }
 
         public NativeConditionalAttribute(string condition, string stubReturnStatement) : this(condition)
@@ -102,13 +61,9 @@ namespace UnityEngine.Bindings
 
     [AttributeUsage(AttributeTargets.Class | AttributeTargets.Struct | AttributeTargets.Enum | AttributeTargets.Method | AttributeTargets.Property | AttributeTargets.Field | AttributeTargets.ReturnValue | AttributeTargets.Parameter, AllowMultiple = true)]
     [VisibleToOtherModules]
-    class NativeHeaderAttribute : Attribute, IBindingsHeaderProviderAttribute
+    class NativeHeaderAttribute : Attribute, IBindingsAttribute
     {
-        public string Header { get; set; }
-
-        public NativeHeaderAttribute()
-        {
-        }
+        public string Header { get; }
 
         public NativeHeaderAttribute(string header)
         {
@@ -121,7 +76,7 @@ namespace UnityEngine.Bindings
 
     [AttributeUsage(AttributeTargets.Field | AttributeTargets.Property | AttributeTargets.Method)]
     [VisibleToOtherModules]
-    class NativeNameAttribute : Attribute, IBindingsNameProviderAttribute
+    sealed class NativeNameAttribute : Attribute, IBindingsAttribute
     {
         public string Name { get; set; }
 
@@ -138,9 +93,9 @@ namespace UnityEngine.Bindings
         }
     }
 
-    [AttributeUsage(AttributeTargets.Method | AttributeTargets.Property)]
+    [AttributeUsage(AttributeTargets.Method | AttributeTargets.Property, AllowMultiple = false)]
     [VisibleToOtherModules]
-    class NativeMethodAttribute : Attribute, IBindingsNameProviderAttribute, IBindingsIsThreadSafeProviderAttribute, IBindingsIsFreeFunctionProviderAttribute, IBindingsThrowsProviderAttribute
+    class NativeMethodAttribute : Attribute, IBindingsAttribute
     {
         public string Name { get; set; }
         public bool IsThreadSafe { get; set; }
@@ -183,7 +138,7 @@ namespace UnityEngine.Bindings
         Field
     }
 
-    [AttributeUsage(AttributeTargets.Property)]
+    [AttributeUsage(AttributeTargets.Property, AllowMultiple = false)]
     [VisibleToOtherModules]
     class NativePropertyAttribute : NativeMethodAttribute
     {
@@ -229,10 +184,8 @@ namespace UnityEngine.Bindings
 
     [AttributeUsage(AttributeTargets.Class | AttributeTargets.Struct | AttributeTargets.Enum)]
     [VisibleToOtherModules]
-    class NativeTypeAttribute : Attribute, IBindingsHeaderProviderAttribute, IBindingsGenerateMarshallingTypeAttribute
+    sealed class NativeTypeAttribute : Attribute, IBindingsAttribute
     {
-        public string Header { get; set; }
-
         public string IntermediateScriptingStructName { get; set; }
 
         public CodegenOptions CodegenOptions { get; set; }
@@ -243,20 +196,6 @@ namespace UnityEngine.Bindings
         }
 
         public NativeTypeAttribute(CodegenOptions codegenOptions)
-        {
-            CodegenOptions = codegenOptions;
-        }
-
-        public NativeTypeAttribute(string header)
-        {
-            if (header == null) throw new ArgumentNullException("header");
-            if (header == "") throw new ArgumentException("header cannot be empty", "header");
-
-            CodegenOptions = CodegenOptions.Auto;
-            Header = header;
-        }
-
-        public NativeTypeAttribute(string header, CodegenOptions codegenOptions) : this(header)
         {
             CodegenOptions = codegenOptions;
         }
@@ -308,14 +247,10 @@ namespace UnityEngine.Bindings
         }
     }
 
-    [AttributeUsage(AttributeTargets.Method)]
+    [AttributeUsage(AttributeTargets.Method, AllowMultiple = false)]
     [VisibleToOtherModules]
-    class ThreadSafeAttribute : NativeMethodAttribute
+    sealed class ThreadSafeAttribute : Attribute, IBindingsAttribute
     {
-        public ThreadSafeAttribute()
-        {
-            IsThreadSafe = true;
-        }
     }
 
     [VisibleToOtherModules]
@@ -356,27 +291,24 @@ namespace UnityEngine.Bindings
         }
     }
 
-    [AttributeUsage(AttributeTargets.Method | AttributeTargets.Property)]
+    [AttributeUsage(AttributeTargets.Method | AttributeTargets.Property, AllowMultiple = false)]
     [VisibleToOtherModules]
-    class NativeThrowsAttribute : Attribute, IBindingsThrowsProviderAttribute
+    class NativeThrowsAttribute : Attribute, IBindingsAttribute
     {
-        public bool ThrowsException { get; set; }
-
-        public NativeThrowsAttribute()
-        {
-            ThrowsException = true;
-        }
-
-        public NativeThrowsAttribute(bool throwsException)
-        {
-            ThrowsException = throwsException;
-        }
     }
 
+    /// <summary>
+    /// Ignore a field for marshaling - the field will not be marshaled to native code
+    /// </summary>
     [AttributeUsage(AttributeTargets.Field)]
     [VisibleToOtherModules]
     class IgnoreAttribute : Attribute, IBindingsAttribute
     {
+        /// <summary>
+        /// Used to ignore this field for size calculations.
+        /// This is used to handle union types because the bindings generator does not support explicit layout with overlapping fields
+        /// In general you should not marshal unions because this can lead to undefined behavior.
+        /// </summary>
         public bool DoesNotContributeToSize { get; set; }
     }
 
@@ -388,17 +320,10 @@ namespace UnityEngine.Bindings
         PreventExecution_Warning
     }
 
-    [VisibleToOtherModules]
-    interface IBindingsPreventExecution
-    {
-        object singleFlagValue { get; set; }
-        PreventExecutionSeverity severity { get; set; }
-        string howToFix { get; set; }
-    }
 
     [VisibleToOtherModules]
     [AttributeUsage(AttributeTargets.Method | AttributeTargets.Property, AllowMultiple = true)]
-    class PreventExecutionInStateAttribute : Attribute, IBindingsPreventExecution
+    sealed class PreventExecutionInStateAttribute : Attribute
     {
         public object singleFlagValue { get; set; }
         public PreventExecutionSeverity severity { get; set; }

@@ -5,9 +5,10 @@
 using System;
 using UnityEngine.Bindings;
 using System.Reflection;
-using System.Linq;
 using System.Text;
 using UnityEngine.Scripting;
+using System.Collections.Generic;
+using System.Buffers;
 
 namespace UnityEngine.TestTools
 {
@@ -17,7 +18,8 @@ namespace UnityEngine.TestTools
     {
     }
 
-    [NativeType(CodegenOptions.Custom, "ManagedCoveredSequencePoint", Header = "Runtime/Scripting/ScriptingCoverage.bindings.h")]
+    [NativeType(CodegenOptions.Custom, "ManagedCoveredSequencePoint")]
+    [NativeHeader("Runtime/Scripting/ScriptingCoverage.bindings.h")]
     public struct CoveredSequencePoint
     {
         public MethodBase method;
@@ -28,7 +30,8 @@ namespace UnityEngine.TestTools
         public UInt32 column;
     }
 
-    [NativeType(CodegenOptions.Custom, "ManagedCoveredMethodStats", Header = "Runtime/Scripting/ScriptingCoverage.bindings.h")]
+    [NativeType(CodegenOptions.Custom, "ManagedCoveredMethodStats")]
+    [NativeHeader("Runtime/Scripting/ScriptingCoverage.bindings.h")]
     public struct CoveredMethodStats
     {
         public MethodBase method;
@@ -91,7 +94,7 @@ namespace UnityEngine.TestTools
         }
     }
 
-    [NativeType("Runtime/Scripting/ScriptingCoverage.h")]
+    [NativeHeader("Runtime/Scripting/ScriptingCoverage.h")]
     [NativeClass("ScriptingCoverage")]
     public static class Coverage
     {
@@ -138,10 +141,26 @@ namespace UnityEngine.TestTools
             if (type == null)
                 throw new ArgumentNullException("type");
 
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            return GetStatsFor(type.GetMembers(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance |
-                BindingFlags.Static | BindingFlags.DeclaredOnly).OfType<MethodBase>().ToArray());
-#pragma warning restore RS0030
+            const BindingFlags flags =
+                BindingFlags.Public    |
+                BindingFlags.NonPublic |
+                BindingFlags.Instance  |
+                BindingFlags.Static    |
+                BindingFlags.DeclaredOnly;
+
+            var methods = type.GetMethods(flags);
+            var methodsLength = methods.Length;
+            var ctors   = type.GetConstructors(flags);
+
+            var stats = new CoveredMethodStats[methodsLength + ctors.Length];
+
+            for (int i = 0; i < methodsLength; ++i)
+                stats[i] = GetStatsFor(methods[i]);
+
+            for (int i = 0; i < ctors.Length; ++i)
+                stats[methodsLength + i] = GetStatsFor(ctors[i]);
+
+            return stats;
         }
 
         [FreeFunction("ScriptingCoverageGetStatsForAllCoveredMethodsFromScripting", ThrowsException = true)]

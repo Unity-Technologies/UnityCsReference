@@ -40,7 +40,7 @@ namespace UnityEditor.Search
         public IEnumerable<TData> Eval(IEnumerable<TData> payload)
         {
             if (payload == null || m_QueryEnumerable == null)
-                return new TData[] {};
+                return System.Array.Empty<TData>();
             m_QueryEnumerable.SetPayload(payload);
             return m_QueryEnumerable;
         }

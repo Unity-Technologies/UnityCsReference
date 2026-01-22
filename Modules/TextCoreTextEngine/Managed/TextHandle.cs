@@ -477,7 +477,7 @@ namespace UnityEngine.TextCore.Text
             if (!useAdvancedText)
             {
                 Debug.LogError("Cannot use GetHighlightRectangles while using Standard Text");
-                return new Rect[0];
+                return Array.Empty<Rect>();
             }
             var result = TextSelectionService.GetHighlightRectangles(textGenerationInfo, cursorIndex, selectIndex);
 

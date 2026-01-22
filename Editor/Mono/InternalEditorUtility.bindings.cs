@@ -17,6 +17,9 @@ using System.Runtime.InteropServices;
 using UnityEngine.SceneManagement;
 using ShaderPropertyType = UnityEngine.Rendering.ShaderPropertyType;
 using ShaderPropertyFlags = UnityEngine.Rendering.ShaderPropertyFlags;
+using System.IO;
+using System.Text.RegularExpressions;
+using System.Text;
 
 namespace UnityEditorInternal
 {
@@ -177,6 +180,78 @@ namespace UnityEditorInternal
         {
             foreach (Material material in prop.targets)
                 FixNormalmapTextureInternal(material, prop.name);
+        }
+
+        [FreeFunction("ImportTextureAsReadable")]
+        internal extern static void ImportTextureAsReadable([NotNull] Texture texture);
+
+        internal static bool DrawWarningHelpBoxWithButton(GUIContent messageContent, GUIContent buttonContent)
+        {
+            const float kButtonWidth = 70f;
+            const float kSpacing = 20f;
+            const float kButtonHeight = 18f;
+
+            // Reserve size of wrapped text
+            Rect contentRect = GUILayoutUtility.GetRect(messageContent, EditorStyles.helpBox);
+            // Reserve size of button
+            GUILayoutUtility.GetRect(1, kButtonHeight + kSpacing);
+
+            // Render background box with text at full height
+            contentRect.height += kButtonHeight + kSpacing;
+            GUIContent messageWithWarningIcon = EditorGUIUtility.TempContent(messageContent.text, EditorGUIUtility.GetHelpIcon(MessageType.Warning));
+            EditorGUI.LabelField(contentRect, GUIContent.none, messageWithWarningIcon, EditorStyles.helpBox);
+
+            // Button (align center)
+            Rect buttonRect = new Rect(
+                contentRect.x + (contentRect.width - kButtonWidth) / 2f, // Center horizontally
+                contentRect.yMax - kButtonHeight - 2f,
+                kButtonWidth,
+                kButtonHeight);
+            return GUI.Button(buttonRect, buttonContent);
+        }
+
+        internal static void SetTextureReadable(string metaFilePath)
+        {
+            if (!File.Exists(metaFilePath))
+            {
+                throw new FileNotFoundException($"Meta file not found: {metaFilePath}");
+            }
+
+            // Read all lines from the meta file
+            string[] lines = File.ReadAllLines(metaFilePath, Encoding.UTF8);
+
+            // Find and modify the isReadable line
+            bool modified = false;
+            for (int i = 0; i < lines.Length; i++)
+            {
+                // Look for the isReadable property line
+                if (Regex.IsMatch(lines[i], @"^\s*isReadable:\s*\d+\s*$"))
+                {
+                    // Replace with isReadable: 1, preserving original indentation
+                    var match = Regex.Match(lines[i], @"^(\s*)isReadable:\s*\d+(\s*)$");
+                    if (match.Success)
+                    {
+                        lines[i] = $"{match.Groups[1].Value}isReadable: 1{match.Groups[2].Value}";
+                        modified = true;
+                        break;
+                    }
+                }
+            }
+
+            if (!modified)
+            {
+                throw new InvalidOperationException("Could not find isReadable property in the meta file");
+            }
+
+            // Write back to file
+            File.WriteAllLines(metaFilePath, lines, Encoding.UTF8);
+        }
+
+        internal static void SetTextureReadableByAssetPath(string textureAssetPath)
+        {
+            string metaFilePath = textureAssetPath + ".meta";
+            SetTextureReadable(metaFilePath);
+            AssetDatabase.ImportAsset(textureAssetPath);
         }
 
         [FreeFunction("InternalEditorUtilityBindings::GetEditorAssemblyPath")]

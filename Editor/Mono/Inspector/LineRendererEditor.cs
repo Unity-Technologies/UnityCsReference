@@ -82,8 +82,10 @@ namespace UnityEditor
             public override bool IsAvailable()
             {
 #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable RS0031 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 return !targets.Skip(1).Any(); // TODO - multi-edit disabled for now. Need to make LineRendererEditor support multiple targets, and fix m_IsGameObjectEditable
 #pragma warning restore RS0030
+#pragma warning restore RS0031
             }
 
             public abstract void DrawToolbar(SerializedProperty positions);
@@ -317,7 +319,7 @@ namespace UnityEditor
                         m_Positions.DeleteArrayElementAtIndex(index);
                     }
                     m_Positions.serializedObject.ApplyModifiedProperties();
-                    m_PositionsView.SetSelection(new int[0]);
+                    m_PositionsView.SetSelection(System.Array.Empty<int>());
                     m_PositionsView.Reload();
                     ResetSimplifyPreview();
                 });

@@ -78,8 +78,8 @@ namespace Unity.ProjectAuditor.Editor.SettingsAnalysis
             if (property != null)
                 methodName = "get_" + descriptor.Method;
 
-            var paramTypes = new Type[] {};
-            var args = new object[] {};
+            var paramTypes = Array.Empty<Type>();
+            var args = Array.Empty<object>();
 
             try
             {

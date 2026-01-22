@@ -75,9 +75,7 @@ namespace UnityEditor.ShortcutManagement
                         m_InvalidShortcutReporter?.ReportInvalidBinding(discoveredEntry, invalidBindingMessage);
 
                         // Replace invalid binding with empty binding
-                        #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                        var emptyBinding = Enumerable.Empty<KeyCombination>();
-#pragma warning restore RS0030
+                        var emptyBinding = Array.Empty<KeyCombination>();
                         shortcutEntry = new ShortcutEntry(shortcutEntry.identifier, emptyBinding, shortcutEntry.action,
                             shortcutEntry.context, shortcutEntry.tag, shortcutEntry.type, null, shortcutEntry.priority);
                     }

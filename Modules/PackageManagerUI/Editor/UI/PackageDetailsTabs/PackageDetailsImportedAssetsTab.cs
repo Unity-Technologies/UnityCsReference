@@ -159,9 +159,9 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private void SortAssetsAndRefreshItems(IEnumerable<Asset> assets)
         {
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable RS0031 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             if (m_ListView.sortedColumns?.Any() != true)
-#pragma warning restore RS0030
+#pragma warning restore RS0031
                 #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 m_ListView.itemsSource = assets != null ? assets.ToArray() : Array.Empty<Asset>();
 #pragma warning restore RS0030

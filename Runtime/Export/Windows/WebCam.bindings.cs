@@ -2,11 +2,9 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Runtime.InteropServices;
-using UnityEngine;
+using Unity.Collections;
 using UnityEngine.Bindings;
 using UnityEngine.Scripting;
 using UnityEngine.Scripting.APIUpdating;
@@ -73,19 +71,18 @@ namespace UnityEngine.Windows.WebCam
 
             if (webCamMode == WebCamMode.PhotoMode)
             {
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                Resolution photoCaptureCameraResolution = PhotoCapture.SupportedResolutions.OrderByDescending((res) => res.width * res.height).First();
-#pragma warning restore RS0030
+                Resolution photoCaptureCameraResolution = PhotoCapture.SupportedResolutions_Internal.Max(
+                    Comparer<Resolution>.Create((x, y) => (x.width * x.height).CompareTo(y.width * y.height)));
 
                 m_CameraResolutionWidth = photoCaptureCameraResolution.width;
                 m_CameraResolutionHeight = photoCaptureCameraResolution.height;
             }
             else if (webCamMode == WebCamMode.VideoMode)
             {
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                Resolution videoCaptureCameraResolution = VideoCapture.SupportedResolutions.OrderByDescending((res) => res.width * res.height).First();
-                float cameraFramerate = VideoCapture.GetSupportedFrameRatesForResolution(videoCaptureCameraResolution).OrderByDescending((fps) => fps).First();
-#pragma warning restore RS0030
+                Resolution videoCaptureCameraResolution = VideoCapture.SupportedResolutions_Internal.Max(
+                    Comparer<Resolution>.Create((x, y) => (x.width * x.height).CompareTo(y.width * y.height)));
+
+                float cameraFramerate = VideoCapture.GetSupportedFrameRatesForResolution_Internal(videoCaptureCameraResolution).Max();
 
                 m_CameraResolutionWidth = videoCaptureCameraResolution.width;
                 m_CameraResolutionHeight = videoCaptureCameraResolution.height;

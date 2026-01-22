@@ -15,7 +15,7 @@ namespace UnityEditorInternal
     }
 
     //*undocumented*
-    [NativeType(Header = "Editor/Mono/RegistryUtil.bindings.h")]
+    [NativeHeader("Editor/Mono/RegistryUtil.bindings.h")]
     public class RegistryUtil
     {
         public static extern uint GetRegistryUInt32Value(string subKey, string valueName, uint defaultValue, RegistryView view);

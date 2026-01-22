@@ -132,7 +132,7 @@ namespace UnityEditor
                 if (m_FilteredHierarchy?.hierarchyType == HierarchyType.Assets)
                     m_ActiveBuiltinList = m_CurrentBuiltinResources;
                 else
-                    m_ActiveBuiltinList = new BuiltinResource[0];   // The Scene tab does not display builtin resources
+                    m_ActiveBuiltinList = Array.Empty<BuiltinResource>();   // The Scene tab does not display builtin resources
 
                 ItemsAvailable = m_FilteredHierarchy.results.Length + m_ActiveBuiltinList.Length;
             }
@@ -376,7 +376,7 @@ namespace UnityEditor
                             if (assetEntityId == EntityId.None)
                             {
                                 // For non selectable assets, don't show context menu. Selection is deselected
-                                m_Owner.SetSelection(new EntityId[0], false);
+                                m_Owner.SetSelection(Array.Empty<EntityId>(), false);
                                 Event.current.Use();
                             }
                             else
@@ -1175,7 +1175,7 @@ namespace UnityEditor
                 // Early out if we do not want to show builtin resources
                 if (!m_Owner.allowBuiltinResources || (searchFilter.GetState() == SearchFilter.State.FolderBrowsing) || (searchFilter.GetState() == SearchFilter.State.EmptySearchFilter))
                 {
-                    m_CurrentBuiltinResources = new BuiltinResource[0];
+                    m_CurrentBuiltinResources = Array.Empty<BuiltinResource>();
                     return;
                 }
 
@@ -1298,7 +1298,7 @@ namespace UnityEditor
                 }
                 else
                 {
-                    m_NoneList = new ExtraItem[0];
+                    m_NoneList = Array.Empty<ExtraItem>();
                 }
 
                 // We don't show all built-in resources; just the ones where their type

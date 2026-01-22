@@ -155,22 +155,22 @@ namespace Unity.Collections.LowLevel.Unsafe
         internal static extern bool CheckAllBufferJobsAreDependencyOrHaveCompleted(AtomicSafetyHandle handle, JobHandle job);
 
         // Same as CheckReadAndThrow but the early out has already been performed in the call site for performance reasons.
-        [ThreadSafe(ThrowsException = true)]
+        [ThreadSafe, NativeThrows]
         [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
         internal static extern void CheckReadAndThrowNoEarlyOut(AtomicSafetyHandle handle);
 
         // Same as CheckWriteAndThrow but the early out has already been performed in the call site for performance reasons.
-        [ThreadSafe(ThrowsException = true)]
+        [ThreadSafe, NativeThrows]
         [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
         internal static extern void CheckWriteAndThrowNoEarlyOut(AtomicSafetyHandle handle);
 
         // Checks if the handle can be deallocated.
         // If not (already destroyed, job currently accessing the data) throws an exception.
-        [ThreadSafe(ThrowsException = true)]
+        [ThreadSafe, NativeThrows]
         [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
         public static extern void CheckDeallocateAndThrow(AtomicSafetyHandle handle);
 
-        [ThreadSafe(ThrowsException = true)]
+        [ThreadSafe, NativeThrows]
         [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
         public static extern void CheckGetSecondaryDataPointerAndThrow(AtomicSafetyHandle handle);
 
@@ -279,8 +279,10 @@ namespace Unity.Collections.LowLevel.Unsafe
         internal static void CreateHandle(out AtomicSafetyHandle safety, Allocator allocator)
         {
             safety = (allocator == Allocator.Temp) ? GetTempMemoryHandle() : Create();
-            if(!Unity.Jobs.LowLevel.Unsafe.JobsUtility.IsExecutingJob)
+
+            if(!Jobs.LowLevel.Unsafe.JobsUtility.AreHandlesPatched)
                 return;
+
             switch(allocator)
             {
                 case Allocator.TempJob:

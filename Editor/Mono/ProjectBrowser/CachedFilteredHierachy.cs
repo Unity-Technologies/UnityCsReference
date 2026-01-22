@@ -75,8 +75,8 @@ namespace UnityEditor
         }
 
         SearchFilter m_SearchFilter = new SearchFilter();
-        FilterResult[] m_Results = new FilterResult[0];     // When filtering of folder we have all sub assets here
-        FilterResult[] m_VisibleItems = new FilterResult[0]; // Subset of m_Results used for showing/hiding sub assets
+        FilterResult[] m_Results = System.Array.Empty<FilterResult>();     // When filtering of folder we have all sub assets here
+        FilterResult[] m_VisibleItems = System.Array.Empty<FilterResult>(); // Subset of m_Results used for showing/hiding sub assets
 
         SearchService.SceneSearchSessionHandler m_SearchSessionHandler = new SearchService.SceneSearchSessionHandler();
         SearchService.SearchSessionOptions m_SearchSessionOptions;
@@ -453,7 +453,7 @@ namespace UnityEditor
 
         public void ResultsChanged()
         {
-            m_Results = new FilterResult[0];
+            m_Results = System.Array.Empty<FilterResult>();
             if (m_SearchFilter.GetState() != SearchFilter.State.EmptySearchFilter)
             {
                 AddResults();
@@ -622,7 +622,7 @@ namespace UnityEditor
 
         public GUID[] dynamicDependencies
         {
-            get { return new GUID[] {}; }
+            get { return System.Array.Empty<GUID>(); }
         }
 
         public int depth
@@ -692,7 +692,7 @@ namespace UnityEditor
         {
             get
             {
-                return new EntityId[0];
+                return System.Array.Empty<EntityId>();
             }
         }
 
@@ -709,7 +709,7 @@ namespace UnityEditor
 
         public EntityId[] FindAllAncestors(EntityId[] entityIds)
         {
-            return new EntityId[0];
+            return System.Array.Empty<EntityId>();
         }
 
         public bool Skip(int count, EntityId[] expanded)

@@ -18,13 +18,11 @@ namespace UnityEngine.UIElements.HierarchyV2
     {
         internal static readonly BindingId itemsSourceProperty = nameof(itemsSource);
         internal static readonly BindingId selectionTypeProperty = nameof(selectionType);
-        internal static readonly BindingId selectedIndexProperty = nameof(selectedIndex);
         internal static readonly BindingId reorderableProperty = nameof(reorderable);
         internal static readonly BindingId reorderModeProperty = nameof(reorderMode);
         internal static readonly BindingId showBorderProperty = nameof(showBorder);
         internal static readonly BindingId showAlternatingRowBackgroundsProperty = nameof(showAlternatingRowBackgrounds);
         internal static readonly BindingId fixedItemHeightProperty = nameof(fixedItemHeight);
-        internal static readonly BindingId selectedIndicesProperty = nameof(selectedIndices);
 
         VisualElement m_Container;
         ScrollContainer m_ScrollView;
@@ -43,7 +41,8 @@ namespace UnityEngine.UIElements.HierarchyV2
 
         // The list of unused items - these items will be repurposed during the BindVisibleItems.
         readonly LinkedList<RecycledItem> m_FreeList = new();
-        readonly CollectionViewSelection m_Selection = new();
+        readonly ICollectionViewSelectionContainer m_Selection;
+        public ICollectionViewSelectionContainer selection => m_Selection;
 
         bool m_IsChangingScrollingParameters;
         double m_DelayedScrolledVerticalValue = 0;
@@ -56,7 +55,7 @@ namespace UnityEngine.UIElements.HierarchyV2
 
         AlternatingRowBackground m_ShowAlternatingRowBackgrounds = AlternatingRowBackground.None;
         RangeSelectionDirection m_RangeSelectionDirection = RangeSelectionDirection.None;
-        SelectionType m_SelectionType;
+        SelectionType m_SelectionType = SelectionType.Single;
         ListViewReorderMode m_ReorderMode;
         enum RangeSelectionDirection
         {
@@ -227,7 +226,7 @@ namespace UnityEngine.UIElements.HierarchyV2
                 else if (m_SelectionType == SelectionType.Single)
                 {
                     if (m_Selection.indexCount > 1)
-                        SetSelection(m_Selection.FirstIndex());
+                        SetSelection(m_Selection.selectedIndex);
                 }
 
                 if (previous != m_SelectionType)
@@ -274,7 +273,7 @@ namespace UnityEngine.UIElements.HierarchyV2
             }
         }
 
-         /// <summary>
+        /// <summary>
         /// Gets or sets a value that indicates whether the user can drag list items to reorder them.
         /// </summary>
         /// <remarks>
@@ -334,12 +333,13 @@ namespace UnityEngine.UIElements.HierarchyV2
         /// <summary>
         /// Constructs a CollectionView.
         /// </summary>
-        public CollectionView()
+        public CollectionView(ICollectionViewSelectionContainer selection = null)
         {
+            m_Selection = selection ?? new CollectionViewSelection(this);
+
             focusable = true;
             isCompositeRoot = true;
             delegatesFocus = true;
-            selectionType = SelectionType.Single;
 
             AddToClassList(BaseVerticalCollectionView.ussClassName);
 
@@ -1002,25 +1002,7 @@ namespace UnityEngine.UIElements.HierarchyV2
             return null;
         }
 
-        /// <summary>
-        /// Returns or sets the selected item's index in the data source. If multiple items are selected, returns the
-        /// first selected item's index. If multiple items are provided, sets them all as selected.
-        /// </summary>
-        [CreateProperty]
-        public int selectedIndex
-        {
-            get => m_Selection.FirstIndex();
-            set => SetSelection(value);
-        }
-
-        /// <summary>
-        /// Returns the indices of selected items in the data source. Always returns an enumerable, even if no item  is selected, or a
-        /// single item is selected.
-        /// </summary>
-        [CreateProperty(ReadOnly = true)]
-        public IEnumerable<int> selectedIndices => m_Selection.indices;
-
-        public bool hasSelection => m_Selection.indices.Count > 0;
+        public bool hasSelection => m_Selection.indexCount > 0;
 
         public bool IsSelected(int index) => m_Selection.ContainsIndex(index);
 
@@ -1196,8 +1178,7 @@ namespace UnityEngine.UIElements.HierarchyV2
                 for (var i = 0; i < count; ++i)
                     newSelection[i] = min + i;
 
-                ClearSelectionWithoutValidation();
-                AddToSelection(newSelection.AsSpan(0, count));
+                SetSelection(newSelection.AsSpan(0, count));
             }
             finally
             {
@@ -1210,24 +1191,21 @@ namespace UnityEngine.UIElements.HierarchyV2
             if (indices.Length == 0)
                 return;
 
-            foreach (var index in indices)
-            {
-                AddToSelectionWithoutValidation(index);
-            }
+            AddToSelectionWithoutValidation(indices);
 
             NotifyOfSelectionChange();
             SaveViewData();
         }
 
-        void AddToSelectionWithoutValidation(int index)
+        void AddToSelectionWithoutValidation(ReadOnlySpan<int> indices)
         {
-            if (m_Selection.ContainsIndex(index))
-                return;
+            foreach (var index in indices)
+            {
+                if (m_IndexToItemDictionary.TryGetValue(index, out var recycleItem))
+                    recycleItem.SetSelected(true);
+            }
 
-            if (m_IndexToItemDictionary.TryGetValue(index, out var recycleItem))
-                recycleItem.SetSelected(true);
-
-            m_Selection.AddIndex(index);
+            m_Selection.AddRange(indices);
         }
 
         /// <summary>
@@ -1245,13 +1223,13 @@ namespace UnityEngine.UIElements.HierarchyV2
         /// <param name="index">The item index.</param>
         public void RemoveFromSelection(int index)
         {
-            if (!m_Selection.TryRemove(index))
+            if (!m_Selection.ContainsIndex(index))
                 return;
 
             if (m_IndexToItemDictionary.TryGetValue(index, out var recycleItem))
                 recycleItem.SetSelected(false);
 
-            m_Selection.TryRemove(index);
+            m_Selection.Remove(index);
             NotifyOfSelectionChange();
             SaveViewData();
         }
@@ -1340,41 +1318,25 @@ namespace UnityEngine.UIElements.HierarchyV2
 
         void SetSelectionInternal(ReadOnlySpan<int> indices, bool sendNotification)
         {
-            if (MatchesExistingSelection(indices))
+            if (m_Selection.MatchesExistingSelection(indices))
                 return;
 
-            var previousSelectedIndex = selectedIndex;
-            ClearSelectionWithoutValidation();
+            m_Selection.Select(indices);
 
-            // If possible resize indices so we can better handle large selections. (UUM-74996)
-            if (m_Selection.capacity < indices.Length)
-            {
-                m_Selection.capacity = indices.Length;
-            }
+            // Update the visual state of visible items
+            foreach (var (_, recycledItem) in m_IndexToItemDictionary)
+                recycledItem.SetSelected(false);
 
             foreach (var index in indices)
             {
-                AddToSelectionWithoutValidation(index);
+                if (m_IndexToItemDictionary.TryGetValue(index, out var recycleItem))
+                    recycleItem.SetSelected(true);
             }
 
             if (sendNotification)
-            {
-                if (previousSelectedIndex != selectedIndex)
-                    NotifyPropertyChanged(selectedIndexProperty);
-
                 NotifyOfSelectionChange();
-            }
 
             SaveViewData();
-        }
-
-        bool MatchesExistingSelection(ReadOnlySpan<int> indices)
-        {
-            if (indices.Length != m_Selection.indexCount)
-                return false;
-
-            var existingSelection = NoAllocHelpers.CreateReadOnlySpan(m_Selection.indices);
-            return existingSelection.SequenceEqual(indices);
         }
 
         /// <summary>
@@ -1382,7 +1344,7 @@ namespace UnityEngine.UIElements.HierarchyV2
         /// </summary>
         public void ClearSelection()
         {
-            if (m_Selection.indices.Count == 0)
+            if (m_Selection?.indexCount == 0)
                 return;
 
             ClearSelectionWithoutValidation();
@@ -1394,7 +1356,7 @@ namespace UnityEngine.UIElements.HierarchyV2
             foreach (var (_, recycledItem) in m_IndexToItemDictionary)
                 recycledItem.SetSelected(false);
 
-            m_Selection.ClearIndices();
+            m_Selection.Clear();
         }
 
         internal virtual CollectionViewDragger CreateDragger()
@@ -1432,7 +1394,7 @@ namespace UnityEngine.UIElements.HierarchyV2
             return canStartDrag?.Invoke(new CanStartDragArgs(item.element, item.index, indices, modifiers)) ?? true;
         }
 
-        internal StartDragArgs RaiseSetupDragAndDrop(RecycledItem item, IEnumerable<int> indices, StartDragArgs args)
+        internal StartDragArgs RaiseSetupDragAndDrop(RecycledItem item, IReadOnlyList<int> indices, StartDragArgs args)
         {
             return setupDragAndDrop?.Invoke(new SetupDragAndDropArgs(item.element, indices, args)) ?? args;
         }
@@ -1496,10 +1458,7 @@ namespace UnityEngine.UIElements.HierarchyV2
             if (selectionType != SelectionType.Multiple)
                 return;
 
-            for (var index = 0; index < itemsSource.Count; index++)
-            {
-                m_Selection.AddIndex(index);
-            }
+            m_Selection.SelectAll();
 
             foreach (var recycledItem in m_IndexToItemDictionary.Values)
             {
@@ -1529,7 +1488,7 @@ namespace UnityEngine.UIElements.HierarchyV2
                 else
                 {
                     m_RangeSelectionDirection = RangeSelectionDirection.None;
-                    selectedIndex = index;
+                    m_Selection.selectedIndex = index;
                 }
 
                 ScrollToItem(index);
@@ -1544,7 +1503,7 @@ namespace UnityEngine.UIElements.HierarchyV2
                     ClearSelection();
                     return true;
                 case KeyboardNavigationOperation.Submit:
-                    ScrollToItem(selectedIndex);
+                    ScrollToItem(m_Selection.selectedIndex);
                     return true;
                 case KeyboardNavigationOperation.Previous:
                 {

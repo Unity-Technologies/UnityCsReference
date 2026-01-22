@@ -258,6 +258,8 @@ namespace UnityEngine
 
         public virtual bool supportsDynamicResolution => UnityEngine.SystemInfo.supportsDynamicResolution;
 
+        public virtual bool supportsBackbufferInMultipleRenderTargets => UnityEngine.SystemInfo.supportsBackbufferInMultipleRenderTargets;
+
         public virtual bool IsFormatSupported(GraphicsFormat format, GraphicsFormatUsage usage)
         {
             return UnityEngine.SystemInfo.IsFormatSupported(format, usage);

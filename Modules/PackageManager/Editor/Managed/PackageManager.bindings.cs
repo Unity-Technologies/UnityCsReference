@@ -85,7 +85,7 @@ namespace UnityEditor.PackageManager
     [StaticAccessor("PackageManager", StaticAccessorType.DoubleColon)]
     internal class Folders
     {
-        [ThreadAndSerializationSafe]
+        [ThreadSafe]
         public static extern string GetPackagesPath();
         public static extern bool IsPackagedAssetPath(string path);
         public static extern string[] GetPackagesPaths();

@@ -642,9 +642,7 @@ namespace UnityEditor
                     s_PlatformsWithDifferentRPAssets.Add(platform.title.ToString());
             }
 
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            if (s_PlatformsWithDifferentRPAssets.Any())
-#pragma warning restore RS0030
+            if (s_PlatformsWithDifferentRPAssets.Count > 0)
             {
                 EditorGUILayout.HelpBox($"The following platforms have assets in its associated Quality levels that belong to different render pipelines: {string.Join(", ", s_PlatformsWithDifferentRPAssets)}", MessageType.Error);
             }

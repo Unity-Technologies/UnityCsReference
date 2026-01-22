@@ -162,7 +162,7 @@ namespace UnityEditor.Shaders
                 return true;
             }
 
-            [SerializeField] public KeywordOverrideInfo[] keywords = { };
+            [SerializeField] public KeywordOverrideInfo[] keywords = Array.Empty<KeywordOverrideInfo>();
             [SerializeField] public ShaderVariantGenerationMode variantGenerationMode = ShaderVariantGenerationMode.Default;
         }
 

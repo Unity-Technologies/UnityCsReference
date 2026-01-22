@@ -191,10 +191,8 @@ namespace UnityEditor.ShortcutManagement
 
             var nameElement = (TextElement)shortcutElementTemplate[0];
             var contextElement = shortcutElementTemplate[1];
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var contextType = (TextElement)contextElement.Children().ElementAt(0);
-#pragma warning restore RS0030
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var tag = (TextElement)contextElement.Children().ElementAt(1);
 #pragma warning restore RS0030
             var shortcutTypeElement = (TextElement)shortcutElementTemplate[2];
@@ -307,9 +305,9 @@ namespace UnityEditor.ShortcutManagement
 
             m_ShortcutsTable.selectedIndex = -1;
 
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable RS0031 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             if (!selection.Any())
-#pragma warning restore RS0030
+#pragma warning restore RS0031
                 m_ViewController.SetCategorySelected(null);
             else
                 #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
@@ -665,9 +663,9 @@ namespace UnityEditor.ShortcutManagement
 
         GenericMenu GetContextMenuForEntries(IEnumerable<ShortcutEntry> entries)
         {
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable RS0031 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             if (entries == null || !entries.Any() || m_IgnoreContext)
-#pragma warning restore RS0030
+#pragma warning restore RS0031
             {
                 m_IgnoreContext = false;
                 return null;
@@ -812,9 +810,9 @@ namespace UnityEditor.ShortcutManagement
 
         void ShortcutSelectionChanged(IEnumerable<object> selection)
         {
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable RS0031 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             if (selection.Any())
-#pragma warning restore RS0030
+#pragma warning restore RS0031
             {
                 #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 var newSelection = (ShortcutEntry)selection.First();
@@ -1711,9 +1709,7 @@ namespace UnityEditor.ShortcutManagement
 
         protected override bool FieldIsEmpty(List<KeyCombination> fieldValue)
         {
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            return value == null || !value.Any();
-#pragma warning restore RS0030
+            return value == null || value.Count == 0;
         }
     }
 

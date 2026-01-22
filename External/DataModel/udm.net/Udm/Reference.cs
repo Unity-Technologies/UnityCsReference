@@ -99,6 +99,7 @@ namespace Unity.DataModel
         }
     }
 
+    #pragma warning disable CS0649
     internal struct TypeLayout
     {
         internal byte HasExplicitLayout;
@@ -107,4 +108,5 @@ namespace Unity.DataModel
         internal short OverrideAlignment;
         internal int OverrideSize;
     }
+    #pragma warning restore CS0649
 }

@@ -14,7 +14,6 @@ namespace UnityEngine
     [NativeHeader("Runtime/Export/Logging/UnityLogWriter.bindings.h")]
     internal class UnityLogWriter : System.IO.TextWriter
     {
-        [ThreadAndSerializationSafe]
         public static void WriteStringToUnityLog(string s)
         {
             if (s == null) return;

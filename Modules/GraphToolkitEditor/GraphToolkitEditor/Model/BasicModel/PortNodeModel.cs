@@ -97,9 +97,7 @@ namespace Unity.GraphToolkit.Editor
                 return GetPorts().SelectMany(p => GraphModel.GetWiresForPort(p)).Distinct();
 #pragma warning restore RS0030
 
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            return Enumerable.Empty<WireModel>();
-#pragma warning restore RS0030
+            return Array.Empty<WireModel>();
         }
 
         internal virtual void OnPortDataTypeChanged(PortModel portModel, TypeHandle previousType, TypeHandle dataTypeHandle) { }

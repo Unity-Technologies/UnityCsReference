@@ -316,7 +316,7 @@ namespace UnityEditor
         CurveWrapper[] GetCurveWrapperArray()
         {
             if (m_Curve == null)
-                return new CurveWrapper[] {};
+                return Array.Empty<CurveWrapper>();
             CurveWrapper cw = new CurveWrapper();
             cw.id = "Curve".GetHashCode();
             cw.groupId = -1;

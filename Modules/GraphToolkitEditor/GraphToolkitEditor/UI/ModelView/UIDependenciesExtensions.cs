@@ -20,9 +20,7 @@ namespace Unity.GraphToolkit.Editor
         /// <param name="model">The model for which we're querying the UI.</param>
         public static IEnumerable<ModelView> GetModelDependencies(this GraphElementModel model)
         {
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            return model == null ? Enumerable.Empty<ModelView>() : UIDependencies.GetModelDependencies(model.Guid);
-#pragma warning restore RS0030
+            return model == null ? Array.Empty<ModelView>() : UIDependencies.GetModelDependencies(model.Guid);
         }
 
         /// <summary>

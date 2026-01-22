@@ -596,6 +596,7 @@ namespace UnityEngine
         }
 
         [FreeFunction(Name = "AnimatorBindings::InternalGetBehaviours", HasExplicitThis = true)]
+        [return: UnityMarshalAs(NativeType.ScriptingObjectPtr)]
         extern internal ScriptableObject[] InternalGetBehaviours([NotNull] Type type);
 
         public StateMachineBehaviour[] GetBehaviours(int fullPathHash, int layerIndex)
@@ -604,6 +605,7 @@ namespace UnityEngine
         }
 
         [FreeFunction(Name = "AnimatorBindings::InternalGetBehavioursByKey", HasExplicitThis = true)]
+        [return: UnityMarshalAs(NativeType.ScriptingObjectPtr)]
         extern internal ScriptableObject[] InternalGetBehavioursByKey(int fullPathHash, int layerIndex, [NotNull] Type type);
 
         // Automatic stabilization of feet during transition and blending

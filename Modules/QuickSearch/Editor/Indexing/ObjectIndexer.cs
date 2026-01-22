@@ -115,9 +115,7 @@ namespace UnityEditor.Search
         public override IEnumerable<SearchResult> Search(string searchQuery, SearchContext context, SearchProvider provider, int maxScore = int.MaxValue, int patternMatchLimit = 2999)
         {
             if (settings.options.disabled)
-                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                return Enumerable.Empty<SearchResult>();
-#pragma warning restore RS0030
+                return Array.Empty<SearchResult>();
             return base.Search(searchQuery, context, provider, maxScore, patternMatchLimit);
         }
 

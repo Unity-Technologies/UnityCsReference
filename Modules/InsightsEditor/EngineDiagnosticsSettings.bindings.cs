@@ -11,7 +11,7 @@ namespace UnityEditor.EngineDiagnostics
 {
     [VisibleToOtherModules]
     [Serializable]
-    [NativeType(Header = "Modules/UnityConnect/Insights/InsightsSettings.h")]
+    [NativeHeader("Modules/UnityConnect/Insights/InsightsSettings.h")]
     internal enum BuildProfileEngineDiagnosticsState
     {
         /// <summary>

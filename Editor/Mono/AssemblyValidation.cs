@@ -307,7 +307,7 @@ namespace UnityEditor
                 assembliesAndReferencesArray[i] = new AssemblyAndReferences
                 {
                     assemblyIndex = i,
-                    referenceIndicies = new int[0]
+                    referenceIndicies = Array.Empty<int>()
                 };
             }
 

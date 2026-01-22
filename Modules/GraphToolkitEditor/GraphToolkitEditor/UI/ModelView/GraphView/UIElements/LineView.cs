@@ -81,7 +81,7 @@ namespace Unity.GraphToolkit.Editor
                 var height = Math.Max(1, Math.Abs(start.y - end.y));
                 var r = new Rect(x, y, width, height);
 
-                MeshDrawingHelpers.SolidRectangle(mgc, r, m_LineColor, ContextType.Editor);
+                MeshDrawingHelpers.SolidRectangle(mgc, r, m_LineColor);
             }
         }
     }

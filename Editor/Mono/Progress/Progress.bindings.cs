@@ -21,7 +21,7 @@ namespace UnityEditor
         // Keep everything in sync with Editor\src\Progress.h
         internal const int InvalidProgressId = -1;
 
-        [NativeType(Header = k_NativeHeader)]
+        [NativeHeader(k_NativeHeader)]
         public enum Status
         {
             Running,
@@ -31,7 +31,7 @@ namespace UnityEditor
             Paused
         }
 
-        [Flags, NativeType(Header = k_NativeHeader)]
+        [Flags, NativeHeader(k_NativeHeader)]
         public enum Options
         {
             None = 0 << 0,
@@ -42,7 +42,7 @@ namespace UnityEditor
             Unmanaged = 1 << 4
         }
 
-        [NativeType(Header = k_NativeHeader)]
+        [NativeHeader(k_NativeHeader)]
         public enum TimeDisplayMode
         {
             NoTimeShown,
@@ -50,7 +50,7 @@ namespace UnityEditor
             ShowRemainingTime
         }
 
-        [NativeType(Header = k_NativeHeader)]
+        [NativeHeader(k_NativeHeader)]
         public enum Priority
         {
             Unresponsive = 0,
@@ -60,7 +60,7 @@ namespace UnityEditor
             High = 10
         }
 
-        [Flags, NativeType(Header = k_NativeHeader)]
+        [Flags, NativeHeader(k_NativeHeader)]
         internal enum Updates : uint
         {
             NothingChanged = 0,
@@ -81,7 +81,7 @@ namespace UnityEditor
             EverythingChanged = 0xffffffff
         }
 
-        [NativeType(Header = k_NativeHeader)]
+        [NativeHeader(k_NativeHeader)]
         internal enum ExplicitLoggingState
         {
             NotSet,

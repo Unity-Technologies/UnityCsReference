@@ -466,8 +466,6 @@ namespace UnityEngine
 
         public static extern StructSystemType CanUnmarshallSystemTypeStructField();
         public static extern StructSystemTypeArray CanUnmarshallSystemTypeArrayStructField();
-
-        public static extern string[] CanUnmarshallArrayOfSystemTypeArgumentToVectorOfScriptingSystemTypeObjectPtr(System.Type[] param);
         public static extern string[] CanUnmarshallArrayOfSystemTypeArgumentToVectorOfUnityType(System.Type[] param);
         public static extern string[] CanUnmarshallArrayOfSystemTypeArgumentToVectorOfScriptingClassPtr(System.Type[] param);
 
@@ -505,8 +503,6 @@ namespace UnityEngine
 
         public static extern string CanMarshallSystemReflectionFieldInfoStructField(StructSystemReflectionFieldInfo param);
         public static extern string[] CanMarshallSystemReflectionFieldInfoArrayStructField(StructSystemReflectionFieldInfoArray param);
-
-        public static extern string[] CanMarshallArrayOfFieldInfoArgumentToVectorOfScriptingFieldInfoObjectPtr(System.Reflection.FieldInfo[] param);
         public static extern string[] CanMarshallArrayOfFieldInfoArgumentToVectorOfScriptingFieldPtr(System.Reflection.FieldInfo[] param);
 
         public static extern StructSystemReflectionFieldInfo CanUnmarshallSystemReflectionFieldInfoStructField();
@@ -544,8 +540,6 @@ namespace UnityEngine
 
         public static extern string CanMarshallSystemReflectionMethodInfoStructField(StructSystemReflectionMethodInfo param);
         public static extern string[] CanMarshallSystemReflectionMethodInfoArrayStructField(StructSystemReflectionMethodInfoArray param);
-
-        public static extern string[] CanMarshallArrayOfMethodInfoArgumentToVectorOfScriptingMethodInfoObjectPtr(System.Reflection.MethodInfo[] param);
         public static extern string[] CanMarshallArrayOfMethodInfoArgumentToVectorOfScriptingMethodPtr(System.Reflection.MethodInfo[] param);
 
         public static extern StructSystemReflectionMethodInfo CanUnmarshallSystemReflectionMethodInfoStructField();
@@ -710,6 +704,12 @@ namespace UnityEngine
     }
 
     [ExcludeFromDocs]
+    internal struct StructWithNonBlittableListField
+    {
+        public List<StructWithStringIntAndFloat> list;
+    }
+
+    [ExcludeFromDocs]
     internal struct StructWithStringIntAndFloat2
     {
         public string a;
@@ -803,7 +803,7 @@ namespace UnityEngine
 #pragma warning disable 0169
         bool a;
     }
-    [NativeType(Header = "Modules/Marshalling/MarshallingTests.h")]
+    [NativeHeader("Modules/Marshalling/MarshallingTests.h")]
     [ExcludeFromDocs]
     internal class TypedefManagedNameTests
     {
@@ -812,7 +812,7 @@ namespace UnityEngine
 
     // --------------------------------------------------------------------
     // Field-bound property tests
-    [NativeType("Modules/Marshalling/MarshallingTests.h")]
+    [NativeHeader("Modules/Marshalling/MarshallingTests.h")]
     internal class FieldBoundPropertyTests
     {
         [NativeProperty(TargetType = TargetType.Field)]
@@ -842,7 +842,6 @@ namespace UnityEngine
         public static extern void InOutArrayOfUnityObjectTypePPtrWhenItemIsDeletedWorks([In, Out] MarshallingTestObject[] array);
 
         public static extern void InOutArrayOfNestedBlittableStructTypeWorks([In, Out] StructNestedBlittable[] array, StructNestedBlittable value);
-        public static extern void InOutArrayOfSystemTypeWorks([In, Out] Type[] array, Type value);
 
         public static extern void InOutArrayOfNonBlittableTypeWorks([In, Out] StructWithStringIntAndFloat[] array, StructWithStringIntAndFloat value);
         public static extern void InOutArrayOfNonBlittableTypeWhenItemIsDeletedWorks([In, Out] StructWithStringIntAndFloat[] array);
@@ -868,7 +867,7 @@ namespace UnityEngine
 
     // --------------------------------------------------------------------
     // Abstract type tests
-    [NativeType(Header = "Modules/Marshalling/MarshallingTests.h")]
+    [NativeHeader("Modules/Marshalling/MarshallingTests.h")]
     internal abstract class AbstractClass
     {
         public static extern int MethodInAbstractClass();
@@ -900,6 +899,11 @@ namespace UnityEngine
         public SomeEnum eVal;
     }
 
+    struct StructWithBlittableListField
+    {
+        public List<int> list;
+    }
+
     unsafe struct StructWithSelfPointer
     {
         public int value;
@@ -908,7 +912,7 @@ namespace UnityEngine
 
     // --------------------------------------------------------------------
     // System.Array tests
-    [NativeType("Modules/Marshalling/MarshallingTests.h")]
+    [NativeHeader("Modules/Marshalling/MarshallingTests.h")]
     internal class ValueTypeArrayTests
     {
         [NativeThrows] public static extern void ParameterIntArrayReadOnly(int[] param);
@@ -993,7 +997,7 @@ namespace UnityEngine
 
     // --------------------------------------------------------------------
     // System.Span tests
-    [NativeType("Modules/Marshalling/MarshallingTests.h")]
+    [NativeHeader("Modules/Marshalling/MarshallingTests.h")]
     internal class ValueTypeSpanTests
     {
         [NativeThrows] public static extern void ParameterIntReadOnlySpan(ReadOnlySpan<int> param);
@@ -1030,6 +1034,7 @@ namespace UnityEngine
         [NativeThrows] public static extern void ParameterListOfCharReadWrite(List<char> param);
         [NativeThrows] public static extern void ParameterListOfEnumReadWrite(List<SomeEnum> param);
         [NativeThrows] public static extern void ParameterListOfCornerCaseStructReadWrite(List<BlittableCornerCases> param);
+        [NativeThrows] public static extern void PamameterArrayOfStructsWithListsAddWithCapacity([In, Out] StructWithBlittableListField[] param);
     }
 
     // --------------------------------------------------------------------
@@ -1047,6 +1052,12 @@ namespace UnityEngine
         [NativeThrows] public static extern void ParameterNativeCallsClear([In,Out] List<StructWithStringIntAndFloat> param);
         [NativeThrows] public static extern void ParameterNativeRemovesItem([In,Out] List<StructWithStringIntAndFloat> param);
         [NativeThrows] public static extern void ParameterOutOnly([Out] List<StructWithStringIntAndFloat> param, StructWithStringIntAndFloat item1, StructWithStringIntAndFloat item2);
+
+        [NativeThrows] public static extern void ParameterStructWithNonBlittableList(StructWithNonBlittableListField param);
+        [NativeThrows] public static extern void ParameterStructWithNonBlittableListByRef(ref StructWithNonBlittableListField param);
+        [NativeThrows] public static extern void ParameterStructWithNonBlittableListIn(in StructWithNonBlittableListField param);
+        [NativeThrows] public static extern void ParameterStructWithNonBlittableListOut(out StructWithNonBlittableListField param);
+        public static extern StructWithNonBlittableListField ReturnStructWithNonBlittableList();
 
         [NativeThrows] public static extern void ParameterReadUnityObjectVector([In] List<MarshallingTestObject> param);
         [NativeThrows] public static extern void ParameterReadUnityObjectPPtrVector([In] List<MarshallingTestObject> param);
@@ -1068,7 +1079,7 @@ namespace UnityEngine
 
     // --------------------------------------------------------------------
     // Invoke tests (calling from native to managed)
-    [NativeType("Modules/Marshalling/MarshallingTests.h")]
+    [NativeHeader("Modules/Marshalling/MarshallingTests.h")]
     internal class InvokeTests
     {
         public static extern bool TestInvokeBool(bool arg);
@@ -1483,5 +1494,15 @@ namespace UnityEngine
     {
         [FreeFunction("MarshallingTest::DisableMarshallingTestsVerification")]
         public static extern void DisableMarshallingTestsVerification();
+    }
+
+    [NativeType(CodegenOptions = CodegenOptions.Custom, IntermediateScriptingStructName = "CustomNativeMarshallerAlwaysThrows")]
+    struct CustomNativeMarshallerAlwaysThrows
+    {
+    }
+
+    internal class CustomNativeMarshalingTests
+    {
+        public static extern void CallWithCustomNativeMarshallerAlwaysThrows(CustomNativeMarshallerAlwaysThrows param);
     }
 }

@@ -9,7 +9,6 @@ namespace UnityEngine.UIElements;
 /// <summary>
 /// Represents a reference to a VisualElement in a <see cref="PanelRenderer"/>.
 /// </summary>
-/// <typeparam name="T">The VisualElement type.</typeparam>
 /// <example>
 /// This example shows how to use VisualElementReference to reference an element in a UXML file that is loaded by a <see cref="PanelRenderer"/>.
 /// <code source="../../../../Modules/UIElements/Tests/UIElementsExamples/Assets/Examples/VisualElementReference_Example.cs"/>
@@ -27,15 +26,16 @@ namespace UnityEngine.UIElements;
 /// <code source="../../../../Modules/UIElements/Tests/UIElementsExamples/Assets/Examples/VisualElementReference_ExampleNested.cs"/>
 /// </example>
 [Serializable]
-public class VisualElementReference<T> : IVisualElementReferenceHandler, IEquatable<VisualElementReference<T>>, IDisposable where T : VisualElement
+public class VisualElementReference : IVisualElementReferenceHandler, IEquatable<VisualElementReference>, IDisposable
 {
     [SerializeField] PanelRenderer m_PanelRenderer;
     [SerializeField] AuthoringIdPath m_AuthoringPath;
 
-    VisualElementAssetReferenceTable m_CurrentTable;
-    Action<T> m_ReferenceResolved;
-    Action<T> m_ReferenceUnloaded;
-    T m_LoadedValue;
+    internal VisualElementAssetReferenceTable m_CurrentTable;
+    Action<VisualElement> m_ReferenceResolved;
+    Action<VisualElement> m_ReferenceUnloaded;
+
+    VisualElement m_LoadedValue;
     bool m_Registered;
 
     /// <summary>
@@ -50,65 +50,24 @@ public class VisualElementReference<T> : IVisualElementReferenceHandler, IEquata
     /// </summary>
     public AuthoringIdPath authoringPath => m_AuthoringPath;
 
+    internal virtual bool hasSubscribers => m_ReferenceResolved != null || m_ReferenceUnloaded != null;
+
     /// <summary>
-    /// Callback invoked when the reference is resolved from the document.
-    /// When you add a callback, if the reference is already resolved, the callback is immediately invoked.
+    /// Creates a new empty VisualElementReference.
     /// </summary>
-    public event Action<T> referenceResolved
+    public VisualElementReference()
     {
-        add
-        {
-            if (value == null)
-                throw new ArgumentNullException(nameof(value));
-
-            m_ReferenceResolved += value;
-
-            // If we have already resolved a value we dont want to miss the callback.
-            if (m_LoadedValue != null)
-                value.Invoke(m_LoadedValue);
-
-            RegisterToTableProvider();
-        }
-        remove
-        {
-            if (value == null)
-                throw new ArgumentNullException(nameof(value));
-
-            m_ReferenceResolved -= value;
-
-            if (m_ReferenceUnloaded == null && m_ReferenceResolved == null)
-                UnregisterFromTableProvider();
-        }
     }
 
     /// <summary>
-    /// Invoked when the referenced object is unloaded. This occurs when the document is destroyed,
-    /// such as when a live reload occurs after the VisualTreeAsset changes.
-    /// At this point, all references are invalid and should be cleared.
+    /// Creates a new VisualElementReference pointing to the given renderer and path.
     /// </summary>
-    public event Action<T> referenceUnloaded
+    /// <param name="renderer">The PanelRenderer that contains the VisualTreeAsset.</param>
+    /// <param name="path">The path of the element to reference.</param>
+    public VisualElementReference(PanelRenderer renderer, AuthoringIdPath path)
     {
-        add
-        {
-            if (value == null)
-                throw new ArgumentNullException(nameof(value));
-
-            m_ReferenceUnloaded += value;
-            RegisterToTableProvider();
-        }
-        remove
-        {
-            if (value == null)
-                throw new ArgumentNullException(nameof(value));
-
-            m_ReferenceUnloaded -= value;
-
-            if (!hasSubscribers)
-                UnregisterFromTableProvider();
-        }
+        SetReference(renderer, path);
     }
-
-    bool hasSubscribers => m_ReferenceResolved != null || m_ReferenceUnloaded != null;
 
     ~VisualElementReference() => Dispose(false);
 
@@ -119,9 +78,6 @@ public class VisualElementReference<T> : IVisualElementReferenceHandler, IEquata
     /// <param name="path">The path of the element to reference.</param>
     public void SetReference(PanelRenderer renderer, AuthoringIdPath path)
     {
-        if (renderer == null)
-            throw new ArgumentNullException(nameof(renderer));
-
         if (m_PanelRenderer == renderer && m_AuthoringPath.Equals(path))
             return;
 
@@ -143,21 +99,85 @@ public class VisualElementReference<T> : IVisualElementReferenceHandler, IEquata
             TryResolveReference();
     }
 
-    void TryResolveReference()
+    /// <summary>
+    /// Registers a callback for when the reference is resolved from the document.
+    /// When you register a callback, if the reference is already resolved, the callback is immediately invoked.
+    /// </summary>
+    /// <param name="callback">The callback to invoke when the reference is resolved.</param>
+    public void RegisterReferenceResolvedCallback(Action<VisualElement> callback)
     {
-        if (m_CurrentTable?.TryGetReference<T>(m_AuthoringPath, out T element) == true)
+        RegisterCallback(callback, ref m_ReferenceResolved, m_LoadedValue);
+    }
+
+    /// <summary>
+    /// Unregisters a callback for when the reference is resolved from the document.
+    /// </summary>
+    /// <param name="callback">The callback to unregister.</param>
+    public void UnregisterReferenceResolvedCallback(Action<VisualElement> callback)
+    {
+        UnregisterCallback(callback, ref m_ReferenceResolved);
+    }
+
+    /// <summary>
+    /// Registers a callback for when the referenced object is unloaded. This occurs when the document is destroyed,
+    /// such as when a live reload occurs after the VisualTreeAsset changes.
+    /// At this point, all references are invalid and should be cleared.
+    /// </summary>
+    /// <param name="callback">The callback to invoke when the reference is unloaded.</param>
+    public void RegisterReferenceUnloadedCallback(Action<VisualElement> callback)
+    {
+        RegisterCallback(callback, ref m_ReferenceUnloaded, null);
+    }
+
+    /// <summary>
+    /// Unregisters a callback for when the referenced object is unloaded.
+    /// </summary>
+    /// <param name="callback">The callback to unregister.</param>
+    public void UnregisterReferenceUnloadedCallback(Action<VisualElement> callback)
+    {
+        UnregisterCallback(callback, ref m_ReferenceUnloaded);
+    }
+
+    internal void RegisterCallback<T>(Action<T> callback, ref Action<T> callbackDelegate, T immediateValue)
+    {
+        if (callback == null)
+            throw new ArgumentNullException(nameof(callback));
+
+        callbackDelegate += callback;
+
+        // If we have already resolved a value we dont want to miss the callback.
+        if (immediateValue != null)
+            callback(immediateValue);
+
+        RegisterToTableProvider();
+    }
+
+    internal void UnregisterCallback<T>(Action<T> callback, ref Action<T> callbackDelegate)
+    {
+        if (callback == null)
+            throw new ArgumentNullException(nameof(callback));
+
+        callbackDelegate -= callback;
+
+        if (!hasSubscribers)
+            UnregisterFromTableProvider();
+    }
+
+    internal virtual void TryResolveReference()
+    {
+        if (m_CurrentTable?.TryGetReference(m_AuthoringPath, out VisualElement element) == true)
         {
             OnReferenceLoaded(element);
         }
     }
 
-    void OnReferenceLoaded(T element)
+    internal virtual void OnReferenceLoaded(VisualElement element)
     {
         m_LoadedValue = element;
         m_ReferenceResolved?.Invoke(m_LoadedValue);
     }
 
-    void OnReferenceUnloaded()
+    internal virtual void OnReferenceUnloaded()
     {
         m_ReferenceUnloaded?.Invoke(m_LoadedValue);
         m_LoadedValue = null;
@@ -166,7 +186,7 @@ public class VisualElementReference<T> : IVisualElementReferenceHandler, IEquata
     /// <summary>
     /// Registers the reference to the table provider to resolve references.
     /// </summary>
-    void RegisterToTableProvider()
+    internal void RegisterToTableProvider()
     {
         if (!m_Registered)
         {
@@ -180,7 +200,7 @@ public class VisualElementReference<T> : IVisualElementReferenceHandler, IEquata
     /// <summary>
     /// Unregisters the reference from the table provider.
     /// </summary>
-    void UnregisterFromTableProvider()
+    internal void UnregisterFromTableProvider()
     {
         if (m_Registered)
         {
@@ -233,10 +253,97 @@ public class VisualElementReference<T> : IVisualElementReferenceHandler, IEquata
     /// </summary>
     /// <param name="other">The instance to compare against.</param>
     /// <returns><see langword="true"/> if <paramref name="other"/> has the same <see cref="PanelRenderer"/> and matching <see cref="AuthoringIdPath"/>.</returns>
-    public bool Equals(VisualElementReference<T> other)
+    public bool Equals(VisualElementReference other)
     {
         if (ReferenceEquals(other, null))
             return false;
         return m_PanelRenderer == other.m_PanelRenderer && m_AuthoringPath.Equals(other.m_AuthoringPath);
+    }
+}
+
+/// <summary>
+/// Represents a strongly-typed reference to a VisualElement in a <see cref="PanelRenderer"/>.
+/// </summary>
+/// <typeparam name="T">The VisualElement type.</typeparam>
+[Serializable]
+public class VisualElementReference<T> : VisualElementReference where T : VisualElement
+{
+    Action<T> m_ReferenceResolvedTyped;
+    Action<T> m_ReferenceUnloadedTyped;
+    T m_LoadedValueTyped;
+
+    internal override bool hasSubscribers => base.hasSubscribers || m_ReferenceResolvedTyped != null || m_ReferenceUnloadedTyped != null;
+
+    /// <summary>
+    /// Creates a new empty VisualElementReference.
+    /// </summary>
+    public VisualElementReference()
+    {
+    }
+
+    /// <summary>
+    /// Creates a new VisualElementReference pointing to the given renderer and path.
+    /// </summary>
+    /// <param name="renderer">The PanelRenderer that contains the VisualTreeAsset.</param>
+    /// <param name="path">The path of the element to reference.</param>
+    public VisualElementReference(PanelRenderer renderer, AuthoringIdPath path) : base(renderer, path)
+    {
+    }
+
+    /// <summary>
+    /// Registers a callback for when the reference is resolved from the document.
+    /// When you register a callback, if the reference is already resolved, the callback is immediately invoked.
+    /// </summary>
+    /// <param name="callback">The callback to invoke when the reference is resolved.</param>
+    public void RegisterReferenceResolvedCallback(Action<T> callback)
+    {
+        RegisterCallback(callback, ref m_ReferenceResolvedTyped, m_LoadedValueTyped);
+    }
+
+    /// <summary>
+    /// Unregisters a callback for when the reference is resolved from the document.
+    /// </summary>
+    /// <param name="callback">The callback to unregister.</param>
+    public void UnregisterReferenceResolvedCallback(Action<T> callback)
+    {
+        UnregisterCallback(callback, ref m_ReferenceResolvedTyped);
+    }
+
+    /// <summary>
+    /// Registers a callback for when the referenced object is unloaded. This occurs when the document is destroyed,
+    /// such as when a live reload occurs after the VisualTreeAsset changes.
+    /// At this point, all references are invalid and should be cleared.
+    /// </summary>
+    /// <param name="callback">The callback to invoke when the reference is unloaded.</param>
+    public void RegisterReferenceUnloadedCallback(Action<T> callback)
+    {
+        RegisterCallback(callback, ref m_ReferenceUnloadedTyped, default);
+    }
+
+    /// <summary>
+    /// Unregisters a callback for when the referenced object is unloaded.
+    /// </summary>
+    /// <param name="callback">The callback to unregister.</param>
+    public void UnregisterReferenceUnloadedCallback(Action<T> callback)
+    {
+        UnregisterCallback(callback, ref m_ReferenceUnloadedTyped);
+    }
+
+    internal override void OnReferenceLoaded(VisualElement element)
+    {
+        m_LoadedValueTyped = (T)element;
+        m_ReferenceResolvedTyped?.Invoke(m_LoadedValueTyped);
+        
+        // Also invoke base class callbacks
+        base.OnReferenceLoaded(element);
+    }
+
+    internal override void OnReferenceUnloaded()
+    {
+        m_ReferenceUnloadedTyped?.Invoke(m_LoadedValueTyped);
+        m_LoadedValueTyped = null;
+        
+        // Also invoke base class callbacks
+        base.OnReferenceUnloaded();
     }
 }

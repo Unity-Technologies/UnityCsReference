@@ -335,7 +335,7 @@ namespace UnityEditor.Search
                     {
                         var data = (ActionButtonData)button.userData;
                         #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                        m_ViewModel.ExecuteAction(data.action, data.selection.ToArray(), false);
+                        m_ViewModel.ExecuteAction(data.action, data.selection.ToArray(), true);
 #pragma warning restore RS0030
                     });
                 }
@@ -352,9 +352,9 @@ namespace UnityEditor.Search
 
         private void RefreshMoreMenu(SearchSelection selection, IEnumerable<SearchAction> actions)
         {
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable RS0031 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             if (!actions.Any())
-#pragma warning restore RS0030
+#pragma warning restore RS0031
             {
                 return;
             }
@@ -380,7 +380,7 @@ namespace UnityEditor.Search
                             : action.content.tooltip;
                         menu.AddItem(new GUIContent(itemName, action.content.image), false,
                             #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                            () => m_ViewModel.ExecuteAction(action, data.selection.ToArray(), false));
+                            () => m_ViewModel.ExecuteAction(action, data.selection.ToArray(), true));
 #pragma warning restore RS0030
                     }
 
@@ -430,9 +430,11 @@ namespace UnityEditor.Search
                     m_PreviewImageRefreshCallback
                         .StartingIn(500)
                         .Every(500)
-                        #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable RS0031 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                         .Until(() => m_PreviewImage?.style.display == DisplayStyle.None || context.selection?.Any() == false);
 #pragma warning restore RS0030
+#pragma warning restore RS0031
                 }
             }
         }

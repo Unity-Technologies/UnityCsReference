@@ -6,7 +6,7 @@ using UnityEngine.Bindings;
 
 namespace UnityEditor
 {
-    [NativeType(Header = "Editor/Src/EditorUserBuildSettings.h")]
+    [NativeHeader("Editor/Src/EditorUserBuildSettings.h")]
     public enum QNXOsVersion
     {
         [UnityEngine.InspectorName("Neutrino RTOS 7.1")]

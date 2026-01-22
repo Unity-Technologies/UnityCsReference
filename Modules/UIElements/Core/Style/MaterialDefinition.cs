@@ -303,34 +303,6 @@ namespace UnityEngine.UIElements
             }
         }
 
-        internal MaterialPropertyBlock BuildPropertyBlock()
-        {
-            if (propertyValues == null || propertyValues.Count == 0)
-                return null;
-
-            var mpb = new MaterialPropertyBlock();
-            foreach (var value in propertyValues)
-            {
-                switch (value.type)
-                {
-                    case MaterialPropertyValueType.Float:
-                        mpb.SetFloat(value.name, value.GetFloat());
-                        break;
-                    case MaterialPropertyValueType.Vector:
-                        mpb.SetVector(value.name, value.GetVector());
-                        break;
-                    case MaterialPropertyValueType.Color:
-                        mpb.SetColor(value.name, value.GetColor());
-                        break;
-                    case MaterialPropertyValueType.Texture:
-                        if (value.textureValue != null)
-                            mpb.SetTexture(value.name, value.textureValue);
-                        break;
-                }
-            }
-            return mpb;
-        }
-
         /// <summary>
         /// Help verify whether an asset has been assigned or not.
         /// </summary>
@@ -434,6 +406,44 @@ namespace UnityEngine.UIElements
                 }
             }
             return result;
+        }
+
+        internal static MaterialDefinition From(UnmanagedMaterialDefinition unmanagedMaterialDefinition)
+        {
+            Material material = null;
+            if (unmanagedMaterialDefinition.material != EntityId.None)
+            {
+                material = Resources.EntityIdToObject(unmanagedMaterialDefinition.material) as Material;
+            }
+
+            List<MaterialPropertyValue> list = null;
+
+            if (!unmanagedMaterialDefinition.propertyValues.IsEmpty)
+            {
+                var props = unmanagedMaterialDefinition.propertyValues;
+                list = new List<MaterialPropertyValue>(props.Count);
+                for (int i = 0; i < props.Count; i++)
+                {
+                    int propId = props[i].name;
+                    if (!Shader.TryConvertPropertyIDToName(propId, out var propName))
+                    {
+                        // This would indicate that the unmanaged style is referencing a property that was not created
+                        // This shouldn't happen, because the UnmanagedMaterialDefinition should always first be
+                        // constructed from the managed MaterialDefinition which stores as a string
+                        Debug.LogError($"Unable to find property name for MaterialDefinition {material?.name} (id={propId}");
+                        continue;
+                    }
+                    list.Add(new MaterialPropertyValue()
+                    {
+                        name = propName,
+                        type = props[i].type,
+                        packedValue =  props[i].packedValue,
+                        textureValue = props[i].textureValue == EntityId.None ? null : Resources.EntityIdToObject(props[i].textureValue) as Texture
+                    });
+                }
+            }
+
+            return new MaterialDefinition(material, list);
         }
     }
 }

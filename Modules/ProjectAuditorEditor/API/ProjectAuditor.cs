@@ -80,7 +80,11 @@ namespace Unity.ProjectAuditor.Editor
             AuditAsync(analysisParams, progress);
 
             while (report == null)
-                Thread.Sleep(50);
+            {
+                AnalysisCoroutine.ForceMoveNext();
+                Thread.Yield();
+            }
+
             return report;
         }
 
@@ -129,11 +133,13 @@ namespace Unity.ProjectAuditor.Editor
                 }
             }
 
+
             var platform = analysisParams.Platform;
             if (!analysisParams.SupportedBuildTarget(BuildPipeline.GetBuildTargetGroup(platform), platform))
             {
                 // Error and early out if the user has request analysis of a platform which the Unity Editor doesn't have installed support for
                 Debug.LogError($"[{DisplayName}] Build target {platform} is not supported in this Unity Editor");
+                analysisParams.OnStarted(report, Array.Empty<string>(), Array.Empty<IssueCategory>());
                 analysisParams.OnCompleted(report);
                 return;
             }
@@ -141,6 +147,11 @@ namespace Unity.ProjectAuditor.Editor
 #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var requestedModules = categories.SelectMany(GetModules).Distinct().ToArray();
             var supportedModules = requestedModules.Where(m => m != null && CoreUtils.SupportsPlatform(m.GetType(), platform)).ToArray();
+
+            analysisParams.OnStarted?.Invoke(
+                report,
+                supportedModules.Select(m => m.Name).ToArray(),
+                analysisParams.Categories.ToValuesArray());
 #pragma warning restore RS0030
 
             var numModules = supportedModules.Length;
@@ -152,12 +163,15 @@ namespace Unity.ProjectAuditor.Editor
                 return;
             }
 
+            AsyncProgressState progressState = progress?.StartRoot("Project Auditor", "Analyzing", supportedModules.Length);
+
             var logTimingsInfo = UserPreferences.LogTimingsInfo;
             var stopwatch = Stopwatch.StartNew();
             var isCancelled = false;
             foreach (var module in supportedModules)
             {
-                var moduleStartTime = DateTime.Now;
+                long moduleAnalysisTimeMs = 0;
+
                 var moduleParams = new AnalysisParams(analysisParams)
                 {
                     OnIncomingIssues = results =>
@@ -166,8 +180,17 @@ namespace Unity.ProjectAuditor.Editor
                         report.AddIssues(resultsList);
                         analysisParams.OnIncomingIssues?.Invoke(resultsList);
                     },
-                    OnModuleCompleted = (analysisResult) =>
+                    OnModuleCompleted = (moduleName, analysisResult, extraAnalysisTimeMs) =>
                     {
+                        moduleAnalysisTimeMs += extraAnalysisTimeMs;
+
+                        if (progress != null)
+                        {
+                            progress.AdvanceRoot(progressState);
+                            if (progress.IsCancelled)
+                                analysisResult = AnalysisResult.Cancelled;
+                        }
+
                         var moduleEndTime = DateTime.Now;
                         if (analysisResult == AnalysisResult.Cancelled)
                             isCancelled = true;
@@ -175,11 +198,11 @@ namespace Unity.ProjectAuditor.Editor
                             Debug.Log($"[{DisplayName}] Module {module.Name} failed.");
                         if (logTimingsInfo)
                             Debug.Log($"[{DisplayName}] Module {module.Name} analysis took: " +
-                                (moduleEndTime - moduleStartTime).TotalMilliseconds / 1000.0 + " seconds.");
+                                moduleAnalysisTimeMs / 1000.0 + " seconds.");
 
-                        report.RecordModuleInfo(module, moduleStartTime, moduleEndTime, analysisResult);
+                        report.RecordModuleInfo(module, moduleAnalysisTimeMs, analysisResult);
 
-                        analysisParams.OnModuleCompleted?.Invoke(analysisResult);
+                        analysisParams.OnModuleCompleted?.Invoke(moduleName, analysisResult, extraAnalysisTimeMs);
 
                         var finished = --numModules == 0;
                         if (finished)
@@ -193,22 +216,33 @@ namespace Unity.ProjectAuditor.Editor
 
                             // finally, call the user's OnCompleted callback
                             analysisParams.OnCompleted?.Invoke(report);
+
+                            progress?.ClearRoot(progressState);
                         }
                     }
                 };
 
+                var startTime = DateTime.UtcNow;
+
                 try
                 {
-                    var analysisResult = module.Audit(moduleParams, progress);
-                    if (analysisResult == AnalysisResult.Cancelled)
-                        progress.Clear();
-                    if (analysisResult != AnalysisResult.InProgress)
-                        moduleParams.OnModuleCompleted(analysisResult);
+                    // The first call should set up the progress bar, do a small amount of work (do not cause a frame hitch) and then yield.
+                    // Then everything after the first `yield return null` uses a coroutine.
+                    var enumerator = module.Audit(moduleParams, progress);
+                    var coroutine = module.QueueAnalysisCoroutine(enumerator, module, (timeMs) => moduleAnalysisTimeMs += timeMs);
+                    coroutine.MoveNext(); // This runs the first step of the coroutine
+
+                    // If we are not tracking progress, we are synchronous, just run the entire analysis
+                    if (progress == null)
+                        while (AnalysisCoroutine.ForceMoveNext()) {}
+
+                    moduleAnalysisTimeMs += (long)(DateTime.UtcNow - startTime).TotalMilliseconds;
                 }
                 catch (Exception e)
                 {
                     Debug.LogError($"[{DisplayName}] Module {module.Name} failed: " + e.Message + " " + e.StackTrace);
-                    moduleParams.OnModuleCompleted(AnalysisResult.Failure);
+                    long extraAnalysisTime = (long)(DateTime.UtcNow - startTime).TotalMilliseconds;
+                    moduleParams.OnModuleCompleted(module.Name, AnalysisResult.Failure, extraAnalysisTime);
                 }
             }
 
@@ -267,6 +301,11 @@ namespace Unity.ProjectAuditor.Editor
             #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return m_Modules.Where(a => a.SupportedLayouts.FirstOrDefault(l => l.Category == category) != null).ToArray();
 #pragma warning restore RS0030
+        }
+
+        internal List<Module> GetModules()
+        {
+            return m_Modules;
         }
 
         /// <summary>

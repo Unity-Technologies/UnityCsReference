@@ -599,7 +599,7 @@ namespace UnityEditor.Presets
             Undo.RevertAllDownToGroup(m_ModalUndoGroup);
 
             // Clear selection so that object field doesn't grab it
-            m_ListArea.InitSelection(new EntityId[0]);
+            m_ListArea.InitSelection(Array.Empty<EntityId>());
 
             Close();
             GUI.changed = true;

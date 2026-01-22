@@ -52,9 +52,9 @@ namespace UnityEditor.PackageManager.UI.Internal
             AddToParentWithSeparatorIfVisible(assetStoreLinks, m_PackageLinkFactory.CreatePublisherWebsiteLink(version));
             AddToParentWithSeparatorIfVisible(assetStoreLinks, m_PackageLinkFactory.CreateReviewLink(version));
 
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable RS0031 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             if (assetStoreLinks.Children().Any())
-#pragma warning restore RS0030
+#pragma warning restore RS0031
                 Add(assetStoreLinks);
         }
 
@@ -69,9 +69,9 @@ namespace UnityEditor.PackageManager.UI.Internal
             AddToParentWithSeparatorIfVisible(upmLinks, m_PackageLinkFactory.CreateUseCasesLink(version));
             AddToParentWithSeparatorIfVisible(upmLinks, m_PackageLinkFactory.CreateDashboardLink(version));
 
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable RS0031 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             if (upmLinks.Children().Any())
-#pragma warning restore RS0030
+#pragma warning restore RS0031
                 Add(upmLinks);
         }
 

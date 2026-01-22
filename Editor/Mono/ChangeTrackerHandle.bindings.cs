@@ -19,7 +19,7 @@ namespace UnityEditor
         internal SerializedObject m_SerializedObject;
 
         private SerializedProperty[] m_ModifiedTrackedProperties;
-        private static readonly SerializedProperty[] s_EmptyPropertyArray = new SerializedProperty[] { };
+        private static readonly SerializedProperty[] s_EmptyPropertyArray = Array.Empty<SerializedProperty>();
 
         public SerializedObjectChangeTracker(SerializedObject obj)
         {
@@ -30,7 +30,6 @@ namespace UnityEditor
 
         ~SerializedObjectChangeTracker() { Dispose(); }
 
-        [ThreadAndSerializationSafe()]
         public void Dispose()
         {
             if (m_Handle != IntPtr.Zero)

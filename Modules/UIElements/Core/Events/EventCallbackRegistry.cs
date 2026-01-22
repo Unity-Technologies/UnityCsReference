@@ -84,14 +84,13 @@ namespace UnityEngine.UIElements
     internal class EventCallbackList
     {
         public static readonly EventCallbackList EmptyList = new EventCallbackList();
-        private static readonly EventCallbackFunctorBase[] EmptyArray = new EventCallbackFunctorBase[0];
 
         private EventCallbackFunctorBase[] m_Array;
         private int m_Count;
 
         public EventCallbackList()
         {
-            m_Array = EmptyArray;
+            m_Array = Array.Empty<EventCallbackFunctorBase>();
         }
 
         public EventCallbackList(EventCallbackList source)

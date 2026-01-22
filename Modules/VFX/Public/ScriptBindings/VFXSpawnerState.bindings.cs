@@ -19,7 +19,7 @@ namespace UnityEngine.VFX
 
     [RequiredByNativeCode]
     [StructLayout(LayoutKind.Sequential)]
-    [NativeType(Header = "Modules/VFX/Public/VFXSpawnerState.h")]
+    [NativeHeader("Modules/VFX/Public/VFXSpawnerState.h")]
     public sealed class VFXSpawnerState : IDisposable
     {
         private IntPtr m_Ptr;

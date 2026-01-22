@@ -166,7 +166,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private void OnProcessGetRegistriesResult(GetRegistriesRequest request)
         {
-            var registriesListResult = request.Result ?? new RegistryInfo[0];
+            var registriesListResult = request.Result ?? Array.Empty<RegistryInfo>();
             var registriesCount = registriesListResult.Length;
 
             if (m_SettingsProxy.registries.Count > 0 && m_SettingsProxy.registries.Count < registriesCount)

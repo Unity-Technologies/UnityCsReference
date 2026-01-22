@@ -411,7 +411,7 @@ namespace UnityEditor
             if (terrain?.terrainData == null)
                 return;
 
-            var currentLayers = new List<TerrainLayer>(terrain.terrainData.terrainLayers ?? new TerrainLayer[0]);
+            var currentLayers = new List<TerrainLayer>(terrain.terrainData.terrainLayers ?? Array.Empty<TerrainLayer>());
     
             bool changed = false;
             if(isPreview)

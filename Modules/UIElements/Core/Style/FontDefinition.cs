@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using UnityEngine.Bindings;
 using UnityEngine.TextCore.Text;
 
 namespace UnityEngine.UIElements
@@ -14,6 +15,19 @@ namespace UnityEngine.UIElements
     [Serializable]
     public partial struct FontDefinition : IEquatable<FontDefinition>
     {
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+        internal static FontDefinition From(in EntityId entityId)
+        {
+            var obj = Resources.EntityIdToObject(entityId);
+            return FromObject(obj);
+        }
+
+        internal static void To(in FontDefinition fontDefinition, out EntityId entityId)
+        {
+            var obj = fontDefinition.GetSelectedFont();
+            entityId = obj?.GetEntityId() ?? EntityId.None;
+        }
+
         [SerializeField]
         private Font m_Font;
         /// <summary>
@@ -21,7 +35,7 @@ namespace UnityEngine.UIElements
         /// </summary>
         public Font font
         {
-            get { return m_Font; }
+            readonly get { return m_Font; }
             set
             {
                 if (value != null && fontAsset != null)
@@ -37,7 +51,7 @@ namespace UnityEngine.UIElements
         /// </summary>
         public FontAsset fontAsset
         {
-            get { return m_FontAsset; }
+            readonly get { return m_FontAsset; }
             set
             {
                 if (value != null && font != null)
@@ -46,7 +60,7 @@ namespace UnityEngine.UIElements
             }
         }
 
-        internal Object GetSelectedFont()
+        internal readonly Object GetSelectedFont()
         {
             if (fontAsset != null)
                 return fontAsset;

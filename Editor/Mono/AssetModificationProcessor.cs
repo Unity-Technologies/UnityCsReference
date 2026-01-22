@@ -140,7 +140,7 @@ namespace UnityEditor
         [RequiredByNativeCode]
         static void OnWillSaveAssets(string[] assets, out string[] assetsThatShouldBeSaved, out string[] assetsThatShouldBeReverted, bool explicitlySaveAsset)
         {
-            assetsThatShouldBeReverted = new string[0];
+            assetsThatShouldBeReverted = Array.Empty<string>();
             assetsThatShouldBeSaved = assets;
 
             bool showSaveDialog = assets.Length > 0 && EditorPrefs.GetBool("VerifySavingAssets", false) && InternalEditorUtility.isHumanControllingUs;
@@ -559,7 +559,7 @@ namespace UnityEditor
                 MethodInfo method = assetModificationProcessorClass.GetMethod(methodName, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static);
                 if (method != null)
                 {
-                    object[] args = {};
+                    object[] args = Array.Empty<object>();
                     if (!CheckArgumentsAndReturnType(args, method, typeof(void)))
                         continue;
 

@@ -20,7 +20,7 @@ namespace UnityEngine.XR
         Unbounded = 8
     }
 
-    [NativeType(Header = "Modules/XR/Subsystems/Input/XRInputSubsystem.h")]
+    [NativeHeader("Modules/XR/Subsystems/Input/XRInputSubsystem.h")]
     [UsedByNativeCode]
     [NativeConditional("ENABLE_XR")]
     public class XRInputSubsystem : IntegratedSubsystem<XRInputSubsystemDescriptor>

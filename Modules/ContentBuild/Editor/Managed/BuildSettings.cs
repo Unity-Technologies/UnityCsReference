@@ -25,6 +25,10 @@ namespace UnityEditor.Build.Content
         StripUnityVersion = 1 << 1,
         ///<summary>Build a development version of the content files.</summary>
         DevelopmentBuild = 1 << 2,
+        /// <summary>
+        /// Build flag to indicate that TypeTree data is to be stripped from the serialized files and saved separately.  The file path of the extracted data is recorded in the UnityEditor.Build.Content.WriteResult in the field 'extractedTypeTreeDataPath'.
+        /// </summary>
+        ExtractTypeTree = 1 << 3,
     }
 
     ///<summary>Struct containing information on how to build content.</summary>

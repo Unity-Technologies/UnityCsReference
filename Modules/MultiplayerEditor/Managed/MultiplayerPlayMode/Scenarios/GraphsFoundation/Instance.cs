@@ -34,7 +34,6 @@ namespace Unity.Multiplayer.PlayMode.Editor
         [SerializeField] private string m_MultiplayerRole;
         [SerializeField] private InstanceStatusData m_StatusData;
         [SerializeField] private InstanceController m_InstanceController;
-        [SerializeReference] private InstanceDescription m_InstanceDescription;
 
         // TODO: MTT-10016 Migrate towards a single Monitoring Task per instance.
         private List<Task> m_CurrentMonitoringTasks = new List<Task>();
@@ -97,7 +96,6 @@ namespace Unity.Multiplayer.PlayMode.Editor
             var executionGraph = new ExecutionGraph();
             executionGraph.StatusRefreshed += instance.OnGraphStatusRefreshed;
             instance.m_InstanceController = playModeController;
-            instance.m_InstanceDescription = description;
             instance.m_ExecutionGraph = executionGraph;
             instance.m_InstanceDescriptionType = description.InstanceTypeName;
             instance.m_RunModeState = description.RunModeState;
@@ -141,12 +139,6 @@ namespace Unity.Multiplayer.PlayMode.Editor
             m_ExecutionGraph.Reset();
 
             RefreshAndNotifyStatus();
-        }
-
-        // Returns the Instance's Description configuration from the current Scenario Config
-        internal InstanceDescription GetInstanceDescription()
-        {
-            return m_InstanceDescription;
         }
 
         internal bool IsFreeRunMode()

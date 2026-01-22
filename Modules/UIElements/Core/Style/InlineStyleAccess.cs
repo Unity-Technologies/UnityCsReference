@@ -284,7 +284,7 @@ namespace UnityEngine.UIElements
             {
                 computedStyle.ApplyStyleBackgroundSize(ve.style.backgroundSize.value);
             }
-            }
+        }
 
         StyleCursor IStyle.cursor
         {

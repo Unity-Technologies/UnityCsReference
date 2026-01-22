@@ -156,9 +156,7 @@ namespace UnityEditor.UIElements.Debugger
 
             m_CustomPropertyFieldsContainer.Clear();
             var customProperties = m_SelectedElement.computedStyle.customProperties;
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            if (customProperties != null && customProperties.Any())
-#pragma warning restore RS0030
+            if (customProperties?.Count > 0)
             {
                 foreach (KeyValuePair<string, StylePropertyValue> customProperty in customProperties)
                 {

@@ -170,15 +170,15 @@ namespace UnityEditor
                     }
                 }
 
-                string importedPrefabPath = FileUtil.PathToAbsolutePath(paths[0]);
-                if (!System.IO.File.Exists(importedPrefabPath))
+                string importedPrefabPath = paths[0];
+                var length = FileUtil.GetSize(importedPrefabPath);
+                if (length == 0)
                 {
-                    Debug.LogError("Could not find prefab artifact on disk");
+                    Debug.LogError("Could not find prefab artifact : " + importedPrefabPath);
                     return false;
                 }
 
-                long length = new System.IO.FileInfo(importedPrefabPath).Length;
-                long fileSizeInKB = length / 1024;
+                var fileSizeInKB = length / 1024;
 
                 // Keep for debugging
                 //Debug.Log("Imported prefab: " + prefabAssetPath + ". File size: " + fileSizeInKB + " KB" + " (guid " + importedPrefabPath + ")");

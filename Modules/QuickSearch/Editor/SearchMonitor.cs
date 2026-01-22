@@ -21,7 +21,7 @@ namespace UnityEditor.Search
 {
     public readonly struct AssetIndexChangeSet
     {
-        static readonly string[] s_EmptyStrings = new string[0];
+        static readonly string[] s_EmptyStrings = Array.Empty<string>();
         internal static readonly AssetIndexChangeSet s_Empty = new AssetIndexChangeSet(null, null);
 
         public readonly string[] updated;
@@ -52,7 +52,7 @@ namespace UnityEditor.Search
 
         public bool empty => updated == null || removed == null || (updated.Length == 0 && removed.Length == 0);
         #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-        public IEnumerable<string> all => updated?.Concat(removed ?? new string[0]).Distinct() ?? Enumerable.Empty<string>();
+        public IEnumerable<string> all => updated?.Concat(removed ?? Array.Empty<string>()).Distinct() ?? Array.Empty<string>();
 #pragma warning restore RS0030
     }
 
@@ -215,7 +215,6 @@ namespace UnityEditor.Search
 
         public static event Action sceneChanged;
         public static event ObjectChangeEvents.ObjectChangeEventsHandler objectChanged;
-        internal static GameObjectChangeTrackerEventHandler gameObjectChanged;
         public static event Action documentsInvalidated;
 
         internal const string k_TransactionDatabasePath = "Library/Search/transactions.db";
@@ -297,7 +296,6 @@ namespace UnityEditor.Search
             s_DelayedInvalidate = Delayer.Debounce(_ => InvalidateDocuments());
 
             ObjectChangeEvents.changesPublished += OnObjectChanged;
-            GameObjectChangeTracker.GameObjectsChanged += OnGameObjectChanged;
             EditorApplication.playModeStateChanged += OnPlayModeChanged;
 
             s_Initialize = true;
@@ -402,14 +400,6 @@ namespace UnityEditor.Search
 
             var handler = objectChanged;
             handler?.Invoke(ref stream);
-        }
-
-        static void OnGameObjectChanged(in NativeArray<GameObjectChangeTrackerEvent> events)
-        {
-            HandleGameObjectChangedEvents(in events);
-
-            var handler = gameObjectChanged;
-            handler?.Invoke(in events);
         }
 
         static void InvalidateCurrentScene()
@@ -535,25 +525,6 @@ namespace UnityEditor.Search
                             InvalidateObject(e.entityIds[idIndex]);
                     }
                     break;
-                }
-            }
-        }
-
-        static void HandleGameObjectChangedEvents(in NativeArray<GameObjectChangeTrackerEvent> events)
-        {
-            for (var i = 0; i < events.Length; ++i)
-            {
-                var e = events[i];
-                switch (e.EventType)
-                {
-                    case GameObjectChangeTrackerEventType.CreatedOrChanged:
-                    case GameObjectChangeTrackerEventType.Destroyed:
-                    case GameObjectChangeTrackerEventType.ChangedParent:
-                    case GameObjectChangeTrackerEventType.ChangedScene:
-                        InvalidateObject(e.EntityId);
-                        break;
-
-                    // Other events are not relevant for us since they do not affect properties.
                 }
             }
         }

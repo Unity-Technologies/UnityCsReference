@@ -118,6 +118,11 @@ namespace Unity.GraphToolkit.Editor
         /// </summary>
         public Image Icon => m_Icon;
 
+        /// <summary>
+        /// The subtitle on the node.
+        /// </summary>
+        public Label SubTitle => m_SubTitle;
+
         /// <inheritdoc />
         public override VisualElement Root => m_Root;
 

@@ -208,14 +208,14 @@ namespace UnityEditor
             }
         }
 
-        static readonly HashSet<DrawCameraMode> s_ShowExposureDrawCameraModes = new HashSet<DrawCameraMode>()
+        static readonly HashSet<DrawCameraMode> s_ShowExposureDrawCameraModes = new HashSet<DrawCameraMode>(new[]
         {
             DrawCameraMode.BakedEmissive, DrawCameraMode.BakedLightmap,
             DrawCameraMode.RealtimeEmissive, DrawCameraMode.RealtimeIndirect
-        };
+        });
         internal bool showExposureSettings => s_ShowExposureDrawCameraModes.Contains(this.cameraMode.drawMode);
 
-        static readonly HashSet<DrawCameraMode> s_ShowLightmapResolutionDrawCameraModes = new HashSet<DrawCameraMode>()
+        static readonly HashSet<DrawCameraMode> s_ShowLightmapResolutionDrawCameraModes = new HashSet<DrawCameraMode>(new[]
         {
             DrawCameraMode.BakedEmissive, DrawCameraMode.RealtimeEmissive,
             DrawCameraMode.BakedLightmap,  DrawCameraMode.RealtimeIndirect,
@@ -226,19 +226,19 @@ namespace UnityEditor
             DrawCameraMode.ShadowMasks, DrawCameraMode.Systems,
             DrawCameraMode.GIContributorsReceivers, DrawCameraMode.BakedLightmapCulling,
             DrawCameraMode.BakedIndices, DrawCameraMode.LightOverlap,
-        };
+        });
         internal bool showLightmapResolutionToggle => s_ShowLightmapResolutionDrawCameraModes.Contains(this.cameraMode.drawMode);
 
         internal bool showBackfaceHighlightsToggle => this.showLightmapResolutionToggle;
 
-        static readonly HashSet<DrawCameraMode> s_ShowInteractiveLightBakingToggleCameraModes = new HashSet<DrawCameraMode>()
+        static readonly HashSet<DrawCameraMode> s_ShowInteractiveLightBakingToggleCameraModes = new HashSet<DrawCameraMode>(new[]
         {
             DrawCameraMode.BakedLightmap, DrawCameraMode.BakedDirectionality,
             DrawCameraMode.ShadowMasks, DrawCameraMode.BakedAlbedo,
             DrawCameraMode.BakedEmissive, DrawCameraMode.BakedCharting,
             DrawCameraMode.BakedTexelValidity, DrawCameraMode.BakedUVOverlap,
             DrawCameraMode.BakedIndices, DrawCameraMode.LightOverlap,
-        };
+        });
         internal bool currentDrawModeMayUseInteractiveLightBakingData => s_ShowInteractiveLightBakingToggleCameraModes.Contains(this.cameraMode.drawMode);
 
         internal bool showLightingVisualizationPanel => this.showExposureSettings || this.showBackfaceHighlightsToggle || this.showLightmapResolutionToggle || this.currentDrawModeMayUseInteractiveLightBakingData;
@@ -1151,7 +1151,7 @@ namespace UnityEditor
         public static ArrayList sceneViews { get { return s_SceneViews; } }
 
         static List<Camera> s_AllSceneCameraList = new List<Camera>();
-        static Camera[] s_AllSceneCameras = new Camera[] {};
+        static Camera[] s_AllSceneCameras = Array.Empty<Camera>();
 
         static Material s_AlphaOverlayMaterial;
         static Material s_DeferredOverlayMaterial;
@@ -1194,6 +1194,9 @@ namespace UnityEditor
 
         double m_StartSearchFilterTime = -1;
         RenderTexture m_SceneTargetTexture;
+        RenderTexture m_LDRSceneTargetTexture;
+        RenderTexture m_SavedColorTargetTexture;
+        RenderTexture m_FadedColorTargetTexture;
         int m_MainViewControlID;
 
         public Camera camera { get { return m_Camera; } }
@@ -1702,6 +1705,12 @@ namespace UnityEditor
 
             if (s_MipColorsTexture)
                 DestroyImmediate(s_MipColorsTexture, true);
+            if (m_LDRSceneTargetTexture)
+                DestroyImmediate(m_LDRSceneTargetTexture, true);
+            if (m_SavedColorTargetTexture)
+                DestroyImmediate(m_SavedColorTargetTexture, true);
+            if (m_FadedColorTargetTexture)
+                DestroyImmediate(m_FadedColorTargetTexture, true);
 
             s_SceneViews.Remove(this);
 
@@ -2173,6 +2182,38 @@ namespace UnityEditor
             m_SceneTargetTexture.Create();
         }
 
+        private void ReallocateTargetTextureIfNeeded(ref RenderTexture rt, in RenderTextureDescriptor rtDesc, string name)
+        {
+            if (rt == null)
+            {
+                rt = new RenderTexture(rtDesc);
+                rt.name = name;
+            }
+            else if (rt.width != rtDesc.width || rt.height != rtDesc.height || rt.graphicsFormat != rtDesc.graphicsFormat)
+            {
+                rt.Release();
+                rt.descriptor = rtDesc;
+                rt.name = name;
+            }
+            rt.Create();
+        }
+
+        private void CreateLDRSceneTargetTexture()
+        {
+            var rtDesc = m_SceneTargetTexture.descriptor;
+            rtDesc.graphicsFormat = SystemInfo.GetGraphicsFormat(DefaultFormat.LDR);
+            rtDesc.depthBufferBits = 0;
+            ReallocateTargetTextureIfNeeded(ref m_LDRSceneTargetTexture, rtDesc, "LDRSceneTarget");
+        }
+
+        private void CreateFilteredSceneTargetTextures()
+        {
+            var rtDesc = m_SceneTargetTexture.descriptor;
+            rtDesc.depthBufferBits = 0;
+            ReallocateTargetTextureIfNeeded(ref m_SavedColorTargetTexture, rtDesc, "SavedColorRT");
+            ReallocateTargetTextureIfNeeded(ref m_FadedColorTargetTexture, rtDesc, "FadedColorRT");
+        }
+
         public bool IsCameraDrawModeSupported(CameraMode mode)
         {
             if (!Handles.IsCameraDrawModeSupported(m_Camera, mode.drawMode))
@@ -2425,18 +2466,15 @@ namespace UnityEditor
             DoClearCamera(groupSpaceCameraRect);
             Handles.DrawCamera(groupSpaceCameraRect, m_Camera, m_CameraMode.drawMode, drawGizmos);
 
-            var colorDesc = m_SceneTargetTexture.descriptor;
-            colorDesc.depthBufferBits = 0;
-            var colorRT = RenderTexture.GetTemporary(colorDesc);
-            colorRT.name = "SavedColorRT";
-            Graphics.Blit(m_SceneTargetTexture, colorRT);
+            CreateFilteredSceneTargetTextures();
+            Graphics.Blit(m_SceneTargetTexture, m_SavedColorTargetTexture);
 
             // Second pass: Blit the scene faded out in the scene target texture
             float fade = UseSceneFiltering() ? 1f : Mathf.Clamp01((float)(EditorApplication.timeSinceStartup - m_StartSearchFilterTime));
             if (!s_FadeMaterial)
                 s_FadeMaterial = EditorGUIUtility.LoadRequired("SceneView/SceneViewGrayscaleEffectFade.mat") as Material;
             s_FadeMaterial.SetFloat("_Fade", fade);
-            Graphics.Blit(colorRT, m_SceneTargetTexture, s_FadeMaterial);
+            Graphics.Blit(m_SavedColorTargetTexture, m_SceneTargetTexture, s_FadeMaterial);
 
             // Third pass: Draw aura for objects which meet the search filter, but are occluded. Save color buffer for later.
             m_Camera.renderingPath = RenderingPath.Forward;
@@ -2446,11 +2484,7 @@ namespace UnityEditor
             Handles.SetCameraFilterMode(m_Camera, Handles.CameraFilterMode.ShowFiltered);
             Handles.DrawCamera(groupSpaceCameraRect, m_Camera, m_CameraMode.drawMode, drawGizmos);
 
-            var fadedDesc = m_SceneTargetTexture.descriptor;
-            colorDesc.depthBufferBits = 0;
-            var fadedRT = RenderTexture.GetTemporary(fadedDesc);
-            fadedRT.name = "FadedColorRT";
-            Graphics.Blit(m_SceneTargetTexture, fadedRT);
+            Graphics.Blit(m_SceneTargetTexture, m_FadedColorTargetTexture);
 
             // Fourth pass: Draw objects which do meet filter in a mask
 
@@ -2476,11 +2510,8 @@ namespace UnityEditor
             if (!s_ApplyFilterMaterial)
                 s_ApplyFilterMaterial = EditorGUIUtility.LoadRequired("SceneView/SceneViewApplyFilter.mat") as Material;
             s_ApplyFilterMaterial.SetTexture("_MaskTex", m_SceneTargetTexture);
-            Graphics.Blit(fadedRT, colorRT, s_ApplyFilterMaterial);
-            Graphics.Blit(colorRT, m_SceneTargetTexture);
-
-            RenderTexture.ReleaseTemporary(colorRT);
-            RenderTexture.ReleaseTemporary(fadedRT);
+            Graphics.Blit(m_FadedColorTargetTexture, m_SavedColorTargetTexture, s_ApplyFilterMaterial);
+            Graphics.Blit(m_SavedColorTargetTexture, m_SceneTargetTexture);
 
             OutlineDrawMode selectionDrawModeMask = 0;
             if (AnnotationUtility.showSelectionOutline)
@@ -2715,15 +2746,10 @@ namespace UnityEditor
             bool hdrDisplayActive = (m_Parent != null && m_Parent.actualView == this && m_Parent.hdrActive);
             if (!UseSceneFiltering() && evt.type == EventType.Repaint && GraphicsFormatUtility.IsIEEE754Format(m_SceneTargetTexture.graphicsFormat) && !hdrDisplayActive)
             {
-                var rtDesc = m_SceneTargetTexture.descriptor;
-                rtDesc.graphicsFormat = SystemInfo.GetGraphicsFormat(DefaultFormat.LDR);
-                rtDesc.depthBufferBits = 0;
-                RenderTexture ldrSceneTargetTexture = RenderTexture.GetTemporary(rtDesc);
-                ldrSceneTargetTexture.name = "LDRSceneTarget";
-                Graphics.Blit(m_SceneTargetTexture, ldrSceneTargetTexture);
-                Graphics.Blit(ldrSceneTargetTexture, m_SceneTargetTexture);
+                CreateLDRSceneTargetTexture();
+                Graphics.Blit(m_SceneTargetTexture, m_LDRSceneTargetTexture);
+                Graphics.Blit(m_LDRSceneTargetTexture, m_SceneTargetTexture);
                 Graphics.SetRenderTarget(m_SceneTargetTexture.colorBuffer, m_SceneTargetTexture.depthBuffer);
-                RenderTexture.ReleaseTemporary(ldrSceneTargetTexture);
             }
 
             if (!UseSceneFiltering() && !isPingingObject)

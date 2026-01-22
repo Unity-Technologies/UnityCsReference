@@ -523,18 +523,26 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
         public virtual void DrawViewOptions()
         {
             if (m_ViewManager.OnAnalysisRequested != null && m_ViewManager.Report.IsForCurrentProject())
+            {
+                GUI.enabled = !m_ViewManager.HasPendingCategories();
+
                 DrawToolbarButtonIcon(Contents.AnalyzeNowButton, () =>
-               {
-                   if (m_Table.GetNumIgnoredIssues() > 0)
-                   {
-                       if (EditorUtility.DisplayDialog(k_Discard, k_DiscardQuestion, "Discard Ignored Items", "Cancel"))
-                       {
-                           m_ViewManager.OnAnalysisRequested(m_Desc.Category);
-                       }
-                   }
-                   else
-                       m_ViewManager.OnAnalysisRequested(m_Desc.Category);
-               });
+                {
+                    if (m_Table.GetNumIgnoredIssues() > 0)
+                    {
+                        if (EditorUtility.DisplayDialog(k_Discard, k_DiscardQuestion, "Discard Ignored Items", "Cancel"))
+                        {
+                            m_ViewManager.OnAnalysisRequested(m_Desc.Category);
+                        }
+                    }
+                    else
+                    {
+                        m_ViewManager.OnAnalysisRequested(m_Desc.Category);
+                    }
+                });
+
+                GUI.enabled = true;
+            }
 
             m_Table.SetFontSize(m_ViewStates.fontSize);
 

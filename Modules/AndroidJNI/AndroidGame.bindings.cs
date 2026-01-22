@@ -9,7 +9,7 @@ namespace UnityEngine.Android
     /// <summary>
     /// <seealso href="https://developer.android.com/reference/android/app/GameState">developer.android.com</seealso>
     /// </summary>
-    [NativeType(Header = "Modules/AndroidJNI/Public/GameStateHelper.h")]
+    [NativeHeader("Modules/AndroidJNI/Public/GameStateHelper.h")]
     public enum AndroidGameState
     {
         /// <summary>
@@ -43,7 +43,7 @@ namespace UnityEngine.Android
         Content = 0x00000004
     }
 
-    [NativeType(Header = "Modules/AndroidJNI/Public/GameStateHelper.h")]
+    [NativeHeader("Modules/AndroidJNI/Public/GameStateHelper.h")]
     internal enum GameStateLabel
     {
         Default = -1,

@@ -52,9 +52,7 @@ namespace UnityEditor.Experimental.GraphView
 #pragma warning restore RS0030
                     .ToList(); // ToList required here as the enumeration might be done again *after* the elements are added to the group
 
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            if (elemsToAdd.Any())
-#pragma warning restore RS0030
+            if (elemsToAdd.Count > 0)
             {
                 group.AddElements(elemsToAdd);
             }

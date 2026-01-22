@@ -12,4 +12,4 @@ using System.Runtime.CompilerServices;
 [assembly: InternalsVisibleTo("Assembly-CSharp-Editor-testable")]
 [assembly: InternalsVisibleTo("RTTI")]
 [assembly: InternalsVisibleTo("UnityEngine.SchemaManagerManaged")]
-
+[assembly: InternalsVisibleTo("UdmGraphViz")]

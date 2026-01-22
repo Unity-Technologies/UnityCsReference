@@ -3,10 +3,12 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using UnityEngine.Bindings;
 
 namespace UnityEngine.UIElements;
 
 [Serializable]
+[VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
 internal struct Specificity : IEquatable<Specificity>, IComparable<Specificity>
 {
     const int k_Mask = 0xFF;

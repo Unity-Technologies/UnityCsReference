@@ -60,6 +60,7 @@ namespace UnityEditor.LightBaking
         public float pushoff;
     };
 
+    [Flags]
     internal enum LightmapRequestOutputType : uint
     {
         IrradianceIndirect = 1 << 0,
@@ -704,6 +705,57 @@ namespace UnityEditor.LightBaking
 
     [RequiredByNativeCode]
     [StructLayout(LayoutKind.Sequential)]
+    internal class VirtualOffsets : IDisposable
+    {
+        private IntPtr _ptr;
+        private readonly bool _ownsPtr;
+
+        public VirtualOffsets()
+        {
+            _ptr = Internal_Create();
+            _ownsPtr = true;
+        }
+        public VirtualOffsets(IntPtr ptr)
+        {
+            _ptr = ptr;
+            _ownsPtr = false;
+        }
+        ~VirtualOffsets()
+        {
+            Destroy();
+        }
+
+        public void Dispose()
+        {
+            Destroy();
+            GC.SuppressFinalize(this);
+        }
+
+        void Destroy()
+        {
+            if (_ownsPtr && _ptr != IntPtr.Zero)
+            {
+                Internal_Destroy(_ptr);
+                _ptr = IntPtr.Zero;
+            }
+        }
+
+        public extern ulong GetByteSize();
+        static extern IntPtr Internal_Create();
+        [NativeMethod(IsThreadSafe = true)]
+        static extern void Internal_Destroy(IntPtr ptr);
+
+        public extern void SetVirtualOffsets(Vector3[] offsets);
+
+        internal static class BindingsMarshaller
+        {
+            public static IntPtr ConvertToNative(VirtualOffsets virtualOffsets) => virtualOffsets._ptr;
+        }
+        public extern bool CheckIntegrity();
+    }
+
+    [RequiredByNativeCode]
+    [StructLayout(LayoutKind.Sequential)]
     internal class LightmapRequests : IDisposable
     {
         private IntPtr _ptr;
@@ -858,9 +910,11 @@ namespace UnityEditor.LightBaking
         public static extern bool Serialize(string path, BakeInput input);
         public static extern bool SerializeLightmapRequests(string path, LightmapRequests lightmapRequests);
         public static extern bool SerializeLightProbeRequests(string path, LightProbeRequests lightProbeRequests);
+        public static extern bool SerializeVirtualOffsets(string path, VirtualOffsets virtualOffsets);
         public static extern bool Deserialize(string path, BakeInput input);
         public static extern bool DeserializeLightmapRequests(string path, LightmapRequests lightmapRequests);
         public static extern bool DeserializeLightProbeRequests(string path, LightProbeRequests lightProbeRequests);
+        public static extern bool DeserializeVirtualOffsets(string path, VirtualOffsets virtualOffsets);
 
         public static extern Result Bake(BakeInput input, LightmapRequests lightmapRequest, LightProbeRequests lightProbeRequests, DeviceSettings deviceSettings);
         public static extern Result BakeOutOfProcess(BakeInput input, LightmapRequests lightmapRequest, LightProbeRequests lightProbeRequests, DeviceSettings deviceSettings);

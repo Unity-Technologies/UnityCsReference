@@ -23,7 +23,7 @@ namespace UnityEditor
 
         public void OnEnable()
         {
-            m_SwitchesInEffect = new DiagnosticSwitch[0];
+            m_SwitchesInEffect = Array.Empty<DiagnosticSwitch>();
             Update();
         }
 

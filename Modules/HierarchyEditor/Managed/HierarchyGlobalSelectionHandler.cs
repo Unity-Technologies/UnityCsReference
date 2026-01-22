@@ -5,6 +5,8 @@
 using System;
 using UnityEditor;
 using UnityEngine;
+using UnityEngine.UIElements;
+using UnityEngine.UIElements.HierarchyV2;
 
 namespace Unity.Hierarchy.Editor
 {
@@ -23,12 +25,10 @@ namespace Unity.Hierarchy.Editor
             m_HierarchyView = view;
             m_LockTracker = lockTracker;
             Selection.selectionChanged += OnGlobalSelectionChanged;
-            m_HierarchyView.FlagsChanged += OnHierarchyViewFlagsChanged;
         }
 
         public void Dispose()
         {
-            m_HierarchyView.FlagsChanged -= OnHierarchyViewFlagsChanged;
             Selection.selectionChanged -= OnGlobalSelectionChanged;
         }
 
@@ -67,14 +67,6 @@ namespace Unity.Hierarchy.Editor
 
             m_SkipNextGlobalSelectionEvent = true;
             Selection.SetEntityIdsUnsafe(viewModelSelection);
-        }
-
-        void OnHierarchyViewFlagsChanged(HierarchyNodeFlags flags)
-        {
-            if (!flags.HasFlag(HierarchyNodeFlags.Selected))
-                return;
-
-            SyncGlobalSelectionFromViewModel();
         }
 
         void OnGlobalSelectionChanged()

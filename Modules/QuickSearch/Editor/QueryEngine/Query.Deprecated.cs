@@ -159,11 +159,11 @@ namespace UnityEditor.Search
         internal IEnumerable<T> Apply(IEnumerable<T> data, bool returnInputIfEmpty)
         {
             if (!valid)
-                return new T[] {};
+                return Array.Empty<T>();
 
             if (evaluationGraph.empty)
             {
-                return returnInputIfEmpty ? data : new T[] {};
+                return returnInputIfEmpty ? data : Array.Empty<T>();
             }
 
             return graphHandler.Eval(data);

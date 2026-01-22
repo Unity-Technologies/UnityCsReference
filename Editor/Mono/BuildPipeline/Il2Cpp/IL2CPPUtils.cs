@@ -15,6 +15,7 @@ using UnityEditor.Build;
 using UnityEditor.Build.Reporting;
 using UnityEditor.Utils;
 using UnityEngine;
+using UnityEngine.Internal;
 using UnityEngine.Scripting;
 using Debug = UnityEngine.Debug;
 using UnityEngine.Scripting.APIUpdating;
@@ -22,6 +23,7 @@ using UnityEngine.Scripting.APIUpdating;
 namespace UnityEditor
 {
     [MovedFrom("UnityEditor.LinuxStandalone")]
+    [ExcludeFromDocs]
     public abstract class Sysroot
     {
         public abstract string Name { get; }
@@ -82,7 +84,7 @@ namespace UnityEditorInternal
             _knownSysroots = new Dictionary<string, Sysroot>();
             foreach (var type in TypeCache.GetTypesDerivedFrom<Sysroot>())
             {
-                var sysroot = Activator.CreateInstance(type, new object[] {}, new object[] {}) as Sysroot;
+                var sysroot = Activator.CreateInstance(type, Array.Empty<object>(), Array.Empty<object>()) as Sysroot;
                 if (sysroot != null)
                 {
                     if (!String.IsNullOrEmpty(Environment.GetEnvironmentVariable("UNITY_SYSROOT_DEBUG")))

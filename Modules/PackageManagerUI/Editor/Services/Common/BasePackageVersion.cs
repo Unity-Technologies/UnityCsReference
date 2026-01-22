@@ -90,12 +90,15 @@ namespace UnityEditor.PackageManager.UI.Internal
         public virtual bool hasEntitlementsError => false;
 
         public virtual IReadOnlyCollection<UIError> errors => Array.Empty<UIError>();
-        public virtual IReadOnlyCollection<PackageSizeInfo> sizes => Array.Empty<PackageSizeInfo>();
-        public virtual IReadOnlyCollection<SemVersion> supportedVersions => Array.Empty<SemVersion>();
+        public virtual IReadOnlyList<PackageSizeInfo> sizes => Array.Empty<PackageSizeInfo>();
+        public virtual IReadOnlyList<SemVersion> supportedVersions => Array.Empty<SemVersion>();
         public virtual SemVersion? supportedVersion => null;
         public virtual string deprecationMessage => null;
         public virtual TrustAndSignature trustAndSignature => TrustAndSignature.NotApplicable;
         public virtual string signatureOrgName => string.Empty;
+
+        public virtual bool isFromUnity => availableRegistry == RegistryType.UnityRegistry && !HasTag(PackageTag.InstalledFromPath);
+        public virtual bool isFromAssetStore => m_Package.product != null && !HasTag(PackageTag.InstalledFromPath);
 
         public abstract string uniqueId { get; }
         public abstract string packageId { get; }

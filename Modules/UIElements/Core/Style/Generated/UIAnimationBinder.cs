@@ -838,7 +838,8 @@ namespace UnityEngine.UIElements
             Rotate,
             Scale,
             MaterialDefinition,
-            Ratio
+            Ratio,
+            EntityId
         }
     }
 }

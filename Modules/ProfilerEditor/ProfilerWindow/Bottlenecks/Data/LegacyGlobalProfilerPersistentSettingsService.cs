@@ -44,6 +44,68 @@ namespace Unity.Profiling.Editor
             set => EditorPrefs.SetInt(k_PersistentSettingKey_BottleneckDetailsViewSelectedSummaryType, value);
         }
 
+        public readonly struct ValuePref : IProfilerPersistentSettingsService.IValue
+        {
+            readonly string m_PreferenceKey;
+            readonly string m_Suffix;
+
+            readonly string FullPreferenceKey => m_PreferenceKey + m_Suffix;
+
+            public ValuePref(string key, string suffix)
+            {
+                m_PreferenceKey = key;
+                m_Suffix = suffix;
+            }
+
+            public string Get()
+            {
+                if (string.IsNullOrEmpty(m_PreferenceKey))
+                    return string.Empty;
+
+                return EditorPrefs.GetString(FullPreferenceKey);
+            }
+
+            public void Set(string value)
+            {
+                if (string.IsNullOrEmpty(m_PreferenceKey))
+                    return;
+
+                EditorPrefs.SetString(FullPreferenceKey, value);
+            }
+
+            public void Delete()
+            {
+                if (string.IsNullOrEmpty(m_PreferenceKey))
+                    return;
+
+                EditorPrefs.DeleteKey(FullPreferenceKey);
+            }
+
+            public IProfilerPersistentSettingsService.IValue Rename(string newKey)
+            {
+                string value = string.Empty;
+                if (!string.IsNullOrEmpty(m_PreferenceKey))
+                {
+                    value = Get();
+                    Delete();
+                }
+
+                var ret = new ValuePref(newKey, m_Suffix);
+                ret.Set(value);
+                return ret;
+            }
+        }
+
+        public IProfilerPersistentSettingsService.IValue ChartCountersOrder(string chartNameKey)
+        {
+            return new ValuePref(chartNameKey, "Order");
+        }
+
+        public IProfilerPersistentSettingsService.IValue ChartCountersVisible(string chartNameKey)
+        {
+            return new ValuePref(chartNameKey, "Visible");
+        }
+
         public void Dispose()
         {
             ProfilerUserSettings.targetFramesPerSecondChanged -= OnTargetFpsChanged;

@@ -86,11 +86,18 @@ namespace UnityEditor
             try
             {
                 bool isPlayModeView = false;
+                bool isVsyncEnabled = false;
 
                 if (this is HostView h)
+                {
                     isPlayModeView = h.actualView is PlayModeView;
+                    if (h.actualView is IGameViewSizeMenuUser sizeView)
+                    {
+                        isVsyncEnabled = sizeView.vSyncEnabled;
+                    }
+                }
 
-                Internal_Init(m_DepthBufferBits, m_AntiAliasing, isPlayModeView);
+                Internal_Init(m_DepthBufferBits, m_AntiAliasing, isPlayModeView, isVsyncEnabled);
             }
             catch
             {

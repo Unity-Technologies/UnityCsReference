@@ -104,7 +104,7 @@ namespace UnityEditor.Scripting.APIUpdater
 #pragma warning restore RS0030
             }
 
-            return new string[0];
+            return Array.Empty<string>();
         }
 
         public void RemoveDependencies(string dependent, params string[] dependencies)

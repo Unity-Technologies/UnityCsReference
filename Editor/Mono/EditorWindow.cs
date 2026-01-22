@@ -117,7 +117,11 @@ namespace UnityEditor
         // This list contains all the editor windows that are already enabled/active/alive.
         // It is important to check if your window is contained in this list before doing anything,
         // such like UI build/rebuild.
-        internal static List<EditorWindow> activeEditorWindows { get; } = new List<EditorWindow>();
+        internal static List<EditorWindow> activeEditorWindows
+        {
+            [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
+            get;
+        } = new List<EditorWindow>();
 
         internal void SaveViewData()
         {
@@ -1377,9 +1381,7 @@ namespace UnityEditor
 
         public virtual IEnumerable<Type> GetExtraPaneTypes()
         {
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            return Enumerable.Empty<Type>();
-#pragma warning restore RS0030
+            return Array.Empty<Type>();
         }
 
         internal static void UpdateWindowMenuListing()

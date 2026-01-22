@@ -55,7 +55,7 @@ namespace UnityEditor
         [Obsolete("GetLicenseFlags is no longer supported", error: true)]
         public int[] GetLicenseFlags()
         {
-            return new int[] {};
+            return Array.Empty<int>();
         }
 
         public string GetString(string key)

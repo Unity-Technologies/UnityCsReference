@@ -6,8 +6,16 @@ using System;
 
 namespace Unity.Profiling.Editor
 {
-    interface IProfilerPersistentSettingsService : IDisposable
+    internal interface IProfilerPersistentSettingsService : IDisposable
     {
+        interface IValue
+        {
+            public string Get();
+            public void Set(string value);
+            public void Delete();
+            public IValue Rename(string newKey);
+        }
+
         bool IsBottleneckViewVisible { get; set; }
 
         ulong TargetFrameDurationNs { get; set; }
@@ -19,5 +27,8 @@ namespace Unity.Profiling.Editor
         event Action TargetFrameDurationChanged;
 
         event Action MaximumFrameCountChanged;
+
+        IValue ChartCountersOrder(string chartNameKey);
+        IValue ChartCountersVisible(string chartNameKey);
     }
 }

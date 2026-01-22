@@ -43,10 +43,13 @@ namespace UnityEditor.Search
                 indexer.IndexDocument(ctx.assetPath, false);
                 indexer.Finish(removedDocuments: null);
 
-                var indexArtifactPath = ctx.GetOutputArtifactFilePath($"{(int)options:X}.index".ToLowerInvariant());
+                var indexArtifactExtension = $"{(int)options:X}.index".ToLowerInvariant();
 
-                using (var fileStream = new FileStream(FileUtil.PathToAbsolutePath(indexArtifactPath), FileMode.CreateNew, FileAccess.Write, FileShare.None))
-                    indexer.storage.Write(fileStream);
+                using (var memoryStream = new MemoryStream())
+                {
+                    indexer.storage.Write(memoryStream);
+                    ctx.SetOutputArtifactData(indexArtifactExtension, memoryStream.ToArray());
+                }
 
                 ctx.DependsOnSourceAsset(ctx.assetPath);
                 var customDependencyName = GetCustomDependencyName(GetType());

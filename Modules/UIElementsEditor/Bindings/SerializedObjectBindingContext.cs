@@ -31,8 +31,8 @@ internal class SerializedObjectBindingContext
     private const int k_MaxBindingTimeMs = 50;
     private long m_LastFrame = long.MinValue;
 
-    delegate void BindUnityObjectMethod(SerializedObjectBindingContext context, VisualElement element, SerializedProperty prop);
-    static readonly Dictionary<Type, BindUnityObjectMethod> s_DefaultBindUnityObjectMethods = new();
+    delegate void BindGenericMethod(SerializedObjectBindingContext context, VisualElement element, SerializedProperty prop);
+    static readonly Dictionary<Type, BindGenericMethod> s_DefaultBindGenericMethods = new();
 
     public SerializedObjectBindingContext(SerializedObject so)
     {
@@ -462,7 +462,13 @@ internal class SerializedObjectBindingContext
                 // nothing to bind here
                 break;
             case SerializedPropertyType.Generic:
-                if (prop.type == nameof(ToggleButtonGroupState))
+                if (prop.type == nameof(VisualElementReference) || prop.type == typeof(VisualElementReference<>).Name)
+                {
+                    // Use custom binding for BaseField<VisualElementReference> (e.g., VisualElementReferenceField)
+                    if (element is INotifyValueChanged<VisualElementReference> && element is BaseField<VisualElementReference>)
+                        SerializedVisualElementReferenceBinding.CreateBind((INotifyValueChanged<VisualElementReference>)element, this, prop);
+                }
+                else if (prop.type == nameof(ToggleButtonGroupState))
                 {
                     DefaultBind(element, prop, SerializedPropertyHelper.GetToggleStatePropertyValue, SerializedPropertyHelper.SetToggleStatePropertyValue, SerializedPropertyHelper.ValueEquals);
                 }
@@ -493,13 +499,13 @@ internal class SerializedObjectBindingContext
             return;
         }
 
-        if (!s_DefaultBindUnityObjectMethods.TryGetValue(fieldType, out var bindDelegate))
+        if (!s_DefaultBindGenericMethods.TryGetValue(fieldType, out var bindDelegate))
         {
             var genericMethod = this.GetType().GetMethod(nameof(CreateUnityObjectBinding), BindingFlags.NonPublic | BindingFlags.Static);
             var methodInfo = genericMethod.MakeGenericMethod(fieldType);
 
-            bindDelegate = (BindUnityObjectMethod)Delegate.CreateDelegate(typeof(BindUnityObjectMethod), methodInfo);
-            s_DefaultBindUnityObjectMethods.Add(fieldType, bindDelegate);
+            bindDelegate = (BindGenericMethod)Delegate.CreateDelegate(typeof(BindGenericMethod), methodInfo);
+            s_DefaultBindGenericMethods.Add(fieldType, bindDelegate);
         }
 
         bindDelegate(this, element, prop);

@@ -47,7 +47,7 @@ namespace UnityEditor
 
             m_Settings.undoRedoSelection = true;
 
-            m_Editor = new CurveEditor(new Rect(0, 0, 1000, 100), new CurveWrapper[0], false);
+            m_Editor = new CurveEditor(new Rect(0, 0, 1000, 100), System.Array.Empty<CurveWrapper>(), false);
             m_Editor.settings = m_Settings;
             m_Editor.margin = 25;
             m_Editor.leftmargin = 35;

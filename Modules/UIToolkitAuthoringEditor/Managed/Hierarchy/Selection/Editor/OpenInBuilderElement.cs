@@ -79,7 +79,7 @@ class OpenInBuilderElement : VisualElement
                 var isValidPath = !string.IsNullOrEmpty(path);
                 m_OpenInBuilderButton.EnableInClassList(HiddenOpenVtaButtonUssClass, !isValidPath);
                 m_OpenInBuilderButton.text = isValidPath
-                    ? $"Open '{path}.uxml' in the UI Builder."
+                    ? $"Open '{path}' in the UI Builder."
                     : null;
             }
             else

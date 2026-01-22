@@ -33,8 +33,8 @@ namespace UnityEditor.Scripting.ScriptCompilation
             BuildTarget = BuildTarget.NoTarget;
             Subtarget = 0;
             PredefinedAssembliesCompilerOptions = new ScriptCompilerOptions();
-            ExtraGeneralDefines = new string[0];
-            AdditionalCompilerArguments = new string[0];
+            ExtraGeneralDefines = System.Array.Empty<string>();
+            AdditionalCompilerArguments = System.Array.Empty<string>();
         }
 
         bool BuildingWithoutOptimization

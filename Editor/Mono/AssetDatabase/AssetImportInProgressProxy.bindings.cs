@@ -7,7 +7,7 @@ using UnityEngine;
 
 namespace UnityEditor
 {
-    [NativeType(Header = "Modules/AssetDatabase/Editor/Public/AssetImportInProgressProxy.h")]
+    [NativeHeader("Modules/AssetDatabase/Editor/Public/AssetImportInProgressProxy.h")]
     class AssetImportInProgressProxy : UnityEngine.Object
     {
         public extern GUID asset

@@ -2551,7 +2551,7 @@ namespace UnityEngine
 
     [StructLayout(LayoutKind.Sequential)]
     [UsedByNativeCode]
-    [NativeHeader(Header = "Modules/Physics2D/Public/PhysicsScripting2D.h")]
+    [NativeHeader("Modules/Physics2D/Public/PhysicsScripting2D.h")]
     public struct PhysicsShape2D
     {
         private PhysicsShapeType2D m_ShapeType;
@@ -3650,7 +3650,7 @@ namespace UnityEngine
 
         [Serializable]
         [StructLayout(LayoutKind.Sequential)]
-        [NativeHeader(Header = "Modules/Physics2D/Public/Rigidbody2D.h")]
+        [NativeHeader("Modules/Physics2D/Public/Rigidbody2D.h")]
         public struct SlideMovement
         {
             public SlideMovement()
@@ -3693,7 +3693,7 @@ namespace UnityEngine
 
         [Serializable]
         [StructLayout(LayoutKind.Sequential)]
-        [NativeHeader(Header = "Modules/Physics2D/Public/Rigidbody2D.h")]
+        [NativeHeader("Modules/Physics2D/Public/Rigidbody2D.h")]
         public struct SlideResults
         {
             [field: SerializeField] public Vector2 remainingVelocity { get; set; }

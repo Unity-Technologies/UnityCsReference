@@ -121,6 +121,8 @@ namespace UnityEngine
 
         extern public RenderTexture normalmapTexture { [NativeMethod("TryGetNormalMapTexture")] get; }
 
+        extern public Material splatBaseMaterial { [NativeMethod("TryGetSplatBaseMaterial")] get; }
+
         extern public bool drawTreesAndFoliage { get; set; }
 
         extern public Vector3 patchBoundsMultiplier { get; set; }

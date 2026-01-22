@@ -142,6 +142,7 @@ namespace UnityEditor.UIElements
             UpdateMixedValueContent();
         }
 
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
         internal static bool IsMissingObjectReference(SerializedProperty p) => p.propertyType == SerializedPropertyType.ObjectReference && p.objectReferenceEntityIdValue != EntityId.None && p.objectReferenceValue == null;
 
         [VisibleToOtherModules("UnityEditor.UIBuilderModule")]

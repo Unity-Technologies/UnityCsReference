@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Collections;
 
 namespace Unity.GraphToolkit.Editor
 {
@@ -50,8 +51,22 @@ namespace Unity.GraphToolkit.Editor
         /// <param name="constantTypeHandle">The type of value held by this constant.</param>
         public virtual void Initialize(TypeHandle constantTypeHandle)
         {
-            // We ignore constantTypeHandle. Our type is solely determined by T.
-            ObjectValue = DefaultValue;
+            if (Type.IsListOrArray())
+            {
+                ObjectValue = Activator.CreateInstance(Type, 1);
+                var elementType = Type.IsArray ? Type.GetElementType() : Type.GetGenericArguments()[0];
+                var defaultValue = elementType.IsValueType ? Activator.CreateInstance(elementType) : null;
+
+                if (Type.IsArray)
+                    (ObjectValue as Array).SetValue(defaultValue, 0);
+                else if (ObjectValue is IList list)
+                    list.Add(defaultValue);
+            }
+            else
+            {
+                // We ignore constantTypeHandle. Our type is solely determined by T.
+                ObjectValue = DefaultValue;
+            }
         }
 
         /// <summary>
@@ -132,6 +147,70 @@ namespace Unity.GraphToolkit.Editor
             ObjectValue = value;
 
             return true;
+        }
+
+        /// <summary>
+        /// Try to set the value of this constant at the given index.
+        /// Use <see cref="ResizeCollection(int)"/> to change the size of the collection beforehand.
+        /// </summary>
+        /// <param name="index">Index in the collection</param>
+        /// <param name="value">The value that is set.</param>
+        /// <returns>True if the value was successfully set at a valid index. False otherwise.</returns>
+        public bool TrySetValueAt(int index, object value)
+        {
+            var count = Type.IsListOrArray() ? ((IList)ObjectValue).Count : 1;
+            if (index < 0 || index >= count)
+                return false;
+
+            if (Type.IsArray)
+            {
+                Array array = (Array)ObjectValue;
+                array.SetValue(value, index);
+            }
+            else if (ObjectValue is IList list)
+                list[index] = value;
+
+            return true;
+        }
+
+        /// <summary>
+        /// Resize the collection to the new size.
+        /// </summary>
+        /// <param name="newSize">New size of the collection.</param>
+        public void ResizeCollection(int newSize)
+        {
+            if (Type.IsListOrArray())
+            {
+                var elementType = Type.IsArray ? Type.GetElementType() : Type.GetGenericArguments()[0];
+                var defaultValue = elementType.IsValueType ? Activator.CreateInstance(elementType) : null;
+
+                if (Type.IsArray)
+                {
+                    Array oldArray = (Array)ObjectValue;
+                    Array newArray = Array.CreateInstance(elementType, newSize);
+                    int lengthToCopy = Math.Min(oldArray.Length, newSize);
+                    Array.Copy(oldArray, newArray, lengthToCopy);
+
+                    for (int i = lengthToCopy; i < newSize; i++)
+                        newArray.SetValue(defaultValue, i);
+
+                    ObjectValue = newArray;
+                }
+                else if (ObjectValue is IList list)
+                {
+                    if (list.Count < newSize)
+                    {
+                        while (list.Count < newSize)
+                            list.Add(defaultValue);
+                    }
+                    else if (list.Count > newSize)
+                    {
+                        while (list.Count > newSize)
+                            list.RemoveAt(list.Count - 1);
+                    }
+                }
+                
+            }
         }
     }
 }

@@ -17,7 +17,7 @@ namespace UnityEditor.Animations
 
     [StructLayout(LayoutKind.Sequential)]
     [RequiredByNativeCode]
-    [NativeType("Editor/Src/Animation/AnimatorControllerLayer.h")]
+    [NativeHeader("Editor/Src/Animation/AnimatorControllerLayer.h")]
     internal struct StateMotionPair
     {
         public AnimatorState m_State;
@@ -26,7 +26,7 @@ namespace UnityEditor.Animations
 
     [StructLayout(LayoutKind.Sequential)]
     [RequiredByNativeCode]
-    [NativeType("Editor/Src/Animation/AnimatorControllerLayer.h")]
+    [NativeHeader("Editor/Src/Animation/AnimatorControllerLayer.h")]
     internal struct StateBehavioursPair
     {
         public AnimatorState m_State;
@@ -61,7 +61,9 @@ namespace UnityEditor.Animations
 
         public void                       SetOverrideMotion(AnimatorState state, Motion motion)
         {
-            if (m_Motions == null) m_Motions =  new StateMotionPair[] {};
+            if (m_Motions == null)
+                m_Motions = System.Array.Empty<StateMotionPair>();
+
             for (int i = 0; i < m_Motions.Length; ++i)
             {
                 if (m_Motions[i].m_State == state)
@@ -87,12 +89,14 @@ namespace UnityEditor.Animations
                         return pair.m_Behaviours as StateMachineBehaviour[];
                 }
             }
-            return new StateMachineBehaviour[0];
+            return System.Array.Empty<StateMachineBehaviour>();
         }
 
         public void                           SetOverrideBehaviours(AnimatorState state, StateMachineBehaviour[] behaviours)
         {
-            if (m_Behaviours == null) m_Behaviours =  new StateBehavioursPair[] {};
+            if (m_Behaviours == null)
+                m_Behaviours = System.Array.Empty<StateBehavioursPair>();
+
             for (int i = 0; i < m_Behaviours.Length; ++i)
             {
                 if (m_Behaviours[i].m_State == state)

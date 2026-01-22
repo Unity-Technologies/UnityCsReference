@@ -98,18 +98,6 @@ namespace Unity.Multiplayer.PlayMode.Editor
             return instances;
         }
 
-        internal InstanceDescription GetInstanceDescriptionByName(string instanceName)
-        {
-            var instances = GetAllInstances();
-            foreach (var instance in instances)
-            {
-                if (instance.Name.Equals(instanceName))
-                    return instance;
-            }
-
-            return null;
-        }
-
         private static void SendEnterPlayModeOnTagsAppliedEvent(PlayModeStateChange state)
         {
             if (VirtualProjectsEditor.IsClone) return;

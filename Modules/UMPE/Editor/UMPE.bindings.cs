@@ -83,7 +83,7 @@ namespace UnityEditor.MPE
     }
 
     [MovedFrom("Unity.MPE")]
-    [NativeType("Modules/UMPE/ChannelService.h")]
+    [NativeHeader("Modules/UMPE/ChannelService.h")]
     [Serializable]
     [StructLayout(LayoutKind.Sequential)]
     public struct ChannelInfo : IEquatable<ChannelInfo>
@@ -130,7 +130,7 @@ namespace UnityEditor.MPE
     }
 
     [MovedFrom("Unity.MPE")]
-    [NativeType("Modules/UMPE/ChannelService.h")]
+    [NativeHeader("Modules/UMPE/ChannelService.h")]
     [Serializable]
     [StructLayout(LayoutKind.Sequential)]
     public struct ChannelClientInfo : IEquatable<ChannelClientInfo>

@@ -67,7 +67,7 @@ namespace UnityEngine.Rendering
     };
 
     // Keep in sync with GraphicsTextureState in GraphicsTexture.bindings.h
-    [NativeType("Runtime/Export/Graphics/GraphicsTexture.bindings.h")]
+    [NativeHeader("Runtime/Export/Graphics/GraphicsTexture.bindings.h")]
     [UsedByNativeCode]
     public enum GraphicsTextureState
     {
@@ -79,7 +79,7 @@ namespace UnityEngine.Rendering
     };
 
     [NativeHeader("Runtime/Export/Graphics/GraphicsTexture.bindings.h")]
-    [NativeType("Runtime/Graphics/Texture/GraphicsTexture.h")]
+    [NativeHeader("Runtime/Graphics/Texture/GraphicsTexture.h")]
     [UsedByNativeCode]
     public partial class GraphicsTexture : IDisposable
     {

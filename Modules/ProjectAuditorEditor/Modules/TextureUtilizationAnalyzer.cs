@@ -53,7 +53,7 @@ namespace Unity.ProjectAuditor.Editor.Modules
         )
         {
             IsEnabledByDefault = false,
-            MessageFormat = "Texture Atlas '{0}' has too much empty space ({1})"
+            MessageFormat = "Texture Atlas '{0}' has too much empty space ({1}, {2})"
         };
 
         //[DiagnosticParameter("TextureEmptySpaceLimit", "Empty Texture Atlas use threshold (percentage)", "Warn if the percentage of unused pixels in a Texture Atlas is greater than this threshold.", 50)]
@@ -79,10 +79,10 @@ namespace Unity.ProjectAuditor.Editor.Modules
             var texture2D = context.Texture as Texture2D;
             if (context.IsDescriptorEnabled(k_TextureAtlasEmptyDescriptor) && texture2D != null)
             {
-                var emptyPercent = TextureUtils.GetEmptyPixelsPercent(texture2D);
+                TextureUtils.GetEmptyPixelsPercent(texture2D, out var emptyPercent, out var emptyBytes);
                 if (emptyPercent > m_EmptySpaceLimit)
                 {
-                    yield return context.CreateIssue(IssueCategory.AssetIssue, k_TextureAtlasEmptyDescriptor.Id, context.Name, Formatting.FormatPercentage(emptyPercent / 100.0f))
+                    yield return context.CreateIssue(IssueCategory.AssetIssue, k_TextureAtlasEmptyDescriptor.Id, context.Name, Formatting.FormatPercentage(emptyPercent / 100.0f), Formatting.FormatSize(emptyBytes))
                         .WithLocation(context.Importer.assetPath);
                 }
             }

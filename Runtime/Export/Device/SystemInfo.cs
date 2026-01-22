@@ -244,6 +244,8 @@ namespace UnityEngine.Device
 
         public static bool supportsDynamicResolution => ShimManager.systemInfoShim.supportsDynamicResolution;
 
+        public static bool supportsBackbufferInMultipleRenderTargets => ShimManager.systemInfoShim.supportsBackbufferInMultipleRenderTargets;
+
         [System.Obsolete("Use overload with a GraphicsFormatUsage parameter instead", false)]
         public static bool IsFormatSupported(GraphicsFormat format, FormatUsage usage)
         {

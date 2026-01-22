@@ -805,9 +805,7 @@ namespace UnityEditor.ShortcutManagement
                 case SearchOption.Name:
                     return !string.IsNullOrEmpty(m_SerializedState.search);
                 case SearchOption.Binding:
-                    #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                    return m_SerializedState.bindingsSearch.Any();
-#pragma warning restore RS0030
+                    return m_SerializedState.bindingsSearch.Count > 0;
             }
 
             return false;
@@ -819,9 +817,7 @@ namespace UnityEditor.ShortcutManagement
             foreach (var entry in m_AllEntries)
             {
                 var binding = entry.combinations;
-                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                if (binding != null && binding.Any())
-#pragma warning restore RS0030
+                if (binding?.Count > 0)
                 {
                     #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     var firstKeyBinding = binding.First();

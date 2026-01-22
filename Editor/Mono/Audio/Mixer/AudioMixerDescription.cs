@@ -60,11 +60,11 @@ namespace UnityEditor.Audio
         {
             ClearDefinitions();
 
-            RegisterAudioMixerEffect("Attenuation", new MixerParameterDefinition[0]);
+            RegisterAudioMixerEffect("Attenuation", Array.Empty<MixerParameterDefinition>());
 
-            RegisterAudioMixerEffect("Send", new MixerParameterDefinition[0]);
+            RegisterAudioMixerEffect("Send", Array.Empty<MixerParameterDefinition>());
 
-            RegisterAudioMixerEffect("Receive", new MixerParameterDefinition[0]);
+            RegisterAudioMixerEffect("Receive", Array.Empty<MixerParameterDefinition>());
 
             var duckVolDef = new MixerParameterDefinition[7];
             duckVolDef[0] = new MixerParameterDefinition { name = "Threshold", units = "dB", displayScale = 1.0f, displayExponent = 1.0f, minRange = -80.0f, maxRange = 0.0f, defaultValue = -10.0f, description = "Threshold of side-chain level detector" };
@@ -125,7 +125,7 @@ namespace UnityEditor.Audio
                 }
             }
 
-            return new MixerParameterDefinition[0];
+            return Array.Empty<MixerParameterDefinition>();
         }
 
         public static bool RegisterAudioMixerEffect(string name, MixerParameterDefinition[] definitions)

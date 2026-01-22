@@ -458,5 +458,13 @@ namespace UnityEditor
         [NativeThrows]
         extern private static bool ApplyObjectOverrideWithoutUndo([NotNull] Object componentOrGameObject, string assetPath);
 
+        [StaticAccessor("PrefabUtilityBindings", StaticAccessorType.DoubleColon)]
+        [NativeThrows]
+        extern private static bool ApplyPropertyOverride([NotNull] Object componentOrGameObject, string propertyPath, string assetPath);
+
+        [StaticAccessor("PrefabUtilityBindings", StaticAccessorType.DoubleColon)]
+        [NativeThrows]
+        extern private static bool ApplyPropertyOverrideWithoutUndo([NotNull] Object componentOrGameObject, string propertyPath, string assetPath);
+
     }
 }

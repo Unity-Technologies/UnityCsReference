@@ -174,9 +174,7 @@ namespace UnityEditor.PackageManager.UI
                 var assetDatabaseProxy = ServicesContainer.instance.Resolve<IAssetDatabaseProxy>();
                 return FindByPackage(packageInfo, upmCache, ioProxy, assetDatabaseProxy);
             }
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            return Enumerable.Empty<Sample>();
-#pragma warning restore RS0030
+            return Array.Empty<Sample>();
         }
 
         /// <summary>

@@ -11,7 +11,7 @@ namespace UnityEditor.PackageManager.UI.Internal
     {
         private static readonly string k_AddNewScopedRegistryText = L10n.Tr("New Scoped Registry");
         private const string k_SelectedRegistryClass = "selectedRegistry";
-        private const string k_ErrorIconClasses = "unity__icon unity__icon--error";
+        private readonly string[] k_ErrorIconClasses = new [] { "unity__icon", "unity__icon--error" };
         private readonly string k_NonCompliantRegistry = L10n.Tr("Restricted scoped registry");
 
         private readonly Label m_Label;
@@ -28,7 +28,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             Add(m_Label);
 
             m_NonCompliantErrorIcon = new VisualElement();
-            m_NonCompliantErrorIcon.AddClasses(k_ErrorIconClasses);
+            m_NonCompliantErrorIcon.AddToClassList(k_ErrorIconClasses);
             m_NonCompliantErrorIcon.tooltip = k_NonCompliantRegistry;
             Add(m_NonCompliantErrorIcon);
             UIUtils.SetElementDisplay(m_NonCompliantErrorIcon, registryInfo?.compliance.status == RegistryComplianceStatus.NonCompliant);

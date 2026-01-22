@@ -321,7 +321,7 @@ namespace UnityEditor
         private Vector3[] GetPivotVectors(PivotSample[] samples, float width, Rect rect, float height, bool loop)
         {
             if (samples.Length == 0 || width < 0.33f) // not pivots for super small anims
-                return new Vector3[0];
+                return Array.Empty<Vector3>();
 
             List<Vector3> vectorList = new List<Vector3>();
             for (int i = 0; i < samples.Length; i++)

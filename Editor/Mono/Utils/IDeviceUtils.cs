@@ -13,10 +13,10 @@ namespace UnityEditor
     {
         // API for native calls
         [RequiredByNativeCode]
-        internal static RemoteAddress StartRemoteSupport(string deviceId)
+        internal static void StartRemoteSupport(string deviceId, out string ip, out int port)
         {
             IDevice device = ModuleManager.GetDevice(deviceId);
-            return device.StartRemoteSupport();
+            device.StartRemoteSupport(out ip, out port);
         }
 
         // API for native calls
@@ -29,10 +29,10 @@ namespace UnityEditor
 
         // API for native calls
         [RequiredByNativeCode]
-        internal static RemoteAddress StartPlayerConnectionSupport(string deviceId)
+        internal static void StartPlayerConnectionSupport(string deviceId, out string ip, out int port)
         {
             IDevice device = ModuleManager.GetDevice(deviceId);
-            return device.StartPlayerConnectionSupport();
+            device.StartPlayerConnectionSupport(out ip, out port);
         }
 
         // API for native calls

@@ -142,7 +142,7 @@ namespace UnityEditor.Search.Providers
             {
                 if (options.HasAny(SearchPropositionFlags.QueryBuilder))
                     return FetchQueryBuilderPropositions(context);
-                return m_SceneQueryEngine == null ? new SearchProposition[0] : m_SceneQueryEngine.FindPropositions(context, options);
+                return m_SceneQueryEngine == null ? Array.Empty<SearchProposition>() : m_SceneQueryEngine.FindPropositions(context, options);
             };
 
             trackSelection = (item, context) => PingItem(item);
@@ -266,7 +266,7 @@ namespace UnityEditor.Search.Providers
                     {
                         #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                         FrameObjects(items.Select(i => i.provider.toObject(i, typeof(GameObject))).Where(i => i).ToArray());
-#pragma warning restore RS0030
+                        #pragma warning restore RS0030
                     }
                 },
 
@@ -385,8 +385,8 @@ namespace UnityEditor.Search.Providers
 
         private static void FrameObjects(UnityEngine.Object[] objects)
         {
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            Selection.entityIds = objects.Select(o => o.GetHashCode()).ToArray().ToEntityIdArray();
+#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            Selection.entityIds = objects.Select(o => o.GetEntityId()).ToArray();
 #pragma warning restore RS0030
             if (SceneView.lastActiveSceneView != null)
                 SceneView.lastActiveSceneView.FrameSelected();

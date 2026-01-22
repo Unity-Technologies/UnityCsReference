@@ -1487,7 +1487,7 @@ By default, Windows will combine these under a single taskbar item.");
             GUILayout.BeginHorizontal();
             EditorGUILayout.PrefixLabel(label, style);
 
-            int[] selected = new int[0];
+            int[] selected = Array.Empty<int>();
 #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             if (paths.Contains(selectedString))
 #pragma warning restore RS0030

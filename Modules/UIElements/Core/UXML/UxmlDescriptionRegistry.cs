@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using System.Reflection;
+using UnityEngine.Bindings;
 using UnityEngine.Pool;
 using UnityEngine.Serialization;
 
@@ -102,6 +103,7 @@ namespace UnityEngine.UIElements
         internal static bool TryGetCachedDescription(Type type, out CachedDescription description) => s_NamesPerType.TryGetValue(type, out description);
     }
 
+    [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
     internal readonly struct UxmlDescription
     {
         public readonly string uxmlName;
@@ -139,6 +141,7 @@ namespace UnityEngine.UIElements
         }
     }
 
+    [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
     internal readonly struct UxmlTypeDescription
     {
         private static readonly Type s_UxmlSerializedDataType = typeof(UxmlSerializedData);
@@ -336,6 +339,7 @@ namespace UnityEngine.UIElements
         }
     }
 
+    [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
     internal static class UxmlDescriptionRegistry
     {
         private static readonly Dictionary<Type, UxmlTypeDescription> s_UxmlDescriptions = new();

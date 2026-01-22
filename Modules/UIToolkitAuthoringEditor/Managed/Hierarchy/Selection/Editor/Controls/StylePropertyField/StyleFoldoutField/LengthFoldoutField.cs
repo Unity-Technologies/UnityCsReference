@@ -5,14 +5,13 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using Unity.Properties;
-using Unity.UIToolkit.Editor;
+using UnityEditor;
 using UnityEngine;
 using UnityEngine.UIElements;
 
 namespace Unity.UIToolkit.Editor
 {
-    internal abstract class LengthFoldoutField : StyleFoldoutField<TextField>, INotifyCompositeStylePropertyChanged<StyleLength>
+    internal abstract class LengthFoldoutField : StyleFoldoutField<TextField>
     {
         static readonly string TextUssClassName = FoldoutFieldPropertyName + "__textfield";
 
@@ -27,25 +26,10 @@ namespace Unity.UIToolkit.Editor
             }
         }
 
-        const string k_TopFieldName = "top";
-        const string k_RightFieldName = "right";
-        const string k_BottomFieldName = "bottom";
-        const string k_LeftFieldName = "left";
-
-        static readonly BindingId topProperty = nameof(top);
-        static readonly BindingId rightProperty = nameof(right);
-        static readonly BindingId bottomProperty = nameof(bottom);
-        static readonly BindingId leftProperty = nameof(left);
-
-        StyleLength m_Top;
-        StyleLength m_Right;
-        StyleLength m_Bottom;
-        StyleLength m_Left;
-
-        public StyleLengthField topField { get; }
-        public StyleLengthField rightField { get; }
-        public StyleLengthField bottomField { get; }
-        public StyleLengthField leftField { get; }
+        public StyleLengthField topField { get; protected set; }
+        public StyleLengthField rightField { get; protected set; }
+        public StyleLengthField bottomField { get; protected set; }
+        public StyleLengthField leftField { get; protected set; }
 
         protected abstract string topPropertyName { get; }
         protected abstract string rightPropertyName { get; }
@@ -64,107 +48,45 @@ namespace Unity.UIToolkit.Editor
 
         public IntegerField draggerIntegerField => m_DraggerField;
 
-        [CreateProperty]
-        public StyleLength top
-        {
-            get => m_Top;
-            set
-            {
-                if (m_Top.Equals(value))
-                    return;
-
-                var previousValue = m_Top;
-                m_Top = value;
-                Refresh();
-                NotifyStylePropertyChanged(topProperty, previousValue, m_Top);
-            }
-        }
-
-        [CreateProperty]
-        public StyleLength right
-        {
-            get => m_Right;
-            set
-            {
-                if (m_Right.Equals(value))
-                    return;
-
-                var previousValue = m_Right;
-                m_Right = value;
-                Refresh();
-                NotifyStylePropertyChanged(rightProperty, previousValue, m_Right);
-            }
-        }
-
-        [CreateProperty]
-        public StyleLength bottom
-        {
-            get => m_Bottom;
-            set
-            {
-                if (m_Bottom.Equals(value))
-                    return;
-
-                var previousValue = m_Bottom;
-                m_Bottom = value;
-                Refresh();
-                NotifyStylePropertyChanged(bottomProperty, previousValue, m_Bottom);
-            }
-        }
-
-        [CreateProperty]
-        public StyleLength left
-        {
-            get => m_Left;
-            set
-            {
-                if (m_Left.Equals(value))
-                    return;
-
-                var previousValue = m_Left;
-                m_Left = value;
-                Refresh();
-                NotifyStylePropertyChanged(leftProperty, previousValue, m_Left);
-            }
-        }
-
         protected LengthFoldoutField() : this(null) { }
 
         protected LengthFoldoutField(string text)
             : base(text)
         {
-            var topRow = new OverrideRow() { name = k_TopFieldName };
-            topField = new StyleLengthField("Top") { name = k_TopFieldName, classList = { TextField.alignedFieldUssClassName }};
-            topRow.Add(topField);
-            Add(topRow);
+            // Derived classes will load UXML and query for fields
+        }
 
-            var rightRow = new OverrideRow() { name = k_RightFieldName };
-            rightField = new StyleLengthField("Right") { name = k_RightFieldName, classList = { TextField.alignedFieldUssClassName }};
-            rightRow.Add(rightField);
-            Add(rightRow);
-
-            var bottomRow = new OverrideRow() { name = k_BottomFieldName };
-            bottomField = new StyleLengthField("Bottom") { name = k_BottomFieldName, classList = { TextField.alignedFieldUssClassName }};
-            bottomRow.Add(bottomField);
-            Add(bottomRow);
-
-            var leftRow = new OverrideRow() { name = k_LeftFieldName };
-            leftField = new StyleLengthField("Left") { name = k_LeftFieldName, classList = { TextField.alignedFieldUssClassName }};
-            leftRow.Add(leftField);
-            Add(leftRow);
-
-            topField.RegisterValueChangedCallback((e) => top = e.newValue);
-            rightField.RegisterValueChangedCallback((e) => right = e.newValue);
-            bottomField.RegisterValueChangedCallback((e) => bottom = e.newValue);
-            leftField.RegisterValueChangedCallback((e) => left = e.newValue);
+        protected void SetupBaseCallbacks()
+        {
+            topField.RegisterCallback<PropertyChangedEvent>(e =>
+            {
+                if (e.property == BaseField<StyleLength>.valueProperty)
+                    UpdateFromChildFields();
+            });
+            rightField.RegisterCallback<PropertyChangedEvent>(e =>
+            {
+                if (e.property == BaseField<StyleLength>.valueProperty)
+                    UpdateFromChildFields();
+            });
+            bottomField.RegisterCallback<PropertyChangedEvent>(e =>
+            {
+                if (e.property == BaseField<StyleLength>.valueProperty)
+                    UpdateFromChildFields();
+            });
+            leftField.RegisterCallback<PropertyChangedEvent>(e =>
+            {
+                if (e.property == BaseField<StyleLength>.valueProperty)
+                    UpdateFromChildFields();
+            });
 
             // Used for its dragger.
-            var toggleInput = this.Q(className: "unity-toggle__input");
             m_DraggerField = new IntegerField(" ");
             m_DraggerField.name = "dragger-integer-field";
+            m_DraggerField.visualInput.focusable = false;
+            m_DraggerField.tabIndex = -1;
             m_DraggerField.AddToClassList(DraggerFieldUssClassName);
             m_DraggerField.RegisterValueChangedCallback(OnDraggerFieldUpdate);
-            toggleInput.Add(m_DraggerField);
+            m_Toggle.labelElement.Add(m_DraggerField);
 
             headerInputField.isDelayed = true; // only updates on Enter or lost focus
             headerInputField.AddToClassList(TextUssClassName);
@@ -234,8 +156,8 @@ namespace Unity.UIToolkit.Editor
             else if (inputArray.Length == 2)
             {
                 // Set the first value to top and bottom, and the second value to left and right
-                top = bottom = Length.ParseString(inputArray[0]);
-                left = right = Length.ParseString(inputArray[1]);
+                topField.value = bottomField.value = Length.ParseString(inputArray[0]);
+                leftField.value = rightField.value = Length.ParseString(inputArray[1]);
             }
             else
             {
@@ -247,15 +169,6 @@ namespace Unity.UIToolkit.Editor
 
             UpdateFromChildFields();
             evt.StopPropagation();
-        }
-
-        protected override void Refresh()
-        {
-            topField.SetValueWithoutNotify(top);
-            rightField.SetValueWithoutNotify(right);
-            bottomField.SetValueWithoutNotify(bottom);
-            leftField.SetValueWithoutNotify(left);
-            base.Refresh();
         }
 
         void OnDraggerFieldUpdate(ChangeEvent<int> evt)
@@ -284,47 +197,6 @@ namespace Unity.UIToolkit.Editor
             target.SendEvent(subEvent);
             evt.StopImmediatePropagation();
         }
-
-        public void SetValue(BindingId id, StyleLength v, bool notify)
-        {
-            if (id == topProperty)
-            {
-                if (notify)
-                    top = v;
-                else
-                    m_Top = v;
-            }
-            else if (id == rightProperty)
-            {
-                if (notify)
-                    right = v;
-                else
-                    m_Right = v;
-            }
-            else if (id == bottomProperty)
-            {
-                if (notify)
-                    bottom = v;
-                else
-                    m_Bottom = v;
-            }
-            else if (id == leftProperty)
-            {
-                if (notify)
-                    left = v;
-                else
-                    m_Left = v;
-            }
-
-            if (!notify)
-                Refresh();
-        }
-
-        public void NotifyStylePropertyChanged(BindingId id, StyleLength previousValue, StyleLength newValue)
-        {
-            this.NotifyStylePropertyChanged(this, id, previousValue, newValue);
-            NotifyPropertyChanged(id);
-        }
     }
 
     internal class PaddingFoldoutField : LengthFoldoutField
@@ -335,17 +207,24 @@ namespace Unity.UIToolkit.Editor
             public override object CreateInstance() => new PaddingFoldoutField();
         }
 
-        protected override string topPropertyName { get; } = "paddingTop";
-        protected override string rightPropertyName { get; } = "paddingRight";
-        protected override string bottomPropertyName { get; } = "paddingBottom";
-        protected override string leftPropertyName { get; } = "paddingLeft";
+        private const string k_VisualTreeAsset = "UIToolkitAuthoring/Inspector/Controls/PaddingFoldoutField.uxml";
+
+        protected override string topPropertyName => "paddingTop";
+        protected override string rightPropertyName => "paddingRight";
+        protected override string bottomPropertyName => "paddingBottom";
+        protected override string leftPropertyName => "paddingLeft";
 
         public PaddingFoldoutField() : base("Padding")
         {
-            topField.tooltip = "USS property: padding-top\n\nSpace reserved for the top edge of the padding during the layout phase.";
-            rightField.tooltip = "USS property: padding-right\n\nSpace reserved for the right edge of the padding during the layout phase.";
-            bottomField.tooltip = "USS property: padding-bottom\n\nSpace reserved for the bottom edge of the padding during the layout phase.";
-            leftField.tooltip = "USS property: padding-left\n\nSpace reserved for the left edge of the padding during the layout phase.";
+            var vta = EditorGUIUtility.Load(k_VisualTreeAsset) as VisualTreeAsset;
+            vta.CloneTree(this);
+
+            topField = this.Q<StyleLengthField>("top");
+            rightField = this.Q<StyleLengthField>("right");
+            bottomField = this.Q<StyleLengthField>("bottom");
+            leftField = this.Q<StyleLengthField>("left");
+
+            SetupBaseCallbacks();
         }
     }
 
@@ -357,17 +236,24 @@ namespace Unity.UIToolkit.Editor
             public override object CreateInstance() => new MarginFoldoutField();
         }
 
-        protected override string topPropertyName { get; } = "marginTop";
-        protected override string rightPropertyName { get; } = "marginRight";
-        protected override string bottomPropertyName { get; } = "marginBottom";
-        protected override string leftPropertyName { get; } = "marginLeft";
+        private const string k_VisualTreeAsset = "UIToolkitAuthoring/Inspector/Controls/MarginFoldoutField.uxml";
+
+        protected override string topPropertyName => "marginTop";
+        protected override string rightPropertyName => "marginRight";
+        protected override string bottomPropertyName => "marginBottom";
+        protected override string leftPropertyName => "marginLeft";
 
         public MarginFoldoutField() : base("Margin")
         {
-            topField.tooltip = "USS property: margin-top\n\nSpace reserved for the top edge of the margin during the layout phase.";
-            rightField.tooltip = "USS property: margin-right\n\nSpace reserved for the right edge of the margin during the layout phase.";
-            bottomField.tooltip = "USS property: margin-bottom\n\nSpace reserved for the bottom edge of the margin during the layout phase.";
-            leftField.tooltip = "USS property: margin-left\n\nSpace reserved for the left edge of the margin during the layout phase.";
+            var vta = EditorGUIUtility.Load(k_VisualTreeAsset) as VisualTreeAsset;
+            vta.CloneTree(this);
+
+            topField = this.Q<StyleLengthField>("top");
+            rightField = this.Q<StyleLengthField>("right");
+            bottomField = this.Q<StyleLengthField>("bottom");
+            leftField = this.Q<StyleLengthField>("left");
+
+            SetupBaseCallbacks();
         }
     }
 }

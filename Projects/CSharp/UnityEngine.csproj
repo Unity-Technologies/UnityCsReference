@@ -7,16 +7,23 @@
     <GenerateDocumentationFile>false</GenerateDocumentationFile>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <EnableDefaultItems>false</EnableDefaultItems>
-    <DefineConstants>$(DefineConstants);ALLOW_IMPLICIT_INTERNAL_VISIBILITY;COMBINED_ASSEMBLIES;DEBUGGER_LISTENS_FIXED_PORT;EDITOR_ONLY_NAVMESH_BUILDER_DEPRECATED;ENABLE_ACCELERATOR_CLIENT_DEBUGGING;ENABLE_ALTERNATIVE_LISTEN_PORT;ENABLE_AR;ENABLE_AUDIO;ENABLE_AUDIO_MANAGER_BASED_SCHEDULING;ENABLE_AUDIO_SCRIPTABLE_PIPELINE;ENABLE_CACHING;ENABLE_CLOTH;ENABLE_CLOUD_LICENSE;ENABLE_CLOUD_SERVICES;ENABLE_CLOUD_SERVICES_ADS;ENABLE_CLOUD_SERVICES_ANALYTICS;ENABLE_CLOUD_SERVICES_BUILD;ENABLE_CLOUD_SERVICES_CRASH_REPORTING;ENABLE_CLOUD_SERVICES_PURCHASING;ENABLE_CLOUD_SERVICES_USE_WEBREQUEST;ENABLE_CRUNCH_TEXTURE_COMPRESSION;ENABLE_DIRECTOR_AUDIO;ENABLE_DIRECTOR_TEXTURE;ENABLE_EDITOR_GAME_SERVICES;ENABLE_EDITOR_HUB_LICENSE;ENABLE_GENERATE_NATIVE_PLUGINS_FOR_ASSEMBLIES_API;ENABLE_LZMA;ENABLE_MANAGED_ANIMATION_JOBS;ENABLE_MANAGED_AUDIO_JOBS;ENABLE_MANAGED_JOBS;ENABLE_MANAGED_TRANSFORM_JOBS;ENABLE_MANAGED_UNITYTLS;ENABLE_MARSHALLING_TESTS;ENABLE_MICROPHONE;ENABLE_MOVIES;ENABLE_MULTIPLE_DISPLAYS;ENABLE_NAVIGATION_OFFMESHLINK_TO_NAVMESHLINK;ENABLE_NETWORK;ENABLE_PHYSICS;ENABLE_SCRIPTING_GC_WBARRIERS;ENABLE_TEXTURE_STREAMING;ENABLE_UNITYEVENTS;ENABLE_UNITYWEBREQUEST;ENABLE_UNITY_CLOUD_IDENTIFIERS;ENABLE_UNITY_COLLECTIONS_CHECKS;ENABLE_UNITY_COLLECTIONS_CHECKS;ENABLE_UNITY_CONSENT;ENABLE_UNITY_GAME_SERVICES_ANALYTICS_SUPPORT;ENABLE_VERSION_CONTROL_INTEGRATION;ENABLE_VIDEO;ENABLE_VR;ENABLE_WEBCAM;ENABLE_WEBSOCKET_CLIENT;ENABLE_WWW;INCLUDE_DYNAMIC_GI;NET_BCL_ATTRS_VISIBLE_TO_MODULES;PLATFORM_SUPPORTS_MONO;PLAYERCONNECTION_LISTENS_FIXED_PORT;RENDER_SOFTWARE_CURSOR;TEXTCORE_1_0_OR_NEWER;TRACE;UNITY_ANDROID_API;UNITY_ASSEMBLIES_API;UNITY_ASSERTIONS;UNITY_ASSERTIONS;UNITY_CURL_BUILT_IN;UNITY_EDITOR;UNITY_EDITOR_API;UNITY_IPHONE_API;UNITY_METRO_API;UNITY_PS4_API;UNITY_PS5_API;UNITY_STANDALONE_LINUX_API;UNITY_STANDALONE_OSX_API;UNITY_STANDALONE_WIN_API;UNITY_TVOS_API;UNITY_WEBGL_API;USE_PROPERTIES_MODULE</DefineConstants>
+    <DefineConstants>$(DefineConstants);ALLOW_IMPLICIT_INTERNAL_VISIBILITY;COMBINED_ASSEMBLIES;DEBUGGER_LISTENS_FIXED_PORT;EDITOR_ONLY_NAVMESH_BUILDER_DEPRECATED;ENABLE_ACCELERATOR_CLIENT_DEBUGGING;ENABLE_ALTERNATIVE_LISTEN_PORT;ENABLE_AMD;ENABLE_AR;ENABLE_AUDIO;ENABLE_AUDIO_MANAGER_BASED_SCHEDULING;ENABLE_AUDIO_SCRIPTABLE_PIPELINE;ENABLE_CACHING;ENABLE_CLOTH;ENABLE_CLOUD_LICENSE;ENABLE_CLOUD_SERVICES;ENABLE_CLOUD_SERVICES_ADS;ENABLE_CLOUD_SERVICES_ANALYTICS;ENABLE_CLOUD_SERVICES_BUILD;ENABLE_CLOUD_SERVICES_CRASH_REPORTING;ENABLE_CLOUD_SERVICES_ENGINE_DIAGNOSTICS;ENABLE_CLOUD_SERVICES_PURCHASING;ENABLE_CLOUD_SERVICES_USE_WEBREQUEST;ENABLE_CLUSTERINPUT;ENABLE_CLUSTER_SYNC;ENABLE_CRUNCH_TEXTURE_COMPRESSION;ENABLE_DIRECTOR_AUDIO;ENABLE_DIRECTOR_TEXTURE;ENABLE_EDITOR_GAME_SERVICES;ENABLE_EDITOR_HUB_LICENSE;ENABLE_ETC_COMPRESSION;ENABLE_EVENT_QUEUE;ENABLE_GENERATE_NATIVE_PLUGINS_FOR_ASSEMBLIES_API;ENABLE_LZMA;ENABLE_MANAGED_ANIMATION_JOBS;ENABLE_MANAGED_AUDIO_JOBS;ENABLE_MANAGED_JOBS;ENABLE_MANAGED_TRANSFORM_JOBS;ENABLE_MANAGED_UNITYTLS;ENABLE_MARSHALLING_TESTS;ENABLE_MICROPHONE;ENABLE_MOVIES;ENABLE_MULTIPLE_DISPLAYS;ENABLE_NAVIGATION_OFFMESHLINK_TO_NAVMESHLINK;ENABLE_NETWORK;ENABLE_PHYSICS;ENABLE_RUNTIME_GI;ENABLE_SCRIPTING_GC_WBARRIERS;ENABLE_TEXTURE_STREAMING;ENABLE_UNITYEVENTS;ENABLE_UNITYWEBREQUEST;ENABLE_UNITY_CLOUD_IDENTIFIERS;ENABLE_UNITY_COLLECTIONS_CHECKS;ENABLE_UNITY_COLLECTIONS_CHECKS;ENABLE_UNITY_CONSENT;ENABLE_UNITY_GAME_SERVICES_ANALYTICS_SUPPORT;ENABLE_VERSION_CONTROL_INTEGRATION;ENABLE_VIDEO;ENABLE_VIRTUALTEXTURING;ENABLE_VR;ENABLE_WEBCAM;ENABLE_WEBSOCKET_CLIENT;ENABLE_WWW;INCLUDE_DYNAMIC_GI;NET_BCL_ATTRS_VISIBLE_TO_MODULES;PLATFORM_SUPPORTS_GAMEPAD_AUDIO;PLATFORM_SUPPORTS_MONO;PLAYERCONNECTION_LISTENS_FIXED_PORT;RENDER_SOFTWARE_CURSOR;TEXTCORE_1_0_OR_NEWER;TRACE;UNITY_ANDROID_API;UNITY_ASSEMBLIES_API;UNITY_ASSERTIONS;UNITY_ASSERTIONS;UNITY_CURL_BUILT_IN;UNITY_EDITOR;UNITY_EDITOR_API;UNITY_IPHONE_API;UNITY_METRO_API;UNITY_PS4_API;UNITY_PS5_API;UNITY_STANDALONE_LINUX_API;UNITY_STANDALONE_OSX_API;UNITY_STANDALONE_WIN_API;UNITY_TINYPROFILING_INTERNAL;UNITY_TVOS_API;UNITY_WEBGL_API;USE_PROPERTIES_MODULE</DefineConstants>
     <LangVersion>12.0</LangVersion>
     <NoWarn>1701;626</NoWarn>
     <Nullable>disable</Nullable>
     <ImplicitUsings>disable</ImplicitUsings>
+    <RootNamespace>UnityEngine</RootNamespace>
     <ImportDirectoryBuildTargets>false</ImportDirectoryBuildTargets>
     <ImportDirectoryBuildProps>false</ImportDirectoryBuildProps>
     <ImportDirectoryPackagesProps>false</ImportDirectoryPackagesProps>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="..\..\External\AMDUnityPlugin\Scripts\AMDCommands.cs">
+      <Link>External\AMDUnityPlugin\Scripts\AMDCommands.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\AMDUnityPlugin\Scripts\AMDDevice.cs">
+      <Link>External\AMDUnityPlugin\Scripts\AMDDevice.cs</Link>
+    </Compile>
     <Compile Include="..\..\External\ClipperManaged\C#\clipper_library\clipper.cs">
       <Link>External\ClipperManaged\C#\clipper_library\clipper.cs</Link>
     </Compile>
@@ -134,6 +141,9 @@
     <Compile Include="..\..\External\DataModel\udm.net\Udm\UdmLogger.cs">
       <Link>External\DataModel\udm.net\Udm\UdmLogger.cs</Link>
     </Compile>
+    <Compile Include="..\..\External\DataModel\udm.net\Udm\UdmManager.cs">
+      <Link>External\DataModel\udm.net\Udm\UdmManager.cs</Link>
+    </Compile>
     <Compile Include="..\..\External\DataModel\udm.net\Udm\UdmObjectId.cs">
       <Link>External\DataModel\udm.net\Udm\UdmObjectId.cs</Link>
     </Compile>
@@ -142,6 +152,9 @@
     </Compile>
     <Compile Include="..\..\External\DataModel\udm.net\Udm\UdmTypeId.cs">
       <Link>External\DataModel\udm.net\Udm\UdmTypeId.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\DataModel\udm.net\Udm\UnityUDMInterop.cs">
+      <Link>External\DataModel\udm.net\Udm\UnityUDMInterop.cs</Link>
     </Compile>
     <Compile Include="..\..\External\DataModel\udm.net\Udm\UnsafeHelper.cs">
       <Link>External\DataModel\udm.net\Udm\UnsafeHelper.cs</Link>
@@ -172,6 +185,12 @@
     </Compile>
     <Compile Include="..\..\External\LibTessDotNet\Tess.cs">
       <Link>External\LibTessDotNet\Tess.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\NVUnityPlugin\Scripts\NVCommands.cs">
+      <Link>External\NVUnityPlugin\Scripts\NVCommands.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\NVUnityPlugin\Scripts\NVDevice.cs">
+      <Link>External\NVUnityPlugin\Scripts\NVDevice.cs</Link>
     </Compile>
     <Compile Include="..\..\External\baselib\baselib\CSharp\BaselibNativeLibrary.cs">
       <Link>External\baselib\baselib\CSharp\BaselibNativeLibrary.cs</Link>
@@ -271,6 +290,9 @@
     </Compile>
     <Compile Include="..\..\Modules\AI\Public\NavMeshBuildSettings.bindings.cs">
       <Link>Modules\AI\Public\NavMeshBuildSettings.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\AMD\ScriptBindings\Plugin.bindings.cs">
+      <Link>Modules\AMD\ScriptBindings\Plugin.bindings.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\AR\ARCore\ScriptBindings\ARCore.bindings.cs">
       <Link>Modules\AR\ARCore\ScriptBindings\ARCore.bindings.cs</Link>
@@ -878,23 +900,11 @@
     <Compile Include="..\..\Modules\ContentLoad\Managed\BuildManifest.cs">
       <Link>Modules\ContentLoad\Managed\BuildManifest.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\ContentLoad\Managed\RootAsset\ContentRootAssetProvider.cs">
-      <Link>Modules\ContentLoad\Managed\RootAsset\ContentRootAssetProvider.cs</Link>
+    <Compile Include="..\..\Modules\ContentLoad\Managed\ContentLoad.bindings.cs">
+      <Link>Modules\ContentLoad\Managed\ContentLoad.bindings.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\ContentLoad\Managed\RootAsset\RootAssetManager.cs">
-      <Link>Modules\ContentLoad\Managed\RootAsset\RootAssetManager.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\ContentLoad\Managed\RootAsset\RootAssetProviderHandler.cs">
-      <Link>Modules\ContentLoad\Managed\RootAsset\RootAssetProviderHandler.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\ContentLoad\Managed\RootAsset\RootAssetProviderHelpers.cs">
-      <Link>Modules\ContentLoad\Managed\RootAsset\RootAssetProviderHelpers.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\ContentLoad\Public\ContentLoad.bindings.cs">
-      <Link>Modules\ContentLoad\Public\ContentLoad.bindings.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\ContentLoad\Public\ContentLoadManager.bindings.cs">
-      <Link>Modules\ContentLoad\Public\ContentLoadManager.bindings.cs</Link>
+    <Compile Include="..\..\Modules\ContentLoad\Managed\ContentLoadManager.bindings.cs">
+      <Link>Modules\ContentLoad\Managed\ContentLoadManager.bindings.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\CrashReporting\CrashReporter.bindings.cs">
       <Link>Modules\CrashReporting\CrashReporter.bindings.cs</Link>
@@ -1129,6 +1139,9 @@
     </Compile>
     <Compile Include="..\..\Modules\Hierarchy\Managed\HierarchyViewOperationExtension.cs">
       <Link>Modules\Hierarchy\Managed\HierarchyViewOperationExtension.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Hierarchy\Managed\HierarchyViewSelection.cs">
+      <Link>Modules\Hierarchy\Managed\HierarchyViewSelection.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\Hierarchy\Managed\HierarchyViewState.cs">
       <Link>Modules\Hierarchy\Managed\HierarchyViewState.cs</Link>
@@ -1624,6 +1637,9 @@
     </Compile>
     <Compile Include="..\..\Modules\Multiplayer\Managed\MultiplayerRolesData.bindings.cs">
       <Link>Modules\Multiplayer\Managed\MultiplayerRolesData.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\NVIDIA\ScriptBindings\Plugin.bindings.cs">
+      <Link>Modules\NVIDIA\ScriptBindings\Plugin.bindings.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\ParticleSystem\Managed\IJobParticleSystem.cs">
       <Link>Modules\ParticleSystem\Managed\IJobParticleSystem.cs</Link>
@@ -2473,6 +2489,12 @@
     </Compile>
     <Compile Include="..\..\Modules\Tilemap\ScriptBindings\Tilemap.bindings.cs">
       <Link>Modules\Tilemap\ScriptBindings\Tilemap.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\U2DRuntime\Managed\Assembly.cs">
+      <Link>Modules\U2DRuntime\Managed\Assembly.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\U2DRuntime\Managed\Profiler2D.bindings.cs">
+      <Link>Modules\U2DRuntime\Managed\Profiler2D.bindings.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\UIElements\AssemblyInfo.cs">
       <Link>Modules\UIElements\AssemblyInfo.cs</Link>
@@ -3818,6 +3840,9 @@
     <Compile Include="..\..\Modules\UIElements\Core\Style\MaterialDefinition.PropertyBag.cs">
       <Link>Modules\UIElements\Core\Style\MaterialDefinition.PropertyBag.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Style\MaterialDefinition.Unmanaged.cs">
+      <Link>Modules\UIElements\Core\Style\MaterialDefinition.Unmanaged.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\UIElements\Core\Style\MaterialDefinition.cs">
       <Link>Modules\UIElements\Core\Style\MaterialDefinition.cs</Link>
     </Compile>
@@ -4102,6 +4127,12 @@
     </Compile>
     <Compile Include="..\..\Modules\UIElements\Core\Unmanaged\UnmanagedDataStore.cs">
       <Link>Modules\UIElements\Core\Unmanaged\UnmanagedDataStore.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Unmanaged\UnmanagedRefCountedList.cs">
+      <Link>Modules\UIElements\Core\Unmanaged\UnmanagedRefCountedList.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Unmanaged\UnmanagedTempList.cs">
+      <Link>Modules\UIElements\Core\Unmanaged\UnmanagedTempList.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\UIElements\Core\UpgradeConstants.cs">
       <Link>Modules\UIElements\Core\UpgradeConstants.cs</Link>
@@ -4460,6 +4491,9 @@
     <Compile Include="..\..\Modules\XR\ScriptBindings\XR.bindings.cs">
       <Link>Modules\XR\ScriptBindings\XR.bindings.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\XR\ScriptBindings\XR.deprecated.cs">
+      <Link>Modules\XR\ScriptBindings\XR.deprecated.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\XR\ScriptBindings\XRInput.bindings.cs">
       <Link>Modules\XR\ScriptBindings\XRInput.bindings.cs</Link>
     </Compile>
@@ -4468,6 +4502,12 @@
     </Compile>
     <Compile Include="..\..\Modules\XR\Subsystems\Display\XRDisplaySubsystem.bindings.cs">
       <Link>Modules\XR\Subsystems\Display\XRDisplaySubsystem.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\XR\Subsystems\Display\XRDisplaySubsystem.cs">
+      <Link>Modules\XR\Subsystems\Display\XRDisplaySubsystem.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\XR\Subsystems\Display\XRDisplaySubsystemDefault.cs">
+      <Link>Modules\XR\Subsystems\Display\XRDisplaySubsystemDefault.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\XR\Subsystems\Display\XRDisplaySubsystemDescriptor.bindings.cs">
       <Link>Modules\XR\Subsystems\Display\XRDisplaySubsystemDescriptor.bindings.cs</Link>
@@ -5096,8 +5136,17 @@
     <Compile Include="..\..\Runtime\Export\Jobs\AtomicSafetyHandle.bindings.cs">
       <Link>Runtime\Export\Jobs\AtomicSafetyHandle.bindings.cs</Link>
     </Compile>
-    <Compile Include="..\..\Runtime\Export\LoadableReference.bindings.cs">
-      <Link>Runtime\Export\LoadableReference.bindings.cs</Link>
+    <Compile Include="..\..\Runtime\Export\Loadable\Loadable.bindings.cs">
+      <Link>Runtime\Export\Loadable\Loadable.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Runtime\Export\Loadable\Loadable.cs">
+      <Link>Runtime\Export\Loadable\Loadable.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Runtime\Export\Loadable\LoadableReference.bindings.cs">
+      <Link>Runtime\Export\Loadable\LoadableReference.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Runtime\Export\Loadable\LoadableScene.cs">
+      <Link>Runtime\Export\Loadable\LoadableScene.cs</Link>
     </Compile>
     <Compile Include="..\..\Runtime\Export\Logging\DebugLogHandler.cs">
       <Link>Runtime\Export\Logging\DebugLogHandler.cs</Link>
@@ -5630,9 +5679,6 @@
     <Compile Include="..\..\Runtime\Export\Scripting\DataModel\RTTI\UdmManagedSerialization.cs">
       <Link>Runtime\Export\Scripting\DataModel\RTTI\UdmManagedSerialization.cs</Link>
     </Compile>
-    <Compile Include="..\..\Runtime\Export\Scripting\DataModel\RTTI\UdmManager.cs">
-      <Link>Runtime\Export\Scripting\DataModel\RTTI\UdmManager.cs</Link>
-    </Compile>
     <Compile Include="..\..\Runtime\Export\Scripting\DataModel\RTTI\UnityObjectFactory.cs">
       <Link>Runtime\Export\Scripting\DataModel\RTTI\UnityObjectFactory.cs</Link>
     </Compile>
@@ -5705,15 +5751,6 @@
     <Compile Include="..\..\Runtime\Export\Scripting\LazyLoadReference.cs">
       <Link>Runtime\Export\Scripting\LazyLoadReference.cs</Link>
     </Compile>
-    <Compile Include="..\..\Runtime\Export\Scripting\Loadable.bindings.cs">
-      <Link>Runtime\Export\Scripting\Loadable.bindings.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Runtime\Export\Scripting\Loadable.cs">
-      <Link>Runtime\Export\Scripting\Loadable.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Runtime\Export\Scripting\LoadableScene.cs">
-      <Link>Runtime\Export\Scripting\LoadableScene.cs</Link>
-    </Compile>
     <Compile Include="..\..\Runtime\Export\Scripting\ManagedStreamHelpers.cs">
       <Link>Runtime\Export\Scripting\ManagedStreamHelpers.cs</Link>
     </Compile>
@@ -5762,9 +5799,6 @@
     <Compile Include="..\..\Runtime\Export\Scripting\StackTrace.cs">
       <Link>Runtime\Export\Scripting\StackTrace.cs</Link>
     </Compile>
-    <Compile Include="..\..\Runtime\Export\Scripting\SystemReflectionMarshalling.cs">
-      <Link>Runtime\Export\Scripting\SystemReflectionMarshalling.cs</Link>
-    </Compile>
     <Compile Include="..\..\Runtime\Export\Scripting\TagHandle.cs">
       <Link>Runtime\Export\Scripting\TagHandle.cs</Link>
     </Compile>
@@ -5791,9 +5825,6 @@
     </Compile>
     <Compile Include="..\..\Runtime\Export\Scripting\UnitySynchronizationContext.cs">
       <Link>Runtime\Export\Scripting\UnitySynchronizationContext.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Runtime\Export\Scripting\UnityUDMInterop.cs">
-      <Link>Runtime\Export\Scripting\UnityUDMInterop.cs</Link>
     </Compile>
     <Compile Include="..\..\Runtime\Export\Scripting\WaitForEndOfFrame.cs">
       <Link>Runtime\Export\Scripting\WaitForEndOfFrame.cs</Link>
@@ -5842,6 +5873,9 @@
     </Compile>
     <Compile Include="..\..\Runtime\Export\Serialization\Serialization.cs">
       <Link>Runtime\Export\Serialization\Serialization.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Runtime\Export\Serialization\TypeTreeStoreManager.bindings.cs">
+      <Link>Runtime\Export\Serialization\TypeTreeStoreManager.bindings.cs</Link>
     </Compile>
     <Compile Include="..\..\Runtime\Export\Serialization\UnitySurrogateSelector.cs">
       <Link>Runtime\Export\Serialization\UnitySurrogateSelector.cs</Link>
@@ -6209,14 +6243,26 @@
     <Compile Include="..\..\Runtime\Scripting\Marshalling\IntPtrObjectMarshalling.cs">
       <Link>Runtime\Scripting\Marshalling\IntPtrObjectMarshalling.cs</Link>
     </Compile>
+    <Compile Include="..\..\Runtime\Scripting\Marshalling\ManagedObjectMarshalling.cs">
+      <Link>Runtime\Scripting\Marshalling\ManagedObjectMarshalling.cs</Link>
+    </Compile>
     <Compile Include="..\..\Runtime\Scripting\Marshalling\ManagedSpanWrapper.cs">
       <Link>Runtime\Scripting\Marshalling\ManagedSpanWrapper.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Runtime\Scripting\Marshalling\NativeInvokeLookupHelpers.cs">
+      <Link>Runtime\Scripting\Marshalling\NativeInvokeLookupHelpers.cs</Link>
     </Compile>
     <Compile Include="..\..\Runtime\Scripting\Marshalling\OutArrayMarshalling.cs">
       <Link>Runtime\Scripting\Marshalling\OutArrayMarshalling.cs</Link>
     </Compile>
+    <Compile Include="..\..\Runtime\Scripting\Marshalling\ReferenceTypeCreator.cs">
+      <Link>Runtime\Scripting\Marshalling\ReferenceTypeCreator.cs</Link>
+    </Compile>
     <Compile Include="..\..\Runtime\Scripting\Marshalling\StringMarshalling.cs">
       <Link>Runtime\Scripting\Marshalling\StringMarshalling.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Runtime\Scripting\Marshalling\SystemReflectionMarshalling.cs">
+      <Link>Runtime\Scripting\Marshalling\SystemReflectionMarshalling.cs</Link>
     </Compile>
     <Compile Include="..\..\Runtime\Transform\ScriptBindings\RectTransform.bindings.cs">
       <Link>Runtime\Transform\ScriptBindings\RectTransform.bindings.cs</Link>
@@ -6229,6 +6275,9 @@
     </Compile>
     <Compile Include="..\..\Runtime\Transform\ScriptBindings\TransformHandle.bindings.cs">
       <Link>Runtime\Transform\ScriptBindings\TransformHandle.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\artifacts\MonolithicEditorDlls\InternalsVisibleTo.cs">
+      <Link>artifacts\MonolithicEditorDlls\InternalsVisibleTo.cs</Link>
     </Compile>
     <Compile Include="..\..\artifacts\generated\UnityEvent\UnityEvent_0.cs">
       <Link>artifacts\generated\UnityEvent\UnityEvent_0.cs</Link>
@@ -6247,9 +6296,6 @@
     </Compile>
     <AdditionalFiles Include="..\..\Tools\Unity.BuildSystem\Unity.BuildSystem\BannedSymbolsFiles\BannedSymbols.RuntimeModules.txt">
       <Link>BannedSymbols.RuntimeModules.txt</Link>
-    </AdditionalFiles>
-    <AdditionalFiles Include="..\..\Tools\Unity.BuildSystem\Unity.BuildSystem\BannedSymbolsFiles\BannedSymbols.Linq.txt">
-      <Link>BannedSymbols.Linq.txt</Link>
     </AdditionalFiles>
   </ItemGroup>
   <ItemGroup>

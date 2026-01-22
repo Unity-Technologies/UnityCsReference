@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
+using UnityEngine.Bindings;
 
 namespace UnityEngine.Pool
 {
@@ -14,6 +15,7 @@ namespace UnityEngine.Pool
     /// <typeparam name="T">Type of the object pool.</typeparam>
     public class ObjectPool<T> : IDisposable, IPool, IObjectPool<T> where T : class
     {
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
         internal readonly List<T> m_List;
         readonly Func<T> m_CreateFunc;
         readonly Action<T> m_ActionOnGet;
@@ -21,6 +23,8 @@ namespace UnityEngine.Pool
         readonly Action<T> m_ActionOnDestroy;
         readonly int m_MaxSize; // Used to prevent catastrophic memory retention.
         internal bool m_CollectionCheck;
+
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
         internal T m_FreshlyReleased;
 
         /// <summary>

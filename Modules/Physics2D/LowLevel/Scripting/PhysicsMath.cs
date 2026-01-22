@@ -63,6 +63,17 @@ namespace UnityEngine.LowLevelPhysics2D
         public static void CosSin(float angle, out float cosine, out float sine) => PhysicsMath_CosSin(angle, out cosine, out sine);
 
         /// <summary>
+        /// Calculate both the Cosine and Sine of the specified angle.
+        /// </summary>
+        /// <param name="angle">The angle to calculate, in radians.</param>
+        /// <returns>A 2D vector where X is the Cosine and Y is the Sine of the specified angle.</returns>
+        public static Vector2 CosSin(float angle)
+        {
+            CosSin(angle, out var cosine, out var sine);
+            return new Vector2(cosine, sine);
+        }
+
+        /// <summary>
         /// Calculate a one-dimensional mass-spring-damper simulation which drives towards a zero translation.
         /// You can then compute the new position using: "translation += newSpeed * deltaTime;"
         /// </summary>

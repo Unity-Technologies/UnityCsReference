@@ -7,7 +7,6 @@ using UnityEngine.Bindings;
 using UnityEngine.Rendering;
 using UnityEngine.Internal;
 using System.Collections.Generic;
-using System.Linq;
 
 namespace UnityEngine
 {
@@ -127,14 +126,13 @@ namespace UnityEngine
         {
             add
             {
-                // Avoids the same handler being added to old/new event.
-                // This assumes we'll not have multiple threads trying to register for the event concurrently; if that may hapen then we need to protect this (lock(registeredDefaultReflectionTextureActions) { ... })
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                if (registeredDefaultReflectionTextureActions.Any(h => h.Method == value.Method))
-#pragma warning restore RS0030
+                if (registeredDefaultReflectionTextureActions.Exists(h => h.Method == value.Method))
                 {
+                    // Avoids the same handler being added to old/new event.
+                    // This assumes we'll not have multiple threads trying to register for the event concurrently; if that may hapen then we need to protect this (lock(registeredDefaultReflectionTextureActions) { ... })
                     return;
                 }
+
                 // Every time someone registers for listening for OldEvent we have an allocation.
                 Action<Texture> f = (b) =>
                 {
@@ -162,13 +160,9 @@ namespace UnityEngine
             add
             {
                 // Avoids the same handler being added to old/new event.
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                if (registeredDefaultReflectionTextureActions.Any(h => h.Method == value.Method)
-#pragma warning restore RS0030
+                if (registeredDefaultReflectionTextureActions.Exists(h => h.Method == value.Method)
                     || registeredDefaultReflectionSetActions.ContainsKey(value.Method.GetHashCode()))
-                {
                     return;
-                }
 
                 registeredDefaultReflectionTextureActions.Add(value);
             }

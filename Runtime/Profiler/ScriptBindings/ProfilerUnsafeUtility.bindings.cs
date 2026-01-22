@@ -222,18 +222,18 @@ namespace Unity.Profiling.LowLevel.Unsafe
             get;
         }
 
-        [ThreadSafe(ThrowsException = false)]
+        [ThreadSafe]
         [NativeConditional("ENABLE_MEM_PROFILER")]
         internal static extern IntPtr GetOrCreateMemLabel(string areaName, string objectName);
 
-        [ThreadSafe(ThrowsException = false)]
+        [ThreadSafe]
         [NativeConditional("ENABLE_MEM_PROFILER")]
         // This will only be referenced from Burst-generated code, in place of the version without the
         // __Unmanaged suffix. So we need to make sure it will not get stripped.
         [RequiredMember]
         internal static extern unsafe IntPtr GetOrCreateMemLabel__Unmanaged(byte* areaName, int areaNameLen, byte* objectName, int objectNameLen);
 
-        [ThreadSafe(ThrowsException = true)]
+        [ThreadSafe, NativeThrows]
         [NativeConditional("ENABLE_MEM_PROFILER")]
         internal static extern long GetMemLabelRelatedMemorySize(IntPtr label);
 

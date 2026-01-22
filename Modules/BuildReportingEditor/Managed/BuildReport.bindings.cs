@@ -20,7 +20,7 @@ namespace UnityEditor.Build.Reporting
     ///<code source="../Tests/BuildReporting/Assets/Editor/ReferenceExamples/BuildReport.cs"/>
     ///</example>
     [NativeHeader("Runtime/Utilities/DateTime.h")]
-    [NativeType(Header = "Modules/BuildReportingEditor/Public/BuildReport.h")]
+    [NativeHeader("Modules/BuildReportingEditor/Public/BuildReport.h")]
     [NativeClass("BuildReporting::BuildReport")]
     public sealed class BuildReport : Object
     {
