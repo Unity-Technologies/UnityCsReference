@@ -20,16 +20,16 @@ namespace UnityEditor.Build.Profile.Handlers
 
         const string k_AssetFolderPath = "Assets/Settings/Build Profiles";
 
-        static string GetDefaultNewProfilePath(string displayName, string variantName = null)
+        static string GetDefaultNewProfilePath(string buildProfileName, string variantName = null)
         {
             var assetFileName = string.IsNullOrEmpty(variantName) ?
-                $"{SanitizeFileName(displayName)}.asset" :
-                $"{SanitizeFileName(displayName)} - {SanitizeFileName(variantName)}.asset";
+                $"{SanitizeFileName(buildProfileName)}.asset" :
+                $"{SanitizeFileName(buildProfileName)} - {SanitizeFileName(variantName)}.asset";
             // Truncate the length to max. 250 symbols, as supported by the asset database.
             // Leave 3 symbols for the GenerateUniqueAssetPath() that adds " 1"(2,3...) in case
             // an asset with such name already exists.
-            if (assetFileName.Length > BuildProfileModuleUtil.k_MaxAssetFileNameLength)
-                assetFileName = assetFileName.Substring(0, BuildProfileModuleUtil.k_MaxAssetFileNameLength);
+            if (System.Text.Encoding.UTF8.GetByteCount(assetFileName) > BuildProfileModuleUtil.k_MaxAssetFileNameLength)
+                assetFileName = BuildProfileModuleUtil.TruncateUtf8StringByBytes(assetFileName,BuildProfileModuleUtil.k_MaxAssetFileNameLength);
             return $"{k_AssetFolderPath}/{assetFileName}";
         }
 
@@ -90,10 +90,10 @@ namespace UnityEditor.Build.Profile.Handlers
         /// Create a new custom build profile asset with the user provided name.
         /// Ensure that custom build profile folders is created if it doesn't already exist.
         /// </summary>
-        internal static void CreateNewAssetWithName(GUID platformId, string buildProfileName, string preconfiguredSettingsVariantName, int preconfiguredSettingsVariant, string[] packagesToAdd)
+        internal static void CreateNewAssetWithName(GUID platformId, string customProfileName, string preconfiguredSettingsVariantName, int preconfiguredSettingsVariant, string[] packagesToAdd)
         {
             EnsureCustomBuildProfileFolderExists();
-            BuildProfile.CreateInstance(platformId, GetProfilePathWithProvidedName(platformId, buildProfileName, preconfiguredSettingsVariantName), preconfiguredSettingsVariant, packagesToAdd);
+            BuildProfile.CreateInstance(platformId, GetProfilePathWithProvidedName(platformId, customProfileName, preconfiguredSettingsVariantName), preconfiguredSettingsVariant, packagesToAdd);
         }
 
         /// <summary>

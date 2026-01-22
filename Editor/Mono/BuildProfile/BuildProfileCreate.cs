@@ -108,9 +108,10 @@ namespace UnityEditor.Build.Profile
         /// <param name="assetPath">The path to the build profile to be created.</param>
         static void ValidateFileNameLength(string assetPath)
         {
+            var byteCount = System.Text.Encoding.UTF8.GetByteCount(Path.GetFileName(assetPath));
             // File name length is limited by the asset database
-            if (Path.GetFileName(assetPath).Length > BuildProfileModuleUtil.k_MaxAssetFileNameLength)
-                throw new ArgumentException($"Build profile name is too long ({Path.GetFileName(assetPath).Length}) - max supported is {BuildProfileModuleUtil.k_MaxAssetFileNameLength}");
+            if (byteCount > BuildProfileModuleUtil.k_MaxAssetFileNameLength)
+                throw new ArgumentException($"Build profile name is too long ({byteCount}) - max supported is {BuildProfileModuleUtil.k_MaxAssetFileNameLength} bytes.");
         }
 
         internal void NotifyBuildProfileExtensionOfCreation(int preconfiguredSettingsVariant)

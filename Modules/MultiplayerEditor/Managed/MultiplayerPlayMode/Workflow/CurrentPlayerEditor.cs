@@ -12,15 +12,16 @@ namespace Unity.Multiplayer.PlayMode.Editor
     {
         static SystemDataStore m_SystemDataStore;
 
-        override public bool IsMainEditor => !VirtualProjectsEditor.IsClone;
-
-        [InitializeOnLoadMethod]
-        static void Initialize()
+        override public bool IsMainEditor
         {
-            if (MigrationUtility.ShouldDisableMultiplayerPlayMode())
-                return;
+            get
+            {
+                // If Multiplayer Play Mode is not installed, it's always the main editor.
+                if (MigrationUtility.ShouldDisableMultiplayerPlayMode())
+                    return true;
 
-            CurrentPlayer.s_EditorApiType = typeof(CurrentPlayerEditor);
+                return !VirtualProjectsEditor.IsClone;
+            }
         }
 
         public CurrentPlayerEditor()

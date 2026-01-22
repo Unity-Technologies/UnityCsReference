@@ -317,6 +317,9 @@ namespace UnityEditor.Overlays
             OverlayDropZoneBase nearestDropZone = null;
             foreach (var dz in dropZones)
             {
+                if (!dz.visible)
+                    continue;
+                
                 if (!dz.CanAcceptTarget(targetOverlay))
                     continue;
 

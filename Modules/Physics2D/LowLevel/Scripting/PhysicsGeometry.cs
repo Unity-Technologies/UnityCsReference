@@ -874,13 +874,13 @@ namespace UnityEngine.LowLevelPhysics2D
         public readonly Vector2 midPoint => (point1 + point2) * 0.5f;
 
         /// <summary>
-        /// Calculate the direction from <see cref="LowLevelPhysics2D.SegmentGeometry.point1"/> to <see cref="LowLevelPhysics2D.SegmentGeometry.point2"/>.
+        /// Calculate the vector from <see cref="LowLevelPhysics2D.SegmentGeometry.point1"/> to <see cref="LowLevelPhysics2D.SegmentGeometry.point2"/>.
         /// See <see cref="LowLevelPhysics2D.SegmentGeometry.backward"/>.
         /// </summary>
-        public readonly Vector2 forward => point1 - point2;
+        public readonly Vector2 forward => point2 - point1;
 
         /// <summary>
-        /// Calculate the direction from <see cref="LowLevelPhysics2D.SegmentGeometry.point2"/> to <see cref="LowLevelPhysics2D.SegmentGeometry.point1"/>.
+        /// Calculate the vector from <see cref="LowLevelPhysics2D.SegmentGeometry.point2"/> to <see cref="LowLevelPhysics2D.SegmentGeometry.point1"/>.
         /// See <see cref="LowLevelPhysics2D.SegmentGeometry.forward"/>.
         /// </summary>
         public readonly Vector2 backward => point1 - point2;

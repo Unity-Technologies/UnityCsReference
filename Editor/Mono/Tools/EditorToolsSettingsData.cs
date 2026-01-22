@@ -9,9 +9,10 @@ using UnityEditor.EditorTools;
 
 namespace UnityEditor
 {
-    [FilePath("Library/EditorToolsSettings.asset", FilePathAttribute.Location.ProjectFolder)]
+    [FilePath(assetPath, FilePathAttribute.Location.ProjectFolder)]
     class EditorToolsSettingsData : ScriptableSingleton<EditorToolsSettingsData>, ISerializationCallbackReceiver
     {
+        internal const string assetPath = "Library/EditorToolsSettings.asset";
         [Serializable]
         public struct GroupSettingsData
         {
@@ -24,10 +25,37 @@ namespace UnityEditor
             public string groupType;
             public bool collapsed;
         }
-        
-        [SerializeField]
-        List<GroupSettingsData> m_GroupsSettingsList = new();
+
+        [SerializeField] List<GroupSettingsData> m_GroupsSettingsList = new();
         Dictionary<string, GroupSettingsData> m_GroupToSettingsData = new();
+
+        [SerializeField] 
+        string m_LastPivotModeTypeString;
+
+        public Type lastPivotModeType
+        {
+            get
+            {
+                var pivotModeType = PivotManager.defaultPivotModeType;
+                if (!string.IsNullOrEmpty(m_LastPivotModeTypeString))
+                    pivotModeType = Type.GetType(m_LastPivotModeTypeString) ?? pivotModeType;
+                return pivotModeType;
+            }
+        }
+
+        [SerializeField]
+        string m_LastPivotRotationTypeString;
+
+        public Type lastPivotRotationType
+        {
+            get
+            {
+                var pivotRotationType = PivotManager.defaultPivotRotationType;
+                if (!string.IsNullOrEmpty(m_LastPivotRotationTypeString))
+                    pivotRotationType = Type.GetType(m_LastPivotRotationTypeString) ?? pivotRotationType;
+                return pivotRotationType;
+            }
+        }
         
         void OnEnable()
         {
@@ -119,6 +147,16 @@ namespace UnityEditor
                 throw new ArgumentNullException(nameof(groupType));
 
             return m_GroupToSettingsData.TryGetValue(groupType.AssemblyQualifiedName, out groupSettings);
+        }
+        
+        public void SetLastPivotModeType(Type pivotModeType)
+        {
+            m_LastPivotModeTypeString = pivotModeType?.AssemblyQualifiedName;
+        }
+
+        public void SetLastPivotRotationType(Type pivotRotationType)
+        {
+            m_LastPivotRotationTypeString = pivotRotationType?.AssemblyQualifiedName;
         }
         
         public void OnBeforeSerialize()

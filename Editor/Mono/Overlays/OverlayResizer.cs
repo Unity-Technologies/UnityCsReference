@@ -286,6 +286,7 @@ namespace UnityEditor.Overlays
         void OnOverlayCanvasGeometryChanged(GeometryChangedEvent evt)
         {
             TryConstrainResizableOverlaySize();
+            UpdateResizerVisibility();
         }
 
         void TryConstrainResizableOverlaySize()

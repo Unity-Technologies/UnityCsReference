@@ -151,6 +151,7 @@ using UnityEngine;
 [assembly: InternalsVisibleTo("Unity.InternalAPIEditorBridge.022")]
 [assembly: InternalsVisibleTo("Unity.InternalAPIEditorBridge.023")]
 [assembly: InternalsVisibleTo("Unity.InternalAPIEditorBridge.024")]
+[assembly: InternalsVisibleTo("Unity.InternalAPIEditorBridge.ShaderGraph.Editor")]
 [assembly: InternalsVisibleTo("Unity.InternalAPIEditorBridgeDev.001")]
 [assembly: InternalsVisibleTo("Unity.InternalAPIEditorBridgeDev.002")]
 [assembly: InternalsVisibleTo("Unity.InternalAPIEditorBridgeDev.003")]

@@ -124,6 +124,7 @@ namespace UnityEditor.Overlays
         public event Action<Layout> layoutChanged;
         public event Action<bool> collapsedChanged;
         public event Action<bool> displayedChanged;
+        internal event Action<bool> foldedChanged;
         internal event Action<OverlayContainer> containerChanged;
         internal event Action minSizeChanged;
         internal event Action maxSizeChanged;
@@ -240,6 +241,7 @@ namespace UnityEditor.Overlays
             {
                 m_Folded = value;
                 UpdateHeaderFoldout();
+                foldedChanged?.Invoke(folded);
             }
         }
 

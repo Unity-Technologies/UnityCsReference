@@ -8,10 +8,10 @@ namespace Unity.Multiplayer.PlayMode.Editor;
 
 class EditorInstanceStatusElement : VisualElement
 {
-    const string k_PillContainerClass = "unity-instance-status__pill-container";
-    const string k_PillClass = "unity-instance-status__pill";
-    const string k_RolePillClass = "unity-instance-status__role-pill";
-    const string k_TagPillClass = "unity-instance-status__tag-pill";
+    internal const string k_PillContainerClass = "unity-instance-status__pill-container";
+    internal const string k_PillClass = "unity-instance-status__pill";
+    internal const string k_RolePillClass = "unity-instance-status__role-pill";
+    internal const string k_TagPillClass = "unity-instance-status__tag-pill";
 
     public EditorInstanceStatusElement(EditorInstanceDescription instanceDescription)
     {

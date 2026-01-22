@@ -217,7 +217,7 @@ namespace UnityEngine.Rendering
     [StructLayout(LayoutKind.Sequential)]
     public struct BatchPackedCullingViewID : IEquatable<BatchPackedCullingViewID>
     {
-        internal ulong handle;
+        internal readonly ulong handle;
 
         public override int GetHashCode()
         {
@@ -226,7 +226,7 @@ namespace UnityEngine.Rendering
 
         public bool Equals(BatchPackedCullingViewID other)
         {
-            return handle == other.handle;
+            return this.handle == other.handle;
         }
 
         public override bool Equals(object obj)
@@ -248,19 +248,32 @@ namespace UnityEngine.Rendering
             return !lhs.Equals(rhs);
         }
 
+        [Obsolete("BatchPackedCullingViewID(int instanceID, int sliceIndex) is obsolete use BatchPackedCullingViewID(EntityId entityId).")]
         public BatchPackedCullingViewID(int instanceID, int sliceIndex)
         {
-            handle = (uint) instanceID | ((ulong)sliceIndex << 32);
         }
 
+        internal BatchPackedCullingViewID(ulong viewID)
+        {
+            this.handle = viewID;
+        }
+
+        [Obsolete("GetInstanceID() is obsolete, use GetEntityId() instead.", false)]
         public int GetInstanceID()
         {
-            return (int)(handle & 0xffffffff);
+            return (int)GetEntityId().GetRawData();
         }
 
+        public readonly EntityId GetEntityId()
+        {
+            int val = (int)(handle & 0xffffffff);
+            return EntityId.From((ulong)val);
+        }
+
+        [Obsolete("GetSliceIndex() is obsolete.")]
         public int GetSliceIndex()
         {
-            return (int)(handle >> 32);
+            return 0;
         }
     }
 
@@ -476,8 +489,6 @@ namespace UnityEngine.Rendering
     }
 
     [StructLayout(LayoutKind.Sequential)]
-    [NativeHeader("Runtime/Camera/BatchRendererGroup.h")]
-    [UsedByNativeCode]
     unsafe public struct BatchCullingContext
     {
         internal BatchCullingContext(
@@ -503,7 +514,7 @@ namespace UnityEngine.Rendering
             viewType = inViewType;
             projectionType = inProjectionType;
             cullingFlags = inBatchCullingFlags;
-            viewID = new BatchPackedCullingViewID { handle = inViewID };
+            viewID = new BatchPackedCullingViewID(inViewID);
             cullingLayerMask = inCullingLayerMask;
             sceneCullingMask = inSceneCullingMask;
             splitExclusionMask = inExclusionSplitMask;

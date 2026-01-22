@@ -117,7 +117,7 @@ namespace UnityEngine.LowLevelPhysics2D
         public readonly bool IsBitSet(int bitIndex)
         {
             if (bitIndex >= 0 && bitIndex <= 63)
-                return (bitMask & ((UInt64)1 << bitIndex)) == 1;
+                return (bitMask & ((UInt64)1 << bitIndex)) != 0;
 
             // Invalid.
             throw new ArgumentOutOfRangeException(nameof(bitIndex), $"Bit index is out of range [0, 63]: {bitIndex}.");
@@ -129,7 +129,21 @@ namespace UnityEngine.LowLevelPhysics2D
         /// <param name="physicsMask">The PhysicsMask bits to compare to this PhysicsMask. If this is zero, false will always be returned.</param>
         /// <returns>True if any set bits in the specified PhysicsMask are also set in this PhysicsMask, false otherwise.</returns>
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
-        public readonly bool AreBitsSet(PhysicsMask physicsMask) => (bitMask & physicsMask) != 0;
+        public readonly bool AreBitsSet(PhysicsMask physicsMask) => (bitMask & physicsMask) == physicsMask;
+
+        /// <summary>
+        /// Gets an enumerable group of bits that are currently reset (0).
+        /// The bits are returned in ascending bit-index order.
+        /// This uses <see cref="LowLevelPhysics2D.PhysicsMask.ResetBitIterator"/>.
+        /// </summary>
+        public readonly ResetBitIterator resetBits => new(this);
+
+        /// <summary>
+        /// Gets an enumerable group of bits that are currently set (1).
+        /// The bits are returned in ascending bit-index order.
+        /// This uses <see cref="LowLevelPhysics2D.PhysicsMask.SetBitIterator"/>.
+        /// </summary>
+        public readonly SetBitIterator setBits => new(this);
 
         /// <undoc/>
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
@@ -234,7 +248,7 @@ namespace UnityEngine.LowLevelPhysics2D
         /// <summary>
         /// An interator that will iterate only the bits that are reset (0) in a <see cref="LowLevelPhysics2D.PhysicsMask"/>
         /// </summary>
-        public struct ResetBitIterator : IEnumerator<int>
+        public struct ResetBitIterator : IEnumerable<int>, IEnumerator<int>
         {
             private int m_BitIndex = -1;
             private UInt64 bitMask;
@@ -255,7 +269,11 @@ namespace UnityEngine.LowLevelPhysics2D
                     return false;
 
                 // Find the next reset bit.
-                while (m_BitIndex < 64 && (bitMask & ((UInt64)1 << ++m_BitIndex)) == 1) { }
+                while (++m_BitIndex < 64)
+                {
+                    if ((bitMask & ((UInt64)1 << m_BitIndex)) == 0)
+                        break;
+                }
 
                 return m_BitIndex < 64;
             }
@@ -264,16 +282,22 @@ namespace UnityEngine.LowLevelPhysics2D
             void IEnumerator.Reset()
             {
                 m_BitIndex = -1;
-                bitMask = 0x0;
             }
 
+            /// <undoc/>
+            public IEnumerator<int> GetEnumerator() => this;
+
+            /// <undoc/>
+            IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+
+            /// <undoc/>
             readonly void IDisposable.Dispose() { }
         }
 
         /// <summary>
         /// An interator that will iterate only the bits that are set (1) in a <see cref="LowLevelPhysics2D.PhysicsMask"/>
         /// </summary>
-        public struct SetBitIterator : IEnumerator<int>
+        public struct SetBitIterator : IEnumerable<int>, IEnumerator<int>
         {
             private int m_BitIndex = -1;
             private UInt64 bitMask;
@@ -294,7 +318,11 @@ namespace UnityEngine.LowLevelPhysics2D
                     return false;
 
                 // Find the next set bit.
-                while (m_BitIndex < 64 && (bitMask & ((UInt64)1 << ++m_BitIndex)) == 0) { }
+                while (++m_BitIndex < 64)
+                {
+                    if ((bitMask & ((UInt64)1 << m_BitIndex)) != 0)
+                        break;
+                }
 
                 return m_BitIndex < 64;
             }
@@ -303,9 +331,15 @@ namespace UnityEngine.LowLevelPhysics2D
             void IEnumerator.Reset()
             {
                 m_BitIndex = -1;
-                bitMask = 0x1;
             }
 
+            /// <undoc/>
+            public IEnumerator<int> GetEnumerator() => this;
+
+            /// <undoc/>
+            IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+
+            /// <undoc/>
             readonly void IDisposable.Dispose() { }
         }
 

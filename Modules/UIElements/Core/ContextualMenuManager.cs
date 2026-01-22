@@ -30,9 +30,9 @@ namespace UnityEngine.UIElements
         /// <param name="evt">The event to inspect.</param>
         /// <returns>Returns true if the event should trigger the display of the contextual menu, false otherwise.</returns>
         /// <remarks>
-        /// This is an abstract method. Each concrete implementation of the ContextualMenuManager defines the events that will display the menu.
+        /// This is an empty virtual method. Each concrete implementation of the ContextualMenuManager defines the events that will display the menu.
         /// </remarks>
-        internal abstract bool CheckIfEventMatches(EventBase evt);
+        internal virtual bool CheckIfEventMatches(EventBase evt) => false;
 
         /// <summary>
         /// Displays the contextual menu.

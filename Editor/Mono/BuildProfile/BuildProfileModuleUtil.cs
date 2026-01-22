@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Text;
 using UnityEditor.Modules;
 using UnityEditor.PackageManager.UI.Internal;
@@ -657,6 +658,7 @@ namespace UnityEditor.Build.Profile
             return string.IsNullOrEmpty(assetPath) ? string.Empty : $"{baseKey}{k_LastRunnableBuildPathSeparator}{assetPath}";
         }
 
+        /// <summary>
         /// On the next editor update recompile scripts.
         /// </summary>
         public static void RequestScriptCompilation(BuildProfile profile)
@@ -1174,6 +1176,34 @@ namespace UnityEditor.Build.Profile
             });
 
             return container;
+        }
+
+        /// <summary>
+        /// Truncates a string to fit within a specified UTF-8 byte count while preserving
+        /// grapheme clusters (user-perceived characters).
+        /// </summary>
+        public static string TruncateUtf8StringByBytes(string input, int maxBytes)
+        {
+            if (string.IsNullOrEmpty(input) || maxBytes < 0)
+                return string.Empty;
+
+            var enumerator = StringInfo.GetTextElementEnumerator(input);
+            var stringBuilder = new StringBuilder(input.Length);
+            int byteCount = 0;
+
+            while (enumerator.MoveNext())
+            {
+                var elem = enumerator.GetTextElement();
+                var elemBytes = Encoding.UTF8.GetByteCount(elem);
+
+                if (byteCount + elemBytes > maxBytes)
+                    break;
+
+                stringBuilder.Append(elem);
+                byteCount += elemBytes;
+            }
+
+            return stringBuilder.ToString();
         }
     }
 }

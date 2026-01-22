@@ -71,11 +71,13 @@ namespace Unity.UI.Builder
             });
             m_MinSizeField.RegisterValueChangedCallback(e =>
             {
+                m_MinSizeField.length = Mathf.Clamp(m_MinSizeField.length, 0, m_MaxSizeField.length);
                 UpdateTextAutoSizeField();
                 e.StopPropagation();
             });
             m_MaxSizeField.RegisterValueChangedCallback(e =>
             {
+                m_MaxSizeField.length = Mathf.Max(m_MinSizeField.length, m_MaxSizeField.length);
                 UpdateTextAutoSizeField();
                 e.StopPropagation();
             });

@@ -126,6 +126,8 @@ namespace Unity.Jobs.LowLevel.Unsafe
 
         public static extern bool IsExecutingJob { [NativeMethod(Name = "GetIsExecutingScriptingJob", IsFreeFunction = true, IsThreadSafe = true)] get; }
 
+        internal static extern bool AreHandlesPatched { [NativeMethod(Name = "GetAreHandlesPatched", IsFreeFunction = true, IsThreadSafe = true)] get; }
+
         public static extern bool JobDebuggerEnabled { [FreeFunction] get; [FreeFunction] set; }
         public static extern bool JobCompilerEnabled { [FreeFunction] get; [FreeFunction] set; }
 

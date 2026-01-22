@@ -32,7 +32,7 @@ namespace UnityEditor.Overlays
 
         protected override bool ShouldEnable(Overlay draggedOverlay)
         {
-            return !m_TargetOverlay.floating && m_TargetOverlay != draggedOverlay;
+            return m_TargetOverlay.displayed && !m_TargetOverlay.floating && m_TargetOverlay != draggedOverlay;
         }
 
         public override bool CanAcceptTarget(Overlay overlay)

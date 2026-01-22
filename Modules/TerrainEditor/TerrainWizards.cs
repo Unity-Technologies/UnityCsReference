@@ -377,9 +377,9 @@ namespace UnityEditor
             else
             {
                 TreePrototype treePrototype = base.terrain.terrainData.treePrototypes[m_PrototypeIndex];
-                m_Tree =       treePrototype.prefab;
-                m_BendFactor = treePrototype.bendFactor;
-                m_NavMeshLod = treePrototype.navMeshLod;
+                m_Tree =            treePrototype.prefab;
+                m_BendFactor =      treePrototype.bendFactor;
+                m_NavMeshLod =      treePrototype.navMeshLod;
             }
 
             m_IsValidTree = IsValidTree(m_Tree, m_PrototypeIndex, terrain);
@@ -413,7 +413,6 @@ namespace UnityEditor
                 trees[m_PrototypeIndex].prefab = m_Tree;
                 trees[m_PrototypeIndex].bendFactor = m_BendFactor;
                 trees[m_PrototypeIndex].navMeshLod = m_NavMeshLod;
-
                 terrain.terrainData.treePrototypes = trees;
             }
             terrain.Flush();

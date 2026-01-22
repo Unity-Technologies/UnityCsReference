@@ -460,7 +460,7 @@ namespace UnityEditor.UIElements.Debugger
             m_TreeViewContainer = new DebuggerTreeView(m_Context.selection, SelectElement);
             splitter.Add(m_TreeViewContainer);
 
-            
+
 
             m_ScrollView = new ScrollView();
             m_ScrollView.Add(m_StylesDebuggerContainer = new StylesDebugger(m_Context.selection));
@@ -469,7 +469,7 @@ namespace UnityEditor.UIElements.Debugger
             m_ScrollView.Add(new LayoutDebuggerTab(m_Context.selection));
             m_ScrollView.Add(new RenderDataDebuggerTab(m_Context.selection));
             m_ScrollView.Add(new PanelTab(m_Context.selection));
-            
+
             splitter.Add(m_ScrollView);
 
 
@@ -704,7 +704,7 @@ namespace UnityEditor.UIElements.Debugger
             public TextDebugger(DebuggerSelection debuggerSelection):base("Text", debuggerSelection, true)
             {
 
-                
+
                 Add(m_GenerationSettings = new TextField("Generation Settings") { isReadOnly = true, multiline = true });
 
                 Add(m_fontAsset = new ObjectField("Font Asset") { allowSceneObjects = false });
@@ -719,7 +719,7 @@ namespace UnityEditor.UIElements.Debugger
 
             protected override void Refresh()
             {
-                
+
                 var textElement = m_SelectedElement as TextElement;
                 if (textElement == null)
                 {
@@ -780,7 +780,7 @@ namespace UnityEditor.UIElements.Debugger
                     return string.Empty;
 
                 StringBuilder sb = new StringBuilder();
-                for(int i =0; i<hexstring.Length; i++) 
+                for(int i =0; i<hexstring.Length; i++)
                 {
                     var t = hexstring[i];
                     sb.Append("U").Append(Convert.ToInt32(t).ToString("X4"));
@@ -899,7 +899,9 @@ namespace UnityEditor.UIElements.Debugger
             if ((changeTypeFlag & VersionChangeType.Hierarchy) == VersionChangeType.Hierarchy)
                 m_TreeViewContainer.hierarchyHasChanged = true;
 
-            if ((changeTypeFlag & VersionChangeType.StyleSheet) == VersionChangeType.StyleSheet && ve == m_Context.selectedElement)
+            if ((changeTypeFlag & VersionChangeType.StyleSheet) == VersionChangeType.StyleSheet
+                && (changeTypeFlag & VersionChangeType.Styles) == 0
+                && ve == m_Context.selectedElement)
                 m_StylesDebuggerContainer.UpdateMatches();
 
             if (panelDebug?.debuggerOverlayPanel != null)
