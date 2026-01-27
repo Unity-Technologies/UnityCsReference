@@ -3820,7 +3820,9 @@ namespace UnityEditor
                 case EventCommandNames.SelectAll:
                     if (execute)
                     {
+#pragma warning disable CS0618 // Type or member is obsolete
                         var gameObjects = FindObjectsByType<GameObject>(FindObjectsSortMode.InstanceID);
+#pragma warning restore CS0618 // Type or member is obsolete
                         var objs = new List<Object>(gameObjects.Length);
                         foreach (var go in gameObjects)
                             if (SceneVisibilityManager.instance.IsSelectable(go))
@@ -3838,7 +3840,9 @@ namespace UnityEditor
                 case EventCommandNames.InvertSelection:
                     if (execute)
                     {
+#pragma warning disable CS0618 // Type or member is obsolete
                         Selection.objects = FindObjectsByType<GameObject>(FindObjectsSortMode.InstanceID).Except(Selection.gameObjects).Where(SceneVisibilityManager.instance.IsSelectable).ToArray();
+#pragma warning restore CS0618 // Type or member is obsolete
                     }
                     Event.current.Use();
                     break;

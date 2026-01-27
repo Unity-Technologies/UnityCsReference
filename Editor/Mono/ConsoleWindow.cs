@@ -1147,10 +1147,7 @@ namespace UnityEditor
         public void AddItemsToMenu(GenericMenu menu)
         {
             menu.AddItem(EditorGUIUtility.TrTextContent("Open Player Log"), false, UnityEditorInternal.InternalEditorUtility.OpenPlayerConsole);
-            if (string.IsNullOrEmpty(Application.consoleLogPath))
-                menu.AddDisabledItem(EditorGUIUtility.TrTextContent("Open Editor Log"), false);
-            else
-                menu.AddItem(EditorGUIUtility.TrTextContent("Open Editor Log"), false, UnityEditorInternal.InternalEditorUtility.OpenEditorConsole);
+            menu.AddItem(EditorGUIUtility.TrTextContent("Open Editor Log"), false, UnityEditorInternal.InternalEditorUtility.OpenEditorConsole);
 
             menu.AddItem(EditorGUIUtility.TrTextContent("Show Timestamp"), HasFlag(ConsoleFlags.ShowTimestamp), SetTimestamp);
 

@@ -86,6 +86,11 @@ namespace UnityEditor.IMGUI.Controls
             m_Children.Add(child);
         }
 
+        internal void AddChildAndKeepId(AdvancedDropdownItem child)
+        {
+            m_Children.Add(child);
+        }
+
         static readonly AdvancedDropdownItem k_SeparatorItem = new SeparatorDropdownItem();
 
         public AdvancedDropdownItem(string name)

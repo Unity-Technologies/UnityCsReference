@@ -533,6 +533,7 @@ namespace UnityEngine.UIElements.HierarchyV2
             item.element.EnableInClassList(BaseVerticalCollectionView.itemAlternativeBackgroundUssClassName, useAlternateUss);
             item.isLastItem = index == itemsSource.Count - 1;
             item.SetSelected(m_Selection.ContainsIndex(index));
+            item.ClearHoverState();
             item.element.style.height = fixedItemHeight;
             item.index = index;
             m_IndexToItemDictionary.Add(index, item);

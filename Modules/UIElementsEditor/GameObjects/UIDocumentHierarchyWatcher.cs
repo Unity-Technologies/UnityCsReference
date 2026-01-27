@@ -27,7 +27,9 @@ namespace Unity.UIElements.Editor
                 return;
             }
 
+#pragma warning disable CS0618 // Type or member is obsolete
             var uiDocuments = Object.FindObjectsByType<UIDocument>(FindObjectsSortMode.InstanceID);
+#pragma warning restore CS0618 // Type or member is obsolete
 
             // Early exit: no UIDocument to keep track of.
             if (uiDocuments == null || uiDocuments.Length == 0)

@@ -52,6 +52,7 @@ namespace UnityEngine
     }
 
     // Must match Scripting::FindObjectsSortMode
+    [Obsolete("FindObjectsSortMode has been deprecated. Use the FindObjectsByType overloads that do not take a FindObjectsSortMode parameter.", false)]
     public enum FindObjectsSortMode
     {
         None = 0,
@@ -647,6 +648,11 @@ namespace UnityEngine
          *     FindObjectsOfType() deleted
          *     FindObjectOfType() deleted
          * This work is captured in https://jira.unity3d.com/browse/COPT-854
+         *
+         * As an update to this (12/17/2025), we are deprecated FindObject(s) methods that depend on sort order.
+         * This is due to the move from InstanceID to EntityId - where we cannot depend on maintaining a meaningful sort order.
+         * Additionally new FindObjectsByType methods have been introduced that do not take in a sort order parameter,
+         * and we are steering users to these new methods.
          * */
 
         // Returns a list of all active loaded objects of Type /type/. Results are sorted by InstanceID
@@ -664,6 +670,7 @@ namespace UnityEngine
         public extern static Object[] FindObjectsOfType(Type type, bool includeInactive);
 
         // Returns a list of all active loaded objects of Type /type/.
+        [Obsolete("FindObjectsByType with FindObjectsSortMode parameter has been deprecated. Use FindObjectsByType(Type) or FindObjectsByType(Type, FindObjectsInactive) instead. InstanceID will be replaced in the future with EntityId and previous sort order cannot be maintained.", false)]
         public static Object[] FindObjectsByType(Type type, FindObjectsSortMode sortMode)
         {
             return FindObjectsByType(type, FindObjectsInactive.Exclude, sortMode);
@@ -672,8 +679,25 @@ namespace UnityEngine
         // Returns a list of all loaded objects of Type /type/.
         [TypeInferenceRule(TypeInferenceRules.ArrayOfTypeReferencedByFirstArgument)]
         [FreeFunction("UnityEngineObjectBindings::FindObjectsByType")]
+        [Obsolete("FindObjectsByType with FindObjectsSortMode parameter has been deprecated. Use FindObjectsByType(Type) or FindObjectsByType(Type, FindObjectsInactive) instead. InstanceID will be replaced in the future with EntityId and previous sort order cannot be maintained.", false)]
         [return: UnityMarshalAs(NativeType.ScriptingObjectPtr)]
         public extern static Object[] FindObjectsByType(Type type, FindObjectsInactive findObjectsInactive, FindObjectsSortMode sortMode);
+
+        // Returns a list of all active loaded objects of Type /type/.
+        public static Object[] FindObjectsByType(Type type)
+        {
+#pragma warning disable CS0618 // Type or member is obsolete
+            return FindObjectsByType(type, FindObjectsInactive.Exclude, FindObjectsSortMode.None);
+#pragma warning restore CS0618 // Type or member is obsolete
+        }
+
+        // Returns a list of all loaded objects of Type /type/.
+        public static Object[] FindObjectsByType(Type type, FindObjectsInactive findObjectsInactive)
+        {
+#pragma warning disable CS0618 // Type or member is obsolete
+            return FindObjectsByType(type, findObjectsInactive, FindObjectsSortMode.None);
+#pragma warning restore CS0618 // Type or member is obsolete
+        }
 
         // Makes the object /target/ not be destroyed automatically when loading a new scene.
         [FreeFunction("GetSceneManager().DontDestroyOnLoad", ThrowsException = true)]
@@ -720,6 +744,7 @@ namespace UnityEngine
         }
 
         // Returns a list of all loaded objects of Type /type/
+        [Obsolete("FindObjectsByType with FindObjectsSortMode parameter has been deprecated. Use FindObjectsByType<T>() or FindObjectsByType<T>(FindObjectsInactive) instead. InstanceID will be replaced in the future with EntityId and previous sort order cannot be maintained.", false)]
         public static T[] FindObjectsByType<T>(FindObjectsSortMode sortMode) where T : Object
         {
             return Resources.ConvertObjects<T>(FindObjectsByType(typeof(T), FindObjectsInactive.Exclude, sortMode));
@@ -733,6 +758,7 @@ namespace UnityEngine
         }
 
         // Returns a list of all loaded objects of Type /type/. Order of results is not guaranteed to be consistent between calls
+        [Obsolete("FindObjectsByType with FindObjectsSortMode parameter has been deprecated. Use FindObjectsByType<T>() or FindObjectsByType<T>(FindObjectsInactive) instead. InstanceID will be replaced in the future with EntityId and previous sort order cannot be maintained.", false)]
         public static T[] FindObjectsByType<T>(FindObjectsInactive findObjectsInactive, FindObjectsSortMode sortMode) where T : Object
         {
             return Resources.ConvertObjects<T>(FindObjectsByType(typeof(T), findObjectsInactive, sortMode));
@@ -751,6 +777,7 @@ namespace UnityEngine
             return (T)FindObjectOfType(typeof(T), includeInactive);
         }
 
+        [Obsolete("FindFirstObjectByType has been deprecated because it relies on instance ID ordering. Use FindAnyObjectByType instead, which does not depend on ordering.", false)]
         public static T FindFirstObjectByType<T>() where T : Object
         {
             return (T)FindFirstObjectByType(typeof(T), FindObjectsInactive.Exclude);
@@ -761,6 +788,7 @@ namespace UnityEngine
             return (T)FindAnyObjectByType(typeof(T), FindObjectsInactive.Exclude);
         }
 
+        [Obsolete("FindFirstObjectByType has been deprecated because it relies on instance ID ordering. Use FindAnyObjectByType instead, which does not depend on ordering.", false)]
         public static T FindFirstObjectByType<T>(FindObjectsInactive findObjectsInactive) where T : Object
         {
             return (T)FindFirstObjectByType(typeof(T), findObjectsInactive);
@@ -769,6 +797,20 @@ namespace UnityEngine
         public static T FindAnyObjectByType<T>(FindObjectsInactive findObjectsInactive) where T : Object
         {
             return (T)FindAnyObjectByType(typeof(T), findObjectsInactive);
+        }
+
+        public static T[] FindObjectsByType<T>() where T : Object
+        {
+#pragma warning disable CS0618 // Type or member is obsolete
+            return Resources.ConvertObjects<T>(FindObjectsByType(typeof(T), FindObjectsInactive.Exclude, FindObjectsSortMode.None));
+#pragma warning restore CS0618 // Type or member is obsolete
+        }
+
+        public static T[] FindObjectsByType<T>(FindObjectsInactive findObjectsInactive) where T : Object
+        {
+#pragma warning disable CS0618 // Type or member is obsolete
+            return Resources.ConvertObjects<T>(FindObjectsByType(typeof(T), findObjectsInactive, FindObjectsSortMode.None));
+#pragma warning restore CS0618 // Type or member is obsolete
         }
 
         [System.Obsolete("Please use Resources.FindObjectsOfTypeAll instead")]
@@ -795,6 +837,7 @@ namespace UnityEngine
                 return null;
         }
 
+        [Obsolete("FindFirstObjectByType has been deprecated because it relies on instance ID ordering. Use FindAnyObjectByType instead, which does not depend on ordering.", false)]
         public static Object FindFirstObjectByType(System.Type type)
         {
             Object[] objects = FindObjectsByType(type, FindObjectsInactive.Exclude, FindObjectsSortMode.InstanceID);
@@ -803,7 +846,7 @@ namespace UnityEngine
 
         public static Object FindAnyObjectByType(System.Type type)
         {
-            Object[] objects = FindObjectsByType(type, FindObjectsInactive.Exclude, FindObjectsSortMode.None);
+            Object[] objects = FindObjectsByType(type, FindObjectsInactive.Exclude);
             return (objects.Length > 0) ? objects[0] : null;
         }
 
@@ -819,6 +862,7 @@ namespace UnityEngine
                 return null;
         }
 
+        [Obsolete("FindFirstObjectByType has been deprecated because it relies on instance ID ordering. Use FindAnyObjectByType instead, which does not depend on ordering.", false)]
         public static Object FindFirstObjectByType(System.Type type, FindObjectsInactive findObjectsInactive)
         {
             Object[] objects = FindObjectsByType(type, findObjectsInactive, FindObjectsSortMode.InstanceID);
@@ -827,7 +871,7 @@ namespace UnityEngine
 
         public static Object FindAnyObjectByType(System.Type type, FindObjectsInactive findObjectsInactive)
         {
-            Object[] objects = FindObjectsByType(type, findObjectsInactive, FindObjectsSortMode.None);
+            Object[] objects = FindObjectsByType(type, findObjectsInactive);
             return (objects.Length > 0) ? objects[0] : null;
         }
 

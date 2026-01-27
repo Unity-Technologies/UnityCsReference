@@ -252,7 +252,9 @@ namespace UnityEditor
 
         private bool IsCollidingWithOtherProbes(string targetPath, ReflectionProbe targetProbe, out ReflectionProbe collidingProbe)
         {
+#pragma warning disable CS0618 // Type or member is obsolete
             ReflectionProbe[] probes = FindObjectsByType<ReflectionProbe>(FindObjectsSortMode.InstanceID).ToArray();
+#pragma warning restore CS0618 // Type or member is obsolete
             collidingProbe = null;
             foreach (var probe in probes)
             {

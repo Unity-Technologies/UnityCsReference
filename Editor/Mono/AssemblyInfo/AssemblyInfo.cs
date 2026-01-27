@@ -254,6 +254,7 @@ using UnityEngine;
 [assembly: InternalsVisibleTo("Unity.Core.EditorWindowManagement.Tests.Editor")]
 [assembly: InternalsVisibleTo("Unity.Modules.Core.InspectorFramework.Tests.Editor")]
 [assembly: InternalsVisibleTo("Unity.Modules.Core.EditorUtils.Tests.Editor")]
+[assembly: InternalsVisibleTo("Unity.Modules.Umpe.Tests.Editor")]
 [assembly: InternalsVisibleTo("Unity.Modules.Core.Undo.Tests.Editor")]
 [assembly: InternalsVisibleTo("Unity.Modules.Core.UnityType.Tests.Editor")]
 [assembly: InternalsVisibleTo("Unity.Modules.Core.Camera.Tests.Editor")]

@@ -42,7 +42,6 @@ namespace UnityEditor.Search.Providers
             SearchMonitor.sceneChanged += InvalidateScene;
             SearchMonitor.documentsInvalidated += Refresh;
             SearchMonitor.objectChanged += OnObjectChanged;
-            SearchMonitor.gameObjectChanged += OnGameObjectChanged;
 
             supportsSyncViewSearch = true;
 
@@ -245,29 +244,6 @@ namespace UnityEditor.Search.Providers
             }
         }
 
-        void OnGameObjectChanged(in NativeArray<GameObjectChangeTrackerEvent> events)
-        {
-            if (m_SceneQueryEngine == null)
-                return;
-
-            for (var i = 0; i < events.Length; ++i)
-            {
-                var e = events[i];
-                switch (e.EventType)
-                {
-                    case GameObjectChangeTrackerEventType.CreatedOrChanged:
-                    case GameObjectChangeTrackerEventType.ChangedParent:
-                    case GameObjectChangeTrackerEventType.ChangedScene:
-                    case GameObjectChangeTrackerEventType.Destroyed:
-                        InvalidateObject(e.EntityId);
-                        InvalidateScene();
-                        break;
-
-                    // Other events are not relevant for us since they do not affect properties.
-                }
-            }
-        }
-
         public static IEnumerable<SearchAction> CreateActionHandlers(string providerId)
         {
             return new SearchAction[]
@@ -338,7 +314,7 @@ namespace UnityEditor.Search.Providers
             }
             else if (context.filterType != null && string.IsNullOrEmpty(context.searchQuery))
             {
-                yield return UnityEngine.Object.FindObjectsByType(context.filterType, UnityEngine.FindObjectsSortMode.None)
+                yield return UnityEngine.Object.FindObjectsByType(context.filterType)
                     .Select(obj =>
                     {
                         if (obj is Component c)
@@ -385,7 +361,7 @@ namespace UnityEditor.Search.Providers
 
         private static void FrameObjects(UnityEngine.Object[] objects)
         {
-            Selection.entityIds = objects.Select(o => o.GetHashCode()).ToArray().ToEntityIdArray();
+            Selection.entityIds = objects.Select(o => o.GetEntityId()).ToArray();
             if (SceneView.lastActiveSceneView != null)
                 SceneView.lastActiveSceneView.FrameSelected();
         }

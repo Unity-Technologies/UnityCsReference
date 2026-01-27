@@ -2,7 +2,10 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
+using UnityEngine.Bindings;
 using UnityEngine.Scripting.APIUpdating;
+using UnityEngine.Serialization;
 
 namespace UnityEngine.TextCore.Text
 {
@@ -15,6 +18,7 @@ namespace UnityEngine.TextCore.Text
     }
 
     [System.Serializable][ExcludeFromPresetAttribute][ExcludeFromObjectFactory]
+    [NativeHeader("Modules/TextCoreTextEngine/TextColorGradient.h")]
     public class TextColorGradient : ScriptableObject
     {
         public ColorGradientMode colorMode = ColorGradientMode.FourCornersGradient;
@@ -26,6 +30,35 @@ namespace UnityEngine.TextCore.Text
 
         const ColorGradientMode k_DefaultColorMode = ColorGradientMode.FourCornersGradient;
         static readonly Color k_DefaultColor = Color.white;
+
+        void OnValidate()
+        {
+            MarkNativeDirty();
+        }
+
+        void OnDisable()
+        {
+            if (m_NativeInstance != IntPtr.Zero)
+            {
+                DestroyNative(m_NativeInstance, MarshalledUnityObject.MarshalNotNull(this));
+                m_NativeInstance = IntPtr.Zero;
+            }
+        }
+
+
+        [VisibleToOtherModules("UnityEngine.UIElementsModule")]
+        internal IntPtr nativeInstance
+        {
+            get
+            {
+                if (m_NativeInstance == IntPtr.Zero)
+                {
+                    m_NativeInstance = CreateNative(topLeft, topRight, bottomLeft, bottomRight, MarshalledUnityObject.MarshalNotNull(this));
+                }
+                return m_NativeInstance;
+            }
+        }
+        IntPtr m_NativeInstance = IntPtr.Zero;
 
         /// <summary>
         /// Default Constructor which sets each of the colors as white.
@@ -67,5 +100,15 @@ namespace UnityEngine.TextCore.Text
             this.bottomLeft = color2;
             this.bottomRight = color3;
         }
+
+        internal void MarkNativeDirty()
+        {
+            if (m_NativeInstance != IntPtr.Zero)
+                UpdateNative(m_NativeInstance, topLeft, topRight, bottomLeft, bottomRight);
+        }
+
+        static extern IntPtr CreateNative(Color32 tl, Color32 tr, Color32 bl, Color32 br, IntPtr managedObject);
+        static extern void DestroyNative(IntPtr nativeInstance, IntPtr managedObject);
+        static extern void UpdateNative(IntPtr instance, Color32 tl, Color32 tr, Color32 bl, Color32 br);
     }
 }

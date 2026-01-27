@@ -320,7 +320,7 @@ namespace UnityEditor.Search
                     button.clickable = new Clickable(() =>
                     {
                         var data = (ActionButtonData)button.userData;
-                        m_ViewModel.ExecuteAction(data.action, data.selection.ToArray(), false);
+                        m_ViewModel.ExecuteAction(data.action, data.selection.ToArray(), true);
                     });
                 }
                 button.userData = new ActionButtonData() { action = action, selection = selection };
@@ -361,7 +361,7 @@ namespace UnityEditor.Search
                             ? action.content.text
                             : action.content.tooltip;
                         menu.AddItem(new GUIContent(itemName, action.content.image), false,
-                            () => m_ViewModel.ExecuteAction(action, data.selection.ToArray(), false));
+                            () => m_ViewModel.ExecuteAction(action, data.selection.ToArray(), true));
                     }
 
                     menu.ShowAsContext();

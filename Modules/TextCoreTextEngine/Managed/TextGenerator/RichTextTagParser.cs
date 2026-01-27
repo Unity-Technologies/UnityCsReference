@@ -19,9 +19,12 @@ namespace UnityEngine.TextCore
     {
         internal static readonly Color32 k_HighlightColor = new Color32(255, 255, 0, 64);
         internal static readonly char k_PrivateArea = '\uE000';
+		internal static Color s_AtgHyperlinkColor = new Color(0x4C / 255f, 0x7E / 255f, 0xFF / 255f, 1f);
+
         [VisibleToOtherModules("UnityEngine.UIElementsModule")]
         internal static readonly Dictionary<string, System.IntPtr> s_FontAssetCache = new();
         internal static readonly Dictionary<string, WeakReference<SpriteAsset>> s_SpriteAssetCache = new();
+        internal static readonly Dictionary<string, System.IntPtr> s_GradientAssetCache = new();
 
         public enum TagType
         {
@@ -35,6 +38,7 @@ namespace UnityEngine.TextCore
             CSpace,
             Font,
             FontWeight,
+            Gradient,
             Italic,
             Indent,
             LineHeight,
@@ -71,7 +75,8 @@ namespace UnityEngine.TextCore
             GlyphMetrics,
             Scale,
             Tint,
-            SpriteColor
+            SpriteColor,
+            Gradient
         }
 
         internal record TagTypeInfo
@@ -102,6 +107,7 @@ namespace UnityEngine.TextCore
             new TagTypeInfo(TagType.CSpace,"cspace" ), //<cspace=1em>Spacing</cspace> is just as important as <cspace=-0.5em>timing.
             new TagTypeInfo(TagType.Font,"font"), //<font="Impact SDF">a different font?</font> or just <font="NotoSans" material="NotoSans Outline">a different material?
             new TagTypeInfo(TagType.FontWeight,"font-weight"), //<font-weight="100">Thin</font-weight>
+            new TagTypeInfo(TagType.Gradient,"gradient"),
             new TagTypeInfo(TagType.Italic,"i"),
             new TagTypeInfo(TagType.Indent,"indent"), //<indent=15%> pixels, font units, or percentages.
             new TagTypeInfo(TagType.LineHeight,"line-height"), //pixels, font units, or percentages. <line-height=100%>Rather cozy.
@@ -650,6 +656,27 @@ namespace UnityEngine.TextCore
             }
         }
 
+        [VisibleToOtherModules("UnityEngine.UIElementsModule")]
+        internal static void PreloadGradientAssetsFromTags(string text, TextSettings textSettings)
+        {
+            if (!HasGradientTags(text, textSettings, out var gradientAssetNames))
+                return;
+
+            foreach (var gradientAssetName in gradientAssetNames)
+            {
+                // Skip if already cached
+                if (s_GradientAssetCache.ContainsKey(gradientAssetName))
+                    continue;
+
+                var gradientAsset = Resources.Load<TextColorGradient>(textSettings.defaultColorGradientPresetsPath + gradientAssetName);
+                if (gradientAsset == null)
+                    continue;
+
+                gradientAsset.MarkNativeDirty();
+                s_GradientAssetCache[gradientAssetName] = gradientAsset.nativeInstance;
+            }
+        }
+
         internal static List<Tag> FindTags(ref string inputStr, TextSettings textSettings, bool preprocessingOnly = false, List<ParseError>? errors = null)
         {
             var input = inputStr.ToCharArray();
@@ -858,6 +885,25 @@ namespace UnityEngine.TextCore
                             value = new TagValue(parsedValue, tagUnitType);
                         }
 
+                        if (tagType == TagType.Indent)
+                        {
+                            var tagUnitType = ParseTagUnitType(ref attributeSection);
+
+                            if (tagUnitType == TagUnitType.Unknown)
+                                tagUnitType = TagUnitType.Pixels;
+
+                            attributeSection = GetAttributeSpan(attributeSection);
+                            float parsedValue;
+                            if (!float.TryParse(attributeSection, NumberStyles.Float, CultureInfo.InvariantCulture, out parsedValue))
+                            {
+                                // Handle parse error, e.g. skip or log
+                                errors?.Add(new("Invalid numerical value", start));
+                                pos = start + 1;
+                                continue;
+                            }
+                            value = new TagValue(parsedValue, tagUnitType);
+                        }
+
                         if (tagType == TagType.Font)
                         {
                             attributeSection = GetAttributeSpan(attributeSection);
@@ -937,6 +983,35 @@ namespace UnityEngine.TextCore
                                 pos = start + 1;
                                 continue;
                             }
+                        }
+
+                        if (tagType == TagType.Gradient)
+                        {
+                            attributeSection = GetAttributeSpan(attributeSection);
+                            var gradientAssetName = attributeSection.ToString();
+
+                            if (string.IsNullOrEmpty(gradientAssetName))
+                            {
+                                errors?.Add(new("Gradient name cannot be empty", start));
+                                pos = start + 1;
+                                continue;
+                            }
+
+                            // Check if gradient asset is preloaded in cache
+                            bool gradientIsPreloaded = s_GradientAssetCache.ContainsKey(gradientAssetName);
+
+                            if (!gradientIsPreloaded)
+                            {
+                                // Only add incomplete tag during preprocessing (for HasGradientTags extraction)
+                                // During rendering, skip the tag so it remains visible in output text
+                                if (preprocessingOnly)
+                                    result.Add(new Tag { tagType = tagType, start = start, end = end, isClosing = false, value = new TagValue(gradientAssetName) });
+
+                                pos = start + 1;
+                                continue;
+                            }
+
+                            value = new TagValue(gradientAssetName, ValueID.Gradient);
                         }
 
                         result.Add(new Tag { tagType = tagType, start = start, end = end, isClosing = isClosing, value = value, value2 = value2 });
@@ -1215,6 +1290,8 @@ namespace UnityEngine.TextCore
                         textSpan.fontStyle |= TextCore.Text.FontStyles.UpperCase;
                         break;
                     case TagType.SmallCaps:
+                        textSpan.fontStyle |= TextCore.Text.FontStyles.SmallCaps;
+                        break;
                     case TagType.Lowercase:
                         textSpan.fontStyle |= TextCore.Text.FontStyles.LowerCase;
                         break;
@@ -1238,10 +1315,8 @@ namespace UnityEngine.TextCore
                             textSpan.highlightPadding = segment.tags[i].value2!.Vector4Value;
 
                         break;
-
-                    //Asset required
                     case TagType.Style:
-                        //TODO : Add support for style
+                        Debug.Assert(false, "Style tags should be handled by the preprocessor.");
                         break;
                     case TagType.Font:
                         string fontAssetName = segment.tags[i].value?.StringValue ?? "";
@@ -1269,6 +1344,18 @@ namespace UnityEngine.TextCore
                     case TagType.Link:
                         textSpan.linkID = AddLink(TagType.Link, segment.tags[i].value?.StringValue ?? "", links);
                         break;
+                    case TagType.Gradient:
+                        string gradientName = segment.tags[i].value?.StringValue ?? "";
+                        if (!string.IsNullOrEmpty(gradientName))
+                        {
+                            // Check static cache first (Pattern matching Font implementation)
+                            if (s_GradientAssetCache.TryGetValue(gradientName, out var cachedNativeGradientAsset))
+                            {
+                                textSpan.gradientAsset = cachedNativeGradientAsset;
+                            }
+                        }
+                        break;
+
                     case TagType.Sprite:
                         if (segment.tags[i].value?.ID == ValueID.AssetID)
                             textSpan.spriteID = (int)segment.tags[i].value!.NumericalValue;
@@ -1376,6 +1463,12 @@ namespace UnityEngine.TextCore
                         };
                         break;
 
+                    case TagType.Indent:
+                        float indentMult = segment.tags[i].value!.unit == TagUnitType.Pixels ? (pixelsPerPoint * 64.0f) : 64.0f;
+                        textSpan.indent = (int)(segment.tags[i].value!.NumericalValue * indentMult);
+                        textSpan.indentUnitType = segment.tags[i].value!.unit;
+                        break;
+
 
                     case TagType.NoParse://Noparse should not be reach here/Should be trimmed
                     case TagType.Unknown:
@@ -1480,7 +1573,7 @@ namespace UnityEngine.TextCore
 
             return false;
         }
-		
+
 		const string k_StyleTag = "<style=\"";
         internal static bool ContainsStyleTags(string text)
         {
@@ -1504,7 +1597,31 @@ namespace UnityEngine.TextCore
 
             return false;
         }
-		
+
+
+        const string k_GradientTag = "<gradient";
+        internal static bool ContainsGradientTag(string text)
+        {
+            if (string.IsNullOrEmpty(text))
+                return false;
+
+            ReadOnlySpan<char> source = text.AsSpan();
+            ReadOnlySpan<char> tag = k_GradientTag.AsSpan();
+
+            int tagIndex = source.IndexOf(tag, StringComparison.Ordinal);
+
+            if (tagIndex < 0)
+                return false;
+
+            int startIndex = tagIndex + tag.Length;
+            for (int i = startIndex; i < source.Length; i++)
+            {
+                if (source[i] == '>')
+                    return true;
+            }
+
+            return false;
+        }
 
         [VisibleToOtherModules("UnityEngine.UIElementsModule", "UnityEngine.IMGUIModule")]
         internal static bool HasFontTags(string text, TextSettings textSettings, out List<string> fontAssetNames)
@@ -1557,5 +1674,28 @@ namespace UnityEngine.TextCore
 
             return spriteAssetNames.Count > 0;
         }
+
+        internal static bool HasGradientTags(string text, TextSettings textSettings, out List<string> gradientAssetNames)
+        {
+            gradientAssetNames = new();
+
+            if (!ContainsGradientTag(text))
+                return false;
+
+            var tags = FindTags(ref text, textSettings, preprocessingOnly: true);
+
+            foreach (var tag in tags)
+            {
+                if (tag.tagType == TagType.Gradient && !tag.isClosing && tag.value?.type == TagValueType.StringValue)
+                {
+                    string? gradientAssetName = tag.value.StringValue;
+                    if (!string.IsNullOrEmpty(gradientAssetName) && !gradientAssetNames.Contains(gradientAssetName))
+                        gradientAssetNames.Add(gradientAssetName);
+                }
+            }
+
+            return gradientAssetNames.Count > 0;
+        }
     }
 }
+

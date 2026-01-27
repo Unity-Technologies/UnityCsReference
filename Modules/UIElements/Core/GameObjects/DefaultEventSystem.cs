@@ -597,7 +597,9 @@ namespace UnityEngine.UIElements
             if (m_LogLabel == null)
             {
                 m_LogLabel = new Label {style = {position = Position.Absolute, bottom = 0, color = Color.white}};
+#pragma warning disable CS0618 // Type or member is obsolete
                 Object.FindFirstObjectByType<UIDocument>().rootVisualElement.Add(m_LogLabel);
+#pragma warning restore CS0618
             }
 
             m_LogLines.Add(s + "\n");

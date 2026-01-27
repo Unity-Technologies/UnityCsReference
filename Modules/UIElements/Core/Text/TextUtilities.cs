@@ -109,7 +109,7 @@ namespace UnityEngine.UIElements
 
         internal static FontAsset GetFontAsset(VisualElement ve)
         {
-            if (ve.computedStyle.unityFontDefinition.fontAsset != null)
+            if (!Equals(ve.computedStyle.unityFontDefinition.fontAsset, null))
                 return ve.computedStyle.unityFontDefinition.fontAsset as FontAsset;
 
             var textSettings = GetTextSettingsFrom(ve);

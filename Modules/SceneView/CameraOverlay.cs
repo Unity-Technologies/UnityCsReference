@@ -620,8 +620,7 @@ namespace UnityEditor
 
             foreach (var componentType in ViewpointProxyTypeCache.GetSupportedCameraComponents())
             {
-                foreach (var cam in GameObject.FindObjectsByType(componentType.viewpointType, FindObjectsInactive.Include,
-                             FindObjectsSortMode.None))
+                foreach (var cam in GameObject.FindObjectsByType(componentType.viewpointType, FindObjectsInactive.Include))
                 {
                     Type proxyType = ViewpointProxyTypeCache.GetTranslatorTypeForType(cam.GetType());
                     var proxyTypeCtor = proxyType.GetConstructor(new[] { cam.GetType() });

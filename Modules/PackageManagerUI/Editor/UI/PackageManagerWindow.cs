@@ -204,17 +204,8 @@ namespace UnityEditor.PackageManager.UI
             var isWindowAlreadyVisible = Resources.FindObjectsOfTypeAll<PackageManagerWindow>()?.FirstOrDefault() != null;
 
             SelectPackageStatic(packageToSelect, pageId);
-            if (isWindowAlreadyVisible)
-                return;
-
-            string packageId = null;
-            if (!string.IsNullOrEmpty(packageToSelect))
-            {
-                var packageDatabase = ServicesContainer.instance.Resolve<IPackageDatabase>();
-                packageDatabase.GetPackageAndVersionByIdOrName(packageToSelect, out var package, out var version, true);
-                packageId = version?.uniqueId ?? package?.versions.primary.uniqueId ?? $"{packageToSelect}@primary";
-            }
-            PackageManagerWindowAnalytics.SendEvent("openWindow", packageId);
+            if (!isWindowAlreadyVisible)
+                PackageManagerWindowAnalytics.SendEvent("openWindow", packageToSelect);
         }
 
         [UsedByNativeCode]

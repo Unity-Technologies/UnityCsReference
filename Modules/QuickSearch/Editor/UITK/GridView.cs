@@ -134,13 +134,13 @@ namespace UnityEditor.Search
 
         public int selectedIndex
         {
-            get { return m_SelectedIndices.Count == 0 ? -1 : m_SelectedIndices.First(); }
-            set { SetSelection(value); }
+            get => m_SelectedIndices.Count == 0 ? -1 : m_SelectedIndices[0];
+            set => SetSelection(value);
         }
 
         public IEnumerable<int> selectedIndices => m_SelectedIndices;
 
-        public object selectedItem => m_SelectedItems.Count == 0 ? null : m_SelectedItems.First();
+        public object selectedItem => m_SelectedItems.Count == 0 ? null : m_SelectedItems[0];
 
         public IEnumerable<object> selectedItems => m_SelectedItems;
 
@@ -156,7 +156,7 @@ namespace UnityEditor.Search
 
         public SelectionType selectionType
         {
-            get { return m_SelectionType; }
+            get => m_SelectionType;
             set
             {
                 m_SelectionType = value;
@@ -168,7 +168,7 @@ namespace UnityEditor.Search
                 {
                     if (m_SelectedIndices.Count > 1)
                     {
-                        SetSelection(m_SelectedIndices.First());
+                        SetSelection(m_SelectedIndices[0]);
                     }
                 }
             }
@@ -715,6 +715,9 @@ namespace UnityEditor.Search
 
             if (selectionType == SelectionType.Multiple && actionKey)
             {
+                if (NeedsItemsSourceIdsRefresh())
+                    RefreshItemsSourceIds();
+
                 m_RangeSelectionOrigin = itemIndex;
 
                 // Add/remove single clicked element
@@ -726,7 +729,7 @@ namespace UnityEditor.Search
             }
             else if (selectionType == SelectionType.Multiple && shiftKey)
             {
-                if (m_RangeSelectionOrigin == -1 || !selectedItems.Any())
+                if (m_RangeSelectionOrigin == -1 || m_SelectedItems.Count == 0)
                 {
                     m_RangeSelectionOrigin = itemIndex;
                     SetSelection(itemIndex);
@@ -738,7 +741,7 @@ namespace UnityEditor.Search
             }
             else if (selectionType == SelectionType.Multiple && m_SelectedIndices.Contains(itemIndex))
             {
-                // Do noting, selection will be processed OnPointerUp.
+                // Do nothing, selection will be processed OnPointerUp.
             }
             else // single
             {
@@ -816,6 +819,9 @@ namespace UnityEditor.Search
 
         private void RebindActiveItems(int firstVisibleItemIndex)
         {
+            if (NeedsItemsSourceIdsRefresh())
+                RefreshItemsSourceIds();
+
             var itemIndex = firstVisibleItemIndex * m_ColumnCount;
             foreach (var reusableItem in activeItems)
             {
@@ -856,12 +862,15 @@ namespace UnityEditor.Search
             if (m_RowPool == null || m_RowPool.Count == 0)
                 return;
 
+            if (NeedsItemsSourceIdsRefresh())
+                RefreshItemsSourceIds();
+
             // When scrolling down, if the last item in the last row is already undefined
             // (because it is already outside the range of source items), then don't bind
             // items from the start.
-            var lastIndex = m_RowPool.Last().GetLastItemInRow().index;
+            var lastIndex = m_RowPool[^1].GetLastItemInRow().index;
             var nextElementIndexToBind = lastIndex == ReusableGridViewItem.UndefinedIndex ? ReusableGridViewItem.UndefinedIndex : lastIndex + 1;
-            var row = m_RowPool.First();
+            var row = m_RowPool[0];
             for (int i = 0; i < m_ColumnCount; i++)
             {
                 var reusableItem = row.GetFirstItemInRow();
@@ -887,8 +896,11 @@ namespace UnityEditor.Search
             if (m_RowPool == null || m_RowPool.Count == 0)
                 return;
 
-            var itemIndex = m_RowPool.First().GetFirstItemInRow().index - 1;
-            var row = m_RowPool.Last();
+            if (NeedsItemsSourceIdsRefresh())
+                RefreshItemsSourceIds();
+
+            var itemIndex = m_RowPool[0].GetFirstItemInRow().index - 1;
+            var row = m_RowPool[^1];
             for (int i = 0; i < m_ColumnCount; i++)
             {
                 var reusableItem = row.GetLastItemInRow();
@@ -919,12 +931,8 @@ namespace UnityEditor.Search
             if (!HasValidDataAndBindings() || m_RowPool == null || m_ItemsSourceIds == null)
                 return;
 
-            m_ItemsSourceIds.Clear();
-            foreach (var item in m_ItemsSource)
-                m_ItemsSourceIds.Add(item.GetHashCode());
-
+            RefreshItemsSourceIds();
             RefreshSelection();
-
             ResizeScrollView();
             ResizeColumns();
             ResizeRows();
@@ -932,8 +940,26 @@ namespace UnityEditor.Search
             ReplaceActiveItems();
         }
 
+        bool NeedsItemsSourceIdsRefresh()
+        {
+            return m_ItemsSourceIds == null || (m_ItemsSource.Count != m_ItemsSourceIds.Count);
+        }
+
+        void RefreshItemsSourceIds()
+        {
+            if (m_ItemsSourceIds == null)
+                m_ItemsSourceIds = new List<int>();
+            else
+                m_ItemsSourceIds.Clear();
+
+            foreach (var item in m_ItemsSource)
+                m_ItemsSourceIds.Add(item.GetHashCode());
+        }
+
         private void RefreshSelection()
         {
+            if (NeedsItemsSourceIdsRefresh())
+                RefreshItemsSourceIds();
             m_SelectedIndices.Clear();
             m_SelectedItems.Clear();
 
@@ -957,6 +983,9 @@ namespace UnityEditor.Search
 
         private void ReplaceActiveItems()
         {
+            if (NeedsItemsSourceIdsRefresh())
+                RefreshItemsSourceIds();
+
             // Unbind and bind elements in the pool only when necessary.
             var firstVisibleItemIndex = m_FirstVisibleRowIndex * m_ColumnCount;
             var endIndex = firstVisibleItemIndex + activeItems.Count;
@@ -1050,7 +1079,7 @@ namespace UnityEditor.Search
                 var removeRowCount = Math.Clamp(previousRowCount - m_RowCount, 0, previousRowCount);
                 for (int i = 0; i < removeRowCount; i++)
                 {
-                    var reusableRow = m_RowPool.Last();
+                    var reusableRow = m_RowPool[^1];
                     for (int j = 0; j < m_ColumnCount; j++)
                     {
                         var reusableItem = reusableRow.GetLastItemInRow();
@@ -1227,9 +1256,7 @@ namespace UnityEditor.Search
 
             ResizeScrollView();
 
-            m_ItemsSourceIds = new List<int>();
-            foreach (var item in m_ItemsSource)
-                m_ItemsSourceIds.Add(item.GetHashCode());
+            RefreshItemsSourceIds();
 
             m_RowPool = new List<ReusableGridViewRow>();
             var itemIndex = m_FirstVisibleRowIndex * m_ColumnCount;
@@ -1470,7 +1497,7 @@ namespace UnityEditor.Search
                 if (m_Items == null || m_Items.Count == 0)
                     return null;
 
-                return m_Items.Last();
+                return m_Items[^1];
             }
 
             public ReusableGridViewItem GetFirstItemInRow()
@@ -1478,7 +1505,7 @@ namespace UnityEditor.Search
                 if (m_Items == null || m_Items.Count == 0)
                     return null;
 
-                return m_Items.First();
+                return m_Items[0];
             }
         }
 

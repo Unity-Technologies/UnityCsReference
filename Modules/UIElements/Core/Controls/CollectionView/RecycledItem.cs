@@ -139,5 +139,13 @@ namespace UnityEngine.UIElements.HierarchyV2
                 }
             }
         }
+
+        public void ClearHoverState()
+        {
+            if (element != null)
+            {
+                element.pseudoStates &= ~PseudoStates.Hover;
+            }
+        }
     }
 }

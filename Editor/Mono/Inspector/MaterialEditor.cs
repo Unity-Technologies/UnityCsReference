@@ -556,6 +556,7 @@ namespace UnityEditor
 
                     var shaders = ShaderUtil.GetAllShaderInfo();
                     var shaderList = new List<string>();
+                    var unnestedList = new List<string>();
                     var legacyList = new List<string>();
                     var notSupportedList = new List<string>();
                     var failedCompilationList = new List<string>();
@@ -581,12 +582,16 @@ namespace UnityEditor
                             legacyList.Add(shader.name);
                             continue;
                         }
+                        if (!shader.name.Contains('/'))
+                        {
+                            unnestedList.Add(shader.name);
+                            continue;
+                        }
                         shaderList.Add(shader.name);
                     }
 
                     shaderList.Sort();
-                    var unnestedList =  shaderList.Where(s => s.Count(c => c == '/') == 0).ToList();
-                    shaderList = shaderList.Where(s => s.Count(c => c == '/') > 0).ToList();
+                    unnestedList.Sort();
                     shaderList.AddRange(unnestedList);
 
                     legacyList.Sort();
@@ -594,7 +599,7 @@ namespace UnityEditor
                     failedCompilationList.Sort();
 
                     shaderList.ForEach(s => AddShaderToMenu("", root, s, s));
-                    if (legacyList.Any() || notSupportedList.Any() || failedCompilationList.Any())
+                    if (legacyList.Count > 0 || notSupportedList.Count > 0 || failedCompilationList.Count > 0)
                         root.AddSeparator();
                     legacyList.ForEach(s => AddShaderToMenu("", root, s, s));
                     notSupportedList.ForEach(s => AddShaderToMenu("Not supported/", root, s, "Not supported/" + s));

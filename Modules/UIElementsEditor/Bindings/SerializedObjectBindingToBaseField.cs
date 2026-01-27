@@ -186,6 +186,8 @@ abstract class SerializedObjectBindingToBaseField<TValue, TField> : SerializedOb
 
         base.OnFieldAttached();
 
+        if (boundProperty == null) return;
+
         if (field is VisualElement handler && !boundProperty.hasMultipleDifferentValues &&
             EqualsValue(previousValue, field.value))
         {

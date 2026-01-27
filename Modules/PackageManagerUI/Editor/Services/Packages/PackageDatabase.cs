@@ -20,8 +20,8 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         IPackage GetPackage(string uniqueId);
         IPackage GetPackage(long productId);
-        void GetPackageAndVersionByIdOrName(string idOrName, out IPackage package, out IPackageVersion version, bool bruteForceSearch);
-        IPackage GetPackageByIdOrName(string idOrName);
+        IPackage GetPackageByIdOrName(string packageIdOrName);
+        IPackage GetPackageByDisplayName(string displayName);
         void GetPackageAndVersion(DependencyInfo info, out IPackage package, out IPackageVersion version);
         IEnumerable<IPackageVersion> GetDirectReverseDependencies(IPackageVersion version);
         IEnumerable<IPackageVersion> GetFeaturesThatUseThisPackage(IPackageVersion version);
@@ -51,7 +51,7 @@ namespace UnityEditor.PackageManager.UI.Internal
     [Serializable]
     internal class PackageDatabase : BaseService<IPackageDatabase>, IPackageDatabase, ISerializationCallbackReceiver
     {
-        // Normally package unique Id never changes for a package, but when we are installing a package from git or a tarball
+        // Normally packageUniqueId never changes for a package, but when we are installing a package from git or a tarball
         // we only had a temporary unique id at first. For example, for `com.unity.a` is a unique id for a package, but when
         // we are installing from git, the only identifier we know is something like `git@example.com/com.unity.a.git`.
         // We only know the id `com.unity.a` after the package has been successfully installed, and we'll trigger an event for that.
@@ -62,6 +62,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         private readonly Dictionary<string, IPackage> m_Packages = new();
         // we added m_Feature to speed up reverse dependencies lookup
         private readonly Dictionary<string, IPackage> m_Features = new();
+        private readonly Dictionary<string, string> m_TechnicalNameToUniqueIdMap = new();
 
         private readonly Dictionary<string, IEnumerable<Sample>> m_ParsedSamples = new();
 
@@ -143,40 +144,32 @@ namespace UnityEditor.PackageManager.UI.Internal
             return PackageInUseState.None;
         }
 
-        // In some situations, we only know an id (could be package unique id, or version unique id) or just a name (package Name, or display name)
-        // but we still might be able to find a package and a version that matches the criteria
-        public void GetPackageAndVersionByIdOrName(string idOrName, out IPackage package, out IPackageVersion version, bool bruteForceSearch)
+        public IPackage GetPackageByIdOrName(string packageIdOrName)
         {
-            // GetPackage by packageUniqueId itself is not an expensive operation, so we want to try and see if the input string is a packageUniqueId first.
-            package = GetPackage(idOrName);
+            if (string.IsNullOrEmpty(packageIdOrName))
+                return null;
+
+            var potentialUniqueId = m_TechnicalNameToUniqueIdMap.GetValueOrDefault(packageIdOrName, packageIdOrName);
+            var package = GetPackage(potentialUniqueId);
             if (package != null)
-            {
-                version = null;
-                return;
-            }
+                return package;
 
-            // if we are able to break the string into two by looking at '@' sign, it's possible that the input idOrDisplayName is a versionId
-            var idOrDisplayNameSplit = idOrName?.Split(new[] { '@' }, 2);
-            if (idOrDisplayNameSplit?.Length == 2)
-            {
-                var packageUniqueId = idOrDisplayNameSplit[0];
-                package = GetPackage(packageUniqueId);
-                if (package != null)
-                {
-                    version = package.versions.FirstOrDefault(v => v.uniqueId == idOrName);
-                    return;
-                }
-            }
+            var technicalNameSplitIndex = packageIdOrName.IndexOf('@');
+            if (technicalNameSplitIndex <= 0)
+                return null;
 
-            // If none of those find-by-index options work, we'll just have to find it the brute force way by matching the name & display name
-            package = bruteForceSearch ? m_Packages.Values.FirstOrDefault(p => p.name == idOrName || p.displayName == idOrName) : null;
-            version = null;
+            var potentialName = packageIdOrName[..technicalNameSplitIndex];
+            potentialUniqueId = m_TechnicalNameToUniqueIdMap.GetValueOrDefault(potentialName, potentialName);
+            return GetPackage(potentialUniqueId);
         }
 
-        public IPackage GetPackageByIdOrName(string idOrName)
+        public IPackage GetPackageByDisplayName(string displayName)
         {
-            GetPackageAndVersionByIdOrName(idOrName, out var package, out _, false);
-            return package;
+            if (!string.IsNullOrEmpty(displayName))
+                foreach (var package in m_Packages.Values)
+                    if (package.displayName == displayName)
+                        return package;
+            return null;
         }
 
         public void GetPackageAndVersion(DependencyInfo info, out IPackage package, out IPackageVersion version)
@@ -251,7 +244,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         public void OnAfterDeserialize()
         {
             foreach (var p in m_SerializedPackages)
-                AddPackage(p.uniqueId, p);
+                AddOrUpdatePackage(p);
         }
 
         public void OnBeforeSerialize()
@@ -302,10 +295,8 @@ namespace UnityEditor.PackageManager.UI.Internal
                         featuresWithDependencyChange[feature.uniqueId] = feature.package;
                 }
 
-                var packageUniqueId = package.uniqueId;
-                var oldPackage = GetPackage(packageUniqueId);
-
-                AddPackage(packageUniqueId, package);
+                var oldPackage = GetPackage(package.uniqueId);
+                AddOrUpdatePackage(package, oldPackage);
                 if (oldPackage != null)
                 {
                     packagesPreUpdate.Add(oldPackage);
@@ -326,7 +317,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 if (oldPackage != null)
                 {
                     packagesRemoved.Add(oldPackage);
-                    RemovePackage(packageUniqueId);
+                    RemovePackage(oldPackage);
                 }
             }
             TriggerOnPackagesChanged(added: packagesAdded, removed: packagesRemoved, preUpdate: packagesPreUpdate, updated: packagesUpdated, progressUpdated: packageProgressUpdated, changedSource: changedSource);
@@ -341,21 +332,33 @@ namespace UnityEditor.PackageManager.UI.Internal
             if (!string.IsNullOrEmpty(finalizedUniqueId))
                 onPackageUniqueIdFinalize?.Invoke(tempUniqueId, finalizedUniqueId);
 
-            RemovePackage(tempUniqueId);
+            RemovePackage(packageWithTempId);
             TriggerOnPackagesChanged(removed: new [] { packageWithTempId });
         }
 
-        private void RemovePackage(string packageUniqueId)
+        private void RemovePackage(IPackage package)
         {
+            var packageName = package.name;
+            var packageUniqueId = package.uniqueId;
+            if (!string.IsNullOrEmpty(packageName))
+                m_TechnicalNameToUniqueIdMap.Remove(packageName);
             m_Packages.Remove(packageUniqueId);
             m_Features.Remove(packageUniqueId);
         }
 
-        private void AddPackage(string packageUniqueId, IPackage package)
+        private void AddOrUpdatePackage(IPackage package, IPackage oldPackage = null)
         {
+            var packageUniqueId = package.uniqueId;
             m_Packages[packageUniqueId] = package;
             if (package.versions.All(v => v.HasTag(PackageTag.Feature)))
                 m_Features[packageUniqueId] = package;
+
+            var packageName = package.name;
+            var oldPackageName = oldPackage?.name;
+            if (!string.IsNullOrEmpty(packageName) && packageName != packageUniqueId)
+                m_TechnicalNameToUniqueIdMap[packageName] = packageUniqueId;
+            if (!string.IsNullOrEmpty(oldPackageName) && oldPackageName != packageName)
+                m_TechnicalNameToUniqueIdMap.Remove(oldPackageName);
         }
 
         public void ClearSamplesCache()

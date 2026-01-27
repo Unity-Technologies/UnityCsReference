@@ -140,15 +140,22 @@ namespace UnityEditor.Build.Profile
 
             if (m_PlayerSettings != null)
             {
-                DestroyImmediate(m_PlayerSettings, true);
-                s_LoadedPlayerSettings.Remove(m_PlayerSettings);
+                var toDestroy = m_PlayerSettings;
+
                 m_PlayerSettings = null;
+
+                BuildProfileModuleUtil.UpdateActiveEditors(this);
+
+                DestroyImmediate(toDestroy, true);
+                s_LoadedPlayerSettings.Remove(toDestroy);
 
                 if (clearYaml)
                     m_PlayerSettingsYaml.Clear();
             }
-
-            BuildProfileModuleUtil.UpdateActiveEditors(this);
+            else
+            {
+                BuildProfileModuleUtil.UpdateActiveEditors(this);
+            }
         }
 
         internal static void CleanUpPlayerSettingsForDeletedBuildProfiles(IList<BuildProfile> currentBuildProfiles)

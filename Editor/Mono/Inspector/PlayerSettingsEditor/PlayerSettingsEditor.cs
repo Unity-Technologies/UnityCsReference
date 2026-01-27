@@ -778,6 +778,18 @@ namespace UnityEditor
 
             FindPlayerSettingsAttributeSections();
         }
+        
+        public static void DiscardPendingChangesForAllEditors(PlayerSettings target)
+        {
+            foreach (var editor in Resources.FindObjectsOfTypeAll<PlayerSettingsEditor>())
+            {
+                if (editor.target == target)
+                {
+                    editor.hasScriptingDefinesBeenModified = false;
+                    editor.hasAdditionalCompilerArgumentsBeenModified = false;
+                }
+            }
+        }
 
         void OnDisable()
         {

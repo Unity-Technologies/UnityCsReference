@@ -1434,6 +1434,8 @@ namespace UnityEngine.LowLevelPhysics2D
 
         /// <summary>
         /// Get/Set the <see cref="System.Object"/> that callbacks for this shape will be sent to.
+        /// Care should be taken with any <see cref="System.Object"/> assigned as a callback target that isn't a <see cref="UnityEngine.Object"/> as this assignment will not in itself keep the object alive and can be garbage collected.
+        /// To avoid this, you should have at least a single reference to the object in your code.
         /// 
         /// This includes the following events:
         /// 

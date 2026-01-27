@@ -75,6 +75,8 @@ namespace UnityEngine.TextCore
                 margin = 0,
                 marginDirection = MarginDirection.Both,
                 marginUnitType = RichTextTagParser.TagUnitType.Pixels,
+                indent = 0,
+                indentUnitType = RichTextTagParser.TagUnitType.Pixels,
                 linkID = -1
             };
         }
@@ -189,6 +191,7 @@ namespace UnityEngine.TextCore
         public int startIndex;
         public int length;
         public IntPtr fontAsset;
+        public IntPtr gradientAsset;
         public int fontSize;        // Encoded in Fixed Point.
         public Color32 color;
         public FontStyles fontStyle;
@@ -209,6 +212,8 @@ namespace UnityEngine.TextCore
         public int margin;
         public MarginDirection marginDirection;
         public RichTextTagParser.TagUnitType marginUnitType;
+        public int indent;          // Encoded in Fixed Point.
+        public RichTextTagParser.TagUnitType indentUnitType;
 
         public override string ToString()
         {
@@ -218,6 +223,7 @@ namespace UnityEngine.TextCore
                 $"{nameof(linkID)}: {linkID}\n" +
                 $"{nameof(fontSize)}: {fontSize}\n" +
                 $"{nameof(fontAsset)}: {fontAsset}" +
+                $"{nameof(gradientAsset)}: {gradientAsset}\n" +
                 $"{nameof(startIndex)}: {startIndex}\n" +
                 $"{nameof(length)}: {length}";
         }

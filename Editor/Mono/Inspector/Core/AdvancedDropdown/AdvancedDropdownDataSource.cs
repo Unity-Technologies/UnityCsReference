@@ -117,7 +117,7 @@ namespace UnityEditor.IMGUI.Controls
                 matchesStart.Sort(searchMatchItemComparer);
             foreach (var element in matchesStart)
             {
-                searchTree.AddChild(element);
+                searchTree.AddChildAndKeepId(element);
             }
             if (searchMatchItemComparer == null)
                 matchesWithin.Sort();
@@ -125,7 +125,7 @@ namespace UnityEditor.IMGUI.Controls
                 matchesWithin.Sort(searchMatchItemComparer);
             foreach (var element in matchesWithin)
             {
-                searchTree.AddChild(element);
+                searchTree.AddChildAndKeepId(element);
             }
             return searchTree;
         }

@@ -360,11 +360,11 @@ namespace UnityEditorInternal.FrameDebuggerInternal
             GUILayout.BeginHorizontal(FrameDebuggerStyles.EventToolbar.s_LevelsHorizontalStyle);
             GUILayout.Label(FrameDebuggerStyles.EventToolbar.s_LevelsHeader);
 
-            float blackMinLevel = EditorGUILayout.DelayedFloatField(m_RTBlackMinLevel);
+            float blackMinLevel = EditorGUILayout.DelayedFloatField(m_RTBlackMinLevel, GUILayout.MaxWidth(40.0f));
             float blackLevel = m_RTBlackLevel;
             float whiteLevel = m_RTWhiteLevel;
-            EditorGUILayout.MinMaxSlider(ref blackLevel, ref whiteLevel, m_RTBlackMinLevel, m_RTWhiteMaxLevel, GUILayout.MinWidth(300.0f));
-            float whiteMaxLevel = EditorGUILayout.DelayedFloatField(m_RTWhiteMaxLevel);
+            EditorGUILayout.MinMaxSlider(ref blackLevel, ref whiteLevel, m_RTBlackMinLevel, m_RTWhiteMaxLevel, GUILayout.MaxWidth(200.0f));
+            float whiteMaxLevel = EditorGUILayout.DelayedFloatField(m_RTWhiteMaxLevel, GUILayout.MaxWidth(40.0f));
 
             if (blackMinLevel < whiteMaxLevel)
             {

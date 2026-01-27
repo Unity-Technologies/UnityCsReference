@@ -90,7 +90,9 @@ namespace UnityEditor
                 {
                     if (i == (m_TableTabs.Length - 1)) // last tab containing materials
                     {
+#pragma warning disable CS0618 // Type or member is obsolete
                         EntityId[] selectedIds = UnityEngine.Object.FindObjectsByType<MeshRenderer>(UnityEngine.FindObjectsSortMode.InstanceID).Where((MeshRenderer mr) => {
+#pragma warning restore CS0618 // Type or member is obsolete
                             return Selection.entityIds.Contains(mr.gameObject.GetEntityId());
                         }).SelectMany(meshRenderer => meshRenderer.sharedMaterials).Where((Material m) => {
                                 return m != null && (m.globalIlluminationFlags & MaterialGlobalIlluminationFlags.AnyEmissive) != 0;

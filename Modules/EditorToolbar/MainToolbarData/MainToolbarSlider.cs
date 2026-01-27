@@ -32,6 +32,7 @@ namespace UnityEditor.Toolbars
         internal override VisualElement CreateElement()
         {
             m_Slider = new EditorToolbarSlider(content.text, new EditorToolbarIcon(content.image), m_MinValue, m_MaxValue);
+            m_Slider.RemoveManipulator(m_Slider.menuManipulator);
             m_Slider.rounded = m_Rounded;
             m_Slider.SetValueWithoutNotify(m_Value);
             m_Slider.RegisterValueChangedCallback((evt) => m_ValueChanged.Invoke(evt.newValue));

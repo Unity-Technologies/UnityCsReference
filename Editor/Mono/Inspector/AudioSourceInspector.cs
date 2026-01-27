@@ -505,7 +505,9 @@ namespace UnityEditor
             if (targets.Length == 1)
             {
                 AudioSource t = (AudioSource)target;
+#pragma warning disable CS0618 // Type or member is obsolete
                 AudioListener audioListener = (AudioListener)FindFirstObjectByType(typeof(AudioListener));
+#pragma warning restore CS0618 // Type or member is obsolete
                 if (audioListener != null)
                 {
                     float distToListener = (AudioUtil.GetListenerPos() - t.transform.position).magnitude;
