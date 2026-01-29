@@ -861,7 +861,19 @@ namespace UnityEditor.Search.Providers
                     enabled = (items) => CanAddScene(items),
                     handler = (item) => SceneManagement.EditorSceneManager.OpenScene(GetAssetPath(item), SceneManagement.OpenSceneMode.Additive)
                 },
-                new SearchAction(type, "reveal", null, Utils.GetRevealInFinderLabel(), item => EditorUtility.RevealInFinder(GetAssetPath(item))),
+                new SearchAction(type, "reveal", null, Utils.GetRevealInFinderLabel(), item =>
+                {
+                    var assetPath = GetAssetPath(item);
+                    if (string.IsNullOrEmpty(assetPath))
+                        return;
+
+                    // Reveal opens an explorer/finder window. However, on macOS especially, if KeepOpen is set to false and the SearchWindow
+                    // closes after the reveal, Unity will take the focus back, and it will seem like nothing happened. Therefore, we enqueue
+                    // the reveal to happen after the window closes. We chose 100ms as a reasonable delay to ensure the window is closed, as even 50ms
+                    // proved to be finicky (sometimes working sometimes not). We cannot use any API to detect when the window is closed because we don't
+                    // know if it's going to be closed or not, so a delay is the only viable solution for now.
+                    Dispatcher.Enqueue(() => EditorUtility.RevealInFinder(assetPath), 0.1);
+                }),
                 new SearchAction(type, "delete", null, "Delete", DeleteAssets),
                 new SearchAction(type, "copy_path", null, "Copy Path")
                 {

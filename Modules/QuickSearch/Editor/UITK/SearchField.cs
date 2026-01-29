@@ -324,7 +324,8 @@ namespace UnityEditor.Search
             UnregisterCallback<KeyDownEvent>(OnSearchToolbarKeyDown);
             searchField.UnregisterCallback<KeyDownEvent>(OnSearchFieldKeyDown);
 
-            viewState.globalEventManager.UnregisterGlobalEventHandler<KeyDownEvent>(OnGlobalKeyInput);
+            if (m_BuilderViewFlags.HasFlag(SearchQueryBuilderViewFlags.UseSearchGlobalEventHandler))
+                viewState.globalEventManager.UnregisterGlobalEventHandler<KeyDownEvent>(OnGlobalKeyInput);
 
             ClearOnCursorChangedHandlers();
 
@@ -342,7 +343,8 @@ namespace UnityEditor.Search
             RegisterCallback<KeyDownEvent>(OnSearchToolbarKeyDown);
             searchField.RegisterCallback<KeyDownEvent>(OnSearchFieldKeyDown);
 
-            viewState.globalEventManager.RegisterGlobalEventHandler<KeyDownEvent>(OnGlobalKeyInput, int.MaxValue);
+            if (m_BuilderViewFlags.HasFlag(SearchQueryBuilderViewFlags.UseSearchGlobalEventHandler))
+                viewState.globalEventManager.RegisterGlobalEventHandler<KeyDownEvent>(OnGlobalKeyInput, int.MaxValue);
 
             UpdateQueryErrors();
             UpdateMultiline();

@@ -126,6 +126,7 @@ internal class ATGTextJobSystem
             var textSettings = TextUtilities.GetTextSettingsFrom(textElement);
             RichTextTagParser.PreloadFontAssetsFromTags(textElement.renderedTextString, textSettings);
             RichTextTagParser.PreloadSpriteAssetsFromTags(textElement.renderedTextString, textSettings);
+            RichTextTagParser.PreloadGradientAssetsFromTags(textElement.renderedTextString, textSettings);
         }
 
         return true;

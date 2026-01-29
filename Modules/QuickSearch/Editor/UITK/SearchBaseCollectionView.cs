@@ -112,7 +112,7 @@ namespace UnityEditor.Search
         private void OnItemsChosen(IEnumerable<object> chosenItems)
         {
             var convertedItems = chosenItems.Select(item => (SearchItem)item).ToArray();
-            m_ViewModel.ExecuteAction(null, convertedItems, !SearchSettings.keepOpen);
+            m_ViewModel.ExecuteAction(null, convertedItems, true);
         }
 
         private void OnDisplayModeChanged(ISearchEvent evt)
@@ -121,7 +121,7 @@ namespace UnityEditor.Search
             UpdateSelection();
         }
 
-        void IResultView.AddSaveQueryMenuItems(SearchContext context, GenericMenu menu)
+        public virtual void AddSaveQueryMenuItems(SearchContext context, GenericMenu menu)
         {
             // Nothing to do
         }
@@ -359,7 +359,7 @@ namespace UnityEditor.Search
             {
                 var items = m_ListView.selectedItems.Cast<SearchItem>().ToArray();
                 var action = evt.altKey ? SearchView.GetSecondaryAction(m_ViewModel.selection, items) : SearchView.GetDefaultAction(m_ViewModel.selection, items);
-                m_ViewModel.ExecuteAction(action, items, !SearchSettings.keepOpen);
+                m_ViewModel.ExecuteAction(action, items, true);
                 return true;
             }
 

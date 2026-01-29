@@ -65,16 +65,36 @@ namespace Unity.Multiplayer.PlayMode.Editor
             }
         }
 
+        private static AdbBridgeHelper.ADB TryGetADBInstance()
+        {
+            try
+            {
+                return AdbBridgeHelper.ADB.GetInstance();
+            }
+            catch (Exception)
+            {
+                return null;
+            }
+        }
+
         public static string GetADBDevices()
         {
-            return AdbBridgeHelper.ADB.GetInstance().Run(new[] { "devices" }, "No devices");
+            var instance = TryGetADBInstance();
+            if (instance == null)
+                return string.Empty;
 
+            return instance.Run(new[] { "devices" }, "No devices");
         }
+
         public static List<string> GetADBDevicesDetailed()
         {
             if (AdbBridgeHelper.AndroidExtensionsInstalled)
             {
-                return FormatDeviceInfo(new List<string>(AdbBridgeHelper.ADB.GetInstance().Run(new[] { "devices", "-l" }, "No devices").Split("\n")));
+                var instance = TryGetADBInstance();
+                if (instance == null)
+                    return new List<string>();
+
+                return FormatDeviceInfo(new List<string>(instance.Run(new[] { "devices", "-l" }, "No devices").Split("\n")));
             }
 
             return new List<string>();

@@ -376,7 +376,7 @@ namespace UnityEngine.TextCore.Text
         [VisibleToOtherModules("UnityEngine.IMGUIModule", "UnityEngine.UIElementsModule")]
         internal FontAsset GetCachedFontAsset(Font font)
         {
-            if (font == null)
+            if (ReferenceEquals(font, null))
                 return null;
 
             if (m_FontLookup == null)

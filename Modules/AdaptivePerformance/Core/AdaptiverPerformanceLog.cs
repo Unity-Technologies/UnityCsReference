@@ -10,7 +10,7 @@ namespace UnityEngine.AdaptivePerformance
 
        public static void Debug(string format, params object[] args)
         {
-            if (enabled)
+            if (enabled && UnityEngine.Debug.isDebugBuild)                
                 UnityEngine.Debug.Log(System.String.Format("[Adaptive Performance] " + format, args));
         }
     }

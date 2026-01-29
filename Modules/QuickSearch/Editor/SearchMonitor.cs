@@ -205,7 +205,6 @@ namespace UnityEditor.Search
 
         public static event Action sceneChanged;
         public static event ObjectChangeEvents.ObjectChangeEventsHandler objectChanged;
-        internal static GameObjectChangeTrackerEventHandler gameObjectChanged;
         public static event Action documentsInvalidated;
 
         internal const string k_TransactionDatabasePath = "Library/Search/transactions.db";
@@ -287,7 +286,6 @@ namespace UnityEditor.Search
             s_DelayedInvalidate = Delayer.Debounce(_ => InvalidateDocuments());
 
             ObjectChangeEvents.changesPublished += OnObjectChanged;
-            GameObjectChangeTracker.GameObjectsChanged += OnGameObjectChanged;
             EditorApplication.playModeStateChanged += OnPlayModeChanged;
 
             s_Initialize = true;
@@ -392,14 +390,6 @@ namespace UnityEditor.Search
 
             var handler = objectChanged;
             handler?.Invoke(ref stream);
-        }
-
-        static void OnGameObjectChanged(in NativeArray<GameObjectChangeTrackerEvent> events)
-        {
-            HandleGameObjectChangedEvents(in events);
-
-            var handler = gameObjectChanged;
-            handler?.Invoke(in events);
         }
 
         static void InvalidateCurrentScene()
@@ -515,25 +505,6 @@ namespace UnityEditor.Search
                             InvalidateObject(e.instanceIds[idIndex]);
                     }
                     break;
-                }
-            }
-        }
-
-        static void HandleGameObjectChangedEvents(in NativeArray<GameObjectChangeTrackerEvent> events)
-        {
-            for (var i = 0; i < events.Length; ++i)
-            {
-                var e = events[i];
-                switch (e.EventType)
-                {
-                    case GameObjectChangeTrackerEventType.CreatedOrChanged:
-                    case GameObjectChangeTrackerEventType.Destroyed:
-                    case GameObjectChangeTrackerEventType.ChangedParent:
-                    case GameObjectChangeTrackerEventType.ChangedScene:
-                        InvalidateObject(e.InstanceId);
-                        break;
-
-                    // Other events are not relevant for us since they do not affect properties.
                 }
             }
         }

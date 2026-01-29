@@ -101,6 +101,23 @@ namespace UnityEditor.Search
             base.OnDetachFromPanel(evt);
         }
 
+        public override void AddSaveQueryMenuItems(SearchContext context, GenericMenu menu)
+        {
+            menu.AddSeparator("");
+            menu.AddItem(EditorGUIUtility.TrTextContent("Export Report..."), false, () => ExportJson(context));
+            menu.AddItem(EditorGUIUtility.TrTextContent("Export CSV..."), false, () => ExportCsv(context));
+        }
+
+        private void ExportJson(SearchContext context)
+        {
+            SearchReport.Export(tableConfig.name, GetColumns(), m_ViewModel.results, context);
+        }
+
+        private void ExportCsv(SearchContext context)
+        {
+            SearchReport.ExportAsCsv(tableConfig.name, GetColumns(), m_ViewModel.results, context);
+        }
+
         private bool IsTableViewRow(VisualElement ve)
         {
             return ve.ClassListContains("unity-multi-column-view__row-container");

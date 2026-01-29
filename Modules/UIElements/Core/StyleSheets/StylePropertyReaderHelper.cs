@@ -566,7 +566,9 @@ namespace UnityEngine.UIElements.StyleSheets
                             var type = obj.GetType();
                             if (type == typeof(Texture2D))
                             {
-                                source.texture = Panel.LoadResource(path, typeof(Texture2D), dpiScaling) as Texture2D;
+                                source.sprite = Panel.LoadResource(path, typeof(Sprite), dpiScaling) as Sprite;
+                                if (source.IsNull())
+                                    source.texture = Panel.LoadResource(path, typeof(Texture2D), dpiScaling) as Texture2D;
                             }
                             else if (type == typeof(Sprite))
                             {

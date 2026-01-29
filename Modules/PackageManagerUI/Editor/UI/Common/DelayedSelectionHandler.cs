@@ -67,7 +67,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             if (string.IsNullOrEmpty(packageToSelect))
                 return;
 
-            m_PackageDatabase.GetPackageAndVersionByIdOrName(packageToSelect, out var package, out _, true);
+            var package = m_PackageDatabase.GetPackageByIdOrName(packageToSelect) ?? m_PackageDatabase.GetPackageByDisplayName(packageToSelect);
             var page = m_PageManager.GetPage(pageId);
             if (package != null && page?.ShouldInclude(package) != true)
                 page = m_PageManager.FindPage(package);
@@ -75,7 +75,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             if (page is { id: MyAssetsPage.k_Id })
             {
                 m_PageManager.activePage = page;
-                page.Load(packageToSelect);
+                page.Load(package?.uniqueId ?? packageToSelect);
                 return;
             }
 

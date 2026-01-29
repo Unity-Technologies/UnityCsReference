@@ -536,8 +536,7 @@ namespace UnityEngine.UIElements.StyleSheets
 
         static readonly Regex s_HexColorRegex = new Regex(@"^#[a-fA-F0-9]{3}(?:[a-fA-F0-9]{3})?$", RegexOptions.Compiled);
         static readonly Regex s_RgbRegex = new Regex(@"^rgb\(\s*(\d+\.?\d*)\s*,\s*(\d+\.?\d*)\s*,\s*(\d+\.?\d*)\s*\)$", RegexOptions.Compiled);
-        static readonly Regex s_RgbaRegex = new Regex(@"rgba\(\s*(\d+\.?\d*)\s*,\s*(\d+\.?\d*)\s*,\s*(\d+\.?\d*)\s*,\s*(\d+\.?\d*)\s*\)$", RegexOptions.Compiled);
-
+        static readonly Regex s_RgbaRegex = new Regex(@"^rgba\(\s*(\d+\.?\d*)\s*,\s*(\d+\.?\d*)\s*,\s*(\d+\.?\d*)\s*,\s*(\d*\.?\d*)\s*\)$", RegexOptions.Compiled);
         
         protected override bool MatchColor()
         {

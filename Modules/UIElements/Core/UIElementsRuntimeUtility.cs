@@ -188,6 +188,12 @@ namespace UnityEngine.UIElements
                 if (overlayPanel.sortingPriority >= maxPriority)
                     return;
 
+                // Filter out transient panels (Shader graph preview Manager for example)
+                if (overlayPanel is RuntimePanel runtimePanel && runtimePanel.panelSettings != null && runtimePanel.panelSettings.isTransient)
+                {
+                    continue;
+                }
+
                 if (overlayPanel.targetDisplay == displayIndex && overlayPanel.targetTexture == null)
                 {
                     RenderPanel(overlayPanel);

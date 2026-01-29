@@ -135,19 +135,10 @@ namespace UnityEditor.Search
                 window.TogglePanelView(SearchViewFlags.OpenInspectorPreview);
         }
 
-        private void OnSaveQuery(ISearchQueryView window)
+        private void OnSaveQuery(ISearchQueryView searchQueryView)
         {
             var saveQueryMenu = new GenericMenu();
-
-            var activeQuery = m_ViewModel.state.activeQuery;
-
-            if (activeQuery != null && (activeQuery is not SearchQueryAsset searchQueryAsset || !searchQueryAsset.IsReadOnlyQuery))
-            {
-                saveQueryMenu.AddItem(new GUIContent($"Save {activeQuery.displayName}"), false, window.SaveActiveSearchQuery);
-                saveQueryMenu.AddSeparator("");
-            }
-
-            AddSaveQueryMenuItems(window, saveQueryMenu);
+            AddSaveQueryMenuItems(searchQueryView, saveQueryMenu);
             saveQueryMenu.ShowAsContext();
         }
 
@@ -157,14 +148,27 @@ namespace UnityEditor.Search
                 OnSaveQuery(window);
         }
 
-        private void AddSaveQueryMenuItems(ISearchQueryView window, GenericMenu saveQueryMenu)
+        internal void AddSaveQueryMenuItems(ISearchQueryView searchQueryView, GenericMenu saveQueryMenu)
         {
-            saveQueryMenu.AddItem(new GUIContent("Save User"), false, window.SaveUserSearchQuery);
-            saveQueryMenu.AddItem(new GUIContent("Save Project..."), false, window.SaveProjectSearchQuery);
+            var activeQuery = m_ViewModel.state.activeQuery;
+
+            if (activeQuery != null && (activeQuery is not SearchQueryAsset searchQueryAsset || !searchQueryAsset.IsReadOnlyQuery))
+            {
+                saveQueryMenu.AddItem(new GUIContent($"Save {activeQuery.displayName}"), false, searchQueryView.SaveActiveSearchQuery);
+                saveQueryMenu.AddSeparator("");
+            }
+
+            saveQueryMenu.AddItem(new GUIContent("Save User"), false, searchQueryView.SaveUserSearchQuery);
+            saveQueryMenu.AddItem(new GUIContent("Save Project..."), false, searchQueryView.SaveProjectSearchQuery);
             if (!string.IsNullOrEmpty(context.searchText))
             {
                 saveQueryMenu.AddSeparator("");
                 saveQueryMenu.AddItem(new GUIContent("Clipboard"), false, () => SaveQueryToClipboard(context.searchText));
+            }
+
+            if (searchQueryView is SearchWindow window)
+            {
+                window.resultView?.AddSaveQueryMenuItems(context, saveQueryMenu);
             }
         }
 

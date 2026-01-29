@@ -189,6 +189,7 @@ namespace UnityEngine.TextCore
         public int startIndex;
         public int length;
         public IntPtr fontAsset;
+        public IntPtr gradientAsset;
         public int fontSize;        // Encoded in Fixed Point.
         public Color32 color;
         public FontStyles fontStyle;
@@ -218,6 +219,7 @@ namespace UnityEngine.TextCore
                 $"{nameof(linkID)}: {linkID}\n" +
                 $"{nameof(fontSize)}: {fontSize}\n" +
                 $"{nameof(fontAsset)}: {fontAsset}" +
+                $"{nameof(gradientAsset)}: {gradientAsset}\n" +
                 $"{nameof(startIndex)}: {startIndex}\n" +
                 $"{nameof(length)}: {length}";
         }

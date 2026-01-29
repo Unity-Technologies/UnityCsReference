@@ -489,7 +489,7 @@ namespace UnityEditor.Search
             // Execute default action
             var item = selection.First();
             if (item.provider.actions.Count > actionIndex)
-                ExecuteAction(item.provider.actions.Skip(actionIndex).First(), selection.ToArray(), !SearchSettings.keepOpen);
+                ExecuteAction(item.provider.actions.Skip(actionIndex).First(), selection.ToArray(), true);
         }
 
         public void ExecuteAction(SearchAction action, SearchItem[] items, bool endSearch = true)
@@ -918,6 +918,11 @@ namespace UnityEditor.Search
             if (s_FocusedWindow)
                 s_FocusedWindow.Focus();
             Utils.CallDelayed(Close);
+        }
+
+        public virtual bool CanCloseWindowOnAction()
+        {
+            return !SearchSettings.keepOpen && (!context.options.HasFlag(SearchFlags.Dockable) || !docked);
         }
 
         IEnumerable<IGroup> ISearchView.EnumerateGroups()
