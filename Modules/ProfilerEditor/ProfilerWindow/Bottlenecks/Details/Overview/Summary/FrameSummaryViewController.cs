@@ -2,10 +2,9 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System.Threading;
 using System;
+using System.Threading;
 using UnityEditor;
-using UnityEngine.UIElements;
 
 namespace Unity.Profiling.Editor.UI
 {
@@ -14,17 +13,8 @@ namespace Unity.Profiling.Editor.UI
         // Model.
         CancellationTokenSource m_BuildModelCancellation;
 
-        // View.
-        VisualElement m_TopSection;
-        VisualElement m_MainThreadUtilizationContainer;
-        VisualElement m_SystemsImpactContainer;
-        VisualElement m_FrameTimesContainer;
-        VisualElement m_AllocationsContainer;
-        Label m_NoDataLabel;
-
         // Children.
         PieChartViewController m_MainThreadUtilizationViewController;
-        SystemsImpactViewController m_SystemsImpactViewController;
         SingleFrameTimesSectionViewController m_SingleFrameTimesSectionViewController;
         FrameAllocationsSectionViewController m_FrameAllocationsSectionViewController;
 
@@ -32,7 +22,8 @@ namespace Unity.Profiling.Editor.UI
             IProfilerCaptureDataService dataService,
             IProfilerPersistentSettingsService settingsService,
             ProfilerWindow profilerWindow,
-            IResponder responder) : base(dataService, settingsService, profilerWindow, responder)
+            IResponder responder,
+            IDetailsElementBinder detailsBinder) : base(dataService, settingsService, profilerWindow, responder, detailsBinder)
         {
 
         }
@@ -40,28 +31,22 @@ namespace Unity.Profiling.Editor.UI
         public void ReloadData(int frameIndex)
         {
             UnityEngine.Debug.Assert(IsViewLoaded);
+
+            // If we have no data, show the no data view.
+            if (m_DataService.FrameCount == 0)
+            {
+                HideContentViewsAndShowNoDataView();
+                m_SelectedRange = new Range(0, 0);
+                return;
+            }
+
+            m_SelectedRange = new Range(frameIndex, frameIndex);
             ReloadDataAsync(frameIndex);
         }
 
         public void CancelReloadDataIfNecessary()
         {
             m_BuildModelCancellation?.Cancel();
-        }
-
-        protected override VisualElement LoadView()
-        {
-            var view = ViewControllerUtility.LoadVisualTreeFromBuiltInUxml("FrameSummaryView.uxml");
-            if (view == null)
-                throw new InvalidViewDefinedInUxmlException();
-
-            const string k_UssClass_Dark = "frame-summary-view__dark";
-            const string k_UssClass_Light = "frame-summary-view__light";
-            var themeUssClass = (EditorGUIUtility.isProSkin) ? k_UssClass_Dark : k_UssClass_Light;
-            view.AddToClassList(themeUssClass);
-
-            GatherReferencesInView(view);
-
-            return view;
         }
 
         protected override void ViewLoaded()
@@ -72,21 +57,22 @@ namespace Unity.Profiling.Editor.UI
 
             // Embed child view controllers.
             m_MainThreadUtilizationViewController = new PieChartViewController("Main thread utilization");
-            m_MainThreadUtilizationContainer.Add(m_MainThreadUtilizationViewController.View);
+            m_BottlenecksContainer.Add(m_MainThreadUtilizationViewController.View);
             AddChild(m_MainThreadUtilizationViewController);
 
-            m_SystemsImpactViewController = new SystemsImpactViewController("Systems impact in frame");
+            m_SystemsImpactViewController = new SystemsImpactViewController(m_DataService, "Systems impact in frame");
             m_SystemsImpactContainer.Add(m_SystemsImpactViewController.View);
             AddChild(m_SystemsImpactViewController);
 
             m_SingleFrameTimesSectionViewController = new SingleFrameTimesSectionViewController(
                 m_ProfilerWindow,
                 m_SettingsService,
-                topMarkersResponder: this);
+                this,
+                m_DetailsBinder);
             m_FrameTimesContainer.Add(m_SingleFrameTimesSectionViewController.View);
             AddChild(m_SingleFrameTimesSectionViewController);
 
-            m_FrameAllocationsSectionViewController = new FrameAllocationsSectionViewController(topMarkersResponder: this);
+            m_FrameAllocationsSectionViewController = new FrameAllocationsSectionViewController(m_ProfilerWindow, this, m_DetailsBinder);
             m_AllocationsContainer.Add(m_FrameAllocationsSectionViewController.View);
             AddChild(m_FrameAllocationsSectionViewController);
         }
@@ -99,16 +85,6 @@ namespace Unity.Profiling.Editor.UI
             }
 
             base.Dispose(disposing);
-        }
-
-        void GatherReferencesInView(VisualElement view)
-        {
-            m_TopSection = view.Q<VisualElement>("frame-summary-view__top-section");
-            m_MainThreadUtilizationContainer = view.Q<VisualElement>("frame-summary-view__main-thread-utilization-container");
-            m_SystemsImpactContainer = view.Q<VisualElement>("frame-summary-view__systems-impact-container");
-            m_FrameTimesContainer = view.Q<VisualElement>("frame-summary-view__frame-times-container");
-            m_AllocationsContainer = view.Q<VisualElement>("frame-summary-view__allocations-container");
-            m_NoDataLabel = view.Q<Label>("frame-summary-view__no-data-label");
         }
 
         async void ReloadDataAsync(int frameIndex)

@@ -316,6 +316,7 @@ namespace UnityEngine
             InstanceIDsToValidArray_Internal((IntPtr)entityIDs.GetUnsafeReadOnlyPtr(), entityIDs.Length, (IntPtr)validArray.GetUnsafePtr(), validArray.Length);
         }
 
+        [Obsolete("InstanceIDsToValidArray obsolete. Use EntityIdsToValidArray(ReadOnlySpan<EntityId>, Span<bool>) instead")]
         public static unsafe void InstanceIDsToValidArray(ReadOnlySpan<int> instanceIDs, Span<bool> validArray)
         {
             if(instanceIDs.Length != validArray.Length)

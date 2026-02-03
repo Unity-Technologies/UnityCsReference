@@ -25,12 +25,15 @@ namespace Unity.UI.Builder
         }
 
         internal const string k_MaterialPropertiesListViewName = "material-properties-list-view";
+        internal const string k_MaterialWarningName = "material-warning";
 
         const string k_EmptyListText = "Click the + icon to add a material property.";
         const string k_NoPropertiesText = "This Shader Graph material doesn't expose any properties.";
 
         const string k_EmptyListClassName = "material-properties-list-empty";
         const string k_FieldClassName = "unity-material-properties-style-field";
+        const string k_WarningClassName = "material-warning-style-field:";
+        const string k_WarningHelpBoxClassName = "material-warning-label";
         const string k_UxmlPath = BuilderConstants.UtilitiesPath + "/StyleField/MaterialDefinitionStyleField.uxml";
         const string k_UssPathNoExt = BuilderConstants.UtilitiesPath + "/StyleField/MaterialDefinitionStyleField";
 
@@ -40,6 +43,7 @@ namespace Unity.UI.Builder
 
         private ObjectField m_MaterialObjectField;
         private ListView m_MaterialPropertiesListView;
+        private VisualElement m_MaterialWarningPlaceHolder;
         private List<MaterialPropertyValue> m_MaterialPropertiesSource;
 
         public MaterialDefinitionStyleField() : this(null) { }
@@ -73,6 +77,9 @@ namespace Unity.UI.Builder
             };
 
             m_MaterialPropertiesListView.onRemove += OnRemoveMaterialProperty;
+
+            m_MaterialWarningPlaceHolder = this.Q<VisualElement>(k_MaterialWarningName);
+            m_MaterialWarningPlaceHolder.AddToClassList(k_WarningClassName);
         }
 
         public override void SetValueWithoutNotify(MaterialDefinition newValue)
@@ -88,6 +95,27 @@ namespace Unity.UI.Builder
             m_MaterialPropertiesListView.RefreshItems();
 
             UpdateDropDownMenu(newValue.material);
+
+            UpdateInvalidMaterialWarning(newValue.material);
+        }
+
+        void UpdateInvalidMaterialWarning(Material material)
+        {
+            m_MaterialWarningPlaceHolder.Clear();
+
+            if (!MaterialDefinition.IsMaterialValid(material))
+            {
+                var helpBox = new UnityEngine.UIElements.HelpBox(
+                    "Selected material '" + material.name + "' is not compatible with UITK",
+                    HelpBoxMessageType.Warning);
+                helpBox.classList.Add(k_WarningHelpBoxClassName);
+                m_MaterialWarningPlaceHolder.Add(helpBox);
+                m_MaterialPropertiesListView.style.display = DisplayStyle.None;
+            }
+            else
+            {
+                m_MaterialPropertiesListView.style.display = DisplayStyle.Flex;
+            }
         }
 
         internal static string SanitizePropertyName(string name)

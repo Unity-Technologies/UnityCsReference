@@ -19,7 +19,7 @@ namespace UnityEngine.LowLevelPhysics2D
     {
         /// <summary>
         /// The rotation direction where X = cos(angle) and Y = sin(angle).
-        /// This should always be normalised otherwise warnings will be produced when used, however this is not enforced.
+        /// This should always be normalized otherwise warnings will be produced when used, however this is not enforced.
         /// See <see cref="LowLevelPhysics2D.PhysicsRotate.isNormalized"/> and <see cref="LowLevelPhysics2D.PhysicsRotate.Normalized"/>.
         /// </summary>
         /// <remarks>

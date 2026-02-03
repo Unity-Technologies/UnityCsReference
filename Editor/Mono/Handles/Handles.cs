@@ -1033,6 +1033,30 @@ namespace UnityEditor
             return value;
         }
 
+        public static float SnapAngleValue(float value)
+        {
+            return SnapAngleValue(value, EditorSnapSettings.rotate);
+        }
+
+        public static float SnapAngleValue(float value, float snap)
+        {
+            if (EditorSnapSettings.angleSnapEnabled)
+                return Snapping.Snap(value, snap);
+            return value;
+        }
+
+        public static float SnapScaleValue(float value)
+        {
+            return SnapScaleValue(value, EditorSnapSettings.scale);
+        }
+
+        public static float SnapScaleValue(float value, float snap)
+        {
+            if (EditorSnapSettings.scaleSnapEnabled)
+                return Snapping.Snap(value, snap);
+            return value;
+        }
+
         // If snapping is active, return a new value rounded to the nearest increment of snap.
         public static Vector2 SnapValue(Vector2 value, Vector2 snap)
         {
@@ -1066,7 +1090,7 @@ namespace UnityEditor
                 }
             }
         }
-        
+
         internal static void AlignToGrid(Transform[] transforms)
         {
             if (transforms != null && transforms.Length > 0)
@@ -1097,7 +1121,7 @@ namespace UnityEditor
                 }
             }
         }
-        
+
         // Snaps val to grid based on constraintDirection
         internal static Vector3 SnapToGrid(Vector3 val, Vector3 constraintDirection, bool invertAxisFilter)
         {

@@ -59,7 +59,7 @@ namespace UnityEngine.LowLevelPhysics2D
         public float linearFrequency { readonly get => m_LinearFrequency; set => m_LinearFrequency = Mathf.Max(0f, value); }
 
         /// <summary>
-        /// Linear dampin, non-dimensional.
+        /// Linear damping, non-dimensional.
         /// Use 1 for critical damping.
         /// </summary>
         public float linearDamping { readonly get => m_LinearDamping; set => m_LinearDamping = Mathf.Max(0f, value); }

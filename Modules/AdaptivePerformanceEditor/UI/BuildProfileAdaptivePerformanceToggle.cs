@@ -78,7 +78,7 @@ namespace UnityEditor.AdaptivePerformance.UI.Editor
             if ( generalSetting != null)
             {
                 profile.RemoveComponent(generalSetting);
-                ScriptableObject.DestroyImmediate(generalSetting);
+                ScriptableObject.DestroyImmediate(generalSetting, true);
             }
             var managerSetting = profile.GetComponent<AdaptivePerformanceManagerSettings>();
             if (managerSetting != null)
@@ -90,6 +90,7 @@ namespace UnityEditor.AdaptivePerformance.UI.Editor
                     AssetDatabase.RemoveObjectFromAsset(loader);
                 }
                 managerSetting.loaders.Clear();
+                ScriptableObject.DestroyImmediate(managerSetting, true);
             }
             var providerSettingContainer = profile.GetComponent<BuildProfileProviderContainer>();
             if (providerSettingContainer != null)
@@ -102,9 +103,26 @@ namespace UnityEditor.AdaptivePerformance.UI.Editor
                     {
                         continue;
                     }
+
+                    foreach (var scaler in providerSettings.AddedScalerViaScan)
+                    {
+                        AssetDatabase.RemoveObjectFromAsset(scaler);
+                        ScriptableObject.DestroyImmediate(scaler, true);
+                    }
+
+                    foreach (var profiles in providerSettings.ScalerProfiles)
+                    {
+                        foreach (var addedScaler in profiles.AddedScalers)
+                        {
+                            AssetDatabase.RemoveObjectFromAsset(addedScaler);
+                            ScriptableObject.DestroyImmediate(addedScaler, true);
+                        }
+                    }
                     AssetDatabase.RemoveObjectFromAsset(providerSettings);
+                    ScriptableObject.DestroyImmediate(providerSettings, true);
                 }
                 providerSettingContainer.adaptivePerformanceProviderSettings.Clear();
+                ScriptableObject.DestroyImmediate(providerSettingContainer, true);
             }
             AssetDatabase.SaveAssetIfDirty(profile);
         }

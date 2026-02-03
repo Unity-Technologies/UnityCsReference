@@ -223,7 +223,6 @@ namespace UnityEngine.LowLevelPhysics2D
         /// <summary>
         /// Draw a PhysicsJoint that visually represents its current state in the world.
         /// This is only used in the Unity Editor or in a Development Player.
-        /// See <see cref="LowLevelPhysics2D.PhysicsWorld.DrawResults"/>, <see cref="LowLevelPhysics2D.PhysicsWorld.drawOptions"/> and <see cref="LowLevelPhysics2D.PhysicsWorld.drawResults"/>.
         /// </summary>
         public readonly void Draw() => m_Id.Draw();
 

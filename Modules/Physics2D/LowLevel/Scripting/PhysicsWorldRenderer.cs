@@ -54,7 +54,7 @@ namespace UnityEngine.LowLevelPhysics2D
             if (!s_IsInitialized)
                 return;
 
-            // Un-register render callback.
+            // Unregister render callback.
             if (s_UsingBIRP)
                 Camera.onPostRender -= BIRP_RenderAllWorlds;
             else

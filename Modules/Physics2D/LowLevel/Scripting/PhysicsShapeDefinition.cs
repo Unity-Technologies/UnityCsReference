@@ -56,7 +56,7 @@ namespace UnityEngine.LowLevelPhysics2D
         /// <summary>
         /// Controls whether this shape produces contact events which can be retrieved after the simulation has completed.
         /// This only applies to kinematic and dynamic bodies.
-        /// A contact event is produced if either shapes involved have theit contactEvents enabled.
+        /// A contact event is produced if either shapes involved have their contactEvents enabled.
         /// Changing this at run-time may lead to lost begin/end events.
         /// </summary>
         public bool contactEvents { readonly get => m_ContactEvents; set => m_ContactEvents = value; }
@@ -101,7 +101,7 @@ namespace UnityEngine.LowLevelPhysics2D
         public bool startMassUpdate { readonly get => m_StartMassUpdate; set => m_StartMassUpdate = value; }
 
         /// <summary>
-        /// The surface material for the shape comprising of many properties such as friciton, bounciness, rolling resistance etc.
+        /// The surface material for the shape comprising of many properties such as friction, bounciness, rolling resistance etc.
         /// </summary>
         /// <remarks>
         /// This is exposed directly as a field rather than a property as it is extremely unlikely to ever change and causes usability issues as a property.

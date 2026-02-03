@@ -2,41 +2,32 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System.Threading;
 using System;
+using System.Threading;
 using UnityEditor;
-using UnityEngine.UIElements;
 
 namespace Unity.Profiling.Editor.UI
 {
     class RangeSummaryViewController : SummaryViewController
     {
         // Model.
+        readonly bool m_RangeIsWholeCapture;
         readonly string m_RangeDescriptor;
         readonly string m_NoDataText;
-        CancellationTokenSource m_BuildModelCancellation;
-
-        // View.
-        VisualElement m_TopSection;
-        VisualElement m_BottlenecksContainer;
-        VisualElement m_SystemsImpactContainer;
-        VisualElement m_FrameTimesContainer;
-        VisualElement m_AllocationsContainer;
-        Label m_NoDataLabel;
+        protected CancellationTokenSource m_BuildModelCancellation;
 
         // Children.
         RangeBottlenecksViewController m_BottlenecksViewController;
-        SystemsImpactViewController m_SystemsImpactViewController;
-        FrameTimesSectionViewController m_FrameTimesSectionViewController;
-        AllocationsSectionViewController m_AllocationsSectionViewController;
 
         public RangeSummaryViewController(
             IProfilerCaptureDataService dataService,
             IProfilerPersistentSettingsService settingsService,
             ProfilerWindow profilerWindow,
             IResponder responder,
-            bool rangeIsWholeCapture = false) : base(dataService, settingsService, profilerWindow, responder)
+            IDetailsElementBinder detailsBinder,
+            bool rangeIsWholeCapture = false) : base(dataService, settingsService, profilerWindow, responder, detailsBinder)
         {
+            m_RangeIsWholeCapture = rangeIsWholeCapture;
             m_RangeDescriptor = (rangeIsWholeCapture) ? "capture" : "selection";
             m_NoDataText = (rangeIsWholeCapture) ?
                 "Record a new capture or load an existing one to see its details here." :
@@ -46,28 +37,22 @@ namespace Unity.Profiling.Editor.UI
         public void ReloadData(Range frameRange)
         {
             UnityEngine.Debug.Assert(IsViewLoaded);
+
+            // If we have no data, show the no data view.
+            if (m_DataService.FrameCount == 0)
+            {
+                HideContentViewsAndShowNoDataView();
+                m_SelectedRange = new Range(0, 0);
+                return;
+            }
+
+            m_SelectedRange = frameRange;
             ReloadDataAsync(frameRange);
         }
 
         public void CancelReloadDataIfNecessary()
         {
             m_BuildModelCancellation?.Cancel();
-        }
-
-        protected override VisualElement LoadView()
-        {
-            var view = ViewControllerUtility.LoadVisualTreeFromBuiltInUxml("RangeSummaryView.uxml");
-            if (view == null)
-                throw new InvalidViewDefinedInUxmlException();
-
-            const string k_UssClass_Dark = "range-summary-view__dark";
-            const string k_UssClass_Light = "range-summary-view__light";
-            var themeUssClass = (EditorGUIUtility.isProSkin) ? k_UssClass_Dark : k_UssClass_Light;
-            view.AddToClassList(themeUssClass);
-
-            GatherReferencesInView(view);
-
-            return view;
         }
 
         protected override void ViewLoaded()
@@ -82,21 +67,23 @@ namespace Unity.Profiling.Editor.UI
             AddChild(m_BottlenecksViewController);
 
             var systemsImpactTitle = $"Systems impact across {m_RangeDescriptor} (mean time)";
-            m_SystemsImpactViewController = new SystemsImpactViewController(systemsImpactTitle);
+            m_SystemsImpactViewController = new SystemsImpactViewController(m_DataService, systemsImpactTitle);
             m_SystemsImpactContainer.Add(m_SystemsImpactViewController.View);
             AddChild(m_SystemsImpactViewController);
 
             m_FrameTimesSectionViewController = new FrameTimesSectionViewController(
                 m_ProfilerWindow,
                 m_RangeDescriptor,
-                topMarkersResponder: this);
+                this,
+                m_DetailsBinder);
             m_FrameTimesContainer.Add(m_FrameTimesSectionViewController.View);
             AddChild(m_FrameTimesSectionViewController);
 
             m_AllocationsSectionViewController = new AllocationsSectionViewController(
                 m_ProfilerWindow,
                 m_RangeDescriptor,
-                topMarkersResponder: this);
+                this,
+                m_DetailsBinder);
             m_AllocationsContainer.Add(m_AllocationsSectionViewController.View);
             AddChild(m_AllocationsSectionViewController);
         }
@@ -109,16 +96,6 @@ namespace Unity.Profiling.Editor.UI
             }
 
             base.Dispose(disposing);
-        }
-
-        void GatherReferencesInView(VisualElement view)
-        {
-            m_TopSection = view.Q<VisualElement>("range-summary-view__top-section");
-            m_BottlenecksContainer = view.Q<VisualElement>("range-summary-view__bottlenecks-container");
-            m_SystemsImpactContainer = view.Q<VisualElement>("range-summary-view__systems-impact-container");
-            m_FrameTimesContainer = view.Q<VisualElement>("range-summary-view__frame-times-container");
-            m_AllocationsContainer = view.Q<VisualElement>("range-summary-view__allocations-container");
-            m_NoDataLabel = view.Q<Label>("range-summary-view__no-data-label");
         }
 
         async void ReloadDataAsync(Range frameRange)

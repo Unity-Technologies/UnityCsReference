@@ -1050,7 +1050,7 @@ namespace UnityEngine.LowLevelPhysics2D
         /// See <see cref="LowLevelPhysics2D.PhysicsQuery.QueryFilter"/>, <see cref="LowLevelPhysics2D.PhysicsQuery.WorldCastMode"/>, <see cref="LowLevelPhysics2D.PhysicsQuery.WorldCastResult"/> and <see cref="Unity.Collections.Allocator"/>.
         /// </summary>
         /// <param name="shapeProxy">The shape proxy to use. This must be in world-space.</param>
-        /// <param name="translation">The translation relative to the shape proxy defining the direction the shape peoxy will move through the world.</param>
+        /// <param name="translation">The translation relative to the shape proxy defining the direction the shape proxy will move through the world.</param>
         /// <param name="filter">The filter to control what results are returned.</param>
         /// <param name="castMode">Controls how many and in what order the results are returned.</param>
         /// <param name="allocator">The memory allocator to use for the results. This can only be <see cref="Unity.Collections.Allocator.Temp"/>, <see cref="Unity.Collections.Allocator.TempJob"/> or <see cref="Unity.Collections.Allocator.Persistent"/>.</param>
@@ -1307,7 +1307,7 @@ namespace UnityEngine.LowLevelPhysics2D
             /// <summary>
             /// Find the maximum values the specified world counters.
             /// </summary>
-            /// <param name="countersA">The first world counters to find the maxiumum of.</param>
+            /// <param name="countersA">The first world counters to find the maximum of.</param>
             /// <param name="countersB">The second world counters to find the maximum of.</param>
             /// <returns>The maximum values from both world counters.</returns>
             public static WorldCounters Maximum(WorldCounters countersA, WorldCounters countersB)
@@ -1423,7 +1423,7 @@ namespace UnityEngine.LowLevelPhysics2D
 	        public float storeImpulses { readonly get => m_StoreImpulses; set => m_StoreImpulses = value; }
 
             /// <summary>
-            /// Time spent spliting islands because some contacts and/or joints have been removed.
+            /// Time spent splitting islands because some contacts and/or joints have been removed.
             /// </summary>
 	        public float splitIslands { readonly get => m_SplitIslands; set => m_SplitIslands = value; }
 
@@ -1513,7 +1513,7 @@ namespace UnityEngine.LowLevelPhysics2D
             /// <summary>
             /// Find the maximum values the specified world profiles.
             /// </summary>
-            /// <param name="countersA">The first world profile to find the maxiumum of.</param>
+            /// <param name="countersA">The first world profile to find the maximum of.</param>
             /// <param name="countersB">The second world profile to find the maximum of.</param>
             /// <returns>The maximum values from both world profile.</returns>
             public static WorldProfile Maximum(WorldProfile profileA, WorldProfile profileB)
@@ -2360,7 +2360,7 @@ namespace UnityEngine.LowLevelPhysics2D
         /// <summary>
         /// Controls the element depth.
         /// 
-        /// When using custom drawing of geometry or primitive shapes there is no reference to the orthoganal axis used with
+        /// When using custom drawing of geometry or primitive shapes there is no reference to the orthogonal axis used with
         /// respect to the current <see cref="LowLevelPhysics2D.PhysicsWorld.transformPlane"/>.
         ///
         /// The element depth is in world-space and for each transform plan is defined as:
@@ -2395,7 +2395,8 @@ namespace UnityEngine.LowLevelPhysics2D
         /// <summary>
         /// Draw the specified Circle Geometry.
         /// This is only used in the Unity Editor or in a Development Player.
-        /// See <see cref="LowLevelPhysics2D.CircleGeometry"/> and <see cref="LowLevelPhysics2D.PhysicsWorld.drawResults"/>.
+        /// 
+        /// See <see cref="LowLevelPhysics2D.CircleGeometry"/>.
         /// </summary>
         /// <param name="geometry">The geometry to draw.</param>
         /// <param name="transform">The transform to use on the specified geometry.</param>
@@ -2407,7 +2408,7 @@ namespace UnityEngine.LowLevelPhysics2D
         /// <summary>
         /// Draw the specified span of Circle Geometry.
         /// This is only used in the Unity Editor or in a Development Player.
-        /// See <see cref="LowLevelPhysics2D.CircleGeometry"/> and <see cref="LowLevelPhysics2D.PhysicsWorld.drawResults"/>.
+        /// See <see cref="LowLevelPhysics2D.CircleGeometry"/>.
         /// </summary>
         /// <param name="geometry">The geometry to draw.</param>
         /// <param name="transform">The transform to use on the specified geometry.</param>
@@ -2419,7 +2420,8 @@ namespace UnityEngine.LowLevelPhysics2D
         /// <summary>
         /// Draw the specified Capsule geometry.
         /// This is only used in the Unity Editor or in a Development Player.
-        /// See <see cref="LowLevelPhysics2D.CapsuleGeometry"/> and <see cref="LowLevelPhysics2D.PhysicsWorld.drawResults"/>.
+        /// 
+        /// See <see cref="LowLevelPhysics2D.CapsuleGeometry"/>.
         /// </summary>
         /// <param name="geometry">The geometry to draw.</param>
         /// <param name="transform">The transform to use on the specified geometry.</param>
@@ -2431,7 +2433,8 @@ namespace UnityEngine.LowLevelPhysics2D
         /// <summary>
         /// Draw the specified span of Capsule geometry.
         /// This is only used in the Unity Editor or in a Development Player.
-        /// See <see cref="LowLevelPhysics2D.CapsuleGeometry"/> and <see cref="LowLevelPhysics2D.PhysicsWorld.drawResults"/>.
+        /// 
+        /// See <see cref="LowLevelPhysics2D.CapsuleGeometry"/>.
         /// </summary>
         /// <param name="geometry">The geometry to draw.</param>
         /// <param name="transform">The transform to use on the specified geometry.</param>
@@ -2443,7 +2446,8 @@ namespace UnityEngine.LowLevelPhysics2D
         /// <summary>
         /// Draw the specified Polygon geometry.
         /// This is only used in the Unity Editor or in a Development Player.
-        /// See <see cref="LowLevelPhysics2D.PolygonGeometry"/> and <see cref="LowLevelPhysics2D.PhysicsWorld.drawResults"/>.
+        /// 
+        /// See <see cref="LowLevelPhysics2D.PolygonGeometry"/>.
         /// </summary>
         /// <param name="geometry">The geometry to draw.</param>
         /// <param name="transform">The transform to use on the specified geometry.</param>
@@ -2455,7 +2459,8 @@ namespace UnityEngine.LowLevelPhysics2D
         /// <summary>
         /// Draw the specified span of Polygon geometry.
         /// This is only used in the Unity Editor or in a Development Player.
-        /// See <see cref="LowLevelPhysics2D.PolygonGeometry"/> and <see cref="LowLevelPhysics2D.PhysicsWorld.drawResults"/>.
+        /// 
+        /// See <see cref="LowLevelPhysics2D.PolygonGeometry"/>.
         /// </summary>
         /// <param name="geometry">The geometry to draw.</param>
         /// <param name="transform">The transform to use on the specified geometry.</param>
@@ -2467,7 +2472,8 @@ namespace UnityEngine.LowLevelPhysics2D
         /// <summary>
         /// Draw the specified Segment geometry.
         /// This is only used in the Unity Editor or in a Development Player.
-        /// See <see cref="LowLevelPhysics2D.SegmentGeometry"/> and <see cref="LowLevelPhysics2D.PhysicsWorld.drawResults"/>.
+        /// 
+        /// See <see cref="LowLevelPhysics2D.SegmentGeometry"/>.
         /// </summary>
         /// <param name="geometry">The geometry to draw.</param>
         /// <param name="transform">The transform to use on the specified geometry.</param>
@@ -2478,7 +2484,8 @@ namespace UnityEngine.LowLevelPhysics2D
         /// <summary>
         /// Draw the specified span Segment geometry.
         /// This is only used in the Unity Editor or in a Development Player.
-        /// See <see cref="LowLevelPhysics2D.SegmentGeometry"/> and <see cref="LowLevelPhysics2D.PhysicsWorld.drawResults"/>.
+        /// 
+        /// See <see cref="LowLevelPhysics2D.SegmentGeometry"/>.
         /// </summary>
         /// <param name="geometry">The geometry to draw.</param>
         /// <param name="transform">The transform to use on the specified geometry.</param>
@@ -2489,7 +2496,6 @@ namespace UnityEngine.LowLevelPhysics2D
         /// <summary>
         /// Draw a Box.
         /// This is only used in the Unity Editor or in a Development Player.
-        /// See <see cref="LowLevelPhysics2D.PhysicsWorld.drawResults"/>.
         /// </summary>
         /// <param name="transform">The transform to use on the specified points.</param>
         /// <param name="size">The size of the box.</param>
@@ -2516,7 +2522,8 @@ namespace UnityEngine.LowLevelPhysics2D
         /// Draw a Capsule outline.
         /// This is only used in the Unity Editor or in a Development Player.
         /// For further information on the parameters.
-        /// See <see cref="LowLevelPhysics2D.CapsuleGeometry"/> and <see cref="LowLevelPhysics2D.PhysicsWorld.drawResults"/>.
+        /// 
+        /// See <see cref="LowLevelPhysics2D.CapsuleGeometry"/>.
         /// </summary>
         /// <param name="transform">The transform to use on the specified centers.</param>
         /// <param name="center1">The local center of the first semi-circle.</param>
@@ -2531,7 +2538,8 @@ namespace UnityEngine.LowLevelPhysics2D
         /// Draw a Point.
         /// This is only used in the Unity Editor or in a Development Player.
         /// A Point is similar to a filled Circle except the radius here is specified in pixels rather than world units.
-        /// See <see cref="LowLevelPhysics2D.PhysicsWorld.DrawCircle"/> and <see cref="LowLevelPhysics2D.PhysicsWorld.drawResults"/>.
+        /// 
+        /// See <see cref="LowLevelPhysics2D.PhysicsWorld.DrawCircle"/>.
         /// </summary>
         /// <param name="position">The position of the point in PhysicsWorld space.</param>
         /// <param name="radius">The radius of the point, in pixels (approximately).</param>
@@ -2542,7 +2550,6 @@ namespace UnityEngine.LowLevelPhysics2D
         /// <summary>
         /// Draw a Line.
         /// This is only used in the Unity Editor or in a Development Player.
-        /// See <see cref="LowLevelPhysics2D.PhysicsWorld.drawResults"/>.
         /// </summary>
         /// <param name="point0">The start of the line.</param>
         /// <param name="point1">The end of the line.</param>
@@ -2553,7 +2560,6 @@ namespace UnityEngine.LowLevelPhysics2D
         /// <summary>
         /// Draw a set of vertices as lines joined to each other.
         /// This is only used in the Unity Editor or in a Development Player.
-        /// See <see cref="LowLevelPhysics2D.PhysicsWorld.drawResults"/>.
         /// </summary>
         /// <param name="transform">The transform to use on the specified vertices.</param>
         /// <param name="vertices">The vertices defining the lines. A minimum of two vertices must be present.</param>
@@ -2565,7 +2571,6 @@ namespace UnityEngine.LowLevelPhysics2D
         /// <summary>
         /// Draw a Transform axis.
         /// This is only used in the Unity Editor or in a Development Player.
-        /// See <see cref="LowLevelPhysics2D.PhysicsWorld.drawResults"/>.
         /// </summary>
         /// <param name="transform">The Transform axis to draw.</param>
         /// <param name="scale"></param>
@@ -2577,21 +2582,19 @@ namespace UnityEngine.LowLevelPhysics2D
         /// <summary>
         /// Draw a world by iterating each object in the world and asking it to visually represent its current state.
         /// This is only used in the Unity Editor or in a Development Player.
-        /// See <see cref="LowLevelPhysics2D.PhysicsWorld.DrawOptions"/> and <see cref="LowLevelPhysics2D.PhysicsWorld.drawResults"/>.
-        /// <param name="drawAABB">The draw region to use to draw the world. A default PhysicsAABB will draw everything.</param>
         /// </summary>
+        /// <param name="drawAABB">The draw region to use to draw the world. A default PhysicsAABB will draw everything.</param>
         internal readonly void Draw(PhysicsAABB drawAABB) => PhysicsWorld_Draw(this, drawAABB);
 
         /// <summary>
         /// Draw all the worlds.
-        /// <param name="drawAABB">The draw region to use to draw the world. A default PhysicsAABB will draw everything.</param>
         /// </summary>
+        /// <param name="drawAABB">The draw region to use to draw the world. A default PhysicsAABB will draw everything.</param>
         internal static void DrawAllWorlds(PhysicsAABB drawAABB) => PhysicsWorld_DrawAllWorlds(drawAABB);
 
         /// <summary>
         /// Get the previous world draw results produced from the last call to <see cref="LowLevelPhysics2D.PhysicsWorld.Draw"/>.
         /// This is only used in the Unity Editor or in a Development Player.
-        /// See <see cref="LowLevelPhysics2D.PhysicsWorld.DrawResults"/>.
         /// </summary>
         /// <returns>The world draw results.</returns>
         internal readonly DrawResults drawResults => PhysicsWorld_GetDrawResults(this);

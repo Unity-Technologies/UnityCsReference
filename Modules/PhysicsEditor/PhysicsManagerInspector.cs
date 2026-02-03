@@ -495,6 +495,7 @@ namespace UnityEditor
             tab.Add(new PropertyField(serializedObject.FindProperty("m_GenerateOnTriggerStayEvents")));
             tab.Add(new PropertyField(serializedObject.FindProperty("m_ContactPairsMode")));
 
+            tab.Add(new PropertyField(serializedObject.FindProperty("m_IncrementalStaticBroadphase")));
             var broadPhaseProp = serializedObject.FindProperty("m_BroadphaseType");
             var broadPhase = new PropertyField(broadPhaseProp);
             tab.Add(broadPhase);

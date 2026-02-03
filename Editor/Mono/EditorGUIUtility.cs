@@ -961,6 +961,9 @@ namespace UnityEditor
         internal static void Internal_SwitchSkin()
         {
             skinIndex = 1 - skinIndex;
+
+            // Force EditorPrefs to flush to disk immediately so other processes can see the change
+            EditorPrefs.Sync();
         }
 
         // Return a GUIContent object with the name and icon of an Object.

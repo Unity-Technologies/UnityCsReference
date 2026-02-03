@@ -965,7 +965,8 @@ namespace UnityEditor.Search
                 return false;
 
             // If we are a mppm clone: we are a secondary process
-            if (Unity.Multiplayer.PlayMode.Editor.VirtualProjectsEditor.IsClone)
+            // NOTE: Use Application.HasARGV instead of : Unity.Multiplayer.PlayMode.Editor.VirtualProjectsEditor.IsClone to avoid allocation
+            if (Application.HasARGV(Unity.Multiplayer.PlayMode.Editor.CommandLineParameters.k_CloneProcess))
                 return false;
 
             if (EditorUtility.isInSafeMode)

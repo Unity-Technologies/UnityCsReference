@@ -149,10 +149,10 @@ namespace UnityEditorInternal
         static public extern int GetPreviousFrameIndex(int frame);
 
         [StaticAccessor("profiling::GetProfilerSessionPtr()->GetProfilerHistory()", StaticAccessorType.Arrow)]
-        static public extern int firstFrameIndex {[NativeMethod("GetFirstFrameIndex")] get; }
+        static public extern int firstFrameIndex {[NativeMethod("GetFirstFrameIndex", IsThreadSafe = true)] get; }
 
         [StaticAccessor("profiling::GetProfilerSessionPtr()->GetProfilerHistory()", StaticAccessorType.Arrow)]
-        static public extern int lastFrameIndex {[NativeMethod("GetLastFrameIndex")] get; }
+        static public extern int lastFrameIndex {[NativeMethod("GetLastFrameIndex", IsThreadSafe = true)] get; }
 
         [StaticAccessor("profiling::GetProfilerSessionPtr()->GetProfilerHistory()", StaticAccessorType.Arrow)]
         static internal extern void SetMaxFrameHistoryLength(int frameCount);

@@ -199,5 +199,15 @@ namespace UnityEditor.AdaptivePerformance.Editor
             bool enabled = settings.enableBoostOnStartup;
             return enabled ? "1" : "0";
         }
+        /// <summary>
+        /// Add the custom scaler in users' assets to the provider settings.
+        /// Only needed if you want to scan for custom scalers during build time.
+        /// </summary>
+        /// <param name="settings"></param>
+        /// <returns></returns>
+        public static bool AddCustomScalerToProviderSetting(UnityEngine.AdaptivePerformance.IAdaptivePerformanceSettings settings)
+        {
+            return EditorUtilities.AddCustomScalerToProviderSetting(settings);
+        }
     }
 }

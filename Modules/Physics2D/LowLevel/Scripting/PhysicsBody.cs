@@ -587,7 +587,7 @@ namespace UnityEngine.LowLevelPhysics2D
         public static void SetBatchForce(ReadOnlySpan<BatchForce> batch) => PhysicsBody_SetBatchForce(batch);
 
         /// <summary>
-        /// Applu an impulse for a batch of <see cref="LowLevelPhysics2D.PhysicsBody"/> using a span of <see cref="LowLevelPhysics2D.PhysicsBody.BatchImpulse"/>.
+        /// Apply an impulse for a batch of <see cref="LowLevelPhysics2D.PhysicsBody"/> using a span of <see cref="LowLevelPhysics2D.PhysicsBody.BatchImpulse"/>.
         /// If invalid values are passed to the batch, they will simply be ignored.
         /// For best performance, the bodies contained in the batch should all be part of the same <see cref="LowLevelPhysics2D.PhysicsWorld"/>.
         /// If the bodies in the batch are not contained in the same <see cref="LowLevelPhysics2D.PhysicsWorld"/>, the batch should be sorted by the <see cref="LowLevelPhysics2D.PhysicsWorld"/> the bodies are contained within.
@@ -1208,7 +1208,6 @@ namespace UnityEngine.LowLevelPhysics2D
         /// <summary>
         /// Draw a body that visually represents its current state in the world.
         /// This is only used in the Unity Editor or in a Development Player.
-        /// See <see cref="LowLevelPhysics2D.PhysicsWorld.DrawResults"/>, <see cref="LowLevelPhysics2D.PhysicsWorld.drawOptions"/> and <see cref="LowLevelPhysics2D.PhysicsWorld.drawResults"/>.
         /// </summary>
         public readonly void Draw() => PhysicsBody_Draw(this);
 

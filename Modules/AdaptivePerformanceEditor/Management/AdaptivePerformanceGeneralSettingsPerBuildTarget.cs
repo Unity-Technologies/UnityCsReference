@@ -9,6 +9,7 @@ using UnityEngine;
 using UnityEngine.AdaptivePerformance;
 
 using UnityEditor.AdaptivePerformance.Editor.Metadata;
+using UnityEngine.Scripting;
 
 namespace UnityEditor.AdaptivePerformance.Editor
 {
@@ -47,6 +48,17 @@ namespace UnityEditor.AdaptivePerformance.Editor
             {
                 m_EnableAdaptivePerformance = value;
                 EditorUtility.SetDirty(this);
+            }
+        }
+
+        [RequiredByNativeCode(optional: true)]
+        internal static void TryInitializeGeneralSettings()
+        {
+            AdaptivePerformanceGeneralSettingsPerBuildTarget generalSettings = null;
+            EditorBuildSettings.TryGetConfigObject(AdaptivePerformanceGeneralSettings.k_SettingsKey, out generalSettings);
+            if (generalSettings != null && generalSettings.EnableAdaptivePerformance && AdaptivePerformanceGeneralSettings.Instance == null)
+            {
+                AdaptivePerformanceGeneralSettings.Instance = AdaptivePerformanceGeneralSettingsForBuildTarget(BuildTargetGroup.Standalone);
             }
         }
 

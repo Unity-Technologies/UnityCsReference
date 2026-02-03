@@ -19,13 +19,16 @@ namespace Unity.Profiling.Editor.UI
         public SingleFrameTimesSectionViewController(
             ProfilerWindow profilerWindow,
             IProfilerPersistentSettingsService settingsService,
-            TopMarkersViewController.IResponder topMarkersResponder) : base(k_Title)
+            TopMarkersViewController.IResponder topMarkersResponder,
+            IDetailsElementBinder detailsBinder) : base(k_Title)
         {
             m_FrameBottlenecksViewController = new FrameBottlenecksViewController(settingsService, profilerWindow);
             m_TopFrameMarkersViewController = new TopMarkersViewController(
                 "Top markers in frame (self time)",
+                profilerWindow,
                 TopMarkersViewController.Action.SwitchToCpuModule,
-                topMarkersResponder);
+                topMarkersResponder,
+                detailsBinder);
         }
 
         public void RefreshFrameBottlenecksView(FrameBottlenecksModel frameBottlenecks)

@@ -4,6 +4,7 @@
 
 using UnityEditor;
 using UnityEngine.UIElements;
+using static Unity.Profiling.Editor.UI.IDetailsProvider;
 
 namespace Unity.Profiling.Editor.UI
 {
@@ -12,6 +13,7 @@ namespace Unity.Profiling.Editor.UI
         // Model.
         readonly string m_Title;
         readonly ProfilerWindow m_ProfilerWindow;
+        private readonly IDetailsElementBinder m_DetailsBinder;
         GCAllocationsModel? m_Model;
 
         // View.
@@ -26,10 +28,22 @@ namespace Unity.Profiling.Editor.UI
 
         public GCAllocationsViewController(
             string title,
-            ProfilerWindow profilerWindow)
+            ProfilerWindow profilerWindow,
+            IDetailsElementBinder detailsBinder)
         {
             m_Title = title;
             m_ProfilerWindow = profilerWindow;
+            m_DetailsBinder = detailsBinder;
+        }
+
+        protected override void Dispose(bool disposing)
+        {
+            if (disposing)
+            {
+                m_DetailsBinder.UnbindDetailsElement(m_MaximumCallsField);
+                m_DetailsBinder.UnbindDetailsElement(m_MaximumSizeField);
+            }
+            base.Dispose(disposing);
         }
 
         public void ReloadData(GCAllocationsModel model)
@@ -108,10 +122,16 @@ namespace Unity.Profiling.Editor.UI
                 var maximumCallsInFrame = model.MaximumCallsInFrame;
                 m_MaximumCallsField.ValueLabel.text = $"{maximumCallsInFrame.Value:N0}";
                 m_MaximumCallsButton.text = FrameIndexFormatterUtility.DisplayStringForFrameIndex(maximumCallsInFrame.FrameIndex);
+                m_DetailsBinder.BindDetailsElement(
+                    m_MaximumCallsField,
+                    new FrameWithHighestGcAllocationsDetailsProvider(m_ProfilerWindow, maximumCallsInFrame.FrameIndex));
 
                 var maximumSizeInFrame = model.MaximumSizeInFrame;
                 m_MaximumSizeField.ValueLabel.text = EditorUtility.FormatBytes(System.Convert.ToInt64(maximumSizeInFrame.Value));
                 m_MaximumSizeButton.text = FrameIndexFormatterUtility.DisplayStringForFrameIndex(maximumSizeInFrame.FrameIndex);
+                m_DetailsBinder.BindDetailsElement(
+                    m_MaximumSizeField,
+                    new FrameWithHighestGcAllocationsDetailsProvider(m_ProfilerWindow, maximumSizeInFrame.FrameIndex));
             }
 
             SetNoDataLabelVisible(!hasData);
@@ -139,6 +159,33 @@ namespace Unity.Profiling.Editor.UI
         void SetNoDataLabelVisible(bool visible)
         {
             UIUtility.SetElementDisplay(m_NoDataLabel, visible);
+        }
+
+        internal class FrameWithHighestGcAllocationsDetailsProvider : IDetailsProvider
+        {
+            private readonly ProfilerWindow m_ProfilerWindow;
+            private readonly int m_FrameIndex;
+
+            public FrameWithHighestGcAllocationsDetailsProvider(ProfilerWindow profilerWindow, int frameIndex)
+            {
+                m_ProfilerWindow = profilerWindow;
+                m_FrameIndex = frameIndex;
+            }
+
+            public AssistantRequestContext GetAssistantContext(IProfilerCaptureDataService dataService)
+            {
+                var prompt = $"Provide detailed analysis of the GC allocations.";
+                var attachment = new CpuProfilerAssistantController.CpuProfilerContext(
+                    capturePath: m_ProfilerWindow.CurrentLoadedCaptureFile,
+                    frameRange: m_FrameIndex..m_FrameIndex);
+
+                return new AssistantRequestContext(prompt, attachment);
+            }
+
+            public ViewController GetDetailsViewController(IProfilerCaptureDataService dataService)
+            {
+                throw new System.NotImplementedException();
+            }
         }
     }
 }

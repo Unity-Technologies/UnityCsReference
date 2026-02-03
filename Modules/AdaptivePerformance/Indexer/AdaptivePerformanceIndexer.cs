@@ -287,12 +287,19 @@ namespace UnityEngine.AdaptivePerformance
             m_UnappliedScalers.Add(scaler);
         }
 
-        internal void RemoveScaler(AdaptivePerformanceScaler scaler)
+        internal bool RemoveScaler(AdaptivePerformanceScaler scaler)
         {
+            bool removed = false;
             if (m_UnappliedScalers.Contains(scaler))
             {
                 m_UnappliedScalers.Remove(scaler);
-                return;
+                removed = true;
+            }
+
+            if (m_DisabledScalers.Contains(scaler))
+            {
+                m_DisabledScalers.Remove(scaler);
+                removed = true;
             }
 
             if (m_AppliedScalers.Contains(scaler))
@@ -300,7 +307,9 @@ namespace UnityEngine.AdaptivePerformance
                 while (!scaler.NotLeveled)
                     scaler.DecreaseLevel();
                 m_AppliedScalers.Remove(scaler);
+                removed = true;
             }
+            return removed;
         }
 
         internal AdaptivePerformanceIndexer(ref IAdaptivePerformanceSettings settings, PerformanceStateTracker tracker)

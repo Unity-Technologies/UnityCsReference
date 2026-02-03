@@ -246,7 +246,7 @@ namespace UnityEngine.LowLevelPhysics2D
         public static readonly PhysicsMask All = new() { bitMask = UInt64.MaxValue };
 
         /// <summary>
-        /// An interator that will iterate only the bits that are reset (0) in a <see cref="LowLevelPhysics2D.PhysicsMask"/>
+        /// An iterator that will iterate only the bits that are reset (0) in a <see cref="LowLevelPhysics2D.PhysicsMask"/>
         /// </summary>
         public struct ResetBitIterator : IEnumerable<int>, IEnumerator<int>
         {
@@ -295,7 +295,7 @@ namespace UnityEngine.LowLevelPhysics2D
         }
 
         /// <summary>
-        /// An interator that will iterate only the bits that are set (1) in a <see cref="LowLevelPhysics2D.PhysicsMask"/>
+        /// An iterator that will iterate only the bits that are set (1) in a <see cref="LowLevelPhysics2D.PhysicsMask"/>
         /// </summary>
         public struct SetBitIterator : IEnumerable<int>, IEnumerator<int>
         {

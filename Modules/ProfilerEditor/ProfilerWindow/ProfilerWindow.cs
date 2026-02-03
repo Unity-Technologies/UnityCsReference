@@ -202,6 +202,9 @@ namespace UnityEditor
 
         internal VisualElement DetailsViewContainer => m_DetailsViewContainer;
 
+        // Assistant controller
+        CpuProfilerAssistantController m_CpuProfilerAssistantController;
+
         // Captures list
         CapturesListViewController m_CapturesListViewController;
         VisualElement m_CapturesListViewContainer;
@@ -433,6 +436,7 @@ namespace UnityEditor
             Initialize();
             m_DataService = new LegacySingletonProfilerCaptureDataService();
             m_PersistentSettingsService = new LegacyGlobalProfilerPersistentSettingsService();
+            m_CpuProfilerAssistantController = new CpuProfilerAssistantController();
             ConstructVisualTree(m_DataService, m_PersistentSettingsService);
             SubscribeToGlobalEvents();
         }
@@ -498,6 +502,8 @@ namespace UnityEditor
             m_PersistentSettingsService = null;
             m_DataService.Dispose();
             m_DataService = null;
+            m_CpuProfilerAssistantController.Dispose();
+            m_CpuProfilerAssistantController = null;
 
             UnsubscribeFromGlobalEvents();
 
@@ -2255,6 +2261,14 @@ namespace UnityEditor
         bool IProfilerWindowController.ProfilerWindowOverheadIsAffectingProfilingRecordingData() => ProfilerWindowOverheadIsAffectingProfilingRecordingData();
         string IProfilerWindowController.ConnectedTargetName { get => ConnectedTargetName; }
         bool IProfilerWindowController.ConnectedToEditor { get => ConnectedToEditor; }
+
+        bool IProfilerWindowController.CpuProfilerAssistantSupported => m_CpuProfilerAssistantController.Supported;
+
+        void IProfilerWindowController.RequestCpuProfilerAssistance(Rect screenRect, CpuProfilerAssistantController.CpuProfilerContext attachment, string request)
+        {
+            m_CpuProfilerAssistantController.LaunchCpuProfilerAssistant(screenRect, attachment, request);
+        }
+
         ProfilerProperty IProfilerWindowController.CreateProperty() => CreateProperty();
         ProfilerProperty IProfilerWindowController.CreateProperty(int sortType) => CreateProperty(sortType);
         void IProfilerWindowController.CloseModule(ProfilerModule module) => CloseModule(module);

@@ -465,11 +465,15 @@ namespace UnityEditor.AdaptivePerformance.Editor
                 }
 
                 var copyObject = EditorUtilities.CloneProviderSettingsFromProjectSettings(packageMetaData.settingsType);
-
                 var providerSetting = copyObject == null ? ScriptableObject.CreateInstance(packageMetaData.settingsType) as IAdaptivePerformanceSettings : copyObject;
                 providerSetting.hideFlags = HideFlags.HideInHierarchy;
                 adaptivePerformanceProviderContainer.adaptivePerformanceProviderSettings.Add(providerSetting);
                 AssetDatabase.AddObjectToAsset(providerSetting, adaptivePerformanceProviderContainer);
+                var customScalers = EditorUtilities.CloneCustomScalersFromProjectSettings(providerSetting);
+                for (int i = 0; i < customScalers.Count; i++)
+                {
+                    AssetDatabase.AddObjectToAsset(customScalers[i], adaptivePerformanceProviderContainer);
+                }
                 AssetDatabase.SaveAssetIfDirty(adaptivePerformanceProviderContainer);
             }
         }

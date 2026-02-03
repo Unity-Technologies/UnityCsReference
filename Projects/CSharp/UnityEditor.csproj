@@ -10334,6 +10334,15 @@
     <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\Analytics\ProfilerWindowAnalytics.cs">
       <Link>Modules\ProfilerEditor\ProfilerWindow\Analytics\ProfilerWindowAnalytics.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\Assistant\IProfilerAssistantService.cs">
+      <Link>Modules\ProfilerEditor\ProfilerWindow\Assistant\IProfilerAssistantService.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\Assistant\MarkersInformationProvider.cs">
+      <Link>Modules\ProfilerEditor\ProfilerWindow\Assistant\MarkersInformationProvider.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\Assistant\ProfilerAssistantController.cs">
+      <Link>Modules\ProfilerEditor\ProfilerWindow\Assistant\ProfilerAssistantController.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\Bottlenecks\Chart\BottlenecksChartViewController.cs">
       <Link>Modules\ProfilerEditor\ProfilerWindow\Bottlenecks\Chart\BottlenecksChartViewController.cs</Link>
     </Compile>
@@ -10391,6 +10400,12 @@
     <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\Bottlenecks\Details\Overview\Components\ReadOnlyFloatField.cs">
       <Link>Modules\ProfilerEditor\ProfilerWindow\Bottlenecks\Details\Overview\Components\ReadOnlyFloatField.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\Bottlenecks\Details\Overview\DetailsPanel\IDetailsElementBinder.cs">
+      <Link>Modules\ProfilerEditor\ProfilerWindow\Bottlenecks\Details\Overview\DetailsPanel\IDetailsElementBinder.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\Bottlenecks\Details\Overview\DetailsPanel\IDetailsProvider.cs">
+      <Link>Modules\ProfilerEditor\ProfilerWindow\Bottlenecks\Details\Overview\DetailsPanel\IDetailsProvider.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\Bottlenecks\Details\Overview\Foldable Section\FoldableSectionViewController.cs">
       <Link>Modules\ProfilerEditor\ProfilerWindow\Bottlenecks\Details\Overview\Foldable Section\FoldableSectionViewController.cs</Link>
     </Compile>
@@ -10423,9 +10438,6 @@
     </Compile>
     <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\Bottlenecks\Details\Overview\Frame GC Collect\FrameGCCollectViewController.cs">
       <Link>Modules\ProfilerEditor\ProfilerWindow\Bottlenecks\Details\Overview\Frame GC Collect\FrameGCCollectViewController.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\Bottlenecks\Details\Overview\Frame Summary\FrameSummaryViewController.cs">
-      <Link>Modules\ProfilerEditor\ProfilerWindow\Bottlenecks\Details\Overview\Frame Summary\FrameSummaryViewController.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\Bottlenecks\Details\Overview\Model Builders\Bottlenecks Builders\BottlenecksModelBuilder.cs">
       <Link>Modules\ProfilerEditor\ProfilerWindow\Bottlenecks\Details\Overview\Model Builders\Bottlenecks Builders\BottlenecksModelBuilder.cs</Link>
@@ -10511,11 +10523,14 @@
     <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\Bottlenecks\Details\Overview\Range GC Allocations\GCAllocationsViewController.cs">
       <Link>Modules\ProfilerEditor\ProfilerWindow\Bottlenecks\Details\Overview\Range GC Allocations\GCAllocationsViewController.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\Bottlenecks\Details\Overview\Range Summary\RangeSummaryViewController.cs">
-      <Link>Modules\ProfilerEditor\ProfilerWindow\Bottlenecks\Details\Overview\Range Summary\RangeSummaryViewController.cs</Link>
-    </Compile>
     <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\Bottlenecks\Details\Overview\Selection Summary\SelectionSummaryViewController.cs">
       <Link>Modules\ProfilerEditor\ProfilerWindow\Bottlenecks\Details\Overview\Selection Summary\SelectionSummaryViewController.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\Bottlenecks\Details\Overview\Summary\FrameSummaryViewController.cs">
+      <Link>Modules\ProfilerEditor\ProfilerWindow\Bottlenecks\Details\Overview\Summary\FrameSummaryViewController.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\Bottlenecks\Details\Overview\Summary\RangeSummaryViewController.cs">
+      <Link>Modules\ProfilerEditor\ProfilerWindow\Bottlenecks\Details\Overview\Summary\RangeSummaryViewController.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\Bottlenecks\Details\Overview\Summary\SummaryViewController.cs">
       <Link>Modules\ProfilerEditor\ProfilerWindow\Bottlenecks\Details\Overview\Summary\SummaryViewController.cs</Link>
@@ -10528,6 +10543,9 @@
     </Compile>
     <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\Bottlenecks\Details\Overview\Systems Impact\SystemsImpactViewController.cs">
       <Link>Modules\ProfilerEditor\ProfilerWindow\Bottlenecks\Details\Overview\Systems Impact\SystemsImpactViewController.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\Bottlenecks\Details\Overview\Top Markers\TopMarkerDetailsProvider.cs">
+      <Link>Modules\ProfilerEditor\ProfilerWindow\Bottlenecks\Details\Overview\Top Markers\TopMarkerDetailsProvider.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\Bottlenecks\Details\Overview\Top Markers\TopMarkerItem.cs">
       <Link>Modules\ProfilerEditor\ProfilerWindow\Bottlenecks\Details\Overview\Top Markers\TopMarkerItem.cs</Link>

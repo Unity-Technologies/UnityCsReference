@@ -223,7 +223,7 @@ namespace UnityEditor.IMGUI.Controls
                         float newAngle = Vector3.Angle(Vector3.forward, angleHandlePosition) *
                             Mathf.Sign(Vector3.Dot(Vector3.right, angleHandlePosition));
                         angle += Mathf.DeltaAngle(angle, newAngle);
-                        angle = Handles.SnapValue(angle, EditorSnapSettings.rotate);
+                        angle = Handles.SnapAngleValue(angle);
                     }
                 }
             }

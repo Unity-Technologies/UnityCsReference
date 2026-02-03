@@ -50,7 +50,7 @@ namespace Unity.Profiling.Editor.UI
                 // Check for cancellation.
                 cancellationToken.ThrowIfCancellationRequested();
 
-                return BuildModelFromSystemImpacts(systemImpacts);
+                return BuildModelFromSystemImpacts(new Range(frameIndex, frameIndex), systemImpacts);
             });
 
             return await task;

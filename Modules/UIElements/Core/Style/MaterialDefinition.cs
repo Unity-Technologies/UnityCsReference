@@ -6,6 +6,8 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Bindings;
+using UnityEngine.Rendering;
+using UnityEngine.UIElements.UIR;
 
 namespace UnityEngine.UIElements
 {
@@ -130,12 +132,14 @@ namespace UnityEngine.UIElements
         /// </summary>
         public MaterialDefinition(Material m)
         {
+            ValidateMaterial(m);
             m_Material = m;
         }
 
         [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         internal MaterialDefinition(Material m, List<MaterialPropertyValue> propertyValues)
         {
+            ValidateMaterial(m);
             m_Material = m;
             this.propertyValues = propertyValues;
         }
@@ -275,6 +279,35 @@ namespace UnityEngine.UIElements
             });
         }
 
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+        internal static bool IsMaterialValid(Material material)
+        {
+            if (material == null || material.shader == null) return true;
+
+            const string k_CustomUITKShaderTagName = "isCustomUITKShader";
+            const string k_CustomUITKShaderTagValue = "true";
+
+            var tag = new ShaderTagId(k_CustomUITKShaderTagName);
+            for (int i = 0; i < material.shader.subshaderCount; i++)
+            {
+                var value = material.shader.FindSubshaderTagValue(i, tag);
+                if (value.name == k_CustomUITKShaderTagValue)
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        static void ValidateMaterial(Material material)
+        {
+            if (!IsMaterialValid(material))
+            {
+                Debug.LogWarning("Selected material '" + material.name + "'is not compatible with UITK");
+            }
+        }
+
         /// <summary>
         /// Creates a material definition from a <see cref="Material"/>.
         /// </summary>
@@ -282,6 +315,7 @@ namespace UnityEngine.UIElements
         /// <returns>A new material definition object.</returns>
         public static MaterialDefinition FromMaterial(Material m)
         {
+            ValidateMaterial(m);
             return new MaterialDefinition { material = m };
         }
 
