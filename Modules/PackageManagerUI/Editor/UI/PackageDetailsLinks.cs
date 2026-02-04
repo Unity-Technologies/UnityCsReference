@@ -3,7 +3,6 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using System.Linq;
 using UnityEngine.UIElements;
 
 namespace UnityEditor.PackageManager.UI.Internal
@@ -13,21 +12,23 @@ namespace UnityEditor.PackageManager.UI.Internal
         [Serializable]
         public new class UxmlSerializedData : VisualElement.UxmlSerializedData
         {
-            public override object CreateInstance() => new PackageDetailsLinks();
+            public override object CreateInstance()
+            {
+                var container = ServicesContainer.instance;
+                return new PackageDetailsLinks(
+                    container.Resolve<IApplicationProxy>(),
+                    container.Resolve<IPackageLinkFactory>());
+            }
         }
 
-        private IApplicationProxy m_Application;
-        private IPackageLinkFactory m_PackageLinkFactory;
-        private void ResolveDependencies()
+        private readonly IApplicationProxy m_Application;
+        private readonly IPackageLinkFactory m_PackageLinkFactory;
+        public PackageDetailsLinks(
+            IApplicationProxy application,
+            IPackageLinkFactory packageLinkFactory)
         {
-            var container = ServicesContainer.instance;
-            m_Application = container.Resolve<IApplicationProxy>();
-            m_PackageLinkFactory = container.Resolve<IPackageLinkFactory>();
-        }
-
-        public PackageDetailsLinks()
-        {
-            ResolveDependencies();
+            m_Application = application;
+            m_PackageLinkFactory = packageLinkFactory;
         }
 
         public void Refresh(IPackageVersion version)
@@ -52,9 +53,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             AddToParentWithSeparatorIfVisible(assetStoreLinks, m_PackageLinkFactory.CreatePublisherWebsiteLink(version));
             AddToParentWithSeparatorIfVisible(assetStoreLinks, m_PackageLinkFactory.CreateReviewLink(version));
 
-#pragma warning disable RS0031 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            if (assetStoreLinks.Children().Any())
-#pragma warning restore RS0031
+            if (assetStoreLinks.childCount > 0)
                 Add(assetStoreLinks);
         }
 
@@ -69,9 +68,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             AddToParentWithSeparatorIfVisible(upmLinks, m_PackageLinkFactory.CreateUseCasesLink(version));
             AddToParentWithSeparatorIfVisible(upmLinks, m_PackageLinkFactory.CreateDashboardLink(version));
 
-#pragma warning disable RS0031 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            if (upmLinks.Children().Any())
-#pragma warning restore RS0031
+            if (upmLinks.childCount > 0)
                 Add(upmLinks);
         }
 

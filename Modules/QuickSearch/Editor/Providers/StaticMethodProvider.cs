@@ -107,9 +107,9 @@ namespace UnityEditor.Search.Providers
         private static bool IsIgnoredAssembly(AssemblyName assemblyName)
         {
             var name = assemblyName.Name;
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return _ignoredAssemblies.Any(candidate => Regex.IsMatch(name, candidate));
-#pragma warning restore RS0030
+#pragma warning restore UA2001
         }
 
         private static void LogResult(object result)

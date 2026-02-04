@@ -194,9 +194,9 @@ namespace UnityEditor
             m_NoEngineReferences = extraDataSerializedObject.FindProperty("noEngineReferences");
             m_AssemblyProvider = EditorCompilationInterface.Instance.PrecompiledAssemblyProvider;
             m_AssetIsReadonly = false;
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             foreach (var assetPath in targets.OfType<AssetImporter>().Select(i => i.assetPath))
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             {
                 try
                 {
@@ -247,9 +247,9 @@ namespace UnityEditor
                     }
                     using (new EditorGUI.DisabledScope(true))
                     {
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                         var value = string.Join(", ", extraDataTargets.Select(t => t.name).ToArray());
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                         EditorGUILayout.TextField(Styles.name, value, EditorStyles.textField);
                     }
                 }
@@ -288,9 +288,9 @@ namespace UnityEditor
 
                 m_ReferencesList.DoLayoutList();
 
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 if (extraDataTargets.Any(data => ((AssemblyDefinitionState)data).references != null && ((AssemblyDefinitionState)data).references.Any(x => x.asset == null)))
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                 {
                     EditorGUILayout.HelpBox("The grayed out assembly references are missing and will not be referenced during compilation.", MessageType.Info);
                 }
@@ -302,9 +302,9 @@ namespace UnityEditor
                     UpdatePrecompiledReferenceListEntry();
                     m_PrecompiledReferencesList.DoLayoutList();
 
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     if (extraDataTargets.Any(data => ((AssemblyDefinitionState)data).precompiledReferences.Any(x => string.IsNullOrEmpty(x.path) && !string.IsNullOrEmpty(x.name))))
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                     {
                         EditorGUILayout.HelpBox("The grayed out assembly references are missing and will not be referenced during compilation.", MessageType.Info);
                     }
@@ -324,9 +324,9 @@ namespace UnityEditor
                         // Invert state include/exclude compatibility of states that have the opposite compatibility,
                         // so all states are either include or exclude.
                         var compatibleWithAny = m_CompatibleWithAnyPlatform.boolValue;
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                         var needToSwap = extraDataTargets.Cast<AssemblyDefinitionState>().Where(p => p.compatibleWithAnyPlatform != compatibleWithAny).ToList();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                         extraDataSerializedObject.ApplyModifiedProperties();
                         foreach (var state in needToSwap)
                         {
@@ -450,9 +450,9 @@ namespace UnityEditor
 
             // Do not write back to the asset if no asset can be found.
             if (targets != null)
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 SaveAndUpdateAssemblyDefinitionStates(extraDataTargets.Cast<AssemblyDefinitionState>().ToArray());
-#pragma warning restore RS0030
+#pragma warning restore UA2001
         }
 
         static void InversePlatformCompatibility(AssemblyDefinitionState state)
@@ -557,26 +557,26 @@ namespace UnityEditor
         {
             var responseFileDefinesFromAssemblyName = CompilationPipeline.GetResponseFileDefinesFromAssemblyName(m_AssemblyName.stringValue) ?? Array.Empty<string>();
             var definesFromAssemblyName = CompilationPipeline.GetDefinesFromAssemblyName(m_AssemblyName.stringValue) ?? Array.Empty<string>();
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var defines = definesFromAssemblyName.Concat(responseFileDefinesFromAssemblyName);
-#pragma warning restore RS0030
+#pragma warning restore UA2001
 
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return defines.Distinct().ToArray();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
         }
 
         private List<VersionMetaData> BuildListOfVersionDefineResourceOptions(string preselectedResourceName)
         {
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var versionDefineResourceOptions = EditorCompilationInterface.Instance.GetVersionMetaDatas().Values.ToList();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
 
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-#pragma warning disable RS0031 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2002 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             if (!string.IsNullOrEmpty(preselectedResourceName) && !versionDefineResourceOptions.Where(x => x.Name == preselectedResourceName).Any())
-#pragma warning restore RS0030
-#pragma warning restore RS0031
+#pragma warning restore UA2001
+#pragma warning restore UA2002
             {
                 versionDefineResourceOptions.Add(new VersionMetaData(preselectedResourceName));
             }
@@ -613,9 +613,9 @@ namespace UnityEditor
             int indexOfSelected = 0;
             if (!string.IsNullOrEmpty(nameProp.stringValue))
             {
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 indexOfSelected = versionedResourceOptions.IndexOf(versionedResourceOptions.Where(x => x.Name == nameProp.stringValue).First());
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             }
 
             bool mixed = versionDefineProp.hasMultipleDifferentValues;
@@ -684,9 +684,9 @@ namespace UnityEditor
 
         private void UpdatePrecompiledReferenceListEntry()
         {
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var precompiledAssemblyNames = CompilationPipeline.GetPrecompiledAssemblyNames().ToList();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             var currentReferencesProp = extraDataSerializedObject.FindProperty("precompiledReferences");
             if (currentReferencesProp.arraySize > 0)
             {
@@ -701,9 +701,9 @@ namespace UnityEditor
                 while (prop.Next(false) && !SerializedProperty.EqualContents(prop, end));
             }
 
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             m_PrecompileReferenceListEntry = precompiledAssemblyNames
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                 .OrderBy(x => x).ToList();
         }
 
@@ -748,9 +748,9 @@ namespace UnityEditor
             if (selectedIndex > 0)
             {
                 var selectedAssemblyName = m_PrecompileReferenceListEntry[selectedIndex];
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 var assembly = m_AssemblyProvider.GetPrecompiledAssemblies(
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                     EditorScriptCompilationOptions.BuildingForEditor | EditorScriptCompilationOptions.BuildingWithAsserts,
                     EditorUserBuildSettings.activeBuildTarget)
                     .First(x => AssetPath.GetFileName(x.Path) == selectedAssemblyName);
@@ -876,9 +876,9 @@ namespace UnityEditor
                 }
             }
 
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var nameToPrecompiledReference = EditorCompilationInterface.Instance.PrecompiledAssemblyProvider
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                 .GetPrecompiledAssemblies(
                     EditorScriptCompilationOptions.BuildingForEditor | EditorScriptCompilationOptions.BuildingWithAsserts,
                     EditorUserBuildSettings.activeBuildTarget)
@@ -955,9 +955,9 @@ namespace UnityEditor
 
             if (state.useGUIDs)
             {
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 data.references = references.Select(r =>
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                 {
                     var guid = AssetDatabase.AssetPathToGUID(AssetDatabase.GetAssetPath(r.asset));
 
@@ -969,14 +969,14 @@ namespace UnityEditor
             }
             else
             {
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 data.references = references.Select(r => r.name).ToArray();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             }
 
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             data.defineConstraints = state.defineConstraints
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                 .Where(x => !string.IsNullOrEmpty(x.name))
                 .Select(r => r.name)
                 .ToArray();
@@ -985,9 +985,9 @@ namespace UnityEditor
             data.autoReferenced = state.autoReferenced;
             data.overrideReferences = state.overrideReferences;
 
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             data.precompiledReferences = state.precompiledReferences
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                 .Select(r => r.name).ToArray();
 
             data.allowUnsafeCode = state.allowUnsafeCode;

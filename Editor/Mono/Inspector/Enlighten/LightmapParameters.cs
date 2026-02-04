@@ -104,25 +104,27 @@ namespace UnityEditor
             if (m_BakedGISettings.value)
             {
                 EditorGUI.indentLevel++;
-                if (m_AntiAliasingSamples.hasMultipleDifferentValues)
+                if (!Lightmapping.UnifiedBaker)
                 {
-                    EditorGUI.BeginChangeCheck();
-                    EditorGUI.showMixedValue = true;
+                    if (m_AntiAliasingSamples.hasMultipleDifferentValues)
+                    {
+                        EditorGUI.BeginChangeCheck();
+                        EditorGUI.showMixedValue = true;
 
-                    int fieldValue = EditorGUILayout.IntPopup(Styles.antiAliasingSamplesContent, m_AntiAliasingSamples.intValue, Styles.antiAliasingSamplesStrings, Styles.antiAliasingSampleValues);
+                        int fieldValue = EditorGUILayout.IntPopup(Styles.antiAliasingSamplesContent, m_AntiAliasingSamples.intValue, Styles.antiAliasingSamplesStrings, Styles.antiAliasingSampleValues);
 
-                    if (EditorGUI.EndChangeCheck())
+                        if (EditorGUI.EndChangeCheck())
+                            m_AntiAliasingSamples.intValue = fieldValue;
+
+                        EditorGUI.showMixedValue = false;
+                    }
+                    else
+                    {
+                        int fieldValue = EditorGUILayout.IntPopup(Styles.antiAliasingSamplesContent, m_AntiAliasingSamples.intValue, Styles.antiAliasingSamplesStrings, Styles.antiAliasingSampleValues);
                         m_AntiAliasingSamples.intValue = fieldValue;
-                    
-                    EditorGUI.showMixedValue = false;
+                    }
                 }
 
-                else
-                {
-                    int fieldValue = EditorGUILayout.IntPopup(Styles.antiAliasingSamplesContent, m_AntiAliasingSamples.intValue, Styles.antiAliasingSamplesStrings, Styles.antiAliasingSampleValues);
-                    m_AntiAliasingSamples.intValue = fieldValue;
-                }
-                
                 const float minPushOff = 0.0001f; // Keep in sync with PLM_MIN_PUSHOFF
                 EditorGUILayout.Slider(m_Pushoff, minPushOff, 1.0f, Styles.pushoffContent);
                 EditorGUILayout.PropertyField(m_BakedLightmapTag, Styles.bakedLightmapTagContent);

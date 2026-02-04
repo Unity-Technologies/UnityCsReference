@@ -280,4 +280,8 @@ using System.Runtime.CompilerServices;
 // Tests/SRPTests/Projects/MultipleSRP_Tests - needed for DiagnosticSwitch class
 [assembly: InternalsVisibleTo("Unity.RenderPipelines.Multiple_SRP.EditorTests")]
 
+// Workspace/Serialization/UnityDataModel/WorkspaceProject
+[assembly: InternalsVisibleTo("UDMInternalWorkspaceProject")]
+
+
 

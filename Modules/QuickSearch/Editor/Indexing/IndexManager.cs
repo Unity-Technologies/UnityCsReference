@@ -142,9 +142,9 @@ namespace UnityEditor.Search
             rootVisualElement.Add(splitter);
 
             m_IndexSettingsTemplates = new List<SearchDatabase.Settings>();
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             foreach (var templateName in SearchDatabaseTemplates.all.Keys.Where(k => k[0] != '_'))
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             {
                 m_IndexSettingsTemplates.Add(ExtractIndexFromTemplate(templateName));
             }
@@ -221,9 +221,9 @@ namespace UnityEditor.Search
         {
             int indexToSelect = -1;
 
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             m_AllSearchDatabases = SearchDatabase.EnumerateAll().OrderBy(sd => Path.GetFileNameWithoutExtension(sd.path)).ToList();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             foreach (var searchDatabase in EnumerateIndexes(includePackages ? SearchDatabase.IndexLocation.all : SearchDatabase.IndexLocation.assets))
             {
                 m_IndexSettingsAssets.Add(searchDatabase);
@@ -241,9 +241,9 @@ namespace UnityEditor.Search
 
         private IEnumerable<SearchDatabase> EnumerateIndexes(SearchDatabase.IndexLocation location)
         {
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return m_AllSearchDatabases.Where(sd =>
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             {
                 if (location == SearchDatabase.IndexLocation.all)
                     return true;
@@ -498,13 +498,13 @@ namespace UnityEditor.Search
 
         private void PingAsset(IEnumerable<object> obj)
         {
-#pragma warning disable RS0031 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2002 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             if (obj.Any())
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             {
-                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 string path = (string)obj.First();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                 if (Path.HasExtension(path)) // In case of Scene and Prefab index, it can give only objects ids so in that case we can't ping
                     EditorGUIUtility.PingObject(AssetDatabase.LoadAssetAtPath<UnityEngine.Object>(path));
             }
@@ -538,13 +538,13 @@ namespace UnityEditor.Search
                     UpdateIndexPreviewListView(dependencies, m_DependenciesListView);
 
                     m_DocumentsButton.text = $"{selectedItemAsset.index.documentCount} Objects";
-                    #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                    #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     UpdateIndexPreviewListView(selectedItemAsset.index.GetDocuments(true).Select(d => $"{d.name} {{{d.id}}}").ToList(), m_DocumentsListView);
-#pragma warning restore RS0030
+#pragma warning restore UA2001
 
-                    #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                    #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     UpdateIndexPreviewListView(selectedItemAsset.index.GetKeywords().OrderBy(p => p).ToList(), m_KeywordsListView);
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                     m_KeywordsButton.text = $"{selectedItemAsset.index.keywordCount} Keywords";
                 }
             }
@@ -761,18 +761,18 @@ namespace UnityEditor.Search
                     }
                 }
 
-                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 if (m_IndexSettings.All(index => !index.hasUnsavedChanges))
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                     base.SaveChanges();
             }
         }
 
         private void SaveNewIndexSettingsFile(string path, int currentIndex)
         {
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             if (m_IndexSettingsExists.Where(index => !index).Count() > 1)
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             {
                 m_ListViewIndexSettings.selectedIndex = currentIndex;
                 var selectedItem = new List<IndexManagerViewModel>() { m_IndexSettings[currentIndex] };
@@ -1112,9 +1112,9 @@ namespace UnityEditor.Search
                     m_DocumentsListView.selectionChanged -= PingAsset;
                 m_IndexDetailsElement.Clear();
 
-#pragma warning disable RS0031 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2002 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 if (obj.Any())
-#pragma warning restore RS0031
+#pragma warning restore UA2002
                 {
                     CreateIndexDetailsElement();
                 }
@@ -1198,9 +1198,9 @@ namespace UnityEditor.Search
 
             private void OnDragUpdated(EventBase evt)
             {
-                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 UnityEngine.Object draggedObject = DragAndDrop.objectReferences.FirstOrDefault();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                 if (draggedObject != null)
                 {
                     DragAndDrop.visualMode = DragAndDropVisualMode.Generic;
@@ -1211,9 +1211,9 @@ namespace UnityEditor.Search
 
             private void OnDragPerform(EventBase evt)
             {
-                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 UnityEngine.Object draggedObject = DragAndDrop.objectReferences.FirstOrDefault();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                 if (draggedObject != null)
                 {
                     DragAndDrop.visualMode = DragAndDropVisualMode.Generic;
@@ -1456,12 +1456,12 @@ namespace UnityEditor.Search
                 hasPackagesRoot = false;
                 if (searchDatabaseSettings.roots != null)
                 {
-                    #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                    #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     hasPackagesRoot = searchDatabaseSettings.roots.Any(r => r == "Packages");
-#pragma warning restore RS0030
-                    #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning restore UA2001
+                    #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     roots.AddRange(searchDatabaseSettings.roots.Where(r => r != "Packages"));
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                 }
                 includes = new List<string>();
                 if (searchDatabaseSettings.includes != null)
@@ -1494,15 +1494,15 @@ namespace UnityEditor.Search
 
                 searchDatabase.settings.type = Enum.GetName(typeof(SearchDatabase.IndexType), type);
                 searchDatabase.settings.baseScore = score;
-                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 searchDatabase.settings.roots = GetRoots().Where(e => !string.IsNullOrEmpty(e)).ToArray();
-#pragma warning restore RS0030
-                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning restore UA2001
+                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 searchDatabase.settings.includes = includes.Where(e => !string.IsNullOrEmpty(e) && e != "." && e != "/").ToArray();
-#pragma warning restore RS0030
-                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning restore UA2001
+                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 searchDatabase.settings.excludes = excludes.Where(e => !string.IsNullOrEmpty(e) && e != "." && e != "/").ToArray();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                 SetOptions(searchDatabase.settings.options, this.options);
             }
 

@@ -18,9 +18,9 @@ namespace UnityEditor.Search
         {
             if (c.expression.types.HasFlag(SearchExpressionType.Function))
             {
-                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 using (c.runtime.Push(c.args[0], c.args.Skip(1)))
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                     return Query(c.runtime.current);
             }
 

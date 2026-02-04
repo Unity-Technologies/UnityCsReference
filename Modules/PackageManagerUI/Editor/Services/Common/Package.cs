@@ -4,7 +4,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using UnityEngine;
 
 namespace UnityEditor.PackageManager.UI.Internal
@@ -28,9 +27,16 @@ namespace UnityEditor.PackageManager.UI.Internal
         private bool m_IsDiscoverable;
         public bool isDiscoverable => m_IsDiscoverable;
 
-        #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-        public string displayName => !string.IsNullOrEmpty(m_Product?.displayName) ? m_Product?.displayName : versions.FirstOrDefault()?.displayName ?? string.Empty;
-#pragma warning restore RS0030
+        public string displayName
+        {
+            get
+            {
+                if (!string.IsNullOrEmpty(m_Product?.displayName))
+                    return m_Product.displayName;
+                return m_VersionList?.primary.displayName ?? string.Empty;
+            }
+        }
+
         public PackageState state
         {
             get
@@ -121,20 +127,14 @@ namespace UnityEditor.PackageManager.UI.Internal
             if (m_Errors != null)
                 foreach (var error in m_Errors)
                     yield return error;
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            foreach (var version in versions.Where(v => v.errors != null))
-#pragma warning restore RS0030
+            foreach (var version in versions.Filter(v => v.errors != null))
                 foreach (var versionError in version.errors)
                     yield return versionError;
         }
 
-        #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-        public bool hasEntitlements => versions.Any(v => v.HasTag(PackageTag.Unity) && v.hasEntitlements);
-#pragma warning restore RS0030
+        public bool hasEntitlements => versions.AnyMatches(v => v.HasTag(PackageTag.Unity) && v.hasEntitlements);
 
-        #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-        public bool hasEntitlementsError => versions.Any(v => v.hasEntitlementsError);
-#pragma warning restore RS0030
+        public bool hasEntitlementsError => versions.AnyMatches(v => v.hasEntitlementsError);
 
         [SerializeReference]
         private IVersionList m_VersionList;

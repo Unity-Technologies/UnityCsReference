@@ -61,9 +61,9 @@ namespace UnityEditor.Search
 
         string HightlightLabel(string label)
         {
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             if (string.IsNullOrEmpty(label) || m_Options.tokens.Any(string.IsNullOrEmpty) || label.IndexOf('<') != -1)
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                 return label;
             foreach (var token in m_Options.tokens)
             {
@@ -423,9 +423,9 @@ namespace UnityEditor.Search
                     m_TextField.value = proposition.replacement;
                     m_SearchToolbar.searchField.MoveCursor(TextCursorPlacement.MoveLineEnd, -1);
                 }
-                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 else if (!options.tokens.All(t => t.StartsWith(proposition.replacement, StringComparison.OrdinalIgnoreCase)))
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                 {
                     var insertion = ReplaceText(m_TextField.text, proposition.replacement, options.cursor, out var insertTokenPos);
                     SearchAnalytics.SendEvent(null, SearchAnalytics.GenericEventType.QuickSearchAutoCompleteInsertSuggestion, insertion);
@@ -531,9 +531,9 @@ namespace UnityEditor.Search
             m_FilteredList = new List<SearchProposition>(Math.Min(maxCount, srcCnt));
 
             // Start with - slow
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             SelectPropositions(ref srcCnt, maxCount, uniqueSrc, p => inputs.Any(i => p.label.StartsWith(i, StringComparison.OrdinalIgnoreCase)));
-#pragma warning restore RS0030
+#pragma warning restore UA2001
 
             m_FilteredList.Sort();
 
@@ -541,13 +541,13 @@ namespace UnityEditor.Search
             inputs = FilterInputWords(inputs);
             SelectPropositions(ref srcCnt, maxCount, uniqueSrc, (p) =>
             {
-                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 if (inputs.Any(i => p.label.IndexOf(i, StringComparison.OrdinalIgnoreCase) != -1))
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                     return true;
-                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 if (p.help != null && inputs.Any(i => p.help.IndexOf(i, StringComparison.OrdinalIgnoreCase) != -1))
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                     return true;
                 return false;
             });
@@ -558,9 +558,9 @@ namespace UnityEditor.Search
                 levenshteinDistance = Mathf.Clamp01(levenshteinDistance);
                 SelectPropositions(ref srcCnt, maxCount, uniqueSrc, p =>
                 {
-                    #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                    #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     return inputs.Any(levenshteinInput =>
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                     {
                         int distance = Utils.LevenshteinDistance(p.label, levenshteinInput, caseSensitive: false);
                         return (int)(levenshteinDistance * p.label.Length) >= distance;
@@ -571,9 +571,9 @@ namespace UnityEditor.Search
 
         static string[] FilterInputWords(in IEnumerable<string> words)
         {
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return words.Where(i => i.Length > 3).Select(w => w
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                 .Replace("<", "")
                 .Replace("=", "")
                 .Replace(">", "")

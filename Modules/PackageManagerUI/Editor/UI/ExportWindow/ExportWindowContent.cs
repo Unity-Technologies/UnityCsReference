@@ -16,36 +16,29 @@ namespace UnityEditor.PackageManager.UI.Internal
         private const int k_SignInWindowHeight = 100;
         private OrganizationInfo[] m_OrganizationInfos;
 
-        private IPackageVersion m_VersionToExport;
+        private readonly IPackageVersion m_VersionToExport;
         private string m_ExportPath;
 
-        private IApplicationProxy m_ApplicationProxy;
-        private IResourceLoader m_ResourceLoader;
-        private IUnityConnectProxy m_UnityConnectProxy;
-        private IUpmClient m_UpmClient;
-        private IIOProxy m_IOProxy;
-
-        private void ResolveDependencies(IApplicationProxy applicationProxy, IIOProxy ioProxy, IResourceLoader resourceLoader, IUnityConnectProxy unityConnectProxy, IUpmClient upmClient)
-        {
-            m_ApplicationProxy = applicationProxy;
-            m_IOProxy = ioProxy;
-            m_ResourceLoader = resourceLoader;
-            m_UnityConnectProxy = unityConnectProxy;
-            m_UpmClient = upmClient;
-        }
+        private readonly IApplicationProxy m_ApplicationProxy;
+        private readonly IUnityConnectProxy m_UnityConnectProxy;
+        private readonly IUpmClient m_UpmClient;
+        private readonly IIOProxy m_IOProxy;
 
         public ExportWindowContent(IApplicationProxy applicationProxy, IIOProxy ioProxy, IResourceLoader resourceLoader, IUnityConnectProxy unityConnectProxy, IUpmClient upmClient, IPackageVersion version)
         {
+            m_ApplicationProxy = applicationProxy;
+            m_IOProxy = ioProxy;
+            m_UnityConnectProxy = unityConnectProxy;
+            m_UpmClient = upmClient;
+
             m_VersionToExport = version;
             windowTitle = L10n.Tr("Export Package");
 
-            ResolveDependencies(applicationProxy, ioProxy, resourceLoader, unityConnectProxy, upmClient);
-
-            var root = m_ResourceLoader.GetTemplate("ExportWindow.uxml");
+            var root = resourceLoader.GetTemplate("ExportWindow.uxml");
             cache = new VisualElementCache(root);
             Add(root);
-            styleSheets.Add(m_ResourceLoader.packageManagerCommonStyleSheet);
-            styleSheets.Add(m_ResourceLoader.exportWindowStyleSheet);
+            styleSheets.Add(resourceLoader.packageManagerCommonStyleSheet);
+            styleSheets.Add(resourceLoader.exportWindowStyleSheet);
             cancelButton.clicked += Close;
             signInOkButton.clicked += Close;
             exportButton.clicked += OnExportButtonClicked;
@@ -74,7 +67,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private void OnPackSuccess(IOperation operation)
         {
-            var tarballPath = m_IOProxy.PathsCombine(m_ExportPath, GetPackageExportFileName());
+            var tarballPath = IOUtils.PathsCombine(m_ExportPath, GetPackageExportFileName());
             Debug.Log(L10n.Tr("[Package Manager Window] Package successfully exported to: ") + tarballPath);
             m_ApplicationProxy.RevealInFinder(tarballPath);
         }
@@ -97,8 +90,8 @@ namespace UnityEditor.PackageManager.UI.Internal
             packageTechnicalNameLabel.text = m_VersionToExport.name;
 
             m_OrganizationInfos = m_UnityConnectProxy.ParseOrganizationInfos();
-            var orgNames = m_OrganizationInfos.SelectMatchesAsList(p => p.name);
-            if (orgNames.Count > 0 && packageOrganizationDropdown.index == -1)
+            var orgNames = m_OrganizationInfos.SelectToNewArray(p => p.name);
+            if (orgNames.Length > 0 && packageOrganizationDropdown.index == -1)
             {
                 packageOrganizationDropdown.choices = new List<string>(orgNames);
                 packageOrganizationDropdown.value = L10n.Tr("Select Organization");
@@ -108,8 +101,8 @@ namespace UnityEditor.PackageManager.UI.Internal
                 packageOrganizationDropdown.choices = new List<string>() { L10n.Tr("No Organizations Found") };
                 packageOrganizationDropdown.value = L10n.Tr("No Organizations Found");
             }
-            packageOrganizationDropdown.SetEnabled(orgNames.Count > 0);
-            exportButton.SetEnabled(orgNames.Count > 0 && packageOrganizationDropdown.index > -1);
+            packageOrganizationDropdown.SetEnabled(orgNames.Length > 0);
+            exportButton.SetEnabled(orgNames.Length > 0 && packageOrganizationDropdown.index > -1);
         }
 
         private void SetWindowSize(int width, int height)
@@ -134,7 +127,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private void OnExportButtonClicked()
         {
-            m_ExportPath = m_ApplicationProxy.OpenFolderPanel(L10n.Tr("Export Package"), m_IOProxy.GetParentDirectory(m_ApplicationProxy.dataPath));
+            m_ExportPath = m_ApplicationProxy.OpenFolderPanel(L10n.Tr("Export Package"), IOUtils.GetParentDirectory(m_ApplicationProxy.dataPath));
             if (string.IsNullOrEmpty(m_ExportPath))
                 return;
 
@@ -146,7 +139,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 return;
             }
 
-            if (m_IOProxy.FileExists(m_IOProxy.PathsCombine(m_ExportPath, GetPackageExportFileName())))
+            if (m_IOProxy.FileExists(IOUtils.PathsCombine(m_ExportPath, GetPackageExportFileName())))
             {
                 if (!m_ApplicationProxy.DisplayDialog("package-export-overwrite",
                         L10n.Tr("Overwrite package?"),

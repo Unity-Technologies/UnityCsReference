@@ -574,18 +574,18 @@ namespace UnityEditor
 
             public override bool visible
             {
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 get { return s_Inspectors != null && s_Inspectors.Count > 0 && !EditorApplication.isPlaying && (s_Inspectors.Last().targets.Length == 1); }
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             }
 
             public override void OnGUI()
             {
                 if (!visible)
                     return;
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 s_Inspectors.Last().PlayStopGUI();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             }
         }
 
@@ -600,11 +600,11 @@ namespace UnityEditor
             public override bool IsAvailable()
             {
                 // Check for count != 1
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-#pragma warning disable RS0031 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2002 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 if (targets.Skip(1).Any())
-#pragma warning restore RS0030
-#pragma warning restore RS0031
+#pragma warning restore UA2001
+#pragma warning restore UA2002
                     return false;
                 if (s_Inspectors == null || s_Inspectors.Count == 0)
                     return false;
@@ -617,17 +617,17 @@ namespace UnityEditor
                 if (s_Inspectors == null || s_Inspectors.Count == 0)
                     return;
 
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 DrawHandles(s_Inspectors.Last(), true);
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             }
 
             public void OnDrawHandles()
             {
                 if (!s_PreviewIsPlaying)
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     DrawHandles(s_Inspectors.Last(), false);
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             }
 
             private void DrawHandles(TrailRendererInspector inspector, bool allowGizmoEditing)
@@ -639,9 +639,9 @@ namespace UnityEditor
 
                 Matrix4x4 orgMatrix = Handles.matrix;
 
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 foreach (var tr in targets.OfType<TrailRenderer>())
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                 {
                     if (tr == null)
                         continue;

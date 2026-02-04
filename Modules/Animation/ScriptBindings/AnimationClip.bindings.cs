@@ -123,13 +123,12 @@ namespace UnityEngine
         {
             if (evt == null)
                 throw new ArgumentNullException("evt");
-            var animationEventBlittable = AnimationEventBlittable.FromAnimationEvent(evt);
-            AddEventInternal(animationEventBlittable);
-            animationEventBlittable.Dispose();
+            using (var animationEventBlittable = AnimationEventBlittable.FromAnimationEvent(evt))
+                AddEventInternal(animationEventBlittable);
         }
 
         [FreeFunction(Name = "AnimationClipBindings::AddEventInternal", HasExplicitThis = true)]
-        extern private void AddEventInternal(System.Object evt);
+        extern private void AddEventInternal(in AnimationEventBlittable evt);
 
         // Retrieves all animation events associated with the animation clip
         unsafe public AnimationEvent[] events

@@ -122,37 +122,37 @@ namespace UnityEditor.Connect
 
         public static List<string> GetCloudDiagCrashSupportedPlatforms()
         {
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return k_CloudDiagCrashSupportedPlatforms.ToList();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
         }
 
         public static List<string> GetCloudDiagUserReportSupportedPlatforms()
         {
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return k_CloudDiagCrashSupportedPlatforms.ToList();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
         }
 
         public static List<string> GetAnalyticsSupportedPlatforms()
         {
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return k_AnalyticsSupportedPlatforms.ToList();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
         }
 
         public static List<string> GetMultiplayerSupportedPlatforms()
         {
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return k_MultiplayerSupportedPlatforms.ToList();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
         }
 
         public static List<string> GetAdsSupportedPlatforms()
         {
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return k_AdsSupportedPlatforms.ToList();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
         }
 
         public static VisualElement SetupSupportedPlatformsBlock(List<string> platforms)

@@ -4,7 +4,6 @@
 
 using System;
 using System.IO;
-using System.Linq;
 using System.Diagnostics.CodeAnalysis;
 using UnityEngine;
 
@@ -17,11 +16,9 @@ namespace UnityEditor.PackageManager.UI.Internal
         void DirectoryCopy(string sourcePath, string destinationPath, bool makeWritable = false, Action<string, float> progressCallback = null);
         ulong DirectorySizeInBytes(string path);
         void RemovePathAndMeta(string path, bool removeEmptyParent = false);
-        string PathsCombine(params string[] components);
 
         string CurrentDirectory { get; }
 
-        string GetParentDirectory(string path);
         bool IsDirectoryEmpty(string directoryPath);
         bool DirectoryExists(string directoryPath);
         string[] DirectoryGetDirectories(string directoryPath, string searchPattern = "*", SearchOption searchOption = SearchOption.TopDirectoryOnly);
@@ -33,7 +30,6 @@ namespace UnityEditor.PackageManager.UI.Internal
         void MakeFileWritable(string filePath, bool writable);
         void CopyFile(string sourceFileName, string destFileName, bool overwrite);
         ulong GetFileSize(string filePath);
-        string GetFileName(string filePath);
         void DeleteIfExists(string filePath);
         bool FileExists(string filePath);
         byte[] FileReadAllBytes(string filePath);
@@ -46,7 +42,8 @@ namespace UnityEditor.PackageManager.UI.Internal
         FileAttributes GetFileAttributes(string file);
         void Move(string sourceDirName, string destinationDirName);
     }
-
+    // Proxy class IO operations. Operations that are affected by or will affect the file system should go here.
+    // Stateless functions like path and file name manipulations should go to IOUtils.
     [ExcludeFromCodeCoverage]
     internal class IOProxy : BaseService<IIOProxy>, IIOProxy
     {
@@ -57,7 +54,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             if (!DirectoryExists(destinationPath))
                 CreateDirectory(destinationPath);
 
-            //Now Create all of the directories
+            // Now Create all the directories
             foreach (var dir in DirectoryGetDirectories(sourcePath, "*", SearchOption.AllDirectories))
             {
                 var path = dir.Replace(sourcePath, destinationPath);
@@ -65,7 +62,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                     CreateDirectory(path);
             }
 
-            //Copy all the files & Replaces any files with the same name
+            // Copy all the files & Replaces any files with the same name
             var files = DirectoryGetFiles(sourcePath, "*", SearchOption.AllDirectories);
             float count = 0;
             foreach (var source in files)
@@ -81,10 +78,10 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public ulong DirectorySizeInBytes(string path)
         {
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            return DirectoryGetFiles(path, "*", SearchOption.AllDirectories).
-#pragma warning restore RS0030
-                Aggregate<string, ulong>(0, (current, file) => current + GetFileSize(file));
+            ulong size = 0;
+            foreach (var file in DirectoryGetFiles(path, "*", SearchOption.AllDirectories))
+                size += GetFileSize(file);
+            return size;
         }
 
         public void RemovePathAndMeta(string path, bool removeEmptyParent = false)
@@ -98,7 +95,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
                 if (removeEmptyParent)
                 {
-                    var parent = GetParentDirectory(path);
+                    var parent = IOUtils.GetParentDirectory(path);
                     if (DirectoryExists(parent) && IsDirectoryEmpty(parent))
                     {
                         path = parent;
@@ -109,31 +106,17 @@ namespace UnityEditor.PackageManager.UI.Internal
             }
         }
 
-        public string PathsCombine(params string[] components)
-        {
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            return components.Where(s => !string.IsNullOrEmpty(s)).
-#pragma warning restore RS0030
-                Aggregate((path1, path2) => new NPath(path1).Combine(path2).ToString(SlashMode.Native));
-        }
-
         public string CurrentDirectory => NPath.CurrentDirectory.ToString(SlashMode.Native);
-
-        public string GetParentDirectory(string path) => new NPath(path).Parent.ToString(SlashMode.Native);
 
         public bool IsDirectoryEmpty(string directoryPath) => new NPath(directoryPath).Contents().Length == 0;
 
         public bool DirectoryExists(string directoryPath) => new NPath(directoryPath).DirectoryExists();
 
         public string[] DirectoryGetDirectories(string directoryPath, string searchPattern = "*", SearchOption searchOption = SearchOption.TopDirectoryOnly)
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            => new NPath(directoryPath).Directories(searchPattern, searchOption == SearchOption.AllDirectories).Select(p => p.ToString(SlashMode.Native)).ToArray();
-#pragma warning restore RS0030
+            => new NPath(directoryPath).Directories(searchPattern, searchOption == SearchOption.AllDirectories).SelectToNewArray(p => p.ToString(SlashMode.Native));
 
         public string[] DirectoryGetFiles(string directoryPath, string searchPattern = "*", SearchOption searchOption = SearchOption.TopDirectoryOnly)
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            => new NPath(directoryPath).Files(searchPattern, searchOption == SearchOption.AllDirectories).Select(p => p.ToString(SlashMode.Native)).ToArray();
-#pragma warning restore RS0030
+            => new NPath(directoryPath).Files(searchPattern, searchOption == SearchOption.AllDirectories).SelectToNewArray(p => p.ToString(SlashMode.Native));
 
         public void CreateDirectory(string directoryPath) => new NPath(directoryPath).CreateDirectory();
 
@@ -142,19 +125,13 @@ namespace UnityEditor.PackageManager.UI.Internal
         private NPath GetPackageAbsoluteDirectory(string relativePath)
         {
             var path = new NPath(relativePath);
-            return path.IsRelative ?  path.MakeAbsolute(new NPath(PathsCombine(GetProjectDirectory(), "Packages"))) : path;
+            return path.IsRelative ?  path.MakeAbsolute(new NPath(IOUtils.PathsCombine(GetProjectDirectory(), "Packages"))) : path;
         }
 
         // The virtual keyword is needed for unit tests
-        public virtual string GetProjectDirectory()
-        {
-            return GetParentDirectory(Application.dataPath);
-        }
+        public virtual string GetProjectDirectory() => IOUtils.GetParentDirectory(Application.dataPath);
 
-        public bool IsSamePackageDirectory(string a, string b)
-        {
-            return GetPackageAbsoluteDirectory(a) == GetPackageAbsoluteDirectory(b);
-        }
+        public bool IsSamePackageDirectory(string a, string b) => GetPackageAbsoluteDirectory(a) == GetPackageAbsoluteDirectory(b);
 
         public void MakeFileWritable(string filePath, bool writable)
         {
@@ -189,8 +166,6 @@ namespace UnityEditor.PackageManager.UI.Internal
                 return 0;
             }
         }
-
-        public string GetFileName(string filePath) => new NPath(filePath).FileName;
 
         public void DeleteIfExists(string filePath) => new NPath(filePath).DeleteIfExists();
 

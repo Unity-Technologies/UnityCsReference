@@ -6,7 +6,7 @@ namespace UnityEditor.PackageManager.UI.Internal;
 
 internal class NonCompliantPackageHelpBox : PackageBaseHelpBox
 {
-    public NonCompliantPackageHelpBox()
+    public NonCompliantPackageHelpBox(IApplicationProxy application) : base(application)
     {
         customIcon = Icon.PackageErrorLarge;
         analyticsId = "non-compliant-package-help-box";

@@ -204,16 +204,16 @@ namespace UnityEditor.Audio
 
         public bool ContainsExposedParameter(GUID parameter)
         {
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return exposedParameters.Where(val => val.guid == parameter).ToArray().Length > 0;
-#pragma warning restore RS0030
+#pragma warning restore UA2001
         }
 
         public void RemoveExposedParameter(GUID parameterGuid)
         {
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             exposedParameters = exposedParameters.Where(val => val.guid != parameterGuid).ToArray();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             OnChangedExposedParameter();
 
             //Tidy up the cache..
@@ -368,9 +368,9 @@ namespace UnityEditor.Audio
         // ancestor path from items in the list to any other items in the list.
         public bool AreAnyOfTheGroupsInTheListAncestors(List<AudioMixerGroupController> groups)
         {
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return groups.Any(g => IsChildOf(g, groups));
-#pragma warning restore RS0030
+#pragma warning restore UA2001
         }
 
         // Before duplicating or removing a selection, this function is called to make sure that the selection does not contain any items that are in a
@@ -464,9 +464,9 @@ namespace UnityEditor.Audio
                 return;
             }
 
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var filteredGroups = groups.ToList();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             RemoveAncestorGroups(filteredGroups);
 
             var undoGroupName = "Remove Group";
@@ -496,16 +496,16 @@ namespace UnityEditor.Audio
 
             foreach (var group in allGroups)
             {
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 var childGroupsToRemove = filteredGroups.Intersect(group.children).ToArray();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
 
                 if (childGroupsToRemove.Length > 0)
                 {
                     Undo.RecordObject(group, "Detach Group Children");
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     group.children = group.children.Except(childGroupsToRemove).ToArray();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                 }
             }
 
@@ -659,9 +659,9 @@ namespace UnityEditor.Audio
 
         public void RemoveGroupsFromParent(AudioMixerGroupController[] groups, bool storeUndoState)
         {
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             List<AudioMixerGroupController> filteredGroups = groups.ToList();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             RemoveAncestorGroups(filteredGroups);
 
             if (storeUndoState)
@@ -763,9 +763,9 @@ namespace UnityEditor.Audio
         // Returns duplicated root groups (traverse group.children to get all groups duplicated)
         public List<AudioMixerGroupController> DuplicateGroups(AudioMixerGroupController[] sourceGroups, bool recordUndo)
         {
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             List<AudioMixerGroupController> filteredGroups = sourceGroups.ToList();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             RemoveAncestorGroups(filteredGroups);
 
             var allRoots = new List<AudioMixerGroupController>();
@@ -849,20 +849,20 @@ namespace UnityEditor.Audio
         {
             // We are moving items so we adjust the insertion index to accomodate that any items above the insertion index is removed before inserting
             if (insertionIndex >= 0)
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 insertionIndex -= newParent.children.ToList().GetRange(0, insertionIndex).Count(selection.Contains);
-#pragma warning restore RS0030
+#pragma warning restore UA2001
 
             Undo.RecordObject(newParent, "Change Audio Mixer Group Parent");
             List<AudioMixerGroupController> groups = GetAllAudioGroupsSlow();
             foreach (var g in groups)
             {
                 // Check if any groups in the selection is part of current groups child list
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-#pragma warning disable RS0031 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2002 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 if (g.children.Intersect(selection).Any())
-#pragma warning restore RS0030
-#pragma warning restore RS0031
+#pragma warning restore UA2001
+#pragma warning restore UA2002
                 {
                     Undo.RecordObject(g, string.Empty); // empty string will use undo name above
                     var modifiedChildList = new List<AudioMixerGroupController>(g.children);
@@ -977,9 +977,9 @@ namespace UnityEditor.Audio
                 groupNode.effect = null;
                 graph[group] = groupNode;
                 object groupTail = group;
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 var reorderedEffects = (group == modifiedGroup1) ? modifiedGroupEffects1 : (group == modifiedGroup2) ? modifiedGroupEffects2 : group.effects.ToList();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                 foreach (var effect in reorderedEffects)
                 {
                     if (!graph.ContainsKey(effect))
@@ -1126,21 +1126,21 @@ namespace UnityEditor.Audio
 
             if (sourceGroup == targetGroup)
             {
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 var modifiedEffects = sourceGroup.effects.ToList();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                 if (!MoveEffect(ref modifiedEffects, sourceIndex, ref modifiedEffects, targetIndex))
                     return false;
                 graph = BuildTemporaryGraph(allGroups, null, null, null, sourceGroup, modifiedEffects, null, null);
             }
             else
             {
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 var modifiedSourceEffects = sourceGroup.effects.ToList();
-#pragma warning restore RS0030
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning restore UA2001
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 var modifiedTargetEffects = targetGroup.effects.ToList();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                 if (!MoveEffect(ref modifiedSourceEffects, sourceIndex, ref modifiedTargetEffects, targetIndex))
                     return false;
                 graph = BuildTemporaryGraph(allGroups, null, null, null, sourceGroup, modifiedSourceEffects, targetGroup, modifiedTargetEffects);
@@ -1211,23 +1211,23 @@ namespace UnityEditor.Audio
             for (int i = 0; i < viewList.Length; i++)
             {
                 viewList[i].guids =
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     (from x in viewList[i].guids
-#pragma warning restore RS0030
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning restore UA2001
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                         from y in allGroups
-#pragma warning restore RS0030
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning restore UA2001
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                         where y.groupID == x
-#pragma warning restore RS0030
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning restore UA2001
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                         select x).ToArray();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             }
 
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             views = viewList.ToArray();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
         }
 
         public void ForceSetView(int index)
@@ -1239,23 +1239,23 @@ namespace UnityEditor.Audio
         public void AddGroupToCurrentView(AudioMixerGroupController group)
         {
             var viewList = views;
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             List<GUID> guidList = viewList[currentViewIndex].guids.ToList();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             guidList.Add(group.groupID);
             viewList[currentViewIndex].guids = guidList.ToArray();
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             views = viewList.ToArray();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
         }
 
         public void SetCurrentViewVisibility(GUID[] guids)
         {
             var viewList = views;
             viewList[currentViewIndex].guids = guids;
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             views = viewList.ToArray();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             SanitizeGroupViews();
         }
 
@@ -1264,12 +1264,12 @@ namespace UnityEditor.Audio
             List<AudioMixerGroupController> allGroups = GetAllAudioGroupsSlow();
             MixerGroupView view = views[currentViewIndex];
 
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return (from g in allGroups
-#pragma warning restore RS0030
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning restore UA2001
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 where view.guids.Contains(g.groupID)
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                 select g).ToArray();
         }
 
@@ -1287,9 +1287,9 @@ namespace UnityEditor.Audio
             List<AudioMixerGroupController> allGroups = GetAllAudioGroupsSlow();
 
             var selected = Selection.GetFiltered(typeof(AudioMixerGroupController), SelectionMode.Deep);
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             m_CachedSelection = allGroups.Intersect(selected.Select(g => (AudioMixerGroupController)g)).ToList();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
         }
     }
 }

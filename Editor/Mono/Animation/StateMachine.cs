@@ -512,9 +512,9 @@ namespace UnityEditor.Animations
 
         public bool RemoveAnyStateTransition(AnimatorStateTransition transition)
         {
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             if ((new List<AnimatorStateTransition>(anyStateTransitions)).Any(t => t == transition))
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             {
                 undoHandler.DoUndo(this, "AnyState Transition Removed");
 
@@ -640,9 +640,9 @@ namespace UnityEditor.Animations
 
         public bool RemoveEntryTransition(AnimatorTransition transition)
         {
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             if ((new List<AnimatorTransition>(entryTransitions)).Any(t => t == transition))
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             {
                 undoHandler.DoUndo(this, "Entry Transition Removed");
                 AnimatorTransition[] transitionsVector = entryTransitions;
@@ -670,45 +670,45 @@ namespace UnityEditor.Animations
 
         internal bool HasState(AnimatorState state)
         {
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return statesRecursive.Any(s => s.state == state);
-#pragma warning restore RS0030
+#pragma warning restore UA2001
         }
 
         internal bool IsDirectParent(AnimatorStateMachine stateMachine)
         {
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return stateMachines.Any(sm => sm.stateMachine == stateMachine);
-#pragma warning restore RS0030
+#pragma warning restore UA2001
         }
 
         internal bool HasStateMachine(AnimatorStateMachine child)
         {
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return stateMachinesRecursive.Any(sm => sm.stateMachine == child);
-#pragma warning restore RS0030
+#pragma warning restore UA2001
         }
 
         internal bool HasTransition(AnimatorState stateA, AnimatorState stateB)
         {
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return stateA.transitions.Any(t => t.destinationState == stateB) ||
-#pragma warning restore RS0030
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning restore UA2001
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 stateB.transitions.Any(t => t.destinationState == stateA);
-#pragma warning restore RS0030
+#pragma warning restore UA2001
         }
 
         internal AnimatorStateMachine FindParent(AnimatorStateMachine stateMachine)
         {
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             if (stateMachines.Any(childSM => childSM.stateMachine == stateMachine))
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                 return this;
             else
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 return stateMachinesRecursive.Find(sm => sm.stateMachine.stateMachines.Any(childSM => childSM.stateMachine == stateMachine)).stateMachine;
-#pragma warning restore RS0030
+#pragma warning restore UA2001
         }
 
         internal AnimatorStateMachine FindStateMachine(string path)

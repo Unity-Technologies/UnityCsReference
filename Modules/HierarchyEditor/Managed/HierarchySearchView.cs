@@ -9,7 +9,7 @@ using UnityEngine;
 
 namespace Unity.Hierarchy.Editor
 {
-    class HierarchySearchView : ISearchView
+    sealed class HierarchySearchView : ISearchView
     {
         SearchViewState m_ViewState;
         HierarchyWindow m_SearchWindow;

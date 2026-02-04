@@ -4,12 +4,14 @@
 
 using System;
 using System.Collections.Generic;
+using System.Runtime.InteropServices;
 using UnityEngine.Bindings;
 using UnityEngine.UIElements.StyleSheets;
 
 namespace UnityEngine.UIElements
 {
     [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+    [StructLayout(LayoutKind.Sequential)]
     internal partial struct ComputedStyle
     {
         public Dictionary<string, StylePropertyValue> customProperties => customData.Read().customProperties;

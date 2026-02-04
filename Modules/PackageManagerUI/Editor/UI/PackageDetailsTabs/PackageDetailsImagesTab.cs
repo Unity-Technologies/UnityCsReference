@@ -4,7 +4,6 @@
 
 using UnityEngine;
 using UnityEngine.UIElements;
-using System.Linq;
 using System.Collections.Generic;
 
 namespace UnityEditor.PackageManager.UI.Internal
@@ -104,9 +103,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         private void ClearImages()
         {
             m_MainImage.image = null;
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            foreach (var thumbnail in m_ThumbnailsContainer.Children().OfType<Image>())
-#pragma warning restore RS0030
+            foreach (var thumbnail in m_ThumbnailsContainer.Children().FilterByType<Image>())
                 thumbnail.image = null;
             m_ThumbnailsContainer.Clear();
             foreach (var texture in m_ImageTextures)
@@ -139,9 +136,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                         m_MainImageInnerContainer.style.paddingTop = new Length(100.0f * texture.height / texture.width, LengthUnit.Percent);
                 }
             });
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            foreach (var thumbnail in m_ThumbnailsContainer.Children().OfType<Image>())
-#pragma warning restore RS0030
+            foreach (var thumbnail in m_ThumbnailsContainer.Children().FilterByType<Image>())
                 thumbnail.RemoveFromClassList("selected");
             image.AddToClassList("selected");
         }

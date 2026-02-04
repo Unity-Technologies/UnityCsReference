@@ -12,14 +12,14 @@ using UnityEngine.Bindings;
 
 namespace Unity.Hierarchy.Editor
 {
-    [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
+    [VisibleToOtherModules]
     interface IHierarchySearchPropositionProvider
     {
         IEnumerable<SearchProposition> FetchPropositions(HierarchyViewModel viewModel, SearchContext context, SearchPropositionOptions options);
     }
 
     [QueryListBlock("Node Types", "nodetype", "nodetype", ":")]
-    class QueryNodeTypeBlock : QueryListBlock
+    sealed class QueryNodeTypeBlock : QueryListBlock
     {
         public QueryNodeTypeBlock(IQuerySource source, string id, string value, QueryListBlockAttribute attr)
             : base(source, id, value, attr)
@@ -54,7 +54,7 @@ namespace Unity.Hierarchy.Editor
         }
     }
 
-    class HierarchySearchProvider : SearchProvider
+    sealed class HierarchySearchProvider : SearchProvider
     {
         HierarchyView m_HierarchyView;
 

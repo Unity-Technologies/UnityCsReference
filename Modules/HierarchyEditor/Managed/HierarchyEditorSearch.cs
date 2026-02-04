@@ -9,7 +9,7 @@ using UnityEngine;
 
 namespace Unity.Hierarchy.Editor
 {
-    class HierarchySearchUtils
+    static class HierarchySearchUtils
     {
         public static void GetTerminalNodes(IQueryNode parent, List<IQueryNode> nodes)
         {
@@ -33,7 +33,7 @@ namespace Unity.Hierarchy.Editor
         }
     }
 
-    class HierarchyEditorSearchQueryParser : IHierarchySearchQueryParser
+    sealed class HierarchyEditorSearchQueryParser : IHierarchySearchQueryParser
     {
         static readonly Regex SerializedPropertyRx = new Regex(@"(#[\w\d\.]+)");
         readonly QueryEngine<GameObject> m_QueryTokenizer;

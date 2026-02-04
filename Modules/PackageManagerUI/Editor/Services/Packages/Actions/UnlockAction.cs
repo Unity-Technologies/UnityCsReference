@@ -17,9 +17,7 @@ internal class UnlockAction : PackageAction
 
     protected override bool TriggerActionImplementation(IReadOnlyCollection<IPackage> packages)
     {
-        #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-        var packageUniqueIds = packages.Select(p => p.uniqueId).ToArray();
-#pragma warning restore RS0030
+        var packageUniqueIds = packages.SelectToNewArray(p => p.uniqueId);
         m_PageManager.activePage.SetPackagesUserUnlockedState(packageUniqueIds, true);
         PackageManagerWindowAnalytics.SendEvent("unlock", packageIds: packageUniqueIds);
         return true;

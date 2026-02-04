@@ -108,9 +108,9 @@ namespace UnityEditor.Search
 
         private void OnItemsChosen(IEnumerable<object> chosenItems)
         {
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var convertedItems = chosenItems.Select(item => (SearchItem)item).ToArray();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             m_ViewModel.ExecuteAction(null, convertedItems, true);
         }
 
@@ -209,9 +209,9 @@ namespace UnityEditor.Search
         protected virtual void UpdateSelection()
         {
             var selectedIndexes = m_ViewModel.selection.indexes;
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             if (m_ListView.selectedIndices.SequenceEqual(selectedIndexes))
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                 return;
 
             var firstSelection = selectedIndexes.Count > 0 ? selectedIndexes[0] : -1;
@@ -225,9 +225,9 @@ namespace UnityEditor.Search
 
         private void HandleItemsSelected(IEnumerable<int> selection)
         {
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var selArray = selection.ToArray();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             m_ViewModel.SetSelection(selArray);
             Dispatcher.Emit(SearchEvent.SelectionHasChanged, new SearchEventPayload(this, selection));
         }
@@ -259,9 +259,9 @@ namespace UnityEditor.Search
         private void OnNavigationMove(NavigationMoveEvent evt)
         {
             var itemCount = m_ListView.itemsSource.Count;
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var currentIndex = m_ListView.selectedIndex == -1 ? -1 : m_ListView.selectedIndices.Last();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             var nextSelectedIndex = -1;
             if (evt.direction == NavigationMoveEvent.Direction.Down)
                 SearchCollectionUtils.NextSelectedItem(currentIndex, itemCount, ref nextSelectedIndex);
@@ -284,9 +284,9 @@ namespace UnityEditor.Search
                     m_ListView.selectedIndex = nextSelectedIndex;
                 else
                 {
-                    #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                    #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     if (!m_ListView.selectedIndices.Contains(nextSelectedIndex))
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                     {
                         using var pool = ListPool<int>.Get(out var newSelection);
                         if (nextSelectedIndex > currentIndex)
@@ -329,9 +329,9 @@ namespace UnityEditor.Search
             if (evt.target is not VisualElement ve || !IsValidKey(evt))
                 return false;
 
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var currentIndex = m_ListView.selectedIndex == -1 ? -1 : m_ListView.selectedIndices.Last();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             var itemCount = m_ListView.itemsSource.Count;
             if (m_ListView == ve || m_ListView.Contains(ve))
             {
@@ -343,9 +343,9 @@ namespace UnityEditor.Search
 
             if ((evt.keyCode == KeyCode.Return || evt.keyCode == KeyCode.KeypadEnter) && m_ListView.selectedIndex != -1)
             {
-                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 var items = m_ListView.selectedItems.Cast<SearchItem>().ToArray();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                 var action = evt.altKey ? SearchView.GetSecondaryAction(m_ViewModel.selection, items) : SearchView.GetDefaultAction(m_ViewModel.selection, items);
                 m_ViewModel.ExecuteAction(action, items, true);
                 return true;
@@ -365,14 +365,14 @@ namespace UnityEditor.Search
                 if (currentIndex == -1)
                 {
                     if (itemCount > 0)
-                        #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                        #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                         nextSelectedIndex = m_ListView.activeItems.LastOrDefault()?.index ?? -1;
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                 }
                 else
-                    #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                    #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     nextSelectedIndex = Math.Min(currentIndex + m_ListView.activeItems.Count(), itemCount - 1);
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             }
             else if (evt.keyCode == KeyCode.PageUp)
             {
@@ -382,9 +382,9 @@ namespace UnityEditor.Search
                         nextSelectedIndex = currentIndex = itemCount - 1;
                 }
                 else if (itemCount > 0)
-                    #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                    #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     nextSelectedIndex = Math.Max(currentIndex - m_ListView.activeItems.Count(), 0);
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             }
 
             return VerifySelectionChanged(currentIndex, nextSelectedIndex, evt);

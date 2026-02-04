@@ -420,12 +420,12 @@ namespace UnityEditor
                     // Select added scenes and frame last scene
                     if (insertedScenes.Count > 0)
                     {
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                         Selection.entityIds = insertedScenes.Select(x => x.handle).ToArray().ToEntityIdArray();
-#pragma warning restore RS0030
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning restore UA2001
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                         m_TreeView.Frame(insertedScenes.Last().handle.ToEntityId(), true, false);
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                     }
                 }
                 else // reorderExistingScenes

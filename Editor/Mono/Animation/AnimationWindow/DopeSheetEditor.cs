@@ -841,9 +841,9 @@ namespace UnityEditorInternal
                 allBindings = state.selection.GetAnimatableBindings(selection.gameObject);
             }
 
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return allBindings
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                 .Where(binding => state.selection.GetValueType(binding) == valueType)
                 .ToArray();
         }
@@ -1480,7 +1480,12 @@ namespace UnityEditorInternal
             {
                 AnimationWindowCurve curve = state.filteredCurves.Find(c => changedCurve.curveId == c.GetHashCode());
                 if (curve != null)
+                {
+                    curve.Clear();
+                    curve.FromAnimationCurve(changedCurve.curve);
+
                     curves.Add(curve);
+                }
                 else
                     Debug.LogError("Could not match ChangedCurve data to destination curves.");
             }

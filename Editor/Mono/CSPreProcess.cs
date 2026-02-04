@@ -73,9 +73,9 @@ namespace UnityEditor.Scripting.ScriptCompilation
             var lines = text.Split(kNewlineChars, StringSplitOptions.RemoveEmptyEntries);
             var prefix = Unsupported.GetBaseUnityDeveloperFolder();
 
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var msgs = new MicrosoftCSharpCompilerOutputParser().Parse(lines, false).ToList();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             for (var index = 0; index < msgs.Count; index++)
             {
                 var msg = msgs[index];

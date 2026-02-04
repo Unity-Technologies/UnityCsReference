@@ -8,15 +8,30 @@ using UnityEngine.Scripting;
 
 namespace UnityEngine
 {
+    /// <summary>
+    /// Specifies the type of file that a reference points to.
+    /// </summary>
+    /// <remarks>
+    /// Used by LoadableReference to distinguish between different types of asset references.
+    /// </remarks>
     /*UCBP-PUBLIC*/ internal enum FileIdentifierType
     {
-        // guid is valid if it's a const guid otherwise null, pathName can point to anywhere except in registered asset folders
+        /// <summary>
+        /// Reference to a non-asset file or built asset. The GUID may be a constant GUID or null.
+        /// The path can point anywhere except in registered asset folders.
+        /// </summary>
         NonAsset = 0,
 
-        // guid is valid, pathName is empty, the resolved path is in a registered asset folder
+        /// <summary>
+        /// Reference to a source asset in the Assets folder. The GUID is valid and the resolved path
+        /// is in a registered asset folder.
+        /// </summary>
         SourceAsset = 2,
 
-        // guid is valid, pathName is empty, the resolved path is a primary artifact path
+        /// <summary>
+        /// Reference to a primary artifact in the Library folder. The GUID is valid and the resolved path
+        /// is a primary artifact path.
+        /// </summary>
         PrimaryArtifact = 3
     };
 }

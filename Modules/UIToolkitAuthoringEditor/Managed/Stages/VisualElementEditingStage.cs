@@ -20,6 +20,7 @@ internal class VisualElementEditingStage : PreviewSceneStage, ISerializationCall
     private int[] m_SerializedPath;
     private SubDocumentOptions m_Options;
     private GlobalObjectId m_PanelSettings;
+    private Clipboard m_Clipboard;
 
     private GUIContent m_HeaderContent;
 
@@ -61,6 +62,8 @@ internal class VisualElementEditingStage : PreviewSceneStage, ISerializationCall
     }
 
     public VisualTreeAsset EditedVisualTreeAsset { get; private set; }
+
+    public Clipboard Clipboard => m_Clipboard;
 
     public void SetContext(VisualTreeAssetEditingContext context)
     {
@@ -118,6 +121,7 @@ internal class VisualElementEditingStage : PreviewSceneStage, ISerializationCall
         DoDeserialize();
         StageNavigationManager.instance.beforeSwitchingAwayFromStage += BeforeLeavingStage;
         Undo.undoRedoPerformed += OnUndoRedoPerformed;
+        m_Clipboard = new Clipboard();
     }
 
     protected override void OnDisable()
@@ -127,6 +131,8 @@ internal class VisualElementEditingStage : PreviewSceneStage, ISerializationCall
         StageNavigationManager.instance.beforeSwitchingAwayFromStage -= BeforeLeavingStage;
         m_PanelElement.nestedRootVisualElement.Clear();
         m_PanelElement.DestroyNestedPanel();
+        m_Clipboard.Dispose();
+        m_Clipboard = null;
     }
 
     protected internal override bool OnOpenStage()
@@ -187,8 +193,7 @@ internal class VisualElementEditingStage : PreviewSceneStage, ISerializationCall
             return false;
         }
 
-        EditedVisualTreeAsset.visualTree.hasAuthoringId = true;
-        EditedVisualTreeAsset.visualTree.SetAttribute(UxmlAsset.AuthoringIdAttribute, EditedVisualTreeAsset.visualTree.id.ToString());
+        VisualTreeAsset.HarmonizeIds(EditedVisualTreeAsset);
         var assetStr =  m_Exporter.ToUxmlString(EditedVisualTreeAsset, m_ExporterOptions);
         var written = WriteTextFileToDisk(assetStr);
         if (written)

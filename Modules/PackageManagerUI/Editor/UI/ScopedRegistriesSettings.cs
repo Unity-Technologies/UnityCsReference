@@ -4,7 +4,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using UnityEngine.UIElements;
 
 namespace UnityEditor.PackageManager.UI.Internal
@@ -25,37 +24,44 @@ namespace UnityEditor.PackageManager.UI.Internal
         [Serializable]
         internal new class UxmlSerializedData : VisualElement.UxmlSerializedData
         {
-            public override object CreateInstance() => new ScopedRegistriesSettings();
+            public override object CreateInstance()
+            {
+                var container = ServicesContainer.instance;
+                return new ScopedRegistriesSettings(
+                    container.Resolve<IResourceLoader>(),
+                    container.Resolve<IProjectSettingsProxy>(),
+                    container.Resolve<IApplicationProxy>(),
+                    container.Resolve<IUpmCache>(),
+                    container.Resolve<IUpmRegistryClient>(),
+                    container.Resolve<ICustomDisplayDialog>());
+            }
         }
-        private Dictionary<string, RegistryItem> m_ExistingRegistryItems = new Dictionary<string, RegistryItem>();
-        private IReadOnlyDictionary<string, RegistryItem> registryItems => m_ExistingRegistryItems;
+        private Dictionary<string, RegistryItem> m_ExistingRegistryItems = new ();
 
         private readonly RegistryItem m_NewScopedRegistryItem;
 
         private RegistryInfoDraft draft => m_SettingsProxy.registryInfoDraft;
 
-        private IResourceLoader m_ResourceLoader;
-        private IProjectSettingsProxy m_SettingsProxy;
-        private IApplicationProxy m_ApplicationProxy;
-        private IUpmCache m_UpmCache;
-        private IUpmRegistryClient m_UpmRegistryClient;
-        private ICustomDisplayDialog m_CustomDisplayDialog;
-        private void ResolveDependencies()
+        private readonly IProjectSettingsProxy m_SettingsProxy;
+        private readonly IApplicationProxy m_ApplicationProxy;
+        private readonly IUpmCache m_UpmCache;
+        private readonly IUpmRegistryClient m_UpmRegistryClient;
+        private readonly ICustomDisplayDialog m_CustomDisplayDialog;
+        public ScopedRegistriesSettings(
+            IResourceLoader resourceLoader,
+            IProjectSettingsProxy settingsProxy,
+            IApplicationProxy applicationProxy,
+            IUpmCache upmCache,
+            IUpmRegistryClient upmRegistryClient,
+            ICustomDisplayDialog customDisplayDialog)
         {
-            var container = ServicesContainer.instance;
-            m_ResourceLoader = container.Resolve<IResourceLoader>();
-            m_SettingsProxy = container.Resolve<IProjectSettingsProxy>();
-            m_ApplicationProxy = container.Resolve<IApplicationProxy>();
-            m_UpmCache = container.Resolve<IUpmCache>();
-            m_UpmRegistryClient = container.Resolve<IUpmRegistryClient>();
-            m_CustomDisplayDialog = container.Resolve<ICustomDisplayDialog>();
-        }
+            m_SettingsProxy = settingsProxy;
+            m_ApplicationProxy = applicationProxy;
+            m_UpmCache = upmCache;
+            m_UpmRegistryClient = upmRegistryClient;
+            m_CustomDisplayDialog = customDisplayDialog;
 
-        public ScopedRegistriesSettings()
-        {
-            ResolveDependencies();
-
-            var root = m_ResourceLoader.GetTemplate("ScopedRegistriesSettings.uxml");
+            var root = resourceLoader.GetTemplate("ScopedRegistriesSettings.uxml");
             Add(root);
             cache = new VisualElementCache(root);
 
@@ -101,11 +107,9 @@ namespace UnityEditor.PackageManager.UI.Internal
             if (EditorWindow.HasOpenInstances<ProjectSettingsWindow>())
             {
                 draft.SetModifiedAfterUndo();
-                // check if the old state makes sense- does it still exist in the list of registries
-                //  if not, put it into a new draft, since it was deleted at some point prior
-                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                if (!string.IsNullOrEmpty(draft.original?.name) && !m_SettingsProxy.scopedRegistries.Any(a => a.name == draft.original?.name))
-#pragma warning restore RS0030
+                // check if the old state makes sense - does it still exist in the list of registries
+                // if not, put it into a new draft, since it was deleted at some point prior
+                if (!string.IsNullOrEmpty(draft.original?.name) && !m_SettingsProxy.scopedRegistries.AnyMatches(a => a.name == draft.original?.name))
                 {
                     draft.SetOriginalRegistryInfo(null, true);
                     m_SettingsProxy.isUserAddingNewScopedRegistry = true;
@@ -242,13 +246,9 @@ namespace UnityEditor.PackageManager.UI.Internal
                        return;
 
                    if (draft.original is not null)
-                       #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                       m_UpmRegistryClient.UpdateRegistry(draft.original.name, draft.name, draft.url, draft.sanitizedScopes.ToArray());
-#pragma warning restore RS0030
+                       m_UpmRegistryClient.UpdateRegistry(draft.original.name, draft.name, draft.url, draft.GetSanitizedScopes());
                    else
-                       #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                       m_UpmRegistryClient.AddRegistry(draft.name, draft.url, draft.sanitizedScopes.ToArray());
-#pragma warning restore RS0030
+                       m_UpmRegistryClient.AddRegistry(draft.name, draft.url, draft.GetSanitizedScopes());
                },
                errorCallback: error =>
                {
@@ -261,13 +261,9 @@ namespace UnityEditor.PackageManager.UI.Internal
         private void CheckRegistryDraftCompliance(Action<RegistryInfo> successCallback = null, Action<UIError> errorCallback = null)
         {
             if (draft.original is not null)
-                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                m_UpmRegistryClient.UpdateRegistryDryRun(draft.original.name, draft.name, draft.url, draft.sanitizedScopes.ToArray(), successCallback, errorCallback);
-#pragma warning restore RS0030
+                m_UpmRegistryClient.UpdateRegistryDryRun(draft.original.name, draft.name, draft.url, draft.GetSanitizedScopes(), successCallback, errorCallback);
             else
-                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                m_UpmRegistryClient.AddRegistryDryRun(draft.name, draft.url, draft.sanitizedScopes.ToArray(), successCallback, errorCallback);
-#pragma warning restore RS0030
+                m_UpmRegistryClient.AddRegistryDryRun(draft.name, draft.url, draft.GetSanitizedScopes(), successCallback, errorCallback);
         }
 
         private void RevertChanges()
@@ -276,9 +272,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             RefreshDraftRegistryItem();
             if (draft.original is null)
             {
-                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                var lastScopedRegistry = m_SettingsProxy.scopedRegistries.LastOrDefault();
-#pragma warning restore RS0030
+                var lastScopedRegistry = m_SettingsProxy.scopedRegistries.Count > 0 ? m_SettingsProxy.scopedRegistries[^1] : null;
                 if (lastScopedRegistry != null)
                 {
                     m_SettingsProxy.SelectRegistry(lastScopedRegistry.name);
@@ -308,9 +302,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         private void OnRegistryScopesChanged(ChangeEvent<string> evt = null)
         {
             draft.RegisterOnUndo(k_EditRegistryScopes);
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            draft.SetScopes(scopesList.Children().Cast<TextField>().Select(textField => textField.value));
-#pragma warning restore RS0030
+            draft.SetScopes(scopesList.Children().FilterByType<TextField>().SelectAsEnumerable(textField => textField.value));
             RefreshApplyAndRevertButtons();
             RefreshDraftRegistryItem();
         }

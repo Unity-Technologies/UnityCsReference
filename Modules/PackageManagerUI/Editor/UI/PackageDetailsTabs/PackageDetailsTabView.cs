@@ -5,7 +5,6 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq;
 using UnityEngine.UIElements;
 
 namespace UnityEditor.PackageManager.UI.Internal
@@ -25,14 +24,12 @@ namespace UnityEditor.PackageManager.UI.Internal
             public override object CreateInstance() => new PackageDetailsTabView();
         }
 
-        private Label m_EntitlementsErrorLabel;
+        private readonly Label m_EntitlementsErrorLabel;
 
-        #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-        public IEnumerable<PackageDetailsTabElement> orderedTabs => m_BodyContainer.Children().OfType<PackageDetailsTabElement>();
-#pragma warning restore RS0030
+        public IEnumerable<PackageDetailsTabElement> orderedTabs => m_BodyContainer.Children().FilterByType<PackageDetailsTabElement>();
 
         private IPackageVersion m_Version = null;
-        private HashSet<PackageDetailsTabElement> m_DeferredRefreshTracker = new HashSet<PackageDetailsTabElement>();
+        private readonly HashSet<PackageDetailsTabElement> m_DeferredRefreshTracker = new();
 
         // hardcoded constant values taken from styles applied to Package Details tab headers
         // if these ever change, these values will need to be updated
@@ -65,24 +62,21 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public void RefreshTabs(IEnumerable<string> tabIds, IPackageVersion version)
         {
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            var tabs = tabIds.Select(id => GetTab(id)).Where(tab => tab != null);
-#pragma warning restore RS0030
-            RefreshTabs(tabs, version);
+            var tabsToRefresh = tabIds.SelectAsEnumerable(GetTab).Filter(tab => tab != null);
+            RefreshTabs(tabsToRefresh, version);
         }
 
         public void RefreshTab(string tabId, IPackageVersion version)
         {
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            var tabs = new[] { GetTab<PackageDetailsTabElement>(tabId) }.Where(tab => tab != null);
-#pragma warning restore RS0030
-            RefreshTabs(tabs, version);
+            var tab = GetTab<PackageDetailsTabElement>(tabId);
+            if (tab != null)
+                RefreshTabs(new [] { tab }, version);
         }
 
-        private void RefreshTabs(IEnumerable<PackageDetailsTabElement> tabs, IPackageVersion version)
+        private void RefreshTabs(IEnumerable<PackageDetailsTabElement> tabsToRefresh, IPackageVersion version)
         {
             m_Version = version;
-            foreach (var tab in tabs)
+            foreach (var tab in tabsToRefresh)
             {
                 m_DeferredRefreshTracker.Add(tab);
                 if (!RefreshTabAndHeaderVisibility(tab, version))
@@ -108,10 +102,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             if (UIUtils.IsElementVisible(GetTab(selectedTabId)))
                 return;
 
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            var firstValidTab = orderedTabs.FirstOrDefault(tab => tab.IsValid(m_Version));
-#pragma warning restore RS0030
-            SelectTab(firstValidTab);
+            SelectTab(orderedTabs.FirstMatch(tab => tab.IsValid(m_Version)));
         }
 
         private bool RefreshTabAndHeaderVisibility(PackageDetailsTabElement tab, IPackageVersion version)

@@ -10,16 +10,9 @@ namespace UnityEditor.PackageManager.UI.Internal;
 
 internal class OpenManifestExternallyAction : PackageAction
 {
-    private readonly IIOProxy m_IOProxy;
-
-    public OpenManifestExternallyAction(IIOProxy ioProxy)
-    {
-        m_IOProxy = ioProxy;
-    }
-
     private bool TryOpenManifest(IPackageVersion version)
     {
-        var path = m_IOProxy.PathsCombine(version.localPath, "package.json");
+        var path = IOUtils.PathsCombine(version.localPath, "package.json");
         if (InternalEditorUtility.OpenFileAtLineExternal(path, 1, 0))
             return true;
 

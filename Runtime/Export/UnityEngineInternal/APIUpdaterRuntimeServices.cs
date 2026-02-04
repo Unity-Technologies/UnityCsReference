@@ -30,9 +30,9 @@ In order to be able to build the game, replace this call (APIUpdaterRuntimeServi
 
         private static Type ResolveType(string name, Assembly callingAssembly, string sourceInfo)
         {
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var foundOnUnityEngine = ComponentsFromUnityEngine.FirstOrDefault(t => (t.Name == name || t.FullName == name) && !IsMarkedAsObsolete(t));
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             if (foundOnUnityEngine != null)
             {
                 Debug.LogWarningFormat("[{1}] Component type '{0}' found in UnityEngine, consider replacing with go.AddComponent<{0}>()", name, sourceInfo);
@@ -47,8 +47,10 @@ In order to be able to build the game, replace this call (APIUpdaterRuntimeServi
             }
 
 #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             candidateType = CurrentAssemblies.GetLoadedAssemblies().SelectMany(a => a.GetTypes()).SingleOrDefault(t => (t.Name == name || t.FullName == name) && typeof(Component).IsAssignableFrom(t));
 #pragma warning restore RS0030
+#pragma warning restore UA2001
             if (candidateType != null)
             {
                 Debug.LogWarningFormat("[{2}] Component type '{0}' found on assembly {1}, consider replacing with go.AddComponent<{0}>()", name, new AssemblyName(candidateType.Assembly.FullName).Name, sourceInfo);

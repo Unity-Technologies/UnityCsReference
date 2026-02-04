@@ -184,9 +184,9 @@ namespace UnityEditor.Search
             else
             {
                 // TODO SearchIndexer Memory: is it needed to return a Distinct here? Should we use a local HashSet instead of having Distinct allocate a new set each time?
-                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 return root.results.Distinct();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             }
         }
 
@@ -330,9 +330,9 @@ namespace UnityEditor.Search
                     results = result.results;
                     if (!result.combined)
                     {
-                        #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                        #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                         results = leftReturn.Intersect(rightReturn).ToList();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                     }
                 }
                 else
@@ -361,19 +361,19 @@ namespace UnityEditor.Search
             {
                 if (!combinedRight)
                 {
-                    #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                    #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     int rightReturnOriginalCount = rightReturn.Count();
-#pragma warning restore RS0030
-                    #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning restore UA2001
+                    #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     int leftReturnOriginalCount = leftReturn.Count();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                     var result = eval(new EvalHandlerArgs(null, null, SearchIndexOperator.None, false, leftReturn, rightReturn, payload));
                     results = result.results;
                     if (!result.combined)
                     {
-                        #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                        #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                         results = leftReturn.Union(rightReturn);
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                     }
                 }
                 else
@@ -391,9 +391,9 @@ namespace UnityEditor.Search
                     rightInstruction.orSet = leftReturn;
                 else
                 {
-                    #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                    #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     rightInstruction.orSet = rightInstruction.orSet.Union(leftReturn);
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                 }
             }
         }

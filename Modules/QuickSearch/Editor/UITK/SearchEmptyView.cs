@@ -172,9 +172,9 @@ namespace UnityEditor.Search
         {
             m_QueriesContainer = new VisualElement();
             m_QueriesContainer.name = "QueryHelpersContainer";
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             if (GetActiveHelperProviders(viewState.queryBuilderEnabled).Count() > 0)
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             {
                 Add(CreateHeader(k_NarrowYourSearchLabel));
                 Add(CreateProviderHelpers(viewState.queryBuilderEnabled));
@@ -206,14 +206,14 @@ namespace UnityEditor.Search
             foreach (var q in SearchTemplateAttribute.GetAllQueries())
                 searches.Add(q, QueryHelperSearchGroup.QueryType.Template, SearchQuery.GetIcon(q));
 
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             foreach (var q in SearchQueryAsset.savedQueries.Cast<ISearchQuery>().Concat(SearchQuery.userQueries).Where(q => q.isSearchTemplate))
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                 searches.Add(q, QueryHelperSearchGroup.QueryType.Template, SearchQuery.GetIcon(q));
 
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             foreach (var a in EnumerateUniqueRecentSearches().Take(5))
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                 searches.Add(a, QueryHelperSearchGroup.QueryType.Recent, recentSearchesIcon);
         }
 
@@ -225,12 +225,12 @@ namespace UnityEditor.Search
             var currentAreaFilterId = SearchSettings.helperWidgetCurrentArea;
             var filteredQueries = GetFilteredQueries(searches.queries, currentAreaFilterId, blockMode); ;
             PopulateSearchHelpers(filteredQueries, container);
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             searches.UpdateTitle(filteredQueries.Count());
-#pragma warning restore RS0030
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning restore UA2001
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             container.Children().LastOrDefault()?.AddToClassList("last-child");
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             return container;
         }
 
@@ -289,9 +289,9 @@ namespace UnityEditor.Search
             if (query.searchText.StartsWith(provider.filterId))
                 return true;
 
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var queryProviders = query.GetProviderIds().ToArray();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             return queryProviders.Length == 1 && queryProviders[0] == provider.id;
         }
 
@@ -302,16 +302,16 @@ namespace UnityEditor.Search
             if (isAll)
             {
                 // Keep only query matching one of the active providers.
-                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 return queries.Where(q => activeProviders.Any(p => IsFilteredQuery(q.query, p)));
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             }
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var currentProvider = activeProviders.FirstOrDefault(p => p.filterId == currentAreaFilterId);
-#pragma warning restore RS0030
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning restore UA2001
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return queries.Where(q =>
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             {
                 // Keep query matching THE selected provider.
                 if (q.type == QueryHelperSearchGroup.QueryType.Recent)
@@ -322,19 +322,19 @@ namespace UnityEditor.Search
 
         private static IEnumerable<string> EnumerateUniqueRecentSearches()
         {
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var recentSearches = SearchSettings.recentSearches.ToList();
-#pragma warning restore RS0030
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning restore UA2001
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             for (var i = 0; i < recentSearches.Count(); ++i)
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             {
                 var a = recentSearches[i];
                 yield return a;
 
-                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 for (var j = i + 1; j < recentSearches.Count();)
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                 {
                     var b = recentSearches[j];
                     if (a.StartsWith(b) || Utils.LevenshteinDistance(a, b, false) < 9)
@@ -381,9 +381,9 @@ namespace UnityEditor.Search
                 providersContainer.Add(b.CreateGUI());
             }
 
-#pragma warning disable RS0031 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2002 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             if (!m_Areas.selectedBlocks.Any())
-#pragma warning restore RS0031
+#pragma warning restore UA2002
             {
                 allArea.selected = true;
                 SetCurrentArea(allArea);
@@ -446,9 +446,9 @@ namespace UnityEditor.Search
             var allProviders = m_ViewModel?.context?.GetProviders() ?? SearchService.Providers;
             if (!blockMode)
                 return allProviders;
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var filtered = allProviders.Where(p => p.id != "expression");
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             return filtered;
         }
 
@@ -626,9 +626,9 @@ namespace UnityEditor.Search
 
             var searches = new QueryHelperSearchGroup(viewState.queryBuilderEnabled, k_SearchesLabel);
             PopulateSearches(searches);
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var filteredQueries = GetFilteredQueries(searches.queries, context.filterId, viewState.queryBuilderEnabled)
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                 .Take(maxQueryCount).ToArray();
             if (filteredQueries.Length == 0)
             {

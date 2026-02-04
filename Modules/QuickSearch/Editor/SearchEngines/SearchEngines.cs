@@ -80,9 +80,9 @@ namespace UnityEditor.Search
 
         public static IEnumerable<string> DefaultSearchItemConverter(IEnumerable<SearchItem> items)
         {
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return items.Select(item => item.id);
-#pragma warning restore RS0030
+#pragma warning restore UA2001
         }
     }
 
@@ -102,9 +102,9 @@ namespace UnityEditor.Search
             if (searchSessions.ContainsKey(context.guid))
                 return;
 
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var provider = SearchService.Providers.First(p => p.id == providerId);
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             searchSessions.Add(context.guid, new SearchApiSession(context, provider));
         }
 
@@ -216,13 +216,13 @@ namespace UnityEditor.Search
 
         public static void SetSearchContext(string query, ProjectSearchContext project, SearchContext context)
         {
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             if (project.requiredTypeNames != null && project.requiredTypeNames.FirstOrDefault() != null)
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             {
-                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 context.filterType = Utils.GetTypeFromName(project.requiredTypeNames.First());
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             }
             else
             {
@@ -261,9 +261,9 @@ namespace UnityEditor.Search
 
         static IEnumerable<string> SearchItemConverter(IEnumerable<SearchItem> items)
         {
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return items.Select(ToPath);
-#pragma warning restore RS0030
+#pragma warning restore UA2001
         }
 
         static string ToPath(SearchItem item)
@@ -298,13 +298,13 @@ namespace UnityEditor.Search
                 return;
 
             searchSession.context.searchText = query;
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             if (context.requiredTypeNames != null && context.requiredTypeNames.FirstOrDefault() != null)
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             {
-                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 searchSession.context.filterType = Utils.GetTypeFromName(context.requiredTypeNames.First());
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             }
             else
             {
@@ -425,9 +425,9 @@ namespace UnityEditor.Search
 
         static IEnumerable<AdvancedObjectSelector> GetActiveSelectors()
         {
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return SearchService.OrderedObjectSelectors.Where(p => p.active);
-#pragma warning restore RS0030
+#pragma warning restore UA2001
         }
     }
 }

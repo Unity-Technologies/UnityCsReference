@@ -233,9 +233,9 @@ namespace UnityEditor
 
             public Texts()
             {
-                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 vertexStreamsMenuContent = vertexStreamsMenu.Select(x => new GUIContent(x)).ToArray();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             }
         }
         private static Texts s_Texts;
@@ -429,9 +429,9 @@ namespace UnityEditor
 
                     if (renderMode == RenderMode.Billboard || renderMode == RenderMode.Mesh)
                     {
-                        #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                        #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                         bool anyAlignToDirection = m_ParticleSystemUI.m_ParticleSystems.FirstOrDefault(o => o.shape.enabled && o.shape.alignToDirection) != null;
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                         if (anyAlignToDirection)
                         {
                             EditorGUI.BeginChangeCheck();
@@ -544,9 +544,9 @@ namespace UnityEditor
                 renderers.Add(ps.GetComponent<ParticleSystemRenderer>());
             }
             var renderersArray = renderers.ToArray();
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             m_Probes.OnGUI(renderersArray, renderers.FirstOrDefault(), true);
-#pragma warning restore RS0030
+#pragma warning restore UA2001
 
             RendererEditorBase.DrawRenderingLayer(m_RenderingLayerMask, renderer, renderersArray, true);
             RendererEditorBase.DrawRendererPriority(m_RendererPriority, true);

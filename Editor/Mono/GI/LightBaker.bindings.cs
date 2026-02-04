@@ -16,6 +16,8 @@ namespace UnityEditor.LightBaking
         public ProbeRequestOutputType outputTypeMask;
         public ulong positionOffset;
         public ulong positionLength;
+        public SampleCount sampleCount;
+        public uint maxBounces;
         public float pushoff;
         public string outputFolderPath;
 
@@ -922,7 +924,7 @@ namespace UnityEditor.LightBaking
         public static extern bool ReportResultToParentProcess(Result result, ExternalProcessConnection connection);
         [NativeMethod(IsThreadSafe = true)]
         public static extern bool ReportProgressToParentProcess(float progress, ExternalProcessConnection connection);
-        public static extern ulong ConvertExpectedWorkToWorkSteps(BakeInput bakeInput, LightmapRequests lightmapRequests, LightProbeRequests lightProbeRequests, ulong sampleCountPerLightmapTexel, ulong sampleCountPerProbe);
+        public static extern ulong ConvertExpectedWorkToWorkSteps(BakeInput bakeInput, LightmapRequests lightmapRequests, LightProbeRequests lightProbeRequests, ulong sampleCountPerLightmapTexel);
         [NativeMethod(IsThreadSafe = true)]
         public static extern bool GetCancellationRequested(ExternalProcessConnection connection);
     }

@@ -26,9 +26,9 @@ namespace UnityEngine.UIElements.UIR
                 public Entry rootEntry;
             }
 
-            static readonly ProfilerMarker k_GenerateEntriesMarker = new("UIR.GenerateEntries");
-            static readonly ProfilerMarker k_ConvertEntriesToCommandsMarker = new("UIR.ConvertEntriesToCommands");
-            static readonly ProfilerMarker k_UpdateOpacityIdMarker = new ("UIR.UpdateOpacityId");
+            static readonly ProfilerMarker k_GenerateEntriesMarker = new(ProfilerCategory.UIToolkit, "UIR.GenerateEntries");
+            static readonly ProfilerMarker k_ConvertEntriesToCommandsMarker = new(ProfilerCategory.UIToolkit, "UIR.ConvertEntriesToCommands");
+            static readonly ProfilerMarker k_UpdateOpacityIdMarker = new (ProfilerCategory.UIToolkit, "UIR.UpdateOpacityId");
 
             RenderTreeManager m_RenderTreeManager;
             MeshGenerationContext m_MeshGenerationContext;

@@ -18,6 +18,9 @@ namespace UnityEditor
 
         internal static readonly TimeSpan DefaultDelay = TimeSpan.FromMilliseconds(200);
 
+        public bool delayInProgress => m_DelayInProgress;
+        internal long lastExecutionTime => m_LastExecutionTime;
+
         /// <summary>
         /// Throttle the action to be executed at most once every delay.
         /// If no delay is specified default delay is <see cref="DefaultDelay"/>
@@ -113,6 +116,29 @@ namespace UnityEditor
             }
         }
 
+        /// <summary>
+        /// Force execute the action immediately.
+        /// </summary>
+        /// <param name="context">Context object to pass to the configured action.</param>
+        public void ForceExecute(object context = null)
+        {
+            Abort();
+            m_Action?.Invoke(context);
+
+            // Mimic the state as if we just executed after a delay of throttle or debounce
+            if (m_IsThrottle)
+            {
+                if (m_FirstExecuteImmediate)
+                    m_LastExecutionTime = DateTime.UtcNow.Ticks;
+                else
+                    m_LastExecutionTime = 0;
+            }
+            else
+            {
+                m_LastExecutionTime = 0;
+            }
+        }
+
         private Delayer(Action<object> action, TimeSpan delay, bool isThrottle, bool firstExecuteImmediate)
         {
             m_Action = action;
@@ -125,6 +151,7 @@ namespace UnityEditor
         {
             EditorApplication.tick -= Debounce;
             EditorApplication.tick -= Throttle;
+            m_DelayInProgress = false;
         }
 
         public void Dispose()
@@ -133,7 +160,6 @@ namespace UnityEditor
 
             m_Context = null;
             m_Action = null;
-            m_DelayInProgress = false;
         }
 
         private void Debounce()

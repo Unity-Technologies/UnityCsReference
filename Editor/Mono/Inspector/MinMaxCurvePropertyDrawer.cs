@@ -276,28 +276,28 @@ namespace UnityEditorInternal
             region.AddToClassList(GrowClass);
             container.Add(region);
 
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var mode = new PopupField<string>(s_Styles.modes.Select(m => m.text).ToList(), m_Property.mode.intValue);
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             container.Add(mode);
 
             EventCallback<ChangeEvent<string>> valueChangeAction = (e) =>
             {
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 MinMaxCurveState state = (MinMaxCurveState)s_Styles.modes.Select(m => m.text).ToList().IndexOf(e.newValue);
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                 m_Property.mode.intValue = (int)state;
                 m_Property.mode.serializedObject.ApplyModifiedProperties();
 
                 constantMax.EnableInClassList(UIElementsUtility.hiddenClassName, state != MinMaxCurveState.k_Scalar && state != MinMaxCurveState.k_TwoScalars);
 
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 if(constantMax.Children().Count() > 0)
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                 {
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     constantMax.Children().First().EnableInClassList(AlignClass, state != MinMaxCurveState.k_TwoScalars);
-#pragma warning restore RS0030
+#pragma warning restore UA2001
 
                     var label = constantMax.Query<Label>().Build().First();
                     if (state == MinMaxCurveState.k_Scalar)
@@ -320,12 +320,12 @@ namespace UnityEditorInternal
 
             container.RegisterCallback<AttachToPanelEvent>((e) =>
             {
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 var popup = mode.Children().First();
-#pragma warning restore RS0030
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning restore UA2001
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 popup.Remove(popup.Children().First());
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                 popup.RemoveFromClassList(InputClass);
 
                 valueChangeAction.Invoke(ChangeEvent<string>.GetPooled("", s_Styles.modes[m_Property.mode.intValue].text));

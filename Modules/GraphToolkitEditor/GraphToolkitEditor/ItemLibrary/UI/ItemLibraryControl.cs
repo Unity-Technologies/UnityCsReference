@@ -179,18 +179,18 @@ namespace Unity.GraphToolkit.ItemLibrary.Editor
 
         void OnTreeviewSelectionChange(IReadOnlyList<ITreeItemView> selection)
         {
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var selectedItems = selection
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                 .OfType<IItemView>()
                 .Select(siv => siv.Item)
                 .ToList();
             m_Library.Adapter.OnSelectionChanged(selectedItems);
             if (m_Library.Adapter.HasDetailsPanel)
             {
-                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 var selectedItem = selectedItems.FirstOrDefault();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                 m_Library.Adapter.UpdateDetailsPanel(selectedItem);
                 if (m_Library.SourcePort != null && selectedItem is GraphNodeModelLibraryItem)
                     AddPortSubItems(selectedItem);
@@ -390,9 +390,9 @@ namespace Unity.GraphToolkit.ItemLibrary.Editor
 
         static string GetAutoCompletionSuggestion(string query, IReadOnlyList<ItemLibraryItem> results)
         {
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var bestMatch = results
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                 .Select(si => si.Name)
                 .FirstOrDefault(n => n.StartsWith(query, StringComparison.OrdinalIgnoreCase));
             if (bestMatch != null && bestMatch.Length > query.Length && bestMatch[query.Length] != ' ')

@@ -46,6 +46,7 @@ namespace UnityEditor.Search
         void MapProperty(int documentIndex, string name, string label, string help, string propertyType, string ownerTypeName, SearchPropositionGenerationOptions propositionGenerationOptions, bool removeNestedKeys);
         void Start(bool clear);
         void Finish(string[] removedDocuments);
+        void Clear();
 
         // Merging
         void CombineIndexes(IReadOnlyList<SearchIndexer> indexes, int baseScore, string indexName, SearchTask<TaskData> task); // Combine is a Merge operation without removing any document.

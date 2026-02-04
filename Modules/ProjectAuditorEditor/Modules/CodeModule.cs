@@ -150,9 +150,9 @@ namespace Unity.ProjectAuditor.Editor.Modules
         {
             base.Initialize();
 
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             m_OpCodes = new List<OpCode>(GetAnalyzers().Select(a => a.opCodes).SelectMany(c => c).Distinct());
-#pragma warning restore RS0030
+#pragma warning restore UA2001
 
             ProjectIssueExtensions.AddCustomComparer(IssueCategory.Assembly, PropertyTypeUtil.FromCustom(AssemblyProperty.CompileTime),
                 (a, b) =>
@@ -191,37 +191,37 @@ namespace Unity.ProjectAuditor.Editor.Modules
                 var opCodeAnalyzers = new List<int>();
                 for (int analyzerIndex = 0; analyzerIndex < m_CompatibleAnalyzers.Length; analyzerIndex++)
                 {
-                    #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                    #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     if (m_CompatibleAnalyzers[analyzerIndex].opCodes.Contains(opCode))
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                         opCodeAnalyzers.Add(analyzerIndex);
                 }
                 m_OpCodeAnalyzers[(ushort)opCode.Value] = opCodeAnalyzers;
             }
 
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var precompiledAssemblies = AssemblyInfoProvider.GetPrecompiledAssemblyPaths(PrecompiledAssemblyTypes.All)
                 .Select(assemblyPath => (ReportItem)context.CreateInsight(IssueCategory.PrecompiledAssembly, Path.GetFileNameWithoutExtension(assemblyPath))
                     .WithCustomProperties([false])
                     .WithLocation(assemblyPath))
                 .ToArray();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             if (precompiledAssemblies.Length > 0)
                 analysisParams.OnIncomingIssues(precompiledAssemblies);
 
             yield return null;
 
             // find all roslyn analyzer DLLs by label
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var roslynAnalyzerAssets = new List<string>(AssetDatabase.FindAssets("l:RoslynAnalyzer").Select(AssetDatabase.GUIDToAssetPath));
-#pragma warning restore RS0030
+#pragma warning restore UA2001
 
             // find all roslyn analyzers packaged with Project Auditor
             if (Directory.Exists(ProjectAuditor.s_RoslynAnalyzersDataPath))
             {
-                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 var assetPaths = AssetDatabase.FindAssets("", [ProjectAuditor.s_RoslynAnalyzersDataPath]).Select(AssetDatabase.GUIDToAssetPath);
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                 foreach (var assetPath in assetPaths)
                 {
                     if (assetPath.EndsWith(".dll"))
@@ -230,9 +230,9 @@ namespace Unity.ProjectAuditor.Editor.Modules
             }
 
             // report all roslyn analyzers as PrecompiledAssembly issues
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var roslynAnalyzerIssues = roslynAnalyzerAssets
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                 .Distinct()
                 .Select(roslynAnalyzerDllPath => (ReportItem)context.CreateInsight(
                 IssueCategory.PrecompiledAssembly,
@@ -274,17 +274,17 @@ namespace Unity.ProjectAuditor.Editor.Modules
 
             if (analysisParams.AssemblyNames != null)
             {
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 compiledEditorAssemblyPaths = new List<AssemblyInfo>(compiledEditorAssemblyPaths.Where(a => Array.IndexOf(analysisParams.AssemblyNames, a.Name) != -1));
                 compiledPlayerAssemblyPaths = new List<AssemblyInfo>(compiledPlayerAssemblyPaths.Where(a => Array.IndexOf(analysisParams.AssemblyNames, a.Name) != -1));
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             }
 
             if (compiledEditorAssemblyPaths.Count > 0)
             {
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 var issues = compiledEditorAssemblyPaths.Select(assemblyInfo => (ReportItem)context.CreateInsight(IssueCategory.Assembly, assemblyInfo.Name)
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                     .WithCustomProperties(
                     [
                         assemblyInfo.IsReadOnly,
@@ -300,7 +300,7 @@ namespace Unity.ProjectAuditor.Editor.Modules
             // Add these manually because they aren't actually compiled, even though they are part of the player (they are pre-compiled)
             if (compiledPlayerAssemblyPaths.Count > 0)
             {
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 var issues = compiledPlayerAssemblyPaths
                     .Where(assemblyInfo => assemblyInfo.IsUnityInternalAssembly)
                     .Select(assemblyInfo => (ReportItem)context.CreateInsight(IssueCategory.Assembly, assemblyInfo.Name)
@@ -312,15 +312,15 @@ namespace Unity.ProjectAuditor.Editor.Modules
                     ])
                     .WithLocation(assemblyInfo.AsmDefPath))
                     .ToArray();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                 if (issues.Length > 0)
                     analysisParams.OnIncomingIssues(issues);
             }
 
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var assemblyInfos = compiledEditorAssemblyPaths.Concat(compiledPlayerAssemblyPaths)
                 .Where(a => AssemblyPackageFilter(a, analysisParams)).ToArray();
-            #pragma warning restore RS0030
+            #pragma warning restore UA2001
 
             if (progress?.IsCancelled ?? false)
             {
@@ -329,11 +329,11 @@ namespace Unity.ProjectAuditor.Editor.Modules
             }
             
             AsyncProgressState progressState = progress?.Start("Analyzing Assemblies", assemblyInfos.Length);
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             // Process successfully compiled assemblies
             var localAssemblyInfos = assemblyInfos.Where(info => !info.IsReadOnly).ToArray();
             var readOnlyAssemblyInfos = assemblyInfos.Where(info => info.IsReadOnly).ToArray();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             var foundIssues = new List<ReportItem>();
             var callCrawler = new CallCrawler();
             var onIssueFoundInternal = new Action<ReportItem>(foundIssues.Add);
@@ -465,9 +465,9 @@ namespace Unity.ProjectAuditor.Editor.Modules
                 foreach (var path in assemblyDirectories)
                     assemblyResolver.AddSearchDirectory(path);
 
-                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 foreach (var dir in assemblyInfos.Select(info => Path.GetDirectoryName(info.Path)).Distinct())
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                     assemblyResolver.AddSearchDirectory(dir);
 
                 // Analyze all assemblies
@@ -694,6 +694,12 @@ namespace Unity.ProjectAuditor.Editor.Modules
             {
                 AssemblyInfo assemblyInfo;
                 var assemblyName = UnityEditor.Compilation.CompilationPipeline.GetAssemblyNameFromScriptPath(unityMessage.file);
+
+                // Skip compiler messages for files not associated with any project assembly
+                // (e.g., warnings from package cache files)
+                if (string.IsNullOrEmpty(assemblyName))
+                    continue;
+
                 if (assemblyName == AssemblyInfo.DefaultAssemblyFileName || assemblyName == AssemblyInfo.DefaultEditorAssemblyFileName)
                 {
                     var assemblyPath = Path.GetFullPath(Path.Combine("Library/ScriptAssemblies", assemblyName), projectFolder);

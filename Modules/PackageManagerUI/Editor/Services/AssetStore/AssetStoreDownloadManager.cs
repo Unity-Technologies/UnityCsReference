@@ -4,7 +4,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using UnityEditorInternal;
 using UnityEngine;
 
@@ -134,23 +133,17 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public bool IsAnyDownloadInProgress()
         {
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            return m_DownloadOperations.Values.Any(d => d.isInProgress);
-#pragma warning restore RS0030
+            return m_DownloadOperations.Values.AnyMatches(d => d.isInProgress);
         }
 
         public bool IsAnyDownloadInProgressOrPause()
         {
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            return m_DownloadOperations.Values.Any(d => d.isInProgress || d.isInPause);
-#pragma warning restore RS0030
+            return m_DownloadOperations.Values.AnyMatches(d => d.isInProgress || d.isInPause);
         }
 
         public int DownloadInProgressCount()
         {
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            return m_DownloadOperations.Values.Count(d => d.isInProgress);
-#pragma warning restore RS0030
+            return m_DownloadOperations.Values.CountMatches(d => d.isInProgress);
         }
 
         private void Download(long productId)
@@ -212,8 +205,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private void RemoveDownloadOperation(long productId)
         {
-            if (m_DownloadOperations.ContainsKey(productId))
-                m_DownloadOperations.Remove(productId);
+            m_DownloadOperations.Remove(productId);
         }
 
         // This function will be called by AssetStoreUtils after the download delegate registration
@@ -243,9 +235,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public void AbortAllDownloads()
         {
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            var operations = m_DownloadOperations.Values.ToList();
-#pragma warning restore RS0030
+            var operations = m_DownloadOperations.Values.ToNewArray();
             m_DownloadOperations.Clear();
             foreach (var operation in operations)
                 operation.Cancel();
@@ -350,9 +340,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public void OnBeforeSerialize()
         {
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            m_SerializedDownloadOperations = m_DownloadOperations.Values.ToArray();
-#pragma warning restore RS0030
+            m_DownloadOperations.Values.ToArray(ref m_SerializedDownloadOperations);
         }
 
         public void OnAfterDeserialize()

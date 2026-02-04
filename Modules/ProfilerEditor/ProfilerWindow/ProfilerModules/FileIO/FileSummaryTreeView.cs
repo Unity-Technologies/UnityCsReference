@@ -389,9 +389,9 @@ namespace UnityEditor
                 return;
             }
 
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var myTypes = rootItem.children.Cast<FileSummaryTreeViewItem>();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             var orderedQuery = InitialOrder(myTypes, sortedColumns);
             for (int i = 1; i < sortedColumns.Length; i++)
             {
@@ -464,9 +464,9 @@ namespace UnityEditor
                 }
             }
 
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             rootItem.children = orderedQuery.Cast<TreeViewItem>().ToList();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
         }
 
         IOrderedEnumerable<FileSummaryTreeViewItem> InitialOrder(IEnumerable<FileSummaryTreeViewItem> myTypes, int[] history)
@@ -528,15 +528,15 @@ namespace UnityEditor
         {
             if (ascending)
             {
-                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 return source.OrderBy(selector);
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             }
             else
             {
-                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 return source.OrderByDescending(selector);
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             }
         }
 
@@ -544,15 +544,15 @@ namespace UnityEditor
         {
             if (ascending)
             {
-                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 return source.ThenBy(selector);
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             }
             else
             {
-                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 return source.ThenByDescending(selector);
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             }
         }
     }

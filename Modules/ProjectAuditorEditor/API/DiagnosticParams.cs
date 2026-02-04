@@ -196,11 +196,11 @@ namespace Unity.ProjectAuditor.Editor
 
         private void InitPlatformParams()
         {
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var buildTargets = Enum.GetValues(typeof(BuildTarget)).Cast<BuildTarget>();
             var supportedBuildTargets = new List<BuildTarget>(buildTargets.Where(bt =>
                 BuildPipeline.IsBuildTargetSupported(BuildPipeline.GetBuildTargetGroup(bt), bt)));
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             var supportedGroups  = new HashSet<BuildTargetGroup>();
             foreach (var buildTarget in supportedBuildTargets)
                 supportedGroups.Add(BuildPipeline.GetBuildTargetGroup(buildTarget));
@@ -474,9 +474,9 @@ namespace Unity.ProjectAuditor.Editor
                 var keysDefault = m_ParamsStack[0].GetKeys();
                 var keysFirstNonDefault = m_ParamsStack[1].GetKeys();
 
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 var keysThatNeedAdding = new List<string>(keysDefault.Except(keysFirstNonDefault));
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                 if (keysThatNeedAdding.Count > 0)
                 {
                     for (var i = 1; i < m_ParamsStack.Count; ++i)
@@ -493,9 +493,9 @@ namespace Unity.ProjectAuditor.Editor
             {
                 var keysDefault = m_ParamsStack[0].GetKeys();
 
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 var keysThatNeedRemoving = new List<string>(keysDefault.Except(m_ParameterData.Keys));
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                 if (keysThatNeedRemoving.Count > 0)
                 {
                     foreach (var platformParams in m_ParamsStack)

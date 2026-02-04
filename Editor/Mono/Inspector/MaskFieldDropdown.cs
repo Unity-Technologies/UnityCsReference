@@ -124,9 +124,9 @@ namespace UnityEditor
 
                 var valueToPopulate = value == 0 ? SelectionModes.None : SelectionModes.All;
                 m_SelectionMatch = new SelectionModes[m_LayerCount];
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 m_SelectionMatch = m_SelectionMatch.Select(el => el = valueToPopulate).ToArray();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             }
         }
 
@@ -342,9 +342,9 @@ namespace UnityEditor
                 ChangeMaskValues(int.MaxValue, changedTo);
                 var valueToPopulate = changedTo ? SelectionModes.All : SelectionModes.None;
                 m_SelectionMatch = new SelectionModes[m_OptionCount];
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 m_SelectionMatch = m_SelectionMatch.Select(el => el = valueToPopulate).ToArray();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             }
         }
 
@@ -493,9 +493,9 @@ namespace UnityEditor
             if (maskValue == 0)
                 selected = Array.Empty<uint>();
             else if (maskValue == int.MaxValue)
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 selected = Enumerable.Range(1, size).Select(i => (uint)i).ToArray();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             else
             {
                 List<uint> selectedMaskToIndex = new List<uint>();

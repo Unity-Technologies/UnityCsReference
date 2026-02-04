@@ -145,9 +145,9 @@ namespace UnityEditor
             EditorGUILayout.PropertyField(m_RenderMode);
             if (EditorGUI.EndChangeCheck())
             {
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 var rectTransforms = targets.Select(c => (c as Canvas).transform).ToArray();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                 Undo.RegisterCompleteObjectUndo(rectTransforms, "Modified RectTransform Values");
                 serializedObject.ApplyModifiedProperties();
                 foreach (Canvas canvas in targets)

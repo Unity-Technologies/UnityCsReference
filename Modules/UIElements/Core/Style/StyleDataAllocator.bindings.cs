@@ -9,8 +9,11 @@ namespace UnityEngine.UIElements;
 
 enum StyleDataType
 {
-    LayoutStyleDataType,
+    InheritedDataType,
+    LayoutDataType,
+    RareDataType,
     TransformDataType,
+    TransitionDataType,
     VisualDataType,
     ManagedDataType // only used for StyleDataRef to hold an index into a pool
 }
@@ -20,10 +23,16 @@ static class StyleDataAllocator
 {
     internal static StyleDataType GetType<T>() where T : unmanaged
     {
-        if (typeof(T) == typeof(LayoutData))
-            return StyleDataType.LayoutStyleDataType;
+        if (typeof(T) == typeof(InheritedData))
+            return StyleDataType.InheritedDataType;
+        else if (typeof(T) == typeof(LayoutData))
+            return StyleDataType.LayoutDataType;
+        else if (typeof(T) == typeof(RareData))
+            return StyleDataType.RareDataType;
         else if (typeof(T) == typeof(TransformData))
             return StyleDataType.TransformDataType;
+        else if (typeof(T) == typeof(TransitionData))
+            return StyleDataType.TransitionDataType;
         else if (typeof(T) == typeof(VisualData))
             return StyleDataType.VisualDataType;
         else
@@ -31,7 +40,8 @@ static class StyleDataAllocator
     }
 
     internal static extern IntPtr Allocate(StyleDataType type);
-
-
     internal static extern void Free(IntPtr ptr, StyleDataType type);
+
+    // For tests
+    internal static extern int SizeOf(StyleDataType type);
 }

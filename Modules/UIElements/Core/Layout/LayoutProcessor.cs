@@ -55,8 +55,8 @@ delegate float InvokeBaselineFunctionDelegate(
 
 static class LayoutDelegates
 {
-    static readonly ProfilerMarker s_InvokeMeasureFunctionMarker = new("InvokeMeasureFunction");
-    static readonly ProfilerMarker s_InvokeBaselineFunctionMarker = new("InvokeBaselineFunction");
+    static readonly ProfilerMarker s_InvokeMeasureFunctionMarker = new(ProfilerCategory.UIToolkit, "InvokeMeasureFunction");
+    static readonly ProfilerMarker s_InvokeBaselineFunctionMarker = new(ProfilerCategory.UIToolkit, "InvokeBaselineFunction");
 
     [AOT.MonoPInvokeCallback(typeof(InvokeMeasureFunctionDelegate))]
     static void InvokeMeasureFunction(

@@ -3,7 +3,6 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System.Collections.Generic;
-using System.Linq;
 
 namespace UnityEditor.PackageManager.UI.Internal;
 
@@ -27,9 +26,7 @@ internal class AddAction : PackageAction
 
     protected override bool TriggerActionImplementation(IReadOnlyCollection<IPackage> packages)
     {
-        #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-        var primaryVersions = packages.Select(p => p.versions.primary).ToArray();
-#pragma warning restore RS0030
+        var primaryVersions = packages.SelectToNewArray(p => p.versions.primary);
         if(!m_OperationDispatcher.Install(primaryVersions))
             return false;
         // The current multi-select UI does not allow users to install non-recommended versions
@@ -40,19 +37,17 @@ internal class AddAction : PackageAction
 
     protected override bool TriggerActionImplementation(IPackageVersion version)
     {
-        IPackage[] packagesToUninstall = null;
+        IReadOnlyCollection<IPackage> packagesToUninstall = null;
         if (version.HasTag(PackageTag.Feature))
         {
             var customizedDependencies = m_PackageDatabase.GetCustomizedDependencies(version, CustomizedDependencyType.Resettable);
-            if (customizedDependencies.Length > 0)
+            if (customizedDependencies.Count > 0)
             {
                 var packageNameAndVersions = string.Join("\n\u2022 ",
-                    #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                    customizedDependencies.Select(package => $"{package.displayName} - {package.versions.recommended.version}").ToArray());
-#pragma warning restore RS0030
+                    customizedDependencies.SelectAsEnumerable(package => $"{package.displayName} - {package.versions.recommended.version}"));
 
                 var title = string.Format(L10n.Tr("Installing {0}"), version.GetDescriptor());
-                var message = customizedDependencies.Length == 1 ?
+                var message = customizedDependencies.Count == 1 ?
                     string.Format(
                         L10n.Tr("This {0} includes a package version that is different from what's already installed. Would you like to reset the following package to the required version?\n\u2022 {1}"),
                         version.GetDescriptor(), packageNameAndVersions) :
@@ -68,7 +63,7 @@ internal class AddAction : PackageAction
             }
         }
 
-        if (packagesToUninstall?.Length > 0)
+        if (packagesToUninstall?.Count > 0)
         {
             m_OperationDispatcher.InstallAndResetDependencies(version, packagesToUninstall);
             PackageManagerWindowAnalytics.SendEvent("installAndReset", version);

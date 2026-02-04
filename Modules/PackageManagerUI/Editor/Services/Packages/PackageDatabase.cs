@@ -4,7 +4,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using UnityEngine;
 using UnityEditor.Scripting.ScriptCompilation;
 
@@ -15,17 +14,17 @@ namespace UnityEditor.PackageManager.UI.Internal
         event Action<string, string> onPackageUniqueIdFinalize;
         event Action<PackagesChangeArgs> onPackagesChanged;
 
-        bool isEmpty { get; }
-        IEnumerable<IPackage> allPackages { get; }
+        IReadOnlyCollection<IPackage> allPackages { get; }
 
         IPackage GetPackage(string uniqueId);
         IPackage GetPackage(long productId);
         IPackage GetPackageByIdOrName(string packageIdOrName);
         IPackage GetPackageByDisplayName(string displayName);
         void GetPackageAndVersion(DependencyInfo info, out IPackage package, out IPackageVersion version);
-        IEnumerable<IPackageVersion> GetDirectReverseDependencies(IPackageVersion version);
-        IEnumerable<IPackageVersion> GetFeaturesThatUseThisPackage(IPackageVersion version);
-        IPackage[] GetCustomizedDependencies(IPackageVersion version, CustomizedDependencyType dependencyType);
+        IEnumerable<IPackageVersion> EnumerateDirectReverseDependencies(IPackageVersion version, bool featureOnly);
+        bool IsUsedByFeature(IPackageVersion version);
+        bool HasCustomizedDependencies(IPackageVersion version, CustomizedDependencyType dependencyType);
+        IReadOnlyCollection<IPackage> GetCustomizedDependencies(IPackageVersion version, CustomizedDependencyType dependencyType);
         IReadOnlyCollection<Sample> GetSamples(IPackageVersion version);
         void OnPackagesModified(IList<IPackage> modified, bool isProgressUpdated = false);
         void UpdatePackages(IReadOnlyCollection<IPackage> toAddOrUpdate = null, IReadOnlyCollection<string> toRemove = null, PackagesChangedSource changedSource = PackagesChangedSource.Other);
@@ -81,9 +80,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_IOProxy = RegisterDependency(ioProxy);
         }
 
-        public bool isEmpty => m_Packages.Count == 0;
-
-        public IEnumerable<IPackage> allPackages => m_Packages.Values;
+        public IReadOnlyCollection<IPackage> allPackages => m_Packages.Values;
 
         public IPackage GetPackage(long productId)
         {
@@ -183,61 +180,64 @@ namespace UnityEditor.PackageManager.UI.Internal
 
             // the versionIdentifier could either be SemVersion or file, git or ssh reference
             // and the two cases are handled differently.
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            if (!string.IsNullOrEmpty(info.version) && char.IsDigit(info.version.First()))
-#pragma warning restore RS0030
+            if (!string.IsNullOrEmpty(info.version) && char.IsDigit(info.version[0]))
             {
                 SemVersionParser.TryParse(info.version, out var parsedVersion);
-                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                version = package.versions.FirstOrDefault(v => v.version == parsedVersion);
-#pragma warning restore RS0030
+                version = package.versions.FirstMatch(v => v.version == parsedVersion);
             }
             else
             {
                 var packageId = UpmPackageVersion.FormatPackageId(info.name, info.version);
-                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                version = package.versions.FirstOrDefault(v => v.uniqueId == packageId);
-#pragma warning restore RS0030
+                version = package.versions.FirstMatch(v => v.uniqueId == packageId);
             }
         }
 
-        public IEnumerable<IPackageVersion> GetDirectReverseDependencies(IPackageVersion version)
+        public IEnumerable<IPackageVersion> EnumerateDirectReverseDependencies(IPackageVersion version, bool featureOnly)
         {
             if (version == null)
-                return null;
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            return allPackages.Select(p => p.versions.installed).Where(p => p?.dependencies?.Any(d =>d.name == version.name) ?? false);
-#pragma warning restore RS0030
+                yield break;
+
+            var packagesToCheck = featureOnly ? m_Features.Values : m_Packages.Values;
+            foreach (var p in packagesToCheck)
+            {
+                var installed = p.versions.installed;
+                if (installed != null && installed.dependencies.AnyMatches(d => d.name == version.name))
+                    yield return installed;
+            }
         }
 
-        public IEnumerable<IPackageVersion> GetFeaturesThatUseThisPackage(IPackageVersion version)
+        public bool IsUsedByFeature(IPackageVersion version)
+        {
+            return version != null && m_Features.Values.AnyMatches(p => p.versions.installed?.dependencies.AnyMatches(d => d.name == version.name) ?? false);
+        }
+
+        public bool HasCustomizedDependencies(IPackageVersion version, CustomizedDependencyType dependencyType)
+        {
+            using var enumerator = EnumerateCustomizedDependencies(version, dependencyType).GetEnumerator();
+            return enumerator.MoveNext();
+        }
+
+        public IReadOnlyCollection<IPackage> GetCustomizedDependencies(IPackageVersion version, CustomizedDependencyType dependencyType)
+        {
+            return new List<IPackage>(EnumerateCustomizedDependencies(version, dependencyType));
+        }
+
+        private IEnumerable<IPackage> EnumerateCustomizedDependencies(IPackageVersion version, CustomizedDependencyType dependencyType)
         {
             if (version?.dependencies == null)
-                return Array.Empty<IPackageVersion>();
+                yield break;
 
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            var installedFeatures = m_Features.Values.Select(p => p.versions.installed)
-#pragma warning restore RS0030
-                .Where(p => p?.isDirectDependency ?? false);
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            return installedFeatures.Where(f => f.dependencies?.Any(r => r.name == version.name) ?? false);
-#pragma warning restore RS0030
-        }
-
-        public IPackage[] GetCustomizedDependencies(IPackageVersion version, CustomizedDependencyType dependencyType)
-        {
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            return version?.dependencies?.Select(d => GetPackage(d.name)).Where(p =>
-#pragma warning restore RS0030
+            foreach (var d in version.dependencies)
             {
-                var installed = p?.versions.installed;
-                var isCustomized = installed is { isDirectDependency: true } && p.versions.recommended?.isInstalled == false;
+                var package = GetPackage(d.name);
+                var installed = package?.versions.installed;
+                var isCustomized = installed is { isDirectDependency: true } && package.versions.recommended?.isInstalled == false;
                 if (!isCustomized)
-                    return false;
+                    continue;
                 var isResettable = !installed.HasTag(PackageTag.Custom) && installed.versionString == installed.versionInManifest;
-                return (isResettable && (dependencyType & CustomizedDependencyType.Resettable) != 0) ||
-                       (!isResettable && (dependencyType & CustomizedDependencyType.NonResettable) != 0);
-            }).ToArray() ?? Array.Empty<IPackage>();
+                if ((isResettable && (dependencyType & CustomizedDependencyType.Resettable) != 0) || (!isResettable && (dependencyType & CustomizedDependencyType.NonResettable) != 0))
+                    yield return package;
+            }
         }
 
         public IReadOnlyCollection<Sample> GetSamples(IPackageVersion version)
@@ -263,9 +263,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public void OnBeforeSerialize()
         {
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            m_SerializedPackages = m_Packages.Values.Cast<Package>().ToArray();
-#pragma warning restore RS0030
+            m_SerializedPackages = m_Packages.Values.FilterByType<Package>().ToNewArray(m_Packages.Count);
         }
 
         private void TriggerOnPackagesChanged(IList<IPackage> added = null, IList<IPackage> removed = null, IList<IPackage> updated = null, IList<IPackage> preUpdate = null, IList<IPackage> progressUpdated = null, PackagesChangedSource changedSource = PackagesChangedSource.Other)
@@ -305,7 +303,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
             foreach (var package in toAddOrUpdate)
             {
-                foreach (var feature in GetFeaturesThatUseThisPackage(package.versions.primary))
+                foreach (var feature in EnumerateDirectReverseDependencies(package.versions.primary, true))
                 {
                     if (!featuresWithDependencyChange.ContainsKey(feature.uniqueId))
                         featuresWithDependencyChange[feature.uniqueId] = feature.package;
@@ -325,9 +323,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                     packagesAdded.Add(package);
             }
 
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            packagesUpdated.AddRange(featuresWithDependencyChange.Values.Where(p => !packagesUpdated.Contains(p)));
-#pragma warning restore RS0030
+            packagesUpdated.AddRange(featuresWithDependencyChange.Values.Filter(p => !packagesUpdated.Contains(p)));
 
             foreach (var packageUniqueId in toRemove)
             {
@@ -368,9 +364,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         {
             var packageUniqueId = package.uniqueId;
             m_Packages[packageUniqueId] = package;
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            if (package.versions.All(v => v.HasTag(PackageTag.Feature)))
-#pragma warning restore RS0030
+            if (package.versions.AllMatches(v => v.HasTag(PackageTag.Feature)))
                 m_Features[packageUniqueId] = package;
 
             var packageName = package.name;

@@ -201,7 +201,7 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
 
             using (new EditorGUILayout.HorizontalScope())
             {
-                EditorGUILayout.LabelField("Show :", GUILayout.ExpandWidth(true), GUILayout.Width(80));
+                EditorGUILayout.LabelField("Show:", GUILayout.ExpandWidth(true), GUILayout.Width(80));
 
                 var wasShowingCritical = m_OnlyCriticalIssues;
                 m_OnlyCriticalIssues = EditorGUILayout.ToggleLeft("Only Major/Critical", m_OnlyCriticalIssues, GUILayout.Width(170));

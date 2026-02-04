@@ -15,39 +15,46 @@ namespace UnityEditor.PackageManager.UI.Internal
         [Serializable]
         public new class UxmlSerializedData : ScrollView.UxmlSerializedData
         {
-            public override object CreateInstance() => new PackageListScrollView();
+            public override object CreateInstance()
+            {
+                var container = ServicesContainer.instance;
+                return new PackageListScrollView(
+                    container.Resolve<IResourceLoader>(),
+                    container.Resolve<IPackageDatabase>(),
+                    container.Resolve<IPageManager>(),
+                    container.Resolve<IPageRefreshHandler>());
+            }
         }
 
         private Dictionary<string, PackageItem> m_PackageItemsLookup;
 
-        private IResourceLoader m_ResourceLoader;
-        private IPackageDatabase m_PackageDatabase;
-        private IPageManager m_PageManager;
-        private IPageRefreshHandler m_PageRefreshHandler;
-        private void ResolveDependencies()
-        {
-            var container = ServicesContainer.instance;
-            m_ResourceLoader = container.Resolve<IResourceLoader>();
-            m_PackageDatabase = container.Resolve<IPackageDatabase>();
-            m_PageManager = container.Resolve<IPageManager>();
-            m_PageRefreshHandler = container.Resolve<IPageRefreshHandler>();
-        }
-
         // The internal modifier is used (instead of private) to give our test project access to these properties/methods
-        #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+        #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
         internal IEnumerable<PackageItem> packageItems => packageGroups.SelectMany(group => group.packageItems);
-#pragma warning restore RS0030
-        #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-        internal IEnumerable<PackageGroup> packageGroups => m_ItemsList.Children().OfType<PackageGroup>();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
+        #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+        internal IEnumerable<PackageGroup> packageGroups => m_ItemsList.Children().FilterByType<PackageGroup>();
+#pragma warning restore UA2001
 
         private VisualElement m_ItemsList;
 
         private VisualElement m_ScrollToTarget;
 
-        public PackageListScrollView()
+        private readonly IResourceLoader m_ResourceLoader;
+        private readonly IPackageDatabase m_PackageDatabase;
+        private readonly IPageManager m_PageManager;
+        private readonly IPageRefreshHandler m_PageRefreshHandler;
+
+        public PackageListScrollView(
+            IResourceLoader resourceLoader,
+            IPackageDatabase packageDatabase,
+            IPageManager pageManager,
+            IPageRefreshHandler pageRefreshHandler)
         {
-            ResolveDependencies();
+            m_ResourceLoader = resourceLoader;
+            m_PackageDatabase = packageDatabase;
+            m_PageManager = pageManager;
+            m_PageRefreshHandler = pageRefreshHandler;
 
             m_ItemsList = new VisualElement();
             Add(m_ItemsList);
@@ -141,9 +148,9 @@ namespace UnityEditor.PackageManager.UI.Internal
                     // Replace PackageItem
                     m_PackageItemsLookup[package.uniqueId] = newGroup.AddPackageItem(package, state);
                     oldGroup.RemovePackageItem(item);
-#pragma warning disable RS0031 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2002 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     if (!oldGroup.packageItems.Any())
-#pragma warning restore RS0031
+#pragma warning restore UA2002
                         m_ItemsList.Remove(oldGroup);
 
                     ReorderGroups(page.visualStates.orderedGroups);
@@ -161,9 +168,9 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private PackageGroup GetOrCreateGroup(string groupName)
         {
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var group = packageGroups.FirstOrDefault(g => string.Compare(g.name, groupName, StringComparison.InvariantCultureIgnoreCase) == 0);
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             if (group != null)
                 return group;
 
@@ -195,9 +202,9 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public void OnVisualStateChange(IEnumerable<VisualState> visualStates)
         {
-#pragma warning disable RS0031 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2002 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             if (!visualStates.Any())
-#pragma warning restore RS0031
+#pragma warning restore UA2002
                 return;
 
             foreach (var state in visualStates)
@@ -245,9 +252,9 @@ namespace UnityEditor.PackageManager.UI.Internal
             var itemsRemoved = numItems != m_PackageItemsLookup.Count;
             numItems = m_PackageItemsLookup.Count;
 
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            foreach (var package in args.added.Concat(args.updated))
-#pragma warning restore RS0030
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            foreach (var package in args.added.Join(args.updated))
+#pragma warning restore UA2001
             {
                 var visualState = page.visualStates.Get(package.uniqueId) ?? new VisualState(package.uniqueId, string.Empty, page.GetDefaultLockState(package));
                 AddOrUpdatePackageItem(visualState, package);
@@ -256,9 +263,9 @@ namespace UnityEditor.PackageManager.UI.Internal
 
             if (args.reorder)
             {
-                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 if (packageGroups.Any(group => !group.isHidden))
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                 {
                     // re-order if there are any added or updated items
                     foreach (var group in packageGroups)
@@ -272,9 +279,9 @@ namespace UnityEditor.PackageManager.UI.Internal
                         packageItem?.packageGroup.AddPackageItem(packageItem);
                     }
 
-                    #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                    #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     m_PackageItemsLookup = packageItems.ToDictionary(item => item.package.uniqueId, item => item);
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                 }
             }
 
@@ -347,12 +354,12 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private void SelectAllVisible()
         {
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            var validItems = packageItems.Where(p => !string.IsNullOrEmpty(p.package?.uniqueId) && UIUtils.IsElementVisible(p));
-#pragma warning restore RS0030
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            var validItems = packageItems.Filter(p => !string.IsNullOrEmpty(p.package?.uniqueId) && UIUtils.IsElementVisible(p));
+#pragma warning restore UA2001
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             m_PageManager.activePage.SetNewSelection(validItems.Select(item => item.package.uniqueId), true);
-#pragma warning restore RS0030
+#pragma warning restore UA2001
         }
 
         private void OnMouseDown(MouseDownEvent evt)
@@ -469,9 +476,9 @@ namespace UnityEditor.PackageManager.UI.Internal
                 return;
 
             var needGroupsReordering = false;
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var currentPackageItems = packageItems.ToList();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             foreach (var packageItem in currentPackageItems)
             {
                 // Check if group has changed
@@ -491,9 +498,9 @@ namespace UnityEditor.PackageManager.UI.Internal
                     newGroup.AddPackageItem(packageItem);
                     needGroupsReordering = true;
 
-#pragma warning disable RS0031 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2002 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     if (!oldGroup.packageItems.Any())
-#pragma warning restore RS0031
+#pragma warning restore UA2002
                         m_ItemsList.Remove(oldGroup);
                 }
             }
@@ -510,18 +517,18 @@ namespace UnityEditor.PackageManager.UI.Internal
                 Func<VisualElement, bool> nonEmptyGroup = (element) =>
                 {
                     var group = element as PackageGroup;
-                    #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                    #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     return group.packageItems.Any(p => UIUtils.IsElementVisible(p));
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                 };
                 var nextGroup = UIUtils.FindNextSibling(packageItem.packageGroup, reverseOrder, nonEmptyGroup) as PackageGroup;
                 if (nextGroup != null)
-                    #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                    #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     nextVisibleItem = reverseOrder ? nextGroup.packageItems.LastOrDefault(p => UIUtils.IsElementVisible(p))
-#pragma warning restore RS0030
-                        #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning restore UA2001
+                        #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                         : nextGroup.packageItems.FirstOrDefault(p => UIUtils.IsElementVisible(p));
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             }
             return nextVisibleItem;
         }

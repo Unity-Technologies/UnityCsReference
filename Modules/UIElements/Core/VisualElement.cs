@@ -9,12 +9,13 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Text;
+using Unity.Profiling;
 using Unity.Properties;
+using UnityEngine.Bindings;
 using UnityEngine.Internal;
 using UnityEngine.UIElements.Layout;
 using UnityEngine.UIElements.StyleSheets;
 using UnityEngine.UIElements.UIR;
-using UnityEngine.Bindings;
 
 namespace UnityEngine.UIElements
 {
@@ -62,7 +63,8 @@ namespace UnityEngine.UIElements
         IsWorldSpaceRootUIDocument = 1 << 20,
         // Element wants a GeometryChangedEvent if any of its descendent receives one
         ReceivesHierarchyGeometryChangedEvents = 1 << 21,
-
+        // Element has released the LayoutNode create in its constructor and can't be used anymore
+        Released = 1 << 22,
         // Element initial flags
         Init = WorldClipDirty | EventInterestParentCategoriesDirty | DetachedDataSource
     }
@@ -1761,6 +1763,7 @@ namespace UnityEngine.UIElements
         {
             get
             {
+                Debug.Assert(!m_LayoutNode.IsUndefined, "VisualElement has been disposed!");
                 return ref m_LayoutNode;
             }
         }
@@ -1837,7 +1840,7 @@ namespace UnityEngine.UIElements
 
             name = string.Empty;
 
-            layoutNode = LayoutManager.SharedManager.CreateNode();
+            m_LayoutNode = LayoutManager.SharedManager.CreateNode();
             unsafe
             {
                 // Fast-tracked access to the transform matrices and flags, as their access is quite frequent.
@@ -1867,8 +1870,10 @@ namespace UnityEngine.UIElements
         {
             try
             {
-                LayoutManager.SharedManager.EnqueueNodeForRecycling(ref m_LayoutNode);
-
+                if (!resourcesReleased)
+                {
+                    LayoutManager.SharedManager.EnqueueNodeForRecycling(ref m_LayoutNode);
+                }
 				s_FinalizerCount++;
             }
             // Exceptions inside finalizers are not automatically logged by Unity
@@ -1878,6 +1883,62 @@ namespace UnityEngine.UIElements
                 Debug.LogError("An exception occured in a VisualElement finalizer, please report a bug.");
                 Debug.LogException(e);
             }
+        }
+
+        /// <summary>
+        /// Indicates if the element has released its reusable resources, in which case it can not be modified or added again.
+        /// </summary>
+        /// <remarks>
+        /// This returns true if <see cref="ReleaseResources"/> has been called on this element.
+        /// </remarks>
+        public bool resourcesReleased => (flags & VisualElementFlags.Released) != 0;
+
+        /// <summary>
+        /// Releases reusable resources associated with this element and makes the element unusable.
+        /// </summary>
+        /// <remarks>
+        /// The element must not be part of a hierarchy nor have any children, otherwise an InvalidOperationException is thrown.
+        /// Calling this method makes the element unusable. Only call it when the element is no longer needed.
+        /// Exceptions are thrown if you modify the element or add it again.
+        ///
+        /// By default, a VisualElement releases its reusable resources only when it is garbage collected.
+        /// Calling this method explicitly releases those resources earlier so the system can immediately reuse them when creating new elements, reducing memory usage.
+        ///
+        /// In most cases, it is more convenient to use <see cref="VisualElement.Clear(VisualElementClearOptions)"/> on a root element
+        /// which will recursively remove all its descendants and call <code>ReleaseResources</code> on each of them.
+        /// </remarks>
+        public void ReleaseResources()
+        {
+            if (parent != null)
+            {
+                throw new InvalidOperationException("Cannot release resources while the VisualElement is still in the hierarchy");
+            }
+            if (hierarchy.childCount > 0)
+            {
+                throw new InvalidOperationException("Cannot release resources while the VisualElement has children");
+            }
+            if (resourcesReleased)
+            {
+                throw new InvalidOperationException("Cannot release resources more than once");
+            }
+            ReleaseResourcesNoChecks();
+        }
+
+
+        internal void ReleaseResourcesNoChecks()
+        {
+            flags |= VisualElementFlags.Released;
+            LayoutManager.SharedManager.EnqueueNodeForRecycling(ref m_LayoutNode);
+
+            // Put back some of the lists we own to their pools
+            // Note: we already know the child list was pooled back when clearing the element
+
+            if (!ReferenceEquals(m_ClassList, s_EmptyClassList))
+            {
+                StringObjectListPool.Release(m_ClassList);
+                m_ClassList = s_EmptyClassList;
+            }
+            m_CallbackRegistry?.Clear();
         }
 
         internal void SetTooltip(TooltipEvent e)
@@ -1927,14 +1988,24 @@ namespace UnityEngine.UIElements
         {
             if (panel == p)
                 return;
-
             //We now gather all Elements in order to dispatch events in an efficient manner
             List<VisualElement> elements = VisualElementListPool.Get();
+            elements.Add(this);
+            GatherAllChildren(elements);
             try
             {
-                elements.Add(this);
-                GatherAllChildren(elements);
+                SetPanelBatched(p, elements);
+            }
+            finally
+            {
+                VisualElementListPool.Release(elements);
+            }
+        }
 
+        internal void SetPanelBatched(BaseVisualElementPanel p, List<VisualElement> elements)
+        {
+            if (panel != p)
+            {
                 EventDispatcherGate? pDispatcherGate = null;
                 if (p?.dispatcher != null)
                 {
@@ -1987,10 +2058,6 @@ namespace UnityEngine.UIElements
                     }
                     p?.liveReloadSystem.StartTracking(elements);
                 }
-            }
-            finally
-            {
-                VisualElementListPool.Release(elements);
             }
         }
 
@@ -2384,7 +2451,7 @@ namespace UnityEngine.UIElements
         /// </remarks>
         public Action<MeshGenerationContext> generateVisualContent { get; set; }
 
-        static readonly Unity.Profiling.ProfilerMarker k_GenerateVisualContentMarker = new("GenerateVisualContent");
+        static readonly Unity.Profiling.ProfilerMarker k_GenerateVisualContentMarker = new(ProfilerCategory.UIToolkit, "GenerateVisualContent");
 
         internal void InvokeGenerateVisualContent(MeshGenerationContext mgc)
         {

@@ -60,16 +60,16 @@ namespace Unity.ProjectAuditor.Editor.AssemblyUtils
             var precompiledAssemblySources = (UnityEditor.Compilation.CompilationPipeline.PrecompiledAssemblySources)flags;
             assemblyPaths.AddRange(UnityEditor.Compilation.CompilationPipeline.GetPrecompiledAssemblyPaths(precompiledAssemblySources));
 
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return assemblyPaths.Select(PathUtils.ReplaceSeparators);
-#pragma warning restore RS0030
+#pragma warning restore UA2001
         }
 
         internal static IEnumerable<string> GetPrecompiledAssemblyDirectories(PrecompiledAssemblyTypes flags)
         {
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             foreach (var dir in GetPrecompiledAssemblyPaths(flags).Select(Path.GetDirectoryName).Distinct())
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                 yield return dir;
         }
 

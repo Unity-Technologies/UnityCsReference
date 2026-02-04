@@ -12,7 +12,7 @@ namespace UnityEditor.PackageManager.UI.Internal
     {
         string assetStoreUrl { get; }
 
-        IList<string> GetCategories();
+        string[] GetCategories();
         void ListLabels(Action<List<string>> successCallback, Action<UIError> errorCallback);
         void GetProductDetail(long productId, Action<AssetStoreProductInfo> successCallback, Action<UIError> errorCallback);
         void GetUpdateDetail(CheckUpdateInfoArgs args, Action<List<AssetStoreUpdateInfo>> successCallback = null, Action<UIError> errorCallback = null);
@@ -105,10 +105,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_HttpClientFactory = RegisterDependency(httpClientFactory);
         }
 
-        public IList<string> GetCategories()
-        {
-            return k_Categories;
-        }
+        public string[] GetCategories() => k_Categories;
 
         public void ListLabels(Action<List<string>> successCallback, Action<UIError> errorCallback)
         {
@@ -214,10 +211,10 @@ namespace UnityEditor.PackageManager.UI.Internal
                                 return;
                             }
 
-                            if (responseCode >= k_ClientErrorResponseCode && responseCode < k_ServerErrorResponseCode)
+                            if (responseCode is >= k_ClientErrorResponseCode and < k_ServerErrorResponseCode)
                             {
-                                var errorMessage = k_KnownErrors[k_GeneralClientError];
-                                k_KnownErrors.TryGetValue(request.responseCode, out errorMessage);
+                                if (!k_KnownErrors.TryGetValue(request.responseCode, out var errorMessage))
+                                    errorMessage = k_KnownErrors[k_GeneralClientError];
                                 errorCallback?.Invoke(new UIError(UIErrorCode.AssetStoreRestApiError, $"{responseCode} {errorMessage}. {k_ErrorMessage}", operationErrorCode: responseCode));
                                 return;
                             }
@@ -249,8 +246,8 @@ namespace UnityEditor.PackageManager.UI.Internal
                         {
                             if (lastResponseCode >= k_ServerErrorResponseCode)
                             {
-                                var errorMessage = k_KnownErrors[k_GeneralServerError];
-                                k_KnownErrors.TryGetValue(lastResponseCode, out errorMessage);
+                                if (!k_KnownErrors.TryGetValue(lastResponseCode, out var errorMessage))
+                                    errorMessage = k_KnownErrors[k_GeneralServerError];
                                 errorCallback?.Invoke(new UIError(UIErrorCode.AssetStoreRestApiError, $"{lastResponseCode} {errorMessage}. {k_ErrorMessage}", operationErrorCode: lastResponseCode));
                             }
                             else

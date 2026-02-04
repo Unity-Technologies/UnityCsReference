@@ -28,9 +28,9 @@ namespace UnityEditor.PackageManager.UI.Internal
         // these extra items are out of order
         [SerializeField]
         private List<VisualState> m_ExtraVisualStates = new();
-        #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-        protected override IEnumerable<VisualState> orderedListBeforeGrouping => m_OrderedVisualStates.Concat(m_ExtraVisualStates);
-#pragma warning restore RS0030
+        #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+        protected override IEnumerable<VisualState> orderedListBeforeGrouping => m_OrderedVisualStates.Join(m_ExtraVisualStates);
+#pragma warning restore UA2001
 
         public PaginatedVisualStateList() {}
 
@@ -38,23 +38,23 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public override bool Contains(string packageUniqueId)
         {
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return base.Contains(packageUniqueId) || m_ExtraVisualStates.Any(v => v.packageUniqueId == packageUniqueId);
-#pragma warning restore RS0030
+#pragma warning restore UA2001
         }
 
         public override VisualState Get(string packageUniqueId)
         {
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return base.Get(packageUniqueId) ?? m_ExtraVisualStates.FirstOrDefault(v => v.packageUniqueId == packageUniqueId);
-#pragma warning restore RS0030
+#pragma warning restore UA2001
         }
 
         public void AddRange(IEnumerable<string> packageUniqueIds)
         {
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             m_OrderedVisualStates.AddRange(packageUniqueIds.Select(id => Get(id) ?? new VisualState(id, string.Empty, false)));
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             SetupLookupTable();
         }
 

@@ -174,9 +174,9 @@ namespace Unity.GraphToolkit.Editor
         public NodePreviewModel NodePreviewModel => HasNodePreview ? m_NodePreviewModel : null;
 
         /// <inheritdoc />
-        #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+        #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
         public override IEnumerable<GraphElementModel> DependentModels => m_NodePreviewModel != null ? base.DependentModels.Append(m_NodePreviewModel) : base.DependentModels;
-#pragma warning restore RS0030
+#pragma warning restore UA2001
 
         /// <summary>
         /// Initializes a new instance of the <see cref="AbstractNodeModel"/> class.

@@ -4,7 +4,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using UnityEngine;
@@ -282,16 +281,9 @@ namespace UnityEditor.MPE
         {
             s_RoleProviders = new List<RoleProvider>();
 
-            var userAssemblies = new HashSet<string>();
-            foreach(var assemblyName in ScriptingRuntime.GetAllUserAssemblies())
-                userAssemblies.Add(Path.GetFileNameWithoutExtension(assemblyName));
-
             var methods = TypeCache.GetMethodsWithAttribute(typeof(RoleProviderAttribute));
             foreach (var method in methods)
             {
-                if (!userAssemblies.Contains(method.Module.Assembly.GetName().Name))
-                    continue;
-
                 var attributeInfo = method.GetCustomAttribute<RoleProviderAttribute>();
                 s_RoleProviders.Add(new RoleProvider() { name = attributeInfo.name, eventType = attributeInfo.eventType, level = attributeInfo.level, execute = method });
             }
@@ -306,7 +298,7 @@ namespace UnityEditor.MPE
 
             foreach (var provider in providers)
             {
-                if ((provider.eventType == eventType && provider.level == level) || (roleName != "" && provider.name == roleName))
+                if (provider.eventType == eventType && (provider.level == level || (roleName != "" && provider.name == roleName)))
                     provider.execute?.Invoke(null, null);
             }
         }

@@ -8,7 +8,6 @@ namespace UnityEditor.PackageManager.UI.Internal
 {
     internal interface IVersionList : IEnumerable<IPackageVersion>
     {
-
         IPackageVersion installed { get; }
 
         IPackageVersion latest { get; }

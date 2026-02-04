@@ -11,7 +11,7 @@ namespace Unity.Hierarchy
     /// <summary>
     /// Hierarchy Column
     /// </summary>
-    internal sealed class HierarchyViewColumn : Column
+    public sealed class HierarchyViewColumn : Column
     {
         internal const string k_NonDefaultValue = "non-default-value";
 
@@ -23,7 +23,7 @@ namespace Unity.Hierarchy
         /// <summary>
         /// Column Descriptor used to build this Column.
         /// </summary>
-        public readonly HierarchyViewColumnDescriptor Descriptor;
+        public HierarchyViewColumnDescriptor Descriptor { get; }
 
         /// <summary>
         /// Available Collection of CellDescriptors for this column

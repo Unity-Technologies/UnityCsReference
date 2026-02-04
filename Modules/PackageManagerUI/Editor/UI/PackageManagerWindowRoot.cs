@@ -17,7 +17,6 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private readonly IResourceLoader m_ResourceLoader;
         private readonly IExtensionManager m_ExtensionManager;
-        private readonly ISelectionProxy m_Selection;
         private readonly IPackageManagerPrefs m_PackageManagerPrefs;
         private readonly IPackageDatabase m_PackageDatabase;
         private readonly IPageManager m_PageManager;
@@ -31,7 +30,6 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public PackageManagerWindowRoot(IResourceLoader resourceLoader,
             IExtensionManager extensionManager,
-            ISelectionProxy selection,
             IPackageManagerPrefs packageManagerPrefs,
             IPackageDatabase packageDatabase,
             IPageManager pageManager,
@@ -45,7 +43,6 @@ namespace UnityEditor.PackageManager.UI.Internal
         {
             m_ResourceLoader = resourceLoader;
             m_ExtensionManager = extensionManager;
-            m_Selection = selection;
             m_PackageManagerPrefs = packageManagerPrefs;
             m_PackageDatabase = packageDatabase;
             m_PageManager = pageManager;
@@ -222,17 +219,12 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private void OnUserLoginStateChange(bool userInfoReady, bool loggedIn)
         {
-            if (!userInfoReady || m_PackageDatabase.isEmpty || !m_PageRefreshHandler.IsInitialFetchingDone(m_PageManager.activePage))
+            if (!userInfoReady || m_PackageDatabase.allPackages.Count == 0 || !m_PageRefreshHandler.IsInitialFetchingDone(m_PageManager.activePage))
                 return;
 
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            var entitlements = m_PackageDatabase.allPackages.Where(package =>  package.hasEntitlements);
-#pragma warning restore RS0030
             if (loggedIn)
             {
-                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                if (entitlements.Any(package => (package.versions?.primary.isInstalled ?? false) && (package.versions?.primary.hasEntitlementsError ?? false)))
-#pragma warning restore RS0030
+                if (m_PackageDatabase.allPackages.AnyMatches(p => p is { hasEntitlements: true } && p.versions.primary is { isInstalled: true, hasEntitlementsError: true }))
                     m_UpmClient.Resolve();
                 else
                 {
@@ -242,9 +234,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             }
             else
             {
-#pragma warning disable RS0031 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                if (entitlements.Any())
-#pragma warning restore RS0031
+                if (m_PackageDatabase.allPackages.AnyMatches(p => p is { hasEntitlements: true }))
                 {
                     m_PageRefreshHandler.Refresh(RefreshOptions.UpmList | RefreshOptions.UpmSearch);
                     m_PageManager.activePage.TriggerOnSelectionChanged();
@@ -275,13 +265,13 @@ namespace UnityEditor.PackageManager.UI.Internal
         {
             // We have to use PointerDownEvent instead of MouseDownEvent because in some cases (i.e. selectable text fields)
             // the event won't reach our code. PointerDownEvent will always be triggered on click which guarantees full support.
-            mainContainerSplitter.RegisterCallback<PointerDownEvent>(e =>
+            mainContainerSplitter.RegisterCallback<PointerDownEvent>(_ =>
             {
                 mainContainerSplitter.AddToClassList(k_FocusedClassName);
                 sidebar.RemoveFromClassList(k_FocusedClassName);
             }, TrickleDown.TrickleDown);
 
-            sidebar.RegisterCallback<PointerDownEvent>(e =>
+            sidebar.RegisterCallback<PointerDownEvent>(_ =>
             {
                 mainContainerSplitter.RemoveFromClassList(k_FocusedClassName);
                 sidebar.AddToClassList(k_FocusedClassName);
@@ -297,9 +287,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             if (packageNameAndVersion.Contains("@"))
             {
                 var values = packageNameAndVersion.Split('@');
-                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                if (values.Count() > 1)
-#pragma warning restore RS0030
+                if (values.Length > 1)
                 {
                     packageName = values[0];
                     packageVersion = values[1];
@@ -348,12 +336,12 @@ namespace UnityEditor.PackageManager.UI.Internal
 
                 // When there are multiple versions selected, we want to make the legacy single select arguments to be null
                 // that way extension UI implemented for single package selection will not show for multi-select cases.
-                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 var packages = selections.Select(selection => m_PackageDatabase.GetPackage(selection)).ToArray();
-#pragma warning restore RS0030
-                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning restore UA2001
+                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 var package = packages.Length > 1 ? null : packages.FirstOrDefault();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                 return new PackageSelectionArgs { package = package, packageVersion = package?.versions.primary, packages = packages, window = this };
             }
         }
@@ -397,7 +385,6 @@ namespace UnityEditor.PackageManager.UI.Internal
         private VisualElement leftColumnContainer => cache.Get<VisualElement>("leftColumnContainer");
         private Sidebar sidebar => cache.Get<Sidebar>("sidebar");
         private TwoPaneSplitView globalSplitter => cache.Get<TwoPaneSplitView>("globalSplitter");
-        private VisualElement mainContainer => cache.Get<VisualElement>("mainContainer");
         private TwoPaneSplitView mainContainerSplitter => cache.Get<TwoPaneSplitView>("mainContainerSplitter");
         private MainContainerOverlay mainContainerOverlay => cache.Get<MainContainerOverlay>("mainContainerOverlay");
     }

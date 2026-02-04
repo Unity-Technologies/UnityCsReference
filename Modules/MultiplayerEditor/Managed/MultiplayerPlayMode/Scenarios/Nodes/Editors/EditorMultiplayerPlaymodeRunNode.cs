@@ -141,7 +141,8 @@ namespace Unity.Multiplayer.PlayMode.Editor
                 ? $"Successfully deactivated '{player.Name}'"
                 : $"Failed to deactivate '{player.Name}'");
 
-            var tags = GetInput(PlayerTags).Split('|');
+            var tagsInput = GetInput(PlayerTags) ?? string.Empty;
+            var tags = tagsInput.Split('|');
             foreach (var tag in tags)
             {
                 if (string.IsNullOrWhiteSpace(tag)) continue;

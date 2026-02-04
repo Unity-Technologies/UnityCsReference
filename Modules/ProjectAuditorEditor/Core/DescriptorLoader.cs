@@ -70,9 +70,9 @@ namespace Unity.ProjectAuditor.Editor.Core
                     throw new Exception("Descriptor with null id loaded from " + name);
 
                 var areas = (Areas)Enum.Parse(typeof(Areas), string.Join(", ", rawDescriptor.areas));
-                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 var platforms = (rawDescriptor.platforms != null) ? rawDescriptor.platforms.Select(p => (BuildTarget)Enum.Parse(typeof(BuildTarget), p)).ToSerializableArray() : null;
-#pragma warning restore RS0030
+#pragma warning restore UA2001
 
                 var desc = new Descriptor(rawDescriptor.id, rawDescriptor.title, areas, rawDescriptor.description, rawDescriptor.recommendation)
                 {

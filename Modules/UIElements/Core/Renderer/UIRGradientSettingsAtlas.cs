@@ -12,8 +12,8 @@ namespace UnityEngine.UIElements.UIR
     /// </summary>
     class GradientSettingsAtlas : IDisposable
     {
-        static ProfilerMarker s_MarkerWrite = new ProfilerMarker("UIR.GradientSettingsAtlas.Write");
-        static ProfilerMarker s_MarkerCommit = new ProfilerMarker("UIR.GradientSettingsAtlas.Commit");
+        static ProfilerMarker s_MarkerWrite = new ProfilerMarker(ProfilerCategory.UIToolkit, "UIR.GradientSettingsAtlas.Write");
+        static ProfilerMarker s_MarkerCommit = new ProfilerMarker(ProfilerCategory.UIToolkit, "UIR.GradientSettingsAtlas.Commit");
 
         readonly int m_Length;
         readonly int m_ElemWidth;

@@ -30,16 +30,16 @@ internal static class VisualElementRemapper
     private readonly struct RemapContext : IEquatable<RemapContext>
     {
         private readonly GUID m_VisualTreeAsset;
-        private readonly int m_TemplateAsset;
-        private readonly int m_VisualElementAsset;
+        private readonly TemplateAsset m_TemplateAsset;
+        private readonly VisualElementAsset m_VisualElementAsset;
         private readonly GlobalObjectId m_Document;
         public bool Remappable { get; }
 
         public RemapContext(VisualElement element)
         {
             m_VisualTreeAsset = AssetDatabase.GUIDFromAssetPath(AssetDatabase.GetAssetPath(element.visualTreeAssetSource));
-            m_TemplateAsset = element.templateAsset?.id ?? -1;
-            m_VisualElementAsset = element.visualElementAsset?.id ?? -1;
+            m_TemplateAsset = element.templateAsset;
+            m_VisualElementAsset = element.visualElementAsset;
             m_Document = ExtractGlobalObjectID(element);
             Remappable = element.visualTreeAssetSource || !m_Document.Equals(default);
         }
@@ -47,14 +47,14 @@ internal static class VisualElementRemapper
         public bool Equals(RemapContext other)
         {
             return m_VisualTreeAsset == other.m_VisualTreeAsset &&
-                   m_TemplateAsset == other.m_TemplateAsset &&
-                   m_VisualElementAsset == other.m_VisualElementAsset &&
+                   m_TemplateAsset?.id == other.m_TemplateAsset?.id &&
+                   m_VisualElementAsset?.id == other.m_VisualElementAsset?.id &&
                    m_Document.Equals(other.m_Document);
         }
 
         public override int GetHashCode()
         {
-            return HashCode.Combine(m_VisualTreeAsset, m_TemplateAsset, m_VisualElementAsset, m_Document);
+            return HashCode.Combine(m_VisualTreeAsset, m_TemplateAsset?.id, m_VisualElementAsset?.id, m_Document);
         }
 
         static GlobalObjectId ExtractGlobalObjectID(VisualElement element)

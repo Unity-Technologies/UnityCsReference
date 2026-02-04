@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System.Linq;
 using UnityEditor.Experimental;
 using UnityEditorInternal;
 using UnityEngine;
@@ -66,9 +65,7 @@ internal class SelectionWindowRow : VisualElement
         RefreshInfoLabel(node);
 
         var removeIconVisible = (!node.isFolder && selected) || (node.isFolder && !isExpanded &&
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            windowData.GetChildren(node, true).Any(n => !n.isFolder && windowData.IsSelected(n.index)));
-#pragma warning restore RS0030
+            windowData.GetChildren(node, true).AnyMatches(n => !n.isFolder && windowData.IsSelected(n.index)));
         UIUtils.SetElementDisplay(m_RemoveIcon, removeIconVisible);
     }
 

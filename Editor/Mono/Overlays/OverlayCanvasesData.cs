@@ -11,14 +11,19 @@ namespace UnityEditor.Overlays
     [Serializable]
     class OverlayCanvasesDataContainer
     {
+        public string m_LastAppliedPresetName;
+        public bool m_PresetDirty;
+
         public List<SaveData> m_SaveData = new List<SaveData>();
 
         public List<DynamicPanelContainerData> m_DynamicPanelContainerData = new List<DynamicPanelContainerData>();
 
         public OverlayCanvasesDataContainer() { }
 
-        public OverlayCanvasesDataContainer(List<SaveData> saveData, List<DynamicPanelContainerData> dynamicPanelContainerData)
+        public OverlayCanvasesDataContainer(List<SaveData> saveData, List<DynamicPanelContainerData> dynamicPanelContainerData, string presetName, bool presetDirty)
         {
+            m_LastAppliedPresetName = presetName;
+            m_PresetDirty = presetDirty;
             m_SaveData = saveData;
             m_DynamicPanelContainerData = dynamicPanelContainerData;
         }
@@ -77,7 +82,7 @@ namespace UnityEditor.Overlays
 
             foreach (var dataPair in m_WindowToCanvasData)
                 m_CanvasesData.Add(new WindowToCanvasDataPair(dataPair.Key, dataPair.Value));
-            
+
             // Output window to last active canvas map to a list
             if (m_WindowToLastActiveCanvasList == null)
                 m_WindowToLastActiveCanvasList = new();

@@ -24,7 +24,7 @@ namespace UnityEngine.UIElements
         private int m_2SidePadding, m_1SidePadding;
         int m_MaxAtlasSize;
 
-        static ProfilerMarker s_MarkerReset = new ProfilerMarker("UIR.AtlasManager.Reset");
+        static ProfilerMarker s_MarkerReset = new ProfilerMarker(ProfilerCategory.UIToolkit, "UIR.AtlasManager.Reset");
 
         public int maxImageSize { get; }
         public RenderTextureFormat format { get; }

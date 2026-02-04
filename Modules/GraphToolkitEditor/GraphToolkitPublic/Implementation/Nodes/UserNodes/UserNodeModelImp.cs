@@ -21,9 +21,8 @@ namespace Unity.GraphToolkit.Editor.Implementation
         Node IUserNodeModelImp.Node => m_Node;
         public Node Node => m_Node;
 
-        public override string Title => m_Node?.GetType().Name ?? "Missing Node";
-
         string m_CustomTooltip;
+        string m_CustomTitle;
         Color m_CustomDefaultColor;
 
         public override string Tooltip
@@ -31,7 +30,23 @@ namespace Unity.GraphToolkit.Editor.Implementation
             get => !string.IsNullOrEmpty(m_CustomTooltip) ? m_CustomTooltip : base.Tooltip;
             set
             {
+                if (m_CustomTooltip == value)
+                    return;
+
                 m_CustomTooltip = value;
+                GraphModel?.CurrentGraphChangeDescription.AddChangedModel(this, ChangeHint.Style);
+            }
+        }
+
+        public override string Title
+        {
+            get => !string.IsNullOrEmpty(m_CustomTitle) ? m_CustomTitle : m_Node?.GetType().Name ?? "Missing Node";
+            set
+            {
+                if (m_CustomTitle == value)
+                    return;
+
+                m_CustomTitle = value;
                 GraphModel?.CurrentGraphChangeDescription.AddChangedModel(this, ChangeHint.Style);
             }
         }
@@ -43,6 +58,9 @@ namespace Unity.GraphToolkit.Editor.Implementation
             get => m_CustomDefaultColor;
             set
             {
+                if (m_CustomDefaultColor == value)
+                    return;                
+
                 m_CustomDefaultColor = value;
                 GraphModel?.CurrentGraphChangeDescription.AddChangedModel(this, ChangeHint.Style);
             }
@@ -93,9 +111,8 @@ namespace Unity.GraphToolkit.Editor.Implementation
         Node IUserNodeModelImp.Node => m_Node;
         public BlockNode Node => m_Node;
 
-        public override string Title => m_Node?.GetType().Name ?? "Missing Node";
-
         string m_CustomTooltip;
+        string m_CustomTitle;
         Color m_CustomDefaultColor;
 
         public override string Tooltip
@@ -103,7 +120,23 @@ namespace Unity.GraphToolkit.Editor.Implementation
             get => !string.IsNullOrEmpty(m_CustomTooltip) ? m_CustomTooltip : base.Tooltip;
             set
             {
+                if (m_CustomTooltip == value)
+                    return;
+
                 m_CustomTooltip = value;
+                GraphModel?.CurrentGraphChangeDescription.AddChangedModel(this, ChangeHint.Style);
+            }
+        }
+
+        public override string Title
+        {
+            get => !string.IsNullOrEmpty(m_CustomTitle) ? m_CustomTitle : m_Node?.GetType().Name ?? "Missing Node";
+            set
+            {
+                if (m_CustomTitle == value)
+                    return;
+
+                m_CustomTitle = value;
                 GraphModel?.CurrentGraphChangeDescription.AddChangedModel(this, ChangeHint.Style);
             }
         }
@@ -115,6 +148,9 @@ namespace Unity.GraphToolkit.Editor.Implementation
             get => m_CustomDefaultColor;
             set
             {
+                if (m_CustomDefaultColor == value)
+                    return;                
+
                 m_CustomDefaultColor = value;
                 GraphModel?.CurrentGraphChangeDescription.AddChangedModel(this, ChangeHint.Style);
             }
@@ -167,9 +203,8 @@ namespace Unity.GraphToolkit.Editor.Implementation
         Node IUserNodeModelImp.Node => m_Node;
         public ContextNode Node => m_Node;
 
-        public override string Title => m_Node?.GetType().Name ?? "Missing Node";
-
         string m_CustomTooltip;
+        string m_CustomTitle;
         Color m_CustomDefaultColor = Color.darkGreen;
 
         public override string Tooltip
@@ -177,7 +212,23 @@ namespace Unity.GraphToolkit.Editor.Implementation
             get => !string.IsNullOrEmpty(m_CustomTooltip) ? m_CustomTooltip : base.Tooltip;
             set
             {
+                if (m_CustomTooltip == value)
+                    return;
+
                 m_CustomTooltip = value;
+                GraphModel?.CurrentGraphChangeDescription.AddChangedModel(this, ChangeHint.Style);
+            }
+        }
+
+        public override string Title
+        {
+            get => !string.IsNullOrEmpty(m_CustomTitle) ? m_CustomTitle : m_Node?.GetType().Name ?? "Missing Node";
+            set
+            {
+                if (m_CustomTitle == value)
+                    return;
+
+                m_CustomTitle = value;
                 GraphModel?.CurrentGraphChangeDescription.AddChangedModel(this, ChangeHint.Style);
             }
         }
@@ -189,6 +240,9 @@ namespace Unity.GraphToolkit.Editor.Implementation
             get => m_CustomDefaultColor;
             set
             {
+                if (m_CustomDefaultColor == value)
+                    return;                
+
                 m_CustomDefaultColor = value;
                 GraphModel?.CurrentGraphChangeDescription.AddChangedModel(this, ChangeHint.Style);
             }

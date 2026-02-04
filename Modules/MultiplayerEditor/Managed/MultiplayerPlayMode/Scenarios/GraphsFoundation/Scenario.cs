@@ -138,6 +138,19 @@ namespace Unity.Multiplayer.PlayMode.Editor
             return null;
         }
 
+        internal Instance GetInstanceById(GUID instanceId)
+        {
+            foreach (var instance in m_Instances)
+            {
+                if (instance.Id == instanceId)
+                {
+                    return instance;
+                }
+            }
+
+            return null;
+        }
+
         internal bool HasActiveFreeRunInstance()
         {
             foreach (var instance in m_Instances)

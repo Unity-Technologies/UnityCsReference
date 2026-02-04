@@ -381,9 +381,9 @@ namespace UnityEditor
                 if (!platformDefaultQualitySettings.TryGetValue(platform.name, out position))
                     platformDefaultQualitySettings.Add(platform.name, 0);
 
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 position = EditorGUI.Popup(iconRect, position, qualitySettings.Select(x => x.m_Name).ToArray(), Styles.kDefaultDropdown);
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                 platformDefaultQualitySettings[platform.name] = position;
             }
 
@@ -1109,13 +1109,13 @@ namespace UnityEditor
                         {
                             includePropertyMethod.Invoke(m_PresetEditor, new object[] { groupSettingsArrayPropertyPath });
 
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                             if (m_QualitySettingsPreset.excludedProperties.Contains(groupNamesArrayPropertyPath))
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                             {
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                                 if (!m_QualitySettingsPreset.excludedProperties.Any(p => p == groupSettingsArrayPropertyPath || groupSettingsArrayPropertyPath.StartsWith(p + ".", System.StringComparison.Ordinal)))
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                                 {
                                     // If and only if the group names array was excluded in the first place,
                                     // and the group settings array was successfully included, then include
@@ -1142,18 +1142,18 @@ namespace UnityEditor
                             // If the group names array was included (it can be manually excluded!),
                             // then check if we've got all group settings arrays excluded. If that is
                             // the case, exclude the group names array too as described earlier.
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                             if (!m_QualitySettingsPreset.excludedProperties.Contains(groupNamesArrayPropertyPath))
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                             {
                                 bool areAllGroupSettingsExcluded = true;
                                 int counter = 0;
                                 while (areAllGroupSettingsExcluded && counter < m_QualitySettingsProperty.arraySize)
                                 {
                                     string propertyPathToCheck = $"m_QualitySettings.Array.data[{counter}].textureMipmapLimitSettings";
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                                     if (!m_QualitySettingsPreset.excludedProperties.Any(p => p == propertyPathToCheck || propertyPathToCheck.StartsWith(p + ".", System.StringComparison.Ordinal)))
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                                     {
                                         areAllGroupSettingsExcluded = false;
                                     }
@@ -1590,9 +1590,9 @@ namespace UnityEditor
             string[] existingNames = GetAllKnownTextureMipmapLimitGroupNames();
 
             int counter = 0;
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             while (existingNames.Any(existingName => existingName == newName))
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             {
                 newName = L10n.Tr("New Group") + string.Format(" ({0})", ++counter);
             }
@@ -1629,9 +1629,9 @@ namespace UnityEditor
         {
             var provider = AssetSettingsProvider.CreateProviderFromAssetPath(
                 "Project/Quality", "ProjectSettings/QualitySettings.asset",
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 SettingsProvider.GetSearchKeywordsFromGUIContentProperties<Styles>()
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                     .Concat(SettingsProvider.GetSearchKeywordsFromGUIContentProperties<Content>())
                     .Concat(SettingsProvider.GetSearchKeywordsFromPath("ProjectSettings/QualitySettings.asset")));
             return provider;

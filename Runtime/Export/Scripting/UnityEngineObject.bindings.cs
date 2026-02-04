@@ -189,7 +189,7 @@ namespace UnityEngine
         public string ToString(string format) => m_Data.ToString(format);
         public string ToString(string format, IFormatProvider formatProvider) => m_Data.ToString(format, formatProvider);
 
-        [VisibleToOtherModules("UnityEngine.UIElementsModule", "UnityEngine.AnimationModule")]
+        [VisibleToOtherModules("UnityEngine.UIElementsModule", "UnityEngine.AnimationModule", "UnityEngine.TextCoreTextEngineModule")]
         internal static EntityId From(int input) => new EntityId {m_Data = input};
 
         internal static EntityId From(ulong input) => new EntityId { m_Data = (int)input };
@@ -577,18 +577,6 @@ namespace UnityEngine
 
             return obj;
         }
-
-        [RequiredByNativeCode]
-        internal static void GetManagedUDMTypeID(Type type, out UdmTypeId typeId)
-        {
-            typeId = RttiResolver.GetTypeID(type);
-        }
-
-        [NativeMethod(Name = "UnityEngineObjectBindings::GetUDMTypeID", HasExplicitThis = true, IsThreadSafe = true)]
-        internal extern UdmTypeId GetObjectUDMTypeID();
-
-        [NativeMethod(Name = "Scripting::ScriptingTypeToUDMTypeID", IsFreeFunction = true, ThrowsException = true, IsThreadSafe = true)]
-        extern internal static UdmTypeId GetUDMTypeID(Type type);
 
 
         // Clones the object /original/ and returns the clone.

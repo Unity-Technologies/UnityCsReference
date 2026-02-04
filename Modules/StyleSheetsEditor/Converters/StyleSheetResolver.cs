@@ -171,9 +171,9 @@ namespace UnityEditor.StyleSheets
             {
                 return new Property(Name)
                 {
-                    #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                    #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     Values = Values.Select(v => v.Clone()).ToList()
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                 };
             }
         }
@@ -339,9 +339,9 @@ namespace UnityEditor.StyleSheets
             ResolveExtendData();
 
             // Ensure we process derivations reverse topological order so we begin by trimming the "grand children" before anything
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var derivations = TopologicalSort(ParentToChildren.Values.ToList());
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             derivations.Reverse();
             var cleanedUpRules = new HashSet<Rule>();
 
@@ -354,9 +354,9 @@ namespace UnityEditor.StyleSheets
                     {
                         // Create the parent chain in which we will be looking for properties duplication:
                         var parentChain = GetParentChain(extRule);
-                        #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                        #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                         foreach (var childProperty in extRule.Properties.Values.ToList())
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                         {
                             // Navigate all parent rule (extended or not) to see if we are overriding an existing values:
                             foreach (var parentRule in parentChain)
@@ -383,18 +383,18 @@ namespace UnityEditor.StyleSheets
                 }
             }
 
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return cleanedUpRules.ToList();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
         }
 
         public void ResolveExtend()
         {
             ResolveExtendData();
             // Ensure we process derivations in right order (topologic) so no lingering extend stays:
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var derivations = TopologicalSort(ParentToChildren.Values.ToList());
-#pragma warning restore RS0030
+#pragma warning restore UA2001
 
             // Apply Derivations:
             foreach (var derivation in derivations)
@@ -589,17 +589,17 @@ namespace UnityEditor.StyleSheets
             options = options ?? new ResolvingOptions();
             var helper = new StyleSheetBuilderHelper();
             if (options.SortRules)
-                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 rules = rules.OrderBy(rule => rule.SelectorName);
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             foreach (var rule in rules)
             {
                 helper.BeginRule(string.Empty, rule.LineNumber);
                 StyleSheetBuilderHelper.BuildSelector(rule.Selector, helper);
 
-                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 var propertyValues = rule.Properties.Values.ToList();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                 if (options.SortProperties)
                     propertyValues.Sort((p1, p2) => p1.Name.CompareTo(p2.Name));
                 foreach (var property in propertyValues)
@@ -1017,9 +1017,9 @@ namespace UnityEditor.StyleSheets
             }
 
             var sortedEdges = graph.DepthFirstTraversal();
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var sortedDerivations = sortedEdges.Select(index => derivations[index]).ToList();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
 
             return sortedDerivations;
         }

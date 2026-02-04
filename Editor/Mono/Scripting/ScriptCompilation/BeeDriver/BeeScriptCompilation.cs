@@ -134,15 +134,15 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 EnableDiagnostics = editorCompilation.EnableDiagnostics,
                 BuildPlayerDataOutput = $"Library/BuildPlayerData/{(buildingForEditor ? "Editor" : "Player")}",
                 ExtractRuntimeInitializeOnLoads = !buildingForEditor,
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 AssembliesToScanForTypeDB = assembliesToScanForTypeDB.OrderBy(p => p).ToArray(),
-#pragma warning restore RS0030
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning restore UA2001
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 SearchPaths = searchPaths.OrderBy(p => p).ToArray(),
-#pragma warning restore RS0030
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning restore UA2001
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 UnityAssembliesToScanForLifecycle = unityAssembliesToScanForLifecycle.ToArray(),
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                 EmitInfoForScriptUpdater = enableScriptUpdater,
                 TargetingPacks = new[]
                 {
@@ -156,9 +156,9 @@ namespace UnityEditor.Scripting.ScriptCompilation
         }
 
         private static ScriptAssembly[] CodeGenAssemblies(ScriptAssembly[] assemblies) =>
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             assemblies
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                 .Where(assembly => UnityCodeGenHelpers.IsCodeGen(FileUtil.GetPathWithoutExtension(assembly.Filename)))
                 .SelectMany(assembly => assembly.AllRecursiveScripAssemblyReferencesIncludingSelf())
                 .Distinct()
@@ -168,9 +168,9 @@ namespace UnityEditor.Scripting.ScriptCompilation
         private static AssemblyData[] AssemblyDataFrom(ScriptAssembly[] assemblies)
         {
             Array.Sort(assemblies, (a1, a2) => string.Compare(a1.Filename, a2.Filename, StringComparison.Ordinal));
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return assemblies.Select((scriptAssembly, index) =>
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             {
                 using (new ProfilerMarker($"AssemblyDataFrom {scriptAssembly.Filename}").Auto())
                     return AssemblyDataFrom(scriptAssembly, assemblies, index);
@@ -180,9 +180,9 @@ namespace UnityEditor.Scripting.ScriptCompilation
         private static AssemblyData AssemblyDataFrom(ScriptAssembly a, ScriptAssembly[] allAssemblies, int index)
         {
             Array.Sort(a.Files, StringComparer.Ordinal);
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var references = a.ScriptAssemblyReferences.Select(r => Array.IndexOf(allAssemblies, r)).ToArray();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             Array.Sort(references);
             return new AssemblyData
             {
@@ -233,9 +233,9 @@ namespace UnityEditor.Scripting.ScriptCompilation
             int resultIndex = 0;
             if (hasBeeDriverMessages)
             {
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 result[resultIndex] = beeDriverMessages.Select(AsCompilerMessage).ToArray();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                 ++resultIndex;
             }
             for (int i = 0; i != nodeResults.Length; i++)
@@ -251,9 +251,9 @@ namespace UnityEditor.Scripting.ScriptCompilation
             while (totalErrors < 10 && nextResultToAugment < result.Length)
             {
                 UnitySpecificCompilerMessages.AugmentMessagesInCompilationErrorsWithUnitySpecificAdvice(result[nextResultToAugment], editorCompilation);
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 totalErrors += result[nextResultToAugment].Count(m => m.type == CompilerMessageType.Error);
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                 ++nextResultToAugment;
             }
 
@@ -283,9 +283,9 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 ? (CompilerOutputParserBase) new PostProcessorOutputParser()
                 : (CompilerOutputParserBase) new MicrosoftCSharpCompilerOutputParser();
 
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return parser
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                 .Parse(
                 (nodeResult.Output ?? string.Empty).Split(new[] {'\r', '\n'},
                     StringSplitOptions.RemoveEmptyEntries),

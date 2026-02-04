@@ -235,9 +235,9 @@ namespace UnityEditor.SceneManagement
 
             if (warnList.Count > 0)
             {
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 string blockingNames = string.Join(", ", warnList.Select(e => MonoScript.FromMonoBehaviour(e).name).Distinct().ToArray());
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                 if (blockingNames.Length > 1000)
                     blockingNames = blockingNames.Substring(0, 1000) + "\n...";
                 return EditorUtility.DisplayDialog(
@@ -354,9 +354,9 @@ namespace UnityEditor.SceneManagement
 
         static void RemoveBrokenPrefabRootsIfNeeded(string prefabAssetPath, GameObject[] environmentRoots, GameObject[] rootsAfterLoadingPrefab, GameObject rootGameObject)
         {
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var rootsLoadedFromFile = rootsAfterLoadingPrefab.Except(environmentRoots).ToList();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
 
             // Filter out the subset of roots that were loaded from the Prefab file (there can be dynamically created environment objects,
             // created from Awake and OnEnable calls from user land, if they use ExecuteAlways or ExecuteInEditMode.

@@ -89,9 +89,9 @@ namespace UnityEngine.UIElements
         public override StartDragArgs SetupDragAndDrop(IEnumerable<int> itemIds, bool skipText = false)
         {
             var startDragArgs = base.SetupDragAndDrop(itemIds, skipText);
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             m_DropData.draggedIds = GetSortedSelectedIds().ToArray();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             return m_TreeView.reorderable ? startDragArgs : new StartDragArgs(string.Empty, DragVisualMode.Rejected);
         }
 

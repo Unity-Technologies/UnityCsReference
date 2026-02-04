@@ -83,20 +83,22 @@ namespace Unity.Hierarchy
 
         internal ReadOnlyNativeVector<HierarchyFlattenedNode> FlattenedNodes
         {
+            [VisibleToOtherModules("UnityEngine.HierarchyModule")]
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get => m_FlattenedNodes;
         }
 
         internal ReadOnlyNativeVector<HierarchyNode> Nodes
         {
+            [VisibleToOtherModules("UnityEngine.HierarchyModule")]
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get => m_Nodes;
         }
 
         internal int Version
         {
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             [VisibleToOtherModules("UnityEngine.HierarchyModule")]
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get => m_Version;
         }
 
@@ -736,8 +738,8 @@ namespace Unity.Hierarchy
 
         // Currently required to feed UI Toolkit containers itemsSource property, which requires the collection to
         // be an IList. We do not want HierarchyViewModel to be an IList, so we provide a read-only list wrapper.
-        [VisibleToOtherModules("UnityEngine.HierarchyModule")]
-        internal class ReadOnlyList : IList
+        [VisibleToOtherModules]
+        internal sealed class ReadOnlyList : IList
         {
             readonly HierarchyViewModel m_ViewModel;
 
@@ -803,15 +805,15 @@ namespace Unity.Hierarchy
             object ICollection.SyncRoot => throw new NotImplementedException();
         }
 
-        [VisibleToOtherModules("UnityEngine.HierarchyModule")]
+        [VisibleToOtherModules]
         internal ReadOnlyList AsReadOnlyList() => new ReadOnlyList(this);
 
-        [FreeFunction("HierarchyViewModelBindings::GetState", HasExplicitThis = true, IsThreadSafe = true)]
         [VisibleToOtherModules("UnityEngine.HierarchyModule")]
+        [FreeFunction("HierarchyViewModelBindings::GetState", HasExplicitThis = true, IsThreadSafe = true)]
         internal extern byte[] GetState();
 
-        [FreeFunction("HierarchyViewModelBindings::SetState", HasExplicitThis = true, IsThreadSafe = true)]
         [VisibleToOtherModules("UnityEngine.HierarchyModule")]
+        [FreeFunction("HierarchyViewModelBindings::SetState", HasExplicitThis = true, IsThreadSafe = true)]
         internal extern void SetState(ReadOnlySpan<byte> bytes);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

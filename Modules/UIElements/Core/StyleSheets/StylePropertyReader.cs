@@ -273,6 +273,15 @@ namespace UnityEngine.UIElements.StyleSheets
                     break;
                 }
 
+                case StyleValueType.MissingAssetReference:
+                {
+                    var missingAssetUrl = value.sheet.ReadMissingAssetReferenceUrl(value.handle);
+                    Debug.LogWarning(string.Format(CultureInfo.InvariantCulture,
+                        "Missing font asset reference '{0}' in stylesheet '{1}'. The font asset may have been deleted or moved.",
+                        missingAssetUrl, value.sheet.name), value.sheet);
+                    break;
+                }
+
                 default:
                     Debug.LogWarning("Invalid value for font " + value.handle.valueType);
                     break;
@@ -317,6 +326,15 @@ namespace UnityEngine.UIElements.StyleSheets
                     if (value.handle.valueIndex != (int)StyleValueKeyword.None)
                         Debug.LogWarning("Invalid keyword for font " + (StyleValueKeyword)value.handle.valueIndex);
 
+                    break;
+                }
+
+                case StyleValueType.MissingAssetReference:
+                {
+                    var missingAssetUrl = value.sheet.ReadMissingAssetReferenceUrl(value.handle);
+                    Debug.LogWarning(string.Format(CultureInfo.InvariantCulture,
+                        "Missing font asset reference '{0}' in stylesheet '{1}'. The font asset may have been deleted or moved.",
+                        missingAssetUrl, value.sheet.name), value.sheet);
                     break;
                 }
 

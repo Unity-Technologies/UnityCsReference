@@ -11,7 +11,7 @@ namespace Unity.Hierarchy
     /// <summary>
     /// A read-only collection of hierarchy node type handler.
     /// </summary>
-    internal readonly struct HierarchyNodeTypeHandlerEnumerable
+    public readonly struct HierarchyNodeTypeHandlerEnumerable
     {
         readonly Hierarchy m_Hierarchy;
 

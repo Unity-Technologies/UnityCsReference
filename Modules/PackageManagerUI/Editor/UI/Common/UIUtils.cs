@@ -4,14 +4,14 @@
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
+using UnityEngine;
 using UnityEngine.UIElements;
 
 namespace UnityEditor.PackageManager.UI.Internal
 {
     internal static class UIUtils
     {
-        private static readonly string[] s_SizeUnits = { "KB", "MB", "GB", "TB" };
+        private static readonly IReadOnlyList<string> k_SizeUnits = Array.AsReadOnly(new []{ "KB", "MB", "GB", "TB" });
 
         public static void SetElementDisplay(VisualElement element, bool value)
         {
@@ -35,9 +35,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 menu.AddDisabledItem(itemName, isChecked);
             if (string.IsNullOrEmpty(tooltip))
                 return;
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            var lastItem = menu.items.LastOrDefault(x => x.name == itemName);
-#pragma warning restore RS0030
+            var lastItem = menu.items.LastMatch(x => x.name == itemName);
             if (lastItem != null)
                 lastItem.element.tooltip = tooltip;
         }
@@ -116,21 +114,20 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public static T GetParentOfType<T>(VisualElement element) where T : VisualElement
         {
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            return GetParentsOfType<T>(element).FirstOrDefault();
-#pragma warning restore RS0030
+            using var enumerator = GetParentsOfType<T>(element).GetEnumerator();
+            return enumerator.MoveNext() ? enumerator.Current : null;
         }
 
         public static string ConvertToHumanReadableSize(ulong sizeInBytes)
         {
             var len = sizeInBytes / 1024.0;
             var order = 0;
-            while (len >= 1024 && order < s_SizeUnits.Length - 1)
+            while (len >= 1024 && order < k_SizeUnits.Count - 1)
             {
                 order++;
-                len = len / 1024;
+                len /= 1024;
             }
-            return $"{len:0.##} {s_SizeUnits[order]}";
+            return $"{len:0.##} {k_SizeUnits[order]}";
         }
 
         public static void ShowTextTooltipOnSizeChange<T>(this T element, int deltaWidth = 0) where T : TextElement
@@ -142,7 +139,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         {
             element.RegisterCallback<GeometryChangedEvent>(evt =>
             {
-                if (evt.newRect.width == evt.oldRect.width)
+                if (Mathf.Approximately(evt.newRect.width, evt.oldRect.width))
                     return;
 
                 var target = evt.target as TextElement;
@@ -174,6 +171,6 @@ namespace UnityEditor.PackageManager.UI.Internal
             InternalShowTextTooltipOnSizeChange(element, 0);
         }
 
-        public static Action<Label> TextTooltipOnSizeChange = ActionShowTextTooltipOnSizeChange;
+        public static readonly Action<Label> TextTooltipOnSizeChange = ActionShowTextTooltipOnSizeChange;
     }
 }

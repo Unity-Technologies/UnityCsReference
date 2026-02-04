@@ -17,46 +17,34 @@ namespace Unity.Multiplayer.PlayMode.Editor
     /// </summary>
     internal static class ScenarioFactory
     {
-        public static MultiplayerRoleFlags GetRoleForInstance(InstanceDescription instance)
+        public static MultiplayerRoleFlags GetRoleForInstance(IInstanceItem instance)
         {
-            Assert.IsNotNull(instance, $"Null instance used");
-            switch (instance)
+            if (!EditorMultiplayerManager.enableMultiplayerRoles)
+                return MultiplayerRoleFlags.Client;
+
+            if (instance.IsInstanceType(typeof(CloneEditorController))) return instance.GetSettings<CloneEditorController.InstanceSettings>().RoleMask;
+            if (instance.IsInstanceType(typeof(MainEditorController))) return instance.GetSettings<MainEditorController.InstanceSettings>().RoleMask;
+            if (instance.IsInstanceType(typeof(LocalPlayerController)))
             {
-                case EditorInstanceDescription editorInstance: return editorInstance.RoleMask;
-                case IBuildableInstanceDescription buildableInstance: return buildableInstance.BuildProfile == null ? MultiplayerRoleFlags.Client : MultiplayerRolesSettings.instance.GetMultiplayerRoleForBuildProfile(buildableInstance.BuildProfile);
+                var buildProfile = instance.GetSettings<LocalPlayerController.InstanceSettings>().BuildProfile;
+                return buildProfile == null ? MultiplayerRoleFlags.Client : MultiplayerRolesSettings.instance.GetMultiplayerRoleForBuildProfile(buildProfile);
             }
             return MultiplayerRoleFlags.Client;
         }
 
-        internal static class RemoteNodeConstants
-        {
-            internal const string k_BuildNodePostFix = "- Build";
-            internal const string k_DeployBuildNodePostfix = "- Deploy Build";
-            internal const string k_DeployConfigBuildNodePostfix = "- Deploy Build Configuration";
-            internal const string k_DeployFleetNodePostfix = "- Deploy Fleet";
-            internal const string k_RunNodePostfix = "- Run";
-            internal const string k_AllocateNodePostfix = "- Allocate";
-        }
-
         private static void CategorizeInstances(
-            List<InstanceDescription> instances,
-            out List<InstanceDescription> servers,
-            out List<InstanceDescription> clients,
-            out bool hasMainEditor)
+            IEnumerable<IInstanceItem> instanceItems,
+            out List<IInstanceItem> servers,
+            out List<IInstanceItem> clients)
         {
-            servers = new List<InstanceDescription>();
-            clients = new List<InstanceDescription>();
-            hasMainEditor = false;
-
-            foreach (var instance in instances)
+            servers = new List<IInstanceItem>();
+            clients = new List<IInstanceItem>();
+            foreach (var instance in instanceItems)
             {
-                if (instance is MainEditorInstanceDescription)
-                {
-                    hasMainEditor = true;
-                }
-
                 if (GetRoleForInstance(instance).HasFlag(MultiplayerRoleFlags.Server))
+                {
                     servers.Add(instance);
+                }
                 else
                 {
                     clients.Add(instance);
@@ -64,11 +52,11 @@ namespace Unity.Multiplayer.PlayMode.Editor
             }
         }
 
-        public static Scenario CreateScenario(string name, List<InstanceDescription> instanceDescriptions)
+        public static Scenario CreateScenario(string name, IEnumerable<IInstanceItem> instanceItems)
         {
             var scenario = Scenario.Create(name);
 
-            CategorizeInstances(instanceDescriptions, out var serverDescriptList, out var clientDescriptList, out var hasEditor);
+            CategorizeInstances(instanceItems, out var serverDescriptList, out var clientDescriptList);
 
             // [TODO] It's good to report the error if multiple servers are selected but we also need to report it earlier, directly in the configuration UI.
             Assert.IsTrue(serverDescriptList.Count <= 1, "There can only be one server in a scenario");
@@ -76,7 +64,7 @@ namespace Unity.Multiplayer.PlayMode.Editor
             // This will ensure the server instance is the first to be added in the scenario.
             if (serverDescriptList.Count > 0)
             {
-                var serverInstance = ConnectOrCreateInstance(serverDescriptList[0], hasEditor);
+                var serverInstance = ConnectOrCreateInstance(serverDescriptList[0]);
                 scenario.AddInstance(serverInstance);
             }
 
@@ -84,19 +72,19 @@ namespace Unity.Multiplayer.PlayMode.Editor
             // and configure the connection data for when they run.
             foreach (var clientDescript in clientDescriptList)
             {
-                var clientInstance = ConnectOrCreateInstance(clientDescript, hasEditor);
+                var clientInstance = ConnectOrCreateInstance(clientDescript);
                 scenario.AddInstance(clientInstance);
             }
             return scenario;
         }
 
-        private static Instance ConnectOrCreateInstance(InstanceDescription instanceDescription, bool hasMainEditor)
+        private static Instance ConnectOrCreateInstance(IInstanceItem instanceItem)
         {
             // If an Existing Instance is Actively Free Running, we connect that instance to this new Scenario.
             if (PlayModeScenarioManager.ActiveScenario is OrchestratedScenario config &&
                 config.Scenario != null)
             {
-                var activeFreeInstance = config.Scenario.GetInstanceByName(instanceDescription.Name, true);
+                var activeFreeInstance = config.Scenario.GetInstanceByName(instanceItem.GetName(), true);
                 if (activeFreeInstance != null)
                 {
                     // Ensure we remove it from the old Scenario
@@ -108,56 +96,16 @@ namespace Unity.Multiplayer.PlayMode.Editor
             }
 
             // Else, create and rebuild the instance from the description as per usual.
-            return CreateInstance(instanceDescription, hasMainEditor);
+            return CreateInstance(instanceItem);
         }
 
-        private static Instance CreateInstance(InstanceDescription instanceDescription, bool hasMainEditor)
+        private static Instance CreateInstance(IInstanceItem instanceItem)
         {
-            if (instanceDescription is VirtualEditorInstanceDescription virtualEditorDescription)
-            {
-                return CreateCloneEditorInstance(virtualEditorDescription);
-            }
-            if (instanceDescription is EditorInstanceDescription editorDescription)
-            {
-                return CreateMainEditorInstance(editorDescription);
-            }
-            if (instanceDescription is LocalInstanceDescription localDescription)
-            {
-                return CreateLocalInstance(localDescription, hasMainEditor);
-            }
-            throw new System.NotImplementedException();
-        }
-
-        static Instance CreateMainEditorInstance(EditorInstanceDescription editorInstanceDescription)
-        {
-            var editorController = MainEditorController.CreateInstance(editorInstanceDescription);
-            var instance = Instance.Create(editorInstanceDescription, editorController);
+            var controller = instanceItem.CreateController();
+            var instance = Instance.Create(instanceItem, controller);
             var executionGraph = instance.GetExecutionGraph();
 
-            editorController.SetupExecutionGraph(executionGraph);
-
-            return instance;
-        }
-
-        static Instance CreateCloneEditorInstance(VirtualEditorInstanceDescription editorInstanceDescription)
-        {
-            var editorController = CloneEditorController.CreateInstance(editorInstanceDescription);
-            var instance = Instance.Create(editorInstanceDescription, editorController);
-            var executionGraph = instance.GetExecutionGraph();
-
-            editorController.SetupExecutionGraph(executionGraph);
-
-            return instance;
-        }
-
-        private static Instance CreateLocalInstance(LocalInstanceDescription description, bool hasMainEditor)
-        {
-            var localController = LocalPlayerController.CreateInstance(description);
-            localController.HasEditorInstance = hasMainEditor;
-            var instance = Instance.Create(description, localController);
-            var executionGraph = instance.GetExecutionGraph();
-
-            localController.SetupExecutionGraph(executionGraph);
+            controller.SetupExecutionGraph(executionGraph);
 
             return instance;
         }

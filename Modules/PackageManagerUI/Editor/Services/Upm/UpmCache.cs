@@ -4,7 +4,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using UnityEngine;
 
 namespace UnityEditor.PackageManager.UI.Internal
@@ -71,7 +70,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         [SerializeField]
         private long[] m_SerializedProductSearchPackageInfoTimestamps;
         [SerializeField]
-        private PackageInfo[] m_SerializedExtraPackageInfos;
+        private List<PackageInfo> m_SerializedExtraPackageInfos = new ();
         [SerializeField]
         private string[] m_SerializedLoadAllVersions;
 
@@ -99,9 +98,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                     continue;
                 result.Add((oldInfo, newInfo));
             }
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            foreach (var newInfo in newInfos.Values.Where(p => !oldInfos.ContainsKey(p.name)))
-#pragma warning restore RS0030
+            foreach (var newInfo in newInfos.Values.Filter(p => !oldInfos.ContainsKey(p.name)))
                 result.Add((null, newInfo));
             return result;
         }
@@ -118,21 +115,11 @@ namespace UnityEditor.PackageManager.UI.Internal
                 p1.entitlements.isAllowed != p2.entitlements.isAllowed ||
                 p1.entitlements.licensingModel != p2.entitlements.licensingModel ||
                 p1.versions.recommended != p2.versions.recommended ||
-                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                p1.versions.compatible.Length != p2.versions.compatible.Length || !p1.versions.compatible.SequenceEqual(p2.versions.compatible) ||
-#pragma warning restore RS0030
-                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                p1.versions.all.Length != p2.versions.all.Length || !p1.versions.all.SequenceEqual(p2.versions.all) ||
-#pragma warning restore RS0030
-                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                p1.errors.Length != p2.errors.Length || !p1.errors.SequenceEqual(p2.errors) ||
-#pragma warning restore RS0030
-                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                p1.dependencies.Length != p2.dependencies.Length || !p1.dependencies.SequenceEqual(p2.dependencies) ||
-#pragma warning restore RS0030
-                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                p1.resolvedDependencies.Length != p2.resolvedDependencies.Length || !p1.resolvedDependencies.SequenceEqual(p2.resolvedDependencies) ||
-#pragma warning restore RS0030
+                !p1.versions.compatible.IsSequenceEqual(p2.versions.compatible) ||
+                !p1.versions.all.IsSequenceEqual(p2.versions.all) ||
+                !p1.errors.IsSequenceEqual(p2.errors) ||
+                !p1.dependencies.IsSequenceEqual(p2.dependencies) ||
+                !p1.resolvedDependencies.IsSequenceEqual(p2.resolvedDependencies) ||
                 p1.projectDependenciesEntry != p2.projectDependenciesEntry ||
                 p1.signature.status != p2.signature.status ||
                 p1.trustLevel != p2.trustLevel ||
@@ -170,45 +157,30 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public void OnBeforeSerialize()
         {
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            m_SerializedInstalledPackageInfos = m_PackageNameToInstalledPackageInfosMap.Values.ToArray();
-#pragma warning restore RS0030
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            m_SerializedSearchPackageInfos = m_SearchPackageInfos.Values.ToArray();
-#pragma warning restore RS0030
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            m_SerializedExtraPackageInfos = m_ExtraPackageInfo.Values.SelectMany(p => p.Values).ToArray();
-#pragma warning restore RS0030
+            m_PackageNameToInstalledPackageInfosMap.Values.ToArray(ref m_SerializedInstalledPackageInfos);
+            m_SearchPackageInfos.Values.ToArray(ref m_SerializedSearchPackageInfos);
 
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            m_SerializedProductSearchPackageInfoProductIds = m_ProductIdToProductSearchInfosMap.Keys.ToArray();
-#pragma warning restore RS0030
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            m_SerializedProductSearchPackageInfos = m_ProductIdToProductSearchInfosMap.Values.Select(i => i.info).ToArray();
-#pragma warning restore RS0030
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            m_SerializedProductSearchPackageInfoTimestamps = m_ProductIdToProductSearchInfosMap.Values.Select(i => i.timestamp).ToArray();
-#pragma warning restore RS0030
+            m_SerializedExtraPackageInfos.Clear();
+            foreach (var infoDictionary in m_ExtraPackageInfo.Values)
+                m_SerializedExtraPackageInfos.AddRange(infoDictionary.Values);
 
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            m_SerializedLoadAllVersions = m_LoadAllVersions.ToArray();
-#pragma warning restore RS0030
+            m_ProductIdToProductSearchInfosMap.Keys.ToArray(ref m_SerializedProductSearchPackageInfoProductIds);
+            m_SerializedProductSearchPackageInfos = m_ProductIdToProductSearchInfosMap.Values.SelectToNewArray(i => i.info);
+            m_SerializedProductSearchPackageInfoTimestamps = m_ProductIdToProductSearchInfosMap.Values.SelectToNewArray(i => i.timestamp);
+
+            m_LoadAllVersions.ToArray(ref m_SerializedLoadAllVersions);
         }
 
         public void OnAfterDeserialize()
         {
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            m_PackageNameToInstalledPackageInfosMap = m_SerializedInstalledPackageInfos.ToDictionary(p => p.name, p => p);
-#pragma warning restore RS0030
+            m_SerializedInstalledPackageInfos.ToDictionary(p => p.name, ref m_PackageNameToInstalledPackageInfosMap);
             foreach (var info in m_SerializedInstalledPackageInfos)
             {
                 m_PackageNameToInstalledPackageInfosMap[info.name] = info;
                 UpdateProductIdToInstalledPackageInfoMap(null, info);
             }
 
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            m_SearchPackageInfos = m_SerializedSearchPackageInfos.ToDictionary(p => p.name, p => p);
-#pragma warning restore RS0030
+            m_SerializedSearchPackageInfos.ToDictionary(p => p.name, ref m_SearchPackageInfos);
 
             foreach (var p in m_SerializedExtraPackageInfos)
                 AddExtraPackageInfo(p);
@@ -266,9 +238,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public IReadOnlyCollection<(PackageInfo oldInfo, PackageInfo newInfo)> SetInstalledPackageInfos(IEnumerable<PackageInfo> packageInfos, long timestamp = 0, PackagesChangedSource changedSource = PackagesChangedSource.Other)
         {
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            var newPackageInfos = packageInfos.ToDictionary(p => p.name, p => p);
-#pragma warning restore RS0030
+            var newPackageInfos = packageInfos.ToNewDictionary(p => p.name);
 
             var oldPackageInfos = m_PackageNameToInstalledPackageInfosMap;
             m_PackageNameToInstalledPackageInfosMap = newPackageInfos;
@@ -329,9 +299,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public void SetSearchPackageInfos(IEnumerable<PackageInfo> packageInfos, long timestamp)
         {
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            var newPackageInfos = packageInfos.ToDictionary(p => p.name, p => p);
-#pragma warning restore RS0030
+            var newPackageInfos = packageInfos.ToNewDictionary(p => p.name);
 
             var oldPackageInfos = m_SearchPackageInfos;
             m_SearchPackageInfos = newPackageInfos;
@@ -363,12 +331,10 @@ namespace UnityEditor.PackageManager.UI.Internal
         // detect changes to the scoped registries that way.
         private void DetectScopedRegistriesChanges(IReadOnlyCollection<(PackageInfo oldInfo, PackageInfo newInfo)> packageInfos, bool isSearchResult)
         {
-            if (m_SettingsProxy.registries == null || m_SettingsProxy.registries.Count < 2)
+            if (m_SettingsProxy.scopedRegistries == null || m_SettingsProxy.scopedRegistries.Count == 0)
                 return;
 
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            var registriesToCheck = m_SettingsProxy.scopedRegistries.ToDictionary(r => r.name, r => r);
-#pragma warning restore RS0030
+            var registriesToCheck = m_SettingsProxy.scopedRegistries.ToNewDictionary(r => r.name);
             // We use a HashSet to make sure we only check each registry once, because packages from the same registry will share the same RegistryInfo
             var registriesChecked = new HashSet<string>();
             foreach (var (_, newInfo) in packageInfos)
@@ -458,7 +424,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         public void ClearExtraInfoCache()
         {
             m_ExtraPackageInfo.Clear();
-            m_SerializedExtraPackageInfos = Array.Empty<PackageInfo>();
+            m_SerializedExtraPackageInfos.Clear();
         }
     }
 }

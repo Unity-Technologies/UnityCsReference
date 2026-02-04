@@ -294,9 +294,9 @@ namespace Unity.GraphToolkit.Editor
 
                         if (gvChangeSet != null)
                         {
-                            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                             deletedModels = gvChangeSet.DeletedModels.ToList();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
 
                             // Adding/removing a variable/group should mark the parent group as changed.
                             // Updating the parent will add/remove the variable UI.
@@ -346,9 +346,9 @@ namespace Unity.GraphToolkit.Editor
                         var selChangeSet = BlackboardRootViewModel.SelectionState.GetAggregatedChangeset(selectionObservation.LastObservedVersion);
                         if (selChangeSet != null)
                         {
-                            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                             var selectionChangedModels = selChangeSet.ChangedModels.Select(graphModel.GetModel).Where(m => m != null);
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                             foreach (var changedModel in selectionChangedModels)
                             {
                                 if (changedModel is IGroupItemModel)
@@ -379,9 +379,9 @@ namespace Unity.GraphToolkit.Editor
                         }
                     }
 
-                    #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                    #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     foreach (var ui in s_UIList.Distinct())
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                     {
                         // Check ui.View != null because ui.UpdateFromModel can remove other ui from the view.
                         if (ui is ModelView modelView && ui.RootView != null && !deletedModels.Contains(modelView.Model.Guid))
@@ -390,9 +390,9 @@ namespace Unity.GraphToolkit.Editor
                         }
                     }
 
-                    #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                    #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     foreach (var ui in s_SelectionUIList.Distinct())
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                     {
                         if (ui is ModelView && ui.RootView != null)
                         {
@@ -428,16 +428,16 @@ namespace Unity.GraphToolkit.Editor
 
         internal IGroupItemModel CreateGroupFromSelection(IGroupItemModel model)
         {
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var selectedItems = GetSelection().OfType<IGroupItemModel>().Where(t => t.GetSection() == model.GetSection() && t.ParentGroup is GroupModel).ToList();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             selectedItems.Add(model);
 
             selectedItems.Sort(GroupItemOrderComparer.Default);
 
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             int index = model.ParentGroup.Items.IndexOf(selectedItems.First(t => !selectedItems.Contains(t.ParentGroup)));
-#pragma warning restore RS0030
+#pragma warning restore UA2001
 
             while (selectedItems.Contains(model.ParentGroup)) // make sure whe don't move to a group within the selection
             {

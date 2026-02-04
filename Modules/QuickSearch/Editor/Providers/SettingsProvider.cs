@@ -30,17 +30,17 @@ namespace UnityEditor.Search.Providers
 
             static SettingsProviderCache()
             {
-                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 value = FetchSettingsProviders()
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                     .Select(provider => new SettingsProviderInfo()
                 {
                     path = provider.settingsPath,
                     label = provider.label,
                     scope = provider.scope,
-                    #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                    #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     searchables = new[] {provider.settingsPath, provider.label}
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                         .Concat(provider.keywords)
                         .Where(s => !string.IsNullOrEmpty(s))
                         .Select(s => Utils.FastToLower(s)).ToArray()
@@ -49,9 +49,9 @@ namespace UnityEditor.Search.Providers
 
                 var iconName = "Filter Icon";
                 var icon = Utils.LoadIcon(iconName);
-                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 var scopeValues = Enum.GetNames(typeof(SettingsScope)).Select(n => Utils.FastToLower(n));
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                 queryEngine = new QueryEngine<SettingsProviderInfo>();
                 queryEngine.SetSearchDataCallback(info => info.searchables, s => Utils.FastToLower(s), StringComparison.Ordinal);
                 queryEngine.SetFilter("scope", info => info.scope, new[] { ":", "=", "!=", "<", ">", "<=", ">=" })
@@ -97,15 +97,15 @@ namespace UnityEditor.Search.Providers
             var query = SettingsProviderCache.queryEngine.ParseQuery(context.searchQuery);
             if (!query.valid)
             {
-                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 context.AddSearchQueryErrors(query.errors.Select(e => new SearchQueryError(e, context, provider)));
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                 yield break;
             }
 
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             yield return query.Apply(SettingsProviderCache.value).Select(spi => provider.CreateItem(context, spi.path, spi.label, spi.path, null, null));
-#pragma warning restore RS0030
+#pragma warning restore UA2001
         }
 
         static IEnumerable<SearchProposition> FetchPropositions(SearchContext context, SearchPropositionOptions options)
@@ -127,9 +127,9 @@ namespace UnityEditor.Search.Providers
             {
                 new SearchAction(type, "open", null, "Open project settings", (items) =>
                 {
-                    #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                    #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     var item = items.Last();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                     if (item.id.StartsWith("Project/"))
                         SettingsService.OpenProjectSettings(item.id);
                     else

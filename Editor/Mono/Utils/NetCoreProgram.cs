@@ -7,13 +7,16 @@ using System.Diagnostics;
 using NiceIO;
 using UnityEditor.Utils;
 using UnityEngine;
+using UnityEngine.Bindings;
 
 namespace UnityEditor.Scripting
 {
+    [VisibleToOtherModules("UnityEditor.BurstModule")]
     internal class NetCoreProgram : Program
     {
         public static readonly NPath DotNetRuntimePath = EditorApplication.applicationScriptingPath + "/DotNetSdk";
         public static readonly NPath DotNetMuxerPath = DotNetRuntimePath.Combine(Application.platform == RuntimePlatform.WindowsEditor ? "dotnet.exe" : "dotnet");
+        public static string NetCoreRunPath => DotNetRuntimePath.Combine("dotnet").ToString();
 
         public NetCoreProgram(string executable, string arguments, Action<ProcessStartInfo> setupStartInfo)
         {

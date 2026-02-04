@@ -14,37 +14,49 @@ namespace UnityEditor.PackageManager.UI.Internal
         [Serializable]
         public new class UxmlSerializedData : VisualElement.UxmlSerializedData
         {
-            public override object CreateInstance() => new PackageList();
-        }
-
-        private IResourceLoader m_ResourceLoader;
-        private IUnityConnectProxy m_UnityConnect;
-        private IPackageManagerPrefs m_PackageManagerPrefs;
-        private IPageManager m_PageManager;
-        private IUpmCache m_UpmCache;
-        private IBackgroundFetchHandler m_BackgroundFetchHandler;
-        private IProjectSettingsProxy m_SettingsProxy;
-        private IPageRefreshHandler m_PageRefreshHandler;
-        private void ResolveDependencies()
-        {
-            var container = ServicesContainer.instance;
-            m_ResourceLoader = container.Resolve<IResourceLoader>();
-            m_UnityConnect = container.Resolve<IUnityConnectProxy>();
-            m_PackageManagerPrefs = container.Resolve<IPackageManagerPrefs>();
-            m_PageManager = container.Resolve<IPageManager>();
-            m_UpmCache = container.Resolve<IUpmCache>();
-            m_BackgroundFetchHandler = container.Resolve<IBackgroundFetchHandler>();
-            m_SettingsProxy = container.Resolve<IProjectSettingsProxy>();
-            m_PageRefreshHandler = container.Resolve<IPageRefreshHandler>();
+            public override object CreateInstance()
+            {
+                var container = ServicesContainer.instance;
+                return new PackageList(
+                    container.Resolve<IResourceLoader>(),
+                    container.Resolve<IUnityConnectProxy>(),
+                    container.Resolve<IPackageManagerPrefs>(),
+                    container.Resolve<IPageManager>(),
+                    container.Resolve<IUpmCache>(),
+                    container.Resolve<IBackgroundFetchHandler>(),
+                    container.Resolve<IProjectSettingsProxy>(),
+                    container.Resolve<IPageRefreshHandler>());
+            }
         }
 
         private Action m_ButtonAction;
 
-        public PackageList()
+        private readonly IUnityConnectProxy m_UnityConnect;
+        private readonly IPackageManagerPrefs m_PackageManagerPrefs;
+        private readonly IPageManager m_PageManager;
+        private readonly IUpmCache m_UpmCache;
+        private readonly IBackgroundFetchHandler m_BackgroundFetchHandler;
+        private readonly IProjectSettingsProxy m_SettingsProxy;
+        private readonly IPageRefreshHandler m_PageRefreshHandler;
+        public PackageList(
+            IResourceLoader resourceLoader,
+            IUnityConnectProxy unityConnect,
+            IPackageManagerPrefs packageManagerPrefs,
+            IPageManager pageManager,
+            IUpmCache upmCache,
+            IBackgroundFetchHandler backgroundFetchHandler,
+            IProjectSettingsProxy settingsProxy,
+            IPageRefreshHandler pageRefreshHandler)
         {
-            ResolveDependencies();
+            m_UnityConnect = unityConnect;
+            m_PackageManagerPrefs = packageManagerPrefs;
+            m_PageManager = pageManager;
+            m_UpmCache = upmCache;
+            m_BackgroundFetchHandler = backgroundFetchHandler;
+            m_SettingsProxy = settingsProxy;
+            m_PageRefreshHandler = pageRefreshHandler;
 
-            var root = m_ResourceLoader.GetTemplate("PackageList.uxml");
+            var root = resourceLoader.GetTemplate("PackageList.uxml");
             Add(root);
             root.StretchToParentSize();
             cache = new VisualElementCache(root);
@@ -151,18 +163,18 @@ namespace UnityEditor.PackageManager.UI.Internal
                 return;
 
             var currentView = this.currentView;
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            foreach (var item in args.selection.previousSelections.Where(s => !args.selection.Contains(s)).Concat(args.selection))
-#pragma warning restore RS0030
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            foreach (var item in args.selection.previousSelections.Filter(s => !args.selection.Contains(s)).Join(args.selection))
+#pragma warning restore UA2001
                 currentView.GetPackageItem(item)?.RefreshSelection();
 
             if (!args.isExplicitUserSelection)
                 currentView.ScrollToSelection();
 
             if (args.selection.previousSelections.Count == 1)
-                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 m_UpmCache.SetLoadAllVersions(args.selection.previousSelections.FirstOrDefault(), false);
-#pragma warning restore RS0030
+#pragma warning restore UA2001
         }
 
         private void OnCheckUpdateProgress()
@@ -239,9 +251,9 @@ namespace UnityEditor.PackageManager.UI.Internal
                 }
             }
 
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var isListEmpty = !page.visualStates.Any(v => v.visible);
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             var isInitialFetchingDone = m_PageRefreshHandler.IsInitialFetchingDone(page);
             if (isListEmpty || !isInitialFetchingDone)
             {

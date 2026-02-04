@@ -52,9 +52,9 @@ namespace UnityEditor.Overlays
             {
                 if (s_Overlays == null)
                 {
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     Type[] ovrls = TypeCache.GetTypesWithAttribute<OverlayAttribute>()
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                         .Where(x => !x.IsAbstract)
                         .ToArray();
 
@@ -63,9 +63,9 @@ namespace UnityEditor.Overlays
 
                     for (int i = 0; i < len; i++)
                     {
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                         var overlayAttribute = (OverlayAttribute)ovrls[i].GetCustomAttributes(typeof(OverlayAttribute), false).FirstOrDefault();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
 
                         // Overlays that are implemented as instances don't need to define a target editor window.
                         if (overlayAttribute?.editorWindowType == null)
@@ -267,9 +267,9 @@ namespace UnityEditor.Overlays
             if (overlay == null)
                 return false;
             var id = string.IsNullOrEmpty(overlay.id) ? $"{overlay.GetType()}" : overlay.id;
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var ret = EnsureUniqueId(existing.Select(x => x.id), id);
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             if (string.IsNullOrEmpty(ret))
                 return false;
             overlay.id = ret;
@@ -278,9 +278,9 @@ namespace UnityEditor.Overlays
 
         static string EnsureUniqueId(IEnumerable<string> existing, string name)
         {
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             if (!existing.Contains(name))
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                 return name;
 
             // 256 has no special meaning, it's just a failsafe to prevent this method from locking up the editor
@@ -290,9 +290,9 @@ namespace UnityEditor.Overlays
             for (int n = 0; n < 256; ++n)
             {
                 var inc = $"{name} ({n})";
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 if (!existing.Contains(inc))
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                     return inc;
             }
 

@@ -5,7 +5,6 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Linq;
 
 namespace UnityEditor.PackageManager.UI.Internal
 {
@@ -61,11 +60,25 @@ namespace UnityEditor.PackageManager.UI.Internal
             return Get<IDictionary<string, object>>(dict, key);
         }
 
-        public static IEnumerable<T> GetList<T>(this IDictionary<string, object> dict, string key)
+        public static T[] GetNewArray<T>(this IDictionary<string, object> dict, string key) where T : class
         {
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            return Get<IList>(dict, key)?.OfType<T>();
-#pragma warning restore RS0030
+            var list = Get<IList>(dict, key);
+            if (list == null)
+                return null;
+            var outputArray = new T[list.Count];
+            for (var i = 0; i < list.Count; i++)
+                outputArray[i] = list[i] as T;
+            return outputArray;
+        }
+
+        public static IEnumerable<T> GetEnumerable<T>(this IDictionary<string, object> dict, string key) where T : class
+        {
+            var list = Get<IList>(dict, key);
+            if (list == null)
+                yield break;
+            foreach (var item in list)
+                if (item is T t)
+                    yield return t;
         }
 
         public static string GetString(this IDictionary<string, object> dict, string key)
@@ -73,7 +86,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             return Get<string>(dict, key);
         }
 
-        public static long GetStringAsLong(this IDictionary<string, object> dict, string key, long fallbackValue = default(long))
+        public static long GetStringAsLong(this IDictionary<string, object> dict, string key, long fallbackValue = 0)
         {
             var stringValue = Get<string>(dict, key);
             return long.TryParse(stringValue, out var result) ? result : fallbackValue;

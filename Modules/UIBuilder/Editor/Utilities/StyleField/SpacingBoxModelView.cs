@@ -206,12 +206,12 @@ namespace Unity.UI.Builder
         private void OnMouseEnter(MouseEnterEvent evt)
         {
             m_Inspector.highlightOverlayPainter.ClearOverlay();
-#pragma warning disable RS0031 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2002 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             if (m_Inspector.selection.selection.Any())
-#pragma warning restore RS0031
-                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning restore UA2002
+                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 m_Inspector.highlightOverlayPainter.AddOverlay(m_Inspector.selection.selection.First());
-#pragma warning restore RS0030
+#pragma warning restore UA2001
         }
 
         private void OnMouseLeave(MouseLeaveEvent evt)

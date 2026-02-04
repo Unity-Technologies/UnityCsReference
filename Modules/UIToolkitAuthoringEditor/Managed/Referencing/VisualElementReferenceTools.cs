@@ -15,19 +15,24 @@ namespace Unity.UIToolkit.Editor;
 
 static class VisualElementReferenceTools
 {
-    public static string GenerateVisualElementAssetLabel(VisualElementAsset vea)
+    public static string GenerateVisualElementAssetLabel(VisualElementAsset vea, bool fallbackToTypeName = true)
     {
         if (vea.serializedData is VisualElement.UxmlSerializedData uxmlData)
         {
             if (!string.IsNullOrEmpty(uxmlData.nameValue))
                 return uxmlData.nameValue;
-            else
+            else if (fallbackToTypeName)
                 return uxmlData.GetType().DeclaringType.Name;
         }
+        else
+        {
+            if (vea.isRoot)
+                return vea.visualTreeAsset.name;
+            else if (fallbackToTypeName)
+                return vea.GetType().Name;
+        }
 
-        if (vea.isRoot)
-            return vea.visualTreeAsset.name;
-        return vea.GetType().Name;
+        return null;
     }
 
     public static string GenerateVisualElementLabel(VisualElement ve)

@@ -16,7 +16,7 @@ namespace UnityEngine.UIElements
         // The name of this updater is kind of confusing, but overall what is does in its Update()
         // can summarized as updating the actual bounds of elements and everything that depends on that
         private static readonly string s_Description = "UIElements.UpdateElementBounds";
-        private static readonly ProfilerMarker s_ProfilerMarker = new ProfilerMarker(s_Description);
+        private static readonly ProfilerMarker s_ProfilerMarker = new ProfilerMarker(ProfilerCategory.UIToolkit, s_Description);
         public override ProfilerMarker profilerMarker => s_ProfilerMarker;
 
         // According to the flags, what operations must be done?

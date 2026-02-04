@@ -103,9 +103,9 @@ namespace UnityEditor
             if (Event.current.type == EventType.DragPerform)
             {
                 // Determine if any object references are component, which would mean we are reordering components in the inspector
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 var anyComponent = DragAndDrop.entityIds != null && DragAndDrop.entityIds.Any(id => InternalEditorUtility.GetObjectFromEntityId(id) is Component);
-#pragma warning restore RS0030
+#pragma warning restore UA2001
 
                 // None of the object references are component, cancel further processing to avoid adding component twice
                 if (!anyComponent)
@@ -133,18 +133,18 @@ namespace UnityEditor
 
                             if (draggedIds.Length == 0)
                                 draggingMode = DraggingMode.NotApplicable;
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                             else if (draggedIds.All(id =>
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                                      {
                                          var obj = InternalEditorUtility.GetObjectFromEntityId(id);
                                          return obj is Component &&
                                                 !(obj is Transform);
                                      }))
                                 draggingMode = DraggingMode.Component;
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                             else if (draggedIds.All(id => InternalEditorUtility.GetObjectFromEntityId(id) is MonoScript))
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                                 draggingMode = DraggingMode.Script;
                             else
                                 draggingMode = DraggingMode.NotApplicable;
@@ -202,14 +202,14 @@ namespace UnityEditor
                                 // Validate dragging components
                                 var valid = false;
                                 var objects = editors[m_TargetIndex].targets;
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                                 if (objects.All(t => t is Component))
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                                 {
                                     var ids = new ReadOnlySpan<EntityId>(DragAndDrop.entityIds);
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                                     var targetComponents = objects.Cast<Component>().ToArray();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                                     var sourceComponents = new Component[ids.Length];
                                     for(int i = 0; i < ids.Length; ++i)
                                         sourceComponents[i] = (Component)InternalEditorUtility.GetObjectFromEntityId(ids[i]);
@@ -277,14 +277,14 @@ namespace UnityEditor
                     return;
                 }
 
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 if (!editors[targetIndex].targets.All(t => t is Component))
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                     return;
 
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 var targetComponents = editors[targetIndex].targets.Cast<Component>().ToArray();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
 
                 if (draggingMode.Value == DraggingMode.Script)
                 {
@@ -298,9 +298,9 @@ namespace UnityEditor
                     foreach (var targetComponent in targetComponents)
                     {
                         var gameObject = targetComponent.gameObject;
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                         if (scripts.Any(s => !ComponentUtility.WarnCanAddScriptComponent(gameObject, s)))
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                         {
                             valid = false;
                             break;
@@ -314,9 +314,9 @@ namespace UnityEditor
 
                         // Add script components
                         var index = 0;
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                         var addedComponents = new Component[targetComponents.Length * scripts.Count()];
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                         for (int i = 0; i < targetComponents.Length; i++)
                         {
                             var targetComponent = targetComponents[i];

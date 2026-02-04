@@ -5,17 +5,15 @@
 using System.Collections.Generic;
 using System.Text.RegularExpressions;
 using Unity.Scripting.LifecycleManagement;
-using UnityEngine.Bindings;
 
 namespace Unity.Hierarchy
 {
-    [VisibleToOtherModules("UnityEditor.HierarchyModule")]
     interface IHierarchySearchQueryParser
     {
         HierarchySearchQueryDescriptor ParseQuery(string query);
     }
 
-    class DefaultHierarchySearchQueryParser : IHierarchySearchQueryParser
+    sealed class DefaultHierarchySearchQueryParser : IHierarchySearchQueryParser
     {
         [NoAutoStaticsCleanup]
         static readonly Regex s_Filter = new Regex(@"([#$\w\[\]]+)(<=|<|>=|>|<|=|:)(.*)", RegexOptions.Compiled);

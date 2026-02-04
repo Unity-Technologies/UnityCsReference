@@ -4,22 +4,21 @@
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using UnityEngine;
 
 namespace UnityEditor.PackageManager.UI.Internal
 {
     internal interface IAssetStoreCache : IService
     {
-        event Action<IEnumerable<AssetStoreLocalInfo> /*addedOrUpdated*/, IEnumerable<AssetStoreLocalInfo> /*removed*/> onLocalInfosChanged;
+        event Action<IReadOnlyCollection<AssetStoreLocalInfo> /*addedOrUpdated*/, IReadOnlyCollection<AssetStoreLocalInfo> /*removed*/> onLocalInfosChanged;
         event Action<AssetStoreProductInfo> onProductInfoChanged;
-        event Action<IEnumerable<AssetStorePurchaseInfo>> onPurchaseInfosChanged;
-        event Action<IEnumerable<AssetStoreUpdateInfo>> onUpdateInfosChanged;
-        event Action<IEnumerable<AssetStoreImportedPackage> /*addedOrUpdated*/, IEnumerable<AssetStoreImportedPackage> /*removed*/> onImportedPackagesChanged;
+        event Action<IReadOnlyCollection<AssetStorePurchaseInfo>> onPurchaseInfosChanged;
+        event Action<IReadOnlyCollection<AssetStoreUpdateInfo>> onUpdateInfosChanged;
+        event Action<IReadOnlyCollection<AssetStoreImportedPackage> /*addedOrUpdated*/, IReadOnlyCollection<AssetStoreImportedPackage> /*removed*/> onImportedPackagesChanged;
 
-        IEnumerable<AssetStoreLocalInfo> localInfos { get; }
-        IEnumerable<AssetStoreImportedPackage> importedPackages { get; }
-        IEnumerable<Asset> importedAssets { get; }
+        IReadOnlyCollection<AssetStoreLocalInfo> localInfos { get; }
+        IReadOnlyCollection<AssetStoreImportedPackage> importedPackages { get; }
+        IReadOnlyCollection<Asset> importedAssets { get; }
 
         void SetCategory(string category, long count);
         void DownloadImageAsync(long productID, string url, Action<long, Texture2D> doneCallbackAction = null);
@@ -31,7 +30,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         AssetStoreImportedPackage GetImportedPackage(long? productId);
         void SetPurchaseInfos(IEnumerable<AssetStorePurchaseInfo> purchaseInfos);
         void SetProductInfo(AssetStoreProductInfo productInfo);
-        void SetLocalInfos(IEnumerable<AssetStoreLocalInfo> localInfos);
+        void SetLocalInfos(IReadOnlyCollection<AssetStoreLocalInfo> newLocalInfos);
         void SetLocalInfo(AssetStoreLocalInfo localInfo);
         void SetUpdateInfos(IEnumerable<AssetStoreUpdateInfo> updateInfos);
         void UpdateImportedAssets(IEnumerable<Asset> addedOrUpdatedAssets, IEnumerable<string> removedAssetPaths);
@@ -75,16 +74,16 @@ namespace UnityEditor.PackageManager.UI.Internal
         [SerializeField]
         private Asset[] m_SerializedImportedAssets = Array.Empty<Asset>();
 
-        public event Action<IEnumerable<AssetStoreLocalInfo> /*addedOrUpdated*/, IEnumerable<AssetStoreLocalInfo> /*removed*/> onLocalInfosChanged;
+        public event Action<IReadOnlyCollection<AssetStoreLocalInfo> /*addedOrUpdated*/, IReadOnlyCollection<AssetStoreLocalInfo> /*removed*/> onLocalInfosChanged;
         public event Action<AssetStoreProductInfo> onProductInfoChanged;
-        public event Action<IEnumerable<AssetStorePurchaseInfo>> onPurchaseInfosChanged;
-        public event Action<IEnumerable<AssetStoreUpdateInfo>> onUpdateInfosChanged;
-        public event Action<IEnumerable<AssetStoreImportedPackage> /*addedOrUpdated*/, IEnumerable<AssetStoreImportedPackage> /*removed*/> onImportedPackagesChanged;
+        public event Action<IReadOnlyCollection<AssetStorePurchaseInfo>> onPurchaseInfosChanged;
+        public event Action<IReadOnlyCollection<AssetStoreUpdateInfo>> onUpdateInfosChanged;
+        public event Action<IReadOnlyCollection<AssetStoreImportedPackage> /*addedOrUpdated*/, IReadOnlyCollection<AssetStoreImportedPackage> /*removed*/> onImportedPackagesChanged;
 
-        public IEnumerable<AssetStoreLocalInfo> localInfos => m_LocalInfos.Values;
+        public IReadOnlyCollection<AssetStoreLocalInfo> localInfos => m_LocalInfos.Values;
 
-        public IEnumerable<AssetStoreImportedPackage> importedPackages => m_ImportedPackages.Values;
-        public IEnumerable<Asset> importedAssets => m_ImportedAssets.Values;
+        public IReadOnlyCollection<AssetStoreImportedPackage> importedPackages => m_ImportedPackages.Values;
+        public IReadOnlyCollection<Asset> importedAssets => m_ImportedAssets.Values;
 
         private readonly IApplicationProxy m_Application;
         private readonly IHttpClientFactory m_HttpClientFactory;
@@ -100,29 +99,15 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public void OnBeforeSerialize()
         {
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            m_SerializedCategories = m_Categories.Keys.ToArray();
-#pragma warning restore RS0030
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            m_SerializedCategoryCounts = m_Categories.Values.ToArray();
-#pragma warning restore RS0030
+            m_Categories.Keys.ToArray(ref m_SerializedCategories);
+            m_Categories.Values.ToArray(ref m_SerializedCategoryCounts);
 
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            m_SerializedPurchaseInfos = m_PurchaseInfos.Values.ToArray();
-#pragma warning restore RS0030
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            m_SerializedProductInfos = m_ProductInfos.Values.ToArray();
-#pragma warning restore RS0030
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            m_SerializedLocalInfos = m_LocalInfos.Values.ToArray();
-#pragma warning restore RS0030
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            m_SerializedUpdateInfos = m_UpdateInfos.Values.ToArray();
-#pragma warning restore RS0030
+            m_PurchaseInfos.Values.ToArray(ref m_SerializedPurchaseInfos);
+            m_ProductInfos.Values.ToArray(ref m_SerializedProductInfos);
+            m_LocalInfos.Values.ToArray(ref m_SerializedLocalInfos);
+            m_UpdateInfos.Values.ToArray(ref m_SerializedUpdateInfos);
 
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            m_SerializedImportedAssets = m_ImportedAssets.Values.ToArray();
-#pragma warning restore RS0030
+            m_ImportedAssets.Values.ToArray(ref m_SerializedImportedAssets);
         }
 
         public void OnAfterDeserialize()
@@ -130,22 +115,12 @@ namespace UnityEditor.PackageManager.UI.Internal
             for (var i = 0; i < m_SerializedCategories.Length; i++)
                 m_Categories[m_SerializedCategories[i]] = m_SerializedCategoryCounts[i];
 
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            m_PurchaseInfos = m_SerializedPurchaseInfos.ToDictionary(info => info.productId, info => info);
-#pragma warning restore RS0030
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            m_ProductInfos = m_SerializedProductInfos.ToDictionary(info => info.productId, info => info);
-#pragma warning restore RS0030
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            m_LocalInfos = m_SerializedLocalInfos.ToDictionary(info => info.productId, info => info);
-#pragma warning restore RS0030
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            m_UpdateInfos = m_SerializedUpdateInfos.ToDictionary(info => info.productId, info => info);
-#pragma warning restore RS0030
+            m_SerializedPurchaseInfos.ToDictionary(info => info.productId, ref m_PurchaseInfos);
+            m_SerializedProductInfos.ToDictionary(info => info.productId, ref m_ProductInfos);
+            m_SerializedLocalInfos.ToDictionary(info => info.productId, ref m_LocalInfos);
+            m_SerializedUpdateInfos.ToDictionary(info => info.productId, ref m_UpdateInfos);
 
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            m_ImportedAssets = m_SerializedImportedAssets.ToDictionary(asset => asset.importedPath, asset => asset);
-#pragma warning restore RS0030
+            m_SerializedImportedAssets.ToDictionary(asset => asset.importedPath, ref m_ImportedAssets);
 
             // We don't serialize imported packages, because the list of imported packages can be constructed from imported assets
             foreach (var asset in m_SerializedImportedAssets)
@@ -156,7 +131,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                     continue;
                 }
 
-                m_ImportedPackages[asset.origin.productId] = new AssetStoreImportedPackage(new List<Asset>() { asset });
+                m_ImportedPackages[asset.origin.productId] = new AssetStoreImportedPackage(asset);
             }
         }
 
@@ -173,7 +148,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             var hash = Hash128.Compute(url);
             try
             {
-                var path = m_IOProxy.PathsCombine(m_Application.userAppDataPath, "Asset Store", "Cache", "Images", productId.ToString(), hash.ToString());
+                var path = IOUtils.PathsCombine(m_Application.userAppDataPath, "Asset Store", "Cache", "Images", productId.ToString(), hash.ToString());
                 if (m_IOProxy.FileExists(path))
                 {
                     var texture = new Texture2D(2, 2);
@@ -196,12 +171,12 @@ namespace UnityEditor.PackageManager.UI.Internal
 
             try
             {
-                var path = m_IOProxy.PathsCombine(m_Application.userAppDataPath, "Asset Store", "Cache", "Images", productId.ToString());
+                var path = IOUtils.PathsCombine(m_Application.userAppDataPath, "Asset Store", "Cache", "Images", productId.ToString());
                 if (!m_IOProxy.DirectoryExists(path))
                     m_IOProxy.CreateDirectory(path);
 
                 var hash = Hash128.Compute(url);
-                path = m_IOProxy.PathsCombine(path, hash.ToString());
+                path = IOUtils.PathsCombine(path, hash.ToString());
                 m_IOProxy.FileWriteAllBytes(path, texture.EncodeToJPG());
             }
             catch (System.IO.IOException e)
@@ -289,11 +264,11 @@ namespace UnityEditor.PackageManager.UI.Internal
                 onProductInfoChanged?.Invoke(productInfo);
         }
 
-        public void SetLocalInfos(IEnumerable<AssetStoreLocalInfo> localInfos)
+        public void SetLocalInfos(IReadOnlyCollection<AssetStoreLocalInfo> newLocalInfos)
         {
             var oldLocalInfos = m_LocalInfos;
             m_LocalInfos = new Dictionary<long, AssetStoreLocalInfo>();
-            foreach (var info in localInfos)
+            foreach (var info in newLocalInfos)
             {
                 var productId = info?.productId ?? 0;
                 if (productId <= 0)
@@ -374,10 +349,10 @@ namespace UnityEditor.PackageManager.UI.Internal
             var modifiedProductIds = new HashSet<long>();
             foreach (var path in removedAssetPaths ?? Array.Empty<string>())
             {
-                if (!m_ImportedAssets.ContainsKey(path))
+                if (!m_ImportedAssets.TryGetValue(path, out var asset))
                     continue;
 
-                modifiedProductIds.Add(m_ImportedAssets[path].origin.productId);
+                modifiedProductIds.Add(asset.origin.productId);
                 m_ImportedAssets.Remove(path);
             }
             foreach (var asset in addedOrUpdatedAssets ?? Array.Empty<Asset>())
@@ -404,7 +379,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                     package.AddImportedAsset(asset);
                     continue;
                 }
-                addedOrUpdatedPackages[asset.origin.productId] = new AssetStoreImportedPackage(new List<Asset>() { asset });
+                addedOrUpdatedPackages[asset.origin.productId] = new AssetStoreImportedPackage(asset);
             }
 
             var removedPackages = new List<AssetStoreImportedPackage>();
@@ -416,11 +391,8 @@ namespace UnityEditor.PackageManager.UI.Internal
                     continue;
                 }
 
-                if (m_ImportedPackages.TryGetValue(productId, out var removedPackage))
-                {
-                    m_ImportedPackages.Remove(productId);
+                if (m_ImportedPackages.Remove(productId, out var removedPackage))
                     removedPackages.Add(removedPackage);
-                }
             }
 
             if (addedOrUpdatedPackages.Count > 0 || removedPackages.Count > 0)

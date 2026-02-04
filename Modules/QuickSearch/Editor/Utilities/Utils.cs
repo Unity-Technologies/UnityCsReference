@@ -32,6 +32,7 @@ using UnityEditor.StyleSheets;
 [assembly: System.Runtime.CompilerServices.InternalsVisibleTo("Unity.Localization.Editor")]
 [assembly: System.Runtime.CompilerServices.InternalsVisibleTo("Unity.Hierarchy.Tests")]
 [assembly: System.Runtime.CompilerServices.InternalsVisibleTo("Unity.Hierarchy.Editor.Tests")]
+[assembly: System.Runtime.CompilerServices.InternalsVisibleTo("Unity.Entities.Editor")]
 [assembly: System.Runtime.CompilerServices.InternalsVisibleTo("Unity.Entities.Editor.Tests")]
 [assembly: System.Runtime.CompilerServices.InternalsVisibleTo("Unity.ShaderVariant.Editor")]
 [assembly: System.Runtime.CompilerServices.InternalsVisibleTo("Unity.RenderPipelines.Core.Editor.Shared")]
@@ -80,9 +81,9 @@ namespace UnityEditor.Search
 
         static RootDescriptor[] rootDescriptors
         {
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             get { return s_RootDescriptors ?? (s_RootDescriptors = GetAssetRootFolders().Select(root => new RootDescriptor(root)).OrderByDescending(desc => desc.absPath.Length).ToArray()); }
-#pragma warning restore RS0030
+#pragma warning restore UA2001
         }
 
         private static UnityEngine.Object[] s_LastDraggedObjects;
@@ -389,9 +390,9 @@ namespace UnityEditor.Search
             }
             catch (ReflectionTypeLoadException e)
             {
-                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 return e.Types.Where(t => t != null);
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             }
         }
 
@@ -460,9 +461,9 @@ namespace UnityEditor.Search
                 var t = obj.GetType();
                 var bindingAttr = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic;
                 var sb = new System.Text.StringBuilder();
-                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 foreach (var item in t.GetFields(bindingAttr).Where(p => PrintField(p)))
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                     Append(sb, item.Name, item.GetValue(obj), level, seen);
 
                 var result = sb.ToString().Trim(' ', '\r', '\n');
@@ -476,9 +477,9 @@ namespace UnityEditor.Search
 
         internal static string FormatProviderList(IEnumerable<SearchProvider> providers, bool fullTimingInfo = false, bool showFetchTime = true)
         {
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return string.Join(fullTimingInfo ? "\r\n" : ", ", providers.Select(p =>
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             {
                 var fetchTime = p.fetchTime;
                 if (fullTimingInfo)
@@ -737,9 +738,9 @@ namespace UnityEditor.Search
 
         internal static Type GetTypeFromName(string typeName)
         {
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return TypeCache.GetTypesDerivedFrom<UnityEngine.Object>().FirstOrDefault(t => string.Equals(t.Name, typeName, StringComparison.Ordinal)) ?? typeof(UnityEngine.Object);
-#pragma warning restore RS0030
+#pragma warning restore UA2001
         }
 
         internal static string StripHTML(string input)
@@ -806,9 +807,9 @@ namespace UnityEditor.Search
                 path = new FileInfo(path).FullName;
             }
             path = CleanPath(path);
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return rootDescriptors.Any(desc => path.StartsWith(desc.absPath));
-#pragma warning restore RS0030
+#pragma warning restore UA2001
         }
 
         internal static string GetPathUnderProject(string path)
@@ -1031,7 +1032,8 @@ namespace UnityEditor.Search
                 return false;
 
             // If we are a mppm clone: we are a secondary process
-            if (Unity.Multiplayer.PlayMode.Editor.VirtualProjectsEditor.IsClone)
+            // NOTE: Use Application.HasARGV instead of : Unity.Multiplayer.PlayMode.Editor.VirtualProjectsEditor.IsClone to avoid allocation
+            if (Application.HasARGV(Unity.Multiplayer.PlayMode.Editor.CommandLineParameters.k_CloneProcess))
                 return false;
 
             if (EditorUtility.isInSafeMode)

@@ -30,9 +30,9 @@ namespace Unity.GraphToolkit.Editor
         static readonly CustomStyleProperty<Color> k_HoverOnlyColorProperty = new CustomStyleProperty<Color>("--hover-only-color");
         static readonly CustomStyleProperty<Color> k_HighlightColorProperty = new CustomStyleProperty<Color>("--highlight-color");
 
-        #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+        #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
         static readonly Vector2[] k_EmptyCorners = Enumerable.Repeat(Vector2.zero, 4).ToArray();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
         static Vector2[] s_Corners = new Vector2[4];
         static Color[] s_Colors = new Color[4];
 

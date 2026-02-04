@@ -72,9 +72,9 @@ namespace Unity.GraphToolkit.Editor
 
                 // snapping is used while dragging, so the element position doesn't necessarily match sourceRect
                 var delta = snappedPosition - selectedElement.layout.position;
-                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 foreach (var port in m_SelectedNodeModel.GetPorts()
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                          .Where(p => p.IsConnected())
                          .Select(p => p.GetView<Port>(graphView))
                          .Where(p => p != null))
@@ -151,9 +151,9 @@ namespace Unity.GraphToolkit.Editor
 
         IEnumerable<SnapToPortResult> GetSnapToPortResults(GraphView graphView)
         {
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return m_ConnectedWires.Select(e => GetSnapToPortResult(graphView, e)).Where(result => result != null);
-#pragma warning restore RS0030
+#pragma warning restore UA2001
         }
 
         SnapToPortResult GetSnapToPortResult(GraphView graphView, WireModel wire)

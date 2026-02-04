@@ -146,9 +146,9 @@ namespace UnityEditor.Search
 
         private void OnItemsChosen(IEnumerable<object> chosenItems)
         {
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var convertedItems = chosenItems.Select(item => (SearchItem)item).ToArray();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             m_ViewModel.ExecuteAction(null, convertedItems, true);
         }
 
@@ -160,9 +160,9 @@ namespace UnityEditor.Search
 
         private void HandleItemsSelected(IEnumerable<int> selection)
         {
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             m_ViewModel.SetSelection(selection.ToArray());
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             Dispatcher.Emit(SearchEvent.SelectionHasChanged, new SearchEventPayload(this, selection));
         }
 
@@ -189,9 +189,9 @@ namespace UnityEditor.Search
         private void OnNavigationMove(NavigationMoveEvent evt)
         {
             var itemCount = m_GridView.itemsSource.Count;
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var currentIndex = m_GridView.selectedIndex == -1 ? -1 : m_GridView.selectedIndices.Last();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             var nextSelectedIndex = -1;
             if (evt.direction == NavigationMoveEvent.Direction.Right)
                 SearchCollectionUtils.NextSelectedItem(currentIndex, itemCount, ref nextSelectedIndex);
@@ -214,9 +214,9 @@ namespace UnityEditor.Search
                     m_GridView.selectedIndex = nextSelectedIndex;
                 else
                 {
-                    #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                    #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     if (!m_GridView.selectedIndices.Contains(nextSelectedIndex))
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                     {
                         var newSelection = new List<int>();
                         if (nextSelectedIndex > currentIndex)
@@ -260,9 +260,9 @@ namespace UnityEditor.Search
                 return false;
 
             // In focus.
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var currentIndex = m_GridView.selectedIndex == -1 ? -1 : m_GridView.selectedIndices.Last();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             var itemCount = m_GridView.itemsSource.Count;
             if (m_GridView == ve || m_GridView.Contains(ve))
             {
@@ -275,9 +275,9 @@ namespace UnityEditor.Search
             // Key handling when GridView is not in focus.
             if ((evt.keyCode == KeyCode.Return || evt.keyCode == KeyCode.KeypadEnter) && m_GridView.selectedIndex != -1)
             {
-                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 var items = m_GridView.selectedItems.Cast<SearchItem>().ToArray();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                 var action = evt.altKey ? SearchView.GetSecondaryAction(m_ViewModel.selection, items) : SearchView.GetDefaultAction(m_ViewModel.selection, items);
                 m_ViewModel.ExecuteAction(action, items, true);
                 return true;
@@ -298,16 +298,16 @@ namespace UnityEditor.Search
             if (evt.keyCode == KeyCode.PageDown)
             {
                 m_GridView.Apply(KeyboardGridNavigationOperation.PageDown, evt);
-                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 selectionHasChanged = m_GridView.selectedIndex != (m_GridView.selectedIndices.Count() == 0 ? -1 : m_GridView.selectedIndices.Last());
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             }
             else if (evt.keyCode == KeyCode.PageUp)
             {
                 m_GridView.Apply(KeyboardGridNavigationOperation.PageUp, evt);
-                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 selectionHasChanged = m_GridView.selectedIndex != (m_GridView.selectedIndices.Count() == 0 ? -1 : m_GridView.selectedIndices.Last());
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             }
 
             return selectionHasChanged;
@@ -345,9 +345,9 @@ namespace UnityEditor.Search
                 return;
 
             var selectedIndexes = m_ViewModel.selection.indexes;
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             if (m_GridView.selectedIndices.SequenceEqual(selectedIndexes))
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                 return;
             var firstSelection = selectedIndexes.Count > 0 ? selectedIndexes[0] : -1;
             m_GridView.SetSelectionWithoutNotify(selectedIndexes);

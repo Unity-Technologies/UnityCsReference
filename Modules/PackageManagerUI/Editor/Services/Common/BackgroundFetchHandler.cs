@@ -4,7 +4,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using UnityEngine;
 
 namespace UnityEditor.PackageManager.UI.Internal
@@ -45,12 +44,8 @@ namespace UnityEditor.PackageManager.UI.Internal
         {
             get
             {
-                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                var numDownloadedAssets = m_AssetStoreCache.localInfos.Count();
-#pragma warning restore RS0030
-                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                var numItemsChecked = numDownloadedAssets - m_CheckUpdateStack.Distinct().Count();
-#pragma warning restore RS0030
+                var numDownloadedAssets = m_AssetStoreCache.localInfos.Count;
+                var numItemsChecked = numDownloadedAssets - new HashSet<long>(m_CheckUpdateStack).Count;
                 return numItemsChecked <= 0 || numDownloadedAssets <= 0 ? 0 : Math.Min(100, numItemsChecked * 100 / numDownloadedAssets);
             }
         }
@@ -85,12 +80,10 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_PageRefreshHandler = RegisterDependency(pageRefreshHandler);
         }
 
-        // We keep a queue in addition to the hash-set so that we can fetch product info in order and skip the ones that's not in the hash-set.
+        // We use a UniqueQueue rather than a regular queue so that we can fetch product info in order but remove duplicates easily.
         // We only do this for product info because we need to cancel fetches when users are scrolling very fast through the My Assets page.
         [NonSerialized]
-        private Queue<long> m_FetchProductInfoQueue = new();
-        [NonSerialized]
-        private HashSet<long> m_ProductInfosToFetch = new();
+        private UniqueQueue<long> m_FetchProductInfoQueue = new();
         [NonSerialized]
         private HashSet<long> m_FetchProductInfoInProgress = new();
 
@@ -120,7 +113,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         [SerializeField]
         private long[] m_SerializedFetchPurchaseInfoQueue = Array.Empty<long>();
         [SerializeField]
-        private List<long> m_SerializedFetchProductInfoQueue = new();
+        private long[] m_SerializedFetchProductInfoQueue = Array.Empty<long>();
         [SerializeField]
         private string[] m_SerializedExtraFetchPackageInfoQueue = Array.Empty<string>();
         [SerializeField]
@@ -150,29 +143,16 @@ namespace UnityEditor.PackageManager.UI.Internal
         {
             // We need to re-trigger all the fetching after serialization, so we just add the current in progress product ids
             // back to the queue/stack to make the queue mechanism handle it properly
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            m_SerializedCheckUpdateStack = m_CheckUpdateStack.Concat(m_CheckUpdateInProgress).ToArray();
-#pragma warning restore RS0030
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            m_SerializedFetchPurchaseInfoQueue = m_FetchPurchaseInfoInProgress.Concat(m_FetchPurchaseInfoQueue).ToArray();
-#pragma warning restore RS0030
+            m_SerializedCheckUpdateStack = m_CheckUpdateStack.Join(m_CheckUpdateInProgress).ToNewArray(m_CheckUpdateStack.Count + m_CheckUpdateInProgress.Count);
+            m_SerializedFetchPurchaseInfoQueue = m_FetchPurchaseInfoInProgress.Join(m_FetchPurchaseInfoQueue).ToNewArray(m_FetchPurchaseInfoInProgress.Count + m_FetchPurchaseInfoQueue.Count);
 
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            m_SerializedFetchProductInfoQueue = m_FetchProductInfoInProgress
-#pragma warning restore RS0030
-                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                .Concat(m_FetchProductInfoQueue.Where(id => m_ProductInfosToFetch.Remove(id))).ToList();
-#pragma warning restore RS0030
+            // We want to get the array size first because `DequeueAll` would change the queue size
+            var numItemsToFetchProductInfo = m_FetchProductInfoInProgress.Count + m_FetchProductInfoQueue.Count;
+            m_SerializedFetchProductInfoQueue = m_FetchProductInfoInProgress.Join(m_FetchProductInfoQueue.DequeueAll()).ToNewArray(numItemsToFetchProductInfo);
 
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            m_SerializedExtraFetchPackageInfoQueue = m_ExtraFetchPackageInfoInProgress.Concat(m_ExtraFetchPackageInfoQueue).ToArray();
-#pragma warning restore RS0030
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            m_SerializedPackageNameToProductIdMapKeys = m_PackageNameToProductIdMap.Keys.ToArray();
-#pragma warning restore RS0030
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            m_SerializedPackageNameToProductIdMapValues = m_PackageNameToProductIdMap.Values.ToArray();
-#pragma warning restore RS0030
+            m_SerializedExtraFetchPackageInfoQueue = m_ExtraFetchPackageInfoInProgress.Join(m_ExtraFetchPackageInfoQueue).ToNewArray(m_ExtraFetchPackageInfoInProgress.Count + m_ExtraFetchPackageInfoQueue.Count);
+            m_PackageNameToProductIdMap.Keys.ToArray(ref m_SerializedPackageNameToProductIdMapKeys);
+            m_PackageNameToProductIdMap.Values.ToArray(ref m_SerializedPackageNameToProductIdMapValues);
         }
 
         public void OnAfterDeserialize()
@@ -180,23 +160,18 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_CheckUpdateStack = new Stack<long>(m_SerializedCheckUpdateStack);
             m_FetchPurchaseInfoQueue = new Queue<long>(m_SerializedFetchPurchaseInfoQueue);
 
-            m_FetchProductInfoQueue = new Queue<long>(m_SerializedFetchProductInfoQueue);
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            m_ProductInfosToFetch = m_FetchProductInfoQueue.ToHashSet();
-#pragma warning restore RS0030
+            m_FetchProductInfoQueue = new UniqueQueue<long>(m_SerializedFetchProductInfoQueue);
 
             m_ExtraFetchPackageInfoQueue = new Queue<string>(m_SerializedExtraFetchPackageInfoQueue);
             for (var i = 0; i < m_SerializedPackageNameToProductIdMapKeys.Length; ++i)
                 m_PackageNameToProductIdMap[m_SerializedPackageNameToProductIdMapKeys[i]] = m_SerializedPackageNameToProductIdMapValues[i];
         }
 
-        private void OnLocalInfosChanged(IEnumerable<AssetStoreLocalInfo> addedOrUpdated, IEnumerable<AssetStoreLocalInfo> removed)
+        private void OnLocalInfosChanged(IReadOnlyCollection<AssetStoreLocalInfo> addedOrUpdated, IReadOnlyCollection<AssetStoreLocalInfo> removed)
         {
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            PushToCheckUpdateStack(addedOrUpdated?.Where(info =>
-#pragma warning restore RS0030
-                m_AssetStoreCache.GetPurchaseInfo(info.productId) != null &&
-                m_AssetStoreCache.GetUpdateInfo(info.productId) == null).Select(info => info.productId));
+            foreach (var info in addedOrUpdated)
+                if (m_AssetStoreCache.GetPurchaseInfo(info.productId) != null && m_AssetStoreCache.GetUpdateInfo(info.productId) == null)
+                    PushToCheckUpdateStack(info.productId);
         }
 
         private void OnUserLoginStateChange(bool isUserInfoReady, bool isUserLoggedIn)
@@ -233,33 +208,30 @@ namespace UnityEditor.PackageManager.UI.Internal
         public void AddToFetchProductInfoQueue(long productId)
         {
             m_FetchProductInfoQueue.Enqueue(productId);
-            m_ProductInfosToFetch.Add(productId);
         }
 
         public void RemoveFromFetchProductInfoQueue(long productId)
         {
-            m_ProductInfosToFetch.Remove(productId);
+            m_FetchProductInfoQueue.Remove(productId);
         }
 
         public void ClearFetchProductInfo()
         {
             m_FetchProductInfoQueue.Clear();
             m_FetchProductInfoInProgress.Clear();
-            m_ProductInfosToFetch.Clear();
         }
 
         private void FetchProductInfoFromQueue()
         {
             // When user is signed out or offline, we still want to proceed because we want the error to be shown in the UI.
-            // However, when the user info is not ready, it usually means unity just boot up and we can just wait.
+            // However, when the user info is not ready, it usually means unity just boot up, so we can just wait.
             if (!m_UnityConnect.isUserInfoReady)
                 return;
 
             var numItemsAdded = 0;
             while (m_FetchProductInfoQueue.Count > 0 && numItemsAdded < k_FetchProductInfoCountPerUpdate && m_FetchProductInfoInProgress.Count < k_MaxFetchProductInfoCount)
             {
-                var productId = m_FetchProductInfoQueue.Dequeue();
-                if (m_FetchProductInfoInProgress.Contains(productId) || !m_ProductInfosToFetch.Remove(productId) || m_AssetStoreCache.GetProductInfo(productId) != null)
+                if (!m_FetchProductInfoQueue.TryDequeue(out var productId) || m_FetchProductInfoInProgress.Contains(productId) || m_AssetStoreCache.GetProductInfo(productId) != null)
                     continue;
                 m_FetchProductInfoInProgress.Add(productId);
                 numItemsAdded++;
@@ -371,23 +343,12 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_CheckUpdateStack.Push(productId);
         }
 
-        public void PushToCheckUpdateStack(IEnumerable<long> productIds, bool forceCheckUpdate = false)
-        {
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            foreach (var productId in productIds?.Reverse() ?? Array.Empty<long>())
-#pragma warning restore RS0030
-                PushToCheckUpdateStack(productId, forceCheckUpdate);
-        }
-
         public void ForceCheckUpdateAllCachedAndImportedPackages()
         {
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            var productIdsToCheck = m_AssetStoreCache.localInfos.Select(i => i.productId)
-#pragma warning restore RS0030
-                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                .Concat(m_AssetStoreCache.importedPackages.Select(i => i.productId)).ToHashSet();
-#pragma warning restore RS0030
-            PushToCheckUpdateStack(productIdsToCheck, true);
+            var productIdsToCheck = m_AssetStoreCache.localInfos.SelectAsEnumerable(i => i.productId)
+                .Join(m_AssetStoreCache.importedPackages.SelectAsEnumerable(i => i.productId)).EnumerateDistinct();
+            foreach (var productId in productIdsToCheck)
+                PushToCheckUpdateStack(productId, true);
         }
 
         public void CancelCheckUpdates()
@@ -398,17 +359,12 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public void CheckUpdateForUncheckedLocalInfos()
         {
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            var idsWithNoUpdateInfo = m_AssetStoreCache.localInfos
-#pragma warning restore RS0030
-                .Where(info => m_AssetStoreCache.GetUpdateInfo(info?.productId) == null)
-                .Select(info => info.productId).ToArray();
+            var oldCheckUpdateStackSize = m_CheckUpdateStack.Count;
+            foreach (var info in m_AssetStoreCache.localInfos)
+                if (m_AssetStoreCache.GetUpdateInfo(info.productId) == null)
+                    PushToCheckUpdateStack(info.productId);
 
-            if (idsWithNoUpdateInfo.Length == 0)
-                return;
-
-            PushToCheckUpdateStack(idsWithNoUpdateInfo);
-            m_RefreshAfterCheckUpdates = true;
+            m_RefreshAfterCheckUpdates = m_CheckUpdateStack.Count > oldCheckUpdateStackSize;
         }
 
         private void ProcessFetchQueue()

@@ -114,7 +114,7 @@ namespace UnityEditor
         internal static string[] RetrieveAdditionalBuildMetadataLocationsFromPlayerContext()
         {
             if (BuildPlayerContext.ActiveInstance == null)
-                return new string[] { };
+                return Array.Empty<string>();
             return BuildPlayerContext.ActiveInstance.RetrieveAdditionalMetadataLocations();
         }
       

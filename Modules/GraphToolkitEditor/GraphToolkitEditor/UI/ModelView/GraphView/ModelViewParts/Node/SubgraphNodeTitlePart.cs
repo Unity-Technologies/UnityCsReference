@@ -5,7 +5,6 @@
 // ReSharper disable once RedundantUsingDirective : needed by 2020.3
 
 using System;
-using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UIElements;
 
@@ -21,6 +20,8 @@ namespace Unity.GraphToolkit.Editor
         public static readonly string localSubgraphIconUssClassName = localSubgraphUssClassName.WithUssElement(GraphElementHelper.iconName);
         Image m_WarningIcon;
 
+       const float k_DefaultMinWidth = 80f;
+
         /// <summary>
         /// Initializes a new instance of the <see cref="SubgraphNodeTitlePart"/> class.
         /// </summary>
@@ -29,10 +30,11 @@ namespace Unity.GraphToolkit.Editor
         /// <param name="ownerElement">The owner of the part.</param>
         /// <param name="parentClassName">The class name of the parent.</param>
         /// <param name="options">The options see <see cref="NodeTitlePart.Options"/>.</param>
+        /// <param name="defaultMinWidth">The default min width of the title label container</param>
         /// <returns>A new instance of <see cref="SubgraphNodeTitlePart"/>.</returns>
-        public new static SubgraphNodeTitlePart Create(string name, Model model, ChildView ownerElement, string parentClassName, int options = Options.Default)
+        public static SubgraphNodeTitlePart Create(string name, Model model, ChildView ownerElement, string parentClassName, int options = Options.Default, float defaultMinWidth = k_DefaultMinWidth)
         {
-            return model is SubgraphNodeModel subgraphNode ? new SubgraphNodeTitlePart(name, subgraphNode, ownerElement, parentClassName, options) : null;
+            return model is SubgraphNodeModel subgraphNode ? new SubgraphNodeTitlePart(name, subgraphNode, ownerElement, parentClassName, options, defaultMinWidth) : null;
         }
 
         /// <summary>
@@ -43,8 +45,9 @@ namespace Unity.GraphToolkit.Editor
         /// <param name="ownerElement">The owner of the part.</param>
         /// <param name="parentClassName">The class name of the parent.</param>
         /// <param name="options">The options see <see cref="NodeTitlePart.Options"/>.</param>
-        SubgraphNodeTitlePart(string name, GraphElementModel model, ChildView ownerElement, string parentClassName, int options)
-            : base(name, model, ownerElement, parentClassName, options)
+        /// <param name="defaultMinWidth">The default min width of the title label container</param>
+        SubgraphNodeTitlePart(string name, GraphElementModel model, ChildView ownerElement, string parentClassName, int options, float defaultMinWidth = k_DefaultMinWidth)
+            : base(name, model, ownerElement, parentClassName, options, defaultMinWidth)
         { }
 
         /// <inheritdoc />

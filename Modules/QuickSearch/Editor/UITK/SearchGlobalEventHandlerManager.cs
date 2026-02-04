@@ -87,9 +87,9 @@ namespace UnityEditor.Search
         {
             if (!m_GlobalEventHandlers.TryGetValue(typeof(T), out var handlerList))
                 return Array.Empty<SearchGlobalEventHandler<T>>();
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return handlerList
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                 .Where(container => container.IsType<T>())
                 .OrderBy(container => container.priority)
                 .Select(container => container.handler as SearchGlobalEventHandler<T>);

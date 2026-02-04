@@ -6,9 +6,8 @@ using System;
 using System.CodeDom;
 using System.CodeDom.Compiler;
 using System.Collections.Generic;
-using System.Globalization;
 using System.IO;
-using System.Linq;
+using System.Text;
 using System.Text.RegularExpressions;
 using UnityEditorInternal;
 using UnityEngine;
@@ -42,17 +41,17 @@ internal class PackageCreator : BaseService<IPackageCreator>, IPackageCreator
     public static readonly string k_NameIsTooLongErrorMessage = L10n.Tr("The package display name is too long.");
     public static readonly string k_PackageDisplayNameChangedMessage = L10n.Tr("The display name you entered contained invalid characters. It has been updated from \"{0}\" to \"{1}\".");
 
-    private readonly IPackageDatabase m_PackageDatabase;
     private readonly IUnityConnectProxy m_UnityConnectProxy;
+    private readonly IUpmCache m_UpmCache;
     private readonly IUpmClient m_UpmClient;
     private readonly IIOProxy m_IOProxy;
     private readonly IDateTimeProxy m_DateTimeProxy;
 
-    public PackageCreator(IUpmClient upmClient, IPackageDatabase packageDatabase, IUnityConnectProxy unityConnectProxy,
+    public PackageCreator(IUpmClient upmClient, IUpmCache upmCache, IUnityConnectProxy unityConnectProxy,
         IIOProxy ioProxy, IDateTimeProxy dateTimeProxy)
     {
         m_UpmClient = RegisterDependency(upmClient);
-        m_PackageDatabase = RegisterDependency(packageDatabase);
+        m_UpmCache = RegisterDependency(upmCache);
         m_UnityConnectProxy = RegisterDependency(unityConnectProxy);
         m_IOProxy = RegisterDependency(ioProxy);
         m_DateTimeProxy = RegisterDependency(dateTimeProxy);
@@ -74,13 +73,13 @@ internal class PackageCreator : BaseService<IPackageCreator>, IPackageCreator
         var packageName = GenerateUniquePackageNameAndUpdateDisplayName(organization, ref displayName);
         var rootNamespace = PackageValidator.SanitizeNamespace(organization) + "." + PackageValidator.SanitizeNamespace(displayName);
 
-        var destinationDirName = m_IOProxy.PathsCombine("Packages", packageName);
+        var destinationDirName = IOUtils.PathsCombine("Packages", packageName);
         var variables = CreateTemplateVariables(packageName, displayName, rootNamespace);
         var tempFolder = m_IOProxy.GetUniqueTempPathInProject();
         try
         {
             var templateFolderPath =
-                m_IOProxy.PathsCombine(EditorApplication.applicationContentsPath, k_DefaultTemplateFolder);
+                IOUtils.PathsCombine(EditorApplication.applicationContentsPath, k_DefaultTemplateFolder);
             m_IOProxy.DirectoryCopy(templateFolderPath, tempFolder);
 
             var templateFiles = m_IOProxy.GetFiles(tempFolder, "*.*", true);
@@ -145,27 +144,16 @@ internal class PackageCreator : BaseService<IPackageCreator>, IPackageCreator
     {
         var packageName = "com." + PackageValidator.SanitizePackageTechnicalName(organization) + "." + PackageValidator.SanitizePackageTechnicalName(displayName);
         var packageNameWithoutSuffixNumber = RemoveSuffixNumber(packageName);
-        #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-        var potentialNameConflicts = m_PackageDatabase.allPackages.Where(i =>
-#pragma warning restore RS0030
-                i.versions.installed != null && i.name.StartsWith(packageNameWithoutSuffixNumber))
-            .Select(p => p.name).ToArray();
 
-        #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-        if (potentialNameConflicts.Any(n => n == packageName))
-#pragma warning restore RS0030
+        var newSuffix = 0;
+        while (m_UpmCache.GetInstalledPackageInfo(packageName) != null)
         {
-            var regex = new Regex($@"^{Regex.Escape(packageNameWithoutSuffixNumber)}(?<count>\d+)$");
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            var matches = potentialNameConflicts.Select(str => regex.Match(str)).Where(match => match.Success);
-#pragma warning restore RS0030
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            var numbers = matches.Select(match => int.Parse(match.Groups["count"].Value)).OrderBy(n => n);
-#pragma warning restore RS0030
-            var firstMissingNumber = GetFirstMissingNumber(numbers);
-            packageName = $"{packageNameWithoutSuffixNumber}{firstMissingNumber}";
-            displayName = $"{RemoveSuffixNumber(displayName)} {firstMissingNumber}";
+            newSuffix++;
+            packageName = $"{packageNameWithoutSuffixNumber}{newSuffix}";
         }
+
+        if (newSuffix > 0)
+            displayName = $"{RemoveSuffixNumber(displayName)} {newSuffix}";
 
         if (packageName.Length > k_MaxPackageNameLength)
             throw new ArgumentException(k_NameIsTooLongErrorMessage);
@@ -176,18 +164,6 @@ internal class PackageCreator : BaseService<IPackageCreator>, IPackageCreator
     private static string RemoveSuffixNumber(string value)
     {
         return Regex.Replace(value, @"\d+$", "").Trim();
-    }
-
-    private static int GetFirstMissingNumber(IEnumerable<int> numbers)
-    {
-        var missingNumber = 1;
-        foreach (var num in numbers)
-        {
-            if (num != missingNumber)
-                return missingNumber;
-            missingNumber++;
-        }
-        return missingNumber;
     }
 
     // Since namespace has a stricter rule than package name, if a string is good enough to be used as a namespace after sanitization,
@@ -218,28 +194,54 @@ internal class PackageCreator : BaseService<IPackageCreator>, IPackageCreator
     {
         var original = m_IOProxy.FileReadAllText(file);
         var updated = ReplaceVariablesInString(variables, original);
-
         if (original != updated)
             m_IOProxy.FileWriteAllText(file, updated);
     }
 
     private void RenameFileWithVariables(Dictionary<string, string> variables, string file)
     {
-        var originalFileName = m_IOProxy.GetFileName(file);
+        var originalFileName = IOUtils.GetFileName(file);
         var updatedFileName = ReplaceVariablesInString(variables, originalFileName);
 
         if (updatedFileName == originalFileName)
             return;
 
-        var folder = m_IOProxy.GetParentDirectory(file);
-        m_IOProxy.Move(file, m_IOProxy.PathsCombine(folder, updatedFileName));
+        var folder = IOUtils.GetParentDirectory(file);
+        m_IOProxy.Move(file, IOUtils.PathsCombine(folder, updatedFileName));
     }
 
-    private string ReplaceVariablesInString(Dictionary<string, string> variables, string txt)
+    private static string ReplaceVariablesInString(Dictionary<string, string> variables, string input)
     {
-        #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-        return variables.Aggregate(txt ?? string.Empty, (current, kvp) => current.Replace(kvp.Key, kvp.Value));
-#pragma warning restore RS0030
+        if (string.IsNullOrEmpty(input))
+            return string.Empty;
+
+        var sb = new StringBuilder(input.Length);
+        for (var i = 0; i < input.Length; )
+        {
+            var start = input.IndexOf('#', i);
+            var end = start < 0 ? -1 : input.IndexOf('#', start + 1);
+            if (start < 0 || end < 0)
+            {
+                sb.Append(input, i, input.Length - i);
+                break;
+            }
+
+            sb.Append(input, i, start - i);
+            // The key here refers to the `#XYZ#` template variable, including the `#` on both sides
+            var key = input.Substring(start, end - start + 1);
+            if (variables.TryGetValue(key, out var value))
+            {
+                sb.Append(value);
+                i = end + 1;
+            }
+            else
+            {
+                // If the key is not found, we copy everything except for the last `#`, as it could be the starting `#` of the next template variable
+                sb.Append(input, start, end - start);
+                i = end;
+            }
+        }
+        return sb.ToString();
     }
 
     private Dictionary<string, string> CreateTemplateVariables(string packageName, string displayName, string rootNamespace)

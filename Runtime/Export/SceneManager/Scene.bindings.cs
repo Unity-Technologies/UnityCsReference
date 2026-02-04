@@ -57,8 +57,13 @@ namespace UnityEngine.SceneManagement
         [StaticAccessor("SceneBindings", StaticAccessorType.DoubleColon)]
         extern private static int GetRootCountInternal(SceneHandle sceneHandle);
 
+        [NativeMethod("GetRootGameObjectsInternal")]
         [StaticAccessor("SceneBindings", StaticAccessorType.DoubleColon)]
-        extern private static void GetRootGameObjectsInternal(SceneHandle sceneHandle, object resultRootList);
+        extern private static void GetRootGameObjectsInternalList(SceneHandle sceneHandle, [Out] List<GameObject> resultRootList);
+
+        [NativeMethod("GetRootGameObjectsInternal")]
+        [StaticAccessor("SceneBindings", StaticAccessorType.DoubleColon)]
+        extern private static void GetRootGameObjectsInternalArray(SceneHandle sceneHandle, [Out] GameObject[] resultRootArray);
 
         [StaticAccessor("SceneBindings", StaticAccessorType.DoubleColon)]
         extern private static EntityId GetDefaultParent(SceneHandle sceneHandle);

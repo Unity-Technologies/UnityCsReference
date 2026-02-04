@@ -3,8 +3,6 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using System.Collections.Generic;
-using System.Linq;
 using UnityEditor.PackageManager.Requests;
 using UnityEngine;
 
@@ -166,21 +164,25 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private void OnProcessGetRegistriesResult(GetRegistriesRequest request)
         {
-            var registriesListResult = request.Result ?? Array.Empty<RegistryInfo>();
-            var registriesCount = registriesListResult.Length;
+            if (request.Result == null || request.Result.Length == 0)
+                return;
 
-            if (m_SettingsProxy.registries.Count > 0 && m_SettingsProxy.registries.Count < registriesCount)
-                onRegistriesAdded?.Invoke(registriesCount - m_SettingsProxy.registries.Count);
+            var mainRegistry = request.Result[0];
+            var newScopedRegistries = new ArraySegment<RegistryInfo>(request.Result, 1, request.Result.Length - 1);
 
-            if (!registriesListResult.IsEquivalentTo(m_SettingsProxy.registries))
+            var numRegistriesAdded = newScopedRegistries.Count - m_SettingsProxy.scopedRegistries.Count;
+            if (numRegistriesAdded > 0)
+                onRegistriesAdded?.Invoke(numRegistriesAdded);
+
+            var scopedRegistriesUpdated = !newScopedRegistries.IsEquivalentTo(m_SettingsProxy.scopedRegistries);
+            var mainRegistryUpdated = !mainRegistry.IsEquivalentTo(m_SettingsProxy.mainRegistry);
+
+            if (scopedRegistriesUpdated || mainRegistryUpdated)
             {
-                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                var name = registriesListResult.FirstOrDefault(r => !m_SettingsProxy.registries.Any(r.IsEquivalentTo))?.name;
-#pragma warning restore RS0030
-                if (!string.IsNullOrEmpty(name))
-                    m_SettingsProxy.SelectRegistry(name);
-
-                m_SettingsProxy.SetRegistries(registriesListResult);
+                var addedOrUpdatedRegistry = scopedRegistriesUpdated ? newScopedRegistries.FirstMatch(r => !m_SettingsProxy.scopedRegistries.AnyMatches(r.IsEquivalentTo)) : null;
+                m_SettingsProxy.SetRegistries(request.Result);
+                if (!string.IsNullOrEmpty(addedOrUpdatedRegistry?.name))
+                    m_SettingsProxy.SelectRegistry(addedOrUpdatedRegistry.name);
                 m_SettingsProxy.Save();
                 onRegistriesModified?.Invoke();
             }

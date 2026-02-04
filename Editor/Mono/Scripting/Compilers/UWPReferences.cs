@@ -125,9 +125,9 @@ namespace UnityEditor.Scripting.Compilers
                 }
             }
 
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return references.ToArray();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
         }
 
         public static IEnumerable<UWPExtensionSDK> GetExtensionSDKs(UWPSDK sdk)
@@ -166,9 +166,9 @@ namespace UnityEditor.Scripting.Compilers
             var allSDKs = new List<UWPSDK>();
 
             var filesUnderPlatformsUAP = Directory.GetFiles(platformsUAP, "*", SearchOption.AllDirectories);
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var allPlatformXmlFiles = filesUnderPlatformsUAP.Where(f => string.Equals("Platform.xml", Path.GetFileName(f), StringComparison.OrdinalIgnoreCase));
-#pragma warning restore RS0030
+#pragma warning restore UA2001
 
             foreach (var platformXmlFile in allPlatformXmlFiles)
             {
@@ -191,9 +191,9 @@ namespace UnityEditor.Scripting.Compilers
                         if (version < kMinimumSupportedUWPVersion)
                             continue;
 
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                         var minVSVersionString = platformElement.Elements("MinimumVisualStudioVersion").Select(e => e.Value).FirstOrDefault();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
 
                         // Get supported previous versionss
                         var previousVersionPath = Path.Combine(Path.GetDirectoryName(platformXmlFile), "PreviousPlatforms.xml");

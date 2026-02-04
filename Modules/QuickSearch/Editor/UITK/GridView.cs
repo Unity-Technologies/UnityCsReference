@@ -390,9 +390,9 @@ namespace UnityEditor.Search
                     {
                         if (m_SelectedIndices.Count > 0)
                         {
-                            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                             m_RangeSelectionOrigin = m_IsRangeSelectionDirectionUp ? m_SelectedIndices.Min() : m_SelectedIndices.Max();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                             HandleSelectionAndScroll(Mathf.Min(m_ItemsSource.Count - 1, m_RangeSelectionOrigin + (m_VisibleItemCount - 1)));
                         }
                         return true;
@@ -401,9 +401,9 @@ namespace UnityEditor.Search
                     {
                         if (m_SelectedIndices.Count > 0)
                         {
-                            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                             m_RangeSelectionOrigin = m_IsRangeSelectionDirectionUp ? m_SelectedIndices.Min() : m_SelectedIndices.Max();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                             HandleSelectionAndScroll(Mathf.Max(0, m_RangeSelectionOrigin - (m_VisibleItemCount - 1)));
                         }
                         return true;
@@ -507,9 +507,9 @@ namespace UnityEditor.Search
 
         private void DoRangeSelection(int rangeSelectionFinalIndex)
         {
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             m_RangeSelectionOrigin = m_IsRangeSelectionDirectionUp ? m_SelectedIndices.Max() : m_SelectedIndices.Min();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             ClearSelectionWithoutValidation();
 
             var range = new List<int>();
@@ -596,9 +596,9 @@ namespace UnityEditor.Search
                     return;
                 case SelectionType.Single:
                     if (indices != null)
-                        #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                        #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                         indices = new[] { indices.Last() };
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                     break;
                 case SelectionType.Multiple:
                     break;

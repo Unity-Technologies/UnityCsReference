@@ -58,12 +58,12 @@ namespace UnityEditor.PackageManager.UI.Internal
         public DateTime? purchasedTime => TicksToDateTime(m_PurchasedTimeTicks);
 
         [SerializeField]
-        protected List<string> m_Labels;
+        protected string[] m_Labels;
         public IReadOnlyCollection<string> labels => m_Labels;
 
         private void SetPurchaseInfo(AssetStorePurchaseInfo purchaseInfo)
         {
-            m_Labels = purchaseInfo?.tags;
+            m_Labels = purchaseInfo?.tags ?? Array.Empty<string>();
             m_IsHidden = purchaseInfo?.isHidden == true;
             m_PurchasedTimeTicks = DateTimeStringToTicks(purchaseInfo?.purchasedTime);
         }

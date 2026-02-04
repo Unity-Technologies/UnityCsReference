@@ -29,13 +29,13 @@ namespace UnityEditor
 
         public void Update()
         {
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var switchesInEffect = Debug.diagnosticSwitches.Where(diagnosticSwitch => !diagnosticSwitch.isSetToDefault)
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                 .ToArray();
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             if (switchesInEffect.SequenceEqual(m_SwitchesInEffect))
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                 return;
 
             m_SwitchesInEffect = switchesInEffect;
@@ -52,9 +52,9 @@ namespace UnityEditor
                     "Diagnostic switches are active and may impact performance or degrade your user experience." +
                     " Switches can be configured through the Diagnostics section in the Preferences window.\n\t"
                     + string.Join("\n\t",
-                        #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                        #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                         switchesInEffect.Select(
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                             diagnosticSwitch =>
                             {
                                 var report = $"{diagnosticSwitch.name}: {diagnosticSwitch.value}";

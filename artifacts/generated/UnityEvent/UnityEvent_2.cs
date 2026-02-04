@@ -36,9 +36,9 @@ namespace UnityEngine.Events
 
         protected override MethodInfo FindMethod_Impl(string name, Type targetObjType)
         {
-#pragma warning disable RS0032 // It's not trivial to fix this when TYPES is empty.
+#pragma warning disable UA2003 // It's not trivial to fix this when TYPES is empty.
             return GetValidMethodInfo(targetObjType, name, new Type[] {typeof(T0), typeof(T1)});
-#pragma warning restore RS0032
+#pragma warning restore UA2003
         }
 
         internal override BaseInvokableCall GetDelegate(object target, MethodInfo theFunction)
@@ -68,10 +68,10 @@ namespace UnityEngine.Events
                     else
                     {
                         var cachedCurCall = calls[i];
-#pragma warning disable RS0032 // It's not trivial to fix this when ARGUMENTCOUNT is zero.
+#pragma warning disable UA2003 // It's not trivial to fix this when ARGUMENTCOUNT is zero.
                         if (m_InvokeArray == null)
                             m_InvokeArray = new object[2];
-#pragma warning restore RS0032
+#pragma warning restore UA2003
                         m_InvokeArray[0] = arg0; m_InvokeArray[1] = arg1;
                         cachedCurCall.Invoke(m_InvokeArray);
                     }

@@ -151,6 +151,7 @@ namespace UnityEditor.Overlays
 
 
         bool m_Active;
+        internal bool active => m_Active;
         bool m_WasFloating;
         bool m_WasCollapsed;
         OverlayContainer m_StartContainer;
@@ -205,6 +206,9 @@ namespace UnityEditor.Overlays
             if (!IsInDraggableArea(e.mousePosition) || !CanStartManipulation(e))
                 return;
 
+            //Directly set to active before changing anything
+            m_Active = true;
+
             m_WasFloating = m_Overlay.floating;
             m_WasCollapsed = m_Overlay.collapsed;
             m_StartContainer = m_Overlay.container;
@@ -234,7 +238,6 @@ namespace UnityEditor.Overlays
 
             UpdateLayout(e.mousePosition);
 
-            m_Active = true;
             target.RegisterCallback<MouseMoveEvent>(OnMouseMove, TrickleDown.TrickleDown);
             target.CaptureMouse();
             e.StopPropagation();
@@ -316,6 +319,7 @@ namespace UnityEditor.Overlays
                     return;
                 }
 
+                m_Active = false;
                 m_Overlay.container?.RemoveOverlay(m_Overlay);
 #pragma warning disable CS0618 // Type or member is obsolete
                 m_Overlay.rootVisualElement.transform.position = Vector2.zero;
@@ -325,6 +329,7 @@ namespace UnityEditor.Overlays
 
             if (m_Overlay.floating)
             {
+                m_Active = false;
 #pragma warning disable CS0618 // Type or member is obsolete
                 var pos = m_Overlay.rootVisualElement.transform.position;
 #pragma warning restore CS0618 // Type or member is obsolete

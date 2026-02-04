@@ -18,19 +18,11 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public Action<string> submitClicked { get; set; }
 
-        private IResourceLoader m_ResourceLoader;
-        private void ResolveDependencies(IResourceLoader resourceLoader)
-        {
-            m_ResourceLoader = resourceLoader;
-        }
-
         public GenericInputDropdown(IResourceLoader resourceLoader, InputDropdownArgs args)
         {
-            ResolveDependencies(resourceLoader);
+            styleSheets.Add(resourceLoader.inputDropdownStyleSheet);
 
-            styleSheets.Add(m_ResourceLoader.inputDropdownStyleSheet);
-
-            var root = m_ResourceLoader.GetTemplate("GenericInputDropdown.uxml");
+            var root = resourceLoader.GetTemplate("GenericInputDropdown.uxml");
             Add(root);
             cache = new VisualElementCache(root);
 

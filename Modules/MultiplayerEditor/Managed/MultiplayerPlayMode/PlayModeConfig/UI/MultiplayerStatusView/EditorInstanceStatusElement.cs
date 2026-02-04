@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using UnityEditor.Multiplayer.Internal;
+using UnityEngine.Multiplayer.Internal;
 using UnityEngine.UIElements;
 
 namespace Unity.Multiplayer.PlayMode.Editor;
@@ -14,7 +15,7 @@ class EditorInstanceStatusElement : VisualElement
     internal const string k_RolePillClass = "unity-instance-status__role-pill";
     internal const string k_TagPillClass = "unity-instance-status__tag-pill";
 
-    public EditorInstanceStatusElement(EditorInstanceDescription instanceDescription)
+    public EditorInstanceStatusElement(MultiplayerRoleFlags role, string playerTag)
     {
         var pillsContainer = new VisualElement();
         pillsContainer.AddToClassList(k_PillContainerClass);
@@ -22,28 +23,16 @@ class EditorInstanceStatusElement : VisualElement
 
         if (EditorMultiplayerManager.enableMultiplayerRoles)
         {
-            var rolePill = new Label(instanceDescription.RoleMask.ToString());
+            var rolePill = new Label(role.ToString());
             rolePill.AddToClassList(k_PillClass, k_RolePillClass);
             pillsContainer.Add(rolePill);
         }
 
-        if (!string.IsNullOrEmpty(instanceDescription.PlayerTag))
+        if (!string.IsNullOrEmpty(playerTag))
         {
-            var tagPill = new Label(instanceDescription.PlayerTag);
+            var tagPill = new Label(playerTag);
             tagPill.AddToClassList(k_PillClass, k_TagPillClass);
             pillsContainer.Add(tagPill);
         }
-
-        if (instanceDescription is VirtualEditorInstanceDescription)
-        {
-            Add(CreateVirtualEditorContent(instanceDescription));
-        }
-    }
-
-    static VisualElement CreateVirtualEditorContent(EditorInstanceDescription instanceDescription)
-    {
-        var container = new VisualElement();
-
-        return container;
     }
 }

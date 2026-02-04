@@ -20,9 +20,10 @@ namespace UnityEditor.Overlays
         {
             m_TargetWindow = targetWindow;
             createMenuCallback = () => targetWindow.rootVisualElement.panel.CreateMenu();
-            SetValueWithoutNotify(m_TargetWindow.overlayCanvas.lastAppliedPresetName);
+            RefreshPresetDisplayValue();
             RegisterCallback<AttachToPanelEvent>(OnAttachedToPanel);
             RegisterCallback<DetachFromPanelEvent>(OnDetachFromPanel);
+            m_TargetWindow.overlayCanvas.presetDirtyChanged += RefreshPresetDisplayValue;
         }
 
         void OnAttachedToPanel(AttachToPanelEvent evt)
@@ -39,6 +40,8 @@ namespace UnityEditor.Overlays
         void RefreshPresetDisplayValue()
         {
             SetValueWithoutNotify(GetValueToDisplay());
+            if (textElement != null)
+                textElement.style.unityFontStyleAndWeight = m_TargetWindow.overlayCanvas.presetDirty ? FontStyle.Bold : FontStyle.Normal;
         }
 
         internal override void AddMenuItems(AbstractGenericMenu menu)
@@ -51,7 +54,11 @@ namespace UnityEditor.Overlays
             if (m_TargetWindow == null)
                 return string.Empty;
 
-            return m_TargetWindow.overlayCanvas.lastAppliedPresetName;
+            var valueToDisplay = m_TargetWindow.overlayCanvas.lastAppliedPresetName;
+            if (m_TargetWindow.overlayCanvas.presetDirty)
+                valueToDisplay += "*";
+
+            return valueToDisplay;
         }
 
         //We don't actually use this but we are required to implement it
@@ -65,9 +72,9 @@ namespace UnityEditor.Overlays
         const string k_DisplayName = "Overlay Menu";
         internal const string k_Id = "Overlays/OverlayMenu"; // Used by tests
         const string k_UssName = "overlay-menu";
-        
+
         const string k_UnityGroupName = "Unity";
-        
+
         public class OverlayMenuData : ScriptableSingleton<OverlayMenuData>
         {
             [SerializeField]

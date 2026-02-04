@@ -31,13 +31,25 @@ namespace UnityEngine.Tilemaps
             return tileData;
         }
 
-        [RequiredByNativeCode]
         public virtual bool GetTileAnimationData(Vector3Int position, ITilemap tilemap, ref TileAnimationData tileAnimationData) { return false; }
 
         [RequiredByNativeCode]
-        private void GetTileAnimationDataRef(Vector3Int position, ITilemap tilemap, ref TileAnimationData tileAnimationData, ref bool hasAnimation)
+        private void GetTileAnimationDataRef(Vector3Int position, ITilemap tilemap, ref Sprite[] tileAnimationData_AnimatedSprites, ref float tileAnimationData_AnimationSpeed, ref float tileAnimationData_AnimationStartTime, ref int tileAnimationData_Flags, ref bool hasAnimation)
         {
+            TileAnimationData tileAnimationData = new TileAnimationData
+            {
+                animatedSprites = tileAnimationData_AnimatedSprites,
+                animationSpeed = tileAnimationData_AnimationSpeed,
+                animationStartTime = tileAnimationData_AnimationStartTime,
+                flags = (TileAnimationFlags)tileAnimationData_Flags
+            };
+
             hasAnimation = GetTileAnimationData(position, tilemap, ref tileAnimationData);
+
+            tileAnimationData_AnimatedSprites = tileAnimationData.animatedSprites;
+            tileAnimationData_AnimationSpeed = tileAnimationData.animationSpeed;
+            tileAnimationData_AnimationStartTime = tileAnimationData.animationStartTime;
+            tileAnimationData_Flags = (int)tileAnimationData.flags;
         }
 
         [RequiredByNativeCode]

@@ -9,7 +9,7 @@ namespace UnityEditor.PackageManager.UI.Internal;
 
 internal interface ILocalInfoHandler : IService
 {
-    IList<AssetStoreLocalInfo> GetParsedLocalInfos();
+    IReadOnlyCollection<AssetStoreLocalInfo> GetParsedLocalInfos();
     AssetStoreLocalInfo GetParsedLocalInfo(string productPath);
     void UpdateExtraInfoInCacheIfNeeded(string productPath, AssetStoreDownloadInfo downloadInfo);
 }
@@ -24,7 +24,7 @@ internal class LocalInfoHandler : BaseService<ILocalInfoHandler>, ILocalInfoHand
         m_IOProxy = RegisterDependency(ioProxy);
     }
 
-    public IList<AssetStoreLocalInfo> GetParsedLocalInfos()
+    public IReadOnlyCollection<AssetStoreLocalInfo> GetParsedLocalInfos()
     {
         var localInfos = new List<AssetStoreLocalInfo>();
         var packageInfos = m_AssetStoreUtils.GetLocalPackageList();

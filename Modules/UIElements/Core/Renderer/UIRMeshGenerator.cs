@@ -51,10 +51,10 @@ namespace UnityEngine.UIElements.UIR
             public Rect uv;
         }
 
-        static readonly ProfilerMarker k_MarkerDrawRectangle = new("MeshGenerator.DrawRectangle");
-        static readonly ProfilerMarker k_MarkerDrawBorder = new("MeshGenerator.DrawBorder");
-        static readonly ProfilerMarker k_MarkerDrawVectorImage = new("MeshGenerator.DrawVectorImage");
-        static readonly ProfilerMarker k_MarkerDrawRectangleRepeat = new("MeshGenerator.DrawRectangleRepeat");
+        static readonly ProfilerMarker k_MarkerDrawRectangle = new(ProfilerCategory.UIToolkit, "MeshGenerator.DrawRectangle");
+        static readonly ProfilerMarker k_MarkerDrawBorder = new(ProfilerCategory.UIToolkit, "MeshGenerator.DrawBorder");
+        static readonly ProfilerMarker k_MarkerDrawVectorImage = new(ProfilerCategory.UIToolkit, "MeshGenerator.DrawVectorImage");
+        static readonly ProfilerMarker k_MarkerDrawRectangleRepeat = new(ProfilerCategory.UIToolkit, "MeshGenerator.DrawRectangleRepeat");
 
         MeshGenerationContext m_MeshGenerationContext;
 

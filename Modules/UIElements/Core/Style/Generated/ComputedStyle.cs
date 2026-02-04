@@ -20,11 +20,11 @@ namespace UnityEngine.UIElements
     internal partial struct ComputedStyle
     {
         public StyleDataRef<CustomData> customData;
-        public StyleDataRef<InheritedData> inheritedData;
+        public StyleDataRefUnmanaged<InheritedData> inheritedData;
         public StyleDataRefUnmanaged<LayoutData> layoutData;
-        public StyleDataRef<RareData> rareData;
+        public StyleDataRefUnmanaged<RareData> rareData;
         public StyleDataRefUnmanaged<TransformData> transformData;
-        public StyleDataRef<TransitionData> transitionData;
+        public StyleDataRefUnmanaged<TransitionData> transitionData;
         public StyleDataRefUnmanaged<VisualData> visualData;
 
         public Int64 matchingRulesHash;
@@ -144,11 +144,11 @@ namespace UnityEngine.UIElements
                 dpiScaling = 1f
             };
             cs.customData = StyleDataRef<CustomData>.Create();
-            cs.inheritedData = StyleDataRef<InheritedData>.Create();
+            cs.inheritedData = StyleDataRefUnmanaged<InheritedData>.Create();
             cs.layoutData = StyleDataRefUnmanaged<LayoutData>.Create();
-            cs.rareData = StyleDataRef<RareData>.Create();
+            cs.rareData = StyleDataRefUnmanaged<RareData>.Create();
             cs.transformData = StyleDataRefUnmanaged<TransformData>.Create();
-            cs.transitionData = StyleDataRef<TransitionData>.Create();
+            cs.transitionData = StyleDataRefUnmanaged<TransitionData>.Create();
             cs.visualData = StyleDataRefUnmanaged<VisualData>.Create();
             return cs;
         }

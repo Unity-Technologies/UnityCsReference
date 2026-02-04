@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using Unity.GraphToolkit.Editor.Implementation;
 
 namespace Unity.GraphToolkit.Editor
 {
@@ -43,6 +44,11 @@ namespace Unity.GraphToolkit.Editor
         /// This value does not determine the <see cref="PortDirection"/> of the port on the variable node.
         /// </remarks>
         VariableKind VariableKind { get; }
+
+        /// <summary>
+        /// The <see cref="Graph"/> that owns this variable.
+        /// </summary>
+        Graph Graph => (((VariableDeclarationModelBase)this).GraphModel as GraphModelImp)?.Graph;
 
         /// <summary>
         /// Tries to retrieve the default value of the variable.

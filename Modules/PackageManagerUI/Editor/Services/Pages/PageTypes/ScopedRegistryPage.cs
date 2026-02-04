@@ -55,9 +55,9 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public override bool ShouldInclude(IPackage package)
         {
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return base.ShouldInclude(package) && package.versions.Any(v =>
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             {
                 var packageInfo = m_UpmCache.GetBestMatchPackageInfo(v.name, v.package.product?.id ?? 0, v.isInstalled);
                 return packageInfo?.registry != null && m_RegistryInfo.IsEquivalentTo(packageInfo.registry);

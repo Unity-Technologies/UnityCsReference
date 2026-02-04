@@ -53,7 +53,12 @@ namespace Unity.Profiling.Memory
         [StaticAccessor("profiling::memory::GetMemorySnapshotManager()", StaticAccessorType.Dot)]
         [NativeMethod("StartOperation")]
         [NativeConditional("ENABLE_PROFILER")]
-        private static extern void StartOperation(uint captureFlag, bool requestScreenshot, string path, bool isRemote);
+        private static extern void StartOperation(uint captureFlags, bool requestScreenshot, string path, bool isRemote);
+
+        [StaticAccessor("profiling::memory::GetMemorySnapshotManager()", StaticAccessorType.Dot)]
+        [NativeMethod("RequestEditorTakeSnapshotOfPlayer")]
+        [NativeConditional("ENABLE_PROFILER")]
+        private static extern void RequestEditorTakeSnapshotOfPlayer(uint captureFlags, bool requestScreenshot);
 
         public static void TakeSnapshot(string path, Action<string, bool> finishCallback, CaptureFlags captureFlags = CaptureFlags.NativeObjects | CaptureFlags.ManagedObjects)
         {

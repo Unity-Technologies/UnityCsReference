@@ -55,9 +55,9 @@ namespace Unity.GraphToolkit.Editor
         {
             ConstantModels = new List<Constant>(constantModels);
             Owners = owners == null ? Array.Empty<GraphElementModel>() : new List<GraphElementModel>(owners);
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             m_CommonConstantType = ModelHelpers.GetCommonBaseType(ConstantModels.Select(
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                 t => t.ObjectValue != null ? t.ObjectValue.GetType() : t.Type));
 
             CreateField();
@@ -113,9 +113,9 @@ namespace Unity.GraphToolkit.Editor
         {
             // PF TODO when this is a module, submit modifications to UIToolkit to avoid having to do reflection.
 
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var registerCallbackMethod = typeof(CallbackEventHandler)
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                 .GetMethods(BindingFlags.Public | BindingFlags.DeclaredOnly | BindingFlags.Instance)
                 .SingleOrDefault(m => m.Name == nameof(RegisterCallback) && m.GetGenericArguments().Length == 2);
 
@@ -370,9 +370,9 @@ namespace Unity.GraphToolkit.Editor
         /// <returns>Whether the type was supported and this method could enable or disable sub-fields.</returns>
         public virtual bool HandleEnabledStateWithWiredSubPorts()
         {
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             if (Owners.Count() != 1 || Owners[0] is not PortModel portModel)
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                 return false;
             bool markConnectedPortSubFieldMixed = (Owners[0].GraphModel?.HideConnectedPortsEditor ?? true);
 

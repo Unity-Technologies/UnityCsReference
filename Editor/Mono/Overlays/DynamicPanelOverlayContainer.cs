@@ -88,6 +88,9 @@ namespace UnityEditor.Overlays
         readonly MinimizedState k_MinimizedState = new MinimizedState();
         StateImplementation m_CurrentState;
 
+        internal Action stateChanged;
+        internal Action resized;
+
         public bool alignRight
         {
             get => m_AlignRight;
@@ -168,7 +171,7 @@ namespace UnityEditor.Overlays
         public DynamicPanelOverlayContainer()
         {
             m_OverlayActions = new OverlayActions();
-            m_OverlayActions.stateChanged += OnOverlayStateChangeRequested;
+            m_OverlayActions.stateChanged += SwitchState;
             Add(m_OverlayActions);
 
             m_ScrollView = new ToolbarScrollView();
@@ -326,22 +329,21 @@ namespace UnityEditor.Overlays
                 m_CurrentState.Stop();
             }
 
+            var newState = GetCurrentState() != state;
             switch (state)
             {
                 case State.Panel:
                     m_CurrentState = k_PanelState;
-                    m_OverlayActions.state = OverlayActions.State.Default;
                     break;
                 case State.Toolbar:
                     m_CurrentState = k_ToolbarState;
-                    m_OverlayActions.state = OverlayActions.State.Toolbar;
                     break;
                 case State.Minimized:
                     m_CurrentState = k_MinimizedState;
-                    m_OverlayActions.state = OverlayActions.State.Minimized;
                     break;
                 default: m_CurrentState = null; break;
             }
+            m_OverlayActions.state = state;
 
             if (m_CurrentState != null)
             {
@@ -355,8 +357,10 @@ namespace UnityEditor.Overlays
                             overlay.RebuildContent();
                     }
                 }
-
                 m_CurrentState.Start();
+
+                if(newState)
+                    stateChanged?.Invoke();
             }
         }
 
@@ -646,7 +650,7 @@ namespace UnityEditor.Overlays
             var idx = m_Section.GetOverlayIndex(chunk.overlay);
             var targetData = m_Section.GetData(idx);
             var targetHeight = folded ? foldedChunkHeight : targetData.currentHeight;
-            var actualHeight = useLayoutValues ? chunk.overlay.rootVisualElement.rect.height : targetHeight; 
+            var actualHeight = useLayoutValues ? chunk.overlay.rootVisualElement.rect.height : targetHeight;
             var newHeight = Mathf.Max(folded ? foldedChunkHeight : minChunkHeight, actualHeight - delta);
 
             delta -= actualHeight - newHeight;
@@ -666,7 +670,7 @@ namespace UnityEditor.Overlays
             for (int i = 0; i < m_Chunks.Count; ++i)
             {
                 var chunk = m_Chunks[i];
-                chunk.SetExpanding(i == m_Chunks.Count - 1); 
+                chunk.SetExpanding(i == m_Chunks.Count - 1);
             }
         }
 
@@ -698,7 +702,8 @@ namespace UnityEditor.Overlays
             return m_ChunksEnabled && chunkIndex < m_Chunks.Count - 1;
         }
 
-        public void SetPreferedHeight(Overlay overlay, float height)
+        //Used in tests only
+        public void SetPreferredHeight(Overlay overlay, float height)
         {
             if (TryGetChunk(overlay, out var index))
             {
@@ -708,7 +713,8 @@ namespace UnityEditor.Overlays
             }
         }
 
-        public float GetPreferedHeight(Overlay overlay)
+        //Used in tests only
+        public float GetPreferredHeight(Overlay overlay)
         {
             if (!overlay.displayed)
                 return 0;
@@ -751,7 +757,7 @@ namespace UnityEditor.Overlays
             float requestedHeight = 0;
 
             // Find requested height
-            for (int i = m_Chunks.Count - 1; i >= 0; --i) 
+            for (int i = m_Chunks.Count - 1; i >= 0; --i)
             {
                 requestedHeight += GetFinalHeight(m_Chunks[i].overlay, m_Section.GetData(m_Chunks[i].overlay).currentHeight);
             }
@@ -761,7 +767,7 @@ namespace UnityEditor.Overlays
             // Requested sizes are smaller than the container height: Set all height to current
             if (requestedHeight <= containerHeight)
             {
-                // Apply prefered height to all
+                // Apply preferred height to all
                 foreach (var chunk in m_Chunks)
                 {
                     var index = m_Section.GetOverlayIndex(chunk.overlay);
@@ -797,19 +803,6 @@ namespace UnityEditor.Overlays
 
             index = -1;
             return false;
-        }
-
-        void OnOverlayStateChangeRequested(OverlayActions.State requested)
-        {
-            var state = State.Panel;
-            switch (requested)
-            {
-                case OverlayActions.State.Default: state = State.Panel; break;
-                case OverlayActions.State.Toolbar: state = State.Toolbar; break;
-                case OverlayActions.State.Minimized: state = State.Minimized; break;
-            }
-
-            SwitchState(state);
         }
 
         void OnParentGeometryChanged(GeometryChangedEvent evt)
@@ -912,19 +905,19 @@ namespace UnityEditor.Overlays
 
                 UpdateFirstLastElementStyle();
             }
-            else  
-            {   
+            else
+            {
                 // Remove/Insert is required to avoid undertermined clip mode assert failure in UITK render data
                 var prevIndex = m_Section.contentContainer.IndexOf(overlay.rootVisualElement);
                 overlay.rootVisualElement.RemoveFromHierarchy();
                 m_Section.contentContainer.Insert(prevIndex, overlay.rootVisualElement);
-                
+
                 var currentHeight = overlay.rootVisualElement.layout.height;
                 EnsureEnoughChunks();
-                
+
                 if (m_Chunks.Count == 1)
                     UpdateFirstLastElementStyle();
-                
+
                 var overlayWidth = overlay.rootVisualElement.layout.width;
                 if (m_Width < overlayWidth)
                     SetWidth(overlayWidth);
@@ -937,15 +930,18 @@ namespace UnityEditor.Overlays
 
         float m_OriginalWidth;
 
-        void OnWidthTranslationBegun()
+        //Used in tests
+        internal void OnWidthTranslationBegun()
         {
             m_OriginalWidth = m_Width;
         }
 
-        void OnWidthTranslated((Vector2 total, Vector2 delta) args)
+        //Used in tests
+        internal void OnWidthTranslated((Vector2 total, Vector2 delta) args)
         {
             var total = alignRight ? -args.total.x : args.total.x;
             SetWidth(m_OriginalWidth + total);
+            resized?.Invoke();
         }
 
         public void SetWidth(float pixel)

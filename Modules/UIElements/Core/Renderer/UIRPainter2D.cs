@@ -503,7 +503,7 @@ namespace UnityEngine.UIElements
             UIPainter2D.QuadraticCurveTo(m_Handle, p1, p2);
         }
 
-        private static readonly ProfilerMarker s_StrokeMarker = new ProfilerMarker("Painter2D.Stroke");
+        private static readonly ProfilerMarker s_StrokeMarker = new ProfilerMarker(ProfilerCategory.UIToolkit, "Painter2D.Stroke");
 
         /// <summary>
         /// Strokes the currently defined path.
@@ -559,7 +559,7 @@ namespace UnityEngine.UIElements
             }
         }
 
-        private static readonly ProfilerMarker s_FillMarker = new ProfilerMarker("Painter2D.Fill");
+        private static readonly ProfilerMarker s_FillMarker = new ProfilerMarker(ProfilerCategory.UIToolkit, "Painter2D.Fill");
 
         private static void SetSolidTextureData(Texture2D targetTexture, Color color, int width, int height)
         {

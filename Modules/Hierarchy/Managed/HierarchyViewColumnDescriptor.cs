@@ -11,29 +11,29 @@ namespace Unity.Hierarchy
     /// <summary>
     /// Column Descriptor used to register a new Column in the Hierarchy and to control display and customization of this column.
     /// </summary>
-    internal sealed class HierarchyViewColumnDescriptor
+    public sealed class HierarchyViewColumnDescriptor
     {
         bool m_IsBound;
 
         /// <summary>
         /// Column Id. HierarchyViewCellDescriptor will use this Id to register themselves with the Column.
         /// </summary>
-        public readonly string Id;
+        public string Id { get; }
 
         /// <summary>
         /// Display name of the Column. If null the header will be empty (unless it contains an icon).
         /// </summary>
-        public string Title;
+        public string Title { get; set; }
 
         /// <summary>
         /// Icon displayed in the header of the column. 
         /// </summary>
-        public Texture2D Icon;
+        public Texture2D Icon { get; set; }
 
         /// <summary>
         /// Tooltip shown when the user hover the header of this column.
         /// </summary>
-        public string Tooltip;
+        public string Tooltip { get; set; }
 
         /// <summary>
         /// Priority used to sort column order.
@@ -41,22 +41,22 @@ namespace Unity.Hierarchy
         /// Negative priority will put the column the the left of the Name column.
         /// Positive priority will put the column to the right of the Name default column.
         /// </summary>
-        public int DefaultPriority;
+        public int DefaultPriority { get; set; }
 
         /// <summary>
         /// Default Width when first instantiating the column. If negative the columns will be assigned an arbitrary width.
         /// </summary>
-        public int DefaultWidth = -1;
+        public int DefaultWidth { get; set; } = -1;
 
         /// <summary>
         /// Define if the column should initially be visible.
         /// </summary>
-        public bool DefaultVisibility;
+        public bool DefaultVisibility { get; set; }
 
         /// <summary>
         /// User data
         /// </summary>
-        public object UserData;
+        public object UserData { get; set; }
 
         /// <summary>
         /// Callback allowing the user to create a custom header. If callback is null, default header will be used to display both the icon and text of the Name field.

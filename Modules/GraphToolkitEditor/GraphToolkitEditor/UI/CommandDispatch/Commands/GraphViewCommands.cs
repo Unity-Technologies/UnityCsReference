@@ -137,9 +137,9 @@ namespace Unity.GraphToolkit.Editor
             if (placematModelsToBringInFrontOf != null && placematModelsToBringInFrontOf.Count > 0)
             {
                 var graphModel = placematModelsToBringInFrontOf[0].Item1.GraphModel;
-                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 for (var i = placematModelsToBringInFrontOf.Count() - 1; i >= 0; --i)
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                 {
                     var placematPair = placematModelsToBringInFrontOf[i];
                     graphModel.BringPlacematAfter(placematPair.Item1, placematPair.Item2);
@@ -270,9 +270,9 @@ namespace Unity.GraphToolkit.Editor
                 graphModelState.GraphModel.DeleteElements(command.Models);
                 var deletedModels = changeScope.ChangeDescription.DeletedModels;
 
-                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 var selectedModels = deletedModels.Where(selectionState.IsSelected).ToList();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                 if (selectedModels.HasAny())
                 {
                     selectionUpdater.SelectElements(selectedModels, false);

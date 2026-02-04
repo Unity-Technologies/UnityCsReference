@@ -5,7 +5,6 @@
 using System;
 using System.Collections.Generic;
 using System.Globalization;
-using System.Linq;
 using System.Text.RegularExpressions;
 using UnityEngine;
 using UnityEditor.Scripting.ScriptCompilation;
@@ -31,7 +30,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         private SemVersion? m_SupportedUnityVersion;
 
         [SerializeField]
-        private List<PackageSizeInfo> m_SizeInfos;
+        private PackageSizeInfo[] m_SizeInfos;
 
         // We want to distinguish version.author to the package.publisherName since publisher name is related to a product
         // but author here refers to the author data in the PackageInfo, which is empty for an asset store package version
@@ -102,21 +101,19 @@ namespace UnityEditor.PackageManager.UI.Internal
                 SemVersionParser.TryParse(simpleVersion.Trim(), out m_SupportedUnityVersion);
                 m_SupportedUnityVersionString = m_SupportedUnityVersion?.ToString();
             }
-            else if (productInfo?.supportedVersions?.Count > 0)
+            else if (productInfo?.supportedVersions?.Length > 0)
             {
                 foreach (var v in productInfo.supportedVersions)
                     if (SemVersionParser.TryParse(v, out var parsedSemVer))
                         m_SupportedUnityVersions.Add(parsedSemVer.Value);
 
                 m_SupportedUnityVersions.Sort((left, right) => left.CompareTo(right));
-                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                m_SupportedUnityVersion = m_SupportedUnityVersions.LastOrDefault();
-#pragma warning restore RS0030
+                m_SupportedUnityVersion = m_SupportedUnityVersions.Count > 0 ? m_SupportedUnityVersions[^1] : null;
                 m_SupportedUnityVersionString = m_SupportedUnityVersion?.ToString();
             }
 
-            m_SizeInfos = new List<PackageSizeInfo>(productInfo?.sizeInfos ?? (IEnumerable<PackageSizeInfo>)Array.Empty<PackageSizeInfo>());
-            m_SizeInfos.Sort((left, right) => left.supportedUnityVersion.CompareTo(right.supportedUnityVersion));
+            m_SizeInfos = productInfo?.sizeInfos?.ToArray() ?? Array.Empty<PackageSizeInfo>();
+            Array.Sort(m_SizeInfos, (left, right) => left.supportedUnityVersion.CompareTo(right.supportedUnityVersion));
 
             var state = productInfo?.state ?? string.Empty;
             if (state.Equals("published", StringComparison.InvariantCultureIgnoreCase))

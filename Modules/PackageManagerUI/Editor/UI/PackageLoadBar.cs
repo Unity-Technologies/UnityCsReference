@@ -14,7 +14,17 @@ namespace UnityEditor.PackageManager.UI.Internal
         [Serializable]
         public new class UxmlSerializedData : VisualElement.UxmlSerializedData
         {
-            public override object CreateInstance() => new PackageLoadBar();
+            public override object CreateInstance()
+            {
+                var container = ServicesContainer.instance;
+                return new PackageLoadBar(
+                    container.Resolve<IResourceLoader>(),
+                    container.Resolve<IApplicationProxy>(),
+                    container.Resolve<IUnityConnectProxy>(),
+                    container.Resolve<IPageManager>(),
+                    container.Resolve<IProjectSettingsProxy>(),
+                    container.Resolve<IPageRefreshHandler>());
+            }
         }
 
         public enum AssetsToLoad
@@ -35,28 +45,27 @@ namespace UnityEditor.PackageManager.UI.Internal
         private bool m_LoadMoreInProgress;
         private bool m_LoadAllDiff;
 
-        private IResourceLoader m_ResourceLoader;
-        private IApplicationProxy m_Application;
-        private IUnityConnectProxy m_UnityConnect;
-        private IPageManager m_PageManager;
-        private IProjectSettingsProxy m_SettingsProxy;
-        private IPageRefreshHandler m_PageRefreshHandler;
-        private void ResolveDependencies()
-        {
-            var container = ServicesContainer.instance;
-            m_ResourceLoader = container.Resolve<IResourceLoader>();
-            m_Application = container.Resolve<IApplicationProxy>();
-            m_UnityConnect = container.Resolve<IUnityConnectProxy>();
-            m_PageManager = container.Resolve<IPageManager>();
-            m_SettingsProxy = container.Resolve<IProjectSettingsProxy>();
-            m_PageRefreshHandler = container.Resolve<IPageRefreshHandler>();
-        }
+        private readonly IApplicationProxy m_Application;
+        private readonly IUnityConnectProxy m_UnityConnect;
+        private readonly IPageManager m_PageManager;
+        private readonly IProjectSettingsProxy m_SettingsProxy;
+        private readonly IPageRefreshHandler m_PageRefreshHandler;
 
-        public PackageLoadBar()
+        public PackageLoadBar(
+            IResourceLoader resourceLoader,
+            IApplicationProxy application,
+            IUnityConnectProxy unityConnect,
+            IPageManager pageManager,
+            IProjectSettingsProxy settingsProxy,
+            IPageRefreshHandler pageRefreshHandler)
         {
-            ResolveDependencies();
+            m_Application = application;
+            m_UnityConnect = unityConnect;
+            m_PageManager = pageManager;
+            m_SettingsProxy = settingsProxy;
+            m_PageRefreshHandler = pageRefreshHandler;
 
-            var root = m_ResourceLoader.GetTemplate("PackageLoadBar.uxml");
+            var root = resourceLoader.GetTemplate("PackageLoadBar.uxml");
             Add(root);
             cache = new VisualElementCache(root);
 

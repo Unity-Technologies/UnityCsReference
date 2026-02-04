@@ -29,12 +29,12 @@ namespace UnityEngine.UIElements
         public const int kMaxValidateLayoutCount = 10;
 
         private static readonly string s_Description = "UIElements.UpdateLayout";
-        private static readonly ProfilerMarker s_ProfilerMarker = new ProfilerMarker(s_Description);
+        private static readonly ProfilerMarker s_ProfilerMarker = new ProfilerMarker(ProfilerCategory.UIToolkit, s_Description);
         public override ProfilerMarker profilerMarker => s_ProfilerMarker;
 
-        static readonly ProfilerMarker k_ComputeLayoutMarker = new("LayoutUpdater.ComputeLayout");
-        static readonly ProfilerMarker k_UpdateSubTreeMarker = new("LayoutUpdater.UpdateSubTree");
-        static readonly ProfilerMarker k_DispatchChangeEventsMarker = new("LayoutUpdater.DispatchChangeEvents");
+        static readonly ProfilerMarker k_ComputeLayoutMarker = new(ProfilerCategory.UIToolkit, "LayoutUpdater.ComputeLayout");
+        static readonly ProfilerMarker k_UpdateSubTreeMarker = new(ProfilerCategory.UIToolkit, "LayoutUpdater.UpdateSubTree");
+        static readonly ProfilerMarker k_DispatchChangeEventsMarker = new(ProfilerCategory.UIToolkit, "LayoutUpdater.DispatchChangeEvents");
 
 
         private bool m_CurrentlyRecordingLayout = false;

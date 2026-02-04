@@ -10,7 +10,7 @@ namespace Unity.Hierarchy
     /// <summary>
     /// Extension to HierarchyView adding a bunch of useful operation methods.
     /// </summary>
-    [VisibleToOtherModules("UnityEditor.HierarchyModule")]
+    [VisibleToOtherModules]
     static class HierarchyViewOperationExtension
     {
         /// <summary>

@@ -46,9 +46,9 @@ namespace Unity.ProjectAuditor.Editor.Modules
                 if (AdvanceAsyncProgress(progress, progressState) == false)
                     break;
 
-                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 var issues = analyzer.Analyze(context).ToArray();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                 if (issues.Length > 0)
                     analysisParams.OnIncomingIssues(issues);
 

@@ -172,29 +172,29 @@ namespace UnityEditor.Search
 
         void ExtractArguments(QueryMarker marker)
         {
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var args = m_Marker.EvaluateArgsNoSpread().ToList();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             if (args.Count < 2)
             {
                 m_Choices = Array.Empty<string>();
                 return;
             }
 
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             m_Choices = ExtractChoices(args[1]).ToArray();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
 
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             foreach (var arg in args.Skip(2))
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             {
                 if (!(arg is IEnumerable<object> enumerable))
                     continue;
 
-                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 var array = enumerable.ToArray();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                 if (array.Length == 0)
                     continue;
 
@@ -229,9 +229,9 @@ namespace UnityEditor.Search
             if (choiceArg == null || !(choiceArg is IEnumerable<object> enumerable))
                 return Array.Empty<string>();
 
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return enumerable.Cast<string>();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
         }
     }
 
@@ -259,9 +259,9 @@ namespace UnityEditor.Search
 
         private static Type GetValueType(string value)
         {
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return TypeCache.GetTypesDerivedFrom<UnityEngine.Object>().FirstOrDefault(t => string.Equals(t.Name, value, StringComparison.OrdinalIgnoreCase) || string.Equals(t.ToString(), value, StringComparison.OrdinalIgnoreCase));
-#pragma warning restore RS0030
+#pragma warning restore UA2001
         }
 
         public override void Apply(in SearchProposition searchProposition)
@@ -288,12 +288,12 @@ namespace UnityEditor.Search
                 icon: EditorGUIUtility.LoadIcon("GameObject Icon"));
 
             var componentType = typeof(Component);
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var assetTypes = SearchUtils.FetchTypePropositions<UnityEngine.Object>().Where(p => !componentType.IsAssignableFrom((Type)p.data));
-#pragma warning restore RS0030
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning restore UA2001
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var propositions = SearchUtils.FetchTypePropositions<Component>("Components").Concat(assetTypes);
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             foreach (var p in propositions)
                 yield return p;
         }

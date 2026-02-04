@@ -16,8 +16,8 @@ namespace UnityEditor.PackageManager.UI.Internal
         public static readonly PageSortOption[] k_DefaultSupportedSortOptions = { PageSortOption.NameAsc, PageSortOption.NameDesc, PageSortOption.PublishedDateDesc };
         public static readonly PageFilters.Status[] k_DefaultSupportedStatusFilters = { PageFilters.Status.UpdateAvailable };
 
-        public override IReadOnlyCollection<PageFilters.Status> supportedStatusFilters => k_DefaultSupportedStatusFilters;
-        public override IReadOnlyCollection<PageSortOption> supportedSortOptions => k_DefaultSupportedSortOptions;
+        public override IReadOnlyList<PageFilters.Status> supportedStatusFilters => k_DefaultSupportedStatusFilters;
+        public override IReadOnlyList<PageSortOption> supportedSortOptions => k_DefaultSupportedSortOptions;
 
         [SerializeField]
         private VisualStateList m_VisualStateList = new();
@@ -58,9 +58,9 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public override void ResetUserUnlockedState()
         {
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            var unlockedVisualStates = visualStates.Where(v => v.userUnlocked).ToArray();
-#pragma warning restore RS0030
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            var unlockedVisualStates = visualStates.Filter(v => v.userUnlocked).ToArray();
+#pragma warning restore UA2001
             foreach (var visualState in unlockedVisualStates)
                 visualState.userUnlocked = false;
             TriggerOnVisualStateChange(unlockedVisualStates);
@@ -86,9 +86,9 @@ namespace UnityEditor.PackageManager.UI.Internal
         {
             base.OnDeactivated();
             var selectedVisualStates = GetSelectedVisualStates();
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            var selectedGroups = new HashSet<string>(selectedVisualStates.Select(v => v.groupName).Where(groupName => !string.IsNullOrEmpty(groupName)));
-#pragma warning restore RS0030
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            var selectedGroups = new HashSet<string>(selectedVisualStates.Select(v => v.groupName).Filter(groupName => !string.IsNullOrEmpty(groupName)));
+#pragma warning restore UA2001
             foreach (var group in selectedGroups)
                 SetGroupExpanded(group, true);
         }
@@ -96,24 +96,24 @@ namespace UnityEditor.PackageManager.UI.Internal
         public override void RebuildAndReorderVisualStates()
         {
             var filterByStatus = filters.status;
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            var packages = m_PackageDatabase.allPackages.Where(
-#pragma warning restore RS0030
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            var packages = m_PackageDatabase.allPackages.Filter(
+#pragma warning restore UA2001
                 p => ShouldInclude(p)
                      && (filterByStatus != PageFilters.Status.UpdateAvailable || p.state == PackageState.UpdateAvailable)
                      && (filterByStatus != PageFilters.Status.SubscriptionBased || p.hasEntitlements));
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var orderedVisualStates = packages.OrderBy(p => p, new PackageComparer(filters.sortOption)).Select(p =>
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             {
                 var visualState = m_VisualStateList.Get(p.uniqueId) ?? new VisualState(p.uniqueId);
                 visualState.groupName = GetGroupName(p);
                 visualState.lockedByDefault = GetDefaultLockState(p);
                 return visualState;
             }).ToList();
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            var orderedGroups = orderedVisualStates.Select(v => v.groupName).Distinct().Where(i => !string.IsNullOrEmpty(i)).ToList();
-#pragma warning restore RS0030
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            var orderedGroups = orderedVisualStates.Select(v => v.groupName).EnumerateDistinct().Filter(i => !string.IsNullOrEmpty(i)).ToList();
+#pragma warning restore UA2001
             if (orderedGroups.Count > 1)
                 SortGroupNames(orderedGroups);
             m_VisualStateList.Rebuild(orderedVisualStates, orderedGroups);
@@ -127,9 +127,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         public override bool GetDefaultLockState(IPackage package)
         {
             return package.versions.installed?.isDirectDependency != true &&
-#pragma warning disable RS0031 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-               m_PackageDatabase.GetFeaturesThatUseThisPackage(package.versions.installed)?.Any() == true;
-#pragma warning restore RS0031
+               m_PackageDatabase.IsUsedByFeature(package.versions.installed);
         }
 
         // All the following load functions do nothing, because for a SimplePage we already know the complete list and there's no more to load

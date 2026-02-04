@@ -4,7 +4,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using UnityEngine;
 
 namespace UnityEditor.PackageManager.UI.Internal
@@ -41,8 +40,8 @@ namespace UnityEditor.PackageManager.UI.Internal
         public override Icon icon => m_Args.icon;
         public override RefreshOptions refreshOptions => m_Args.refreshOptions;
 
-        public override IReadOnlyCollection<PageFilters.Status> supportedStatusFilters => m_Args.supportedStatusFilters ?? Array.Empty<PageFilters.Status>();
-        public override IReadOnlyCollection<PageSortOption> supportedSortOptions => m_Args.supportedSortOptions ?? Array.Empty<PageSortOption>();
+        public override IReadOnlyList<PageFilters.Status> supportedStatusFilters => m_Args.supportedStatusFilters ?? Array.Empty<PageFilters.Status>();
+        public override IReadOnlyList<PageSortOption> supportedSortOptions => m_Args.supportedSortOptions ?? Array.Empty<PageSortOption>();
         public override PageCapability capability => m_Args.capability;
 
         public ExtensionPage(IPackageDatabase packageDatabase, ExtensionPageArgs args)

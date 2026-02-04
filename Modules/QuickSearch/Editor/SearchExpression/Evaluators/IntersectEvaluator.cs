@@ -34,9 +34,9 @@ namespace UnityEditor.Search
             }
 
             // Remove from primary set all items from subsequent sets that do not intersect
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             foreach (var e in c.args.Skip(1))
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             {
                 if (e != null && !e.types.HasFlag(SearchExpressionType.Selector))
                 {

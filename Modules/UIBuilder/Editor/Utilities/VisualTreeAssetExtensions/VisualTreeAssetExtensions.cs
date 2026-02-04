@@ -227,18 +227,18 @@ namespace Unity.UI.Builder
                     continue;
                 if (vea is not VisualElementAsset visualElementAsset)
                     continue;
-                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 if (visualElementAsset.classes.Contains(className))
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                     foundList.Add(visualElementAsset);
             }
             foreach (var vea in list)
             {
                 if (vea is not TemplateAsset templateAsset)
                     continue;
-                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 if (templateAsset.classes.Contains(className))
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                     foundList.Add(templateAsset);
             }
             return foundList;
@@ -259,48 +259,6 @@ namespace Unity.UI.Builder
                     usings[i] = u;
                 }
             }
-        }
-
-        static void GetAllReferencedStyleSheets(VisualElementAsset vea, HashSet<StyleSheet> sheets)
-        {
-            var styleSheets = vea.stylesheets;
-            if (styleSheets != null)
-            {
-                foreach (var styleSheet in styleSheets)
-                    if (styleSheet != null) // Possible if the path is not valid.
-                        sheets.Add(styleSheet);
-            }
-
-            var styleSheetPaths = vea.GetStyleSheetPaths();
-            if (styleSheetPaths != null)
-            {
-                foreach (var sheetPath in styleSheetPaths)
-                {
-                    var sheetAsset = BuilderPackageUtilities.LoadAssetAtPath<StyleSheet>(sheetPath);
-                    if (sheetAsset == null)
-                    {
-                        sheetAsset = Resources.Load<StyleSheet>(sheetPath);
-                        if (sheetAsset == null)
-                            continue;
-                    }
-
-                    sheets.Add(sheetAsset);
-                }
-            }
-        }
-
-        internal static List<StyleSheet> GetAllReferencedStyleSheets(this VisualTreeAsset vta)
-        {
-            var sheets = new HashSet<StyleSheet>();
-
-            var visualTree = vta.visualTreeNoAlloc;
-            if (null == visualTree)
-                return new List<StyleSheet>();
-
-            GetAllReferencedStyleSheets(visualTree, sheets);
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            return sheets.ToList();
-#pragma warning restore RS0030
         }
 
         public static string GetPathFromTemplateName(this VisualTreeAsset vta, string templateName)
@@ -411,9 +369,9 @@ namespace Unity.UI.Builder
                 var styleSheetPaths = element.GetStyleSheetPaths();
                 if (styleSheetPaths != null)
                 {
-                    #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                    #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     for (int i = 0; i < styleSheetPaths.Count(); ++i)
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                     {
                         var styleSheetPath = styleSheetPaths[i];
                         if (styleSheetPath != oldUssPath && oldUssPath != String.Empty)

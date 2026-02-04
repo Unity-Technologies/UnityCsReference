@@ -109,75 +109,68 @@ namespace UnityEditor
             Application.SetStackTraceLogType(logType, oldStackTraceType);
         }
 
-        void LogMessageMultiple(MessageEventArgs messageEventArgs)
+        unsafe void LogMessageMultiple(MessageEventArgs messageEventArgs)
         {
-            ReadOnlySpan<byte> payload = messageEventArgs.data.AsSpan<byte>();
-            var payloadLength = payload.Length;
+            var payloadLength = messageEventArgs.data.Length;
 
             if (payloadLength <= 0) return;
 
             var name = ConnectionUIHelper.GetPlayerNameFromId(messageEventArgs.playerId);
             var t = ConnectionUIHelper.GetPlayerType(ProfilerDriver.GetConnectionIdentifier(messageEventArgs.playerId));
 
-            var prefix = $"<i>{t} \"{name}\"</i> ";
-            var prefixUtf8Length = Encoding.UTF8.GetByteCount(prefix);
-            var prefixUtf8Bytes = new byte[prefixUtf8Length];
-            var prefixUtf8Span = new Span<byte>(prefixUtf8Bytes);
-            Encoding.UTF8.GetBytes(prefix, prefixUtf8Span);
+            var messagePrefix = $"<i>{t} \"{name}\"</i> ";
+            var prefixUtf8Bytes = Encoding.UTF8.GetBytes(messagePrefix);
 
-            var messagePrefix = new UTF8StringView(prefixUtf8Span);
-
-            static UTF8StringView ReadString(ReadOnlySpan<byte> payload, ref int offset)
+            fixed (byte* payloadPtr = messageEventArgs.data.AsSpan<byte>())
+            fixed (byte* prefixUtf8Ptr = prefixUtf8Bytes)
             {
-                var bytesLength = BitConverter.ToInt32(payload.Slice(offset, 4));
-                offset += 4;
-
-                if (bytesLength == 0)
-                    return default;
-                if (bytesLength < 0)
-                    throw new Exception("Received corrupted message");
-
-                var utf8String = payload.Slice(offset, bytesLength);
-                offset += bytesLength;
-
-                unsafe
+                static UTF8StringView ReadString(byte* payload, ref int offset)
                 {
-                    fixed(byte* ptr = &utf8String[0])
-                        return new UTF8StringView(ptr, bytesLength);
+                    var bytesLength = BitConverter.ToInt32(new ReadOnlySpan<byte>(payload + offset, 4));
+                    offset += 4;
+
+                    if (bytesLength == 0)
+                        return default;
+                    if (bytesLength < 0)
+                        throw new Exception("Received corrupted message");
+
+                    var utf8StringPtr = payload + offset;
+                    offset += bytesLength;
+                    return new UTF8StringView(utf8StringPtr, bytesLength);
                 }
-            }
 
-            static LogMessageFlags FlagsFromType(LogType type)
-            {
-                switch (type)
+                static LogMessageFlags FlagsFromType(LogType type)
                 {
-                    case LogType.Warning: return LogMessageFlags.DebugWarning;
-                    case LogType.Error: return LogMessageFlags.DebugError;
-                    case LogType.Assert: return LogMessageFlags.DebugAssert;
-                    case LogType.Exception: return LogMessageFlags.DebugException;
+                    switch (type)
+                    {
+                        case LogType.Warning: return LogMessageFlags.DebugWarning;
+                        case LogType.Error: return LogMessageFlags.DebugError;
+                        case LogType.Assert: return LogMessageFlags.DebugAssert;
+                        case LogType.Exception: return LogMessageFlags.DebugException;
+                    }
+                    return LogMessageFlags.DebugLog;
                 }
-                return LogMessageFlags.DebugLog;
-            }
 
-            for (var offset = 0; offset < payloadLength;)
-            {
-                var logType = (LogType)BitConverter.ToInt32(payload.Slice(offset, 4));
-                offset += 4;
-
-                var message = ReadString(payload, ref offset);
-                var timestamp = ReadString(payload, ref offset);
-                var stacktrace = ReadString(payload, ref offset);
-
-                var log = new LogEntryStruct
+                for (var offset = 0; offset < payloadLength;)
                 {
-                    messagePrefix = messagePrefix,
-                    message = message,
-                    timestamp = timestamp,
-                    callstack = stacktrace,
-                    mode = FlagsFromType(logType) | LogMessageFlags.kStacktraceIsPostprocessed
-                };
-                ConsoleWindow.AddMessage(ref log);
-                Console.WriteLine(messagePrefix.ToString() + message.ToString());
+                    var logType = (LogType)BitConverter.ToInt32(new ReadOnlySpan<byte>(payloadPtr + offset, 4));
+                    offset += 4;
+
+                    var message = ReadString(payloadPtr, ref offset);
+                    var timestamp = ReadString(payloadPtr, ref offset);
+                    var stacktrace = ReadString(payloadPtr, ref offset);
+
+                    var log = new LogEntryStruct
+                    {
+                        messagePrefix = new UTF8StringView(prefixUtf8Ptr, prefixUtf8Bytes.Length),
+                        message = message,
+                        timestamp = timestamp,
+                        callstack = stacktrace,
+                        mode = FlagsFromType(logType) | LogMessageFlags.kStacktraceIsPostprocessed
+                    };
+                    ConsoleWindow.AddMessage(ref log);
+                    Console.WriteLine(messagePrefix + message.ToString());
+                }
             }
         }
     }

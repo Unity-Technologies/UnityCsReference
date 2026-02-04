@@ -3,7 +3,6 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using System.Linq;
 using UnityEngine.UIElements;
 
 namespace UnityEditor.PackageManager.UI.Internal
@@ -13,19 +12,17 @@ namespace UnityEditor.PackageManager.UI.Internal
         [Serializable]
         public new class UxmlSerializedData : VisualElement.UxmlSerializedData
         {
-            public override object CreateInstance() => new PackagePlatformList();
+            public override object CreateInstance()
+            {
+                return new PackagePlatformList(ServicesContainer.instance.Resolve<IUpmCache>());
+            }
         }
 
-        private IUpmCache m_UpmCache;
-        private void ResolveDependencies()
+        private readonly IUpmCache m_UpmCache;
+        public PackagePlatformList(IUpmCache upmCache)
         {
-            var container = ServicesContainer.instance;
-            m_UpmCache = container.Resolve<IUpmCache>();
-        }
+            m_UpmCache = upmCache;
 
-        public PackagePlatformList()
-        {
-            ResolveDependencies();
             m_TagLabelList = new TagLabelList();
             Add(m_TagLabelList);
         }
@@ -39,21 +36,17 @@ namespace UnityEditor.PackageManager.UI.Internal
                 return;
 
             var upmReserved = m_UpmCache.ParseUpmReserved(packageInfo);
-            var platformNames = upmReserved?.GetList<string>("supportedPlatforms") ?? Array.Empty<string>();
+            var platformNames = upmReserved?.GetNewArray<string>("supportedPlatforms") ?? Array.Empty<string>();
 
-#pragma warning disable RS0031 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            if (!platformNames.Any())
-#pragma warning restore RS0031
+            if (platformNames.Length == 0)
                 return;
 
             UIUtils.SetElementDisplay(this, true);
 
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            var listLabel = platformNames.Count() > 1 ? L10n.Tr("Supported Platforms:") : L10n.Tr("Supported Platform:");
-#pragma warning restore RS0030
+            var listLabel = platformNames.Length > 1 ? L10n.Tr("Supported Platforms:") : L10n.Tr("Supported Platform:");
             m_TagLabelList.Refresh(listLabel, platformNames);
         }
 
-        private TagLabelList m_TagLabelList;
+        private readonly TagLabelList m_TagLabelList;
     }
 }

@@ -4,7 +4,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Text.RegularExpressions;
 using UnityEngine.Analytics;
 
@@ -33,7 +32,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         }
 
         private Data m_Data;
-        private PackageManagerWindowAnalytics(string action, string packageId, IEnumerable<string> packageIds, string packageTag, IEnumerable<string> packageTags)
+        private PackageManagerWindowAnalytics(string action, string packageId, string[] packageIds, string packageTag, string[] packageTags)
         {
             var servicesContainer = ServicesContainer.instance;
 
@@ -51,12 +50,8 @@ namespace UnityEditor.PackageManager.UI.Internal
                 action = action,
                 package_id = packageId ?? string.Empty,
                 package_tag = packageTag ?? string.Empty,
-                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                package_ids = packageIds?.ToArray() ?? Array.Empty<string>(),
-#pragma warning restore RS0030
-                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                package_tags = packageTags?.ToArray() ?? Array.Empty<string>(),
-#pragma warning restore RS0030
+                package_ids = packageIds ?? Array.Empty<string>(),
+                package_tags = packageTags ?? Array.Empty<string>(),
                 search_text = activePage.searchText,
                 filter_name = activePage.id,
                 details_tab = packageManagerPrefs.selectedPackageDetailsTabIdentifier ?? string.Empty,
@@ -87,14 +82,27 @@ namespace UnityEditor.PackageManager.UI.Internal
             SendEvent(action, GetAnalyticsPackageId(version), packageTag: version?.GetAnalyticsTags());
         }
 
-        public static void SendEvent(string action, IEnumerable<IPackageVersion> versions)
+        public static void SendEvent(string action, IReadOnlyCollection<IPackage> packages)
         {
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            SendEvent(action, packageIds: versions?.Select(GetAnalyticsPackageId), packageTags: versions?.Select(v => v.GetAnalyticsTags()));
-#pragma warning restore RS0030
+            var packageIds = new string[packages.Count];
+            var packageTags = new string[packages.Count];
+            var index = 0;
+            foreach (var package in packages)
+            {
+                var version = package.versions.primary;
+                packageIds[index] = GetAnalyticsPackageId(version);
+                packageTags[index] = version.GetAnalyticsTags();
+                ++index;
+            }
+            SendEvent(action, packageIds: packageIds, packageTags: packageTags);
         }
 
-        public static void SendEvent(string action, string packageId = null, IEnumerable<string> packageIds = null, string packageTag = null, IEnumerable<string> packageTags = null)
+        public static void SendEvent(string action, IReadOnlyCollection<IPackageVersion> versions)
+        {
+            SendEvent(action, packageIds: versions?.SelectToNewArray(GetAnalyticsPackageId), packageTags: versions?.SelectToNewArray(v => v.GetAnalyticsTags()));
+        }
+
+        public static void SendEvent(string action, string packageId = null, string[] packageIds = null, string packageTag = null, string[] packageTags = null)
         {
             var editorAnalyticsProxy = ServicesContainer.instance.Resolve<IEditorAnalyticsProxy>();
             editorAnalyticsProxy.SendAnalytic(new PackageManagerWindowAnalytics(action, packageId, packageIds, packageTag, packageTags));

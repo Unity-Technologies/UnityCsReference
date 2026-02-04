@@ -12,7 +12,9 @@ namespace UnityEditor.PackageManager.UI.Internal
     {
         public static ActiveTrustReturnValue ShowActiveTrustWindow(IList<PackageInfo> invalidSignaturePackages, IList<PackageInfo> missingSignaturePackages, IList<PackageInfo> limitedTrustPackages)
         {
-            var content = new ActiveTrustContent(invalidSignaturePackages, missingSignaturePackages, limitedTrustPackages);
+            var container = ServicesContainer.instance;
+            var content = new ActiveTrustContent(container.Resolve<IResourceLoader>(), container.Resolve<IApplicationProxy>(),
+                invalidSignaturePackages, missingSignaturePackages, limitedTrustPackages);
             return ModalWindowContainer.ShowModal(content) ? content.returnValue : ActiveTrustReturnValue.Error;
         }
 
@@ -22,24 +24,12 @@ namespace UnityEditor.PackageManager.UI.Internal
 
             public ActiveTrustReturnValue returnValue { get; private set; } = ActiveTrustReturnValue.Cancel;
 
-            private Button m_CancelButton;
-            private Button m_InstallAnywayButton;
-
-            private readonly IResourceLoader m_ResourceLoader;
-            private readonly IApplicationProxy m_Application;
-            public ActiveTrustContent(IList<PackageInfo> invalidSignaturePackages, IList<PackageInfo> missingSignaturePackages, IList<PackageInfo> limitedTrustPackages)
+            public ActiveTrustContent(IResourceLoader resourceLoader, IApplicationProxy application, IList<PackageInfo> invalidSignaturePackages, IList<PackageInfo> missingSignaturePackages, IList<PackageInfo> limitedTrustPackages)
             {
-                m_ResourceLoader = ServicesContainer.instance.Resolve<IResourceLoader>();
-                m_Application = ServicesContainer.instance.Resolve<IApplicationProxy>();
-                Init(invalidSignaturePackages, missingSignaturePackages, limitedTrustPackages);
-            }
-
-            private void Init(IList<PackageInfo> invalidSignaturePackages, IList<PackageInfo> missingSignaturePackages, IList<PackageInfo> limitedTrustPackages)
-            {
-                var root = m_ResourceLoader.GetTemplate("ActiveTrustWindow.uxml");
+                var root = resourceLoader.GetTemplate("ActiveTrustWindow.uxml");
                 cache = new VisualElementCache(root);
-                styleSheets.Add(m_ResourceLoader.packageManagerCommonStyleSheet);
-                styleSheets.Add(m_ResourceLoader.activeTrustWindowStyleSheet);
+                styleSheets.Add(resourceLoader.packageManagerCommonStyleSheet);
+                styleSheets.Add(resourceLoader.activeTrustWindowStyleSheet);
 
                 var hasInvalidSignature = invalidSignaturePackages?.Count > 0;
                 var hasMissingSignature = missingSignaturePackages?.Count > 0;
@@ -53,45 +43,45 @@ namespace UnityEditor.PackageManager.UI.Internal
                     var message = invalidSignaturePackages.Count == 1
                         ? L10n.Tr("This package has an invalid signature.")
                         : string.Format(L10n.Tr("{0} packages have invalid signatures."), invalidSignaturePackages.Count);
-                    var packageStateInvalidSignatures = new ActiveTrustPackageState(m_ResourceLoader, message, Icon.PackageErrorLarge, invalidSignaturePackages);
+                    var packageStateInvalidSignatures = new ActiveTrustPackageState(resourceLoader, message, Icon.PackageErrorLarge, invalidSignaturePackages);
                     bodyScroll.Add(packageStateInvalidSignatures);
-                    docUrl ??= $"https://docs.unity3d.com/{m_Application.shortUnityVersion}/Documentation/Manual/upm-errors.html#pkg-invalid-sig";
+                    docUrl ??= $"https://docs.unity3d.com/{application.shortUnityVersion}/Documentation/Manual/upm-errors.html#pkg-invalid-sig";
                 }
                 if (hasMissingSignature)
                 {
                     var message = missingSignaturePackages.Count == 1
                         ? L10n.Tr("This package is missing a signature.")
                         : string.Format(L10n.Tr("{0} packages are missing a signature."), missingSignaturePackages.Count);
-                    var packagesStateMissingSignatures = new ActiveTrustPackageState(m_ResourceLoader, message, Icon.PackageWarningLarge, missingSignaturePackages, false);
+                    var packagesStateMissingSignatures = new ActiveTrustPackageState(resourceLoader, message, Icon.PackageWarningLarge, missingSignaturePackages, false);
                     bodyScroll.Add(packagesStateMissingSignatures);
-                    docUrl ??= $"https://docs.unity3d.com/{m_Application.shortUnityVersion}/Documentation/Manual/upm-signature.html";
+                    docUrl ??= $"https://docs.unity3d.com/{application.shortUnityVersion}/Documentation/Manual/upm-signature.html";
                 }
                 if (hasLimitedTrust)
                 {
                     var message = limitedTrustPackages.Count == 1
                         ? L10n.Tr("This package is signed but not from official Unity sources.")
                         : string.Format(L10n.Tr("{0} packages are signed but not from official Unity sources."), limitedTrustPackages.Count);
-                    var packageStateLimitedTrust = new ActiveTrustPackageState(m_ResourceLoader, message, Icon.PackageOptionLarge, limitedTrustPackages);
+                    var packageStateLimitedTrust = new ActiveTrustPackageState(resourceLoader, message, Icon.PackageOptionLarge, limitedTrustPackages);
                     bodyScroll.Add(packageStateLimitedTrust);
-                    docUrl ??= $"https://docs.unity3d.com/{m_Application.shortUnityVersion}/Documentation/Manual/upm-signature.html";
+                    docUrl ??= $"https://docs.unity3d.com/{application.shortUnityVersion}/Documentation/Manual/upm-signature.html";
                 }
                 if (!string.IsNullOrEmpty(docUrl))
-                    readMoreButton.clicked += () => m_Application.OpenURL(docUrl);
+                    readMoreButton.clicked += () => application.OpenURL(docUrl);
 
-                m_CancelButton = new Button { text = L10n.Tr("Cancel") };
-                m_CancelButton.clicked += () =>
+                var cancelButton = new Button { text = L10n.Tr("Cancel") };
+                cancelButton.clicked += () =>
                 {
                     returnValue = ActiveTrustReturnValue.Cancel;
                     container.Close();
                 };
-                m_InstallAnywayButton = new Button { text = L10n.Tr("Install Anyway") };
-                m_InstallAnywayButton.clicked += () =>
+                var installAnywayButton = new Button { text = L10n.Tr("Install Anyway") };
+                installAnywayButton.clicked += () =>
                 {
                     returnValue = ActiveTrustReturnValue.InstallAnyway;
                     container.Close();
                 };
-                buttonsContainer.Add(m_InstallAnywayButton);
-                buttonsContainer.Add(m_CancelButton);
+                buttonsContainer.Add(installAnywayButton);
+                buttonsContainer.Add(cancelButton);
                 Add(root);
 
                 RegisterCallback<GeometryChangedEvent>(OnFirstLayout);
@@ -127,7 +117,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 UnregisterCallback<GeometryChangedEvent>(OnFirstLayout);
 
                 // There are many issues with the modal window, this seems to ensure that the window is properly sized
-                schedule.Execute(() => CalculateAndSetWindowHeight()).StartingIn(1);
+                schedule.Execute(CalculateAndSetWindowHeight).StartingIn(1);
             }
 
             private void CalculateAndSetWindowHeight()
@@ -155,7 +145,6 @@ namespace UnityEditor.PackageManager.UI.Internal
             private VisualElementCache cache { get; set; }
             private VisualElement upperContainer => cache.Get<VisualElement>("upperContainer");
             private ExtendedHelpBox helpBoxContainer => cache.Get<ExtendedHelpBox>("helpBoxContainer");
-            private VisualElement bodyContainer => cache.Get<VisualElement>("bodyContainer");
             private ScrollView bodyScroll => cache.Get<ScrollView>("bodyScroll");
             private VisualElement lowerContainer => cache.Get<VisualElement>("lowerContainer");
             private Button readMoreButton => cache.Get<Button>("readMoreButton");

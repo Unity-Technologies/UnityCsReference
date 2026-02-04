@@ -19,15 +19,14 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private class InProgressContainer : VisualElement
         {
-            public Label label { get; private set; }
-            public Button button { get; private set; }
+            public Label label { get; }
 
             public InProgressContainer(Action buttonAction)
             {
                 label = new Label();
                 Add(label);
 
-                button = new Button() { text = L10n.Tr("View") };
+                var button = new Button { text = L10n.Tr("View") };
                 button.clickable.clicked += buttonAction;
                 Add(button);
             }
@@ -40,32 +39,22 @@ namespace UnityEditor.PackageManager.UI.Internal
         private InProgressContainer m_EnablingContainer;
         private InProgressContainer enablingContainer => m_EnablingContainer ??= new InProgressContainer(ViewEnabling);
 
-        private IResourceLoader m_ResourceLoader;
-        private IUpmClient m_UpmClient;
-        private IAssetStoreDownloadManager m_AssetStoreDownloadManager;
-        private IPackageDatabase m_PackageDatabase;
-        private IPageManager m_PageManager;
-        private void ResolveDependencies(IResourceLoader resourceLoader,
-                                         IUpmClient upmClient,
-                                         IAssetStoreDownloadManager assetStoreDownloadManager,
-                                         IPackageDatabase packageDatabase,
-                                         IPageManager packageManager)
-        {
-            m_ResourceLoader = resourceLoader;
-            m_UpmClient = upmClient;
-            m_AssetStoreDownloadManager = assetStoreDownloadManager;
-            m_PackageDatabase = packageDatabase;
-            m_PageManager = packageManager;
-        }
-
+        private readonly IUpmClient m_UpmClient;
+        private readonly IAssetStoreDownloadManager m_AssetStoreDownloadManager;
+        private readonly IPackageDatabase m_PackageDatabase;
+        private readonly IPageManager m_PageManager;
         public InProgressDropdown(IResourceLoader resourceLoader,
                                   IUpmClient upmClient,
                                   IAssetStoreDownloadManager assetStoreDownloadManager,
                                   IPackageDatabase packageDatabase,
                                   IPageManager packageManager)
         {
-            ResolveDependencies(resourceLoader, upmClient, assetStoreDownloadManager, packageDatabase, packageManager);
-            styleSheets.Add(m_ResourceLoader.inProgressDropdownStyleSheet);
+            m_UpmClient = upmClient;
+            m_AssetStoreDownloadManager = assetStoreDownloadManager;
+            m_PackageDatabase = packageDatabase;
+            m_PageManager = packageManager;
+
+            styleSheets.Add(resourceLoader.inProgressDropdownStyleSheet);
 
             m_Height = 0;
             Refresh();
@@ -100,14 +89,14 @@ namespace UnityEditor.PackageManager.UI.Internal
             return m_Height != 0;
         }
 
-        private bool AddInProgressContainer(InProgressContainer container, int numItemsInProgress, string textFormat)
+        private bool AddInProgressContainer(InProgressContainer element, int numItemsInProgress, string textFormat)
         {
             if (numItemsInProgress <= 0)
                 return false;
 
             var numItemsText = string.Format(numItemsInProgress > 1 ? L10n.Tr("{0} items") : L10n.Tr("{0} item"), numItemsInProgress);
-            container.label.text = string.Format(textFormat, numItemsText);
-            Add(container);
+            element.label.text = string.Format(textFormat, numItemsText);
+            Add(element);
             return true;
         }
 
@@ -128,17 +117,17 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private void ViewPackagesOnPage(IPage page, PackageProgress progress, PackageTag tag = PackageTag.None)
         {
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            var packagesInProgress = m_PackageDatabase.allPackages.Where(p =>
-#pragma warning restore RS0030
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            var packagesInProgress = m_PackageDatabase.allPackages.Filter(p =>
+#pragma warning restore UA2001
                 p.progress == progress && (tag == PackageTag.None || p.versions.primary.HasTag(tag))).ToArray();
             if (packagesInProgress.Length > 0)
             {
                 m_PageManager.activePage = page;
                 page.LoadExtraItems(packagesInProgress);
-                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 page.SetNewSelection(packagesInProgress.Select(p => p.uniqueId));
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             }
             Close();
         }

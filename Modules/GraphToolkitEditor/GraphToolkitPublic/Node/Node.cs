@@ -220,6 +220,18 @@ namespace Unity.GraphToolkit.Editor
         }
 
         /// <summary>
+        /// The main text displayed in the node's header.
+        /// </summary>
+        /// <remarks>
+        /// This attribute will only modify the node's title in the graph view.
+        /// </remarks>
+        public string Title
+        {
+            get => m_Implementation.Title;
+            set => m_Implementation.Title = value;
+        }
+
+        /// <summary>
         /// The highlight color of the node. The highlight is located on the upper border of nodes, and on the upper and lower borders of context nodes.
         /// </summary>
         public Color DefaultColor

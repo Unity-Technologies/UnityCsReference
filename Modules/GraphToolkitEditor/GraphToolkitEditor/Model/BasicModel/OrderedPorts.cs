@@ -202,9 +202,9 @@ namespace Unity.GraphToolkit.Editor
         IEnumerator<PortModel> IEnumerable<PortModel>.GetEnumerator()
         {
             Assert.AreEqual(m_Order.Count, m_PortModels.Count, "these lists are supposed to always be of the same size");
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return m_Order.Select(i => m_PortModels[i]).GetEnumerator();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
         }
 
         /// <summary>

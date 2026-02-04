@@ -4,7 +4,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using UnityEngine;
 using UnityEngine.UIElements;
 
@@ -14,10 +13,8 @@ namespace UnityEditor.PackageManager.UI.Internal
     {
         private IWindow m_Window;
         private bool m_NeedRefresh;
-        #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-        public IEnumerable<PackageActionDropdownItem> visibleDropdownItems => m_DropdownItems.Where(item => item.visible);
-#pragma warning restore RS0030
         private List<PackageActionDropdownItem> m_DropdownItems;
+        public IReadOnlyCollection<PackageActionDropdownItem> dropdownItems => m_DropdownItems;
         public DropdownButton dropdownButton { get; }
 
         private Action<PackageSelectionArgs> m_Action;
@@ -92,20 +89,23 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private void OnBeforeShowDropdown()
         {
-            if (m_NeedRefresh || m_DropdownItems.Any(d => d.needRefresh))
+            var needRefresh = m_NeedRefresh || m_DropdownItems.AnyMatches(i => i.needRefresh);
+            if (!needRefresh)
+                return;
+
+            m_DropdownItems.Sort(ExtensionManager.CompareExtensions);
+            var newDropdownMenu = new DropdownMenu();
+            foreach (var item in m_DropdownItems)
             {
-                m_DropdownItems.Sort(ExtensionManager.CompareExtensions);
-                var newDropdownMenu = new DropdownMenu();
-                foreach (var item in visibleDropdownItems)
-                {
-                    if (item.insertSeparatorBefore)
-                        newDropdownMenu.AppendSeparator();
-                    newDropdownMenu.AppendAction(item.text, a => { item.action?.Invoke(m_Window.activeSelection); }, item.statusCallback);
-                    item.needRefresh = false;
-                }
-                dropdownButton.menu = newDropdownMenu;
-                m_NeedRefresh = false;
+                item.needRefresh = false;
+                if (!item.visible)
+                    continue;
+                if (item.insertSeparatorBefore)
+                    newDropdownMenu.AppendSeparator();
+                newDropdownMenu.AppendAction(item.text, a => { item.action?.Invoke(m_Window.activeSelection); }, item.statusCallback);
             }
+            dropdownButton.menu = newDropdownMenu;
+            m_NeedRefresh = false;
         }
 
         public IPackageActionDropdownItem AddDropdownItem()
@@ -121,9 +121,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private void RefreshDropdownIcon()
         {
-#pragma warning disable RS0031 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            var anyDropdownItemsVisible = visibleDropdownItems.Any();
-#pragma warning restore RS0031
+            var anyDropdownItemsVisible = m_DropdownItems.AnyMatches(i => i.visible);
             if (anyDropdownItemsVisible && dropdownButton.menu == null)
                 dropdownButton.menu = new DropdownMenu();
             else if (!anyDropdownItemsVisible && dropdownButton.menu != null)

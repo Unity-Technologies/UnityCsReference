@@ -87,6 +87,7 @@ namespace UnityEngine
             None = 0,
 
             // The NVIDIA Optix AI denoiser is applied.
+            [Obsolete("DenoiserType.Optix is obsolete, use DenoiserType.OpenImage instead.", false)]
             Optix = 1,
 
             // The Intel Open Image AI denoiser is applied.

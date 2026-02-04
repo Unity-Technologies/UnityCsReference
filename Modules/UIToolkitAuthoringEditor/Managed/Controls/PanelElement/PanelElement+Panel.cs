@@ -29,6 +29,11 @@ namespace Unity.UIToolkit.Editor
             public RuntimePanel(ScriptableObject ownerObject) : base(ownerObject, EventDispatcher.CreateDefault())
             {
             }
+
+            // Don't render for now.
+            public override void Render()
+            {
+            }
         }
 
         public class PanelOwner : ScriptableObject {}

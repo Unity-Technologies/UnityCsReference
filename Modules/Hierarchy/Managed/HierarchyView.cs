@@ -19,8 +19,7 @@ namespace Unity.Hierarchy
     /// <summary>
     /// UI element control that displays a hierarchy.
     /// </summary>
-    [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
-    internal sealed partial class HierarchyView : VisualElement, IDisposable
+    public sealed class HierarchyView : VisualElement, IDisposable
     {
         internal const int k_ItemHeight = 20;
         const string k_ListViewName = "unity-tree-view__list-view";
@@ -84,7 +83,7 @@ namespace Unity.Hierarchy
         // UX elements
         readonly CollectionView m_CollectionView;
         readonly MultiColumnLayoutConfiguration m_MultiColumnLayoutConfiguration;
-        readonly HierarchyViewItemColumn m_NameColumn;
+        readonly HierarchyViewColumnName m_NameColumn;
         readonly HierarchyViewDragHandler m_DragHandler;
         readonly VisualElement m_ListViewScrollView;
         readonly HierarchyViewSelection m_Selection;
@@ -133,6 +132,8 @@ namespace Unity.Hierarchy
 
         /// <summary>
         /// This event is fired when a <see cref="HierarchyViewItem"/> is unbound from a hierarchy view, allowing cleanup of the view item.
+        /// Note that hierarchy view item are recycled by handler, so unbinding does not mean destruction. For this reason, it is preferable
+        /// to not "undo" styles or modifications done during binding in this unbind event, for performance reasons.
         /// </summary>
         public event Action<HierarchyViewItem> UnbindViewItem;
 
@@ -152,7 +153,8 @@ namespace Unity.Hierarchy
         /// This event is fired when a right click is handled on a node or on the background of the view.
         /// </summary>
         /// <remarks>
-        /// This callback receives the <see cref="HierarchyViewItem"/> to create the context menu for and the <see cref="DropdownMenu"/> to populate. If the user right clicks in empty space, the callback receives null for the view item.
+        /// This callback receives the <see cref="HierarchyViewItem"/> to create the context menu for and the <see cref="DropdownMenu"/> to populate.
+        /// If the user right clicks in empty space, the callback receives null for the view item.
         /// </remarks>
         public event PopulateContextMenuEventHandler PopulateContextMenu;
 
@@ -168,16 +170,17 @@ namespace Unity.Hierarchy
         /// Customize the tooltip displayed when the mouse hovers the node name label.
         /// </summary>
         /// <remarks>
-        /// This callback receives the <see cref="HierarchyViewItem"/> to get the tooltip for, the StringBuilder to build the tooltip, and whether the HierarchyView is being filtered.
+        /// This callback receives the <see cref="HierarchyViewItem"/> to get the tooltip for, the
+        /// StringBuilder to build the tooltip, and whether the HierarchyView is being filtered.
         /// </remarks>
         public event GetTooltipEventHandler GetTooltip;
 
         /// <summary>
-        /// This event is fired when the <see cref="HierarchyView"/> is initializing, typically allowing to load additional stylesheets and add styles to <see cref="StyleContainer"/>.
-        /// Internal because it is only used by HierarchyWindow to allow to statically customize the HierarchyView.
+        /// This event is fired when the <see cref="HierarchyView"/> is initializing, typically
+        /// allowing to load additional stylesheets and add styles to <see cref="StyleContainer"/>.
         /// </summary>
         [VisibleToOtherModules("UnityEditor.HierarchyModule")]
-        internal event Action Initializing;
+        internal event Action Initializing; // Internal because it is only used by HierarchyWindow to allow to statically customize the HierarchyView.
 
         /// <summary>
         /// Gets the source hierarchy used to populate the hierarchy view.
@@ -274,7 +277,12 @@ namespace Unity.Hierarchy
         internal bool DisplayUpdateNeeded => m_Version != m_HierarchyViewModel.Version;
         internal bool ExecutePostUpdateActionsNeeded => m_PostUpdateActionQueue.Count > 0;
         internal HierarchyViewDragHandler DragHandler => m_DragHandler;
-        internal HierarchyViewItemColumn NameColumn { [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")] get => m_NameColumn; }
+
+        internal HierarchyViewColumnName NameColumn
+        {
+            [VisibleToOtherModules]
+            get => m_NameColumn;
+        }
 
         /// <summary>
         /// Create a new instance of the <see cref="HierarchyView"/>.
@@ -302,7 +310,7 @@ namespace Unity.Hierarchy
                 itemsSource = null
             };
 
-            m_NameColumn = new HierarchyViewItemColumn(this);
+            m_NameColumn = new HierarchyViewColumnName(this);
             m_DragHandler = new HierarchyViewDragHandler(this);
 
             m_CollectionView.AddToClassList(k_ListViewName);
@@ -1005,7 +1013,7 @@ namespace Unity.Hierarchy
                     {
                         hc.ApplyDefaultColumnProperties();
                     }
-                    else if (col is HierarchyViewItemColumn viewItemCol)
+                    else if (col is HierarchyViewColumnName viewItemCol)
                     {
                         viewItemCol.ApplyDefaultColumnProperties();
                     }
@@ -1405,6 +1413,7 @@ namespace Unity.Hierarchy
             m_HierarchyViewModel.SetFlagsRecursive(parents.Span, HierarchyNodeFlags.Expanded, HierarchyTraversalDirection.Parents);
         }
 
+        [VisibleToOtherModules]
         internal void SelectChildrenAndExpandRecursive()
         {
             var count = m_HierarchyViewModel.HasFlagsCount(HierarchyNodeFlags.Selected);
@@ -1528,7 +1537,7 @@ namespace Unity.Hierarchy
 
         void OnNavigationMove(NavigationMoveEvent evt)
         {
-            if (m_IsRenamingItem)
+            if (m_IsRenamingItem || m_Selection.indexCount == 0)
                 return;
 
             var shouldStopPropagation = true;
@@ -1557,8 +1566,7 @@ namespace Unity.Hierarchy
                 {
                     case NavigationMoveEvent.Direction.Right:
                     case NavigationMoveEvent.Direction.Left:
-                        var count = m_HierarchyViewModel.HasFlagsCount(HierarchyNodeFlags.Selected);
-                        using (var selectedNodes = new RentSpanUnmanaged<HierarchyNode>(count))
+                        using (var selectedNodes = new RentSpanUnmanaged<HierarchyNode>(m_Selection.indexCount))
                         {
                             m_HierarchyViewModel.GetNodesWithFlags(HierarchyNodeFlags.Selected, selectedNodes);
                             SetExpandedState(selectedNodes, evt.direction == NavigationMoveEvent.Direction.Right, evt.altKey);

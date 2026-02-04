@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using JetBrains.Annotations;
+using UnityEditor;
 using UnityEngine.UIElements;
 using UnityEditor.UIElements;
 
@@ -63,8 +64,8 @@ internal class UIToolkitAuthoringSettingsProvider : IUIToolkitSettingsProviderEx
             UIToolkitAuthoringSettings.EnableUIStages = evt.newValue;
         });
 
-        // [TODO]: Uncomment this line to expose the UI stages to users.
-        //rootElement.Add(uiStagesIntegration);
+        if (Unsupported.IsSourceBuild())
+            rootElement.Add(uiStagesIntegration);
 
         var displayOptions = new Label(k_DisplayOptionsText);
         displayOptions.style.paddingTop = 20;

@@ -665,10 +665,10 @@ internal class SerializedObjectBindingContext
         return serializedObject.isValid;
     }
 
-    private static readonly ProfilerMarker k_SerializedObjectUpdater = new ProfilerMarker("BindingContext.UpdateSerializedObject");
-    private static readonly ProfilerMarker k_ChangeTracking = new ProfilerMarker("BindingContext.ChangeTracking");
-    private static readonly ProfilerMarker k_SyncVersion = new ProfilerMarker("BindingContext.SyncChangeVersion");
-    private static readonly ProfilerMarker k_NotifyChanges = new ProfilerMarker("BindingContext.NotifyChanges");
+    private static readonly ProfilerMarker k_SerializedObjectUpdater = new ProfilerMarker(ProfilerCategory.UIToolkit, "BindingContext.UpdateSerializedObject");
+    private static readonly ProfilerMarker k_ChangeTracking = new ProfilerMarker(ProfilerCategory.UIToolkit, "BindingContext.ChangeTracking");
+    private static readonly ProfilerMarker k_SyncVersion = new ProfilerMarker(ProfilerCategory.UIToolkit, "BindingContext.SyncChangeVersion");
+    private static readonly ProfilerMarker k_NotifyChanges = new ProfilerMarker(ProfilerCategory.UIToolkit, "BindingContext.NotifyChanges");
 
     internal void UpdateIfNecessary(VisualElement element)
     {

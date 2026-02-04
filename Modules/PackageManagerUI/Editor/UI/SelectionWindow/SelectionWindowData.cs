@@ -4,7 +4,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using UnityEngine;
 
 namespace UnityEditor.PackageManager.UI.Internal;
@@ -33,11 +32,13 @@ internal class SelectionWindowData : ISerializationCallbackReceiver
     public string headerTitle;
     public string headerDescription;
     public string actionLabel;
+
+    [SerializeField]
     private List<Node> m_Nodes = new();
     public IReadOnlyList<Node> nodes => m_Nodes;
 
     // This node is not created through the SelectionWindowData.CreateNode function, because we don't want it to be
-    // part of the final visible tree. We set the index to `-1` such that if it accidentally end up in the final tree,
+    // part of the final visible tree. We set the index to `-1` such that if it accidentally ends up in the final tree,
     // we will get an InvalidIndexException. This hidden node is only used when we construct trees.
     public Node hiddenRootNode = new() { index = -1, parentIndex = -1, isFolder = true};
 
@@ -45,56 +46,74 @@ internal class SelectionWindowData : ISerializationCallbackReceiver
     [SerializeField]
     private int[] m_SerializedSelectedIndexes = Array.Empty<int>();
 
-    #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-    public IReadOnlyList<Asset> selectedAssets => m_SelectedIndexes
-#pragma warning restore RS0030
-        .Where(index => !nodes[index].isFolder)
-        .Select(index => nodes[index].asset).ToArray();
-    #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-    public IReadOnlyList<Asset> assets => nodes.Where(n => !n.isFolder).Select(n => n.asset).ToArray();
-#pragma warning restore RS0030
+    public IReadOnlyList<Asset> selectedAssets
+    {
+        get
+        {
+            if (m_SelectedIndexes.Count == 0)
+                return Array.Empty<Asset>();
+            var result = new List<Asset>(m_SelectedIndexes.Count);
+            foreach (var index in m_SelectedIndexes)
+                if (!nodes[index].isFolder)
+                    result.Add(nodes[index].asset);
+            return result;
+        }
+    }
 
+    public int numSelectedAssets => m_SelectedIndexes.CountMatches(index => !nodes[index].isFolder);
+    public int numTotalAssets => nodes.CountMatches(n => !n.isFolder);
     public int selectedNodesCount => m_SelectedIndexes.Count;
 
-    // This constructor only constructs an instance of SelectionWindowData for the remove case.
-    public SelectionWindowData(IEnumerable<Asset> assetsList, string packageName, string description)
+    public int productId
     {
+        get
+        {
+            foreach (var node in nodes)
+                if (node.asset?.origin != null)
+                    return node.asset.origin.productId;
+            return 0;
+        }
+    }
+
+    // This constructor only constructs an instance of SelectionWindowData for the remove case.
+    public SelectionWindowData(IReadOnlyCollection<Asset> assetsList, string packageName, string description)
+    {
+        const string assetsFolder = "Assets/";
         headerTitle = packageName;
         headerDescription = description;
         actionLabel = k_RemoveText;
 
-        #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-        foreach (var asset in assetsList.OrderBy(a => a.importedPath))
-#pragma warning restore RS0030
+        var sortedAssets = assetsList.ToNewArray();
+        Array.Sort(sortedAssets, (x, y) => StringComparer.OrdinalIgnoreCase.Compare(x.importedPath, y.importedPath));
+        foreach (var asset in sortedAssets)
         {
             var normalizedPath = asset.importedPath.Replace('\\', '/');
-            // We don't support removing assets that are outside of the "Assets" folder.
+            // We don't support removing assets that are outside the "Assets" folder.
             // The only known case of that is when a .unitypackage injects a UPM package in the "Packages" folder.
-            // In that case, it will be handle as an embedded package.
-            if (!normalizedPath.StartsWith("Assets/"))
+            // In that case, it will be handled as an embedded package.
+            if (!normalizedPath.StartsWith(assetsFolder))
             {
                 Debug.Log($"[Package Manager Window] Cannot remove the asset at {asset.importedPath}: This asset is outside of the Assets folder.");
                 continue;
             }
 
-            // Every imported assets with an AssetOrigin should be in the "Assets/" folder.
-            // We skip 1 because we don't want to show "Assets/" as the root node in the selection window.
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            var pathParts = normalizedPath.Split('/').Skip(1).ToArray();
-#pragma warning restore RS0030
-
+            // Every imported assets with an AssetOrigin should be in the "Assets/" folder
+            // We skip it because we don't want to show "Assets/" as the root node in the selection window.
+            var pathParts = normalizedPath[assetsFolder.Length..].Split('/');
             var currentNode = hiddenRootNode;
             for (var i = 0; i < pathParts.Length; ++i)
             {
                 var isLeafNode = i == pathParts.Length - 1;
                 var nodeToCreate = pathParts[i];
-                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                var matchingChildNode = GetChildren(currentNode).FirstOrDefault(c => c.name == nodeToCreate);
-#pragma warning restore RS0030
+                var matchingChildNode = GetChildren(currentNode).FirstMatch(c => c.name == nodeToCreate);
 
                 if (matchingChildNode == null)
                 {
-                    var newNode = isLeafNode ? AddFileNode(currentNode, asset, nodeToCreate) : AddFolderNode(currentNode, nodeToCreate);
+                    var newNode = AddNode(currentNode, nodeToCreate);
+                    if (isLeafNode)
+                        newNode.asset = asset;
+                    else
+                        newNode.isFolder = true;
                     // Move one step down the tree to the newly created node.
                     currentNode = newNode;
                     continue;
@@ -147,16 +166,12 @@ internal class SelectionWindowData : ISerializationCallbackReceiver
     {
         if (id < 0 || id >= nodes.Count)
             return false;
-        #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-        return nodes[id].childIndexes.All(childId => !IsSelected(childId));
-#pragma warning restore RS0030
+        return !nodes[id].childIndexes.AnyMatches(IsSelected);
     }
 
     public bool IsSelected(int id) => m_SelectedIndexes.Contains(id);
     public void ClearSelection() => m_SelectedIndexes.Clear();
-    #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-    public void SelectAll() => m_SelectedIndexes = nodes.Select(n => n.index).ToHashSet();
-#pragma warning restore RS0030
+    public void SelectAll() => nodes.SelectAsEnumerable(n => n.index).ToHashSet(ref m_SelectedIndexes);
 
     private Node AddNode(Node parentNode, string name)
     {
@@ -173,21 +188,6 @@ internal class SelectionWindowData : ISerializationCallbackReceiver
         return newNode;
     }
 
-    private Node AddFileNode(Node parentNode, Asset asset, string name)
-    {
-        var node = AddNode(parentNode, name);
-        node.asset = asset;
-        return node;
-    }
-
-    private Node AddFolderNode(Node parentNode, string name)
-    {
-        var node = AddNode(parentNode, name);
-        node.asset = null;
-        node.isFolder = true;
-        return node;
-    }
-
     public IEnumerable<Node> GetChildren(Node node, bool recursive = false)
     {
         foreach (var id in node.childIndexes)
@@ -202,15 +202,11 @@ internal class SelectionWindowData : ISerializationCallbackReceiver
 
     public void OnBeforeSerialize()
     {
-        #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-        m_SerializedSelectedIndexes = m_SelectedIndexes.ToArray();
-#pragma warning restore RS0030
+        m_SelectedIndexes.ToArray(ref m_SerializedSelectedIndexes);
     }
 
     public void OnAfterDeserialize()
     {
-        #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-        m_SelectedIndexes = m_SerializedSelectedIndexes.ToHashSet();
-#pragma warning restore RS0030
+        m_SerializedSelectedIndexes.ToHashSet(ref m_SelectedIndexes);
     }
 }

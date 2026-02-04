@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using Unity.UIToolkit.Editor;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.UIElements;
@@ -611,7 +612,7 @@ namespace Unity.UI.Builder
                 {
                     var startSuccess = StartDrag(target, evt.position);
 
-                    if (target is BuilderClassPill pill)
+                    if (target is ClassPill pill)
                         pill.isDragged = startSuccess;
 
                     if (startSuccess)
@@ -707,7 +708,7 @@ namespace Unity.UI.Builder
             HandleDropAction(evt.position);
             m_Active = false;
 
-            if (target is BuilderClassPill pill)
+            if (target is ClassPill pill)
                 pill.isDragged = false;
 
             evt.StopPropagation();

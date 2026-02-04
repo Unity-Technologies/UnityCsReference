@@ -59,7 +59,7 @@ namespace Unity.GraphToolkit.Editor.Implementation
 
             foreach (var variable in VariableDeclarations)
             {
-                if( VariableDeclarationRequiresInitialization(variable) && variable.InitializationModel == null )
+                if (VariableDeclarationRequiresInitialization(variable) && variable.InitializationModel == null)
                 {
                     variable.CreateInitializationValue();
                 }
@@ -71,28 +71,45 @@ namespace Unity.GraphToolkit.Editor.Implementation
 
                 base.OnEnable();
 
-                m_Graph.OnEnable();
-
-                foreach (var nodeModel in NodeModels)
+                LockForModification = true;
+                try
                 {
-                    if (nodeModel is IUserNodeModelImp userNodeModelImp)
+                    m_Graph.OnEnable();
+
+                    foreach (var nodeModel in NodeModels)
                     {
-                        userNodeModelImp.CallOnEnable();
+                        if (nodeModel is IUserNodeModelImp userNodeModelImp)
+                        {
+                            userNodeModelImp.CallOnEnable();
+                        }
                     }
+                }
+                finally
+                {
+                    LockForModification = false;
                 }
             }
         }
 
         public override void OnDisable()
         {
-            foreach (var nodeModel in NodeModels)
+            LockForModification = true;
+            try
             {
-                if (nodeModel is IUserNodeModelImp userNodeModelImp)
+                foreach (var nodeModel in NodeModels)
                 {
-                    userNodeModelImp.CallOnDisable();
+                    if (nodeModel is IUserNodeModelImp userNodeModelImp)
+                    {
+                        userNodeModelImp.CallOnDisable();
+                    }
                 }
+                m_Graph?.OnDisable();
             }
-            m_Graph?.OnDisable();
+            finally
+            {
+                LockForModification = false;
+            }
+
             base.OnDisable();
         }
 
@@ -134,6 +151,14 @@ namespace Unity.GraphToolkit.Editor.Implementation
                 BuildNodesFromNodeModels();
                 return m_Nodes;
             }
+        }
+
+        bool LockForModification { get; set; }
+
+        internal void CheckModificationLock()
+        {
+            if (LockForModification)
+                throw new InvalidOperationException("Cannot change the graph in OnEnable, OnDisable and OnGraphChanged.");
         }
 
         public override bool VariableDeclarationRequiresInitialization(VariableDeclarationModelBase _)
@@ -210,13 +235,85 @@ namespace Unity.GraphToolkit.Editor.Implementation
 
         public IVariable CreateVariable(string name, Type valueType, object defaultValue = null, VariableKind kind = VariableKind.Local)
         {
-            var typeHandle = valueType.GenerateTypeHandle();
+            CheckModificationLock();
+
+            TypeHandle typeHandle;
+            if (valueType == null)
+            {
+                if (defaultValue != null)
+                    throw new ArgumentException("Cannot provide a default value for an Execution Flow variable (valueType is null).", nameof(defaultValue));
+
+                typeHandle = TypeHandle.ExecutionFlow;
+            }
+            else
+            {
+                bool isSerializable = valueType.IsSerializable || typeof(UnityEngine.Object).IsAssignableFrom(valueType);
+
+                if (defaultValue != null)
+                {
+                    if (!isSerializable)
+                        throw new ArgumentException($"The type '{valueType.Name}' is not serializable. " +
+                                                    $"You cannot provide a default value for it as it will be lost.", nameof(defaultValue));
+
+                    if (defaultValue.GetType() != valueType)
+                        throw new ArgumentException($"The default value type ({defaultValue.GetType().Name}) " +
+                                                    $"must exactly match the variable type ({valueType.Name})", nameof(defaultValue));
+                }
+
+                typeHandle = valueType.GenerateTypeHandle();
+            }
 
             var constant = CreateConstantValue(typeHandle);
             if( defaultValue != null )
                 constant.ObjectValue = defaultValue;
 
-            return CreateGraphVariableDeclaration(typeHandle, name, kind == VariableKind.Input ?ModifierFlags.Read : (kind == VariableKind.Output ? ModifierFlags.Write : ModifierFlags.None), (kind != VariableKind.Local)?VariableScope.Exposed:VariableScope.Local, initializationModel:constant);
+            var result = CreateGraphVariableDeclaration(
+                typeHandle,
+                name,
+                kind == VariableKind.Input ? ModifierFlags.Read : (kind == VariableKind.Output ? ModifierFlags.Write : ModifierFlags.None),
+                (kind != VariableKind.Local) ? VariableScope.Exposed : VariableScope.Local,
+                initializationModel: constant
+            );
+
+            if (result != null && result.DataType.Resolve() is { } variableType)
+            {
+                if (!SupportedTypes.Contains(variableType))
+                {
+                    m_SupportedTypes.Add(variableType);
+                }
+            }
+            return result;
+        }
+
+        public bool RemoveVariable(IVariable variable, bool forceRemove)
+        {
+            CheckModificationLock();
+
+            if (variable == null)
+                throw new ArgumentNullException(nameof(variable));
+
+            if (variable is not VariableDeclarationModelBase variableModel)
+                return false;
+
+            if (variable.Graph != Graph)
+                throw new ArgumentException("The variable provided does not belong to this graph.", nameof(variable));
+
+            if (!VariableDeclarations.Contains(variableModel))
+                return false;
+
+            // If we are not force removing, and there are still nodes referencing the variable declaration. return false
+            if (!forceRemove)
+            {
+                using (var disposableReferences = ListPool<AbstractNodeModel>.Get(out List<AbstractNodeModel> references))
+                {
+                    FindReferencesInGraph(variableModel, references);
+                    if (references.Count > 0)
+                        return false;
+                }
+            }
+
+            DeleteVariableDeclaration(variableModel, deleteUsages: forceRemove);
+            return true;
         }
 
         public bool DeleteWiresBetween(IPort output, IPort input)
@@ -588,6 +685,24 @@ namespace Unity.GraphToolkit.Editor.Implementation
             public static void GetPortTypesForNode(INode node, HashSet<Type> hashSet) => GraphModelImp.GetPortTypesForNode(node, hashSet);
             public static void InitializeSupportedTypesFromContextNodeType(Type graphType, IGraphNodeCreationData nodeCreationData, Type type, HashSet<Type> supportedTypes)
                 => GraphModelImp.InitializeSupportedTypesFromContextNodeType(graphType, nodeCreationData, type, supportedTypes);
+        }
+
+        internal BaseGraphProcessingResult CallOnGraphChanged(GraphChangeDescription changes)
+        {
+            var result = new ErrorsAndWarningsImp(this);
+
+            var graphChanges = new GraphLogger();
+            graphChanges.errorsAndWarnings = result;
+            LockForModification = true;
+            try
+            {
+                Graph.OnGraphChanged(graphChanges);
+            }
+            finally
+            {
+                LockForModification = false;
+            }
+            return result;
         }
     }
 }

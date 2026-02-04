@@ -174,27 +174,27 @@ namespace Unity.GraphToolkit.Editor
         {
             graphView.GetGraphElementsInRegion(selectionRegion, k_OnMouseUpAllUIs, GraphView.PartitioningMode.PlacematTitle);
 
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var allSelectedModels = k_OnMouseUpAllUIs
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                 .OfType<ModelView>()
                 .Select(elem => elem.Model)
                 .OfType<GraphElementModel>()
                 .Where(model => model.IsSelectable())
                 .ToList();
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             bool onlyWiresSelected = allSelectedModels.All(m => m is WireModel);
-#pragma warning restore RS0030
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning restore UA2001
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var selectedNodes = allSelectedModels
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                 .OfType<PortNodeModel>()
                 .ToHashSet();
             k_OnMouseUpAllUIs.Clear();
 
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             foreach (var node in selectedNodes.ToList()) // need to copy the list as it will be changed while iterating.
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                 RecurseAddGraphContainerChildren(node, selectedNodes);
 
             bool PortIsSelected(PortModel p) => p != null && selectedNodes.Contains(p.NodeModel);
@@ -202,9 +202,9 @@ namespace Unity.GraphToolkit.Editor
             // don't select wires unless they link selected models or if only wires are selected
             var modelsToSelect = onlyWiresSelected ?
                 allSelectedModels :
-                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 allSelectedModels
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                     .Where(m => m is not WireModel wire
                         || PortIsSelected(wire.FromPort) && PortIsSelected(wire.ToPort))
                     .ToList();
@@ -215,9 +215,9 @@ namespace Unity.GraphToolkit.Editor
         {
             if (node is IGraphElementContainer container)
             {
-                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 foreach (var child in container.GetGraphElementModels().OfType<PortNodeModel>())
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                 {
                     nodeModels.Add(child);
                     RecurseAddGraphContainerChildren(child, nodeModels);
@@ -251,9 +251,9 @@ namespace Unity.GraphToolkit.Editor
                 model.AppendAllViews(graphView, e => e is GraphElement, s_OverriddenSelectionElements);
             }
 
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             foreach (var element in s_OverriddenSelectionElementsBackup.Except(s_OverriddenSelectionElements))
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             {
                 var graphElement = (GraphElement)element;
                 graphElement.UpdateSelectionVisuals(graphElement.IsSelected());

@@ -598,9 +598,9 @@ namespace UnityEditor
                                 // Duplicate effect
                                 AudioMixerEffectController sourceEffect = m_MovingSrcGroup.effects[m_MovingEffectSrcIndex];
                                 AudioMixerEffectController copiedEffect = m_MovingSrcGroup.controller.CopyEffect(sourceEffect);
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                                 var targetEffects = m_MovingDstGroup.effects.ToList();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                                 if (AudioMixerController.InsertEffect(copiedEffect, ref targetEffects, m_MovingEffectDstIndex))
                                 {
                                     m_MovingDstGroup.effects = targetEffects.ToArray();
@@ -611,9 +611,9 @@ namespace UnityEditor
                                 // Move effect
                                 if (m_MovingSrcGroup == m_MovingDstGroup)
                                 {
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                                     var effects = m_MovingSrcGroup.effects.ToList();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                                     if (AudioMixerController.MoveEffect(ref effects, m_MovingEffectSrcIndex, ref effects, m_MovingEffectDstIndex))
                                     {
                                         m_MovingSrcGroup.effects = effects.ToArray();
@@ -621,12 +621,12 @@ namespace UnityEditor
                                 }
                                 else if (!m_MovingSrcGroup.effects[m_MovingEffectSrcIndex].IsAttenuation())
                                 {
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                                     var sourceEffects = m_MovingSrcGroup.effects.ToList();
-#pragma warning restore RS0030
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning restore UA2001
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                                     var targetEffects = m_MovingDstGroup.effects.ToList();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                                     if (AudioMixerController.MoveEffect(ref sourceEffects, m_MovingEffectSrcIndex, ref targetEffects, m_MovingEffectDstIndex))
                                     {
                                         m_MovingSrcGroup.effects = sourceEffects.ToArray();
@@ -855,9 +855,9 @@ namespace UnityEditor
             Event evt = Event.current;
 
             // Right click toggle
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             if (evt.type == EventType.MouseUp && evt.button == 1 && r.Contains(evt.mousePosition) && allGroups.Any(g => g.solo))
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             {
                 RecordSelectedGroupUndoState(selection, "Change solo state");
                 foreach (var g in allGroups)
@@ -884,14 +884,14 @@ namespace UnityEditor
         {
             Event evt = Event.current;
             // Right click toggle
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             if (evt.type == EventType.MouseUp && evt.button == 1 && r.Contains(evt.mousePosition) && allGroups.Any(g => g.mute))
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             {
                 RecordSelectedGroupUndoState(selection, "Change mute state");
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 if (allGroups.Any(g => g.solo))
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                     return false;
                 foreach (var g in allGroups)
                     g.mute = false;
@@ -922,9 +922,9 @@ namespace UnityEditor
         {
             Event evt = Event.current;
             // Right click toggle
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             if (evt.type == EventType.MouseUp && evt.button == 1 && r.Contains(evt.mousePosition) && allGroups.Any(g => g.bypassEffects))
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             {
                 RecordSelectedGroupUndoState(selection, "Change bypass state");
                 foreach (var g in allGroups)
@@ -973,16 +973,16 @@ namespace UnityEditor
             foreach (var group in m_Controller.CachedSelection)
                 selectedIDs.Add(group.GetEntityId());
 
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             EntityId lastClickedID = selectedIDs.Count > 0 ? selectedIDs.Last() : EntityId.None;
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             bool allowMultiselection = true;
             bool keepMultiSelection = Event.current.shift || clickedControlInGroup;
 
             var newSelection = InternalEditorUtility.HandleMultiSelectionWithCurrentModifiers(clickedGroup.GetEntityId(), allIDs, selectedIDs, lastClickedID, keepMultiSelection, allowMultiselection, useShiftAsActionKey:false);
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             List<AudioMixerGroupController> groups = (from x in p.allGroups where newSelection.Contains(x.GetEntityId()) select x).ToList();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
 
             Selection.objects = groups.ToArray();
             m_Controller.OnUnitySelectionChanged();
@@ -1188,9 +1188,9 @@ namespace UnityEditor
             List<Rect> GetBackgroundRects(Rect r, AudioMixerGroupController group, int maxNumGroups)
             {
                 List<float> heights = new List<float>();
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 heights.AddRange(Enumerable.Repeat(0f, kEffectStartIndex));
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                 heights[kHeaderIndex] = headerHeight;
                 heights[kVUMeterFaderIndex] = vuHeight;
                 heights[kTotalVULevelIndex] = dbHeight;
@@ -1506,9 +1506,9 @@ namespace UnityEditor
             m_IndexCounter = 0;
 
             Event evt = Event.current;
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var sortedGroups = m_Controller.GetCurrentViewGroupList().ToList();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             if (sortGroupsAlphabetically)
                 sortedGroups.Sort(m_GroupComparer);
 
@@ -1537,9 +1537,9 @@ namespace UnityEditor
                     }
                 }
             }
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             List<AudioMixerGroupController> buses = unsortedBuses.ToList();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             buses.Sort(m_GroupComparer);
 
             // Show referenced buses after all sorted groups
@@ -1562,9 +1562,9 @@ namespace UnityEditor
                 effectMap = effectMap,
                 allGroups = allGroups,
                 shownGroups = sortedGroups,
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 anySoloActive = allGroups.Any(g => g.solo),
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                 visibleRect = new Rect(m_State.m_ScrollPos.x, m_State.m_ScrollPos.y, rect.width, rect.height)
             };
 
@@ -1747,9 +1747,9 @@ namespace UnityEditor
                 if (g.bypassEffects)
                     numBypassEffects += g.effects.Length - 1; // one of the effects is "Attenuation"
                 else
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     numBypassEffects += g.effects.Count(e => e.bypass);
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             }
 
             Event evt = Event.current;

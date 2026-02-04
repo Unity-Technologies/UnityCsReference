@@ -238,9 +238,9 @@ namespace UnityEditor.AdaptivePerformance.Editor
                 Type[] types;
                 try
                 {
-                #pragma warning disable RS0030 // Only for editor use.
+                #pragma warning disable UA2001 // Only for editor use.
                     types = asm.GetTypes();
-                #pragma warning restore RS0030
+                #pragma warning restore UA2001
                 }
                 catch (ReflectionTypeLoadException ex)
                 {

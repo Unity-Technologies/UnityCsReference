@@ -20,7 +20,7 @@ namespace UnityEngine.UIElements.UIR
 
     internal static class RenderEvents
     {
-        static readonly ProfilerMarker k_NudgeVerticesMarker = new ("UIR.NudgeVertices");
+        static readonly ProfilerMarker k_NudgeVerticesMarker = new (ProfilerCategory.UIToolkit, "UIR.NudgeVertices");
 
         private static readonly float VisibilityTreshold = UIRUtility.k_Epsilon;
 

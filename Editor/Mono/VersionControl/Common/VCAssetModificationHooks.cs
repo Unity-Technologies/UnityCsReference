@@ -83,9 +83,9 @@ namespace UnityEditorInternal.VersionControl
             // and in-order list back.
             var taskResultList = task.assetList;
             var result = new AssetList {Capacity = fromPaths.Count};
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             result.AddRange(fromPaths.Select(path => taskResultList.SingleOrDefault(a => a.path == path)));
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             return result;
         }
 
@@ -247,17 +247,17 @@ namespace UnityEditorInternal.VersionControl
 
                 if (task != null && task.success)
                 {
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     for (int i = batchStart; i < batchStart + deleteAssetList.Count(); i++)
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                         deletionResults[i] = File.Exists(assetPaths[i]) ? AssetDeleteResult.DidNotDelete : AssetDeleteResult.DidDelete;
                 }
                 else
                 {
                     //NOTE: we most likely don't know which assets failed to actually be deleted
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     for (int i = batchStart; i < batchStart + deleteAssetList.Count(); i++)
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                         deletionResults[i] = AssetDeleteResult.FailedDelete;
                 }
             }
@@ -300,9 +300,9 @@ namespace UnityEditorInternal.VersionControl
                 return true; // everything is editable
 
             // paths that are empty/null are considered to be editable, so remove them from consideration
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             assetPaths = assetPaths.Where(p => !string.IsNullOrEmpty(p)).ToList();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
 
             AssetList assets;
             if (statusOptions == StatusQueryOptions.UseCachedIfPossible || statusOptions == StatusQueryOptions.UseCachedAsync)

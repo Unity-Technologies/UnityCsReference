@@ -22,7 +22,6 @@ internal sealed class HierarchyVisualElementHandler : VisualElementNodeTypeHandl
     private static void RegisterHierarchyHandlers()
     {
         HierarchyWindow.RegisterNodeTypeHandler<HierarchyVisualElementHandler>();
-        HierarchyWindow.RegisterNodeTypeHandler<VisualElementEditingNodeHandler>();
     }
 
     [InitializeOnLoadMethod, UsedImplicitly]
@@ -31,7 +30,7 @@ internal sealed class HierarchyVisualElementHandler : VisualElementNodeTypeHandl
         StageNavigationManager.instance.stageChanging += OnStageWillChange;
     }
 
-    [/*BeforeCodeUnloading,*/ UsedImplicitly]
+    [UsedImplicitly]
     private static void UnregisterHierarchyHandlers()
     {
         HierarchyWindow.UnregisterNodeTypeHandler<HierarchyVisualElementHandler>();
@@ -115,15 +114,17 @@ internal sealed class HierarchyVisualElementHandler : VisualElementNodeTypeHandl
 
     protected override void BindNavigation(HierarchyViewItem item, VisualElement container)
     {
+        base.BindNavigation(item, container);
         SetStageNodeNavigation(item, container);
     }
 
     protected override void UnbindNavigation(HierarchyViewItem item, VisualElement container)
     {
+        base.UnbindNavigation(item, container);
         UnsetStageNodeNavigation(item);
     }
 
-    protected override void PopulateContextMenu(in HierarchyNode node, VisualElement element, DropdownMenu menu)
+    protected override void PopulateContextMenu(HierarchyView view, in HierarchyNode node, VisualElement element, DropdownMenu menu)
     {
         IPanelComponent panelComponent;
         VisualTreeAsset vtaSource;
@@ -287,9 +288,15 @@ internal sealed class HierarchyVisualElementHandler : VisualElementNodeTypeHandl
         {
             case MainStage:
                 HierarchyWindow.RegisterNodeTypeHandler<HierarchyVisualElementHandler>();
+                HierarchyWindow.UnregisterNodeTypeHandler<VisualElementEditingNodeHandler>();
+                break;
+            case VisualElementEditingStage:
+                HierarchyWindow.RegisterNodeTypeHandler<VisualElementEditingNodeHandler>();
+                HierarchyWindow.UnregisterNodeTypeHandler<HierarchyVisualElementHandler>();
                 break;
             default:
                 HierarchyWindow.UnregisterNodeTypeHandler<HierarchyVisualElementHandler>();
+                HierarchyWindow.UnregisterNodeTypeHandler<VisualElementEditingNodeHandler>();
                 break;
         }
     }

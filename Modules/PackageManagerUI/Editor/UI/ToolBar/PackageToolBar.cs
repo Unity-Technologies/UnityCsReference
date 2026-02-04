@@ -4,7 +4,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using UnityEngine.UIElements;
 
 namespace UnityEditor.PackageManager.UI.Internal
@@ -14,32 +13,21 @@ namespace UnityEditor.PackageManager.UI.Internal
         [Serializable]
         public new class UxmlSerializedData : VisualElement.UxmlSerializedData
         {
-            public override object CreateInstance() => new PackageToolbar();
-        }
-
-        private IApplicationProxy m_Application;
-        private IAssetStoreDownloadManager m_AssetStoreDownloadManager;
-        private IUpmCache m_UpmCache;
-        private IPackageManagerPrefs m_PackageManagerPrefs;
-        private IPackageDatabase m_PackageDatabase;
-        private IPackageOperationDispatcher m_OperationDispatcher;
-        private IPageManager m_PageManager;
-        private IUnityConnectProxy m_UnityConnect;
-        private IIOProxy m_IOProxy;
-        private IModalManager m_ModalManager;
-        private void ResolveDependencies()
-        {
-            var container = ServicesContainer.instance;
-            m_Application = container.Resolve<IApplicationProxy>();
-            m_AssetStoreDownloadManager = container.Resolve<IAssetStoreDownloadManager>();
-            m_UpmCache = container.Resolve<IUpmCache>();
-            m_PackageManagerPrefs = container.Resolve<IPackageManagerPrefs>();
-            m_PackageDatabase = container.Resolve<IPackageDatabase>();
-            m_OperationDispatcher = container.Resolve<IPackageOperationDispatcher>();
-            m_PageManager = container.Resolve<IPageManager>();
-            m_UnityConnect = container.Resolve<IUnityConnectProxy>();
-            m_IOProxy = container.Resolve<IIOProxy>();
-            m_ModalManager = container.Resolve<IModalManager>();
+            public override object CreateInstance()
+            {
+                var container = ServicesContainer.instance;
+                return new PackageToolbar(
+                    container.Resolve<IResourceLoader>(),
+                    container.Resolve<IApplicationProxy>(),
+                    container.Resolve<IAssetStoreDownloadManager>(),
+                    container.Resolve<IUpmCache>(),
+                    container.Resolve<IPackageManagerPrefs>(),
+                    container.Resolve<IPackageDatabase>(),
+                    container.Resolve<IPackageOperationDispatcher>(),
+                    container.Resolve<IPageManager>(),
+                    container.Resolve<IUnityConnectProxy>(),
+                    container.Resolve<IModalManager>());
+            }
         }
 
         private IPackage m_Package;
@@ -57,9 +45,36 @@ namespace UnityEditor.PackageManager.UI.Internal
         private VisualElement m_BuiltInActionsContainer;
         public VisualElement extensions { get; }
 
-        public PackageToolbar()
+        private readonly IApplicationProxy m_Application;
+        private readonly IAssetStoreDownloadManager m_AssetStoreDownloadManager;
+        private readonly IUpmCache m_UpmCache;
+        private readonly IPackageManagerPrefs m_PackageManagerPrefs;
+        private readonly IPackageDatabase m_PackageDatabase;
+        private readonly IPackageOperationDispatcher m_OperationDispatcher;
+        private readonly IPageManager m_PageManager;
+        private readonly IUnityConnectProxy m_UnityConnect;
+        private readonly IModalManager m_ModalManager;
+        public PackageToolbar(
+            IResourceLoader resourceLoader,
+            IApplicationProxy application,
+            IAssetStoreDownloadManager assetStoreDownloadManager,
+            IUpmCache upmCache,
+            IPackageManagerPrefs packageManagerPrefs,
+            IPackageDatabase packageDatabase,
+            IPackageOperationDispatcher operationDispatcher,
+            IPageManager pageManager,
+            IUnityConnectProxy unityConnect,
+            IModalManager modalManager)
         {
-            ResolveDependencies();
+            m_Application = application;
+            m_AssetStoreDownloadManager = assetStoreDownloadManager;
+            m_UpmCache = upmCache;
+            m_PackageManagerPrefs = packageManagerPrefs;
+            m_PackageDatabase = packageDatabase;
+            m_OperationDispatcher = operationDispatcher;
+            m_PageManager = pageManager;
+            m_UnityConnect = unityConnect;
+            m_ModalManager = modalManager;
 
             m_MainContainer = new VisualElement { name = "toolbarMainContainer" };
             Add(m_MainContainer);
@@ -81,7 +96,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_ProgressContainer = new VisualElement { name = "toolbarProgressContainer" };
             Add(m_ProgressContainer);
 
-            m_DownloadProgress = new ProgressBar { name = "downloadProgress" };
+            m_DownloadProgress = new ProgressBar(resourceLoader) { name = "downloadProgress" };
             m_ProgressContainer.Add(m_DownloadProgress);
 
             InitializeButtons();
@@ -91,12 +106,12 @@ namespace UnityEditor.PackageManager.UI.Internal
         {
             m_BuiltInToolBarButtons = new IPackageToolBarButton[]
             {
-                new PackageToolBarSimpleButton(new LocateAction(m_IOProxy, m_Application)),
+                new PackageToolBarSimpleButton(new LocateAction(m_Application)),
                 new PackageToolBarSimpleButton(new SignInAction(m_UnityConnect, m_Application)),
                 new PackageToolBarSimpleButton(new ExportAction(m_ModalManager)),
                 new PackageToolBarSimpleButton(new AddAction(m_OperationDispatcher, m_Application, m_PackageDatabase)),
                 new LegacyFormatDropdownButton(m_OperationDispatcher, m_AssetStoreDownloadManager, m_UnityConnect, m_Application),
-                new ManageDropdownButton(m_Application, m_UpmCache, m_PackageManagerPrefs, m_PackageDatabase, m_OperationDispatcher, m_PageManager, m_IOProxy)
+                new ManageDropdownButton(m_Application, m_UpmCache, m_PackageManagerPrefs, m_PackageDatabase, m_OperationDispatcher, m_PageManager)
             };
 
             foreach (var button in m_BuiltInToolBarButtons)
@@ -192,16 +207,16 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private void RefreshExtensionItems()
         {
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            var activeDisableCondition = new DisableCondition[]
-#pragma warning restore RS0030
-            {
-                new DisableIfInstallOrEmbedOrUninstallInProgress(m_OperationDispatcher),
-                new DisableIfCompiling(m_Application)
-            }.FirstOrDefault(c => c.active);
+            var activeDisableCondition = GetDisableConditions().FirstMatch(c => c.active);
             foreach (var item in extensions.Children())
                 item.SetEnabled(activeDisableCondition == null);
             extensions.tooltip = activeDisableCondition?.tooltip ?? string.Empty;
+        }
+
+        private IEnumerable<DisableCondition> GetDisableConditions()
+        {
+            yield return new DisableIfInstallOrEmbedOrUninstallInProgress(m_OperationDispatcher);
+            yield return new DisableIfCompiling(m_Application);
         }
 
         private void OnDownloadProgress(IOperation operation)

@@ -27,8 +27,8 @@ namespace UnityEditor.PackageManager.UI.Internal
         bool oneTimePackageErrorsPopUpShown { get; set; }
         bool isUserAddingNewScopedRegistry { get; set; }
 
-        IList<RegistryInfo> registries { get; }
-        IEnumerable<RegistryInfo> scopedRegistries { get; }
+        RegistryInfo mainRegistry { get; }
+        IReadOnlyList<RegistryInfo> scopedRegistries { get; }
         RegistryInfoDraft registryInfoDraft { get; }
 
         void SetRegistries(RegistryInfo[] registries);
@@ -104,8 +104,6 @@ namespace UnityEditor.PackageManager.UI.Internal
             set => PackageManagerProjectSettings.instance.isUserAddingNewScopedRegistry = value;
         }
 
-        public IList<RegistryInfo> registries => PackageManagerProjectSettings.instance.registries;
-
         public void SetRegistries(RegistryInfo[] registries)
         {
             PackageManagerProjectSettings.instance.SetRegistries(registries);
@@ -131,7 +129,8 @@ namespace UnityEditor.PackageManager.UI.Internal
             PackageManagerProjectSettings.instance.SelectRegistry(name);
         }
 
-        public IEnumerable<RegistryInfo> scopedRegistries => PackageManagerProjectSettings.instance.scopedRegistries;
+        public RegistryInfo mainRegistry => PackageManagerProjectSettings.instance.mainRegistry;
+        public IReadOnlyList<RegistryInfo> scopedRegistries => PackageManagerProjectSettings.instance.scopedRegistries;
 
         public RegistryInfoDraft registryInfoDraft => PackageManagerProjectSettings.instance.registryInfoDraft;
 

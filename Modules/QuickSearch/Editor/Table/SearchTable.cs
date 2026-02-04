@@ -22,9 +22,9 @@ namespace UnityEditor.Search
         {
             this.id = id;
             this.name = name;
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             columns = columnModels == null ? Array.Empty<SearchColumn>() : columnModels.Where(c => c != null).ToArray();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             InitFunctors();
         }
 
@@ -42,9 +42,9 @@ namespace UnityEditor.Search
         {
             itemHeight = table.itemHeight;
             if (table.columns != null)
-                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 columns = table.columns.ToArray();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
         }
 
         public SearchTable Clone(string newName = null)
@@ -63,9 +63,9 @@ namespace UnityEditor.Search
 
         internal static SearchTable CreateDefault(IEnumerable<SearchItem> items = null)
         {
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return new SearchTable("Default", ItemSelectors.Enumerate(items)
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                 .Select(c => { c.options |= SearchColumnFlags.Volatile; return c; }));
         }
 
@@ -97,9 +97,9 @@ namespace UnityEditor.Search
 
         public override string ToString()
         {
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return $"{name} ({id}): {string.Join(", ", columns.Select(c => c.name))}";
-#pragma warning restore RS0030
+#pragma warning restore UA2001
         }
     }
 }

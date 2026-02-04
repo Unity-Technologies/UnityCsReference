@@ -43,8 +43,8 @@ namespace UnityEditor.UIElements
         internal string FormatDependencyKeyName(string uxmlQualifiedName) => k_UxmlTraitsDependencyPrefix + uxmlQualifiedName;
         internal string FormatSerializedDependencyKeyName(string uxmlQualifiedName) => k_UxmlSerializedDataDependencyPrefix + uxmlQualifiedName;
 
-        static ProfilerMarker s_UxmlTraitsRegisterMarker = new("UxmlCodeDependencies.UxmlTraits.RegisterAssetAttributeDependencies");
-        static ProfilerMarker s_UxmlSerializationRegisterMarker = new("UxmlCodeDependencies.UxmlSerialization.RegisterAssetAttributeDependencies");
+        static ProfilerMarker s_UxmlTraitsRegisterMarker = new(ProfilerCategory.UIToolkit, "UxmlCodeDependencies.UxmlTraits.RegisterAssetAttributeDependencies");
+        static ProfilerMarker s_UxmlSerializationRegisterMarker = new(ProfilerCategory.UIToolkit, "UxmlCodeDependencies.UxmlSerialization.RegisterAssetAttributeDependencies");
 
         internal void RegisterUxmlSerializedDataDependencies(Dictionary<string, Type> serializedDataTypes)
         {

@@ -4,6 +4,7 @@
 
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Bindings;
 using UnityEngine.UIElements;
 
 namespace UnityEditor.UIElements
@@ -19,6 +20,7 @@ namespace UnityEditor.UIElements
         public int m_ReferenceCount;
     }
 
+    [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
     internal abstract class BaseLiveReloadAssetTracker<T> : ILiveReloadAssetTracker<T> where T : ScriptableObject
     {
         protected Dictionary<EntityId, AssetTracking<T>> m_TrackedAssets = new Dictionary<EntityId, AssetTracking<T>>();
@@ -154,6 +156,7 @@ namespace UnityEditor.UIElements
         }
     }
 
+    [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
     internal abstract class BaseLiveReloadVisualTreeAssetTracker : BaseLiveReloadAssetTracker<VisualTreeAsset>
     {
         internal abstract void OnVisualTreeAssetChanged();

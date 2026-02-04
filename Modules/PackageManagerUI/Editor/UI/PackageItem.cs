@@ -224,7 +224,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             if (primaryVersion is not { isInstalled: true } || !primaryVersion.HasTag(PackageTag.Feature))
                 return;
 
-            var featureCustomized = m_PackageDatabase.GetCustomizedDependencies(targetVersion, CustomizedDependencyType.All)?.Length > 0;
+            var featureCustomized = m_PackageDatabase.HasCustomizedDependencies(targetVersion, CustomizedDependencyType.All);
             m_StateIcon.EnableInClassList("customized", featureCustomized);
             m_StateIcon.tooltip = featureCustomized ? L10n.Tr("This feature has been manually customized") : string.Empty;
         }

@@ -155,9 +155,9 @@ namespace Unity.GraphToolkit.Editor
             }
             else if (evt.commandName == EventCommandNamesBridge.SelectAll)
             {
-                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 View.Dispatch(new SelectElementsCommand(SelectElementsCommand.SelectionMode.Replace, SelectableModels.ToList()));
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                 evt.StopPropagation();
             }
             else if (evt.commandName == EventCommandNamesBridge.DeselectAll)
@@ -167,9 +167,9 @@ namespace Unity.GraphToolkit.Editor
             }
             else if (evt.commandName == EventCommandNamesBridge.InvertSelection)
             {
-                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 View.Dispatch(new SelectElementsCommand(SelectElementsCommand.SelectionMode.Toggle, SelectableModels.ToList()));
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                 evt.StopPropagation();
             }
         }
@@ -246,9 +246,9 @@ namespace Unity.GraphToolkit.Editor
                 return;
 
             var copiedElements = CopySelection();
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             View.Dispatch(new DeleteElementsCommand(copiedElements.ToList()) { UndoString = "Cut" });
-#pragma warning restore RS0030
+#pragma warning restore UA2001
         }
 
         /// <summary>
@@ -360,9 +360,9 @@ namespace Unity.GraphToolkit.Editor
 
             var delta = GetPasteDelta(data, operation);
             var selection = GetSelection();
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             foreach (var selected in selection.Reverse())
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             {
                 var ui = selected.GetView(View);
                 if (ui is ModelView modelView && modelView.HandlePasteOperation(operation, operationName, delta, data))
@@ -383,9 +383,9 @@ namespace Unity.GraphToolkit.Editor
         /// <param name="conditionFunc">The filter to apply.</param>
         protected static void FilterElements(IEnumerable<GraphElementModel> elements, HashSet<GraphElementModel> collectedElementSet, Func<GraphElementModel, bool> conditionFunc)
         {
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             foreach (var element in elements.Where(e => e != null && conditionFunc(e)))
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             {
                 collectedElementSet.Add(element);
             }
@@ -557,9 +557,9 @@ namespace Unity.GraphToolkit.Editor
         {
             evt.menu.AppendAction(CommandMenuItemNames.Delete, _ =>
             {
-                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 View.Dispatch(new DeleteElementsCommand(GetSelection().ToList()));
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             }, CanDeleteSelection() ? DropdownMenuAction.Status.Normal : DropdownMenuAction.Status.Disabled);
         }
 
@@ -567,9 +567,9 @@ namespace Unity.GraphToolkit.Editor
         {
             evt.menu.AppendAction(CommandMenuItemNames.SelectAll, _ =>
             {
-                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 View.Dispatch(new SelectElementsCommand(SelectElementsCommand.SelectionMode.Add, SelectableModels.ToList()));
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             }, _ => DropdownMenuAction.Status.Normal);
         }
     }

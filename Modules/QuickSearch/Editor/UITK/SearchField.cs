@@ -182,9 +182,9 @@ namespace UnityEditor.Search
             searchField = new ToolbarSearchField() { name = "SearchField" };
             searchField.AddToClassList(searchFieldClassName);
             searchField.style.flexGrow = 1f;
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             searchField.Children().First().style.display = DisplayStyle.None;
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             textField.tripleClickSelectsLine = true;
             textField.selectAllOnFocus = false;
 
@@ -541,13 +541,13 @@ namespace UnityEditor.Search
 
             List<SearchQueryError> errors;
             if (m_ViewModel.currentGroup == (m_ViewModel as IGroup)?.id)
-                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 errors = m_ViewModel.GetAllVisibleErrors().ToList();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             else
-                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 errors = context.GetErrorsByProvider(m_ViewModel.currentGroup).ToList();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
 
             if (errors.Count == 0 || context.markers?.Length > 0)
                 return;

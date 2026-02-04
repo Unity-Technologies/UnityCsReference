@@ -12,10 +12,49 @@ using UnityEngine.UIElements;
 
 namespace Unity.UIToolkit.Editor;
 
+internal readonly record struct StyleInspectorTarget
+{
+    public readonly VisualElement Element;
+    public readonly StyleRule Rule;
+    public readonly StyleSheet Sheet;
+    public readonly StyleDiff.ContextType Type;
+
+    public StyleInspectorTarget(VisualElement element)
+    {
+        Element = element;
+        Rule = null;
+        Sheet = null;
+        Type = StyleDiff.ContextType.VisualElement;
+    }
+
+    public StyleInspectorTarget(VisualElement element, StyleSheet sheet, StyleRule rule)
+    {
+        Element = element;
+        Rule = rule;
+        Sheet = sheet;
+        Type = StyleDiff.ContextType.StyleSheet;
+    }
+
+    public bool IsValid()
+    {
+        switch (Type)
+        {
+            case StyleDiff.ContextType.None:
+                return false;
+            case StyleDiff.ContextType.VisualElement:
+                return Element != null;
+            case StyleDiff.ContextType.StyleSheet:
+                return Element != null && Rule != null && Sheet != null;
+            default:
+                throw new ArgumentOutOfRangeException();
+        }
+    }
+}
+
 [UxmlElement]
 internal sealed class StyleInspectorElement : VisualElement, IVisualElementChangeProcessor
 {
-    public static BindingId SelectionProperty = nameof(Element);
+    public static BindingId TargetProperty = nameof(Target);
     public static BindingId ContentAssetProperty = nameof(ContentAsset);
     public static BindingId IsReadOnlyProperty = nameof(IsReadOnly);
 
@@ -81,6 +120,11 @@ internal sealed class StyleInspectorElement : VisualElement, IVisualElementChang
             m_StyleDiff.RefreshElement(element, m_StyleDiffFlags);
         }
 
+        public void RefreshRule(VisualElement element, StyleSheet styleSheet, StyleRule rule)
+        {
+            m_StyleDiff.RefreshRule(element, styleSheet, rule, m_StyleDiffFlags);
+        }
+
         public void Dispose()
         {
             m_StyleDiff?.Dispose();
@@ -89,20 +133,20 @@ internal sealed class StyleInspectorElement : VisualElement, IVisualElementChang
 
     AuthoringContext m_Context;
 
-    VisualElement m_Element;
+    StyleInspectorTarget m_Target;
 
     [CreateProperty]
-    public VisualElement Element
+    public StyleInspectorTarget Target
     {
-        get => m_Element;
+        get => m_Target;
         set
         {
-            if (m_Element == value)
+            if (m_Target == value)
                 return;
-            ReleaseSelection(m_Element);
-            m_Element = value;
-            AcquireSelection(m_Element);
-            NotifyPropertyChanged(SelectionProperty);
+            ReleaseSelection(m_Target.Element);
+            m_Target = value;
+            AcquireSelection(m_Target.Element);
+            NotifyPropertyChanged(TargetProperty);
         }
     }
 
@@ -175,8 +219,8 @@ internal sealed class StyleInspectorElement : VisualElement, IVisualElementChang
                     IsReadOnly = IsReadOnly
                 };
                 dataSource = m_Context;
-                if (m_Element != null)
-                    AcquireSelection(m_Element);
+                if (Target.Element != null)
+                    AcquireSelection(Target.Element);
                 else
                     Refresh();
 
@@ -186,8 +230,8 @@ internal sealed class StyleInspectorElement : VisualElement, IVisualElementChang
             {
                 if (detachFromPanelEvent.originPanel == null)
                     return;
-                if (m_Element != null)
-                    ReleaseSelection(m_Element);
+                if (Target.Element != null)
+                    ReleaseSelection(Target.Element);
                 dataSource = null;
                 m_Context.Dispose();
                 UnbindAdvancedTextUI();
@@ -219,9 +263,9 @@ internal sealed class StyleInspectorElement : VisualElement, IVisualElementChang
 
     public void ProcessChanges(BaseVisualElementPanel targetPanel, AuthoringChanges changes)
     {
-        if (changes.styleChanged.Contains(Element) ||
-            changes.bindingContextChanged.Contains(Element) ||
-            changes.stylingContextChanged.Contains(Element))
+        if (changes.styleChanged.Contains(Target.Element) ||
+            changes.bindingContextChanged.Contains(Target.Element) ||
+            changes.stylingContextChanged.Contains(Target.Element))
         {
             Refresh();
         }
@@ -234,9 +278,20 @@ internal sealed class StyleInspectorElement : VisualElement, IVisualElementChang
 
     private void Refresh()
     {
-        if (m_Context != null)
+        if (m_Context != null && m_Target.IsValid())
         {
-            m_Context.Refresh(Element);
+            switch (m_Target.Type)
+            {
+                case StyleDiff.ContextType.VisualElement:
+                    m_Context.Refresh(m_Target.Element);
+                    break;
+                case StyleDiff.ContextType.StyleSheet:
+                    m_Context.RefreshRule(m_Target.Element, m_Target.Sheet, m_Target.Rule);
+                    break;
+                default:
+                    throw new ArgumentOutOfRangeException();
+            }
+
             UpdateFlexColumnGlobalState(m_Context.StyleDiff.flexDirection.computedValue);
             UpdateAdvancedTextHelpBox(UIToolkitProjectSettings.enableAdvancedText);
         }

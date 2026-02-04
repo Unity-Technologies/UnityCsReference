@@ -34,8 +34,8 @@ namespace UnityEditor.UIElements
 
         internal static readonly string s_RepaintProfilerMarkerName = "UIElementsUtility.DoDispatch(Repaint Event)";
         internal static readonly string s_EventProfilerMarkerName = "UIElementsUtility.DoDispatch(Non Repaint Event)";
-        private static readonly ProfilerMarker s_RepaintProfilerMarker = new ProfilerMarker(s_RepaintProfilerMarkerName);
-        private static readonly ProfilerMarker s_EventProfilerMarker = new ProfilerMarker(s_EventProfilerMarkerName);
+        private static readonly ProfilerMarker s_RepaintProfilerMarker = new ProfilerMarker(ProfilerCategory.UIToolkit, s_RepaintProfilerMarkerName);
+        private static readonly ProfilerMarker s_EventProfilerMarker = new ProfilerMarker(ProfilerCategory.UIToolkit, s_EventProfilerMarkerName);
 
         static internal bool DoDispatch(BaseVisualElementPanel panel, Event eventInstance)
         {

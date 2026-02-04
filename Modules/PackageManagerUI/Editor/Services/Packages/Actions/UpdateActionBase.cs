@@ -3,7 +3,6 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System.Collections.Generic;
-using System.Text;
 
 namespace UnityEditor.PackageManager.UI.Internal;
 
@@ -40,12 +39,9 @@ internal abstract class UpdateActionBase : PackageAction
         var targetVersion = GetUpdateTarget(version);
         if (installedVersion is { isDirectDependency: false } && installedVersion != targetVersion)
         {
-            var featureSetDependents = m_PackageDatabase.GetFeaturesThatUseThisPackage(installedVersion);
-            // if the installed version is being used by a Feature Set show the more specific
-            //  Feature Set dialog instead of the generic one
+            // if the installed version is being used by a Feature Set show the more specific Feature Set dialog instead of the generic one
             var title = string.Format(L10n.Tr("Updating {0}"), version.GetDescriptor());
-            using var enumerator = featureSetDependents.GetEnumerator();
-            if (featureSetDependents != null && enumerator.MoveNext())
+            if (m_PackageDatabase.IsUsedByFeature(installedVersion))
             {
                 var message = string.Format(L10n.Tr("Changing a {0} that is part of a feature can lead to errors. Are you sure you want to proceed?"), version.GetDescriptor());
                 if (!m_Application.DisplayDialog("updatePackagePartOfFeature", title, message, L10n.Tr("Yes"), L10n.Tr("No")))

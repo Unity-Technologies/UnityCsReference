@@ -5,6 +5,7 @@
 using System;
 using UnityEngine.UIElements;
 using System.Collections.Generic;
+using Unity.UIToolkit.Editor;
 using UnityEditor;
 using UnityEditor.UIElements;
 using UnityEngine;
@@ -19,14 +20,14 @@ namespace Unity.UI.Builder
         static readonly string kExplorerStyleSheetPaneContextModeUssClassName = BuilderConstants.ExplorerStyleSheetsPaneClassName + "--context-mode";
 
         ToolbarMenu m_AddUSSMenu;
-        BuilderNewSelectorField m_NewSelectorField;
+        NewSelectorField m_NewSelectorField;
         BuilderTooltipPreview m_TooltipPreview;
         Label m_MessageLink;
         BuilderStyleSheetsDragger m_StyleSheetsDragger;
         Label m_EmptyStyleSheetsPaneLabel;
 
         BuilderDocument document => m_PaneWindow?.document;
-        public BuilderNewSelectorField newSelectorField => m_NewSelectorField;
+        public NewSelectorField newSelectorField => m_NewSelectorField;
 
         public BuilderStyleSheets(
             BuilderPaneWindow paneWindow,
@@ -52,7 +53,7 @@ namespace Unity.UI.Builder
             m_TooltipPreview = tooltipPreview;
             if (m_TooltipPreview != null)
             {
-                m_TooltipPreview.Add(BuilderStyleSheetsNewSelectorHelpTips.Create());
+                m_TooltipPreview.Add(new StyleSheetsNewSelectorHelpTips());
                 m_MessageLink = m_TooltipPreview.Q<Label>(null, kMessageLinkClassName);
                 m_MessageLink.focusable = true;
             }
@@ -63,7 +64,7 @@ namespace Unity.UI.Builder
             var parent = this.Q("new-selector-item");
 
             // Init text field.
-            m_NewSelectorField = parent.Q<BuilderNewSelectorField>("new-selector-field");
+            m_NewSelectorField = parent.Q<NewSelectorField>("new-selector-field");
 
             m_NewSelectorField.RegisterCallback<NewSelectorSubmitEvent>(OnNewSelectorSubmit);
             UpdateNewSelectorFieldEnabledStateFromDocument();

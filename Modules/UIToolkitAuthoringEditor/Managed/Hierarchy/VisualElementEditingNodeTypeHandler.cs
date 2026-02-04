@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using Unity.Hierarchy;
 using UnityEditor;
 using UnityEditor.SceneManagement;
+using UnityEditor.UIElements;
 using UnityEngine;
 using UnityEngine.Assertions;
 using UnityEngine.Pool;
@@ -17,28 +18,27 @@ namespace Unity.UIToolkit.Editor;
 internal class VisualElementEditingNodeHandler : VisualElementNodeTypeHandler, IVisualElementEditingManager
 {
     private VisualElementEditingStage m_Stage;
+    private VisualTreeAssetExporter m_Exporter;
     private Panel m_Panel;
     private VisualElement m_LocalRoot;
     private bool m_ExpandOnInitialize = false;
 
     VisualTreeAssetEditingContext Context => m_Stage?.Context ?? default;
+    Clipboard Clipboard => m_Stage?.Clipboard;
 
     public VisualElementEditingNodeHandler()
         : base(new HierarchySelectionHandler())
     {
         isReadonly = false;
         SelectionHandler.SetEditingManager(this);
-        UIElementsRuntimeUtility.onCreateAuthoringPanel += RegisterPanel;
-        UIElementsRuntimeUtility.onWillDestroyAuthoringPanel += UnregisterPanel;
     }
 
     protected override void Dispose(bool disposing)
     {
-        UIElementsRuntimeUtility.onCreateAuthoringPanel -= RegisterPanel;
-        UIElementsRuntimeUtility.onWillDestroyAuthoringPanel -= UnregisterPanel;
         if (m_Stage)
             m_Stage.MainDocumentWasCloned -= StageOnMainDocumentWasCloned;
         m_Stage = null;
+        m_Exporter = null;
         base.Dispose(disposing);
     }
 
@@ -73,10 +73,11 @@ internal class VisualElementEditingNodeHandler : VisualElementNodeTypeHandler, I
         if (m_Stage)
             m_Stage.MainDocumentWasCloned += StageOnMainDocumentWasCloned;
 
+        m_Exporter = new VisualTreeAssetExporter();
         SetContextForEditing(stage.Context, stage.GetAuthoringPanel());
     }
 
-    void StageOnMainDocumentWasCloned(VisualElementEditingStage obj)
+    void StageOnMainDocumentWasCloned(VisualElementEditingStage stage)
     {
         CacheLocalRoot();
     }
@@ -87,12 +88,12 @@ internal class VisualElementEditingNodeHandler : VisualElementNodeTypeHandler, I
 
     protected override bool AcceptParent(HierarchyView view, in HierarchyNode parentNode, VisualElement parent)
     {
-        return CanReceiveChildren(parent) && (IsEditable(parent) || parent == m_LocalRoot);
+        return CanReceiveChildren(parent) && (IsFullyEditable(parent) || parent == m_LocalRoot);
     }
 
     protected override bool AcceptChild(HierarchyView view, in HierarchyNode childNode, VisualElement child)
     {
-        return IsEditable(child);
+        return IsFullyEditable(child);
     }
 
     protected override void InitializeDrag(in HierarchyViewDragAndDropSetupData data)
@@ -128,7 +129,7 @@ internal class VisualElementEditingNodeHandler : VisualElementNodeTypeHandler, I
 
         foreach (var visualElement in draggedVisualElements)
         {
-            if (!IsEditable(visualElement))
+            if (!IsFullyEditable(visualElement))
                 return DragVisualMode.Rejected;
 
             if (data.Parent == Hierarchy.Root)
@@ -156,7 +157,8 @@ internal class VisualElementEditingNodeHandler : VisualElementNodeTypeHandler, I
                 break;
             case DragAndDropPosition.BetweenItems:
             {
-                var accept = CheckIfElementCanBeInsertedAtIndex(data.View, data.Parent, data.ChildIndex, data.InsertAtIndex);
+                var accept =
+                    CheckIfElementCanBeInsertedAtIndex(data.View, data.Parent, data.ChildIndex, data.InsertAtIndex);
                 if (!accept)
                     return DragVisualMode.Rejected;
                 if (!performDrop)
@@ -174,10 +176,12 @@ internal class VisualElementEditingNodeHandler : VisualElementNodeTypeHandler, I
             default:
                 throw new ArgumentOutOfRangeException();
         }
+
         return DoPerformVisualElementsDrop(in data, draggedVisualElements);
     }
 
-    bool CheckIfElementCanBeInsertedAtIndex(HierarchyView view, in HierarchyNode parent, int childIndex, int insertIndex)
+    bool CheckIfElementCanBeInsertedAtIndex(HierarchyView view, in HierarchyNode parent, int childIndex,
+        int insertIndex)
     {
         // Try to detect a case where we are trying to drag a parent as it's first
         if (childIndex == 0)
@@ -203,6 +207,7 @@ internal class VisualElementEditingNodeHandler : VisualElementNodeTypeHandler, I
         {
             return false;
         }
+
         if (!TryGetNodeFromElement(logicalParent, out var logicalParentNode))
             return false;
 
@@ -220,21 +225,23 @@ internal class VisualElementEditingNodeHandler : VisualElementNodeTypeHandler, I
             if (childCount == 0)
                 return true;
 
-            return TryGetElementFromNode(in children[0], out var current) && IsEditable(current);
+            return TryGetElementFromNode(in children[0], out var current) && IsFullyEditable(current);
         }
 
         if (childIndex < childCount)
         {
             // We only want to allow drag and dropping at a place where the index will visually remain the same, so we
             // need to check if either the current element or the element before it is editable.
-            return TryGetElementFromNode(in children[childIndex - 1], out var previous) && IsEditable(previous) ||
-                   TryGetElementFromNode(in children[childIndex], out var current) && IsEditable(current);
+            return TryGetElementFromNode(in children[childIndex - 1], out var previous) && IsFullyEditable(previous) ||
+                   TryGetElementFromNode(in children[childIndex], out var current) && IsFullyEditable(current);
         }
+
         // childIndex == childCount
         return true;
     }
 
-    private DragVisualMode DoPerformVisualElementsDrop(in HierarchyViewDragAndDropHandlingData data, List<VisualElement> draggedVisualElements)
+    private DragVisualMode DoPerformVisualElementsDrop(in HierarchyViewDragAndDropHandlingData data,
+        List<VisualElement> draggedVisualElements)
     {
         var parentElement = m_LocalRoot;
 
@@ -279,17 +286,39 @@ internal class VisualElementEditingNodeHandler : VisualElementNodeTypeHandler, I
             {
                 if (logicalParent.IndexOf(element) < index)
                     --index;
-
             }
+
             logicalParent.Insert(index++, element);
         }
 
         var adjustedIndex = logicalParent.IndexOf(draggedVisualElements[0]);
-        for (var i = 0; i < adjustedIndex; ++i)
+        var upTo = adjustedIndex;
+        for (var i = 0; i < upTo; ++i)
         {
-            if (logicalParent[i].visualElementAsset == null)
+            var parentVtaSource = parentElement.visualTreeAssetSource;
+            if (parentElement is PanelRootElement)
+            {
+                if (Context.SubDocumentOptions is SubDocumentOptions.Isolation)
+                {
+                    parentVtaSource = m_Stage.EditedVisualTreeAsset;
+                }
+                else
+                {
+                    parentVtaSource = Context.RootVisualTreeAsset;
+                }
+            }
+
+            if (parentElement is TemplateContainer templateContainer)
+            {
+                var templateAsset = (TemplateAsset)templateContainer.visualElementAsset;
+                parentVtaSource = templateAsset.ResolveTemplate();
+            }
+
+            if (logicalParent[i].visualElementAsset == null ||
+                logicalParent[i].visualTreeAssetSource != parentVtaSource)
                 --adjustedIndex;
         }
+
         new ReparentElementsCommand(parentAsset, adjustedIndex, childrenAssets).Execute();
 
         return DragVisualMode.Move;
@@ -338,11 +367,13 @@ internal class VisualElementEditingNodeHandler : VisualElementNodeTypeHandler, I
         {
             return DragVisualMode.Rejected;
         }
+
         // Contains assets we do not care about here.
         return DragVisualMode.None;
     }
 
-    private DragVisualMode HandleStyleSheetsBeingDropped(in HierarchyViewDragAndDropHandlingData data, List<StyleSheet> styleSheets, bool performDrop)
+    private DragVisualMode HandleStyleSheetsBeingDropped(in HierarchyViewDragAndDropHandlingData data,
+        List<StyleSheet> styleSheets, bool performDrop)
     {
         if (data.DropPosition != DragAndDropPosition.OverItem)
             return DragVisualMode.Rejected;
@@ -353,7 +384,7 @@ internal class VisualElementEditingNodeHandler : VisualElementNodeTypeHandler, I
         if (!TryGetElementFromNode(data.Target, out var element))
             return DragVisualMode.Rejected;
 
-        if (!IsEditable(element))
+        if (!IsFullyEditable(element))
             return DragVisualMode.Rejected;
 
         return performDrop
@@ -361,7 +392,8 @@ internal class VisualElementEditingNodeHandler : VisualElementNodeTypeHandler, I
             : DragVisualMode.Copy;
     }
 
-    private DragVisualMode DoPerformStyleSheetsDrop(in HierarchyViewDragAndDropHandlingData data, List<StyleSheet> styleSheets)
+    private DragVisualMode DoPerformStyleSheetsDrop(in HierarchyViewDragAndDropHandlingData data,
+        List<StyleSheet> styleSheets)
     {
         // Only support "OverItem" for now, so the target and parent should be the same.
         Assert.IsTrue(data.Parent == data.Target);
@@ -379,7 +411,8 @@ internal class VisualElementEditingNodeHandler : VisualElementNodeTypeHandler, I
         return DragVisualMode.Copy;
     }
 
-    private DragVisualMode HandleVisualTreeAssetsBeingDropped(in HierarchyViewDragAndDropHandlingData data, List<VisualTreeAsset> visualTreeAssets, bool performDrop)
+    private DragVisualMode HandleVisualTreeAssetsBeingDropped(in HierarchyViewDragAndDropHandlingData data,
+        List<VisualTreeAsset> visualTreeAssets, bool performDrop)
     {
         foreach (var visualTreeAsset in visualTreeAssets)
         {
@@ -399,7 +432,7 @@ internal class VisualElementEditingNodeHandler : VisualElementNodeTypeHandler, I
             case DragAndDropPosition.OverItem:
             {
                 if (!TryGetElementFromNode(data.Target, out var parent)
-                    || !IsEditable(parent))
+                    || !IsFullyEditable(parent))
                     return DragVisualMode.Rejected;
 
                 if (!performDrop)
@@ -408,7 +441,8 @@ internal class VisualElementEditingNodeHandler : VisualElementNodeTypeHandler, I
                 break;
             case DragAndDropPosition.BetweenItems:
             {
-                var accept = CheckIfElementCanBeInsertedAtIndex(data.View, data.Parent, data.ChildIndex, data.InsertAtIndex);
+                var accept =
+                    CheckIfElementCanBeInsertedAtIndex(data.View, data.Parent, data.ChildIndex, data.InsertAtIndex);
                 if (!accept)
                     return DragVisualMode.Rejected;
                 if (!performDrop)
@@ -427,10 +461,12 @@ internal class VisualElementEditingNodeHandler : VisualElementNodeTypeHandler, I
             default:
                 throw new ArgumentOutOfRangeException();
         }
+
         return DoPerformVisualTreeAssetDrop(in data, visualTreeAssets);
     }
 
-    private DragVisualMode DoPerformVisualTreeAssetDrop(in HierarchyViewDragAndDropHandlingData data, List<VisualTreeAsset> visualTreeAssets)
+    private DragVisualMode DoPerformVisualTreeAssetDrop(in HierarchyViewDragAndDropHandlingData data,
+        List<VisualTreeAsset> visualTreeAssets)
     {
         var parentElement = m_LocalRoot;
 
@@ -466,6 +502,7 @@ internal class VisualElementEditingNodeHandler : VisualElementNodeTypeHandler, I
             if (logicalParent[i].visualElementAsset == null)
                 --adjustedIndex;
         }
+
         new AddTemplatesToElementCommand(parentAsset, adjustedIndex, visualTreeAssets.ToArray()).Execute();
         m_Stage.RequestRefresh();
 
@@ -482,23 +519,24 @@ internal class VisualElementEditingNodeHandler : VisualElementNodeTypeHandler, I
         {
             case DragAndDropPosition.OverItem:
             {
-                if (!TryGetElementFromNode(data.Target, out var parent) || !IsEditable(parent))
+                if (!TryGetElementFromNode(data.Target, out var parent) || !IsFullyEditable(parent))
                     return DragVisualMode.Rejected;
 
                 if (!performDrop)
                     return DragVisualMode.Copy;
             }
-            break;
+                break;
 
             case DragAndDropPosition.BetweenItems:
             {
-                var accept = CheckIfElementCanBeInsertedAtIndex(data.View, data.Parent, data.ChildIndex, data.InsertAtIndex);
+                var accept =
+                    CheckIfElementCanBeInsertedAtIndex(data.View, data.Parent, data.ChildIndex, data.InsertAtIndex);
                 if (!accept)
                     return DragVisualMode.Rejected;
                 if (!performDrop)
                     return DragVisualMode.Copy;
             }
-            break;
+                break;
 
             case DragAndDropPosition.OutsideItems:
             {
@@ -508,7 +546,7 @@ internal class VisualElementEditingNodeHandler : VisualElementNodeTypeHandler, I
                 if (!performDrop)
                     return DragVisualMode.Copy;
             }
-            break;
+                break;
 
             default:
                 throw new ArgumentOutOfRangeException();
@@ -531,7 +569,9 @@ internal class VisualElementEditingNodeHandler : VisualElementNodeTypeHandler, I
             return DragVisualMode.Rejected;
 
         var logicalParent = GetLogicalParentFromPhysicalParent(parentElement);
-        var parentAsset = logicalParent != m_LocalRoot ? logicalParent.visualElementAsset : m_Stage.EditedVisualTreeAsset.visualTree;
+        var parentAsset = logicalParent != m_LocalRoot
+            ? logicalParent.visualElementAsset
+            : m_Stage.EditedVisualTreeAsset.visualTree;
         var adjustedIndex = -1;
         if (data.DropPosition == DragAndDropPosition.BetweenItems)
         {
@@ -559,6 +599,185 @@ internal class VisualElementEditingNodeHandler : VisualElementNodeTypeHandler, I
 
     protected override bool CanStartDrag(HierarchyView view, in SelectionContext selection) => true;
 
+    protected override bool CanSetName(HierarchyView view, in HierarchyNode node, VisualElement element)
+    {
+        return IsFullyEditable(element);
+    }
+
+    protected override bool CanCut(HierarchyView view, in SelectionContext selection)
+        => CanDoHierarchyOperation(view, in selection);
+
+    protected override bool OnCut(HierarchyView view, in SelectionContext selection)
+    {
+        Clipboard.ClearCutElements();
+
+        using var nodesHandle = ListPool<HierarchyNode>.Get(out var nodes);
+        using var elementsHandle = ListPool<VisualElement>.Get(out var elements);
+
+        FilterSelection(view, in selection, elements, nodes);
+
+        if (elements.Count == 0)
+            return false;
+
+        using (new HierarchyViewModelFlagsChangeScope(view.ViewModel))
+        {
+            view.ViewModel.ClearFlags(HierarchyNodeFlags.Cut);
+            var nodesSpan = NoAllocHelpers.CreateSpan(nodes);
+            view.ViewModel.SetFlagsRecursive(nodesSpan, HierarchyNodeFlags.Cut, HierarchyTraversalDirection.Children);
+        }
+
+        Clipboard.SetCutElements(elements);
+        return true;
+    }
+
+    protected override bool CanCopy(HierarchyView view, in SelectionContext selection)
+        => CanDoHierarchyOperation(view, in selection);
+
+    protected override bool OnCopy(HierarchyView view, in SelectionContext selection)
+    {
+        Clipboard.ClearCutElements();
+        view.ViewModel.ClearFlags(HierarchyNodeFlags.Cut);
+
+        using var nodesHandle = ListPool<HierarchyNode>.Get(out var nodes);
+        using var elementsHandle = ListPool<VisualElement>.Get(out var elements);
+
+        FilterSelection(view, in selection, elements, nodes);
+
+        if (elements.Count == 0)
+            return false;
+
+        var toCopy = new List<UxmlAsset>(elements.Count);
+        for (var i = 0; i < elements.Count; ++i)
+        {
+            toCopy.Add(elements[i].visualElementAsset);
+        }
+
+        SystemCopyBuffer = m_Exporter.ToUxmlString(m_Stage.EditedVisualTreeAsset, toCopy);
+
+        return true;
+    }
+
+    protected override bool CanDelete(HierarchyView view, in SelectionContext selection)
+        => CanDoHierarchyOperation(view, in selection);
+
+    protected override bool OnDelete(HierarchyView view, in SelectionContext selection)
+    {
+        using var nodesHandle = ListPool<HierarchyNode>.Get(out var nodes);
+        using var elementsHandle = ListPool<VisualElement>.Get(out var elements);
+
+        FilterSelection(view, in selection, elements, nodes);
+
+        if (elements.Count == 0)
+            return false;
+
+        var toRemove = new VisualElementAsset[elements.Count];
+        for (var i = 0; i < elements.Count; ++i)
+        {
+            toRemove[i] = elements[i].visualElementAsset;
+        }
+
+        new RemoveElementsCommand(toRemove).Execute();
+        foreach (var t in elements)
+        {
+            t.RemoveFromHierarchy();
+        }
+
+        return true;
+    }
+
+    protected override bool CanDuplicate(HierarchyView view, in SelectionContext selection)
+        => CanDoHierarchyOperation(view, in selection);
+
+    protected override bool OnDuplicate(HierarchyView view, in SelectionContext selection)
+    {
+        if (view.ViewModel.HasFlags(HierarchyNodeFlags.Cut))
+        {
+            Clipboard.ClearCutElements();
+            view.ViewModel.ClearFlags(HierarchyNodeFlags.Cut);
+        }
+
+        using var nodesHandle = ListPool<HierarchyNode>.Get(out var nodes);
+        using var elementsHandle = ListPool<VisualElement>.Get(out var elements);
+
+        FilterSelection(view, in selection, elements, nodes);
+
+        if (elements.Count == 0)
+            return false;
+
+        var toDuplicate = new VisualElementAsset[elements.Count];
+        for (var i = 0; i < elements.Count; ++i)
+        {
+            toDuplicate[i] = elements[i].visualElementAsset;
+        }
+
+        new DuplicateElementsCommand(toDuplicate).Execute();
+        m_Stage.RequestRefresh();
+        return true;
+    }
+
+    protected override bool CanPaste(HierarchyView view, in SelectionContext selection)
+    {
+        if (selection.SelectionCount > 0 && !CanDoHierarchyOperation(view, in selection))
+            return false;
+
+        if (Clipboard?.GetCutElements() != null)
+            return true;
+
+        return IsSystemCopyBufferUxml();
+    }
+
+    protected override bool OnPaste(HierarchyView view, in SelectionContext selection)
+   {
+        var parentAsset = m_Stage.EditedVisualTreeAsset.visualTree;
+
+        var parentElement = m_LocalRoot;
+        if (selection.SelectionCount > 0 && TryGetElementFromNode(in selection.Selection[0], out var element))
+        {
+            if (element.parent != null)
+                parentElement = GetLogicalParentFromPhysicalParent(element.parent) ?? parentElement;
+            parentAsset = parentElement?.visualElementAsset ?? parentAsset;
+        }
+
+        if (parentElement == m_LocalRoot)
+            parentAsset = m_Stage.EditedVisualTreeAsset.visualTree;
+
+        // Cut operation
+        if (view.ViewModel.HasFlags(HierarchyNodeFlags.Cut))
+        {
+            var cutElements = Clipboard.GetCutElements();
+            var toPaste = new VisualElementAsset[cutElements.Count];
+            for (var i = 0; i < cutElements.Count; ++i)
+            {
+                var ve = cutElements[i];
+                parentElement.Add(ve);
+                toPaste[i] = ve.visualElementAsset;
+            }
+
+            new ReparentElementsCommand(parentAsset, -1, toPaste).Execute();
+            RequestSelectionOnNextUpdate(toPaste);
+            Clipboard.ClearCutElements();
+            view.ViewModel.ClearFlags(HierarchyNodeFlags.Cut);
+            return true;
+        }
+
+        // Copy operation
+        if (!IsSystemCopyBufferUxml())
+            return false;
+
+        try
+        {
+            new PasteElementsCommand(SystemCopyBuffer, parentAsset).Execute();
+            m_Stage.RequestRefresh();
+            view.ViewModel.ClearFlags(HierarchyNodeFlags.Cut);
+            return true;
+        }
+        // Not valid JSON or type.
+        catch (ArgumentException)
+        {
+            return false;
+        }
+    }
+
     protected override void OnBindView(HierarchyView view)
     {
         if (StageNavigationManager.instance.currentStage is not VisualElementEditingStage)
@@ -575,6 +794,52 @@ internal class VisualElementEditingNodeHandler : VisualElementNodeTypeHandler, I
 
         if (m_ExpandOnInitialize)
             ForceDisplayInContextPanel(viewModel);
+
+        var toSelects = GetDelayedSelectionRequests();
+        if (toSelects is { Count: > 0 })
+        {
+            viewModel.ClearFlags(HierarchyNodeFlags.Selected);
+            var selectionSet = false;
+            foreach (var vea in toSelects)
+            {
+                var element = FindElementFromAsset(vea);
+                if (TryGetNodeFromElement(element, out var node))
+                {
+                    var parentNode = Hierarchy.GetParent(node);
+
+                    if (parentNode != Hierarchy.Root && parentNode != HierarchyNode.Null)
+                        viewModel.SetFlagsRecursive(parentNode, HierarchyNodeFlags.Expanded, HierarchyTraversalDirection.Parents);
+                    viewModel.SetFlags(node, HierarchyNodeFlags.Selected);
+                    if (TryGetSelectionObject(node, out var entityId))
+                    {
+                        if (selectionSet)
+                        {
+                            Selection.Add(entityId);
+                        }
+                        else
+                        {
+                            Selection.activeEntityId = entityId;
+                            selectionSet = true;
+                        }
+                    }
+                }
+                else
+                {
+                    Console.WriteLine("Could not find Asset");
+                }
+            }
+            toSelects.Clear();
+        }
+    }
+
+    private VisualElement FindElementFromAsset(VisualElementAsset vea)
+    {
+        var element = m_Panel.visualTree.Query().Where(e =>
+        {
+            if (e.visualElementAsset == null) return false;
+            return e.visualElementAsset.id == vea.id;
+        }).First();
+        return element;
     }
 
     private void ForceDisplayInContextPanel(HierarchyViewModel viewModel)
@@ -613,7 +878,7 @@ internal class VisualElementEditingNodeHandler : VisualElementNodeTypeHandler, I
 
     protected override void Bind(HierarchyViewItem item, VisualElement element)
     {
-        item.EnableInClassList(VisualElementDisabledUssClass, !IsEditable(element));
+        item.EnableInClassList(VisualElementDisabledUssClass, !IsFullyEditable(element));
         base.Bind(item, element);
     }
 
@@ -625,6 +890,7 @@ internal class VisualElementEditingNodeHandler : VisualElementNodeTypeHandler, I
 
     protected override void BindNavigation(HierarchyViewItem item, VisualElement container)
     {
+        base.BindNavigation(item, container);
         if (IsNavigable(container))
             SetStageNodeNavigation(item, container);
         else
@@ -633,6 +899,7 @@ internal class VisualElementEditingNodeHandler : VisualElementNodeTypeHandler, I
 
     protected override void UnbindNavigation(HierarchyViewItem item, VisualElement container)
     {
+        base.UnbindNavigation(item, container);
         UnsetStageNodeNavigation(item);
     }
 
@@ -641,7 +908,7 @@ internal class VisualElementEditingNodeHandler : VisualElementNodeTypeHandler, I
         return element.GetFirstAncestorWhere(e => e == m_LocalRoot) != null;
     }
 
-    private bool IsEditable(VisualElement element)
+    private bool IsFullyEditable(VisualElement element)
     {
         return GetEditFlags(element) == (VisualElementEditFlags.FullyEditable);
     }
@@ -649,6 +916,51 @@ internal class VisualElementEditingNodeHandler : VisualElementNodeTypeHandler, I
     public VisualElementEditFlags GetEditFlags(VisualElement element)
     {
         return Context.GetElementEditFlags(element);
+    }
+
+    private bool CanDoHierarchyOperation(HierarchyView view, in SelectionContext selection)
+    {
+        if (selection.Type != SelectionContext.SelectionType.All)
+            return false;
+
+        for (var i = 0; i < selection.SelectionCount; ++i)
+        {
+            if (!TryGetElementFromNode(selection.Selection[i], out var element))
+                continue;
+
+            if (IsFullyEditable(element))
+                return true;
+        }
+
+        return false;
+    }
+
+    private void FilterSelection(HierarchyView view, in SelectionContext selection, List<VisualElement> elements,
+        List<HierarchyNode> nodes)
+    {
+        for (var i = 0; i < selection.SelectionCount; ++i)
+        {
+            if (!TryGetElementFromNode(selection.Selection[i], out var element))
+                continue;
+
+            if (!IsFullyEditable(element))
+                continue;
+
+            if (elements.Count > 0)
+            {
+                var previous = elements[^1];
+                if (previous.FindCommonAncestor(element) != previous)
+                {
+                    nodes.Add(selection.Selection[i]);
+                    elements.Add(element);
+                }
+            }
+            else
+            {
+                nodes.Add(selection.Selection[i]);
+                elements.Add(element);
+            }
+        }
     }
 
     internal void CacheLocalRoot()
@@ -668,7 +980,7 @@ internal class VisualElementEditingNodeHandler : VisualElementNodeTypeHandler, I
                 .Where(tc =>
                 {
                     var templateAsset = (TemplateAsset)tc.visualElementAsset;
-                    return templateAsset == template && templateAsset.id == template.id;
+                    return templateAsset.id == template.id;
                 }).First();
         }
 
@@ -680,8 +992,9 @@ internal class VisualElementEditingNodeHandler : VisualElementNodeTypeHandler, I
         }
     }
 
-    protected override void PopulateContextMenu(in HierarchyNode node, VisualElement element, DropdownMenu menu)
+    protected override void PopulateContextMenu(HierarchyView view, in HierarchyNode node, VisualElement element,
+        DropdownMenu menu)
     {
-        StageContextMenuUtility.PopulateMenu(menu);
+        StageContextMenuUtility.PopulateMenu(view, in node, menu, this);
     }
 }

@@ -12,19 +12,22 @@ namespace UnityEditor.PackageManager.UI.Internal
         [Serializable]
         public new class UxmlSerializedData : Image.UxmlSerializedData
         {
-            public override object CreateInstance() => new CopyIconButton();
+            public override object CreateInstance()
+            {
+                return new CopyIconButton(
+                    ServicesContainer.instance.Resolve<IApplicationProxy>());
+            }
         }
 
         private const string k_CopyIconName = "copyIcon";
         private const string k_ClickedClassName = "clicked";
         public string textToCopy { get; private set; }
 
-        private IApplicationProxy m_ApplicationProxy;
-
-        public CopyIconButton()
+        private readonly IApplicationProxy m_ApplicationProxy;
+        public CopyIconButton(IApplicationProxy applicationProxy)
         {
-            var container = ServicesContainer.instance;
-            m_ApplicationProxy = container.Resolve<IApplicationProxy>();
+            m_ApplicationProxy = applicationProxy;
+
             name = k_CopyIconName;
             tooltip = L10n.Tr("Copy to clipboard");
 

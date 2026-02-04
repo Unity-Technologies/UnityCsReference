@@ -13,27 +13,21 @@ namespace UnityEditor.PackageManager.UI.Internal
         [Serializable]
         public new class UxmlSerializedData : VisualElement.UxmlSerializedData
         {
-            public override object CreateInstance() => new ProgressBar();
+            public override object CreateInstance()
+            {
+                return new ProgressBar(
+                    ServicesContainer.instance.Resolve<IResourceLoader>());
+            }
         }
-
-        private IResourceLoader m_ResourceLoader;
 
         static private double s_LastWidthTime;
         private const double k_PaintInterval = 1f; // Time interval to repaint
 
-        private void ResolveDependencies()
+        public ProgressBar(IResourceLoader resourceLoader)
         {
-            var container = ServicesContainer.instance;
-            m_ResourceLoader = container.Resolve<IResourceLoader>();
-        }
-
-        public ProgressBar()
-        {
-            ResolveDependencies();
-
             UIUtils.SetElementDisplay(this, false);
 
-            var root = m_ResourceLoader.GetTemplate("ProgressBar.uxml");
+            var root = resourceLoader.GetTemplate("ProgressBar.uxml");
             Add(root);
             root.StretchToParentSize();
 

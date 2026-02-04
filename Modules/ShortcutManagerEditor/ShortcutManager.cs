@@ -126,9 +126,9 @@ namespace UnityEditor.ShortcutManagement
         public IEnumerable<string> GetAvailableProfileIds()
         {
             yield return ShortcutManager.defaultProfileId;
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             foreach (var id in m_ShortcutProfileManager.GetProfiles().Select(profile => profile.id))
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                 yield return id;
         }
 
@@ -234,9 +234,9 @@ namespace UnityEditor.ShortcutManagement
 
         public IEnumerable<string> GetAvailableShortcutIds()
         {
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return m_ShortcutProfileManager.GetAllShortcuts().Select(entry => entry.identifier.path);
-#pragma warning restore RS0030
+#pragma warning restore UA2001
         }
 
         public ShortcutBinding GetShortcutBinding(string shortcutId)
@@ -245,9 +245,9 @@ namespace UnityEditor.ShortcutManagement
                 throw new ArgumentNullException(nameof(shortcutId) + ":" + shortcutId);
 
             var shortcutEntries = m_ShortcutProfileManager.GetAllShortcuts();
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var shortcutEntry = shortcutEntries.FirstOrDefault(entry => entry.identifier.path == shortcutId);
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             if (shortcutEntry == null)
             {
                 if (MenuService.IsShortcutAvailableInMode(shortcutId))
@@ -264,9 +264,9 @@ namespace UnityEditor.ShortcutManagement
                 throw new ArgumentNullException(nameof(shortcutId) + ":" + shortcutId);
 
             var shortcutEntries = m_ShortcutProfileManager.GetAllShortcuts();
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var shortcutEntry = shortcutEntries.FirstOrDefault(entry => entry.identifier.path == shortcutId);
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             if (shortcutEntry == null)
                 throw new ArgumentException("Shortcut not available", nameof(shortcutId) + ": " + shortcutId);
 
@@ -282,9 +282,9 @@ namespace UnityEditor.ShortcutManagement
                 throw new ArgumentNullException(nameof(shortcutId) + ": " + shortcutId);
 
             var shortcutEntries = m_ShortcutProfileManager.GetAllShortcuts();
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var shortcutEntry = shortcutEntries.FirstOrDefault(entry => entry.identifier.path == shortcutId);
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             if (shortcutEntry == null)
                 throw new ArgumentException("Shortcut not available", nameof(shortcutId) + ": " + shortcutId);
 
@@ -300,9 +300,9 @@ namespace UnityEditor.ShortcutManagement
                 throw new ArgumentNullException(nameof(shortcutId) + ": " + shortcutId);
 
             var shortcutEntries = m_ShortcutProfileManager.GetAllShortcuts();
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var shortcutEntry = shortcutEntries.FirstOrDefault(entry => entry.identifier.path == shortcutId);
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             if (shortcutEntry == null)
                 throw new ArgumentException("Shortcut not available", nameof(shortcutId) + ": " + shortcutId);
 

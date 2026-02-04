@@ -101,9 +101,9 @@ namespace UnityEditor
 
         internal bool IsEmpty()
         {
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return m_Textures.Count(t => t != null) == 0;
-#pragma warning restore RS0030
+#pragma warning restore UA2001
         }
 
         internal static PlatformIcon[] GetRequiredPlatformIconsByType(PlatformIconKind kind, IReadOnlyDictionary<PlatformIconKind, PlatformIcon[]> requiredIcons)
@@ -111,9 +111,9 @@ namespace UnityEditor
             if (kind != PlatformIconKind.Any)
                 return requiredIcons[kind];
 
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return requiredIcons.Values.SelectMany(i => i).ToArray();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
         }
 
         internal PlatformIcon(int width, int height, int minLayerCount, int maxLayerCount, string iconSubKind, string description, PlatformIconKind kind, bool draggable = true)
@@ -169,9 +169,9 @@ namespace UnityEditor
 
         public void SetTextures(params Texture2D[] textures)
         {
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             if (textures == null || textures.Length == 0 || textures.Count(t => t != null) == 0)
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             {
                 m_Textures.Clear();
                 return;
@@ -181,19 +181,19 @@ namespace UnityEditor
                 throw new InvalidOperationException($"Attempting to assign an incorrect amount of layers to an PlatformIcon, trying to assign {textures.Length} textures while the Icon requires atleast {minLayerCount} but no more than {maxLayerCount} layers");
             }
 
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             m_Textures = textures.ToList();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
         }
 
         internal int GetValidLayerCount()
         {
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var validLayerCount = m_Textures.Count(t => t != null);
-#pragma warning restore RS0030
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning restore UA2001
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var previewTexturesCount = GetPreviewTextures().Count(t => t != null);
-#pragma warning restore RS0030
+#pragma warning restore UA2001
 
             return Math.Max(previewTexturesCount, validLayerCount);
         }
@@ -271,9 +271,9 @@ namespace UnityEditor
                     var requiredKind = kind.Equals(PlatformIconKind.Any) ? (int)serializedIcon.Kind : kind.kind;
                     if (icon.kind.kind != requiredKind || icon.iconSubKind != serializedIcon.SubKind) continue;
                     if (icon.width != serializedIcon.Width || icon.height != serializedIcon.Height) continue;
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     var serializedTextures = serializedIcon.Textures.Take(icon.maxLayerCount).ToArray();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                     var textures = new Texture2D[serializedTextures.Length > icon.minLayerCount
                                                  ? serializedTextures.Length
                                                  : icon.minLayerCount];
@@ -345,9 +345,9 @@ namespace UnityEditor
             }
             else
             {
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 iconStructs = icons.Select(
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                     i => i.GetPlatformIconStruct()
                     ).ToArray();
             }
@@ -365,28 +365,28 @@ namespace UnityEditor
             {
                 var requiredIcons = iBuildTarget.IconPlatformProperties?.GetRequiredPlatformIcons();
                 if (requiredIcons != null)
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     return requiredIcons.Keys.ToArray();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             }
             return Array.Empty<PlatformIconKind>();
         }
 
         internal static int GetNonEmptyPlatformIconCount(PlatformIcon[] icons)
         {
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return icons.Count(i => !i.IsEmpty());
-#pragma warning restore RS0030
+#pragma warning restore UA2001
         }
 
         internal static int GetValidPlatformIconCount(PlatformIcon[] icons)
         {
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return icons.Count(
-#pragma warning restore RS0030
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning restore UA2001
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 i => i.GetTextures().Count(t => t != null) >= i.minLayerCount && i.layerCount <= i.maxLayerCount
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             );
         }
 
@@ -472,9 +472,9 @@ namespace UnityEditor
                 var platformIconKind = iBuildTarget.IconPlatformProperties?.GetPlatformIconKindFromEnumValue(kind);
                 return platformIconKind == null ?
                     GetIconsForPlatform(iBuildTarget.TargetName, kind) :
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     GetPlatformIcons(buildTarget, platformIconKind).Select(t => t.GetTexture(0)).ToArray();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             }
             return PlayerSettings.GetIconsForPlatform(buildTarget.TargetName, kind);
         }
@@ -524,9 +524,9 @@ namespace UnityEditor
                 var platformIconKind = iBuildTarget.IconPlatformProperties?.GetPlatformIconKindFromEnumValue(kind);
                 return platformIconKind == null ?
                     GetIconWidthsForPlatform(iBuildTarget.TargetName, kind) :
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     GetPlatformIcons(buildTarget, platformIconKind).Select(s => s.width).ToArray();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             }
             return GetIconWidthsForPlatform(buildTarget.TargetName, kind);
         }

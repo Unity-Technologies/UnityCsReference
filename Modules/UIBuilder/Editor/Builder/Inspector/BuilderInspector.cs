@@ -1775,15 +1775,15 @@ namespace Unity.UI.Builder
                 if (fields.Count > 1)
                 {
                     // Skip the box model and fetch the desired field.
-                    #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                    #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     field = fields.First(f => f is not BoxModel && string.IsNullOrEmpty(((BindableElement)f).bindingPath));
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                 }
                 else
                 {
-                    #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                    #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     field = fields.First();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                 }
             }
             if (expand)
@@ -1878,9 +1878,9 @@ namespace Unity.UI.Builder
         public T FindBoxModelRelatedStyleField<T>(string styleName, bool expand = true) where T : BindableElement
         {
             var fields = styleFields.m_StyleFields[styleName];
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var field = fields.OfType<T>().FirstOrDefault(s => string.IsNullOrEmpty(s.bindingPath));
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             if (expand)
                 ExpandParentFoldouts(field);
             return field;

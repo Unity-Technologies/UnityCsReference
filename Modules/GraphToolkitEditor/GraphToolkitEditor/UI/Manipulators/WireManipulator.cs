@@ -194,9 +194,9 @@ namespace Unity.GraphToolkit.Editor
 
                     var draggedWires = new List<WireModel> { m_ConnectedWireDragHelper.OriginalWire.WireModel };
                     if (m_AdditionalWireDragHelpers != null)
-                        #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                        #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                         draggedWires.AddRange(m_AdditionalWireDragHelpers.Select(wireDrag => wireDrag.OriginalWire.WireModel));
-#pragma warning restore RS0030
+#pragma warning restore UA2001
 
                     // Disable all wires except the dragged ones.
                     WireDragHelper.EnableAllWires(m_ConnectedWireDragHelper.GraphView, false, draggedWires);
@@ -229,9 +229,9 @@ namespace Unity.GraphToolkit.Editor
                 {
                     if (m_AdditionalWireDragHelpers != null)
                     {
-                        #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                        #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                         m_ConnectedWireDragHelper.HandleMouseUp(evt, true, m_AdditionalWireDragHelpers.Select(t => t.OriginalWire), m_AdditionalWireDragHelpers.Select(t => t.DraggedPort));
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                         foreach (var dragHelper in m_AdditionalWireDragHelpers)
                             dragHelper.HandleMouseUp(evt, false, Array.Empty<Wire>(), Array.Empty<PortModel>());
                     }
@@ -299,9 +299,9 @@ namespace Unity.GraphToolkit.Editor
 
         static List<WireDragHelper> GetAdditionalWireDragHelpers(PortModel detachedPort, Wire targetWire, RootView rootView, IMouseEvent evt)
         {
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var connectedWires = detachedPort.GetConnectedWires().ToList();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             if (connectedWires.Count == 0)
                 return null;
 

@@ -258,9 +258,9 @@ namespace Unity.UI.Builder
 
                 for (var i = matchedRules.Count - 1; i >= 0; --i)
                 {
-                    #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                    #pragma warning disable UA2004 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     var matchRecord = matchedRules.ElementAt(i).matchRecord;
-#pragma warning restore RS0030
+#pragma warning restore UA2004
                     var ruleProperty = matchRecord.complexSelector.rule?.FindLastProperty(styleName);
 
                     if (ruleProperty != null)

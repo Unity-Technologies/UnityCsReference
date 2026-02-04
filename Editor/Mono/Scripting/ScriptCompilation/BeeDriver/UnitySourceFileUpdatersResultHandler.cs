@@ -60,18 +60,18 @@ namespace UnityEditor.Scripting.ScriptCompilation
             Console.WriteLine("[API Updater] Updated Files:");
             if (immutablePackageUpdates.Count > 0)
             {
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 var immutablePackageFiles = immutablePackageUpdates.Select(u => u.originalFileWithError).ToArray();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                 APIUpdaterHelper.HandlePackageFilePaths(immutablePackageFiles);
                 ExecuteUpdates(immutablePackageUpdates);
             }
 
             if (nonImmutableUpdates.Count > 0)
             {
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 var nonImmutableTargetFiles = nonImmutableUpdates.Select(u => u.originalFileWithError).ToArray();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
 
                 if (MayOverwrite(nonImmutableTargetFiles) && PrepareForOverwritingUpdatedFiles(nonImmutableTargetFiles))
                     ExecuteUpdates(nonImmutableUpdates);
@@ -123,9 +123,9 @@ namespace UnityEditor.Scripting.ScriptCompilation
 
             if (!AssetDatabase.MakeEditable(destFiles))
             {
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 Debug.LogError($"Failed to make VCS provider make the scripts to be update editable.{Environment.NewLine}" + string.Join(Environment.NewLine, destFiles.Select(d => d.ToString())));
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                 return false;
             }
 

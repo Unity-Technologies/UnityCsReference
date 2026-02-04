@@ -21,6 +21,9 @@ namespace UnityEngine.UIElements.UIR
         ApplyUserProps
     }
 
+    [RequiredByNativeCode]
+    [StructLayout(LayoutKind.Sequential)]
+    [NativeHeader("Modules/UIElements/Core/Native/Renderer/PanelRenderer.h")]
     struct SerializedCommand
     {
         public SerializedCommandType type;
@@ -35,7 +38,7 @@ namespace UnityEngine.UIElements.UIR
         public Vector4 gpuData0;
         public Vector4 gpuData1;
 
-        public MaterialPropertyBlock userProps;
+        public IntPtr userProps;
     }
 
     class CommandList : IDisposable
@@ -54,31 +57,34 @@ namespace UnityEngine.UIElements.UIR
 
         public IntPtr stencilState => m_StencilState;
 
-        List<SerializedCommand> m_Commands = new();
+        NativeList<SerializedCommand> m_Commands;
         Vector4[] m_GpuTextureData = new Vector4[TextureSlotManager.k_SlotSize * TextureSlotManager.k_MaxSlotCount];
         NativeList<DrawBufferRange> m_DrawRanges;
+        List<MaterialPropertyBlock> m_UserPropBlocks = new(); // Keep MaterialPropertyBlocks alive for a few frames
 
         public CommandList(IntPtr vertexDecl, IntPtr stencilState)
         {
             m_VertexDecl = vertexDecl;
             m_StencilState = stencilState;
-            m_DrawRanges = new(1024, k_MemoryLabel);
+            m_Commands = new(256, k_MemoryLabel); // No deferred disposal needed has the pointer is sent to native after building
+            m_DrawRanges = new(1024, k_MemoryLabel, (int)UIRenderDevice.k_MaxQueuedFrameCount);
             handle = GCHandle.Alloc(this);
         }
 
         public int Count => m_Commands.Count;
         public NativeList<DrawBufferRange> ActiveDrawRanges => m_DrawRanges;
 
-        public List<SerializedCommand> Commands => m_Commands;
+        public NativeList<SerializedCommand> Commands => m_Commands;
 
         public void Reset()
         {
             m_Owner = null;
             m_UIRenderer = null;
             m_Material = null;
+            var commandsBuffer = m_Commands.GetBuffer();
             for (int i = 0; i < m_Commands.Count; i++)
             {
-                SerializedCommand cmd = m_Commands[i];
+                SerializedCommand cmd = commandsBuffer[i];
                 if (cmd.type == SerializedCommandType.SetTexture)
                 {
                     Utility.ReleaseTextureRef(cmd.textureRefPtr);
@@ -87,6 +93,7 @@ namespace UnityEngine.UIElements.UIR
             m_Commands.Clear();
             m_DrawRanges.Clear();
             constantProps.Clear();
+            m_UserPropBlocks.Clear();
         }
 
         public void Init(VisualElement owner, Material material, CommandFlags commandFlags)
@@ -117,10 +124,10 @@ namespace UnityEngine.UIElements.UIR
             IntPtr shaderPropertySheetPtr = Utility.AllocateShaderPropertySheet();
             try
             {
+                var commandsBuffer = m_Commands.GetBuffer();
                 for (int i = 0; i < m_Commands.Count; ++i)
                 {
-                    // TODO: Use reference instead of copy (not currently possible with List<T>)
-                    SerializedCommand cmd = m_Commands[i];
+                    SerializedCommand cmd = commandsBuffer[i];
                     switch (cmd.type)
                     {
                         case SerializedCommandType.SetTexture:
@@ -137,7 +144,7 @@ namespace UnityEngine.UIElements.UIR
                             Utility.ApplyShaderPropertySheet(shaderPropertySheetPtr);
                             break;
                         case SerializedCommandType.ApplyUserProps:
-                            Utility.SetPropertyBlock(cmd.userProps);
+                            Utility.SetPropertyBlockPtr(cmd.userProps);
                             break;
                         case SerializedCommandType.DrawRanges:
                             vStream[0] = cmd.vertexBuffer;
@@ -166,17 +173,21 @@ namespace UnityEngine.UIElements.UIR
                 gpuData1 = gpuData1,
             };
 
-            m_Commands.Add(cmd);
+            m_Commands.Add(ref cmd);
         }
 
         public void ApplyUserProps(MaterialPropertyBlock userProps)
         {
+            // Keep the MaterialPropertyBlock alive so the GC doesn't free the underlying native object
+            // while it's still in use by the render thread
+            m_UserPropBlocks.Add(userProps);
+
             var cmd = new SerializedCommand
             {
                 type = SerializedCommandType.ApplyUserProps,
-                userProps = userProps
+                userProps = MaterialPropertyBlock.BindingsMarshaller.ConvertToNative(userProps)
             };
-            m_Commands.Add(cmd);
+            m_Commands.Add(ref cmd);
         }
 
         public void ApplyBatchProps()
@@ -186,7 +197,7 @@ namespace UnityEngine.UIElements.UIR
                 type = SerializedCommandType.ApplyBatchProps
             };
 
-            m_Commands.Add(cmd);
+            m_Commands.Add(ref cmd);
         }
 
         public void DrawRanges(Utility.GPUBuffer<ushort> ib, Utility.GPUBuffer<Vertex> vb, NativeSlice<DrawBufferRange> ranges)
@@ -199,7 +210,7 @@ namespace UnityEngine.UIElements.UIR
                 firstRange = m_DrawRanges.Count,
                 rangeCount = ranges.Length,
             };
-            m_Commands.Add(cmd);
+            m_Commands.Add(ref cmd);
             m_DrawRanges.Add(ranges);
         }
 
@@ -220,19 +231,21 @@ namespace UnityEngine.UIElements.UIR
 
             if (disposing)
             {
-                m_DrawRanges.Dispose();
-                m_DrawRanges = null;
-                if (handle.IsAllocated)
-                    handle.Free();
-
+                var commandsBuffer = m_Commands.GetBuffer();
                 for (int i = 0; i < m_Commands.Count; i++)
                 {
-                    SerializedCommand cmd = m_Commands[i];
+                    SerializedCommand cmd = commandsBuffer[i];
                     if (cmd.type == SerializedCommandType.SetTexture)
                     {
                         Utility.ReleaseTextureRef(cmd.textureRefPtr);
                     }
                 }
+
+                m_Commands.Dispose();
+                m_DrawRanges.Dispose();
+                m_DrawRanges = null;
+                if (handle.IsAllocated)
+                    handle.Free();
             }
             else DisposeHelper.NotifyMissingDispose(this);
 

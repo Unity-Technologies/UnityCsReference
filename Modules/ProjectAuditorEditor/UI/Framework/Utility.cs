@@ -93,7 +93,7 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
 
         static byte[] s_LetterWidths;
         static GUIStyle s_Style;
-        static GUIContent s_GUIContent;
+        static GUIContent s_TempContent;
 
         public static readonly GUIContent ClearSelection = new GUIContent("Clear Selection");
         public static readonly GUIContent CopyToClipboard = new GUIContent("Copy to Clipboard");
@@ -162,20 +162,17 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
 
         public static void DrawSelectedText(string text)
         {
-            var treeViewSelectionStyle = (GUIStyle)"TV Selection";
-            var backgroundStyle = new GUIStyle(treeViewSelectionStyle);
+            const int kBorder = 4;
 
-            var treeViewLineStyle = (GUIStyle)"TV Line";
-            var textStyle = new GUIStyle(treeViewLineStyle);
+            var treeViewSelectionStyle = SharedStyles.TextBoxBackground;
+            var textStyle = SharedStyles.IconLabel;
 
-            var content = new GUIContent(text, text);
+            var content = GetTempContent(text);
             var size = textStyle.CalcSize(content);
-            var rect = EditorGUILayout.GetControlRect(GUILayout.MaxWidth(size.x), GUILayout.Height(size.y));
-            if (Event.current.type == EventType.Repaint)
-            {
-                backgroundStyle.Draw(rect, false, false, true, true);
-                GUI.Label(rect, content, textStyle);
-            }
+            var rect = EditorGUILayout.GetControlRect(GUILayout.MaxWidth(size.x + kBorder), GUILayout.Height(size.y + kBorder));
+
+            GUI.Box(rect, GUIContent.none, treeViewSelectionStyle);
+            GUI.Label(rect, content, textStyle);
         }
 
         public static string GetTreeViewSelectedSummary(TreeViewSelection selection, string[] names)
@@ -281,7 +278,7 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
                     if (string.IsNullOrEmpty(tooltip))
                         tooltip = "Not Analyzed";
                     if (s_AdditionalAnalysisIcon == null)
-                        s_AdditionalAnalysisIcon = LoadIcon(k_AdditionalAnalysisIconName);
+                        s_AdditionalAnalysisIcon = LoadIcon(k_AdditionalAnalysisIconName, "d_");
                     return EditorGUIUtility.TrIconContent(s_AdditionalAnalysisIcon, tooltip);
                 case IconType.FoldoutExpanded:
                     if (s_FoldoutExpandedIcon == null)
@@ -463,8 +460,10 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
             return guiContent;
         }
 
-        static Texture2D LoadIcon(string iconName)
+        static Texture2D LoadIcon(string iconName, string darkModePrefix = "")
         {
+            if (SharedStyles.IsDarkMode)
+                iconName = darkModePrefix + iconName;
             return EditorResources.Load<Texture2D>($"{ProjectAuditor.s_DataPath}/Icons/{iconName}.png");
         }
 
@@ -519,15 +518,19 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
         {
             if (s_Style == null)
                 s_Style = EditorStyles.label;
-
-            if (s_GUIContent == null)
-                s_GUIContent = new GUIContent();
-
             s_Style.fontSize = fontSize;
-            s_GUIContent.text = text;
-            var width = s_Style.CalcSize(s_GUIContent).x;
 
+            var content = GetTempContent(text);
+            var width = s_Style.CalcSize(content).x;
             return width;
+        }
+
+        private static GUIContent GetTempContent(string text)
+        {
+            if (s_TempContent == null)
+                s_TempContent = new GUIContent();
+            s_TempContent.text = text;
+            return s_TempContent;
         }
     }
 }

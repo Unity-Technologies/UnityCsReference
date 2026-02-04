@@ -4,7 +4,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using UnityEngine;
 using UnityEngine.UIElements;
 
@@ -13,10 +12,10 @@ namespace UnityEditor.PackageManager.UI.Internal
     internal class AssetStoreFiltersWindow : PackageManagerFiltersWindow
     {
         [NonSerialized]
-        private List<string> m_Categories;
+        private IReadOnlyCollection<string> m_Categories;
 
         [NonSerialized]
-        private List<string> m_Labels;
+        private IReadOnlyCollection<string> m_Labels;
 
         private IAssetStoreRestAPI m_AssetStoreRestAPI;
         private IBackgroundFetchHandler m_BackgroundFetchHandler;
@@ -30,16 +29,9 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         protected override Vector2 GetSize(IPage page)
         {
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            var height = k_FoldOutHeight + page.supportedStatusFilters.Count() * k_ToggleHeight;
-#pragma warning restore RS0030
+            var height = k_FoldOutHeight + page.supportedStatusFilters.Count * k_ToggleHeight;
 
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            var categories = m_CategoriesFoldOut?.Children().OfType<Toggle>() ?? Array.Empty<Toggle>();
-#pragma warning restore RS0030
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            var numCategories = categories.Count();
-#pragma warning restore RS0030
+            var numCategories = m_CategoriesFoldOut?.childCount ?? 0;
             height += (numCategories > 0 ? k_FoldOutHeight : 0) + numCategories * k_ToggleHeight;
 
             return new Vector2(k_Width, Math.Min(height, k_MaxHeight));
@@ -47,18 +39,20 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private float GetLabelsHeight()
         {
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            var labels = m_LabelsFoldOut?.Children().OfType<Toggle>().ToArray() ?? Array.Empty<Toggle>();
-#pragma warning restore RS0030
-            var firstLabelsCount = Math.Min(k_MaxDisplayLabels, labels.Length);
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            var selectedLabelsCount = labels.Skip(k_MaxDisplayLabels).Count(t => t.value);
-#pragma warning restore RS0030
+            var labelsCount = 0;
+            var selectedLabelsCount = 0;
+            foreach (var toggle in m_LabelsFoldOut?.Children().FilterByType<Toggle>() ?? Array.Empty<Toggle>())
+            {
+                labelsCount++;
+                if (labelsCount > k_MaxDisplayLabels && toggle.value)
+                    selectedLabelsCount++;
+            }
+            var firstLabelsCount = Math.Min(k_MaxDisplayLabels, labelsCount);
 
             var height = (firstLabelsCount + selectedLabelsCount) * k_ToggleHeight;
-            if (labels.Length > 0)
+            if (labelsCount > 0)
                 height += k_FoldOutHeight;
-            if (labels.Length > firstLabelsCount + selectedLabelsCount)
+            if (labelsCount > firstLabelsCount + selectedLabelsCount)
                 height += k_ToggleHeight; // Show all button height
 
             return height;
@@ -67,19 +61,17 @@ namespace UnityEditor.PackageManager.UI.Internal
         protected override void Init(Rect rect, IPage page)
         {
             // We want to show categories right way since the information is always available
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            m_Categories = m_AssetStoreRestAPI.GetCategories().ToList();
-#pragma warning restore RS0030
+            m_Categories = m_AssetStoreRestAPI.GetCategories();
             base.Init(rect, page);
 
             // Defer display of labels
             m_AssetStoreRestAPI.ListLabels(labels =>
             {
                 // If window was closed during fetch of labels, ignore display
-                if (instance == null)
+                if (instance is null)
                     return;
 
-                m_Labels = labels ?? new List<string>();
+                m_Labels = (IReadOnlyCollection<string>)labels ?? Array.Empty<string>();
                 if (m_Labels.Count > 0)
                 {
                     DoLabelsDisplay();
@@ -88,7 +80,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                     // Update window height if necessary
                     var labelsHeight = GetLabelsHeight();
                     var newHeight = Math.Min(position.height + labelsHeight, k_MaxHeight);
-                    if (newHeight != position.height)
+                    if (!Mathf.Approximately(newHeight, position.height))
                     {
                         position = new Rect(position) { height = newHeight };
                         RepaintImmediately();
@@ -100,33 +92,26 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         protected override void ApplyFilters()
         {
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            foreach (var toggle in m_StatusFoldOut.Children().OfType<Toggle>())
-#pragma warning restore RS0030
+            foreach (var toggle in m_StatusFoldOut.Children().FilterByType<Toggle>())
                 toggle.SetValueWithoutNotify(toggle.name == m_Filters.status.ToString());
 
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            foreach (var toggle in m_CategoriesFoldOut?.Children().OfType<Toggle>() ?? Array.Empty<Toggle>())
-#pragma warning restore RS0030
+            foreach (var toggle in m_CategoriesFoldOut?.Children().FilterByType<Toggle>() ?? Array.Empty<Toggle>())
                 toggle.SetValueWithoutNotify(m_Filters.categories?.Contains(toggle.name.ToLower()) ?? false);
 
-            var selectedLabels = 0;
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            var labels = m_LabelsFoldOut?.Children().OfType<Toggle>() ?? Array.Empty<Toggle>();
-#pragma warning restore RS0030
-            foreach (var toggle in labels)
+            var selectedLabelsCount = 0;
+            var labelsCount = 0;
+            foreach (var toggle in m_LabelsFoldOut?.Children().FilterByType<Toggle>() ?? Array.Empty<Toggle>())
             {
+                labelsCount++;
                 if (m_Filters?.labels?.Contains(toggle.name) ?? false)
                 {
                     toggle.SetValueWithoutNotify(true);
                     UIUtils.SetElementDisplay(toggle, true);
-                    selectedLabels++;
+                    selectedLabelsCount++;
                 }
             }
 
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            if (labels.Count() > Math.Max(k_MaxDisplayLabels, selectedLabels))
-#pragma warning restore RS0030
+            if (labelsCount > Math.Max(k_MaxDisplayLabels, selectedLabelsCount))
             {
                 m_ShowAllButton = new Button {text = L10n.Tr("Show all"), name = k_ShowAllButtonName};
                 m_ShowAllButton.clickable.clicked += () =>
@@ -149,9 +134,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 {
                     if (evt.newValue)
                     {
-                        #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                        foreach (var t in m_StatusFoldOut.Children().OfType<Toggle>())
-#pragma warning restore RS0030
+                        foreach (var t in m_StatusFoldOut.Children().FilterByType<Toggle>())
                         {
                             if (t == toggle)
                                 continue;
@@ -160,9 +143,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                         }
 
                         if (status == PageFilters.Status.Unlabeled && m_LabelsFoldOut != null)
-                            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                            foreach (var t in m_LabelsFoldOut.Children().OfType<Toggle>())
-#pragma warning restore RS0030
+                            foreach (var t in m_LabelsFoldOut.Children().FilterByType<Toggle>())
                                 t.value = false;
 
                         if (status == PageFilters.Status.UpdateAvailable)
@@ -222,29 +203,38 @@ namespace UnityEditor.PackageManager.UI.Internal
         private void UpdateFiltersIfNeeded()
         {
             var filters = m_Filters.Clone();
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            var selectedStatus = m_StatusFoldOut.Children().OfType<Toggle>().Where(toggle => toggle.value).Select(toggle => toggle.name).FirstOrDefault();
-#pragma warning restore RS0030
-            filters.status = !string.IsNullOrEmpty(selectedStatus) && Enum.TryParse(selectedStatus, out PageFilters.Status status) ? status : PageFilters.Status.None;
+            var selectedStatus = PageFilters.Status.None;
+            foreach (var toggle in EnumerateSelectedToggle(m_StatusFoldOut))
+                if (!string.IsNullOrEmpty(toggle.name) && Enum.TryParse(toggle.name, out selectedStatus))
+                    break;
+            filters.status = selectedStatus;
 
             if (m_CategoriesFoldOut != null)
             {
-                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                var selectedCategories = m_CategoriesFoldOut.Children().OfType<Toggle>().Where(toggle => toggle.value).Select(toggle => toggle.name.ToLower());
-#pragma warning restore RS0030
-                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                filters.categories = selectedCategories.ToList();
-#pragma warning restore RS0030
+                var categories = filters.categories;
+                if (categories == null)
+                    categories = new ();
+                else
+                    categories.Clear();
+
+                foreach (var toggle in EnumerateSelectedToggle(m_CategoriesFoldOut))
+                    categories.Add(toggle.name.ToLower());
+
+                filters.categories = categories;
             }
 
             if (m_LabelsFoldOut != null)
             {
-                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                var selectedLabels = m_LabelsFoldOut.Children().OfType<Toggle>().Where(toggle => toggle.value).Select(toggle => toggle.name);
-#pragma warning restore RS0030
-                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                filters.labels = selectedLabels.ToList();
-#pragma warning restore RS0030
+                var labels = filters.labels;
+                if (labels == null)
+                    labels = new ();
+                else
+                    labels.Clear();
+
+                foreach (var toggle in EnumerateSelectedToggle(m_LabelsFoldOut))
+                    labels.Add(toggle.name.ToLower());
+
+                filters.labels = labels;
             }
 
             if (!filters.Equals(m_Filters))

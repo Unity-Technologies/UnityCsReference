@@ -98,9 +98,9 @@ namespace Unity.UI.Builder
 
         public void SetTypePopupValueWithoutNotify(Type type)
         {
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var typeDisplayName = m_TypeOptions.FirstOrDefault(pair => pair.Value.IsAssignableFrom(type)).Key;
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             m_TypePopup.SetValueWithoutNotify(typeDisplayName);
         }
 

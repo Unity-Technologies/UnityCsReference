@@ -44,7 +44,7 @@ namespace UnityEngine.TextCore.Text
                 var textAsset = TextAsset.GetTextAssetByID(meshInfo.textAssetId);
                 HashSet<uint> missingUnicodes = null;
 
-                if (textAsset is SpriteAsset spriteAsset || textAsset == null)
+                if (textAsset is SpriteAsset || textAsset == null)
                 {
                     // Sprite is never populated during text generation.
                     // If it's missing, we won't add it to the atlas anyway.

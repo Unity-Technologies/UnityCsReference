@@ -18,9 +18,9 @@ namespace Unity.GraphToolkit.Editor
         /// <returns>The most specialized common base type for the objects, or null if all objects are null.</returns>
         public static Type GetCommonBaseType(IEnumerable<object> objects)
         {
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return GetCommonBaseType(objects.Where(o => o != null).Select(o => o.GetType()));
-#pragma warning restore RS0030
+#pragma warning restore UA2001
         }
 
         /// <summary>

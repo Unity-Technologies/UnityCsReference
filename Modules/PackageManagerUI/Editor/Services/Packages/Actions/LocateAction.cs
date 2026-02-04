@@ -6,18 +6,16 @@ namespace UnityEditor.PackageManager.UI.Internal;
 
 internal class LocateAction : PackageAction
 {
-    private readonly IIOProxy m_IOProxy;
     private readonly IApplicationProxy m_ApplicationProxy;
 
-    public LocateAction(IIOProxy ioProxy, IApplicationProxy applicationProxy)
+    public LocateAction(IApplicationProxy applicationProxy)
     {
         m_ApplicationProxy = applicationProxy;
-        m_IOProxy = ioProxy;
     }
 
     protected override bool TriggerActionImplementation(IPackageVersion version)
     {
-        var path = m_IOProxy.PathsCombine("Packages", version.name, "package.json");
+        var path = IOUtils.PathsCombine("Packages", version.name, "package.json");
         if (!m_ApplicationProxy.PingObjectInProjectBrowser(path))
             return false;
         PackageManagerWindowAnalytics.SendEvent("locate", version);

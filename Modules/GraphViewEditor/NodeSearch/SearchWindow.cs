@@ -211,9 +211,9 @@ namespace UnityEditor.Experimental.GraphView
 
                     // Try to find a child of the same name as we had before
                     List<SearchTreeEntry> children = GetChildren(activeTree, match);
-                    #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                    #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     SearchTreeEntry childMatch = children.FirstOrDefault(c => c.name == m_SelectionStack[level].name);
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                     if (childMatch != null && childMatch is SearchTreeGroupEntry)
                     {
                         match = childMatch as SearchTreeGroupEntry;

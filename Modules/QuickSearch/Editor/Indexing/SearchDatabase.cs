@@ -13,9 +13,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading;
-using UnityEditor.Experimental;
 using UnityEditor.Profiling;
-using UnityEditorInternal;
 using UnityEngine;
 
 namespace UnityEditor.Search
@@ -60,6 +58,7 @@ namespace UnityEditor.Search
         public const int version = (9 << 8) ^ SearchIndexArtifactImporter.Version;
         private const string k_QuickSearchLibraryPath = "Library/Search";
         public const string defaultSearchDatabaseIndexPath = "UserSettings/Search.index";
+        static readonly TimeSpan k_DefaultProductionTimeLimitPerFrame = TimeSpan.FromMilliseconds(16);
 
         public enum IndexType
         {
@@ -141,9 +140,9 @@ namespace UnityEditor.Search
 
             public bool IsPackagesIndexingEnabled()
             {
-                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 return roots != null && roots.Any(r => IsPackages(r));
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             }
 
             public void EnablePackagesIndexing(bool enable)
@@ -173,51 +172,6 @@ namespace UnityEditor.Search
             }
         }
 
-        class IndexArtifact : IEquatable<IndexArtifact>
-        {
-            public readonly string source;
-            public readonly ArtifactKey key;
-            public ImportResultID value;
-            public string path;
-            public long timestamp;
-            public OnDemandState state;
-
-            public GUID guid => key.guid;
-            public Type indexerType => key.importerType;
-            public bool valid => key.isValid && value.isValid;
-            public bool timeout => TimeSpan.FromTicks(DateTime.UtcNow.Ticks - timestamp).TotalSeconds > 10d;
-
-            public IndexArtifact(in string source, in GUID guid, in Type indexerType)
-            {
-                this.source = source;
-                key = AssetDatabaseExperimental.CreateArtifactKey(guid, indexerType);
-                value = default;
-                path = null;
-                timestamp = long.MaxValue;
-                state = OnDemandState.Unavailable;
-            }
-
-            public override string ToString()
-            {
-                return $"{guid} / {path} / {value}";
-            }
-
-            public override int GetHashCode()
-            {
-                return guid.GetHashCode() ^ value.GetHashCode();
-            }
-
-            public override bool Equals(object other)
-            {
-                return other is IndexArtifact l && Equals(l);
-            }
-
-            public bool Equals(IndexArtifact other)
-            {
-                return guid == other.guid && value.Equals(other.value);
-            }
-        }
-
         public new string name
         {
             get
@@ -232,57 +186,6 @@ namespace UnityEditor.Search
             }
         }
 
-        readonly struct ReadLockScope : IDisposable
-        {
-            readonly ReaderWriterLockSlim m_Lock;
-
-            public ReadLockScope(ReaderWriterLockSlim _lock)
-            {
-                m_Lock = _lock;
-                m_Lock.EnterReadLock();
-            }
-
-            public void Dispose()
-            {
-                m_Lock.ExitReadLock();
-            }
-        }
-
-        readonly struct WriteLockScope : IDisposable
-        {
-            readonly ReaderWriterLockSlim m_Lock;
-
-            public WriteLockScope(ReaderWriterLockSlim _lock)
-            {
-                m_Lock = _lock;
-                m_Lock.EnterWriteLock();
-            }
-
-            public void Dispose()
-            {
-                m_Lock.ExitWriteLock();
-            }
-        }
-
-        readonly struct TryWriteLockScope : IDisposable
-        {
-            readonly ReaderWriterLockSlim m_Lock;
-            readonly bool m_Locked;
-            public bool locked => m_Locked;
-
-            public TryWriteLockScope(ReaderWriterLockSlim _lock)
-            {
-                m_Lock = _lock;
-                m_Locked = m_Lock.TryEnterWriteLock(0);
-            }
-
-            public void Dispose()
-            {
-                if (m_Locked)
-                    m_Lock.ExitWriteLock();
-            }
-        }
-
         public IReadOnlyCollection<string> roots => settings.roots;
         public IReadOnlyCollection<string> includePatterns => settings.includes;
         public IReadOnlyCollection<string> excludePatterns => settings.excludes;
@@ -291,7 +194,6 @@ namespace UnityEditor.Search
         [SerializeField] public Settings settings;
         public long indexSize { get; private set; }
 
-        [NonSerialized] private int m_ProductionLimit = 99;
         [NonSerialized] private EntityId m_EntityId = EntityId.None;
         [NonSerialized] private Task m_CurrentResolveTask;
         [NonSerialized] private Task m_CurrentUpdateTask;
@@ -299,7 +201,6 @@ namespace UnityEditor.Search
         [NonSerialized] private int m_UpdateTasks = 0;
         [NonSerialized] private string m_IndexSettingsPath;
         [NonSerialized] private ConcurrentBag<AssetIndexChangeSet> m_UpdateQueue = new ConcurrentBag<AssetIndexChangeSet>();
-        [NonSerialized] private ReaderWriterLockSlim m_ImmutableLock = new(LockRecursionPolicy.SupportsRecursion);
 
         private int m_IndexingRequestTrackerId;
         private int m_IncrementalIndexingRequestTrackerId;
@@ -377,13 +278,6 @@ namespace UnityEditor.Search
 
             m_IndexingRequestTrackerId = EditorPerformanceTracker.StartTracker("SearchImporter.IndexingRequest");
 
-            // TODO: Remove this
-            using var writeLockScope = new TryWriteLockScope(m_ImmutableLock);
-            if (!writeLockScope.locked)
-            {
-                return false;
-            }
-
             this.settings = settings;
             DisposeIndex();
             index = CreateIndexer(settings);
@@ -407,9 +301,9 @@ namespace UnityEditor.Search
 
         public static IEnumerable<SearchDatabase> Enumerate(IndexLocation location, params string[] types)
         {
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return EnumerateAll().Where(db =>
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             {
                 if (types != null && types.Length > 0 && Array.IndexOf(types, db.settings.type) == -1)
                     return false;
@@ -425,9 +319,9 @@ namespace UnityEditor.Search
 
         public static SearchDatabase GetDefaultSearchDatabase()
         {
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return EnumerateAll().First();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
         }
 
         public static IEnumerable<SearchDatabase> EnumerateAll()
@@ -518,10 +412,16 @@ namespace UnityEditor.Search
         internal static string GetIndexTypeSuffix(Settings settings, string assetPath)
         {
             var importHashCode = assetPath == null ? settings.options.GetHashCode() : GetImporterHashCode(settings, assetPath);
-            return $"{importHashCode:X}.index".ToLowerInvariant();
+            return SearchIndexArtifactImporter.GetArtifactPathSuffix(importHashCode);
         }
 
         internal static void ForceRebuildIndex(SearchDatabase db)
+        {
+            MakeDatabaseDirty(db);
+            SearchDatabase.ImportAsset(db.path, true);
+        }
+
+        internal static void MakeDatabaseDirty(SearchDatabase db)
         {
             var settings = db.settings;
             MakeIndexImporterDirty(settings.options.types, settings.options.properties, settings.options.extended, settings.options.dependencies);
@@ -531,7 +431,6 @@ namespace UnityEditor.Search
             }
 
             AssetDatabase.Refresh();
-            SearchDatabase.ImportAsset(db.path, true);
         }
 
         internal static void MakeIndexImporterDirty(bool types, bool properties, bool extended, bool dependencies)
@@ -543,9 +442,9 @@ namespace UnityEditor.Search
 
         private static IEnumerable<string> FilterIndexes(IEnumerable<string> paths)
         {
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return paths.Where(u => u == defaultSearchDatabaseIndexPath);
-#pragma warning restore RS0030
+#pragma warning restore UA2001
         }
 
         public static Settings LoadSettings(string settingsPath)
@@ -597,9 +496,9 @@ namespace UnityEditor.Search
         {
             if (s_DBs == null)
                 return null;
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return s_DBs.Where(db => string.Equals(db.path, path, StringComparison.OrdinalIgnoreCase)).FirstOrDefault();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
         }
 
         public static SearchDatabase ImportAsset(string settingsPath, bool forceUpdate = false)
@@ -659,6 +558,9 @@ namespace UnityEditor.Search
                 LoadingState = LoadState.Error;
                 return;
             }
+
+            // Set default loading state
+            LoadingState = LoadState.Loading;
 
             Dispatcher.Enqueue(LoadAsync);
         }
@@ -767,7 +669,7 @@ namespace UnityEditor.Search
         {
             if (!this)
             {
-                loadTask.Resolve(null, completed: true);
+                loadTask.Resolve(null);
                 return;
             }
 
@@ -779,194 +681,104 @@ namespace UnityEditor.Search
             loadTask.Resolve(new TaskData(null, index, diff.empty));
         }
 
-        internal ArtifactKey GetAssetArtifactKey(string assetPath)
+        // This method should be run in a thread.
+        void MergeProducedArtifacts(SearchIndexArtifactImportContext importContext, Task mergeTask, EventWaitHandle doneHandle, EventWaitHandle artifactImportedHandle, int baseScore)
         {
-            var indexImporterType = GetIndexImporterTypeForAsset(settings, assetPath);
-            var artifact = new IndexArtifact(assetPath, AssetDatabase.GUIDFromAssetPath(assetPath), indexImporterType);
-            return artifact.key;
-        }
-
-        private bool ResolveArtifactPaths(in IList<IndexArtifact> artifacts, out List<IndexArtifact> unresolvedArtifacts, Task task, ref int completed)
-        {
-            var inProductionCount = 0;
-
-            task.Report($"Resolving {artifacts.Count} artifacts...");
-            unresolvedArtifacts = new List<IndexArtifact>((int)(artifacts.Count / 1.5f));
-
-            var sw = System.Diagnostics.Stopwatch.StartNew();
-            for (int i = 0; i < artifacts.Count; ++i)
-            {
-                var a = artifacts[i];
-                if (a == null || a.guid.Empty())
-                {
-                    ++completed;
-                    continue;
-                }
-
-                // Simply mark artifact as unresolved and we will resume later.
-                if (inProductionCount > m_ProductionLimit || sw.ElapsedMilliseconds > 250)
-                {
-                    #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                    unresolvedArtifacts.AddRange(artifacts.Skip(i));
-#pragma warning restore RS0030
-                    break;
-                }
-
-                if (!ProduceArtifact(a))
-                {
-                    ++completed;
-                    continue;
-                }
-
-                if (!a.valid)
-                {
-                    inProductionCount++;
-                    if (!a.timeout)
-                        unresolvedArtifacts.Add(a);
-                    else
-                    {
-                        // Check if the asset is still available (maybe it was deleted since last request)
-                        // TODO: What happens if exists and is still importing? I.e. it takes more than 10s to import? We should not
-                        // try to produce another artifact in that case.
-                        var resolvedPath = AssetDatabase.GUIDToAssetPath(a.guid);
-                        if (!string.IsNullOrEmpty(resolvedPath) && File.Exists(resolvedPath))
-                        {
-                            a.timestamp = long.MaxValue;
-                            if (ProduceArtifact(a))
-                                unresolvedArtifacts.Add(a);
-                        }
-                    }
-                }
-                else if (GetArtifactPaths(a.value, out var paths))
-                {
-                    var artifactIndexSuffix = "." + GetIndexTypeSuffix(settings, a.source);
-                    #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                    var virtualPath = paths.LastOrDefault(p => p.EndsWith(artifactIndexSuffix, StringComparison.Ordinal));
-#pragma warning restore RS0030
-                    if (virtualPath == null)
-                        ReportWarning(a, artifactIndexSuffix, paths);
-                    else
-                    {
-                        if (UDS.UsingFullBackend())
-                        {
-                            // Copy the file from its virtual location to extract it from UDS
-                            var tempPath = FileUtil.GetUniqueTempPathInProject();
-                            FileUtil.CopyFileOrDirectory(virtualPath, tempPath);
-                            a.path = tempPath;
-                        }
-                        else
-                        {
-                            a.path = virtualPath;
-                        }
-                    }
-                }
-            }
-
-            var producedCount = artifacts.Count - unresolvedArtifacts.Count;
-            if (producedCount >= m_ProductionLimit)
-                m_ProductionLimit = (int)(m_ProductionLimit * 1.5f);
-
-            task.Report(completed);
-            return unresolvedArtifacts.Count == 0;
-        }
-
-        private void ReportWarning(in IndexArtifact a, in string artifactIndexSuffix, params string[] paths)
-        {
-            var assetPath = AssetDatabase.GUIDToAssetPath(a.guid);
-            Console.WriteLine($"Cannot find search index artifact for {assetPath} ({a.guid}{artifactIndexSuffix})\n\t- {string.Join("\n\t- ", paths)}");
-        }
-
-        private Task ResolveArtifacts(Task resolveTask, Action<IndexArtifact[], Task> onArtifactsResolved)
-        {
-            List<string> paths = null;
-            resolveTask.RunThread(() =>
-            {
-                resolveTask.Report("Scanning dependencies...");
-                paths = index.GetDependencies();
-            }, () => ProduceArtifacts(resolveTask, paths, onArtifactsResolved));
-
-            return resolveTask;
-        }
-
-        private void ProduceArtifacts(Task resolveTask, in IList<string> paths, Action<IndexArtifact[], Task> onArtifactsResolved)
-        {
-            if (paths == null || (resolveTask?.Canceled() ?? false))
+            if (mergeTask.Canceled() || index == null)
                 return;
 
-            resolveTask.Report("Producing artifacts...");
-            resolveTask.total = paths.Count;
-            if (resolveTask?.Canceled() ?? false)
+            if (index.storage is not LMDBIndexStorage lmdbStorage)
                 return;
 
-            // TODO: Can't use combineAutoResolve = true here, because we use WaitForReadComplete which might defer the resolver
-            // on another frame, and so the task still needs to be valid at that moment.
-            ResolveArtifacts(CreateArtifacts(paths), null, resolveTask, onArtifactsResolved);
-        }
+            mergeTask.Report("Merging artifacts...", 0, importContext.TotalCount);
+            mergeTask.total = importContext.TotalCount;
 
-        private void ResolveArtifacts(IndexArtifact[] artifacts, IList<IndexArtifact> partialSet, Task task, Action<IndexArtifact[], Task> onArtifactsResolved)
-        {
-            try
+            var artifactsMerged = 0;
+            var lastImportedCount = 0;
+            while (!doneHandle.WaitOne(TimeSpan.Zero) || artifactsMerged < importContext.ImportedCount)
             {
-                partialSet = partialSet ?? artifacts;
-
-                if (!this || task.Canceled())
+                artifactImportedHandle.WaitOne();
+                if (mergeTask.Canceled())
                     return;
 
-                int completed = artifacts.Length - partialSet.Count;
-                if (ResolveArtifactPaths(partialSet, out var remainingArtifacts, task, ref completed))
+                // We do not need to protect access to ImportedCount here. The production task only ever increments it.
+                // Which means that at any given time when we check this value, it is either the same or higher than the last time we checked it.
+                // So if we read this value only once per loop, we are guaranteed to never miss any produced artifacts.
+                var currentImportedCount = importContext.ImportedCount;
+                if (currentImportedCount > lastImportedCount)
                 {
-                    if (task.Canceled())
-                        return;
-                    onArtifactsResolved(artifacts, task);
-                    return;
+                    var batch = importContext.ArtifactImportData.AsBatch(lastImportedCount, currentImportedCount - lastImportedCount);
+                    lmdbStorage.MergeArtifactImportDataBatch(Array.Empty<string>(), in batch, baseScore, 10, mergeTask);
+                    artifactsMerged += batch.Length;
+                    lastImportedCount = currentImportedCount;
                 }
+            }
 
-                // Resume later with remaining artifacts
-                Dispatcher.Enqueue(() => ResolveArtifacts(artifacts, remainingArtifacts, task, onArtifactsResolved),
-                    GetArtifactResolutionCheckDelay(remainingArtifacts.Count));
-            }
-            catch (Exception err)
-            {
-                task.Resolve(err);
-            }
+            if (mergeTask.Canceled())
+                return;
+            lmdbStorage.Finish(Array.Empty<string>());
         }
 
-        private static double GetArtifactResolutionCheckDelay(int artifactCount)
+        void ProduceArtifactsAndMerge(SearchIndexArtifactImportContext importContext, Task parentTask, int baseScore, Action<Task> onBeforeMerge)
         {
-            if (UnityEditorInternal.InternalEditorUtility.isHumanControllingUs)
-                return Math.Max(0.5, Math.Min(artifactCount / 1000.0, 3.0));
-            return 1;
-        }
-
-        void CombineBuildArtifacts(in IndexArtifact[] artifacts, Task task)
-        {
-            if (task.Canceled() || index == null)
+            if (parentTask.Canceled())
                 return;
 
-            task.Report("Combining indexes...", -1f);
-            task.total = artifacts.Length;
+            var productionTaskDoneWaitHandle = new EventWaitHandle(false, EventResetMode.ManualReset);
+            var artifactsImportedHandle = new EventWaitHandle(false, EventResetMode.AutoReset);
 
-            // TODO: Remove this
-            using var writeLockScope = new WriteLockScope(m_ImmutableLock);
-
-            if (index.storage is LMDBIndexStorage lmdbStorage)
+            // Merge task. Merges produced artifacts as they are produced by the production task.
+            // Will only terminate once the production task notifies it is done and all artifacts have been merged.
+            // Only this task resolves the parent task.
+            // Create the merge task first, since the resolving of the task on cancel is done in LIFO order. We want the
+            // Production task to resolve first in that case.
+            var mergeTask = parentTask.CreateChildTask("Merge", "Merging artifacts", (currentTask, data) =>
             {
-                var artifactPaths = new string[artifacts.Length];
-                for (int i = 0; i < artifacts.Length; ++i)
-                {
-                    var a = artifacts[i];
-                    if (a != null && a.valid && !string.IsNullOrEmpty(a.path))
-                        artifactPaths[i] = a.path;
-                }
+                // Resolve parent task when the merge task is done unless cancelled.
+                if (!parentTask.Canceled())
+                    parentTask.Resolve(new TaskData(null, index));
 
-                if (task.Canceled())
-                    return;
-                lmdbStorage.Clear();
-                lmdbStorage.MergeArtifacts(Array.Empty<string>(), artifactPaths, 0, task);
-                if (task.Canceled())
-                    return;
-                lmdbStorage.Finish(Array.Empty<string>());
+                // Dispose of the wait handles in the resolver to make sure that it is always done no matter what happens (i.e. completion, cancellation, etc.).
+                productionTaskDoneWaitHandle.Dispose();
+                artifactsImportedHandle.Dispose();
+
+            }, this);
+            mergeTask.SetProgressPriority(Progress.Priority.Low); // Set a lower priority than the production task to display it after.
+
+            // Production task. Produces artifacts in the main thread, but is time sliced. When done it notifies the merge task.
+            var productionTask = parentTask.CreateChildTask("Produce", "Producing artifacts", (currentTask, data) =>
+            {
+                // Do this in the resolver so that if anything fails it is still called and the merge task can terminate.
+                productionTaskDoneWaitHandle.Set();
+                artifactsImportedHandle.Set();
+            }, this);
+            productionTask.SetProgressPriority(Progress.Priority.Normal); // Set a higher priority than the merge task to display it first.
+
+            // Start the merge task thread before starting the production task.
+            mergeTask.RunThread(routine: () =>
+            {
+                // If there is any setup to do before merging, do it now.
+                onBeforeMerge?.Invoke(mergeTask);
+                MergeProducedArtifacts(importContext, mergeTask, productionTaskDoneWaitHandle, artifactsImportedHandle, baseScore);
+            }, () =>
+            {
+                // Resolve merge task when thread is done
+                mergeTask.Resolve(new TaskData(null, null));
+            });
+
+            // Setup artifact imported callback
+            void OnArtifactsImported(SearchIndexArtifactImportContext context, Task _, in SearchIndexArtifactImportData.Batch importedBatch)
+            {
+                // Notify the merge task that new artifacts are available to merge.
+                artifactsImportedHandle.Set();
             }
+
+            // Start the production task
+            SearchIndexArtifactGeneration.ProduceArtifacts(importContext, productionTask, OnArtifactsImported, (context, currentTask) =>
+            {
+                // Resolve the production task, this will notify the merge task that production is done.
+                currentTask.Resolve(new TaskData(null, null));
+            });
         }
 
         internal void Build()
@@ -978,23 +790,34 @@ namespace UnityEditor.Search
             }
 
             LoadingState = LoadState.Loading;
-            m_CurrentResolveTask?.Cancel();
             m_CurrentResolveTask?.Dispose();
             m_CurrentResolveTask = new Task("Build", $"Building {name.ToLowerInvariant()} search index", OnBuildFinished, 1, this);
-            ResolveArtifacts(m_CurrentResolveTask, (artifacts, task) =>
+
+            var importContext = new SearchIndexArtifactImportContext(this)
             {
-                task.RunThread(routine: () => CombineBuildArtifacts(artifacts, task),
-                    finalize: () => task.Resolve(new TaskData(null, index), completed: true));
+                ArtifactProductionFrameTimeLimit = k_DefaultProductionTimeLimitPerFrame
+            };
+            m_CurrentResolveTask.userData = importContext;
+            SearchIndexArtifactGeneration.GetIndexDependenciesAsync(this, m_CurrentResolveTask, (sources, parentTask) =>
+            {
+                // Reset progress so that global progress is computed from children
+                parentTask.Report("", -2.0f);
+                importContext.SetSources(sources);
+                ProduceArtifactsAndMerge(importContext, parentTask, 0, (_) =>
+                {
+                    // Clear existing index
+                    index.storage.Clear();
+                });
             });
         }
 
         private void OnBuildFinished(Task task, TaskData data)
         {
-            m_CurrentResolveTask?.Dispose();
+            var taskCancelled = task?.Canceled() ?? false;
             m_CurrentResolveTask = null;
-            if (!this || task.canceled || task.error != null)
+            if (!this || taskCancelled || task?.error != null)
             {
-                LoadingState = task.canceled ? LoadState.Canceled : LoadState.Error;
+                LoadingState = taskCancelled ? LoadState.Canceled : LoadState.Error;
                 return;
             }
 
@@ -1005,12 +828,12 @@ namespace UnityEditor.Search
 
         private void OnIncrementalLoadFinished(Task task, TaskData data)
         {
-            m_CurrentIncrementalLoadTask?.Dispose();
+            var taskCancelled = task?.Canceled() ?? false;
             m_CurrentIncrementalLoadTask = null;
-            if (!this || task.error != null)
+            if (!this || taskCancelled || task?.error != null)
             {
-                LoadingState = LoadState.Error;
-                if (task.error != null)
+                LoadingState = taskCancelled ? LoadState.Canceled : LoadState.Error;
+                if (task?.error != null)
                     Debug.LogException(task.error);
                 return;
             }
@@ -1144,7 +967,7 @@ namespace UnityEditor.Search
             if (!this)
                 return;
 
-            if (ready && !updating && !m_ImmutableLock.IsReadLockHeld)
+            if (ready && !updating)
             {
                 if (m_UpdateQueue.TryTake(out var diff))
                     ProcessIncrementalUpdate(diff);
@@ -1166,7 +989,6 @@ namespace UnityEditor.Search
 
         internal void ProcessIncrementalUpdate(AssetIndexChangeSet changeset)
         {
-            var updates = CreateArtifacts(changeset.updated);
             var taskName = $"Updating {settings.name.ToLowerInvariant()} search index";
 
             m_IncrementalIndexingRequestTrackerId = StartIncrementalUpdateTracker();
@@ -1175,103 +997,35 @@ namespace UnityEditor.Search
             m_CurrentUpdateTask = new Task("Update", taskName, (task, data) =>
             {
                 ResolveIncrementalUpdate(task);
-            }, updates.Length, this);
-            ResolveArtifacts(updates, null, m_CurrentUpdateTask, (artifacts, task) =>
+            }, this);
+
+            var importContext = new SearchIndexArtifactImportContext(this)
             {
-                task.RunThread(routine: () => MergeArtifacts(artifacts, task, changeset),
-                    finalize: () => task.Resolve(new TaskData(null, index), completed: true));
-            });
-        }
-
-        private void MergeArtifacts(IndexArtifact[] artifacts, Task task, AssetIndexChangeSet changeset)
-        {
-            if (task.Canceled() || task.error != null)
-                return;
-
-            var baseScore = settings.baseScore;
-            task.Report("Merging changes to index...");
-
-            // TODO: Remove this
-            using var writeLockScope = new WriteLockScope(m_ImmutableLock);
-
-            if (index.storage is LMDBIndexStorage lmdbStorage)
+                ArtifactProductionFrameTimeLimit = k_DefaultProductionTimeLimitPerFrame
+            };
+            m_CurrentUpdateTask.userData = importContext;
+            importContext.SetSources(changeset.updated);
+            ProduceArtifactsAndMerge(importContext, m_CurrentUpdateTask, settings.baseScore, (mergeTask) =>
             {
-                var artifactPaths = new string[artifacts.Length];
-                for (int i = 0; i < artifacts.Length; ++i)
+                if (index.storage is LMDBIndexStorage lmdbStorage)
                 {
-                    var a = artifacts[i];
-                    if (a != null && a.valid && !string.IsNullOrEmpty(a.path))
-                        artifactPaths[i] = a.path;
+                    // Remove deleted artifacts from the index storage
+                    using var cancellationToken = new SearchCancellationToken(mergeTask.cancellationToken);
+                    lmdbStorage.RemoveDocuments(changeset.removed, cancellationToken);
                 }
-
-                if (task.Canceled())
-                    return;
-                lmdbStorage.MergeArtifacts(changeset.removed, artifactPaths, baseScore, task);
-                if (task.Canceled())
-                    return;
-                lmdbStorage.Finish(Array.Empty<string>());
-            }
+            });
         }
 
         private void ResolveIncrementalUpdate(Task task)
         {
             if (task.error != null)
                 Debug.LogException(task.error);
-            m_CurrentUpdateTask?.Dispose();
             m_CurrentUpdateTask = null;
             Interlocked.Decrement(ref m_UpdateTasks);
             ProcessIncrementalUpdates();
             SearchService.RefreshWindows();
             EmitDatabaseReady(this);
             StopIncrementalUpdateTracker();
-        }
-
-        private IndexArtifact[] CreateArtifacts(in IList<string> assetPaths)
-        {
-            {
-                var artifacts = new IndexArtifact[assetPaths.Count];
-
-                for (int i = 0; i < assetPaths.Count; ++i)
-                {
-                    var indexImporterType = GetIndexImporterTypeForAsset(settings, assetPaths[i]);
-                    artifacts[i] = new IndexArtifact(assetPaths[i], AssetDatabase.GUIDFromAssetPath(assetPaths[i]), indexImporterType);
-                }
-
-                return artifacts;
-            }
-        }
-
-        private static bool ProduceArtifact(IndexArtifact artifact)
-        {
-            artifact.state = AssetDatabaseExperimental.GetOnDemandArtifactProgress(artifact.key).state;
-
-            if (artifact.state == OnDemandState.Failed)
-                return false;
-
-            if (artifact.state == OnDemandState.Available)
-            {
-                // Debug.LogFormat(LogType.Log, LogOption.None, null, $"   Available: {artifact.source}");
-                artifact.value = AssetDatabaseExperimental.LookupArtifact(artifact.key);
-                return true;
-            }
-
-            if (artifact.timestamp == long.MaxValue)
-            {
-                artifact.timestamp = DateTime.UtcNow.Ticks;
-                // Debug.LogFormat(LogType.Log, LogOption.None, null, $"ProduceArtifactAsync: {artifact.source}");
-                artifact.value = AssetDatabaseExperimental.ProduceArtifactAsync(artifact.key);
-            }
-            else
-            {
-                artifact.value = AssetDatabaseExperimental.LookupArtifact(artifact.key);
-            }
-
-            return true;
-        }
-
-        private static bool GetArtifactPaths(in ImportResultID id, out string[] paths)
-        {
-            return AssetDatabaseExperimental.GetArtifactPaths(id, out paths);
         }
 
         internal static void CreateDefaultIndex()
@@ -1292,13 +1046,6 @@ namespace UnityEditor.Search
         {
             CreateDefaultIndex(defaultSearchDatabaseIndexPath);
             return ImportAsset(defaultSearchDatabaseIndexPath);
-        }
-
-        // TODO: Remove this. It will no longer be needed with LMDB
-        // Don't use on the main thread!
-        public IDisposable GetImmutableScope()
-        {
-            return new ReadLockScope(m_ImmutableLock);
         }
 
         static bool KeepChangesetPredicate(string path, ObjectIndexer index)

@@ -8,6 +8,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using Unity.Profiling;
+using Unity.UIToolkit.Editor;
 using UnityEditor;
 using UnityEditor.UIElements;
 using UnityEngine;
@@ -27,10 +28,10 @@ namespace Unity.UI.Builder
 
     internal class ElementHierarchyView : VisualElement
     {
-        readonly UnityEngine.Pool.ObjectPool<BuilderClassPill> m_ClassPillsPool = new (
+        readonly UnityEngine.Pool.ObjectPool<ClassPill> m_ClassPillsPool = new (
             () =>
             {
-                var pill = new BuilderClassPill();
+                var pill = new ClassPill();
                 pill.AddToClassList(k_TreeItemPillClass);
                 m_ClassDragger.RegisterCallbacksOnTarget(pill);
                 return pill;
@@ -178,9 +179,9 @@ namespace Unity.UI.Builder
                     return;
                 }
 
-                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 var selectedElement = selection.selection.First();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                 var explorerItem = selectedElement.GetProperty(BuilderConstants.ElementLinkedExplorerItemVEPropertyName) as BuilderExplorerItem;
 
                 if (explorerItem == null)
@@ -228,7 +229,7 @@ namespace Unity.UI.Builder
         {
             var explorerItem = element as BuilderExplorerItem;
 
-            var pill = element.Q<BuilderClassPill>();
+            var pill = element.Q<ClassPill>();
             if (pill is { isDragged: false })
             {
                 m_ClassPillsPool.Release(pill);
@@ -254,9 +255,9 @@ namespace Unity.UI.Builder
                 return;
             }
 
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var selectedElement = m_Selection.selection.First();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             var explorerItem = selectedElement.GetProperty(BuilderConstants.ElementLinkedExplorerItemVEPropertyName) as BuilderExplorerItem;
 
             if (explorerItem != null && !explorerItem.IsRenamingActive() && m_TreeView.IsFocused())
@@ -295,7 +296,7 @@ namespace Unity.UI.Builder
         {
             var item = m_TreeViewController.GetTreeViewItemDataForIndex(index);
             var explorerItem = element as BuilderExplorerItem;
-            var draggedPill = explorerItem.Query<BuilderClassPill>().Where(pill => pill.isDragged).First();
+            var draggedPill = explorerItem.Query<ClassPill>().Where(pill => pill.isDragged).First();
             var labelCont = explorerItem.Q<VisualElement>(className: BuilderConstants.ExplorerItemLabelContClassName);
 
             if (draggedPill != null)
@@ -340,11 +341,11 @@ namespace Unity.UI.Builder
                 if (elementContainer == null)
                     return;
 
-                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 foreach (var child in elementContainer.Children().ToList())
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                 {
-                    if (child is BuilderClassPill pill && pill == draggedPill)
+                    if (child is ClassPill pill && pill == draggedPill)
                     {
                         continue;
                     }
@@ -457,7 +458,7 @@ namespace Unity.UI.Builder
                 foreach (var partStr in selectorParts)
                 {
                     Label label;
-                    BuilderClassPill pill = null;
+                    ClassPill pill = null;
 
                     if (partStr.StartsWith(BuilderConstants.UssSelectorClassNameSymbol))
                     {
@@ -709,7 +710,7 @@ namespace Unity.UI.Builder
             m_ContextMenuManipulator.RegisterCallbacksOnTarget(explorerItem);
         }
 
-        void UpdateTooltips(Label label, BuilderClassPill pill)
+        void UpdateTooltips(Label label, ClassPill pill)
         {
             VisualElement tooltipElement = pill == null ? label : pill;
             var row = tooltipElement.GetFirstAncestorWithClass(BaseTreeView.itemUssClassName);
@@ -825,13 +826,13 @@ namespace Unity.UI.Builder
             {
                 var list = ListPool<int>.Get();
                 m_TreeView.viewController.GetExpandedItemIds(list);
-                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 m_RegisteredState.expandedIndices = list.Select(id => m_TreeView.viewController.GetIndexForId(id)).Where(index => index != -1).ToList();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                 m_RegisteredState.expandedIndices.Sort();
-                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 m_RegisteredState.selectedIndices = m_TreeView.selectedIndices.ToList();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                 m_RegisteredState.scrollOffset = m_TreeView.scrollView.scrollOffset;
                 ListPool<int>.Release(list);
             }
@@ -915,9 +916,9 @@ namespace Unity.UI.Builder
                 if (m_SelectElementCallback == null)
                     return;
 
-                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 var enumerable = itemIndices as int[] ?? itemIndices.ToArray();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                 if (enumerable.Length == 0)
                 {
                     m_SelectElementCallback(null);
@@ -1031,9 +1032,9 @@ namespace Unity.UI.Builder
                             return;
                         }
 
-                        #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                        #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                         var selectedElement = m_Selection.selection.First();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
 
                         if (!selectedElement.HasProperty(BuilderConstants.ElementLinkedExplorerItemVEPropertyName))
                         {

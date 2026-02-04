@@ -3,14 +3,13 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using System.IO;
 using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEngine.UIElements;
 
 namespace Unity.Hierarchy.Editor
 {
-    class StageNavigationView : VisualElement, IDisposable
+    sealed class StageNavigationView : VisualElement, IDisposable
     {
         readonly Image m_Icon;
         readonly Label m_Label;

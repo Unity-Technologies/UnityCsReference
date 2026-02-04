@@ -115,6 +115,7 @@ namespace UnityEditor
             public static GUIContent hdrText = EditorGUIUtility.TrTextContent("HDR", "Enable High Dynamic Range rendering.");
             public static GUIContent shadowDistanceText = EditorGUIUtility.TrTextContent("Shadow Distance", "Maximum distance at which Unity renders shadows associated with this probe.");
             public static GUIContent cullingMaskText = EditorGUIUtility.TrTextContent("Culling Mask", "Allows objects on specified layers to be included or excluded in the reflection.");
+            public static GUIContent textureTypeError = EditorGUIUtility.TrTextContent("The associated texture is not a Cubemap. If the texture is backed by an asset this can be fixed by setting the texture type to Cubemap in the texture importer and then rebaking the probe.");
 
             public static GUIContent typeText = EditorGUIUtility.TrTextContent("Type", "Specify the lighting setup for this probe: Baked, Custom, or Realtime.");
             public static GUIContent[] reflectionProbeMode = { EditorGUIUtility.TrTextContent("Baked"), EditorGUIUtility.TrTextContent("Custom"), EditorGUIUtility.TrTextContent("Realtime") };
@@ -252,9 +253,9 @@ namespace UnityEditor
 
         private bool IsCollidingWithOtherProbes(string targetPath, ReflectionProbe targetProbe, out ReflectionProbe collidingProbe)
         {
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             ReflectionProbe[] probes = FindObjectsByType<ReflectionProbe>(FindObjectsSortMode.InstanceID).ToArray();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             collidingProbe = null;
             foreach (var probe in probes)
             {
@@ -559,6 +560,9 @@ namespace UnityEditor
                     if (cubemap && cubemap.mipmapCount == 1)
                         EditorGUILayout.HelpBox("No mipmaps in the cubemap, Smoothness value in Standard shader will be ignored.", MessageType.Warning);
                 }
+
+                if (probe.texture && !(probe.texture is Cubemap))
+                    EditorGUILayout.HelpBox(Styles.textureTypeError.text, MessageType.Error);
             }
 
             DoBakeButton();
@@ -700,6 +704,9 @@ namespace UnityEditor
             {
                 ReflectionProbe p = (ReflectionProbe)t;
                 if (!reflectiveMaterial)
+                    return;
+
+                if (!(p.texture is Cubemap))
                     return;
 
                 if (StageUtility.IsGizmoCulledBySceneCullingMasksOrFocusedScene(p.gameObject, Camera.current))

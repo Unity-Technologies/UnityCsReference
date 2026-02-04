@@ -54,18 +54,20 @@ namespace UnityEditor.IMGUI.Controls
             {
                 ++selectedIndex;
             }
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2004 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             while (selectedIndex < item.children.Count() && item.children.ElementAt(selectedIndex).IsSeparator());
-#pragma warning restore RS0030
+#pragma warning restore UA2001
+#pragma warning restore UA2004
 
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             if (selectedIndex >= item.children.Count())
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                 selectedIndex = 0;
 
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             if (selectedIndex < item.children.Count())
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                 SetSelectionOnItem(item, selectedIndex);
         }
 
@@ -77,14 +79,14 @@ namespace UnityEditor.IMGUI.Controls
             {
                 --selectedIndex;
             }
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2004 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             while (selectedIndex >= 0 && item.children.ElementAt(selectedIndex).IsSeparator());
-#pragma warning restore RS0030
+#pragma warning restore UA2004
 
             if (selectedIndex < 0)
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 selectedIndex = item.children.Count() - 1;
-#pragma warning restore RS0030
+#pragma warning restore UA2001
 
             if (selectedIndex >= 0)
                 SetSelectionOnItem(item, selectedIndex);
@@ -98,13 +100,13 @@ namespace UnityEditor.IMGUI.Controls
             {
                 state.selectedIndex = 0;
             }
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             else if (selectedIndex >= item.children.Count())
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             {
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 state.selectedIndex = item.children.Count() - 1;
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             }
             else
             {
@@ -125,15 +127,15 @@ namespace UnityEditor.IMGUI.Controls
         internal AdvancedDropdownItem GetSelectedChild(AdvancedDropdownItem item)
         {
             var index = GetSelectedIndex(item);
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-#pragma warning disable RS0031 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2002 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             if (!item.children.Any() || index < 0 || index >= item.children.Count())
-#pragma warning restore RS0030
-#pragma warning restore RS0031
+#pragma warning restore UA2001
+#pragma warning restore UA2002
                 return null;
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2004 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return item.children.ElementAt(index);
-#pragma warning restore RS0030
+#pragma warning restore UA2004
         }
 
         internal Vector2 GetScrollState(AdvancedDropdownItem item)

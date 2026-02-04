@@ -87,6 +87,7 @@ namespace UnityEngine.UIElements.UIR
         float m_IndexToVertexCountRatio;
         List<List<AllocToFree>> m_DeferredFrees;
         List<List<AllocToUpdate>> m_Updates;
+        List<MeshHandle> m_MeshesPendingFree;
         CommandListManager m_CommandListManager;
         UInt32[] m_Fences;
         MaterialPropertyBlock m_ConstantProps; // Properties that are constant throughout the evaluation of the commands
@@ -94,6 +95,7 @@ namespace UnityEngine.UIElements.UIR
         uint m_FrameIndex;
         uint m_NextUpdateID = 1; // For the current frame only, 0 is not an accepted value here
         DrawStatistics m_DrawStats;
+        bool m_RenderingInProgress;
 
         readonly LinkedPool<MeshHandle> m_MeshHandles = new LinkedPool<MeshHandle>(() => new MeshHandle(), mh => {});
         readonly DrawParams m_DrawParams = new DrawParams();
@@ -106,11 +108,11 @@ namespace UnityEngine.UIElements.UIR
 
         static readonly int s_GradientSettingsTexID = Shader.PropertyToID("_GradientSettingsTex");
         static readonly int s_ShaderInfoTexID = Shader.PropertyToID("_ShaderInfoTex");
-        static ProfilerMarker s_MarkerAllocate = new ProfilerMarker("UIR.Allocate");
-        static ProfilerMarker s_MarkerFree = new ProfilerMarker("UIR.Free");
-        static ProfilerMarker s_MarkerAdvanceFrame = new ProfilerMarker("UIR.AdvanceFrame");
-        static ProfilerMarker s_MarkerFence = new ProfilerMarker("UIR.WaitOnFence");
-        static ProfilerMarker s_MarkerBeforeDraw = new ProfilerMarker("UIR.BeforeDraw");
+        static ProfilerMarker s_MarkerAllocate = new ProfilerMarker(ProfilerCategory.UIToolkit, "UIR.Allocate");
+        static ProfilerMarker s_MarkerFree = new ProfilerMarker(ProfilerCategory.UIToolkit, "UIR.Free");
+        static ProfilerMarker s_MarkerAdvanceFrame = new ProfilerMarker(ProfilerCategory.UIToolkit, "UIR.AdvanceFrame");
+        static ProfilerMarker s_MarkerFence = new ProfilerMarker(ProfilerCategory.UIToolkit, "UIR.WaitOnFence");
+        static ProfilerMarker s_MarkerBeforeDraw = new ProfilerMarker(ProfilerCategory.UIToolkit, "UIR.BeforeDraw");
 
         internal static uint maxVerticesPerPage => 0xFFFF; // On DX11, 0xFFFF is an invalid index (associated to primitive restart). With size = 0xFFFF last index is 0xFFFE    cases:1259449
         internal bool breakBatches { get; set; }
@@ -151,6 +153,7 @@ namespace UnityEngine.UIElements.UIR
 
             m_DeferredFrees = new List<List<AllocToFree>>((int)k_MaxQueuedFrameCount);
             m_Updates = new List<List<AllocToUpdate>>((int)k_MaxQueuedFrameCount);
+            m_MeshesPendingFree = new();
             for (int i = 0; i < k_MaxQueuedFrameCount; i++)
             {
                 m_DeferredFrees.Add(new List<AllocToFree>());
@@ -277,6 +280,7 @@ namespace UnityEngine.UIElements.UIR
 
         public MeshHandle Allocate(uint vertexCount, uint indexCount, out NativeSlice<Vertex> vertexData, out NativeSlice<UInt16> indexData, out UInt16 indexOffset)
         {
+            Debug.Assert(!m_RenderingInProgress);
             MeshHandle meshHandle = m_MeshHandles.Get();
             meshHandle.triangleCount = indexCount / 3;
             Allocate(meshHandle, vertexCount, indexCount, out vertexData, out indexData, false);
@@ -286,6 +290,7 @@ namespace UnityEngine.UIElements.UIR
 
         public void Update(MeshHandle mesh, uint vertexCount, out NativeSlice<Vertex> vertexData)
         {
+            Debug.Assert(!m_RenderingInProgress);
             Debug.Assert(mesh.allocVerts.size >= (uint)vertexCount);
             if (mesh.allocTime == m_FrameIndex)
             {
@@ -310,6 +315,7 @@ namespace UnityEngine.UIElements.UIR
 
         public void Update(MeshHandle mesh, uint vertexCount, uint indexCount, out NativeSlice<Vertex> vertexData, out NativeSlice<UInt16> indexData, out UInt16 indexOffset)
         {
+            Debug.Assert(!m_RenderingInProgress);
             Debug.Assert(mesh.allocVerts.size >= (uint)vertexCount);
             Debug.Assert(mesh.allocIndices.size >= (uint)indexCount);
             if (mesh.allocTime == m_FrameIndex)
@@ -364,6 +370,8 @@ namespace UnityEngine.UIElements.UIR
 
         void Allocate(MeshHandle meshHandle, uint vertexCount, uint indexCount, out NativeSlice<Vertex> vertexData, out NativeSlice<UInt16> indexData, bool shortLived)
         {
+            Debug.Assert(!m_RenderingInProgress);
+
             s_MarkerAllocate.Begin();
 
             Page page = null;
@@ -529,6 +537,13 @@ namespace UnityEngine.UIElements.UIR
 
         public void Free(MeshHandle mesh)
         {
+            if (m_RenderingInProgress)
+            {
+                // Defer mesh free until frame rendering completes
+                m_MeshesPendingFree.Add(mesh);
+                return;
+            }
+
             if (mesh.updateAllocID != 0) // Is there an update over this mesh
             {
                 int activeUpdateIndex = (int)(mesh.updateAllocID - 1); // -1 since 1 is the first update id in a frame
@@ -568,6 +583,8 @@ namespace UnityEngine.UIElements.UIR
 
         public void OnFrameRenderingBegin()
         {
+            m_RenderingInProgress = true;
+
             m_DrawStats = new DrawStatistics();
             m_DrawStats.currentFrameIndex = (int)m_FrameIndex;
 
@@ -582,8 +599,6 @@ namespace UnityEngine.UIElements.UIR
                 page = page.next;
             }
             s_MarkerBeforeDraw.End();
-
-            AdvanceFrame();
 
             // UUM-101410: We must update the fence now in case that multiple calls to Update() are performed without
             // Render() being called. Otherwise, the previous fence (which has already passed) won't be updated and we
@@ -1197,7 +1212,7 @@ namespace UnityEngine.UIElements.UIR
         unsafe void UpdateFenceValue()
         {
             uint newFenceVal = Utility.InsertCPUFence();
-            fixed(uint* fence = &m_Fences[(int)((m_FrameIndex - 1) % m_Fences.Length)])
+            fixed(uint* fence = &m_Fences[(int)(m_FrameIndex % m_Fences.Length)])
             {
                 for (;;)
                 {
@@ -1266,11 +1281,10 @@ namespace UnityEngine.UIElements.UIR
             }
         }
 
-        // Advances to the next frame after the current frame's data has been finalized.
-        // Waits for the GPU to finish using previous frame data, frees deferred allocations,
-        // processes pending mesh updates, and prunes unused pages to prepare for new rendering.
-        void AdvanceFrame()
+        public void AdvanceFrame()
         {
+            m_RenderingInProgress = false;
+
             s_MarkerAdvanceFrame.Begin();
 
             m_FrameIndex++;
@@ -1330,6 +1344,13 @@ namespace UnityEngine.UIElements.UIR
                 }
             }
             queueToUpdate.Clear();
+
+            foreach (var mesh in m_MeshesPendingFree)
+            {
+                Free(mesh);
+            }
+
+            m_MeshesPendingFree.Clear();
 
             PruneUnusedPages();
 

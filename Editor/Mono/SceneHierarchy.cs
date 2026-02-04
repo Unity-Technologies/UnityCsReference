@@ -36,7 +36,7 @@ namespace UnityEditor
             const string kWarningMessage = "The current sorting method is taking a lot of time. Consider using 'Transform Sort' in playmode for better performance.";
 
             public static GUIContent defaultSortingContent = EditorGUIUtility.TrIconContent(kCustomSorting);
-            public static GUIContent createContent = EditorGUIUtility.IconContent("CreateAddNew");
+            public static GUIContent createContent = EditorGUIUtility.TrIconContent("Toolbar Plus More", "Create new GameObject");
             public static GUIContent fetchWarning = new GUIContent("", EditorGUIUtility.FindTexture(kWarningSymbol), kWarningMessage);
 
             public static GUIStyle lockButton = "IN LockButton";
@@ -589,9 +589,9 @@ namespace UnityEditor
 
         public virtual void OnQuit()
         {
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             m_ExpandedScenes = GetExpandedSceneNames().ToList();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
 
             // Game objects will have new instanceIDs in the next Unity session, so clear all state before serializing to layout to prevent saving redundant data
             m_TreeViewState = new TreeViewState<EntityId>();
@@ -764,9 +764,9 @@ namespace UnityEditor
                 EntityId id = m_TreeView.state.renameOverlay.userData;
                 bool endRenaming = m_TreeView.data.rowCount != rowCountBeforeReloading;
                 if (!endRenaming)
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     endRenaming = m_TreeView.data.GetRows().FirstOrDefault(item => item.id == id) == null;
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                 if (endRenaming)
                     m_TreeView.EndNameEditing(false);
                 else
@@ -820,9 +820,9 @@ namespace UnityEditor
         bool IsTreeViewSelectionInSyncWithBackend()
         {
             if (m_TreeView != null)
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 return m_TreeView.state.selectedIDs.SequenceEqual(Selection.entityIds);
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             return false;
         }
 
@@ -898,10 +898,10 @@ namespace UnityEditor
 
         public void GameObjectCreateDropdownButton()
         {
-            Rect rect = GUILayoutUtility.GetRect(Styles.createContent, EditorStyles.toolbarCreateAddNewDropDown, null);
+            Rect rect = GUILayoutUtility.GetRect(Styles.createContent, EditorStyles.toolbarButton, null);
             bool mouseOver = rect.Contains(Event.current.mousePosition);
             if (Event.current.type == EventType.Repaint)
-                EditorStyles.toolbarCreateAddNewDropDown.Draw(rect, Styles.createContent, mouseOver, false, false, false);
+                EditorStyles.toolbarButton.Draw(rect, Styles.createContent, mouseOver, false, false, false);
 
             if (Event.current.type == EventType.MouseDown && mouseOver)
             {
@@ -1315,18 +1315,18 @@ namespace UnityEditor
             // Prefab menu items that only make sense if a single object is selected.
             PopulateGenericMenuWithPrefabMenuItems(menu, contextClickedItemID);
 
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             GameObject[] selectedGameObjects = Selection.transforms.Select(t => t.gameObject).ToArray();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
 
             // All Create GameObject menu items
             {
                 menu.AddSeparator("");
 
                 var targetSceneForCreation = selectedGameObjects.Length > 0
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     ? selectedGameObjects.Last().scene.handle
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                     : SceneManager.GetActiveScene().handle;
 
                 // Set the context of each MenuItem to the current selection, so the created gameobjects will be added as children
@@ -1393,9 +1393,9 @@ namespace UnityEditor
 
         protected void AddCreateGameObjectItemsToSceneMenu(GenericMenu menu, Scene scene)
         {
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             MenuUtils.AddCreateGameObjectItemsToMenu(menu, Selection.transforms.Select(t => t.gameObject).ToArray(), false, false, true, scene.handle,
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                 MenuUtils.ContextMenuOrigin.Scene, BeforeCreateGameObjectMenuItemWasExecuted, AfterCreateGameObjectMenuItemWasExecuted);
         }
 
@@ -1843,9 +1843,9 @@ namespace UnityEditor
             string title = LocalizationDatabase.GetLocalizedString("Discard Changes");
             string message = LocalizationDatabase.GetLocalizedString("Are you sure you want to discard the changes in the following scenes:\n\n   {0}\n\nYour changes will be lost.");
 
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             string sceneNames = string.Join("\n   ", modifiedScenes.Select(scene => scene.name).ToArray());
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             message = string.Format(message, sceneNames);
 
             return EditorUtility.DisplayDialog(title, message, LocalizationDatabase.GetLocalizedString("OK"), LocalizationDatabase.GetLocalizedString("Cancel"));
@@ -1856,9 +1856,9 @@ namespace UnityEditor
             var expandedSceneNames = GetExpandedSceneNames();
             var selectedSceneHandles = GetSelectedScenes();
             var modifiedScenes = GetModifiedScenes(selectedSceneHandles);
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var modifiedScenesWithSavePath = modifiedScenes.Where(scene => !string.IsNullOrEmpty(scene.path)).ToArray();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
 
             if (!UserAllowedDiscardingChanges(modifiedScenesWithSavePath))
                 return;
@@ -1874,18 +1874,18 @@ namespace UnityEditor
             // When reloading a single scene it will be given a new scene handle which will collapse it in the Hierarchy.
             // Here we ensure same scene are expanded
             if (SceneManager.sceneCount == 1)
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 SetScenesExpanded(expandedSceneNames.ToList());
-#pragma warning restore RS0030
+#pragma warning restore UA2001
 
             EditorApplication.RequestRepaintAllViews();
         }
 
         internal static Scene[] GetModifiedScenes(List<SceneHandle> handles)
         {
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return handles.Select(EditorSceneManager.GetSceneByHandle).Where(scene => scene.isDirty).ToArray();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
         }
 
         void CloseSelectedScenes(bool removeScenes)
@@ -1952,9 +1952,9 @@ namespace UnityEditor
 
         void InvertSelection()
         {
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var instanceIDs = treeView.GetRowIDs().Except(treeView.GetSelection()).ToArray();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             treeView.SetSelection(instanceIDs, true);
             TreeViewSelectionChanged(instanceIDs);
         }
@@ -1999,24 +1999,24 @@ namespace UnityEditor
                     foreach (var rootGameObject in scene.GetRootGameObjects())
                     {
                         entityIds.Add(rootGameObject.GetEntityId());
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                         entityIds.AddRange(rootGameObject.transform.GetComponentsInChildren<Transform>(true).Select(t => t.gameObject.GetEntityId()));
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                     }
                 }
                 else
                 {
                     var go = InternalEditorUtility.GetObjectFromEntityId(id) as GameObject;
                     if (go != null)
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                         entityIds.AddRange(go.transform.GetComponentsInChildren<Transform>(true).Select(t => t.gameObject.GetEntityId()));
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                 }
             }
 
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var newSelection = entityIds.Distinct().ToArray();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             treeView.SetSelection(newSelection, true);
 
             TreeViewSelectionChanged(newSelection);
@@ -2056,9 +2056,9 @@ namespace UnityEditor
                 }
             }
 
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var newSelection = instanceIDs.Distinct().ToArray();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             treeView.SetSelection(newSelection, true);
             TreeViewSelectionChanged(newSelection);
         }

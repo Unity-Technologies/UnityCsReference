@@ -42,13 +42,13 @@ namespace UnityEditor.Search
             if (roots.Length == 0)
                 roots = new string[] { settings.root };
 
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return roots
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                 .Select(r => r.Replace("\\", "/").Trim('/'))
-                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 .Concat(roots.SelectMany(r => s_AssetDabaseRoots.Where(adbRoot => adbRoot.StartsWith(r, StringComparison.OrdinalIgnoreCase))))
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                 .Distinct()
                 .Where(r => Directory.Exists(r));
         }
@@ -58,9 +58,9 @@ namespace UnityEditor.Search
             List<string> paths = new List<string>();
             foreach (var root in GetRoots())
             {
-                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 paths.AddRange(Directory.GetFiles(root, "*.meta", SearchOption.AllDirectories)
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                     .Select(path => path.Replace("\\", "/").Substring(0, path.Length - 5))
                     .Where(path => !SkipEntry(path) && File.Exists(path)));
             }
@@ -179,9 +179,9 @@ namespace UnityEditor.Search
                     if (AssetImporter.GetAtPath(path) is ModelImporter)
                         IndexProperty(documentIndex, "t", "model", saveKeyword: true);
 
-                    #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                    #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     foreach (var obj in AssetDatabase.LoadAllAssetRepresentationsAtPath(path).Where(o => o))
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                     {
                         if (AssetDatabase.IsSubAsset(obj))
                         {

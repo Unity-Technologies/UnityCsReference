@@ -38,7 +38,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             return true;
         }
 
-        public static bool IsEquivalentTo(this IList<RegistryInfo> registries, IList<RegistryInfo> otherRegistries)
+        public static bool IsEquivalentTo(this IReadOnlyList<RegistryInfo> registries, IReadOnlyList<RegistryInfo> otherRegistries)
         {
             if (registries.Count != otherRegistries.Count)
                 return false;

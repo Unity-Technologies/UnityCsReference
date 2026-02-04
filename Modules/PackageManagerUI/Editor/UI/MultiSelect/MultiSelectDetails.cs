@@ -4,7 +4,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using UnityEngine.UIElements;
 
 namespace UnityEditor.PackageManager.UI.Internal
@@ -14,37 +13,25 @@ namespace UnityEditor.PackageManager.UI.Internal
         [Serializable]
         public new class UxmlSerializedData : VisualElement.UxmlSerializedData
         {
-            public override object CreateInstance() => new MultiSelectDetails();
+            public override object CreateInstance()
+            {
+                var container = ServicesContainer.instance;
+                return new MultiSelectDetails(
+                    container.Resolve<IResourceLoader>(),
+                    container.Resolve<IApplicationProxy>(),
+                    container.Resolve<IPackageDatabase>(),
+                    container.Resolve<IPackageOperationDispatcher>(),
+                    container.Resolve<IPageManager>(),
+                    container.Resolve<IPackageManagerPrefs>(),
+                    container.Resolve<IAssetStoreClient>(),
+                    container.Resolve<IAssetStoreDownloadManager>(),
+                    container.Resolve<IAssetStoreCache>(),
+                    container.Resolve<IBackgroundFetchHandler>(),
+                    container.Resolve<IUnityConnectProxy>());
+            }
         }
 
-        private IResourceLoader m_ResourceLoader;
-        private IApplicationProxy m_Application;
-        private IPackageDatabase m_PackageDatabase;
-        private IPackageOperationDispatcher m_OperationDispatcher;
-        private IPageManager m_PageManager;
-        private IPackageManagerPrefs m_PackageManagerPrefs;
-        private IAssetStoreClient m_AssetStoreClient;
-        private IAssetStoreDownloadManager m_AssetStoreDownloadManager;
-        private IAssetStoreCache m_AssetStoreCache;
-        private IBackgroundFetchHandler m_BackgroundFetchHandler;
-        private IUnityConnectProxy m_UnityConnect;
-        private IIOProxy m_IOProxy;
-        private void ResolveDependencies()
-        {
-            var container = ServicesContainer.instance;
-            m_ResourceLoader = container.Resolve<IResourceLoader>();
-            m_Application = container.Resolve<IApplicationProxy>();
-            m_PackageDatabase = container.Resolve<IPackageDatabase>();
-            m_OperationDispatcher = container.Resolve<IPackageOperationDispatcher>();
-            m_PageManager = container.Resolve<IPageManager>();
-            m_PackageManagerPrefs = container.Resolve<IPackageManagerPrefs>();
-            m_AssetStoreClient = container.Resolve<IAssetStoreClient>();
-            m_AssetStoreDownloadManager = container.Resolve<IAssetStoreDownloadManager>();
-            m_AssetStoreCache = container.Resolve<IAssetStoreCache>();
-            m_BackgroundFetchHandler = container.Resolve<IBackgroundFetchHandler>();
-            m_UnityConnect = container.Resolve<IUnityConnectProxy>();
-            m_IOProxy = container.Resolve<IOProxy>();
-        }
+
 
         private UnlockFoldout m_UnlockFoldout;
         private NoActionsFoldout m_NoActionFoldout;
@@ -63,15 +50,50 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private MultiSelectFoldoutGroup[] m_FoldoutGroups;
 
-        #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-        private IEnumerable<IMultiSelectFoldoutElement> allFoldoutElements => m_StandaloneFoldouts.Cast<IMultiSelectFoldoutElement>().Concat(m_FoldoutGroups);
-#pragma warning restore RS0030
-
-        public MultiSelectDetails()
+        private IEnumerable<IMultiSelectFoldoutElement> EnumerateAllFoldoutElements()
         {
-            ResolveDependencies();
+            foreach (var element in m_StandaloneFoldouts ?? Array.Empty<IMultiSelectFoldoutElement>())
+                yield return element;
+            foreach (var element in m_FoldoutGroups  ?? Array.Empty<IMultiSelectFoldoutElement>())
+                yield return element;
+        }
 
-            var root = m_ResourceLoader.GetTemplate("MultiSelectDetails.uxml");
+        private readonly IApplicationProxy m_Application;
+        private readonly IPackageDatabase m_PackageDatabase;
+        private readonly IPackageOperationDispatcher m_OperationDispatcher;
+        private readonly IPageManager m_PageManager;
+        private readonly IPackageManagerPrefs m_PackageManagerPrefs;
+        private readonly IAssetStoreClient m_AssetStoreClient;
+        private readonly IAssetStoreDownloadManager m_AssetStoreDownloadManager;
+        private readonly IAssetStoreCache m_AssetStoreCache;
+        private readonly IBackgroundFetchHandler m_BackgroundFetchHandler;
+        private readonly IUnityConnectProxy m_UnityConnect;
+
+        public MultiSelectDetails(
+            IResourceLoader resourceLoader,
+            IApplicationProxy application,
+            IPackageDatabase packageDatabase,
+            IPackageOperationDispatcher operationDispatcher,
+            IPageManager pageManager,
+            IPackageManagerPrefs packageManagerPrefs,
+            IAssetStoreClient assetStoreClient,
+            IAssetStoreDownloadManager assetStoreDownloadManager,
+            IAssetStoreCache assetStoreCache,
+            IBackgroundFetchHandler backgroundFetchHandler,
+            IUnityConnectProxy unityConnect)
+        {
+            m_Application = application;
+            m_PackageDatabase = packageDatabase;
+            m_OperationDispatcher = operationDispatcher;
+            m_PageManager = pageManager;
+            m_PackageManagerPrefs = packageManagerPrefs;
+            m_AssetStoreClient = assetStoreClient;
+            m_AssetStoreDownloadManager = assetStoreDownloadManager;
+            m_AssetStoreCache = assetStoreCache;
+            m_BackgroundFetchHandler = backgroundFetchHandler;
+            m_UnityConnect = unityConnect;
+
+            var root = resourceLoader.GetTemplate("MultiSelectDetails.uxml");
             Add(root);
             cache = new VisualElementCache(root);
 
@@ -108,7 +130,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_DownloadFoldoutGroup = new DownloadFoldoutGroup(m_AssetStoreDownloadManager, m_OperationDispatcher, m_UnityConnect, m_Application);
             m_DownloadUpdateFoldoutGroup = new DownloadUpdateFoldoutGroup(m_AssetStoreDownloadManager, m_AssetStoreCache, m_OperationDispatcher, m_UnityConnect, m_Application);
             m_RemoveImportedFoldoutGroup = new RemoveImportedFoldoutGroup(m_Application, m_OperationDispatcher);
-            m_OpenManifestExternallyFoldoutGroup = new OpenManifestExternallyFoldoutGroup(m_IOProxy);
+            m_OpenManifestExternallyFoldoutGroup = new OpenManifestExternallyFoldoutGroup();
 
             m_FoldoutGroups = new MultiSelectFoldoutGroup[]
             {
@@ -149,9 +171,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         private void OnUpdateChecked(IEnumerable<long> productIds)
         {
             var selection = m_PageManager.activePage.GetSelection();
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            if (productIds.Any(id => selection.Contains(id.ToString())))
-#pragma warning restore RS0030
+            if (productIds.AnyMatches(id => selection.Contains(id.ToString())))
                 Refresh(selection);
         }
 
@@ -162,21 +182,16 @@ namespace UnityEditor.PackageManager.UI.Internal
 
             title.text = string.Format(L10n.Tr("{0} {1} selected"), selections.Count, selections.Count > 1 ? L10n.Tr("items") : L10n.Tr("item"));
 
-            // We get the versions from the visual states instead of directly from the selection to keep the ordering of packages
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            var packages = m_PageManager.activePage.visualStates.Select(visualState =>
-#pragma warning restore RS0030
-            {
-                if (!selections.Contains(visualState.packageUniqueId))
-                    return null;
-                return m_PackageDatabase.GetPackage(visualState.packageUniqueId);
-            }).Where(package => package != null);
-
-            foreach (var foldoutElement in allFoldoutElements)
+            foreach (var foldoutElement in EnumerateAllFoldoutElements())
                 foldoutElement.ClearPackages();
 
-            foreach (var package in packages)
+            // We get the versions from the visual states instead of directly from the selection to keep the ordering of packages
+            foreach (var visualState in m_PageManager.activePage.visualStates)
             {
+                if (!selections.Contains(visualState.packageUniqueId))
+                    continue;
+
+                var package = m_PackageDatabase.GetPackage(visualState.packageUniqueId);
                 if (m_UnlockFoldout.AddPackage(package))
                     continue;
 
@@ -191,7 +206,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                     m_NoActionFoldout.AddPackage(package);
             }
 
-            foreach (var foldoutElement in allFoldoutElements)
+            foreach (var foldoutElement in EnumerateAllFoldoutElements())
                 foldoutElement.Refresh();
 
             UIUtils.SetElementDisplay(infoBoxContainer, m_UnlockFoldout.packages.Count > 0);
@@ -205,9 +220,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private void OnDeselectLockedSelectionsClicked()
         {
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            var packageUniqueIds = m_UnlockFoldout.packages.Select(p => p.uniqueId).ToArray();
-#pragma warning restore RS0030
+            var packageUniqueIds = m_UnlockFoldout.packages.SelectToNewArray(p => p.uniqueId);
             m_PageManager.activePage.RemoveSelection(packageUniqueIds);
             PackageManagerWindowAnalytics.SendEvent("deselectLocked", packageIds: packageUniqueIds);
         }

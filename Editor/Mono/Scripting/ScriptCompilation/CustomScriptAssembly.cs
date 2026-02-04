@@ -170,9 +170,9 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 }
 
                 if (additionalReferences.Count > 0)
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     data.references = data.references.Concat(additionalReferences).ToArray();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             }
         }
 
@@ -335,9 +335,9 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 if(extensionModule != null)
                 {
                     var extraScriptAssemblyPlatforms = extensionModule.GetExtraScriptAssemblyPlatforms(buildTargetList[i].buildTargetPlatformVal);
-#pragma warning disable RS0031 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2002 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     if (extraScriptAssemblyPlatforms != null && extraScriptAssemblyPlatforms.Any())
-#pragma warning restore RS0031
+#pragma warning restore UA2002
                     {
                         foreach(var extraPlatform in extraScriptAssemblyPlatforms)
                         {
@@ -375,14 +375,14 @@ namespace UnityEditor.Scripting.ScriptCompilation
         public bool IsCompatibleWithEditor()
         {
             if (ExcludePlatforms != null)
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 return ExcludePlatforms.All(p => p.BuildTarget != BuildTarget.NoTarget);
-#pragma warning restore RS0030
+#pragma warning restore UA2001
 
             if (IncludePlatforms != null)
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 return IncludePlatforms.Any(p => p.BuildTarget == BuildTarget.NoTarget);
-#pragma warning restore RS0030
+#pragma warning restore UA2001
 
             return true;
         }
@@ -392,12 +392,12 @@ namespace UnityEditor.Scripting.ScriptCompilation
             bool buildingForEditor = (options & EditorScriptCompilationOptions.BuildingForEditor) == EditorScriptCompilationOptions.BuildingForEditor;
 
             var isBuildingWithTestAssemblies = (options & EditorScriptCompilationOptions.BuildingIncludingTestAssemblies) == EditorScriptCompilationOptions.BuildingIncludingTestAssemblies;
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var isTestAssembly = DefineConstraints != null && DefineConstraints.Any(x => x == "UNITY_INCLUDE_TESTS");
-#pragma warning restore RS0030
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning restore UA2001
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var isTestFrameworkAssembly = DefineConstraints != null && DefineConstraints.Any(x => x == "UNITY_TESTS_FRAMEWORK");
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             if (!buildingForEditor && (isTestAssembly || isTestFrameworkAssembly) && !isBuildingWithTestAssemblies)
             {
                 return false;
@@ -445,18 +445,18 @@ namespace UnityEditor.Scripting.ScriptCompilation
             {
                 // build target is different
                 // OR build target matches, but subtarget for target assembly is both present and differs
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 return ExcludePlatforms.All(p =>
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                     p.BuildTarget != buildTarget ||
                     (p.BuildTarget == buildTarget &&
                     (p.HasSubTarget && p.SubTarget != subTarget)));
             }
 
             // build target matches, and if present, subtarget matches
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return IncludePlatforms.Any(p => p.BuildTarget == buildTarget && (!p.HasSubTarget || p.SubTarget == subTarget));
-#pragma warning restore RS0030
+#pragma warning restore UA2001
         }
 
         public static CustomScriptAssembly Create(string name, string directory)
@@ -465,9 +465,9 @@ namespace UnityEditor.Scripting.ScriptCompilation
 
             var modifiedDirectory = AssetPath.ReplaceSeparators(directory);
 
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             if (modifiedDirectory.Last() != AssetPath.Separator)
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                 modifiedDirectory += AssetPath.Separator.ToString();
 
             customScriptAssembly.Name = name;
@@ -554,9 +554,9 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 if (string.Equals(platform.Name, name, System.StringComparison.OrdinalIgnoreCase))
                     return platform;
 
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var platformNames = Platforms.Select(p => string.Format("\"{0}\"", p.Name)).ToArray();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             System.Array.Sort(platformNames);
 
             var platformsString = string.Join(",\n", platformNames);

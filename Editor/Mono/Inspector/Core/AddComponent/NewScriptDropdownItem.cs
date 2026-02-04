@@ -82,9 +82,9 @@ namespace UnityEditor.AddComponent
         {
             if (m_Directory.IndexOfAny(kInvalidPathChars) >= 0)
                 return true;
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             if (TargetDir().Split(kPathSepChars, StringSplitOptions.None).Contains(string.Empty))
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                 return true;
             return false;
         }
@@ -111,9 +111,9 @@ namespace UnityEditor.AddComponent
             return s_CSharpDOMProvider.IsValidIdentifier(className);
         }
 
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
         private bool ClassExists(string className) => CurrentAssemblies.GetLoadedAssemblies().Any(a => a.GetType(className, false) != null);
-#pragma warning restore RS0030
+#pragma warning restore UA2001
         private bool ClassAlreadyExists()
         {
             if (m_ClassName == string.Empty)

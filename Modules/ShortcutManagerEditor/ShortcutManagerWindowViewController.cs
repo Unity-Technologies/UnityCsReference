@@ -215,9 +215,9 @@ namespace UnityEditor.ShortcutManagement
             m_CategoryToEntriesList.Add(k_MainMenu, menuItems);
 
 
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             m_Categories = categories.ToList();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
 
             m_Categories.Sort();
             m_Categories.Insert(k_AllUnityCommandsIndex, k_AllUnityCommands);
@@ -239,9 +239,9 @@ namespace UnityEditor.ShortcutManagement
 
         public List<string> GetAvailableProfiles()
         {
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return m_ShortcutProfileManager.GetProfiles()
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                 .Select(p => p.id)
                 .Concat(new[] { "Default" })
                 .ToList();
@@ -819,9 +819,9 @@ namespace UnityEditor.ShortcutManagement
                 var binding = entry.combinations;
                 if (binding?.Count > 0)
                 {
-                    #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                    #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     var firstKeyBinding = binding.First();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                     if (!m_KeyBindingRootToBoundEntries.ContainsKey(firstKeyBinding))
                     {
                         m_KeyBindingRootToBoundEntries[firstKeyBinding] = new List<ShortcutEntry>();

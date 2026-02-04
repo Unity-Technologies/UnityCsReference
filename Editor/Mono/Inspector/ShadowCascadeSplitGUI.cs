@@ -87,9 +87,9 @@ namespace UnityEditor
             // setup the array locally with the last partition
             float[] adjustedCascadePartitions = new float[normalizedCascadePartitions.Length + 1];
             Array.Copy(normalizedCascadePartitions, adjustedCascadePartitions, normalizedCascadePartitions.Length);
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             adjustedCascadePartitions[adjustedCascadePartitions.Length - 1] = 1.0f - normalizedCascadePartitions.Sum();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
 
 
             // check for user input on any of the partition handles

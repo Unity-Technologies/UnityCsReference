@@ -13,29 +13,33 @@ namespace UnityEditor.PackageManager.UI.Internal
         [Serializable]
         public new class UxmlSerializedData : VisualElement.UxmlSerializedData
         {
-            public override object CreateInstance() => new SignInBar();
+            public override object CreateInstance()
+            {
+                var container = ServicesContainer.instance;
+                return new SignInBar(
+                    container.Resolve<IUnityConnectProxy>(),
+                    container.Resolve<IPageManager>(),
+                    container.Resolve<IPackageDatabase>());
+            }
         }
 
         private static readonly string k_Message = L10n.Tr("to manage Asset Store packages");
         private static readonly string k_ButtonText = L10n.Tr("Sign in");
 
-        private IUnityConnectProxy m_UnityConnect;
-        private IPageManager m_PageManager;
-        private IPackageDatabase m_PackageDatabase;
-        private void ResolveDependencies()
+        private readonly IUnityConnectProxy m_UnityConnect;
+        private readonly IPageManager m_PageManager;
+        private readonly IPackageDatabase m_PackageDatabase;
+        public SignInBar(
+            IUnityConnectProxy unityConnect,
+            IPageManager pageManager,
+            IPackageDatabase packageDatabase)
         {
-            var container = ServicesContainer.instance;
-            m_UnityConnect = container.Resolve<IUnityConnectProxy>();
-            m_PageManager = container.Resolve<IPageManager>();
-            m_PackageDatabase = container.Resolve<IPackageDatabase>();
-        }
+            m_UnityConnect = unityConnect;
+            m_PageManager = pageManager;
+            m_PackageDatabase = packageDatabase;
 
-        public SignInBar()
-        {
             Add(new Button(OnSignInButtonClicked) { text = k_ButtonText });
             Add(new Label(k_Message));
-
-            ResolveDependencies();
         }
 
         public void OnEnable()

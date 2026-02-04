@@ -244,15 +244,15 @@ namespace UnityEditor.Experimental.GraphView
                     }
                     else // prevent heterogenous selections between stack child nodes and other nodes
                     {
-                        #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                        #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                         var selected = selection.selection.Cast<GraphElement>();
-#pragma warning restore RS0030
-                        #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning restore UA2001
+                        #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                         bool selectionHasChildren = selected.Any(item => item.IsStackable());
-#pragma warning restore RS0030
-                        #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning restore UA2001
+                        #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                         bool selectionHasSiblings = selected.All(item => item.parent == parent);
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                         bool targetIsChild = IsStackable();
                         bool isSelectionHomogenous = !targetIsChild && !selectionHasChildren || targetIsChild && selectionHasSiblings;
 

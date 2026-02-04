@@ -7,6 +7,7 @@ using System.Buffers;
 using System.Collections.Generic;
 using System.IO;
 using System.Runtime.InteropServices;
+using UnityEditor.Experimental;
 using UnityEngine;
 using UnityEngine.Bindings;
 
@@ -252,6 +253,13 @@ namespace UnityEditor.Search
             Internal_MergeArtifactsBatch(m_Ptr, removedDocuments, artifactPaths, baseScore, progressId, batchSize, cancellationToken);
         }
 
+        public void MergeArtifactImportDataBatch(string[] removedDocuments, in SearchIndexArtifactImportData.Batch artifactImportDataBatch, int baseScore, long batchSize, SearchTask<TaskData> task)
+        {
+            var progressId = (task?.async ?? false) ? task.progressId : Progress.InvalidProgressId;
+            using var cancellationToken = task != null ? new SearchCancellationToken(task.cancellationToken) : SearchCancellationToken.None;
+            Internal_MergeArtifactImportDataBatch(m_Ptr, removedDocuments, artifactImportDataBatch.ImporterHashCodes, artifactImportDataBatch.ArtifactKeys, artifactImportDataBatch.ImportResultIds, baseScore, progressId, batchSize, cancellationToken);
+        }
+
         public void Write(Stream stream)
         {
             stream.Write(SaveToArtifactBytes());
@@ -436,6 +444,9 @@ namespace UnityEditor.Search
 
         [FreeFunction("LMDBIndexStorageBindings::MergeArtifactsBatch", IsThreadSafe = true)]
         static extern void Internal_MergeArtifactsBatch(IntPtr currentStorage, string[] documentsToRemove, string[] artifactPaths, int baseScore, int progressId, long batchSize, SearchCancellationToken cancellationToken);
+
+        [FreeFunction("LMDBIndexStorageBindings::MergeArtifactImportDataBatch", IsThreadSafe = true)]
+        static extern void Internal_MergeArtifactImportDataBatch(IntPtr currentStorage, string[] documentsToRemove, ReadOnlySpan<int> artifactImporterHashCodes, ReadOnlySpan<ArtifactKey> artifactKeys, ReadOnlySpan<ImportResultID> artifactImportResultIds, int baseScore, int progressId, long batchSize, SearchCancellationToken cancellationToken);
 
         [NativeMethod(IsThreadSafe = true)]
         extern SearchResult[] SearchPropertyDouble(string name, double value, SearchIndexOperator op);

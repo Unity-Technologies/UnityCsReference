@@ -62,9 +62,9 @@ namespace Unity.ProjectAuditor.Editor.UI
 
         public ProjectAuditorWindow m_ProjectAuditorWindow;
 
-        #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+        #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
         List<IGrouping<string, ReportItem>> m_TopTenIssues = new List<IGrouping<string, ReportItem>>();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
 
         bool m_RefreshTopTenIssues;
 
@@ -196,7 +196,7 @@ namespace Unity.ProjectAuditor.Editor.UI
             m_Stats.GameObjectAnalysisTime = report.CalculateIssueCategoryAnalysisDuration(IssueCategory.GameObject);
 
             // Various stats
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             m_Stats.NumBuildSteps += allIssues.Count(i => i.Category == IssueCategory.BuildStep);
             m_Stats.NumShaders += allIssues.Count(i => i.Category == IssueCategory.Shader);
             m_Stats.NumPackages += allIssues.Count(i => i.Category == IssueCategory.Package);
@@ -206,7 +206,7 @@ namespace Unity.ProjectAuditor.Editor.UI
 
             m_Stats.NumCompiledAssemblies += allIssues.Count(i => i.Category == IssueCategory.Assembly && i.Severity != Severity.Error);
             m_Stats.NumTotalAssemblies += allIssues.Count(i => i.Category == IssueCategory.Assembly);
-#pragma warning restore RS0030
+#pragma warning restore UA2001
         }
 
         public override void Clear()
@@ -292,9 +292,9 @@ namespace Unity.ProjectAuditor.Editor.UI
             {
                 var errorString = LogLevel.Error.ToString();
 
-                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 m_AnyCompilationErrors = m_ViewManager.Report.GetAllIssues()
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                     .Any(i => i.Category == IssueCategory.CodeCompilerMessage
                         && i.GetProperty(PropertyType.LogLevel) == errorString);
 
@@ -398,7 +398,7 @@ namespace Unity.ProjectAuditor.Editor.UI
 
                 if (m_RefreshTopTenIssues)
                 {
-                    #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                    #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     m_TopTenIssues = m_ViewManager.Report.GetAllIssues()
                         .Where(i =>
                             !m_ViewManager.HasPendingCategory(i.Category)
@@ -411,12 +411,12 @@ namespace Unity.ProjectAuditor.Editor.UI
                         .ThenBy(group => group.First().Id.GetDescriptor().Title)
                         .Take(10)
                         .ToList();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                     int oldSize = m_TopTenFoldoutStates.Count;
 
-                    #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                    #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     foreach (var key in m_TopTenFoldoutStates.Keys.ToArray().Where(key => !m_TopTenIssues.Any(group => group.First().DescriptorIdAsString == key)))
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                         m_TopTenFoldoutStates.Remove(key);
 
                     m_RefreshTopTenIssues = false;
@@ -457,9 +457,9 @@ namespace Unity.ProjectAuditor.Editor.UI
 
         void DrawDiagnostic(IGrouping<string, ReportItem> issueGroup, int itemIndex)
         {
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var firstIssue = issueGroup.First();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             var descriptorIdString = firstIssue.DescriptorIdAsString;
 
             if (!m_TopTenFoldoutStates.ContainsKey(descriptorIdString))
@@ -484,9 +484,9 @@ namespace Unity.ProjectAuditor.Editor.UI
                     EditorGUILayout.LabelField(Utility.GetSeverityIcon(GetHighestGroupSeverity(issueGroup)), SharedStyles.Label,
                         GUILayout.Width(36));
 
-                    #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                    #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     DrawDiagnosticLabel(descriptor, issueGroup.Count());
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                 }
 
                 if (Event.current.isMouse && Event.current.type == EventType.MouseDown && descriptor != null)

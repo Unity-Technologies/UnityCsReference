@@ -84,6 +84,9 @@ namespace UnityEngine
         [NativeThrows] public static extern void ParameterConstCharPtr(string param);
         [NativeThrows] public static extern void ParameterConstCharPtrNull(string param);
         [NativeThrows] public static extern void ParameterConstCharPtrEmptyString(string param);
+        [NativeThrows] public static extern void ParameterNullableString(string param);
+        [NativeThrows] public static extern void ParameterNullableStringNull(string param);
+        [NativeThrows] public static extern void ParameterNullableStringEmptyString(string param);
 
         [NativeThrows] public static extern void ParameterCoreStringVector(string[] param);
 
@@ -1088,7 +1091,7 @@ namespace UnityEngine
         public static extern char TestInvokeChar(char arg);
         public static extern short TestInvokeShort(short arg);
         public static extern ushort TestInvokeUShort(ushort arg);
-        public static extern int TestInvokeInt(int arg);
+        public static extern int TestInvokeInt(int arg, ref int refArg1, out int outArg2);
         public static extern uint TestInvokeUInt(uint arg);
         public static extern long TestInvokeLong(long arg);
         public static extern ulong TestInvokeULong(ulong arg);
@@ -1110,7 +1113,12 @@ namespace UnityEngine
         [RequiredMember, RequiredByNativeCode(Optional = true)]
         static ushort InvokeUShort(ushort arg) { return arg; }
         [RequiredMember, RequiredByNativeCode(Optional = true)]
-        static int InvokeInt(int arg) { return arg; }
+        static int InvokeInt(int arg, ref int refArg1, out int outArg2)
+        {
+            outArg2 = arg + refArg1;
+            refArg1 = arg - 1;
+            return arg + 1;
+        }
         [RequiredMember, RequiredByNativeCode(Optional = true)]
         static uint InvokeUInt(uint arg) { return arg; }
         [RequiredMember, RequiredByNativeCode(Optional = true)]

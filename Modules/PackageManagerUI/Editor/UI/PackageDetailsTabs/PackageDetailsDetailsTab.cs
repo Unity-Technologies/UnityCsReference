@@ -13,16 +13,18 @@ namespace UnityEditor.PackageManager.UI.Internal
         private const string k_EmptyDescriptionClass = "empty";
         private const int k_MaxDescriptionCharacters = 10000;
 
-        private IApplicationProxy m_ApplicationProxy;
-
         public override bool IsValid(IPackageVersion version)
         {
             return version?.HasTag(PackageTag.UpmFormat) == true;
         }
 
-        public PackageDetailsDetailsTab(IUnityConnectProxy unityConnect, IResourceLoader resourceLoader, IApplicationProxy applicationProxy) : base(unityConnect)
+        private readonly IApplicationProxy m_ApplicationProxy;
+        private readonly IUpmCache m_UpmCache;
+        public PackageDetailsDetailsTab(IUnityConnectProxy unityConnect, IResourceLoader resourceLoader, IApplicationProxy applicationProxy, IUpmCache upmCache) : base(unityConnect)
         {
             m_ApplicationProxy = applicationProxy;
+            m_UpmCache = upmCache;
+
             m_Id = k_Id;
             m_DisplayName = L10n.Tr("Details");
             var root = resourceLoader.GetTemplate("DetailsTabs/PackageDetailsDetailsTab.uxml");
@@ -33,12 +35,12 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private void AddInformationCards()
         {
-            detailInformationCardsContainer.Add(new TechnicalNameInfoCard());
-            detailInformationCardsContainer.Add(new SourceInfoCard());
+            detailInformationCardsContainer.Add(new TechnicalNameInfoCard(m_ApplicationProxy));
+            detailInformationCardsContainer.Add(new SourceInfoCard(m_UpmCache));
             detailInformationCardsContainer.Add(new SignatureInfoCard());
             detailInformationCardsContainer.Add(new MinimumEditorVersionInfoCard());
             detailInformationCardsContainer.Add(new PackageStateInfoCard(m_ApplicationProxy));
-            detailInformationCardsContainer.Add(new InstalledFromInfoCard());
+            detailInformationCardsContainer.Add(new InstalledFromInfoCard(m_ApplicationProxy));
         }
 
         protected override void RefreshContent(IPackageVersion version)

@@ -10,6 +10,7 @@ using System.Linq;
 using System.Text;
 using System.Runtime.InteropServices;
 using NiceIO;
+using PlayerBuildProgramLibrary.Data;
 using UnityEditor;
 using UnityEditor.Build;
 using UnityEditor.Build.Reporting;
@@ -319,9 +320,9 @@ namespace UnityEditorInternal
             "UNICODE",
         };
 
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
         private static readonly string[] BaseDefines20 = new[]
-#pragma warning restore RS0030
+#pragma warning restore UA2001
         {
             "ALL_INTERIOR_POINTERS=1",
             "GC_GCJ_SUPPORT=1",
@@ -338,9 +339,9 @@ namespace UnityEditorInternal
             "USE_MUNMAP=1",
         }.ToArray();
 
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
         private static readonly string[] BaseDefines46 = BaseDefines20.Concat(new[]
-#pragma warning restore RS0030
+#pragma warning restore UA2001
         {
             "NET_4_0=1",
             "UNITY_AOT=1",
@@ -349,23 +350,41 @@ namespace UnityEditorInternal
             "NET_STANDARD=1",
         }).ToArray();
 
-        internal static string ApiCompatibilityLevelToDotNetProfileArgument(ApiCompatibilityLevel compatibilityLevel, BuildTarget target)
+        internal static string ApiCompatibilityLevelToDotNetProfileArgument(ApiCompatibilityLevel compatibilityLevel, BuildTarget target, ScriptingBackend scriptingBackend)
         {
-            switch (compatibilityLevel)
+            if (scriptingBackend == ScriptingBackend.Mono)
             {
-                case ApiCompatibilityLevel.NET_2_0_Subset:
-                    return "legacyunity";
+                switch (compatibilityLevel)
+                {
+                    case ApiCompatibilityLevel.NET_Unity_4_8:
+                    case ApiCompatibilityLevel.NET_Standard:
+                        return "unityjit";
 
-                case ApiCompatibilityLevel.NET_2_0:
-                    return "net20";
-
-                case ApiCompatibilityLevel.NET_Unity_4_8:
-                case ApiCompatibilityLevel.NET_Standard:
-                    return "unityaot-" + BuildTargetDiscovery.GetPlatformProfileSuffix(target);
-
-                default:
-                    throw new NotSupportedException(string.Format("ApiCompatibilityLevel.{0} is not supported by IL2CPP!", compatibilityLevel));
+                    default:
+                        throw new NotSupportedException(string.Format("ApiCompatibilityLevel.{0} is not supported!", compatibilityLevel));
+                }
             }
+
+            if (scriptingBackend == ScriptingBackend.IL2CPP)
+            {
+                switch (compatibilityLevel)
+                {
+                    case ApiCompatibilityLevel.NET_Unity_4_8:
+                    case ApiCompatibilityLevel.NET_Standard:
+                        return "unityaot-" + BuildTargetDiscovery.GetPlatformProfileSuffix(target);
+
+                    default:
+                        throw new NotSupportedException(string.Format("ApiCompatibilityLevel.{0} is not supported!", compatibilityLevel));
+                }
+            }
+
+            if (scriptingBackend == ScriptingBackend.CoreCLR)
+            {
+                // We won't need the profile argument going forward
+                return null;
+            }
+
+            throw new ArgumentException($"Unhandled scripting backend {scriptingBackend}");
         }
 
         internal static string[] GetBuilderDefinedDefines(BuildTarget target, ApiCompatibilityLevel apiCompatibilityLevel, bool enableIl2CppDebugger)
@@ -498,9 +517,9 @@ namespace UnityEditorInternal
                 // the most robust and maintainable approach.
 
                 var toolBinDirectory = Path.Combine(il2CppFolder, toolName, "bin").ToNPath();
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 var candidates = toolBinDirectory.Files($"*{expectedToolExecutableName}", recurse: true)
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                     .OrderByDescending(f => f.GetLastWriteTimeUtc())
                     .ToArray();
 
@@ -557,9 +576,9 @@ namespace UnityEditorInternal
                     topLevel = Path.Combine(topLevel, customRoot);
 
                 var toolBinDirectory = Path.Combine(topLevel, name, "bin").ToNPath();
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 var candidates = toolBinDirectory.Files($"*{expectedToolExecutableName}", recurse: true)
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                     .Where(f => f.Parent.FileName == tfm)
                     .OrderByDescending(f => f.GetLastWriteTimeUtc())
                     .ToArray();
@@ -589,9 +608,9 @@ namespace UnityEditorInternal
                 GetExePath("il2cpp-compile").ToNPath().Parent
             };
 
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return projectBinDirs.Aggregate(string.Empty, (accum, next) => $"{accum}{Path.PathSeparator}{next}");
-#pragma warning restore RS0030
+#pragma warning restore UA2001
         }
 
         internal static string GetAdditionalArguments()
@@ -613,9 +632,9 @@ namespace UnityEditorInternal
                 arguments.Add(additionalArgs.Trim('\''));
             }
 
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return arguments.Aggregate(String.Empty, (current, arg) => current + arg + " ");
-#pragma warning restore RS0030
+#pragma warning restore UA2001
         }
 
         private static string BinaryDirectoryForPlatform(RuntimePlatform platform)

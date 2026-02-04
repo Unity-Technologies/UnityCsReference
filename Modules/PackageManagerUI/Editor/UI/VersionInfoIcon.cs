@@ -12,19 +12,16 @@ namespace UnityEditor.PackageManager.UI.Internal
         [Serializable]
         public new class UxmlSerializedData : VisualElement.UxmlSerializedData
         {
-            public override object CreateInstance() => new VersionInfoIcon();
+            public override object CreateInstance()
+            {
+                return new VersionInfoIcon(ServicesContainer.instance.Resolve<IApplicationProxy>());
+            }
         }
 
-        private IApplicationProxy m_Application;
-        private void ResolveDependencies()
+        private readonly IApplicationProxy m_Application;
+        public VersionInfoIcon(IApplicationProxy application)
         {
-            var container = ServicesContainer.instance;
-            m_Application = container.Resolve<IApplicationProxy>();
-        }
-
-        public VersionInfoIcon()
-        {
-            ResolveDependencies();
+            m_Application = application;
         }
 
         public void Refresh(IPackage package)

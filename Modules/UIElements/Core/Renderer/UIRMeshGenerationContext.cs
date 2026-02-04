@@ -344,8 +344,8 @@ namespace UnityEngine.UIElements
             meshGenerator = new MeshGenerator(this);
         }
 
-        static readonly ProfilerMarker k_AllocateMarker = new ProfilerMarker("UIR.MeshGenerationContext.Allocate");
-        static readonly ProfilerMarker k_DrawVectorImageMarker = new ProfilerMarker("UIR.MeshGenerationContext.DrawVectorImage");
+        static readonly ProfilerMarker k_AllocateMarker = new ProfilerMarker(ProfilerCategory.UIToolkit, "UIR.MeshGenerationContext.Allocate");
+        static readonly ProfilerMarker k_DrawVectorImageMarker = new ProfilerMarker(ProfilerCategory.UIToolkit, "UIR.MeshGenerationContext.DrawVectorImage");
 
         /// <summary>
         /// Allocates the specified number of vertices and indices from a temporary allocator.

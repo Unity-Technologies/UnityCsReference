@@ -115,9 +115,9 @@ internal abstract class TreeViewDataSource<TIdentifier> : ITreeViewDataSource<TI
             if (orgSize != expandedSet.Count)
             {
                 // Bulk set expanded ids (is sorted in SetExpandedIDs)
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 SetExpandedIDs(expandedSet.ToArray());
-#pragma warning restore RS0030
+#pragma warning restore UA2001
 
                 // Refresh immediately if any Item was expanded
                 if (m_NeedRefreshRows)
@@ -324,9 +324,9 @@ internal abstract class TreeViewDataSource<TIdentifier> : ITreeViewDataSource<TI
                 oldExpandedSet.ExceptWith(parents);
 
             // Bulk set expanded ids (is sorted in SetExpandedIDs)
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             SetExpandedIDs(oldExpandedSet.ToArray());
-#pragma warning restore RS0030
+#pragma warning restore UA2001
         }
 
         virtual public void SetExpanded(TreeViewItem<TIdentifier> item, bool expand)

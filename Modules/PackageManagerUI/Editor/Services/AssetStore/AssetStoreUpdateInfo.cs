@@ -4,19 +4,16 @@
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
 
 namespace UnityEditor.PackageManager.UI.Internal
 {
     internal class CheckUpdateInfoArgs
     {
-        public long[] productIds;
+        public IReadOnlyCollection<long> productIds { get; }
 
-        public CheckUpdateInfoArgs(IEnumerable<long> productIds)
+        public CheckUpdateInfoArgs(IReadOnlyCollection<long> productIds)
         {
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            this.productIds = productIds.ToArray();
-#pragma warning restore RS0030
+            this.productIds = productIds;
         }
 
         public override string ToString()

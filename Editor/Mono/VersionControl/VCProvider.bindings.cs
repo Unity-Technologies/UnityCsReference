@@ -319,9 +319,9 @@ namespace UnityEditor.VersionControl
         [FreeFunction("VersionControlBindings::VCProvider::Internal_WaitForRelatedTasks")]
         internal static extern void WaitForRelatedTasks(Asset[] assets);
 
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
         internal static void WaitForRelatedTasks(string[] assets) => WaitForRelatedTasks(assets.Select(a => new Asset(a)).ToArray());
-#pragma warning restore RS0030
+#pragma warning restore UA2001
 
         internal static void WaitForRelatedTasks(Asset asset) => WaitForRelatedTasks(new[] { asset });
 

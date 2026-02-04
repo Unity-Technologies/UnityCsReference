@@ -4,7 +4,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using UnityEngine.UIElements;
 
 namespace UnityEditor.PackageManager.UI.Internal
@@ -38,7 +37,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         protected override void RefreshContent(IPackageVersion version)
         {
             UpdateDependencies(version?.dependencies);
-            UpdateReverseDependencies(m_PackageDatabase.GetDirectReverseDependencies(version));
+            UpdateReverseDependencies(m_PackageDatabase.EnumerateDirectReverseDependencies(version, false));
         }
 
         private void OnGeometryChanged(GeometryChangedEvent evt)
@@ -158,16 +157,6 @@ namespace UnityEditor.PackageManager.UI.Internal
             reverseDependenciesNames.Clear();
             reverseDependenciesVersions.Clear();
 
-#pragma warning disable RS0031 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            var hasReverseDependencies = reverseDependencies?.Any() ?? false;
-#pragma warning restore RS0031
-            UIUtils.SetElementDisplay(noReverseDependencies, !hasReverseDependencies);
-            UIUtils.SetElementDisplay(reverseDependenciesNames, hasReverseDependencies);
-            UIUtils.SetElementDisplay(reverseDependenciesVersions, hasReverseDependencies);
-
-            if (!hasReverseDependencies)
-                return;
-
             foreach (var version in reverseDependencies)
             {
                 var nameText = version.displayName ?? string.Empty;
@@ -177,7 +166,13 @@ namespace UnityEditor.PackageManager.UI.Internal
                 reverseDependenciesVersions.Add(BuildSelectableLabel(versionText, "text"));
             }
 
-            ToggleLowWidthDependencyView(rect.width);
+            var hasReverseDependencies = reverseDependenciesNames.childCount > 0;
+            UIUtils.SetElementDisplay(noReverseDependencies, !hasReverseDependencies);
+            UIUtils.SetElementDisplay(reverseDependenciesNames, hasReverseDependencies);
+            UIUtils.SetElementDisplay(reverseDependenciesVersions, hasReverseDependencies);
+
+            if (hasReverseDependencies)
+                ToggleLowWidthDependencyView(rect.width);
         }
 
         private readonly VisualElementCache m_Cache;

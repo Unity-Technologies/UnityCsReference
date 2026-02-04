@@ -128,11 +128,11 @@ namespace UnityEngine.UIElements.UIR
             }
         }
 
-        static readonly ProfilerMarker k_MarkerClipProcessing = new("RenderTree.UpdateClips");
-        static readonly ProfilerMarker k_MarkerOpacityProcessing = new("RenderTree.UpdateOpacity");
-        static readonly ProfilerMarker k_MarkerColorsProcessing = new("RenderTree.UpdateColors");
-        static readonly ProfilerMarker k_MarkerTransformProcessing = new("RenderTree.UpdateTransforms");
-        static readonly ProfilerMarker k_MarkerVisualsProcessing = new("RenderTree.UpdateVisuals");
+        static readonly ProfilerMarker k_MarkerClipProcessing = new(ProfilerCategory.UIToolkit, "RenderTree.UpdateClips");
+        static readonly ProfilerMarker k_MarkerOpacityProcessing = new(ProfilerCategory.UIToolkit, "RenderTree.UpdateOpacity");
+        static readonly ProfilerMarker k_MarkerColorsProcessing = new(ProfilerCategory.UIToolkit, "RenderTree.UpdateColors");
+        static readonly ProfilerMarker k_MarkerTransformProcessing = new(ProfilerCategory.UIToolkit, "RenderTree.UpdateTransforms");
+        static readonly ProfilerMarker k_MarkerVisualsProcessing = new(ProfilerCategory.UIToolkit, "RenderTree.UpdateVisuals");
 
         public void Init(RenderTreeManager renderTreeManager, RenderData rootRenderData)
         {

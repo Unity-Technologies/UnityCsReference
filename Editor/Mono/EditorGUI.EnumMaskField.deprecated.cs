@@ -90,9 +90,9 @@ namespace UnityEditor
             if (!enumType.IsEnum)
                 throw new ArgumentException("Parameter enumValue must be of type System.Enum", "enumValue");
 
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var names = Enum.GetNames(enumType).Select(ObjectNames.NicifyVariableName).ToArray();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             int flags = MaskFieldGUIDeprecated.DoMaskField(
                 IndentedRect(position),
                 GUIUtility.GetControlID(s_MaskField, FocusType.Keyboard, position),
@@ -112,9 +112,9 @@ namespace UnityEditor
             var position2 = EditorGUI.PrefixLabel(position, id, label);
             position.xMax = position2.x;
 
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var names = Enum.GetNames(enumType).Select(ObjectNames.NicifyVariableName).ToArray();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             int flags = MaskFieldGUIDeprecated.DoMaskField(position2, id, Convert.ToInt32(enumValue), names, style);
             return EnumDataUtility.IntToEnumFlags(enumType, flags);
         }
@@ -127,9 +127,9 @@ namespace UnityEditor
                 throw new ArgumentException("Parameter enumValue must be of type System.Enum", "enumValue");
 
             var id = GUIUtility.GetControlID(s_MaskField, FocusType.Keyboard, position);
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var names = Enum.GetNames(enumType).Select(ObjectNames.NicifyVariableName).ToArray();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             int flags = MaskFieldGUIDeprecated.DoMaskField(
                 PrefixLabel(position, id, label),
                 id,

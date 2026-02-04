@@ -1078,9 +1078,9 @@ namespace UnityEditor
             if (methodsToHideInCallstack == null || methodSignatureRegex == null || lines == null)
                 return lines;
 
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var strippedLines = lines.ToList();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             var isException = HasMode((int)mode, Mode.ScriptingException);
             strippedLines.RemoveAll(line =>
             {
@@ -1149,10 +1149,7 @@ namespace UnityEditor
         public void AddItemsToMenu(GenericMenu menu)
         {
             menu.AddItem(EditorGUIUtility.TrTextContent("Open Player Log"), false, UnityEditorInternal.InternalEditorUtility.OpenPlayerConsole);
-            if (string.IsNullOrEmpty(Application.consoleLogPath))
-                menu.AddDisabledItem(EditorGUIUtility.TrTextContent("Open Editor Log"), false);
-            else
-                menu.AddItem(EditorGUIUtility.TrTextContent("Open Editor Log"), false, UnityEditorInternal.InternalEditorUtility.OpenEditorConsole);
+            menu.AddItem(EditorGUIUtility.TrTextContent("Open Editor Log"), false, UnityEditorInternal.InternalEditorUtility.OpenEditorConsole);
 
             menu.AddItem(EditorGUIUtility.TrTextContent("Show Timestamp"), HasFlag(ConsoleFlags.ShowTimestamp), SetTimestamp);
 

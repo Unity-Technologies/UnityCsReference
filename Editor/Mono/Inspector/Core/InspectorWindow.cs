@@ -208,16 +208,7 @@ namespace UnityEditor
         }
 
         // Note: supportedModes is cleared before and sorted after this method is called
-        protected override void OnUpdateSupportedDataModes(List<DataMode> supportedModes)
-        {
-            // Not showing data modes in debug
-            if (m_InspectorMode != InspectorMode.Normal)
-                return;
-
-            m_UserSupportedDataModes.Clear();
-            DataModeSupportUtils.GetDataModeSupport(Selection.activeObject, Selection.activeContext, m_UserSupportedDataModes);
-            supportedModes.AddRange(m_UserSupportedDataModes);
-        }
+        protected override void OnUpdateSupportedDataModes(List<DataMode> supportedModes) { }
 
         protected override void OnDisable()
         {

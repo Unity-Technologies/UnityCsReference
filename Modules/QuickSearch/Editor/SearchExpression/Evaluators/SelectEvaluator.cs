@@ -33,9 +33,9 @@ namespace UnityEditor.Search
             foreach (var batch in dataset.Batch(batchSize))
             {
                 var results = batch;
-                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 var sIt = c.args.Skip(1).GetEnumerator();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                 while (sIt.MoveNext())
                 {
                     var selector = sIt.Current;

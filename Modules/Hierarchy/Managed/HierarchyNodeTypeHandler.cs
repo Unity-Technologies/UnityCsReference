@@ -13,8 +13,7 @@ namespace Unity.Hierarchy
     /// Base class for hierarchy node type handlers.
     /// </summary>
     [RequiredByNativeCode(Optional = true), StructLayout(LayoutKind.Sequential)]
-    [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
-    internal abstract class HierarchyNodeTypeHandler : HierarchyNodeTypeHandlerBase
+    public abstract class HierarchyNodeTypeHandler : HierarchyNodeTypeHandlerBase
     {
         readonly Lazy<UnityEngine.Pool.ObjectPool<HierarchyViewItem>> m_ViewItemPool;
 

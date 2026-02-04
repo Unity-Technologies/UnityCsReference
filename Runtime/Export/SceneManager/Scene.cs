@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
 using System.Collections.Generic;
 
 namespace UnityEngine.SceneManagement
@@ -88,21 +89,8 @@ namespace UnityEngine.SceneManagement
             set => SetDefaultParent(handle, value);
         }
 
-        public GameObject[] GetRootGameObjects()
+        private bool ValidateGetRootGameObjects()
         {
-            var rootGameObjects = new List<GameObject>(rootCount);
-            GetRootGameObjects(rootGameObjects);
-
-            return rootGameObjects.ToArray();
-        }
-
-        public void GetRootGameObjects(List<GameObject> rootGameObjects)
-        {
-            if (rootGameObjects.Capacity < rootCount)
-                rootGameObjects.Capacity = rootCount;
-
-            rootGameObjects.Clear();
-
             if (!IsValid())
                 throw new System.ArgumentException("The scene is invalid.");
 
@@ -110,9 +98,27 @@ namespace UnityEngine.SceneManagement
                 throw new System.ArgumentException("The scene is not loaded.");
 
             if (rootCount == 0)
+                return false;
+
+            return true;
+        }
+
+        public GameObject[] GetRootGameObjects()
+        {
+            if (!ValidateGetRootGameObjects())
+                return Array.Empty<GameObject>();
+
+            GameObject[] rootGameObjects = new GameObject[rootCount];
+            GetRootGameObjectsInternalArray(handle, rootGameObjects);
+            return rootGameObjects;
+        }
+
+        public void GetRootGameObjects(List<GameObject> rootGameObjects)
+        {
+            if (!ValidateGetRootGameObjects())
                 return;
 
-            GetRootGameObjectsInternal(handle, rootGameObjects);
+            GetRootGameObjectsInternalList(handle, rootGameObjects);
         }
 
         public static bool operator==(Scene lhs, Scene rhs)

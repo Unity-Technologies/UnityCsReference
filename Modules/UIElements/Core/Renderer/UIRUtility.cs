@@ -12,7 +12,7 @@ namespace UnityEngine.UIElements
 {
     static partial class UIRUtility
     {
-        static readonly ProfilerMarker k_ComputeTransformMatrixMarker = new("UIR.ComputeTransformMatrix");
+        static readonly ProfilerMarker k_ComputeTransformMatrixMarker = new(ProfilerCategory.UIToolkit, "UIR.ComputeTransformMatrix");
 
         public static readonly string k_DefaultShaderName = UIR.Shaders.k_Default;
 

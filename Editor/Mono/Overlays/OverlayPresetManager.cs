@@ -310,9 +310,9 @@ namespace UnityEditor.Overlays
             {
                 if (!Directory.Exists(parentLayoutFolder))
                     Directory.CreateDirectory(parentLayoutFolder);
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 InternalEditorUtility.SaveToSerializedFileAndForget(presets.Cast<Object>().ToArray(), path, true);
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             }
         }
 

@@ -4,6 +4,7 @@
 
 using System.Collections.Generic;
 using System.IO;
+using Unity.UIToolkit.Editor;
 using UnityEditor;
 using UnityEditor.UIElements;
 using UnityEngine;
@@ -78,7 +79,7 @@ namespace Unity.UI.Builder
 
         protected override VisualElement CreateDraggedElement()
         {
-            var pill = new BuilderClassPill();
+            var pill = new ClassPill();
             pill.AddToClassList(s_DraggableStyleClassPillClassName);
             return pill;
         }

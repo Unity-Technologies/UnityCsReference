@@ -10,10 +10,8 @@ internal class PackageSignatureHelpBox : PackageBaseHelpBox
     public static readonly string k_UnsignedMessage = L10n.Tr("Unity can't verify this package because it doesn't have a signature. Use signed packages to reduce risk to your project.");
     public static readonly string k_InvalidSignatureMessage = L10n.Tr("This package has an invalid signature which can indicate unsafe or malicious content. Remove this package to reduce risk to your project.");
 
-    private readonly IApplicationProxy m_Application;
-    public PackageSignatureHelpBox(IApplicationProxy application)
+    public PackageSignatureHelpBox(IApplicationProxy application) : base(application)
     {
-        m_Application = application;
     }
 
     public override void Refresh(IPackageVersion version)

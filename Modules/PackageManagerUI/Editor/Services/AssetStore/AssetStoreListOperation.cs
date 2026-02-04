@@ -3,8 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using System.Linq;
-using System.Text;
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace UnityEditor.PackageManager.UI.Internal
@@ -89,7 +88,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             }
 
             m_Result = new AssetStorePurchases(m_OriginalQueryArgs);
-            if (m_OriginalQueryArgs.status is PageFilters.Status.Downloaded or PageFilters.Status.Imported or PageFilters.Status.UpdateAvailable && m_AdjustedQueryArgs.productIds.Count == 0)
+            if (m_OriginalQueryArgs.status is PageFilters.Status.Downloaded or PageFilters.Status.Imported or PageFilters.Status.UpdateAvailable && m_AdjustedQueryArgs.productIds.Length == 0)
             {
                 m_Result.total = 0;
                 onOperationSuccess?.Invoke(this);
@@ -123,39 +122,30 @@ namespace UnityEditor.PackageManager.UI.Internal
             {
                 case PageFilters.Status.Downloaded:
                     m_AdjustedQueryArgs.status = PageFilters.Status.None;
-                    #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                    m_AdjustedQueryArgs.productIds = m_AssetStoreCache.localInfos.Select(info => info.productId).ToList();
-#pragma warning restore RS0030
+                    m_AdjustedQueryArgs.productIds = m_AssetStoreCache.localInfos.SelectToNewArray(info => info.productId);
                     break;
                 case PageFilters.Status.Imported:
                     m_AdjustedQueryArgs.status = PageFilters.Status.None;
-                    #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                    m_AdjustedQueryArgs.productIds = m_AssetStoreCache.importedPackages.Select(p => p.productId).ToList();
-#pragma warning restore RS0030
+                    m_AdjustedQueryArgs.productIds = m_AssetStoreCache.importedPackages.SelectToNewArray(p => p.productId);
                     break;
                 case PageFilters.Status.UpdateAvailable:
                     m_AdjustedQueryArgs.status = PageFilters.Status.None;
-                    #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                    var productIdsToCheck = m_AssetStoreCache.localInfos.Select(i => i.productId)
-#pragma warning restore RS0030
-                        #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                        .Concat(m_AssetStoreCache.importedPackages.Select(i => i.productId)).ToHashSet();
-#pragma warning restore RS0030
-                    #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                    m_AdjustedQueryArgs.productIds = productIdsToCheck.Where(id =>
-#pragma warning restore RS0030
+                    var productIdsToCheck = new HashSet<long>();
+                    foreach (var localInfo in m_AssetStoreCache.localInfos)
                     {
-                        var updateInfo = m_AssetStoreCache.GetUpdateInfo(id);
-                        if (updateInfo == null)
-                            return false;
-
-                        var localInfo = m_AssetStoreCache.GetLocalInfo(id);
-                        if (localInfo != null && localInfo.uploadId != updateInfo.recommendedUploadId)
-                            return true;
-
-                        var importedPackage = m_AssetStoreCache.GetImportedPackage(id);
-                        return importedPackage != null && importedPackage.uploadId != updateInfo.recommendedUploadId;
-                    }).ToList();
+                        var updateInfo = m_AssetStoreCache.GetUpdateInfo(localInfo.productId);
+                        if (updateInfo != null && localInfo.uploadId != updateInfo.recommendedUploadId)
+                            productIdsToCheck.Add(localInfo.productId);
+                    }
+                    foreach (var importedPackage in m_AssetStoreCache.importedPackages)
+                    {
+                        if (productIdsToCheck.Contains(importedPackage.productId))
+                            continue;
+                        var updateInfo = m_AssetStoreCache.GetUpdateInfo(importedPackage.productId);
+                        if (updateInfo != null && importedPackage.uploadId != updateInfo.recommendedUploadId)
+                            productIdsToCheck.Add(importedPackage.productId);
+                    }
+                    m_AdjustedQueryArgs.productIds = productIdsToCheck.ToNewArray();
                     break;
             }
         }

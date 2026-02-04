@@ -8,6 +8,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Unity.PlayMode.Editor;
 using UnityEditor;
+using UnityEditor.Multiplayer.Internal;
 using UnityEngine;
 using UnityEngine.Assertions;
 
@@ -23,15 +24,11 @@ namespace Unity.Multiplayer.PlayMode.Editor
     [Serializable]
     internal class Instance : ISerializationCallbackReceiver
     {
+        [SerializeReference] private IInstanceItem m_InstanceItem;
         [SerializeField] private ExecutionGraph m_ExecutionGraph;
-        [SerializeField] private string m_Name;
-        [SerializeField] private string m_InstanceDescriptionType;
         [SerializeField] private CancellationTokenSource m_FreeRunCancelTokenSource;
         [SerializeField] private bool m_HasDeployedAndRun;
-        [SerializeField] private string m_BuildTarget;
         [SerializeField] private bool m_Drifted;
-        [SerializeField] private RunModeState m_RunModeState;
-        [SerializeField] private string m_MultiplayerRole;
         [SerializeField] private InstanceStatusData m_StatusData;
         [SerializeField] private InstanceController m_InstanceController;
 
@@ -40,7 +37,8 @@ namespace Unity.Multiplayer.PlayMode.Editor
 
         internal event Action<Instance, InstanceStatusData> StatusRefreshed;
 
-        internal string Name => m_Name;
+        internal string Name => m_InstanceItem.GetName();
+        internal GUID Id => m_InstanceItem.GetId();
         internal InstanceController Controller => m_InstanceController;
         internal InstanceStatusData StatusData => m_StatusData;
         internal ExecutionGraph GetExecutionGraph() => m_ExecutionGraph;
@@ -58,6 +56,7 @@ namespace Unity.Multiplayer.PlayMode.Editor
 
         internal RunModeState RunModeState
         {
+            get => m_InstanceItem.GetRunMode();
             set
             {
                 if (IsActive())
@@ -66,10 +65,17 @@ namespace Unity.Multiplayer.PlayMode.Editor
                     return;
                 }
 
-                if (m_RunModeState == value)
+                if (RunModeState == value)
                     return;
 
-                m_RunModeState = value;
+                m_InstanceItem = m_InstanceItem.WithRunMode(value);
+                var activeScenario = PlayModeScenarioManager.ActiveScenario as OrchestratedScenario;
+                if (activeScenario != null)
+                {
+                    activeScenario.Settings.SetInstanceRunningMode(Id, value);
+                    EditorUtility.SetDirty(activeScenario);
+                }
+
                 Reset();
             }
         }
@@ -79,29 +85,18 @@ namespace Unity.Multiplayer.PlayMode.Editor
             return m_InstanceController.ValidateForRunningAsync(cancellationToken);
         }
 
-        internal static Instance Create()
+        internal static Instance Create(IInstanceItem instanceItem, InstanceController playModeController)
         {
-            var description = new MainEditorInstanceDescription() { Name = "Main Editor" };
-            var controller = MainEditorController.CreateInstance(description);
-            return Create(description, controller);
-        }
-
-        internal static Instance Create(InstanceDescription description, InstanceController playModeController)
-        {
-            Assert.IsNotNull(description, "InstanceDescription cannot be null");
+            Assert.IsNotNull(instanceItem, "InstanceItem cannot be null");
             Assert.IsNotNull(playModeController, "PlayModeController cannot be null");
 
             // For each instance, wire up an Execution Graph
             var instance = new Instance();
             var executionGraph = new ExecutionGraph();
             executionGraph.StatusRefreshed += instance.OnGraphStatusRefreshed;
+            instance.m_InstanceItem = instanceItem;
             instance.m_InstanceController = playModeController;
             instance.m_ExecutionGraph = executionGraph;
-            instance.m_InstanceDescriptionType = description.InstanceTypeName;
-            instance.m_RunModeState = description.RunModeState;
-            instance.m_BuildTarget = description.BuildTargetType;
-            instance.m_MultiplayerRole = description.MultiplayerRole;
-            instance.m_Name = description.Name;
             return instance;
         }
 
@@ -143,7 +138,7 @@ namespace Unity.Multiplayer.PlayMode.Editor
 
         internal bool IsFreeRunMode()
         {
-            return m_RunModeState == RunModeState.ManualControl;
+            return RunModeState == RunModeState.ManualControl;
         }
 
         // Returns the array of analytics InstanceData from Instances
@@ -180,20 +175,51 @@ namespace Unity.Multiplayer.PlayMode.Editor
                 ? RunModeState.ManualControl.ToString()
                 : RunModeState.ScenarioControl.ToString();
 
-            var isRunning = isFreeRun && IsActive();
-
             return new InstanceData
             {
-                Type = m_InstanceDescriptionType,
-                BuildTarget = m_BuildTarget,
+                Type = Controller.GetTypeNameForAnalytics(),
+                BuildTarget = GetBuildTargetForAnalytics(),
                 InstanceLaunchingDuration = durationMs,
                 RunningMode = runningMode,
-                IsActive = isRunning,
+                IsActive = IsActive(),
                 InstancePrepareStageDurationMs = prepareStageDurationMs,
                 InstanceDeployStageDurationMs = deployStageDurationMs,
                 InstanceRunStageDurationMs = runStageDurationMs,
-                MultiplayerRole = m_MultiplayerRole,
+                MultiplayerRole = GetMultiplayerRoleForAnalytics(),
             };
+        }
+
+        string GetBuildTargetForAnalytics()
+        {
+            if (Controller is LocalPlayerController localController)
+            {
+                return InternalUtilities.GetBuildTargetType(localController.Settings.BuildProfile);
+            }
+
+            return InternalUtilities.GetBuildTargetType(EditorUserBuildSettings.activeBuildTarget);
+        }
+
+        string GetMultiplayerRoleForAnalytics()
+        {
+            if (Controller is LocalPlayerController localController)
+            {
+                var buildProfile = localController.Settings.BuildProfile;
+                if (buildProfile == null)
+                    return string.Empty;
+                return MultiplayerRolesSettings.instance.GetMultiplayerRoleForBuildProfile(buildProfile).ToString();
+            }
+
+            if (Controller is CloneEditorController cloneController)
+            {
+                return cloneController.Settings.RoleMask.ToString();
+            }
+
+            if (Controller is MainEditorController mainEditorController)
+            {
+                return mainEditorController.Settings.RoleMask.ToString();
+            }
+
+            return string.Empty;
         }
 
         // calculate the sum of time difference between the earliest start time and the latest end time for a given list of nodes
@@ -254,7 +280,7 @@ namespace Unity.Multiplayer.PlayMode.Editor
                     continue;
 
                 // Else Stop execution and log errors where needed
-                Debug.LogError($"Instance {m_Name} encountered an error in Manual Mode, " +
+                Debug.LogError($"Instance {Name} encountered an error in Manual Mode, " +
                                $"please refer to the Editor logs for more information.");
                 break;
             }
@@ -328,7 +354,7 @@ namespace Unity.Multiplayer.PlayMode.Editor
         {
             // Run the Executed stage and wait for the result.
             ExecutionGraph.ExecutionResult stageResult
-                = await m_ExecutionGraph.RunOrResumeAsync(executionStage, cancellationToken, m_Name);
+                = await m_ExecutionGraph.RunOrResumeAsync(executionStage, cancellationToken, Name);
 
             // If successful, track tasks needed to monitor this instance.
             if (stageResult.Success)

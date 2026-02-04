@@ -713,12 +713,31 @@ namespace UnityEditor.Search
             }
         }
 
-        public void Start(bool clear) { }
+        public void Start(bool clear)
+        {
+            if (clear)
+                Clear();
+        }
 
         public void Finish(string[] removedDocuments)
         {
             Version = DefaultVersion;
             Timestamp = DateTime.UtcNow.Ticks;
+        }
+
+        public void Clear()
+        {
+            m_DocumentBytes.Clear();
+            m_DocumentSourceHashes.Clear();
+            m_DocumentSourceTypeStructuralHashes.Clear();
+            m_WordEntries.Clear();
+            m_PropertyDoubleEntries.Clear();
+            m_PropertyStringEntries.Clear();
+            m_KeywordEntries.Clear();
+            m_KeywordRemoveEntries.Clear();
+            m_MetaInfoBytes.Clear();
+            m_StringTable.Clear();
+            m_StringTableAccelerator.Clear();
         }
 
         public void CombineIndexes(IReadOnlyList<SearchIndexer> indexes, int baseScore, string indexName, SearchTask<TaskData> task)

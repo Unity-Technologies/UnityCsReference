@@ -3,7 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using System.Linq;
+using System.Collections.Generic;
 
 namespace UnityEditor.PackageManager.UI.Internal
 {
@@ -23,12 +23,11 @@ namespace UnityEditor.PackageManager.UI.Internal
 
     internal static class RefreshOptionsExtension
     {
-        public static RefreshOptions[] Split(this RefreshOptions value)
+        public static IEnumerable<RefreshOptions> Split(this RefreshOptions value)
         {
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            return Enum.GetValues(typeof(RefreshOptions)).Cast<RefreshOptions>()
-#pragma warning restore RS0030
-                .Where(r => (value & r) != 0).ToArray();
+            foreach (var enumValue in Enum.GetValues(typeof(RefreshOptions)))
+                if (enumValue is RefreshOptions option && (value & option) != 0)
+                    yield return option;
         }
 
         public static bool Contains(this RefreshOptions value, RefreshOptions flag) => (value & flag) == flag;

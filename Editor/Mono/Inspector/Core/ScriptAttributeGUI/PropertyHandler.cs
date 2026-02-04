@@ -530,9 +530,9 @@ namespace UnityEditor
                 }
 
                 if (type.IsArray) type = type.GetElementType();
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 else if (type.IsArrayOrList()) type = type.GetGenericArguments().Single();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
 
                 FieldInfo field = type.GetField(propertyName.Dequeue(), fieldFilter);
                 if (field != null) listInfo = field;
@@ -547,9 +547,9 @@ namespace UnityEditor
                 if (field != null) baseFields.Add(field);
             }
 
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return !TypeCache.GetFieldsWithAttribute(typeof(NonReorderableAttribute)).Any(f => baseFields.Any(b => f.Equals(b)));
-#pragma warning restore RS0030
+#pragma warning restore UA2001
         }
 
         internal static bool UseReorderabelListControl(SerializedProperty property) => IsNonStringArray(property) && IsArrayReorderable(property);

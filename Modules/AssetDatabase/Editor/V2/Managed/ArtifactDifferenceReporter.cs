@@ -122,12 +122,12 @@ namespace UnityEditor
 
         internal IEnumerable<string> GatherDifferences(ArtifactInfo oldInfo, ArtifactInfo newInfo, ref IEnumerable<ArtifactInfoDifference> differences)
         {
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             m_AllDiffs = newInfo.dependencies.Except(oldInfo.dependencies)
-#pragma warning restore RS0030
-                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning restore UA2001
+                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 .Concat(oldInfo.dependencies.Except(newInfo.dependencies))
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                 .Select(e => e.Key)
                 .Distinct()
                 .Select(key =>
@@ -147,9 +147,9 @@ namespace UnityEditor
                 }).ToList();
 
             var msgs = new List<string>();
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             for (int i = 0; i < m_AllDiffs.Count(); ++i)
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             {
                 var artifactInfoDiff = m_AllDiffs[i];
                 foreach (var formatter in getMessageFormatters())
@@ -165,9 +165,9 @@ namespace UnityEditor
                 }
             }
 
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             if (m_AllDiffs.Count() == 0 && newInfo.importResultID != oldInfo.importResultID)
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             {
                 var indeterministicImporterDifference = new ArtifactInfoDifference(kIndeterministicImporter, DiffType.Modified, oldInfo, newInfo);
                 indeterministicImporterDifference.message = "the importer used is non-deterministic, as it has produced a different result even though all the dependencies are the same";
@@ -352,12 +352,12 @@ namespace UnityEditor
 
         private static void PostProcessorVersionHashModified(ref ArtifactInfoDifference diff, List<string> msgsList)
         {
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var oldPostProcessorKey = diff.oldDependencies.Keys.FirstOrDefault(key => key.StartsWith(kImporterRegistry_PostProcessorVersionHash, StringComparison.Ordinal));
-#pragma warning restore RS0030
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning restore UA2001
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var newPostProcessorKey = diff.newDependencies.Keys.FirstOrDefault(key => key.StartsWith(kImporterRegistry_PostProcessorVersionHash, StringComparison.Ordinal));
-#pragma warning restore RS0030
+#pragma warning restore UA2001
 
             if (!string.IsNullOrEmpty(oldPostProcessorKey) && !string.IsNullOrEmpty(newPostProcessorKey) && oldPostProcessorKey != newPostProcessorKey)
             {

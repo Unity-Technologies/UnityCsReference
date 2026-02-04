@@ -212,12 +212,12 @@ namespace UnityEditor.SceneTemplate
 
         public void SetItems(IEnumerable<Item> items)
         {
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             m_UnpinnedItems = items.ToList();
-#pragma warning restore RS0030
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning restore UA2001
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             m_Items = items.ToList();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             for (var i = 0; i < m_Items.Count; i++)
             {
                 var item = m_Items[i];
@@ -261,29 +261,29 @@ namespace UnityEditor.SceneTemplate
             if (m_SelectedItems.Count > 0)
             {
                 // Unselect currently selected item:
-                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 foreach (var toUnselectElement in m_SelectedItems.Select(item => m_IdToElements[item.id]))
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                 {
                     toUnselectElement.RemoveFromClassList(Styles.selected);
                 }
             }
 
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var oldSelection = m_SelectedItems.ToList();
-#pragma warning restore RS0030
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning restore UA2001
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             m_SelectedItems = itemToSelect.ToList();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
 
-#pragma warning disable RS0031 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2002 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             if (itemToSelect.Any())
-#pragma warning restore RS0031
+#pragma warning restore UA2002
             {
                 // Select new item
-                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 var toSelectElements = itemToSelect.Select(item => m_IdToElements[item.id]);
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                 foreach (var toSelectElement in toSelectElements)
                 {
                     toSelectElement.AddToClassList(Styles.selected);
@@ -310,16 +310,16 @@ namespace UnityEditor.SceneTemplate
 
         public void SetSelection(IEnumerable<int> idToSelect)
         {
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             SetSelection(idToSelect.Select(IdToItem));
-#pragma warning restore RS0030
+#pragma warning restore UA2001
         }
 
         public void SetPinned(IEnumerable<int> idToPinned)
         {
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             SetPinned(idToPinned.Select(IdToItem));
-#pragma warning restore RS0030
+#pragma warning restore UA2001
         }
 
         public void SetPinned(IEnumerable<Item> idToPinned)
@@ -458,9 +458,9 @@ namespace UnityEditor.SceneTemplate
 
         private int GetSelectedVisibleIndex()
         {
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var lastSelectedItem = m_SelectedItems.LastOrDefault();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             var lastSelectedElement = lastSelectedItem == null ? null : m_IdToElements[lastSelectedItem.id];
             var selectedIndex = lastSelectedElement == null || lastSelectedElement.style.display == DisplayStyle.None ? -1 : m_ItemsContainer.IndexOf(lastSelectedElement);
             return selectedIndex;
@@ -510,9 +510,9 @@ namespace UnityEditor.SceneTemplate
 
         private void AddToSelection(Item item)
         {
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var oldSelection = m_SelectedItems.ToList();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             m_SelectedItems.Add(item);
             m_IdToElements[item.id].AddToClassList(Styles.selected);
             onSelectionChanged?.Invoke(oldSelection, m_SelectedItems);
@@ -520,9 +520,9 @@ namespace UnityEditor.SceneTemplate
 
         private void RemoveFromSelection(Item item)
         {
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var oldSelection = m_SelectedItems.ToList();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             m_SelectedItems.Remove(item);
             m_IdToElements[item.id].RemoveFromClassList(Styles.selected);
             onSelectionChanged?.Invoke(oldSelection, m_SelectedItems);

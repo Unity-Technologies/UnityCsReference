@@ -144,10 +144,21 @@ namespace UnityEngine.Loading
         /// <typeparam name="T">The type to filter root assets by.</typeparam>
         /// <returns>An array of root assets that match the specified type.</returns>
         public static T[] GetRootAssets<T>() where T : Object
+            => FilterByType<T>(GetRootAssets());
+
+        /// <summary>
+        /// Retrieve all root assets of a specific type from the specified content directory.
+        /// </summary>
+        /// <typeparam name="T">The type to filter root assets by.</typeparam>
+        /// <param name="contentDirectory">The registered content directory handle from which to retrieve root assets.</param>
+        /// <returns>An array of root assets that match the specified type.</returns>
+        public static T[] GetRootAssets<T>(ContentDirectoryHandle contentDirectory) where T : Object
+            => FilterByType<T>(GetRootAssetsFromRegisteredDirectory(contentDirectory));
+
+        private static T[] FilterByType<T>(Object[] assets) where T : Object
         {
-            var allRootAssets = GetRootAssets();
             var typedList = new List<T>();
-            foreach (var obj in allRootAssets)
+            foreach (var obj in assets)
             {
                 if (typeof(T).IsAssignableFrom(obj.GetType()))
                     typedList.Add((T)obj);

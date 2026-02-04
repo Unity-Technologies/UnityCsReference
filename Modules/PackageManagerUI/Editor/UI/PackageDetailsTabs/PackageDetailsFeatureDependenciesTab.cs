@@ -2,8 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System.Linq;
-using UnityEngine;
 using UnityEngine.UIElements;
 
 namespace UnityEditor.PackageManager.UI.Internal
@@ -152,9 +150,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 if (dependencies == null || dependencies.Length == 0)
                     return;
 
-                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                if (string.IsNullOrEmpty(selectedDependencyPackageName) || !dependencies.Any(d => d.name == selectedDependencyPackageName))
-#pragma warning restore RS0030
+                if (string.IsNullOrEmpty(selectedDependencyPackageName) || !dependencies.AnyMatches(d => d.name == selectedDependencyPackageName))
                 {
                     selectedDependencyPackageName = dependencies[0].name;
                     m_PackageManagerPrefs.selectedFeatureDependency = selectedDependencyPackageName;
@@ -171,9 +167,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             UIUtils.SetElementDisplay(dependencyLink, showElementsInDetailsView);
             UIUtils.SetElementDisplay(dependencyInfoBox, showElementsInDetailsView);
 
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            foreach (var item in dependencyList.Children().OfType<FeatureDependencyItem>())
-#pragma warning restore RS0030
+            foreach (var item in dependencyList.Children().FilterByType<FeatureDependencyItem>())
                 item.EnableInClassList(k_SelectedClassName, item.packageName == selectedDependencyPackageName);
 
             dependencyTitle.text = version?.displayName ?? selectedDependencyPackageName;

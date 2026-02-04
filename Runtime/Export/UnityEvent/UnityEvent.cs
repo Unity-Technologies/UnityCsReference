@@ -767,8 +767,8 @@ namespace UnityEngine.Events
         // ISerializationCallbackReceiver.OnAfterDeserialize executes before entering playmode
         // thus persistent calls can be cached incorrectly if initially called very early.
         // This callback invalidates caches after actual entering of playmode.
-// This is a quirky situation.  The `UNITY_EDITOR` works for editor and player assembly builds.  However, when building the monolithic editor assemblies, that logic causes the monolithic to inherit the analyzer from CoreModule and then 
-// also inherit the UNITY_EDITOR define from one of the editor assemblies.  This leads to both the `RuntimeInitializeOnLoadMethod` ban being active and UNITY_EDITOR being defined which then leads to needing a pragma here
+        // This is a quirky situation.  The `UNITY_EDITOR` works for editor and player assembly builds.  However, when building the monolithic editor assemblies, that logic causes the monolithic to inherit the analyzer from CoreModule and then 
+        // also inherit the UNITY_EDITOR define from one of the editor assemblies.  This leads to both the `RuntimeInitializeOnLoadMethod` ban being active and UNITY_EDITOR being defined which then leads to needing a pragma here
 #pragma warning disable RS0030
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
 #pragma warning restore RS0030

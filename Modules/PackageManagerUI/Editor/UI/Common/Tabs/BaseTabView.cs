@@ -4,7 +4,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using UnityEngine.UIElements;
 
 namespace UnityEditor.PackageManager.UI.Internal
@@ -31,9 +30,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public virtual event Action<T, T> onTabSwitched = delegate {};
 
-        #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-        public IEnumerable<T> tabs => m_TabElements.Values.OfType<T>();
-#pragma warning restore RS0030
+        public IEnumerable<T> tabs => m_TabElements.Values.FilterByType<T>();
 
         protected float m_CalculatedTabHorizontalMarginAndPadding = 0f;
         protected const float k_DropdownButtonWidth = 14f;
@@ -110,12 +107,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             UIUtils.SetElementDisplay(tabHeader, true);
             SelectTab(tabHeaderId);
 
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            var tabIdsAndAssociatedWidths = m_ValidTabIds.Select(t =>
-#pragma warning restore RS0030
-            {
-                return (t, GetTotalWidthForTabHeader(t));
-            }).ToList();
+            var tabIdsAndAssociatedWidths = m_ValidTabIds.SelectToNewArray(t => (t, GetTotalWidthForTabHeader(t)));
 
             var dropdownTabIds = CalculateDropdownTabIds(rect.width, m_SelectedTabId, k_DropdownButtonWidth, tabIdsAndAssociatedWidths);
             ReconstructTabHeaderDropdown(dropdownTabIds);
@@ -149,9 +141,9 @@ namespace UnityEditor.PackageManager.UI.Internal
             if (float.IsNaN(windowWidth))
                 return dropdownTabIds;
 
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            var totalTabWidth = tabIdsAndAssociatedWidths.Sum(t => t.tabEstimatedWidth);
-#pragma warning restore RS0030
+            var totalTabWidth = 0.0f;
+            foreach (var (_, width) in tabIdsAndAssociatedWidths)
+                totalTabWidth += width;
             if (totalTabWidth < windowWidth)
                 return dropdownTabIds;
 
@@ -181,9 +173,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             // so we just skip the calculation in this case, especially since the panel is not visible anyway
             if (elementPanel == null)
                 return;
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            var tabIdsAndAssociatedWidths = m_ValidTabIds.Select(t => (t, GetTotalWidthForTabHeader(t))).ToArray();
-#pragma warning restore RS0030
+            var tabIdsAndAssociatedWidths = m_ValidTabIds.SelectToNewArray(t => (t, GetTotalWidthForTabHeader(t)));
             var dropdownTabIds = CalculateDropdownTabIds(rect.width, m_SelectedTabId, k_DropdownButtonWidth, tabIdsAndAssociatedWidths);
             ReconstructTabHeaderDropdown(dropdownTabIds);
         }

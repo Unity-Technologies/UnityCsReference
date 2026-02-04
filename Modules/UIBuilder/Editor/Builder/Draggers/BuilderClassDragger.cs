@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using Unity.UIToolkit.Editor;
 using UnityEngine;
 using UnityEngine.UIElements;
 
@@ -24,7 +25,7 @@ namespace Unity.UI.Builder
 
         protected override VisualElement CreateDraggedElement()
         {
-            var pill = new BuilderClassPill();
+            var pill = new ClassPill();
             pill.AddToClassList(s_DraggableStyleClassPillClassName);
             return pill;
         }
@@ -36,7 +37,7 @@ namespace Unity.UI.Builder
 
         protected override bool PrepareDrag(VisualElement target, Vector2 mousePosition)
         {
-            m_ClassNameBeingDragged = (target as BuilderClassPill)?.selectorAsString;
+            m_ClassNameBeingDragged = (target as ClassPill)?.selectorAsString;
 
             // if a ChildSubDocument is open, make sure that style class is part of active stylesheet, otherwise refuse drag
             if (!paneWindow.document.activeOpenUXMLFile.isChildSubDocument)

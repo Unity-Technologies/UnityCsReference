@@ -17,7 +17,18 @@ internal class StyleSheetNodeTypeHandler : HierarchyNodeTypeHandler
         {
             using var _ = StringBuilderPool.Get(out var stringBuilder);
             var context = new ExportContext(styleSheet, stringBuilder, options);
-            WriteSelectorBlock(ref context, selectors);
+
+            for (var i = 0; i < selectors.Length; ++i)
+            {
+                if (context.options.IsSelectorIgnored(selectors[i]))
+                    continue;
+
+                if (stringBuilder.Length > 0)
+                    stringBuilder.Append(", ");
+
+                WriteSelector(ref context, selectors[i]);
+            }
+
             return stringBuilder.ToString();
         }
     }
@@ -68,7 +79,10 @@ internal class StyleSheetNodeTypeHandler : HierarchyNodeTypeHandler
 
     readonly NodeMappings m_Mappings = new();
     readonly StyleSheetEditorExporter m_Exporter = new();
-    readonly StyleSheetExporter.UssExportOptions m_ExportOptions = new();
+    readonly StyleSheetExporter.UssExportOptions m_ExportOptions = new()
+    {
+        ignoreSelectorPrefixList = new[] { "__unity-selector" }
+    };
 
     internal NodeMappings Mappings => m_Mappings;
 
@@ -84,9 +98,15 @@ internal class StyleSheetNodeTypeHandler : HierarchyNodeTypeHandler
         for (var i = 0; i < styleSheet.rules.Length; i++)
         {
             var rule = styleSheet.rules[i];
-            CommandList.Add(root[0], 1, out var ruleNode);
-            m_Mappings.Add(ruleNode[0], new Node(styleSheet, rule));
-            CommandList.SetName(ruleNode[0], m_Exporter.ToUssString(styleSheet, rule.complexSelectors, m_ExportOptions));
+            var displayString = m_Exporter.ToUssString(styleSheet, rule.complexSelectors, m_ExportOptions);
+
+            // Only add the rule if it has at least one non-internal selector
+            if (!string.IsNullOrWhiteSpace(displayString))
+            {
+                CommandList.Add(root[0], 1, out var ruleNode);
+                m_Mappings.Add(ruleNode[0], new Node(styleSheet, rule));
+                CommandList.SetName(ruleNode[0], displayString);
+            }
         }
 
         return root[0];

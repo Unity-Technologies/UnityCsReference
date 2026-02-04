@@ -23,12 +23,12 @@ namespace UnityEditor.UIElements
             public string propertyIndent { get; set; } = "    ";
             [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
             internal string[] ignoreSelectorList { get; set; } = Array.Empty<string>();
-            [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+            [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
             internal string[] ignoreSelectorPrefixList { get; set; } = Array.Empty<string>();
             [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
             internal string[] ignorePropertyList { get; set; } = Array.Empty<string>();
 
-            [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+            [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
             internal bool IsSelectorIgnored(StyleComplexSelector selector)
             {
                 if (selector.selectors.Length == 0 ||

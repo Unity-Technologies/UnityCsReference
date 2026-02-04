@@ -236,7 +236,7 @@ internal class LayoutManager : IDisposable
     readonly ManagedObjectStore<LayoutBaselineFunction> m_ManagedBaselineFunctions = new(k_CapacitySmall);
     readonly ManagedObjectStore<GCHandle> m_ManagedOwners = new();
 
-    readonly ProfilerMarker m_CollectMarker = new ("UIElements.CollectLayoutNodes");
+    readonly ProfilerMarker m_CollectMarker = new (ProfilerCategory.UIToolkit, "UIElements.CollectLayoutNodes");
 
     // Last allocated index in the store (0 mean index 0 is valid aka a node was allocated)
     int m_HighMark = -1;
@@ -440,26 +440,32 @@ internal class LayoutManager : IDisposable
 
     unsafe void FreeNode(UnmanagedDataHandle handle)
     {
-        ref var data = ref GetAccess().GetNodeData(handle);
+        var access = GetAccess();
+        ref var data = ref access.GetNodeData(handle);
         if (data.Children.IsCreated)
         {
             data.Children.Dispose();
             data.Children = new();
         }
 
-        ref var cache = ref GetAccess().GetCacheData(handle);
+        ref var cache = ref access.GetCacheData(handle);
         cache.ClearCachedMeasurements();
 
         data.UsesMeasure = false;
         data.UsesBaseline = false;
 
-        ref var computedStyle = ref GetAccess().GetComputedStyle(handle);
+        ref var computedStyle = ref access.GetComputedStyle(handle);
         computedStyle.Release();
 
-        GCHandle owner = m_ManagedOwners.GetValue(data.ManagedOwnerIndex);
-        if (owner.IsAllocated)
-            owner.Free();
-        m_ManagedOwners.UpdateValue(ref data.ManagedOwnerIndex, default);
+        //This assumes an internal behavior of the managed object store... invalid could be -1 instead
+        if (data.ManagedOwnerIndex != 0)
+        {
+            GCHandle owner = m_ManagedOwners.GetValue(data.ManagedOwnerIndex);
+            if (owner.IsAllocated)
+                owner.Free();
+            m_ManagedOwners.UpdateValue(ref data.ManagedOwnerIndex, default);
+        }
+
         m_Nodes.Free(handle);
     }
 

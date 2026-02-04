@@ -12,23 +12,28 @@ internal class PartiallyNonCompliantRegistryMessage : VisualElement
     [Serializable]
     public new class UxmlSerializedData : VisualElement.UxmlSerializedData
     {
-        public override object CreateInstance() => new PartiallyNonCompliantRegistryMessage();
+        public override object CreateInstance()
+        {
+            var container = ServicesContainer.instance;
+            return new PartiallyNonCompliantRegistryMessage(
+                container.Resolve<IApplicationProxy>(),
+                container.Resolve<IPageManager>());
+        }
     }
 
-    private ExtendedHelpBox m_PartiallyNonCompliantHelpBox;
-    private IPageManager m_PageManager;
+    private readonly ExtendedHelpBox m_HelpBox;
 
-    public PartiallyNonCompliantRegistryMessage()
+    private readonly IPageManager m_PageManager;
+    public PartiallyNonCompliantRegistryMessage(IApplicationProxy applicationProxy, IPageManager pageManager)
     {
-        ResolveDependencies();
-        m_PartiallyNonCompliantHelpBox = new ExtendedHelpBox { customIcon = Icon.RegistryErrorLarge, analyticsId = "partially-non-compliant-registry-help-box"};
-        Add(m_PartiallyNonCompliantHelpBox);
-    }
+        m_PageManager = pageManager;
 
-    private void ResolveDependencies()
-    {
-        var container = ServicesContainer.instance;
-        m_PageManager = container.Resolve<IPageManager>();
+        m_HelpBox = new ExtendedHelpBox(applicationProxy)
+        {
+            customIcon = Icon.RegistryErrorLarge,
+            analyticsId = "partially-non-compliant-registry-help-box"
+        };
+        Add(m_HelpBox);
     }
 
     public void OnEnable()
@@ -55,8 +60,8 @@ internal class PartiallyNonCompliantRegistryMessage : VisualElement
             return;
 
         var violation = page.scopedRegistry.compliance.violations[0];
-        m_PartiallyNonCompliantHelpBox.text = string.Format(L10n.Tr("Certain restricted packages may not be visible in the registry. {0}"), violation?.message ?? string.Empty);
-        m_PartiallyNonCompliantHelpBox.readMoreUrl = violation?.readMoreLink;
+        m_HelpBox.text = string.Format(L10n.Tr("Certain restricted packages may not be visible in the registry. {0}"), violation?.message ?? string.Empty);
+        m_HelpBox.readMoreUrl = violation?.readMoreLink;
         UIUtils.SetElementDisplay(this, true);
     }
 }

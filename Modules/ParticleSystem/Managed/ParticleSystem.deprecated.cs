@@ -116,9 +116,17 @@ namespace UnityEngine
         [Obsolete("safeCollisionEventSize has been deprecated. Use GetSafeCollisionEventSize() instead (UnityUpgradable) -> ParticlePhysicsExtensions.GetSafeCollisionEventSize(UnityEngine.ParticleSystem)", false)]
         public int safeCollisionEventSize { get { return ParticleSystemExtensionsImpl.GetSafeCollisionEventSize(this); } }
 
-        [Obsolete("SetTrails is deprecated. Use SetParticlesAndTrails() instead. Avoid SetTrails when ParticleSystem.trails.dieWithParticles is false.", false)]
+        
         [FreeFunction(Name = "ParticleSystemScriptBindings::SetTrailData", HasExplicitThis = true)]
-        extern public void SetTrails(Trails trailData);
+        extern private void SetTrailsInternal(Trails trailData);
+
+        [Obsolete("SetTrails is deprecated. Use SetParticlesAndTrails() instead. Avoid SetTrails when ParticleSystem.trails.dieWithParticles is false.", false)]
+        public void SetTrails(Trails trailData)
+        {
+            if (trailData.positions == null || trailData.frontPositions == null || trailData.backPositions == null || trailData.positionCounts == null || trailData.textureOffsets == null)
+                throw new NullReferenceException("ParticleSystem.TrailData has not been initialized");
+            SetTrailsInternal(trailData);
+        }
 
         [Obsolete("Emit with specific parameters is deprecated. Pass a ParticleSystem.EmitParams parameter instead, which allows you to override some/all of the emission properties", false)]
         public void Emit(Vector3 position, Vector3 velocity, float size, float lifetime, Color32 color)

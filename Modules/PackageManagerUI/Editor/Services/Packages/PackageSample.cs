@@ -107,29 +107,29 @@ namespace UnityEditor.PackageManager.UI
                 IEnumerable<IDictionary<string, object>> samples = null;
                 var upmReserved = upmCache.ParseUpmReserved(package);
                 if (upmReserved != null)
-                    samples = upmReserved.GetList<IDictionary<string, object>>("samples");
+                    samples = upmReserved.GetNewArray<IDictionary<string, object>>("samples");
 
                 if (samples == null)
                 {
-                    var jsonPath = ioProxy.PathsCombine(package.resolvedPath, "package.json");
+                    var jsonPath = IOUtils.PathsCombine(package.resolvedPath, "package.json");
                     if (ioProxy.FileExists(jsonPath))
                     {
                         var packageJson = Json.Deserialize(ioProxy.FileReadAllText(jsonPath)) as Dictionary<string, object>;
-                        samples = packageJson.GetList<IDictionary<string, object>>("samples");
+                        samples = packageJson.GetNewArray<IDictionary<string, object>>("samples");
                     }
                 }
 
-                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 return samples?.Select(sample =>
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                 {
                     var displayName = sample.GetString("displayName");
                     var path = sample.GetString("path");
                     var description = sample.GetString("description");
                     var interactiveImport = sample.Get("interactiveImport", false);
 
-                    var resolvedSamplePath = ioProxy.PathsCombine(package.resolvedPath, path);
-                    var importPath = ioProxy.PathsCombine(
+                    var resolvedSamplePath = IOUtils.PathsCombine(package.resolvedPath, path);
+                    var importPath = IOUtils.PathsCombine(
                         Application.dataPath,
                         "Samples",
                         IOUtils.SanitizeFileName(package.displayName),
@@ -164,9 +164,9 @@ namespace UnityEditor.PackageManager.UI
         public static IEnumerable<Sample> FindByPackage(string packageName, string packageVersion)
         {
             var upmCache = ServicesContainer.instance.Resolve<IUpmCache>();
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var packageInfo = upmCache.installedPackageInfosReady ? upmCache.GetInstalledPackageInfo(packageName) : PackageInfo.GetAllRegisteredPackages().FirstOrDefault(p => p.name == packageName);
-#pragma warning restore RS0030
+#pragma warning restore UA2001
 
             if (packageInfo?.version == packageVersion || string.IsNullOrEmpty(packageVersion))
             {
@@ -239,13 +239,13 @@ namespace UnityEditor.PackageManager.UI
                     {
                         try
                         {
-                            var importDirectory = m_IOProxy.GetParentDirectory(m_IOProxy.GetParentDirectory(importPath));
+                            var importDirectory = IOUtils.GetParentDirectory(IOUtils.GetParentDirectory(importPath));
                             if (m_IOProxy.DirectoryExists(importDirectory))
                             {
                                 var versionDirs = m_IOProxy.DirectoryGetDirectories(importDirectory, "*");
                                 foreach (var d in versionDirs)
                                 {
-                                    var p = m_IOProxy.PathsCombine(d, m_IOProxy.GetFileName(importPath));
+                                    var p = IOUtils.PathsCombine(d, IOUtils.GetFileName(importPath));
                                     if (m_IOProxy.DirectoryExists(p))
                                         m_PreviousImports.Add(p);
                                 }

@@ -119,7 +119,7 @@ namespace UnityEditor.IMGUI.Controls
                 matchesStart.Sort(searchMatchItemComparer);
             foreach (var element in matchesStart)
             {
-                searchTree.AddChild(element);
+                searchTree.AddChildAndKeepId(element);
             }
             if (searchMatchItemComparer == null)
                 matchesWithin.Sort();
@@ -127,7 +127,7 @@ namespace UnityEditor.IMGUI.Controls
                 matchesWithin.Sort(searchMatchItemComparer);
             foreach (var element in matchesWithin)
             {
-                searchTree.AddChild(element);
+                searchTree.AddChildAndKeepId(element);
             }
             return searchTree;
         }
@@ -140,9 +140,9 @@ namespace UnityEditor.IMGUI.Controls
 
         void BuildSearchableElements(AdvancedDropdownItem item)
         {
-#pragma warning disable RS0031 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2002 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             if (!item.children.Any())
-#pragma warning restore RS0031
+#pragma warning restore UA2002
             {
                 m_SearchableElements.Add(item);
                 return;

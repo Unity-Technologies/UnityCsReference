@@ -4,7 +4,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Text.RegularExpressions;
 using UnityEditor.Scripting.ScriptCompilation;
 
@@ -31,7 +30,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         public string publisherWebsiteUrl;
         public string publisherSupportUrl;
 
-        public List<string> supportedVersions;
+        public string[] supportedVersions;
         public List<PackageImage> images;
         public List<PackageSizeInfo> sizeInfos;
 
@@ -67,7 +66,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 ++imagesLoaded;
             }
 
-            var images = productDetail.GetList<IDictionary<string, object>>("images") ?? Array.Empty<IDictionary<string, object>>();
+            var images = productDetail.GetEnumerable<IDictionary<string, object>>("images") ?? Array.Empty<IDictionary<string, object>>();
             foreach (var image in images)
             {
                 if (imagesLoaded >= imageLimit)
@@ -115,11 +114,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 foreach (var key in uploads.Keys)
                 {
                     var simpleVersion = Regex.Replace(key, @"(?<major>\d+)\.(?<minor>\d+).(?<patch>\d+)[abfp].+", "${major}.${minor}.${patch}");
-
-                    SemVersion? version;
-                    bool isVersionParsed = SemVersionParser.TryParse(simpleVersion.Trim(), out version);
-
-                    if (isVersionParsed)
+                    if (SemVersionParser.TryParse(simpleVersion.Trim(), out var version))
                     {
                         var info = uploads.GetDictionary(key);
                         var assetCount = info?.GetString("assetCount") ?? string.Empty;
@@ -127,7 +122,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
                         result.Add(new PackageSizeInfo
                         {
-                            supportedUnityVersion = (SemVersion)version,
+                            supportedUnityVersion = version.Value,
                             assetCount = string.IsNullOrEmpty(assetCount) ? 0 : ulong.Parse(assetCount),
                             downloadSize = string.IsNullOrEmpty(downloadSize) ? 0 : ulong.Parse(downloadSize)
                         });
@@ -177,9 +172,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
             productInfo.displayName = productDetail.GetString("displayName");
 
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            productInfo.supportedVersions = productDetail.GetList<string>("supportedUnityVersions")?.ToList();
-#pragma warning restore RS0030
+            productInfo.supportedVersions = productDetail.GetNewArray<string>("supportedUnityVersions") ?? Array.Empty<string>();
 
             productInfo.state = productDetail.GetString("state");
 

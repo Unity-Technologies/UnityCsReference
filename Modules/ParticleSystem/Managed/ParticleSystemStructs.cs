@@ -490,16 +490,23 @@ namespace UnityEngine
             internal Trail m_Trail;
         }
 
-        [NativeType(CodegenOptions.Custom, "MonoParticleTrails")]
+        // Native type for Trails can be found in ParticleTrails.h
         [StructLayout(LayoutKind.Sequential)]
         public struct Trails
         {
+            [NativeName("m_Positions")]
             internal List<Vector4> positions;
+            [NativeName("m_FrontPositions")]
             internal List<int> frontPositions;
+            [NativeName("m_BackPositions")]
             internal List<int> backPositions;
+            [NativeName("m_NumPositions")]
             internal List<int> positionCounts;
+            [NativeName("m_TextureOffsets")]
             internal List<float> textureOffsets;
+            [NativeName("m_MaxTrails")]
             internal int maxTrailCount;
+            [NativeName("m_MaxPositionsPerTrail")]
             internal int maxPositionsPerTrailCount;
 
             internal void Allocate()

@@ -562,7 +562,9 @@ namespace UnityEngine.UIElements.StyleSheets
                             var type = obj.GetType();
                             if (type == typeof(Texture2D))
                             {
-                                source.texture = resourcePath.LoadResource<Texture2D>(dpiScaling);
+                                source.sprite = resourcePath.LoadResource<Sprite>(dpiScaling);
+                                if (source.IsNull())
+                                    source.texture = resourcePath.LoadResource<Texture2D>(dpiScaling);
                             }
                             else if (type == typeof(Sprite))
                             {

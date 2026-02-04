@@ -14,31 +14,18 @@ internal class CustomDisplayDialogContent : ModalContent
 
     private string m_ReadMoreUrl;
 
-    private IApplicationProxy m_ApplicationProxy;
-    private IResourceLoader m_ResourceLoader;
-
-    private void ResolveDependencies(IApplicationProxy applicationProxy, IResourceLoader resourceLoader)
-    {
-        m_ApplicationProxy = applicationProxy;
-        m_ResourceLoader = resourceLoader;
-    }
-
+    private readonly IApplicationProxy m_ApplicationProxy;
     public CustomDisplayDialogContent(IApplicationProxy applicationProxy, IResourceLoader resourceLoader, CustomDialogArgsBase dialogArgs)
     {
-        ResolveDependencies(applicationProxy, resourceLoader);
+        m_ApplicationProxy = applicationProxy;
 
         args = dialogArgs;
         windowTitle = args.windowTitle;
 
-        Init();
-    }
-
-    private void Init()
-    {
-        var root = m_ResourceLoader.GetTemplate("CustomDisplayDialog.uxml");
+        var root = resourceLoader.GetTemplate("CustomDisplayDialog.uxml");
         cache = new VisualElementCache(root);
-        styleSheets.Add(m_ResourceLoader.packageManagerCommonStyleSheet);
-        styleSheets.Add(m_ResourceLoader.customDisplayDialogStyleSheet);
+        styleSheets.Add(resourceLoader.packageManagerCommonStyleSheet);
+        styleSheets.Add(resourceLoader.customDisplayDialogStyleSheet);
         Add(root);
 
         headerIcon.AddToClassList(args.headerIcon.ClassName());

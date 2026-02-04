@@ -77,9 +77,9 @@ namespace Unity.GraphToolkit.Editor
                         continue;
 
                     var interfaces = customPropertyBuilderType.GetInterfaces();
-                    #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                    #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     var cpfInterface = interfaces.FirstOrDefault(i => i.IsGenericType && i.GetGenericTypeDefinition() == typeof(ICustomPropertyFieldBuilder<>));
-#pragma warning restore RS0030
+#pragma warning restore UA2001
 
                     if (cpfInterface != null)
                     {
@@ -211,9 +211,9 @@ namespace Unity.GraphToolkit.Editor
 
             CheckAttributesCompatibility(type, attributes);
 
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             bool isDelayed = attributes?.FirstOrDefault(t => t is DelayedAttribute) != null;
-            #pragma warning restore RS0030
+            #pragma warning restore UA2001
             //if (typeof(IList).IsAssignableFrom(type))
             //{
             //    var listField = new ListPropertyField(type);

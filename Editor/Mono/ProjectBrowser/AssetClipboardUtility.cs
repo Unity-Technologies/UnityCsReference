@@ -21,9 +21,9 @@ namespace UnityEditor
         internal static void DuplicateSelectedAssets()
         {
             performedAction = PerformedAction.None;
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             Selection.objects = DuplicateAssets(Selection.objects).ToArray();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
         }
 
         internal static void CutCopySelectedAssets(PerformedAction action)
@@ -61,14 +61,14 @@ namespace UnityEditor
             switch (performedAction)
             {
                 case PerformedAction.Copy:
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     Selection.objects = PasteCopiedAssets(targetPath).ToArray();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                     break;
                 case PerformedAction.Cut:
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     Selection.objects = PasteCutAssets(targetPath).ToArray();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                     performedAction = PerformedAction.None;
                     break;
             }
@@ -82,9 +82,9 @@ namespace UnityEditor
 
         internal static IEnumerable<Object> DuplicateAssets(IEnumerable<EntityId> instanceIDs)
         {
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return DuplicateAssets(instanceIDs.Select(id => EditorUtility.EntityIdToObject(id)));
-#pragma warning restore RS0030
+#pragma warning restore UA2001
         }
 
         static void CutCopyAssets(IEnumerable<Object> assets)
@@ -100,9 +100,9 @@ namespace UnityEditor
         // file names must match m_Name of the main asset in a duplicate
         // therefore object names may not contain invalid characters or path separators
         static readonly Regex k_MatchInvalidObjAssetNameChars = new(
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             $@"({string.Join('|', Path.GetInvalidFileNameChars().Select(c=> Regex.Escape(c.ToString())))}|/|\\)"
-#pragma warning restore RS0030
+#pragma warning restore UA2001
         );
 
         static IEnumerable<Object> PasteCopiedAssets(string destination = null)
@@ -177,9 +177,9 @@ namespace UnityEditor
                 Debug.LogError(errString, firstDuplicatedObjectToFail);
             }
 
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return pastedObjects.Select(AssetDatabase.LoadMainAssetAtPath);
-#pragma warning restore RS0030
+#pragma warning restore UA2001
         }
 
         static IEnumerable<Object> PasteCutAssets(string destination = null)
@@ -217,9 +217,9 @@ namespace UnityEditor
             Reset();
             AssetDatabase.Refresh();
 
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return pastedObjects.Select(AssetDatabase.LoadMainAssetAtPath);
-#pragma warning restore RS0030
+#pragma warning restore UA2001
         }
 
         // Returns list of duplicated instanceIDs

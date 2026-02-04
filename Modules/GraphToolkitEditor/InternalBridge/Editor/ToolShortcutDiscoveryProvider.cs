@@ -46,9 +46,9 @@ namespace Unity.GraphToolsAuthoringFramework.InternalEditorBridge
             EditorApplication.update -= Initialize;
             m_Initialized = true;
 
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var providers = GetShortcutProviders().ToList();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             if (!providers.Contains(this))
             {
                 providers.Add(this);
@@ -76,9 +76,9 @@ namespace Unity.GraphToolsAuthoringFramework.InternalEditorBridge
 
         IEnumerable<IShortcutEntryDiscoveryInfo> IDiscoveryShortcutProvider.GetDefinedShortcuts()
         {
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return Proxy?.GetDefinedShortcuts().Select(si => new ToolShortcutEntryInfo(si)) ?? (IEnumerable<IShortcutEntryDiscoveryInfo>)Array.Empty<IShortcutEntryDiscoveryInfo>();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
         }
 
         static IEnumerable<IDiscoveryShortcutProvider> GetShortcutProviders()

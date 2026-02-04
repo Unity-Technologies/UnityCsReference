@@ -170,9 +170,9 @@ namespace UnityEditor.Search
         readonly struct SearchEventResult : ISearchEventResult
         {
             public bool hasResults { get; }
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             public object result => hasResults ? results.First() : null;
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             public IEnumerable<object> results { get; }
             public SearchEventResultStatus status { get; }
             public int handlersWithResultsCount { get; }
@@ -180,9 +180,9 @@ namespace UnityEditor.Search
             public SearchEventResult(IEnumerable<object> results, int handlersWithResultsCount, SearchEventResultStatus status)
             {
                 this.results = results;
-#pragma warning disable RS0031 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2002 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 hasResults = results != null && results.Any();
-#pragma warning restore RS0031
+#pragma warning restore UA2002
                 this.handlersWithResultsCount = handlersWithResultsCount;
                 this.status = status;
             }

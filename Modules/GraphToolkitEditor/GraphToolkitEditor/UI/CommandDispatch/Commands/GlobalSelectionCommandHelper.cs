@@ -30,9 +30,9 @@ namespace Unity.GraphToolkit.Editor
             /// <summary>
             /// The <see cref="SelectionStateComponent.StateUpdater"/> for the <see cref="SelectionStateComponent"/> passed in the constructor.
             /// </summary>
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             public SelectionStateComponent.StateUpdater MainUpdateScope => this.First(u => u.IsUpdaterForState(m_MainSelectionState));
-#pragma warning restore RS0030
+#pragma warning restore UA2001
 
             /// <summary>
             /// Initializes a new instance of the <see cref="UpdateScopeList"/> class.
@@ -59,9 +59,9 @@ namespace Unity.GraphToolkit.Editor
         {
             get
             {
-                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 var selectionUpdateScopes = m_AllSelectionStates.Select(s => s.UpdateScope);
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                 return new UpdateScopeList(m_MainSelectionState, selectionUpdateScopes);
             }
         }
@@ -73,9 +73,9 @@ namespace Unity.GraphToolkit.Editor
         public GlobalSelectionCommandHelper(SelectionStateComponent mainSelectionState)
         {
             m_MainSelectionState = mainSelectionState;
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             m_AllSelectionStates = mainSelectionState.State.AllStateComponents.OfType<SelectionStateComponent>().ToList();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
         }
     }
 }

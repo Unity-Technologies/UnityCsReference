@@ -105,9 +105,9 @@ namespace UnityEditor.Search
         {
             handler = execute;
             if (enabled != null)
-                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 this.enabled = (items) => items.All(e => enabled(e));
-#pragma warning restore RS0030
+#pragma warning restore UA2001
         }
 
         /// <summary>

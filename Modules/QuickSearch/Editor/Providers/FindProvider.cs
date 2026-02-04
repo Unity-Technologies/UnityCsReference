@@ -119,9 +119,9 @@ namespace UnityEditor.Search.Providers
                         results = SearchWord(args.exclude, word, options, subset);
 
                     if (args.orSet != null)
-                        #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                        #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                         results = results.Concat(args.orSet);
-#pragma warning restore RS0030
+#pragma warning restore UA2001
 
                     return FindFilesQuery.EvalResult.Combined(results);
                 }
@@ -129,9 +129,9 @@ namespace UnityEditor.Search.Providers
 
             if (!query.valid)
             {
-                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 context.AddSearchQueryErrors(query.errors.Select(e => new SearchQueryError(e, context, provider)));
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                 yield break;
             }
 
@@ -139,9 +139,9 @@ namespace UnityEditor.Search.Providers
             {
                 options |= FindOptions.Packages;
             }
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             if (roots == null || roots.Count() == 0)
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                 roots = GetRoots(options);
 
             var results = new ConcurrentBag<SearchDocument>();
@@ -354,9 +354,9 @@ namespace UnityEditor.Search.Providers
                 {
                     if (updated != null)
                     {
-                        #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                        #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                         foreach (var u in updated.Concat(moved))
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                         {
                             if (!string.IsNullOrEmpty(u) && u.StartsWith(kvp.Key, StringComparison.Ordinal))
                                 kvp.Value.TryAdd(new SearchDocument(u), 0);
@@ -385,9 +385,9 @@ namespace UnityEditor.Search.Providers
             if (s_Roots.TryGetValue(options, out var roots))
                 return roots;
 
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var projectRoots = new List<string>(Utils.GetAssetRootFolders().Where(r => FilterRoot(r, options)));
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             return (s_Roots[options] = projectRoots);
         }
 

@@ -4,7 +4,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using UnityEngine;
 
 namespace UnityEditor.PackageManager.UI.Internal
@@ -24,14 +23,13 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public bool enablePreReleasePackages
         {
-            get { return m_EnablePreReleasePackages; }
+            get => m_EnablePreReleasePackages;
             set
             {
-                if (value != m_EnablePreReleasePackages)
-                {
-                    m_EnablePreReleasePackages = value;
-                    onEnablePreReleasePackagesChanged?.Invoke(m_EnablePreReleasePackages);
-                }
+                if (value == m_EnablePreReleasePackages)
+                    return;
+                m_EnablePreReleasePackages = value;
+                onEnablePreReleasePackagesChanged?.Invoke(m_EnablePreReleasePackages);
             }
         }
 
@@ -39,14 +37,13 @@ namespace UnityEditor.PackageManager.UI.Internal
         private bool m_AdvancedSettingsExpanded = true;
         public virtual bool advancedSettingsExpanded
         {
-            get { return m_AdvancedSettingsExpanded; }
+            get => m_AdvancedSettingsExpanded;
             set
             {
-                if (value != m_AdvancedSettingsExpanded)
-                {
-                    m_AdvancedSettingsExpanded = value;
-                    onAdvancedSettingsFoldoutChanged?.Invoke(m_AdvancedSettingsExpanded);
-                }
+                if (value == m_AdvancedSettingsExpanded)
+                    return;
+                m_AdvancedSettingsExpanded = value;
+                onAdvancedSettingsFoldoutChanged?.Invoke(m_AdvancedSettingsExpanded);
             }
         }
 
@@ -54,14 +51,13 @@ namespace UnityEditor.PackageManager.UI.Internal
         private bool m_ScopedRegistriesSettingsExpanded = true;
         public virtual bool scopedRegistriesSettingsExpanded
         {
-            get { return m_ScopedRegistriesSettingsExpanded; }
+            get => m_ScopedRegistriesSettingsExpanded;
             set
             {
-                if (value != m_ScopedRegistriesSettingsExpanded)
-                {
-                    m_ScopedRegistriesSettingsExpanded = value;
-                    onScopedRegistriesSettingsFoldoutChanged?.Invoke(m_ScopedRegistriesSettingsExpanded);
-                }
+                if (value == m_ScopedRegistriesSettingsExpanded)
+                    return;
+                m_ScopedRegistriesSettingsExpanded = value;
+                onScopedRegistriesSettingsFoldoutChanged?.Invoke(m_ScopedRegistriesSettingsExpanded);
             }
         }
 
@@ -69,14 +65,13 @@ namespace UnityEditor.PackageManager.UI.Internal
         private bool m_SeeAllPackageVersions;
         public virtual bool seeAllPackageVersions
         {
-            get { return m_SeeAllPackageVersions; }
+            get => m_SeeAllPackageVersions;
             set
             {
-                if (value != m_SeeAllPackageVersions)
-                {
-                    m_SeeAllPackageVersions = value;
-                    onSeeAllVersionsChanged?.Invoke(m_SeeAllPackageVersions);
-                }
+                if (value == m_SeeAllPackageVersions)
+                    return;
+                m_SeeAllPackageVersions = value;
+                onSeeAllVersionsChanged?.Invoke(m_SeeAllPackageVersions);
             }
         }
 
@@ -84,12 +79,8 @@ namespace UnityEditor.PackageManager.UI.Internal
         private bool m_DismissPreviewPackagesInUse;
         public virtual bool dismissPreviewPackagesInUse
         {
-            get { return m_DismissPreviewPackagesInUse; }
-            set
-            {
-                if (value != m_DismissPreviewPackagesInUse)
-                    m_DismissPreviewPackagesInUse = value;
-            }
+            get => m_DismissPreviewPackagesInUse;
+            set => m_DismissPreviewPackagesInUse = value;
         }
 
         [SerializeField]
@@ -99,13 +90,12 @@ namespace UnityEditor.PackageManager.UI.Internal
         public bool oneTimePackageErrorsPopUpShown;
 
         [SerializeField]
-        private List<RegistryInfo> m_Registries = new List<RegistryInfo>();
+        private RegistryInfo m_MainRegistry = new ();
+        public RegistryInfo mainRegistry => m_MainRegistry;
 
-        public IList<RegistryInfo> registries => m_Registries;
-
-        #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-        public IEnumerable<RegistryInfo> scopedRegistries => m_Registries.Skip(1);
-#pragma warning restore RS0030
+        [SerializeField]
+        private List<RegistryInfo> m_ScopedRegistries = new ();
+        public IReadOnlyList<RegistryInfo> scopedRegistries => m_ScopedRegistries;
 
         // `m_UserSelectedRegistryName` and `m_UserAddingNewScopedRegistry` only reflect what scoped registry the user selected
         // by interacting with the settings window. registryInfoDraft.original is what's actually selected and displayed to the user
@@ -122,28 +112,27 @@ namespace UnityEditor.PackageManager.UI.Internal
         }
 
         [SerializeField]
-        private RegistryInfoDraft m_RegistryInfoDraft = new RegistryInfoDraft();
+        private RegistryInfoDraft m_RegistryInfoDraft = new();
         public RegistryInfoDraft registryInfoDraft => m_RegistryInfoDraft;
 
         public void SelectRegistry(string name)
         {
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            var registry = string.IsNullOrEmpty(name) ? null : scopedRegistries.FirstOrDefault(r => r.name == name);
-#pragma warning restore RS0030
+            var registry = string.IsNullOrEmpty(name) ? null : scopedRegistries.FirstMatch(r => r.name == name);
             m_UserSelectedRegistryName = name;
             m_RegistryInfoDraft.SetOriginalRegistryInfo(registry);
         }
 
         public void SetRegistries(RegistryInfo[] newRegistries)
         {
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            var sanitizedNewRegistries = newRegistries?.Where(r => r != null).ToArray();
-#pragma warning restore RS0030
+            if (newRegistries == null || newRegistries.Length == 0)
+                return;
 
-            var oldSelectionIndex = Math.Max(0, m_Registries.FindIndex(r => r.name == m_UserSelectedRegistryName));
-            m_Registries.Clear();
-            if (sanitizedNewRegistries?.Length > 0)
-                m_Registries.AddRange(sanitizedNewRegistries);
+            m_MainRegistry = newRegistries[0];
+
+            var oldSelectionIndex = Math.Max(0, m_ScopedRegistries.FindIndex(r => r.name == m_UserSelectedRegistryName));
+            m_ScopedRegistries.Clear();
+            if (newRegistries.Length > 1)
+                m_ScopedRegistries.AddRange(new ArraySegment<RegistryInfo>(newRegistries, 1, newRegistries.Length - 1));
             RefreshSelection(oldSelectionIndex);
         }
 
@@ -152,7 +141,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             if (!IsValidRegistryInfo(registry))
                 return false;
 
-            m_Registries.Add(registry);
+            m_ScopedRegistries.Add(registry);
             if (m_RegistryInfoDraft.original is null && m_RegistryInfoDraft.name == registry.name)
             {
                 m_UserSelectedRegistryName = registry.name;
@@ -168,12 +157,12 @@ namespace UnityEditor.PackageManager.UI.Internal
             if (!IsValidRegistryInfo(newRegistry) || string.IsNullOrEmpty(oldName))
                 return false;
 
-            for (var i = 0; i < m_Registries.Count; i++)
+            for (var i = 0; i < m_ScopedRegistries.Count; i++)
             {
-                var registry = m_Registries[i];
+                var registry = m_ScopedRegistries[i];
                 if (registry.name != oldName)
                     continue;
-                m_Registries[i] = newRegistry;
+                m_ScopedRegistries[i] = newRegistry;
 
                 if (m_UserSelectedRegistryName == oldName)
                     m_UserSelectedRegistryName = newRegistry.name;
@@ -188,16 +177,14 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public bool RemoveRegistry(string name)
         {
-            var registryIndex = m_Registries.FindIndex(r => r.name == name);
+            var registryIndex = m_ScopedRegistries.FindIndex(r => r.name == name);
             if (registryIndex >= 0)
             {
-                m_Registries.RemoveAt(registryIndex);
+                m_ScopedRegistries.RemoveAt(registryIndex);
                 if (m_RegistryInfoDraft.original?.name == name)
                     RefreshSelection(registryIndex);
-
                 return true;
             }
-
             return false;
         }
 
@@ -205,26 +192,20 @@ namespace UnityEditor.PackageManager.UI.Internal
         {
             if (!string.IsNullOrEmpty(m_UserSelectedRegistryName))
             {
-                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                var selectedRegistry = scopedRegistries.FirstOrDefault(r => r.name == m_UserSelectedRegistryName);
-#pragma warning restore RS0030
+                var selectedRegistry = scopedRegistries.FirstMatch(r => r.name == m_UserSelectedRegistryName);
                 if (selectedRegistry == null)
                 {
-                    // We use `m_Registries.Count - 2` because m_Registries always contains the main registry
-                    // and scopedRegistries is always one element less than m_Registries
-                    var newSelectionIndex = Math.Max(0, Math.Min(oldSelectionIndex, m_Registries.Count - 2));
-                    #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                    selectedRegistry = scopedRegistries.Skip(newSelectionIndex).FirstOrDefault();
-#pragma warning restore RS0030
+                    if (oldSelectionIndex >= 0 && oldSelectionIndex < m_ScopedRegistries.Count)
+                        selectedRegistry = m_ScopedRegistries[oldSelectionIndex];
+                    else if (m_ScopedRegistries.Count > 0)
+                        selectedRegistry = m_ScopedRegistries[m_ScopedRegistries.Count -  1];
                 }
                 m_UserSelectedRegistryName = selectedRegistry?.name ?? string.Empty;
                 m_RegistryInfoDraft.SetOriginalRegistryInfo(selectedRegistry);
             }
             else
             {
-                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                var selectedRegistry = m_UserAddingNewScopedRegistry ? null : scopedRegistries.FirstOrDefault();
-#pragma warning restore RS0030
+                var selectedRegistry = m_UserAddingNewScopedRegistry || scopedRegistries.Count == 0 ? null : scopedRegistries[0];
                 m_RegistryInfoDraft.SetOriginalRegistryInfo(selectedRegistry);
             }
         }
@@ -234,25 +215,17 @@ namespace UnityEditor.PackageManager.UI.Internal
             if (info?.scopes == null)
                 return false;
 
-            return !string.IsNullOrEmpty(info.id?.Trim()) && !string.IsNullOrEmpty(info.name?.Trim())
-                && !string.IsNullOrEmpty(info.url?.Trim()) && info.scopes.Length > 0
-                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                && info.scopes.All(s => !string.IsNullOrEmpty(s.Trim()));
-#pragma warning restore RS0030
+            return !string.IsNullOrWhiteSpace(info.id) && !string.IsNullOrWhiteSpace(info.name)
+                && !string.IsNullOrWhiteSpace(info.url) && info.scopes.Length > 0
+                && !info.scopes.AnyMatches(string.IsNullOrWhiteSpace);
         }
 
         void OnEnable()
         {
             m_RegistryInfoDraft.OnEnable();
 
-            if (m_RegistryInfoDraft.original is null && !m_RegistryInfoDraft.hasUnsavedChanges && !isUserAddingNewScopedRegistry)
-            {
-                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                var firstScopedRegistry = scopedRegistries.FirstOrDefault();
-#pragma warning restore RS0030
-                if (firstScopedRegistry != null)
-                    m_RegistryInfoDraft.SetOriginalRegistryInfo(firstScopedRegistry);
-            }
+            if (m_RegistryInfoDraft.original is null && !m_RegistryInfoDraft.hasUnsavedChanges && !isUserAddingNewScopedRegistry && scopedRegistries.Count > 0)
+                m_RegistryInfoDraft.SetOriginalRegistryInfo(scopedRegistries[0]);
 
             onInitializationFinished.Invoke();
         }
@@ -267,14 +240,13 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public long loadAssets
         {
-            get { return m_LoadAssets == 0  ? (long)PackageLoadBar.AssetsToLoad.Min : m_LoadAssets; }
+            get => m_LoadAssets == 0  ? (long)PackageLoadBar.AssetsToLoad.Min : m_LoadAssets;
             set
             {
-                if (value != m_LoadAssets)
-                {
-                    m_LoadAssets = value;
-                    onLoadAssetsChanged?.Invoke(m_LoadAssets);
-                }
+                if (value == m_LoadAssets)
+                    return;
+                m_LoadAssets = value;
+                onLoadAssetsChanged?.Invoke(m_LoadAssets);
             }
         }
     }

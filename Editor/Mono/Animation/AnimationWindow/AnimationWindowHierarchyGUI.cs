@@ -495,9 +495,9 @@ namespace UnityEditorInternal
             if (DoTreeViewButton(m_HierarchyItemButtonControlIDs[row], rect, GUIContent.none, m_AnimationCurveDropdown))
             {
                 state.SelectHierarchyItem(node.id, false, false);
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 GenericMenu menu = GenerateMenu(new AnimationWindowHierarchyNode[] { node }.ToList(), enabled);
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                 menu.DropDown(rect);
                 Event.current.Use();
             }
@@ -522,9 +522,9 @@ namespace UnityEditorInternal
             {
                 foreach (var curve in node.curves)
                 {
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     if (curve.keyframes.Any(key => state.time.ContainsTime(key.time)))
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                     {
                         hasKey = true;
                     }
@@ -731,13 +731,13 @@ namespace UnityEditorInternal
 
                 // Property or propertygroup
                 if (hierarchyNode is AnimationWindowHierarchyPropertyGroupNode || hierarchyNode is AnimationWindowHierarchyPropertyNode)
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     curves = AnimationWindowUtility.FilterCurves(hierarchyNode.curves.ToArray(), hierarchyNode.path, hierarchyNode.animatableObjectType, hierarchyNode.propertyName);
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                 else
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     curves = AnimationWindowUtility.FilterCurves(hierarchyNode.curves.ToArray(), hierarchyNode.path, hierarchyNode.animatableObjectType);
-#pragma warning restore RS0030
+#pragma warning restore UA2001
 
                 foreach (AnimationWindowCurve animationWindowCurve in curves)
                     curvesToRemove.Add(animationWindowCurve.binding);
@@ -771,9 +771,9 @@ namespace UnityEditorInternal
                         curves.AddRange(AnimationWindowUtility.FilterCurves(hierarchyNode.curves, hierarchyNode.path, hierarchyNode.animatableObjectType));
                 }
             }
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return curves.Distinct().ToList();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
         }
 
         // Changing rotation interpolation will change the propertynames of the curves
@@ -927,9 +927,9 @@ namespace UnityEditorInternal
 
                 if (newName != oldName)
                 {
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     var bindings = m_RenamedNode.curves.Select(c => c.binding);
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                     var newNames = new string[m_RenamedNode.curves.Length];
                     Array.Fill(newNames, newName);
 

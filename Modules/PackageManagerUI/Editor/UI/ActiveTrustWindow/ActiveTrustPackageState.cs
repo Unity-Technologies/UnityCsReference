@@ -11,21 +11,9 @@ namespace UnityEditor.PackageManager.UI.Internal
 {
     internal class ActiveTrustPackageState: VisualElement
     {
-        private IResourceLoader m_ResourceLoader;
-        private void ResolveDependencies(IResourceLoader resourceLoader)
-        {
-            m_ResourceLoader = resourceLoader;
-        }
-
         public ActiveTrustPackageState(IResourceLoader resourceLoader, string headerText, Icon icon, IList<PackageInfo> items, bool isOrgKnown = true)
         {
-            ResolveDependencies(resourceLoader);
-            Init(headerText, icon, items, isOrgKnown);
-        }
-
-        private void Init(string headerText, Icon icon, IList<PackageInfo> items, bool isOrgKnown)
-        {
-            var root = m_ResourceLoader.GetTemplate("ActiveTrustPackageState.uxml");
+            var root = resourceLoader.GetTemplate("ActiveTrustPackageState.uxml");
             cache = new VisualElementCache(root);
 
             stateIcon.AddToClassList(icon.ClassName());

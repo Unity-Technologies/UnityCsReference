@@ -185,9 +185,9 @@ namespace UnityEditor.Search
         public void ReleaseOldPreviews(TimeSpan elapsedTime)
         {
             var now = DateTime.UtcNow;
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var oldPreviews = m_PreviewCollections.Where(pair =>
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             {
                 var lifeTime = now - pair.Value.creationTime;
                 return lifeTime > elapsedTime;

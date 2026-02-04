@@ -34,7 +34,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 
-#pragma warning disable RS0030 // Linq usages in external code won't be changed
+#pragma warning disable UA2001 // Linq usages in external code won't be changed
 
 namespace UnityEditor
 {

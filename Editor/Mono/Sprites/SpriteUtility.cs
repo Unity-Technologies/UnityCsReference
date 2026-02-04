@@ -61,9 +61,9 @@ namespace UnityEditor
                 return;
 
             // Return if any of the dragged objects are null, e.g. a MonoBehaviour without a managed instance
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             if (objectReferences.Any(obj => obj == null))
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                 return;
 
             // Regardless of EditorBehaviorMode or SceneView mode we don't handle if texture is dragged over a GO with renderer
@@ -427,9 +427,9 @@ namespace UnityEditor
             }
 
             Object firstSprite = null;
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             firstSprite = AssetDatabase.LoadAllAssetsAtPath(assetPath).FirstOrDefault(t => t is Sprite);
-#pragma warning restore RS0030
+#pragma warning restore UA2001
 
             return firstSprite as Sprite;
         }

@@ -104,9 +104,9 @@ namespace UnityEditor
             var farRight = farLeft;
 
             // Fetch all the effector-collider bounds.
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             foreach (var c in effector.gameObject.GetComponents<Collider2D>().Where(c => c.enabled && c.usedByEffector))
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             {
                 var b = c.bounds;
                 var left = b.min.x;

@@ -88,9 +88,9 @@ namespace UnityEditor
 
         private IEnumerable<Vector3> SelectedProbePositions()
         {
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return m_Selection.Select(t => m_SourcePositions[t]).ToList();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
         }
 
         public void DuplicateSelectedProbes()
@@ -116,9 +116,9 @@ namespace UnityEditor
             var serializer = new XmlSerializer(typeof(Vector3[]));
             var writer = new StringWriter();
 
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             serializer.Serialize(writer, localPositions.Select(pos => m_Group.transform.TransformPoint(pos)).ToArray());
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             writer.Close();
             GUIUtility.systemCopyBuffer = writer.ToString();
         }
@@ -185,9 +185,9 @@ namespace UnityEditor
 
             Undo.RegisterCompleteObjectUndo(new Object[] { m_Group, m_SerializedSelectedProbes }, "Delete Probes");
 
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var reverseSortedIndicies = m_Selection.OrderByDescending(x => x);
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             foreach (var index in reverseSortedIndicies)
             {
                 m_SourcePositions.RemoveAt(index);

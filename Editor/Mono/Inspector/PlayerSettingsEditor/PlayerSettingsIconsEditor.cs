@@ -286,9 +286,9 @@ namespace UnityEditor
             else
             {
                 // Map serialized icons to required icons
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 icons = PlayerSettings.GetPlatformIconsFromStruct(icons, kind, serializedIcons.ToArray());
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             }
 
             return icons;
@@ -326,9 +326,9 @@ namespace UnityEditor
             }
             else
             {
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 iconStructs = icons.Select(
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                     i => i.GetPlatformIconStruct()
                     ).ToArray<PlatformIconStruct>();
             }
@@ -539,9 +539,9 @@ namespace UnityEditor
                         foreach (var subKindGroup in kindGroup.Value)
                         {
                             subKindGroup.Key.m_SetIconSlots =
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                                 PlayerSettings.GetNonEmptyPlatformIconCount(subKindGroup.Value.Select(x => x.platformIcon)
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                                     .ToArray());
                             kindGroup.Key.m_SetIconSlots += subKindGroup.Key.m_SetIconSlots;
 

@@ -13,19 +13,14 @@ namespace UnityEditor.PackageManager.UI.Internal
         [Serializable]
         public new class UxmlSerializedData : VisualElement.UxmlSerializedData
         {
-            public override object CreateInstance() => new Alert();
+            public override object CreateInstance()
+            {
+                return new Alert(ServicesContainer.instance.Resolve<IApplicationProxy>());
+            }
         }
 
-        private IApplicationProxy m_ApplicationProxy;
-        private void ResolveDependencies()
+        public Alert(IApplicationProxy application) : base(application)
         {
-            var container = ServicesContainer.instance;
-            m_ApplicationProxy = container.Resolve<IApplicationProxy>();
-        }
-
-        public Alert()
-        {
-            ResolveDependencies();
         }
 
         public void RefreshError(UIError error, IPackageVersion packageVersion = null)
@@ -55,7 +50,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                     return;
                 buttonAction = () =>
                 {
-                    m_ApplicationProxy.OpenURL(productUrl);
+                    m_Application.OpenURL(productUrl);
                     PackageManagerWindowAnalytics.SendEvent("viewProductInAssetStoreFromAlertHelpBox", packageVersion.uniqueId);
                 };
                 SetCustomLinkButton(L10n.Tr("View in Asset Store"), buttonAction, productUrl);
@@ -65,7 +60,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 buttonAction = () =>
                 {
                     PackageManagerWindowAnalytics.SendEvent($"alertreadmore_{error.errorCode}", packageVersion?.uniqueId);
-                    m_ApplicationProxy.OpenURL(error.readMoreURL);
+                    m_Application.OpenURL(error.readMoreURL);
                 };
                 SetCustomLinkButton(L10n.Tr("Learn More"), buttonAction, error.readMoreURL);
             }

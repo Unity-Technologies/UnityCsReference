@@ -153,12 +153,12 @@ namespace Unity.GraphToolkit.Editor
 
             if (YamlParsingHelper.TryParseList(ContextNodeModel.blocksFieldName, k_ReferenceIdStr, referenceMissingType.serializedData, 0, out var listStr))
             {
-                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 var referenceIds = listStr.Select(long.Parse);
-#pragma warning restore RS0030
-                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning restore UA2001
+                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 var blocks = referenceIds.Select(id => ManagedReferenceUtility.GetManagedReference(graphModel.GraphObject, id) as BlockNodeModel);
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                 createdPlaceholder = graphModel.CreateContextNodePlaceholder(name, position, guid, blocks, referenceMissingType.referenceId);
             }
             else
@@ -206,12 +206,12 @@ namespace Unity.GraphToolkit.Editor
                 return;
 
             // Create the missing wire
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var toPort = toNodeModel.GetPorts().FirstOrDefault(p => p.UniqueName == toPortUniqueId);
-#pragma warning restore RS0030
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning restore UA2001
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var fromPort = fromNodeModel.GetPorts().FirstOrDefault(p => p.UniqueName == fromPortUniqueId);
-#pragma warning restore RS0030
+#pragma warning restore UA2001
 
             if (fromPort != null && toPort != null)
                 createdPlaceholder = graphModel.CreateWirePlaceholder(toPort, fromPort, guid, referenceMissingType.referenceId);

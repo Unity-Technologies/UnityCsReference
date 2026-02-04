@@ -191,9 +191,9 @@ namespace UnityEditor.Search
             m_BlockSource = dataSource;
             m_Title = title ?? m_BlockSource.editorTitle ?? m_BlockSource.name ?? string.Empty;
             m_PathIdToItem = new();
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             m_Propositions = m_BlockSource.FetchPropositions().Where(p => p.valid);
-#pragma warning restore RS0030
+#pragma warning restore UA2001
 
             minimumSize = new Vector2(Mathf.Max(rect.width, 250f), 350f);
             maximumSize = new Vector2(Mathf.Max(rect.width, 400f), 450f);

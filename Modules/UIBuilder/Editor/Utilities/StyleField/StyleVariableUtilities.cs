@@ -66,9 +66,9 @@ namespace Unity.UI.Builder
 
         public static IEnumerable<VariableInfo> GetAllAvailableVariables(VisualElement currentVisualElement, StyleValueType[] compatibleTypes, bool editorExtensionMode)
         {
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return currentVisualElement.variableContext.variables
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                 .Where(variable =>
                 {
                     if (variable.name == BuilderConstants.SelectedStyleRulePropertyName)
@@ -102,9 +102,9 @@ namespace Unity.UI.Builder
                         }
                     }
 
-                    #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                    #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     return (compatibleTypes == null || compatibleTypes.Contains(valueType)) && !variable.name.StartsWith("--unity-theme");
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                 })
                 .Distinct()
                 .Select(variable =>

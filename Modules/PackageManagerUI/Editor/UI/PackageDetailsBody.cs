@@ -13,56 +13,67 @@ namespace UnityEditor.PackageManager.UI.Internal
         [Serializable]
         public new class UxmlSerializedData : VisualElement.UxmlSerializedData
         {
-            public override object CreateInstance() => new PackageDetailsBody();
-        }
-
-        private IResourceLoader m_ResourceLoader;
-        private IPackageDatabase m_PackageDatabase;
-        private IPackageOperationDispatcher m_OperationDispatcher;
-        private IPackageManagerPrefs m_PackageManagerPrefs;
-        private ISelectionProxy m_Selection;
-        private IAssetDatabaseProxy m_AssetDatabase;
-        private IApplicationProxy m_Application;
-        private IIOProxy m_IOProxy;
-        private IAssetStoreCache m_AssetStoreCache;
-        private IPageManager m_PageManager;
-        private IUpmCache m_UpmCache;
-        private IUnityConnectProxy m_UnityConnect;
-        private IPackageLinkFactory m_PackageLinkFactory;
-
-        private PackageDetailsTabView m_TabView;
-
-        private void ResolveDependencies()
-        {
-            var container = ServicesContainer.instance;
-            m_ResourceLoader = container.Resolve<IResourceLoader>();
-            m_PackageDatabase = container.Resolve<IPackageDatabase>();
-            m_OperationDispatcher = container.Resolve<IPackageOperationDispatcher>();
-            m_PackageManagerPrefs = container.Resolve<IPackageManagerPrefs>();
-            m_Selection = container.Resolve<ISelectionProxy>();
-            m_AssetDatabase = container.Resolve<IAssetDatabaseProxy>();
-            m_Application = container.Resolve<IApplicationProxy>();
-            m_IOProxy = container.Resolve<IIOProxy>();
-            m_AssetStoreCache = container.Resolve<IAssetStoreCache>();
-            m_PageManager = container.Resolve<IPageManager>();
-            m_UpmCache = container.Resolve<IUpmCache>();
-            m_UnityConnect = container.Resolve<IUnityConnectProxy>();
-            m_PackageLinkFactory = container.Resolve<IPackageLinkFactory>();
+            public override object CreateInstance()
+            {
+                var container = ServicesContainer.instance;
+                return new PackageDetailsBody(
+                    container.Resolve<IResourceLoader>(),
+                    container.Resolve<IPackageDatabase>(),
+                    container.Resolve<IPackageOperationDispatcher>(),
+                    container.Resolve<IPackageManagerPrefs>(),
+                    container.Resolve<IApplicationProxy>(),
+                    container.Resolve<IIOProxy>(),
+                    container.Resolve<IAssetStoreCache>(),
+                    container.Resolve<IPageManager>(),
+                    container.Resolve<IUpmCache>(),
+                    container.Resolve<IUnityConnectProxy>(),
+                    container.Resolve<IPackageLinkFactory>());
+            }
         }
 
         private IPackageVersion m_Version;
+        private readonly PackageDetailsTabView m_TabView;
 
-        public PackageDetailsBody()
+        private readonly IResourceLoader m_ResourceLoader;
+        private readonly IPackageDatabase m_PackageDatabase;
+        private readonly IPackageOperationDispatcher m_OperationDispatcher;
+        private readonly IPackageManagerPrefs m_PackageManagerPrefs;
+        private readonly IApplicationProxy m_Application;
+        private readonly IIOProxy m_IOProxy;
+        private readonly IAssetStoreCache m_AssetStoreCache;
+        private readonly IPageManager m_PageManager;
+        private readonly IUpmCache m_UpmCache;
+        private readonly IUnityConnectProxy m_UnityConnect;
+        private readonly IPackageLinkFactory m_PackageLinkFactory;
+
+        public PackageDetailsBody(
+            IResourceLoader resourceLoader,
+            IPackageDatabase packageDatabase,
+            IPackageOperationDispatcher operationDispatcher,
+            IPackageManagerPrefs packageManagerPrefs,
+            IApplicationProxy application,
+            IIOProxy ioProxy,
+            IAssetStoreCache assetStoreCache,
+            IPageManager pageManager,
+            IUpmCache upmCache,
+            IUnityConnectProxy unityConnect,
+            IPackageLinkFactory packageLinkFactory)
         {
-            ResolveDependencies();
+            m_ResourceLoader = resourceLoader;
+            m_PackageDatabase = packageDatabase;
+            m_OperationDispatcher = operationDispatcher;
+            m_PackageManagerPrefs = packageManagerPrefs;
+            m_Application = application;
+            m_IOProxy = ioProxy;
+            m_AssetStoreCache = assetStoreCache;
+            m_PageManager = pageManager;
+            m_UpmCache = upmCache;
+            m_UnityConnect = unityConnect;
+            m_PackageLinkFactory = packageLinkFactory;
 
-            m_TabView = new PackageDetailsTabView()
-            {
-                name = "packageDetailsTabView"
-            };
-            Add(m_TabView);
-
+            m_TabView = new PackageDetailsTabView { name = "packageDetailsTabView" };
             m_TabView.onTabSwitched += OnTabSwitched;
+            Add(m_TabView);
 
             AddTabs();
         }
@@ -70,10 +81,10 @@ namespace UnityEditor.PackageManager.UI.Internal
         public void AddTabs()
         {
             // The following list of tabs are added in the order we want them to be shown to the users.
-            m_TabView.AddTab(new PackageDetailsDetailsTab(m_UnityConnect, m_ResourceLoader, m_Application));
-            m_TabView.AddTab(new PackageDetailsOverviewTab(m_UnityConnect, m_ResourceLoader));
+            m_TabView.AddTab(new PackageDetailsDetailsTab(m_UnityConnect, m_ResourceLoader, m_Application, m_UpmCache));
+            m_TabView.AddTab(new PackageDetailsOverviewTab(m_UnityConnect, m_ResourceLoader, m_UpmCache));
             m_TabView.AddTab(new PackageDetailsReleasesTab(m_UnityConnect));
-            m_TabView.AddTab(new PackageDetailsImportedAssetsTab(m_UnityConnect, m_IOProxy, m_PackageManagerPrefs));
+            m_TabView.AddTab(new PackageDetailsImportedAssetsTab(m_UnityConnect, m_PackageManagerPrefs));
             m_TabView.AddTab(new PackageDetailsVersionsTab(m_UnityConnect, m_ResourceLoader, m_Application, m_PackageManagerPrefs, m_PackageDatabase, m_OperationDispatcher, m_PageManager, m_UpmCache, m_PackageLinkFactory));
             m_TabView.AddTab(new PackageDetailsDependenciesTab(m_UnityConnect, m_ResourceLoader, m_PackageDatabase));
             m_TabView.AddTab(new FeatureDependenciesTab(m_UnityConnect, m_ResourceLoader, m_PackageDatabase, m_PackageManagerPrefs, m_Application));
@@ -132,9 +143,9 @@ namespace UnityEditor.PackageManager.UI.Internal
             if (!args.page.isActivePage)
                 return;
 
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var newVisualState = args.visualStates.FirstOrDefault(state => state.packageUniqueId == m_Version?.package.uniqueId);
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             if (newVisualState?.userUnlocked == true && m_PageManager.activePage.GetSelection()?.Count == 1)
                 m_TabView.RefreshTab(PackageDetailsVersionsTab.k_Id, m_Version);
         }

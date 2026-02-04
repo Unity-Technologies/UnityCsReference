@@ -4,6 +4,7 @@
 
 using System;
 using System.Globalization;
+using System.Runtime.InteropServices;
 using UnityEngine;
 
 namespace UnityEngine.UIElements
@@ -11,9 +12,14 @@ namespace UnityEngine.UIElements
     /// <summary>
     /// Script interface for <see cref="VisualElement"/> text-shadow style property <see cref="IStyle.textShadow"/>.
     /// </summary>
-    [Serializable]
+    [Serializable, StructLayout(LayoutKind.Sequential)]
     public partial struct TextShadow : IEquatable<TextShadow>
     {
+        /// <summary>
+        /// The color of the shadow.
+        /// </summary>
+        public Color color;
+
         /// <summary>
         /// The offset of the shadow.
         /// </summary>
@@ -23,11 +29,6 @@ namespace UnityEngine.UIElements
         /// The blur radius of the shadow.
         /// </summary>
         public float blurRadius;
-
-        /// <summary>
-        /// The color of the shadow.
-        /// </summary>
-        public Color color;
 
         public override bool Equals(object obj)
         {

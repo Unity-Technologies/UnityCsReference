@@ -923,10 +923,16 @@ namespace UnityEditor
                                 if (alpha < 1f)
                                     GUI.color = new Color(GUI.color.r, GUI.color.g, GUI.color.b, alpha);
 
-                                // Render sub assets with rounded corners so they are visually different than the main representation when shown on the slate background
-                                float borderRadius = isSubAssetAndFolderBrowsing ? Mathf.Round(5f * position.width / m_Owner.maxGridSize) : 0f;
-                                GUI.DrawTexture(actualImageDrawPosition, m_Content.image, ScaleMode.ScaleToFit, true, 0f, GUI.color, 0f, borderRadius);
-
+                                // Render sub asset previews with rounded corners so they are visually different than the main representation when shown on the slate background
+                                if (isSubAssetAndFolderBrowsing && previewImage != null)
+                                {
+                                    float borderRadius = isSubAssetAndFolderBrowsing ? Mathf.Round(5f * position.width / m_Owner.maxGridSize) : 0f;
+                                    GUI.DrawTexture(actualImageDrawPosition, previewImage, ScaleMode.ScaleToFit, true, 0f, GUI.color, 0f, borderRadius);
+                                }
+                                else
+                                {
+                                    Styles.resultsGrid.Draw(actualImageDrawPosition, m_Content, false, false, selected, m_Owner.HasFocus());
+                                }
 
                                 if (alpha < 1f)
                                     GUI.color = orgColor2;

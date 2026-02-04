@@ -25,7 +25,7 @@ namespace UnityEditor.UIElements
     // Make sure UXML is imported after assets than can be addressed in USS
     [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
     [HelpURL("UIE-VisualTree-landing")]
-    [ScriptedImporter(version: 28, ext: "uxml", importQueueOffset: 1102)]
+    [ScriptedImporter(version: 29, ext: "uxml", importQueueOffset: 1102)]
     [ExcludeFromPreset]
     internal class UIElementsViewImporter : ScriptedImporter
     {
@@ -76,9 +76,39 @@ namespace UnityEditor.UIElements
         }
     }
 
-    [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+    [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
     internal class UXMLImporterImpl : StyleValueImporter
     {
+        private class LogAuthoringIdConflictScope : IDisposable
+        {
+            UXMLImporterImpl m_Importer;
+            VisualTreeAsset m_VisualTreeAsset;
+            IXmlLineInfo m_LineInfo;
+
+            public bool conflictDetected { get; private set; } = false;
+
+            public LogAuthoringIdConflictScope(UXMLImporterImpl importer, VisualTreeAsset vta, IXmlLineInfo lineInfo)
+            {
+                m_Importer = importer;
+                m_VisualTreeAsset = vta;
+                m_LineInfo = lineInfo;
+                m_VisualTreeAsset.onAuthoringIdConflictResolved += LogError;
+            }
+
+            void LogError(UxmlAsset asset, int oldId, int newId)
+            {
+                conflictDetected = true;
+                m_Importer.LogError(asset.visualTreeAsset, ImportErrorType.Semantic, ImportErrorCode.DuplicateAuthoringId, oldId, m_LineInfo);
+            }
+
+            public void Dispose()
+            {
+                m_VisualTreeAsset.onAuthoringIdConflictResolved -= LogError;
+                m_Importer = null;
+                m_VisualTreeAsset = null;
+            }
+        }
+
         const string k_ClassAttr = "class";
         const string k_StyleAttr = "style";
         const string k_GenericPathAttr = UxmlGenericAttributeNames.k_PathAttributeName;
@@ -99,9 +129,8 @@ namespace UnityEditor.UIElements
         #pragma warning restore CS0618 // Type or member is obsolete
 
         static UxmlAssetAttributeCache s_UxmlAssetAttributeCache = new();
-        readonly Dictionary<int, UxmlAsset> m_UsedIds = new();
 
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
         internal UXMLImporterImpl()
         {
         }
@@ -155,7 +184,9 @@ namespace UnityEditor.UIElements
                 case ImportErrorCode.InvalidXml:
                     return "Xml is not valid, exception during parsing: {0}";
                 case ImportErrorCode.InvalidRootElement:
-                    return "Expected the XML Root element name to be '" + k_RootNode + "', found '{0}'";
+                    return "Expected the UXML Root element name to be '" + k_RootNode + "', found '{0}'";
+                case ImportErrorCode.MultipleRootElements:
+                    return "Multiple UXML elements were found. Expected a single root UXML element to be found";
                 case ImportErrorCode.TemplateHasEmptyName:
                     return "'" + k_TemplateNode + "' declaration requires a non-empty '" + k_TemplateNameAttr +
                            "' attribute";
@@ -271,7 +302,7 @@ namespace UnityEditor.UIElements
             TryCreateInlineStyleSheet(vta);
         }
 
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
         internal void ImportXmlFromString(string xml, out VisualTreeAsset vta)
         {
             byte[] b = Encoding.UTF8.GetBytes(xml);
@@ -291,7 +322,7 @@ namespace UnityEditor.UIElements
                 return;
             }
 
-            LoadXmlRoot(doc, vta, true);
+            LoadXmlRoot(doc, vta);
             TryCreateInlineStyleSheet(vta);
         }
 
@@ -341,7 +372,7 @@ namespace UnityEditor.UIElements
             vta.contentHash = contentHash.GetHashCode();
         }
 
-        void LoadXmlRoot(XDocument doc, VisualTreeAsset vta, bool generateRandomId = false)
+        void LoadXmlRoot(XDocument doc, VisualTreeAsset vta)
         {
             XElement elt = doc.Root;
 
@@ -358,16 +389,8 @@ namespace UnityEditor.UIElements
                 return;
             }
 
-            try
-            {
-                LoadXml(elt, null, null, vta, generateRandomId);
-                UxmlSerializer.CreateSerializedDataOverrides(vta);
-            }
-            finally
-            {
-                // Clear used IDs for next import
-                m_UsedIds.Clear();
-            }
+            LoadXml(elt, null, null, vta);
+            UxmlSerializer.CreateSerializedDataOverrides(vta);
         }
 
         void LoadTemplateNode(VisualTreeAsset vta, XElement elt, XElement child)
@@ -642,69 +665,27 @@ namespace UnityEditor.UIElements
             }
         }
 
-        void LoadXml(XElement elt, UxmlAsset parent, UxmlSerializedData parentSerializedData, VisualTreeAsset vta, bool generateRandomId = false)
+        void LoadXml(XElement elt, UxmlAsset parent, UxmlSerializedData parentSerializedData, VisualTreeAsset vta)
         {
             if (!TryResolveType(elt, parent, vta, out var uxmlAsset, out var uxmlSerializedDataDescription))
                 return;
 
-            int parentHash;
-            // Not a direct cast because it can fail.
-            var uObjectAsset = uxmlAsset as UxmlObjectAsset;
-            if (parent == null)
-            {
-                if (uObjectAsset != null)
-                    uObjectAsset.parentId = 0;
-                parentHash = vta.contentHash;
-            }
-            else
-            {
-                if (uObjectAsset != null)
-                    uObjectAsset.parentId = parent.id;
-                parentHash = parent.id;
-            }
-
             if (!EnsureValidUxmlObjectChild(elt, uxmlAsset, vta, parent))
                 return;
 
-            var templateAsset = uxmlAsset as TemplateAsset;
             var vea = uxmlAsset as VisualElementAsset;
+            var templateAsset = uxmlAsset as TemplateAsset;
             var uxmlObjectAsset = uxmlAsset as UxmlObjectAsset;
-            if (templateAsset != null)
+
+            if (vea is { isRoot: true })
             {
-                if (null == parent)
-                {
-                    vta.visualTree.Add(templateAsset);
-                }
-                else
-                {
-                    parent.Add(templateAsset);
-                }
-            }
-            else if (uxmlObjectAsset != null)
-            {
-                parent?.Add(uxmlObjectAsset);
+                vta.SetRootAsset(vea);
             }
             else
             {
-                if (parent is VisualElementAsset veaParent)
-                {
-                    veaParent.Add(vea);
-                }
-                else
-                {
-                    if (vea?.isRoot ?? false)
-                    {
-                        vta.SetRootAsset(vea);
-                    }
-                    else
-                    {
-                        vta.visualTree.Add(vea);
-                    }
-                }
+                var actualParent = parent ?? vta.visualTree;
+                actualParent.Add(uxmlAsset);
             }
-
-            // Allocate an Id, this may be replaced by the authoring-id attribute later
-            uxmlAsset.id = GetNextUxmlAssetId(uxmlAsset, generateRandomId, parentHash);
 
             var currentSerializedData = vea?.serializedData;
 
@@ -726,7 +707,6 @@ namespace UnityEditor.UIElements
 
             if (currentSerializedData != null)
                 currentSerializedData.uxmlAssetId = uxmlAsset.id;
-            m_UsedIds[uxmlAsset.id] = uxmlAsset;
 
             if (elt.HasElements)
             {
@@ -744,27 +724,6 @@ namespace UnityEditor.UIElements
                     }
                 }
             }
-        }
-
-        int GetNextUxmlAssetId(UxmlAsset uxmlAsset, bool generateRandomId, int parentHash)
-        {
-            var vta = uxmlAsset.visualTreeAsset;
-            int newId;
-            do
-            {
-                if (generateRandomId)
-                {
-                    newId = vta.GetNextUxmlAssetId(uxmlAsset.parentAsset?.id ?? 0);
-                }
-                else
-                {
-                    // id includes the parent id, meaning it's dependent on the whole direct hierarchy
-                    newId = (vta.GetNextChildSerialNumber() + 585386304) * -1521134295 + parentHash++;
-                }
-            }
-            while (m_UsedIds.ContainsKey(newId));
-
-            return newId;
         }
 
         /// <summary>
@@ -946,7 +905,7 @@ namespace UnityEditor.UIElements
             }
         }
 
-        static ProfilerMarker s_ResolveAttributeOverrides = new ProfilerMarker("UXMLImport.ResolveAttributeOverrideTargets");
+        static ProfilerMarker s_ResolveAttributeOverrides = new ProfilerMarker(ProfilerCategory.UIToolkit, "UXMLImport.ResolveAttributeOverrideTargets");
 
         void LoadAttributeOverridesNode(TemplateAsset templateAsset, XElement attributeOverridesElt, VisualTreeAsset vta)
         {
@@ -1137,6 +1096,12 @@ namespace UnityEditor.UIElements
             if (parent is UxmlObjectAsset)
             {
                 LogError(vta, ImportErrorType.Semantic, ImportErrorCode.InvalidUxmlObjectChild, uxmlAsset.fullTypeName, elt);
+                return false;
+            }
+
+            if (uxmlAsset is VisualElementAsset { isRoot: true } && parent != null)
+            {
+                LogError(vta, ImportErrorType.Semantic, ImportErrorCode.MultipleRootElements, uxmlAsset.fullTypeName, elt);
                 return false;
             }
 
@@ -1342,27 +1307,15 @@ namespace UnityEditor.UIElements
                     return true;
                 }
 
-                asset.id = parsedId;
-
-                // Check we have no conflicts
-                if (m_UsedIds.TryGetValue(asset.id, out var usedIdEntry))
+                // Log conflict if there is any.
+                using (var conflict = new LogAuthoringIdConflictScope(this, vta, elt))
                 {
-                    // If the id is already used by a non-generated id, log an error
-                    if (usedIdEntry.hasAuthoringId)
-                    {
-                        LogError(vta, ImportErrorType.Semantic, ImportErrorCode.DuplicateAuthoringId, asset.id, elt);
-
-                        // If we have a conflict we will need to generate a new id.
-                        asset.id = GetNextUxmlAssetId(asset, true, 0);
+                    asset.hasAuthoringId = true;
+                    asset.id = parsedId;
+                    if (conflict.conflictDetected)
                         return true;
-                    }
-
-                    // Assign a new id to the generated one
-                    usedIdEntry.id = GetNextUxmlAssetId(usedIdEntry, true, 0);
-                    m_UsedIds[usedIdEntry.id] = usedIdEntry;
                 }
 
-                asset.hasAuthoringId = true;
                 if (uxmlSerializedData != null)
                     uxmlSerializedData.uxmlAssetId = asset.id;
                 asset.SetAttribute(attrName, xattr.Value);
@@ -1429,24 +1382,24 @@ namespace UnityEditor.UIElements
                             vta,
                             ImportErrorType.Semantic,
                             ImportErrorCode.InvalidCssInStyleAttribute,
-                            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                             parser.errors.Aggregate("", (s, error) => s + error.ToString() + "\n"),
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                             xattr);
                         return true;
                     }
 
-                    #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                    #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     if (parsed.StyleRules.Count() != 1)
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                     {
                         LogWarning(
                             vta,
                             ImportErrorType.Semantic,
                             ImportErrorCode.InvalidCssInStyleAttribute,
-                            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                             "Expected one style rule, found " + parsed.StyleRules.Count(),
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                             xattr);
                         return true;
                     }
@@ -1456,9 +1409,9 @@ namespace UnityEditor.UIElements
                     // it's then applied during tree cloning
                     m_Builder.BeginRule(-1);
                     m_CurrentLine = ((IXmlLineInfo)xattr).LineNumber;
-                    #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                    #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     foreach (var prop in parsed.StyleRules.First().Style.Declarations)
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                     {
                         m_Builder.BeginProperty(prop.Name);
                         VisitValue(prop);
@@ -1475,6 +1428,7 @@ namespace UnityEditor.UIElements
     internal enum ImportErrorCode
     {
         InvalidRootElement,
+        MultipleRootElements,
         DuplicateTemplateName,
         UnknownTemplate,
         UnknownElement,

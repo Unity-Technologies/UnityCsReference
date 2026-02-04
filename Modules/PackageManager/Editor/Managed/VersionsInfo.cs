@@ -42,16 +42,16 @@ namespace UnityEditor.PackageManager
             string recommended,
             IEnumerable<string> deprecated)
         {
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             m_All = (all ?? Array.Empty<string>()).ToArray();
-#pragma warning restore RS0030
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning restore UA2001
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             m_Compatible = (compatible ?? Array.Empty<string>()).ToArray();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             m_Recommended = recommended ?? string.Empty;
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             m_Deprecated = (deprecated ?? Array.Empty<string>()).ToArray();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
         }
 
         public string[] all { get { return m_All; } }
@@ -67,9 +67,9 @@ namespace UnityEditor.PackageManager
         {
             get
             {
-                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 return (all.LastOrDefault() ?? string.Empty);
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             }
         }
 
@@ -77,9 +77,9 @@ namespace UnityEditor.PackageManager
         {
             get
             {
-                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 return (compatible.LastOrDefault() ?? string.Empty);
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             }
         }
     }

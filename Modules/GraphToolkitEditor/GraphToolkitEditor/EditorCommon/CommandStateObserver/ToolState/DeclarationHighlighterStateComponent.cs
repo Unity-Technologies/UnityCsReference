@@ -30,9 +30,9 @@ namespace Unity.GraphToolkit.Editor
             /// <param name="declarations">The declarations to highlight.</param>
             public void SetHighlightedDeclarations(Hash128 sourceStateHashGuid, IEnumerable<DeclarationModel> declarations)
             {
-                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 var newDeclarations = declarations.Select(m => m.Guid).ToList();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                 var changedDeclarations = new HashSet<Hash128>(newDeclarations);
 
                 if (m_State.m_HighlightedDeclarations.TryGetValue(sourceStateHashGuid, out var currentDeclarations))
@@ -105,13 +105,13 @@ namespace Unity.GraphToolkit.Editor
 
             if (other is DeclarationHighlighterStateComponent highlighterStateComponent)
             {
-                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 var newDeclarations = new HashSet<Hash128>(highlighterStateComponent.m_HighlightedDeclarations.Values.SelectMany(v => v));
-#pragma warning restore RS0030
+#pragma warning restore UA2001
 
-                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 var changedDeclarations = new HashSet<Hash128>(m_HighlightedDeclarations.Values.SelectMany(v => v));
-#pragma warning restore RS0030
+#pragma warning restore UA2001
 
                 changedDeclarations.SymmetricExceptWith(newDeclarations);
                 CurrentChangeset.ChangedModels.UnionWith(changedDeclarations);

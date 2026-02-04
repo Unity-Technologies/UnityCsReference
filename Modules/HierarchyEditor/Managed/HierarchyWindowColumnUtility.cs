@@ -2,9 +2,11 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
 using UnityEditor;
 using UnityEditor.UIElements;
 using UnityEngine;
+using UnityEngine.Pool;
 using UnityEngine.SceneManagement;
 using UnityEngine.UIElements;
 
@@ -28,6 +30,46 @@ namespace Unity.Hierarchy.Editor
                 go = handler.GetGameObject(cell.Node);
             }
             return go;
+        }
+
+        /// <summary>
+        /// Gets the GameObjects that should be affected by a column editor action.
+        /// Returns current cell's GameObject and all selected GameObjects.
+        /// </summary>
+        /// <param name="cell">The cell containing the column editor.</param>
+        /// <param name="length">The number of valid GameObjects in the returned span.</param>
+        /// <returns>A rented span of GameObjects. The caller is responsible for disposing it.</returns>
+        public static RentSpan<GameObject> GetTargetGameObjects(HierarchyViewCell cell, out int length)
+        {
+            if (cell.Handler is not HierarchyGameObjectHandler handler)
+                handler = cell.View.Source.GetNodeTypeHandler<HierarchyGameObjectHandler>();
+
+            var gameObjectNodeType = handler.GetNodeType();
+            var hierarchy = cell.View.Source;
+            var gameObjects = new RentSpan<GameObject>(Math.Max(cell.View.ViewModel.HasFlagsCount(HierarchyNodeFlags.Selected)+1, 1));
+            length = 0;
+
+            // First add the current cell underlying gameobject to the target objects
+            var cellGo = handler.GetGameObject(cell.Node);
+            if (cellGo && cellGo != null)
+                gameObjects.Span[length++] = cellGo;
+
+            foreach (ref readonly var node in cell.View.ViewModel.EnumerateNodesWithFlags(HierarchyNodeFlags.Selected))
+            {
+                if (node == cell.Node)
+                    continue;
+
+                if (hierarchy.GetNodeType(in node) != gameObjectNodeType)
+                    continue;
+
+                var go = handler.GetGameObject(in node);
+                if (!go || go == null)
+                    continue;
+
+                gameObjects.Span[length++] = go;
+            }
+
+            return gameObjects;
         }
 
         /// <summary>

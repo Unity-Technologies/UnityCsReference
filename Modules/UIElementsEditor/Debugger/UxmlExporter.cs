@@ -45,9 +45,9 @@ namespace UnityEditor.UIElements.Debugger
                 template.Add(new XAttribute(XNamespace.Xmlns + it.Value, it.Key));
             }
 
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             foreach (var it in usings.OrderByDescending(x => x))
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             {
                 template.AddFirst(new XElement("Using", new XAttribute("alias", it), new XAttribute("path", it)));
             }

@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System.Linq;
 using UnityEngine.UIElements;
 
 namespace UnityEditor.PackageManager.UI.Internal
@@ -14,7 +13,6 @@ namespace UnityEditor.PackageManager.UI.Internal
         private readonly VisualElement m_Container;
         private readonly VisualElement m_VersionHistoryList;
         private readonly VisualElement m_VersionsToolbar;
-        private readonly Button m_VersionsShowOthersButton;
         private readonly Label m_LoadingLabel;
         private readonly Label m_NonCompliantPackageLabel;
 
@@ -58,8 +56,9 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_VersionsToolbar = new VisualElement { name = "versionsToolbar" };
             m_Container.Add(m_VersionsToolbar);
 
-            m_VersionsShowOthersButton = new Button { name = "versionsShowAllButton", text = L10n.Tr("See other versions") };
-            m_VersionsToolbar.Add(m_VersionsShowOthersButton);
+            var versionsShowOthersButton = new Button { name = "versionsShowAllButton", text = L10n.Tr("See other versions") };
+            versionsShowOthersButton.clickable.clicked += ShowOthersVersion;
+            m_VersionsToolbar.Add(versionsShowOthersButton);
 
             m_LoadingLabel = new Label { name = "versionsLoadingLabel", text = L10n.Tr("Loading...") };
             m_Container.Add(m_LoadingLabel);
@@ -67,8 +66,6 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_NonCompliantPackageLabel = new Label { name = "nonCompliantPackageLabel", text = L10n.Tr("Information is unavailable because the package comes from a restricted registry.") };
             m_NonCompliantPackageLabel.AddToClassList("packageDetailsTabMessage");
             m_ContentContainer.Add(m_NonCompliantPackageLabel);
-
-            m_VersionsShowOthersButton.clickable.clicked += ShowOthersVersion;
         }
 
         private void ShowOthersVersion()
@@ -102,9 +99,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 m_PackageManagerPrefs.packageDisplayedInVersionHistoryTab = m_Version?.uniqueId;
             }
 
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            foreach (var historyItem in m_VersionHistoryList.Children().OfType<PackageDetailsVersionHistoryItem>())
-#pragma warning restore RS0030
+            foreach (var historyItem in m_VersionHistoryList.Children().FilterByType<PackageDetailsVersionHistoryItem>())
                 historyItem.StopSpinner();
             m_VersionHistoryList.Clear();
 
@@ -126,9 +121,8 @@ namespace UnityEditor.PackageManager.UI.Internal
             UIUtils.SetElementDisplay(m_LoadingLabel, false);
 
             var primaryVersion = m_Version.package?.versions.primary;
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            foreach (var v in versions.Reverse())
-#pragma warning restore RS0030
+            // We add the versions here in ascending order, but versions show up in descending order due to styling
+            foreach (var v in versions)
             {
                 PackageAction action;
                 if (primaryVersion?.isInstalled ?? false)

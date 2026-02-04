@@ -374,9 +374,9 @@ namespace UnityEditor.AnimationWindowBuiltin
         {
             GenericMenu menu = new GenericMenu();
             var contextData = new EventLineContextMenuObject(animatedGo, clip, time, eventIndex, selectedEvents);
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var selectedCount = selectedEvents.Count(selected => selected);
-#pragma warning restore RS0030
+#pragma warning restore UA2001
 
             menu.AddItem(Styles.textAddEvent, false, EventLineContextMenuAdd, contextData);
             if (selectedCount > 0 || eventIndex != -1)

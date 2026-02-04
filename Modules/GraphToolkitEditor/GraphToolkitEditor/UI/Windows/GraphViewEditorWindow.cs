@@ -296,9 +296,9 @@ Would you like to save these changes?
         {
             static MethodInfo GetMethodInfo(Expression<CreateWindowMethod> expression)
             {
-                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 return ((MethodCallExpression)expression.Body).Method;
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             }
 
             k_CreateWindowMethod = GetMethodInfo(types => EditorWindow.CreateWindow<EditorWindow>(types)).GetGenericMethodDefinition();

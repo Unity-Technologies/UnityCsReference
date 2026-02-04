@@ -37,6 +37,9 @@ namespace Unity.UI.Builder
 
         static bool IsUxml(string assetPath)
         {
+            if(string.IsNullOrEmpty(assetPath))
+                return false;
+
             if (assetPath.EndsWith("uxml") || assetPath.EndsWith("uxml.meta"))
                 return true;
 

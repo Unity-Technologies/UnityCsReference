@@ -406,9 +406,9 @@ namespace Unity.GraphToolkit.Editor
                     if (JsonUtility.FromJson(m_SerializedState[i], componentType) is IUndoableStateComponent newStateComponent)
                     {
                         var stateComponent =
-                            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                             state.AllStateComponents.OfType<IUndoableStateComponent>().FirstOrDefault(c => c.CanBeUndoDataSource(newStateComponent));
-#pragma warning restore RS0030
+#pragma warning restore UA2001
 
                         if (stateComponent != null)
                         {

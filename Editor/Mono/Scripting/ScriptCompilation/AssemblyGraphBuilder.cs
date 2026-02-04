@@ -85,16 +85,16 @@ namespace UnityEditor.Scripting.ScriptCompilation
         public void Initialize(IReadOnlyCollection<CustomScriptAssembly> assemblies,
             IReadOnlyCollection<CustomScriptAssemblyReference> customScriptAssemblyReferences)
         {
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var assemblyByNameLookup = assemblies.ToDictionary(x => x.Name, x => x);
-#pragma warning restore RS0030
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning restore UA2001
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var assemblyByGuidLookup = assemblies.ToDictionary(x => x.GUID, x => x);
-#pragma warning restore RS0030
+#pragma warning restore UA2001
 
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             bool rootOverridden = assemblies.Any(x => AssetPath.ComparePaths(x.PathPrefix, _projectPath));
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             if (!rootOverridden)
             {
                 _npp.Insert(_globalAssemblyDefinition.PathPrefix, _globalAssemblyDefinition);

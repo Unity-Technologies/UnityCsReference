@@ -149,9 +149,9 @@ namespace UnityEngine
         }
 
         [FreeFunction(Name = "ParticleSystemScriptBindings::SetParticlesAndTrailData", HasExplicitThis = true, ThrowsException = true)]
-        extern public void SetParticlesAndTrails([Out] Particle[] particles, Trails trailData, int size, int offset);
+        extern public void SetParticlesAndTrails([NotNull, Out] Particle[] particles, Trails trailData, int size, int offset);
         public void SetParticlesAndTrails([Out] Particle[] particles, Trails trailData, int size) { SetParticlesAndTrails(particles, trailData, size, 0); }
-        public void SetParticlesAndTrails([Out] Particle[] particles, Trails trailData) { SetParticlesAndTrails(particles, trailData, -1); }       
+        public void SetParticlesAndTrails([Out] Particle[] particles, Trails trailData) { SetParticlesAndTrails(particles, trailData, -1); }
 
         [FreeFunction(Name = "ParticleSystemScriptBindings::SetParticlesAndTrailDataWithNativeArray", HasExplicitThis = true, ThrowsException = true)]
         extern private void SetParticlesAndTrailsWithNativeArray(IntPtr particles, Trails trailData, int particlesLength, int size, int offset);

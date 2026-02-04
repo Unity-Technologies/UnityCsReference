@@ -205,8 +205,8 @@ namespace UnityEngine.TextCore.Text
             get
             {
                 bool isCacheTextCore = m_TextHandleFlags.HasFlag(TextHandleFlags.IsCachedPermanentTextCore);
-                if (!IsCachedTemporary)
-                    Debug.AssertFormat(isCacheTextCore == (TextInfoNode != null), "TextHandle : TextCore Permananent cache mismatch. isCache {0} but {1}", isCacheTextCore, TextInfoNode == null ? " has no node": "has a node");
+                if (!IsCachedTemporary && isCacheTextCore != (TextInfoNode != null))
+                    Debug.AssertFormat(false, "TextHandle : TextCore Permanent cache mismatch. isCache {0} but {1}", isCacheTextCore, TextInfoNode == null ? " has no node": "has a node");
 
                 return isCacheTextCore;
             }

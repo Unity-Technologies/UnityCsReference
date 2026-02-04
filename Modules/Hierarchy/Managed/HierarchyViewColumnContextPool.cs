@@ -15,7 +15,7 @@ namespace Unity.Hierarchy
     [VisibleToOtherModules("UnityEditor.HierarchyModule")]
     internal sealed class HierarchyViewColumnContextPool<TPooledObject> where TPooledObject : class
     {
-        class ContextPoolImplementation
+        sealed class ContextPoolImplementation
         {
             public UnityEngine.Pool.ObjectPool<TPooledObject> Pool { get; private set; }
             public HashSet<TPooledObject> Active { get; private set; } = new();

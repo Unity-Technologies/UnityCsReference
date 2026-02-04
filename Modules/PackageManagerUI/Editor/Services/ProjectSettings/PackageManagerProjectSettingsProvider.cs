@@ -9,27 +9,25 @@ namespace UnityEditor.PackageManager.UI.Internal
 {
     internal class PackageManagerProjectSettingsProvider : SettingsProvider
     {
-        private VisualElement m_RootVisualElement;
-
         // The naming of this constant does not follow typical conventions for our codebase.
         // However, it cannot be changed as it is referenced by other test projects.
         public const string k_PackageManagerSettingsPath = "Project/Package Manager";
+        public static readonly string[] k_Keywords = new []
+        {
+            L10n.Tr("enable"),
+            L10n.Tr("preview"),
+            L10n.Tr("package"),
+            L10n.Tr("scoped"),
+            L10n.Tr("registries"),
+            L10n.Tr("registry"),
+            L10n.Tr("dependencies")
+        };
+
         const string k_GeneralServicesTemplatePath = "UXML/PackageManager/PackageManagerProjectSettings.uxml";
         protected VisualTreeAsset m_GeneralTemplate;
 
         private static readonly string k_Message = L10n.Tr(
             "Pre-release package versions are in the process of becoming stable. The recommended best practice is to use them only for testing purposes and to give direct feedback to the authors.");
-
-        private IResourceLoader m_ResourceLoader;
-        private IProjectSettingsProxy m_SettingsProxy;
-        private IApplicationProxy m_Application;
-        private void ResolveDependencies()
-        {
-            var container = ServicesContainer.instance;
-            m_ResourceLoader = container.Resolve<IResourceLoader>();
-            m_SettingsProxy = container.Resolve<IProjectSettingsProxy>();
-            m_Application = container.Resolve<IApplicationProxy>();
-        }
 
         internal static class StylesheetPath
         {
@@ -43,32 +41,35 @@ namespace UnityEditor.PackageManager.UI.Internal
             public static readonly string styleSheetPackageManagerLight = "StyleSheets/PackageManager/Light.uss";
         }
 
-        public PackageManagerProjectSettingsProvider(string path, SettingsScope scopes, IEnumerable<string> keywords = null)
-            : base(path, scopes, keywords)
+        private readonly IProjectSettingsProxy m_SettingsProxy;
+        public PackageManagerProjectSettingsProvider(
+            IResourceLoader resourceLoader,
+            IProjectSettingsProxy settingsProxy,
+            IApplicationProxy application)
+            : base(k_PackageManagerSettingsPath, SettingsScope.Project, k_Keywords)
         {
-            activateHandler = (s, element) =>
+            m_SettingsProxy = settingsProxy;
+            activateHandler = (_, element) =>
             {
-                ResolveDependencies();
-
                 // Create a child to make sure all the style sheets are not added to the root.
-                m_RootVisualElement = new ScrollView();
-                m_RootVisualElement.StretchToParentSize();
-                m_RootVisualElement.AddStyleSheetPath(StylesheetPath.scopedRegistriesSettings);
-                m_RootVisualElement.AddStyleSheetPath(StylesheetPath.projectSettings);
-                m_RootVisualElement.AddStyleSheetPath(EditorGUIUtility.isProSkin ? StylesheetPath.stylesheetDark : StylesheetPath.stylesheetLight);
-                m_RootVisualElement.AddStyleSheetPath(EditorGUIUtility.isProSkin ? StylesheetPath.styleSheetPackageManagerDark : StylesheetPath.styleSheetPackageManagerLight);
-                m_RootVisualElement.AddStyleSheetPath(StylesheetPath.stylesheetCommon);
-                m_RootVisualElement.styleSheets.Add(m_ResourceLoader.packageManagerCommonStyleSheet);
+                var scrollView = new ScrollView();
+                scrollView.StretchToParentSize();
+                scrollView.AddStyleSheetPath(StylesheetPath.scopedRegistriesSettings);
+                scrollView.AddStyleSheetPath(StylesheetPath.projectSettings);
+                scrollView.AddStyleSheetPath(EditorGUIUtility.isProSkin ? StylesheetPath.stylesheetDark : StylesheetPath.stylesheetLight);
+                scrollView.AddStyleSheetPath(EditorGUIUtility.isProSkin ? StylesheetPath.styleSheetPackageManagerDark : StylesheetPath.styleSheetPackageManagerLight);
+                scrollView.AddStyleSheetPath(StylesheetPath.stylesheetCommon);
+                scrollView.styleSheets.Add(resourceLoader.packageManagerCommonStyleSheet);
 
-                element.Add(m_RootVisualElement);
+                element.Add(scrollView);
 
                 m_GeneralTemplate = EditorGUIUtility.Load(k_GeneralServicesTemplatePath) as VisualTreeAsset;
 
                 VisualElement newVisualElement = new VisualElement();
                 m_GeneralTemplate.CloneTree(newVisualElement);
-                m_RootVisualElement.Add(newVisualElement);
+                scrollView.Add(newVisualElement);
 
-                cache = new VisualElementCache(m_RootVisualElement);
+                cache = new VisualElementCache(scrollView);
 
                 advancedSettingsFoldout.SetValueWithoutNotify(m_SettingsProxy.advancedSettingsExpanded);
                 m_SettingsProxy.onAdvancedSettingsFoldoutChanged += OnAdvancedSettingsFoldoutChanged;
@@ -86,7 +87,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                         m_SettingsProxy.scopedRegistriesSettingsExpanded = changeEvent.newValue;
                 });
 
-                preReleaseInfoBox.readMoreUrl = $"https://docs.unity3d.com/{m_Application.shortUnityVersion}/Documentation/Manual/pack-preview.html";
+                preReleaseInfoBox.readMoreUrl = $"https://docs.unity3d.com/{application.shortUnityVersion}/Documentation/Manual/pack-preview.html";
 
                 RefreshEnablePreReleasePackagesCheckbox();
                 enablePreReleasePackages.RegisterValueChangedCallback(changeEvent =>
@@ -98,7 +99,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                         var saveIt = true;
                         if (newValue && !m_SettingsProxy.oneTimeWarningShown)
                         {
-                            if (m_Application.DisplayDialog("showPreReleasePackages", L10n.Tr("Show Pre-release Package Versions"), k_Message, L10n.Tr("I understand"), L10n.Tr("Cancel")))
+                            if (application.DisplayDialog("showPreReleasePackages", L10n.Tr("Show Pre-release Package Versions"), k_Message, L10n.Tr("I understand"), L10n.Tr("Cancel")))
                                 m_SettingsProxy.oneTimeWarningShown = true;
                             else
                                 saveIt = false;
@@ -145,16 +146,11 @@ namespace UnityEditor.PackageManager.UI.Internal
         [SettingsProvider]
         public static SettingsProvider CreateProjectSettingsProvider()
         {
-            return new PackageManagerProjectSettingsProvider(k_PackageManagerSettingsPath, SettingsScope.Project, new List<string>()
-            {
-                L10n.Tr("enable"),
-                L10n.Tr("preview"),
-                L10n.Tr("package"),
-                L10n.Tr("scoped"),
-                L10n.Tr("registries"),
-                L10n.Tr("registry"),
-                L10n.Tr("dependencies"),
-            });
+            var container = ServicesContainer.instance;
+            return new PackageManagerProjectSettingsProvider(
+                container.Resolve<IResourceLoader>(),
+                container.Resolve<IProjectSettingsProxy>(),
+                container.Resolve<IApplicationProxy>());
         }
 
         private void OnAdvancedSettingsFoldoutChanged(bool expanded)

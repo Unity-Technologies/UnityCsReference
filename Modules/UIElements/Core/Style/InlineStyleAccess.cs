@@ -675,9 +675,9 @@ namespace UnityEngine.UIElements
                     if (sv.value == null && inlineValue.value == null)
                         return false;
 
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     if (sv.value is List<T> list && inlineValue.value != null && list.SequenceEqual(inlineValue.value))
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                         return false;
                 }
             }

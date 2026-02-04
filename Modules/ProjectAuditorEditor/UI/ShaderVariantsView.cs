@@ -106,9 +106,9 @@ namespace Unity.ProjectAuditor.Editor.UI
             if (string.IsNullOrEmpty(logFilename))
                 return;
 
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var variants = m_Issues.Where(i => i.Category == IssueCategory.ShaderVariant).ToArray();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             var result = ShadersModule.ParsePlayerLog(logFilename, variants);
             switch (result)
             {
@@ -139,7 +139,7 @@ namespace Unity.ProjectAuditor.Editor.UI
                 GUI.enabled = NumIssues > 0;
 
                 EditorGUILayout.BeginHorizontal();
-                EditorGUILayout.LabelField("Extra :", GUILayout.Width(80));
+                EditorGUILayout.LabelField("Extra:", GUILayout.Width(80));
                 EditorGUI.BeginChangeCheck();
                 m_ShowCompiledVariants = EditorGUILayout.ToggleLeft("Compiled Variants", m_ShowCompiledVariants, GUILayout.Width(180));
                 m_ShowUncompiledVariants = EditorGUILayout.ToggleLeft("Uncompiled Variants", m_ShowUncompiledVariants, GUILayout.Width(180));
@@ -171,9 +171,9 @@ namespace Unity.ProjectAuditor.Editor.UI
                     else
                     {
                         // check if they are all the same
-                        #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                        #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                         var props = selectedIssues.Select(issue =>
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                             issue.GetCustomProperty(m_PropertyFoldouts[i].id)).Distinct().ToArray();
                         if (props.Length > 1)
                             GUILayout.TextArea("<Multiple values>", SharedStyles.TextAreaWithDynamicSize, GUILayout.ExpandHeight(true));
@@ -241,9 +241,9 @@ namespace Unity.ProjectAuditor.Editor.UI
                     case EventType.DragExited:
                         break;
                     case EventType.DragUpdated:
-                        #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                        #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                         var valid = 1 == DragAndDrop.paths.Count(path => Path.HasExtension(path) && Path.GetExtension(path).Equals(".log"));
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                         DragAndDrop.visualMode = valid ? DragAndDropVisualMode.Generic : DragAndDropVisualMode.Rejected;
                         evt.Use();
                         break;
@@ -281,11 +281,11 @@ namespace Unity.ProjectAuditor.Editor.UI
             var svcName = Path.GetFileNameWithoutExtension(path);
             if (path.Length != 0)
             {
-                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 var variants = m_Issues.Where(issue => predicate == null || predicate(issue));
 
                 ShadersModule.ExportVariantsToSvc(svcName, path, variants.ToArray());
-#pragma warning restore RS0030
+#pragma warning restore UA2001
 
                 EditorUtility.RevealInFinder(path);
             }

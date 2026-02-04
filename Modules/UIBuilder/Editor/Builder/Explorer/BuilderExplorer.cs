@@ -203,9 +203,9 @@ namespace Unity.UI.Builder
 
         public virtual void SelectionChanged()
         {
-#pragma warning disable RS0031 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2002 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             if (!m_Selection.selection.Any())
-#pragma warning restore RS0031
+#pragma warning restore UA2002
             {
                 m_SelectionMadeExternally = true;
                 m_ElementHierarchyView.ClearSelection();

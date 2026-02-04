@@ -51,11 +51,10 @@ namespace UnityEditor.Search
                 {
                     icon = column.content.image as Texture2D,
                     displayName = displayName,
-                    tooltip = column.content.tooltip,
+                    tooltip = string.IsNullOrEmpty(column.content.tooltip) ? path : column.content.tooltip,
                     userData = column
                 };
 
-                m_ColumnIndexes[newItem.id] = column;
                 var parent = rootItem;
                 if (prefix != null)
                 {
@@ -65,6 +64,8 @@ namespace UnityEditor.Search
 
                 if (FindItem(name, parent) == null)
                     parent.AddChild(newItem);
+
+                m_ColumnIndexes[newItem.id] = column;
             }
 
             rootItem.SortChildren(SortColumnProviders);
@@ -79,11 +80,11 @@ namespace UnityEditor.Search
             if (m_ColumnIndexes.TryGetValue(i.id, out var column))
                 properties.Add(column);
             else if (i.userData is AdvancedDropdownItem addAllItem)
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-#pragma warning disable RS0031 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2002 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 AddAll(properties, addAllItem.children, addAllItem.children.Where(c => c.userData is SearchColumn).All(c => c.children.Any()));
-#pragma warning restore RS0030
-#pragma warning restore RS0031
+#pragma warning restore UA2001
+#pragma warning restore UA2002
 
             m_AddColumnsHandler?.Invoke(properties, m_ActiveColumnIndex);
         }

@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System.Collections.Generic;
 using System;
 using UnityEngine.Bindings;
 using UnityEngine.UIElements;
@@ -12,7 +11,7 @@ namespace Unity.Hierarchy
     /// <summary>
     /// Class providing utility functions to set/get Model values on a UITk Control (i.e editor) in a HierarchyViewCell.
     /// </summary>
-    [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
+    [VisibleToOtherModules]
     internal sealed class HierarchyViewCellValueEditor<TModel, TEditor, TValue> where TEditor : VisualElement, INotifyValueChanged<TValue>, new()
     {
         readonly Func<HierarchyViewCellValueEditor<TModel, TEditor, TValue>, TValue> m_GetModelValue;

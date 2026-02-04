@@ -21,7 +21,6 @@ namespace UnityEngine.Animations
     }
 
     [System.Serializable]
-    [NativeType(CodegenOptions = CodegenOptions.Custom, IntermediateScriptingStructName = "MonoConstraintSource")]
     [NativeHeader("Modules/Animation/Constraints/ConstraintSource.h")]
     [NativeHeader("Modules/Animation/Constraints/Constraint.bindings.h")]
     [UsedByNativeCode]

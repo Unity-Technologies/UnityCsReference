@@ -122,9 +122,9 @@ namespace UnityEditor.UIElements.Samples
                 text = addSyntaxColors_USS(text);
             }
 
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var lineCount = text.Count(x => x == '\n') + 1;
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             string lineNumbersText = "";
             for (int i = 1; i <= lineCount; ++i)
             {
@@ -312,9 +312,9 @@ namespace UnityEditor.UIElements.Samples
             code = Regex.Replace(code, @"\b([a-zA-Z_][a-zA-Z0-9_]*)\s*(?=\()", m =>
             {
                 var name = m.Groups[1].Value;
-                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 if (!types.Contains(name) && !keywords.Contains(name))
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                     return $"<color={methodColor}>{name}</color>";
                 else
                     return name;

@@ -6,19 +6,13 @@ namespace UnityEditor.PackageManager.UI.Internal;
 
 internal class SourceInfoCard : PackageInformationCard
 {
-    IUpmCache m_UpmCache;
     protected override string titleText => L10n.Tr("Source");
     protected override InformationCardSize cardSize => InformationCardSize.Small;
 
-    private void ResolveDependencies()
+    private readonly IUpmCache m_UpmCache;
+    public SourceInfoCard(IUpmCache upmCache)
     {
-        var container = ServicesContainer.instance;
-        m_UpmCache = container.Resolve<IUpmCache>();
-    }
-
-    public SourceInfoCard()
-    {
-        ResolveDependencies();
+        m_UpmCache = upmCache;
     }
 
     public override void Refresh(IPackageVersion version)

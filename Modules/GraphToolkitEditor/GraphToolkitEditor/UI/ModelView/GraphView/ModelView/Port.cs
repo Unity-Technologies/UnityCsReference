@@ -703,9 +703,12 @@ namespace Unity.GraphToolkit.Editor
                     }
                     else
                     {
-                        // If the port has no icon, use the minWorldHitBoxSize.
-                        x = direction == PortDirection.Input ? node.worldBound.xMin : node.worldBound.xMax - minWorldHitBoxSize.x;
-                        y = connector.worldBound.center.y - minWorldHitBoxSize.y * 0.5f;
+                        // If the port has no icon, use the connector to compute the hit box.
+                        var portPos = portConnectorPart.Connector.worldBound;
+                        var margin = minWorldHitBoxSize.x * 0.5f;
+                        x = direction == PortDirection.Input ? node.worldBound.xMin : portPos.center.x - margin;
+                        y = portConnector.worldBound.yMin;
+                        hitBoxSize = new Vector2(direction == PortDirection.Input ? portPos.center.x + margin - x : node.worldBound.xMax - x, portConnector.worldBound.size.y);
                     }
                 }
                 else

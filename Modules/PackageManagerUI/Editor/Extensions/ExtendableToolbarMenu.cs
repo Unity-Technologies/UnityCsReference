@@ -4,7 +4,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using UnityEditor.UIElements;
 using UnityEngine.UIElements;
 
@@ -15,23 +14,22 @@ namespace UnityEditor.PackageManager.UI.Internal
         [Serializable]
         public new class UxmlSerializedData : ToolbarWindowMenu.UxmlSerializedData
         {
-            public override object CreateInstance() => new ExtendableToolbarMenu();
+            public override object CreateInstance()
+            {
+                return new ExtendableToolbarMenu(
+                    ServicesContainer.instance.Resolve<IDropdownHandler>());
+            }
         }
 
         private bool m_NeedRefresh;
-        private List<MenuDropdownItem> m_BuiltInItems;
-        private List<MenuDropdownItem> m_DropdownItems;
+        private readonly List<MenuDropdownItem> m_BuiltInItems;
+        private readonly List<MenuDropdownItem> m_DropdownItems;
         public DropdownMenu menu { get; private set; }
 
-        private IDropdownHandler m_DropdownHandler;
-        private void ResolveDependencies()
+        private readonly IDropdownHandler m_DropdownHandler;
+        public ExtendableToolbarMenu(IDropdownHandler dropdownHandler)
         {
-            m_DropdownHandler = ServicesContainer.instance.Resolve<IDropdownHandler>();
-        }
-
-        public ExtendableToolbarMenu()
-        {
-            ResolveDependencies();
+            m_DropdownHandler = dropdownHandler;
 
             m_BuiltInItems = new List<MenuDropdownItem>();
             m_DropdownItems = new List<MenuDropdownItem>();
@@ -56,9 +54,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 m_DropdownItems.Sort(ExtensionManager.CompareExtensions);
 
                 var newDropdownMenu = new DropdownMenu();
-                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                foreach (var item in m_BuiltInItems.Concat(m_DropdownItems))
-#pragma warning restore RS0030
+                foreach (var item in m_BuiltInItems.Join(m_DropdownItems))
                 {
                     if (item.insertSeparatorBefore)
                         newDropdownMenu.AppendSeparator();
@@ -73,20 +69,18 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public MenuDropdownItem AddBuiltInDropdownItem()
         {
-            m_BuiltInItems.Add(new MenuDropdownItem());
+            var newItem = new MenuDropdownItem();
+            m_BuiltInItems.Add(newItem);
             m_NeedRefresh = true;
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            return m_BuiltInItems.Last();
-#pragma warning restore RS0030
+            return newItem;
         }
 
         public IMenuDropdownItem AddDropdownItem()
         {
-            m_DropdownItems.Add(new MenuDropdownItem());
+            var newItem = new MenuDropdownItem();
+            m_DropdownItems.Add(newItem);
             m_NeedRefresh = true;
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            return m_DropdownItems.Last();
-#pragma warning restore RS0030
+            return newItem;
         }
 
         public void Remove(MenuDropdownItem item)

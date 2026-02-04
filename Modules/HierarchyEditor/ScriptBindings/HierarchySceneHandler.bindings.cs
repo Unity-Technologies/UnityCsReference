@@ -23,7 +23,7 @@ namespace Unity.Hierarchy.Editor
     [RequiredByNativeCode(Optional = true), StructLayout(LayoutKind.Sequential)]
     [NativeHeader("Modules/HierarchyEditor/Public/HierarchySceneHandler.h")]
     [NativeHeader("Modules/HierarchyEditor/HierarchySceneHandlerBindings.h")]
-    internal sealed partial class HierarchySceneHandler :
+    public sealed class HierarchySceneHandler :
         HierarchyNodeTypeHandler,
         IHierarchyEntityIdConverter,
         IHierarchyEditorNodeTypeHandler

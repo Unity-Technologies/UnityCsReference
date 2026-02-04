@@ -20,18 +20,18 @@ namespace Unity.ProjectAuditor.Editor
 
         public static void Initialize()
         {
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var paths = AssetDatabase.FindAssets("t:asmdef", ["Packages"])
                 .Select(AssetDatabase.GUIDToAssetPath);
             var asmDefPath = paths.FirstOrDefault(path => path.EndsWith("Unity.ProjectAuditor.Editor.asmdef"));
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             Path = string.IsNullOrEmpty(asmDefPath) ?
                 k_CanonicalPath :
                 PathUtils.GetDirectoryName(PathUtils.GetDirectoryName(asmDefPath));
 
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var packageInfo = PackageUtils.GetClientPackages().FirstOrDefault(p => p.name == Name);
-#pragma warning restore RS0030
+#pragma warning restore UA2001
 
             IsInstalled = (packageInfo != null);
             if (IsInstalled)

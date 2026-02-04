@@ -23,12 +23,9 @@ namespace UnityEditor.PackageManager.UI.Internal
     {
         public List<string> ParseLabels(IDictionary<string, object> result)
         {
-            var resultsList = result.GetList<string>("results");
-            if (resultsList == null)
-                return null;
-            var labels = new List<string>(resultsList);
-            labels.Remove("#BIN");
-            labels.Sort();
+            var labels = new List<string>(result.GetEnumerable<string>("results").Filter(label => label != "#BIN"));
+            if (labels.Count > 1)
+                labels.Sort();
             return labels;
         }
 

@@ -93,7 +93,7 @@ namespace UnityEngine.UIElements
         }
 
         private static readonly string s_Description = "UIElements.UpdateStyle";
-        private static readonly ProfilerMarker s_ProfilerMarker = new ProfilerMarker(s_Description);
+        private static readonly ProfilerMarker s_ProfilerMarker = new ProfilerMarker(ProfilerCategory.UIToolkit, s_Description);
         public override ProfilerMarker profilerMarker => s_ProfilerMarker;
 
         public void DirtyStyleSheets()

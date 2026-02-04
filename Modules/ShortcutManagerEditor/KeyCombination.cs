@@ -182,20 +182,20 @@ namespace UnityEditor.ShortcutManagement
 
         internal static string SequenceToString(IEnumerable<KeyCombination> keyCombinations)
         {
-#pragma warning disable RS0031 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2002 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             if (!keyCombinations.Any())
-#pragma warning restore RS0031
+#pragma warning restore UA2002
                 return "";
 
             var builder = new StringBuilder();
 
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             builder.Append(keyCombinations.First());
-#pragma warning restore RS0030
+#pragma warning restore UA2001
 
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             foreach (var keyCombination in keyCombinations.Skip(1))
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             {
                 builder.Append(", ");
                 builder.Append(keyCombination);
@@ -340,15 +340,15 @@ namespace UnityEditor.ShortcutManagement
         [VisibleToOtherModules("UnityEditor.GraphToolkitModule")]
         internal static string SequenceToMenuString(IEnumerable<KeyCombination> keyCombinations)
         {
-#pragma warning disable RS0031 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2002 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             if (!keyCombinations.Any())
-#pragma warning restore RS0031
+#pragma warning restore UA2002
                 return "";
 
             //TODO: once we start supporting chords we need to figure out how to represent that for menus.
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return keyCombinations.Single().ToMenuShortcutString();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
         }
 
         internal static void VisualizeModifiers(ShortcutModifiers modifiers, StringBuilder builder)

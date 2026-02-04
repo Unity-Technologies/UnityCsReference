@@ -59,6 +59,10 @@ namespace UnityEditor.Search
                 if (ancestor is SearchFieldElement searchField && searchField.addNewBlockIcon != null)
                 {
                     m_Icon.image = searchField.addNewBlockIcon;
+                    m_Icon.style.width = searchField.addNewBlockIcon.width;
+                    m_Icon.style.height = searchField.addNewBlockIcon.height;
+                    m_Icon.style.minHeight = searchField.addNewBlockIcon.height;
+                    m_Icon.style.minWidth = searchField.addNewBlockIcon.width;
                     break;
                 }
                 ancestor = ancestor.parent;
@@ -85,22 +89,22 @@ namespace UnityEditor.Search
             if (source.context.empty)
             {
                 var areaPropositions = QueryAreaBlock.FetchPropositions(context);
-                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 var allOtherPropositions = new[] { SearchProposition.CreateSeparator() }.Concat(SearchProposition.Fetch(context, options).OrderBy(p => p));
-#pragma warning restore RS0030
-                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning restore UA2001
+                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 return areaPropositions.Count() > 0 ?
-#pragma warning restore RS0030
-                    #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning restore UA2001
+                    #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     areaPropositions.Concat(allOtherPropositions) :
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                     allOtherPropositions;
             }
             else
             {
-                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 return SearchProposition.Fetch(context, options).OrderBy(p => p);
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             }
         }
     }

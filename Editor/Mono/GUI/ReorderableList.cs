@@ -138,9 +138,9 @@ namespace UnityEditorInternal
             if (m_OutdatedProperties.BinarySearch(m_PropertyPath) >= 0)
             {
                 InvalidateCache();
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 m_OutdatedProperties = m_OutdatedProperties.Where(e => !e.Equals(m_PropertyPath)).ToList();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                 return true;
             }
             return false;
@@ -311,9 +311,9 @@ namespace UnityEditorInternal
             {
                 if (GUIUtility.keyboardControl != list.id) list.GrabKeyboardFocus();
 
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 int[] deleteIndexes = list.m_Selection.Count > 0 ? list.selectedIndices.Reverse<int>().ToArray() : new[] { list.index };
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                 int lastDeletedIndex = -1;
                 // Remove in reverse so we do not need to keep track of changing indexes
                 foreach (var index in deleteIndexes)
@@ -452,9 +452,9 @@ namespace UnityEditorInternal
         {
             var id = ReorderableListWrapper.GetPropertyIdentifier(prop);
             ReorderableList list = null;
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             s_Instances?.FirstOrDefault(i =>
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             {
                 ReorderableList list2 = null;
                 if (!(i?.TryGetTarget(out list2) ?? false)) return false;
@@ -974,9 +974,9 @@ namespace UnityEditorInternal
                             if (visibleRect.y + visibleRect.height < GetElementYOffset(i > 0 ? i - 1 : i)) break;
                         }
 
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                         bool activeElement = m_Selection.Any(id => id == i);
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                         bool focusedElement = (activeElement && HasKeyboardControl());
 
                         // update the position of the element
@@ -1186,9 +1186,9 @@ namespace UnityEditorInternal
                     if (evt.type == EventType.Used)
                     {
                         // don't allow arrowing through the ends of the list
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                         m_Selection = m_Selection.Where(i => i >= 0 && i < (m_Elements != null ? m_Elements.arraySize : m_ElementList.Count)).ToList();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                     }
                     if (oldIndex != index && PropertyEditor.FocusedPropertyEditor != null)
                     {

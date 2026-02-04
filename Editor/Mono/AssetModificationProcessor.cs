@@ -161,6 +161,14 @@ namespace UnityEditor
                 MethodInfo method = assetModificationProcessorClass.GetMethod(methodName, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static);
                 if (method != null)
                 {
+                    if (ContainsNullOrWhiteSpaceString(assetsThatShouldBeSaved))
+                    {
+                        int originalCount = assetsThatShouldBeSaved.Length;
+                        assetsThatShouldBeSaved = Array.FindAll(assetsThatShouldBeSaved, s => !string.IsNullOrWhiteSpace(s));
+                        int skippedCount = originalCount - assetsThatShouldBeSaved.Length;
+                        Debug.LogWarning($"OnWillSaveAssets: Skipped {skippedCount} null or empty path(s).");
+                    }
+
                     object[] args = { assetsThatShouldBeSaved };
                     if (!CheckArguments(args, method))
                         continue;
@@ -192,9 +200,9 @@ namespace UnityEditor
                 if (!EditorUserSettings.overwriteFailedCheckoutAssets)
                 {
                     assetsThatShouldBeReverted = notEditableAssets.ToArray();
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     assetsThatShouldBeSaved = assetsThatShouldBeSaved.Except(assetsThatShouldBeReverted).ToArray();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                 }
             }
         }
@@ -611,6 +619,11 @@ namespace UnityEditor
             }
 
             return true;
+        }
+
+        internal static bool ContainsNullOrWhiteSpaceString(string[] stringArray)
+        {
+            return Array.Exists(stringArray, string.IsNullOrWhiteSpace);
         }
     }
 }

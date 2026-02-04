@@ -71,15 +71,15 @@ namespace UnityEngine.UIElements
     /// <summary>
     /// Represents a filter parameter for a <see cref="FilterFunctionDefinition"/>.
     /// </summary>
-    [Serializable]
-
+    [Serializable, StructLayout(LayoutKind.Sequential)]
     public struct FilterParameter : IEquatable<FilterParameter>
     {
         [SerializeField]
         private FilterParameterType m_Type;
 
         /// <summary>The type of the filter parameter.</summary>
-        public FilterParameterType type {
+        public FilterParameterType type
+        {
             get => m_Type;
             set => m_Type = value;
         }
@@ -88,7 +88,8 @@ namespace UnityEngine.UIElements
         private float m_FloatValue;
 
         /// <summary>The float value of the filter parameter.</summary>
-        public float floatValue {
+        public float floatValue
+        {
             get => m_FloatValue;
             set => m_FloatValue = value;
         }
@@ -97,7 +98,8 @@ namespace UnityEngine.UIElements
         private Color m_ColorValue;
 
         /// <summary>The color value of the filter parameter.</summary>
-        public Color colorValue {
+        public Color colorValue
+        {
             get => m_ColorValue;
             set => m_ColorValue = value;
         }
@@ -168,7 +170,7 @@ namespace UnityEngine.UIElements
     /// <summary>
     /// Represents a filter function that holds the definition and parameters of a filter.
     /// </summary>
-    [Serializable]
+    [Serializable, StructLayout(LayoutKind.Sequential)]
     public partial struct FilterFunction : IEquatable<FilterFunction>
     {
         [SerializeField]

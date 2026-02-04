@@ -411,9 +411,9 @@ namespace UnityEditor
                 return;
             }
 
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var myTypes = rootItem.children.Cast<FileAccessTreeViewItem>();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             var orderedQuery = InitialOrder(myTypes, sortedColumns);
             for (int i = 1; i < sortedColumns.Length; i++)
             {
@@ -458,9 +458,9 @@ namespace UnityEditor
                 }
             }
 
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             rootItem.children = orderedQuery.Cast<TreeViewItem>().ToList();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
         }
 
         IOrderedEnumerable<FileAccessTreeViewItem> InitialOrder(IEnumerable<FileAccessTreeViewItem> myTypes, int[] history)

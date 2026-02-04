@@ -159,9 +159,9 @@ namespace UnityEditor
         {
             m_SerializedObject = serializedObject;
 
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             m_GameObjectsSerializedObject = new SerializedObject(serializedObject.targetObjects.Select(t => ((Component)t).gameObject).ToArray());
-#pragma warning restore RS0030
+#pragma warning restore UA2001
 
             m_ImportantGI = m_SerializedObject.FindProperty("m_ImportantGI");
             m_StitchLightmapSeams = m_SerializedObject.FindProperty("m_StitchLightmapSeams");
@@ -183,12 +183,12 @@ namespace UnityEditor
             m_ReceiveGI = m_SerializedObject.FindProperty("m_ReceiveGI");
             m_GlobalIlluminationMeshLod = m_SerializedObject.FindProperty("m_GlobalIlluminationMeshLod");
 
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             m_Renderers = m_SerializedObject.targetObjects.OfType<Renderer>().ToArray();
-#pragma warning restore RS0030
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning restore UA2001
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             m_Terrains = m_SerializedObject.targetObjects.OfType<Terrain>().ToArray();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
 
             m_StaticEditorFlags = m_GameObjectsSerializedObject.FindProperty("m_StaticEditorFlags");
 
@@ -474,9 +474,9 @@ namespace UnityEditor
 
             // show a warning if not all renderers are valid, even when not active or enabled
             if (contributeGI || mixedValue)
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 if (m_Renderers != null && !m_Renderers.All(Lightmapping.IsRendererValid))
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                     EditorGUILayout.HelpBox(m_Renderers.Length > 1 ? Styles.giMeshNotValidMultiple.text : Styles.giMeshNotValid.text, MessageType.Warning);
 
             EditorGUI.showMixedValue = false;

@@ -30,7 +30,6 @@ namespace Unity.UI.Builder
             uxmlTagElement.namespaceDefinitions.Add(engineNamespaceDefinition);
             uxmlTagElement.namespaceDefinitions.Add(new UxmlNamespaceDefinition{ prefix = UXMLConstants.UxmlEditorNamespaceDefaultPrefix, resolvedNamespace = UXMLConstants.UxmlEditorNamespace });
             uxmlTagElement.xmlNamespace = engineNamespaceDefinition;
-            uxmlTagElement.id = vta.GenerateNewId(uxmlTagElement);
             vta.SetRootAsset(uxmlTagElement);
             return vta;
         }

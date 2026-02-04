@@ -362,7 +362,7 @@ namespace UnityEngine.UIElements
                    ValueEquals(a.propertyValues.ToReadOnlySpan(), b.propertyValues, (p1, p2) => p1.Equals(p2)));
         }
 
-        static readonly ProfilerMarker s_StyleDiffRefreshProfilerMarker = new ProfilerMarker("StyleDiff.Refresh()");
+        static readonly ProfilerMarker s_StyleDiffRefreshProfilerMarker = new ProfilerMarker(ProfilerCategory.UIToolkit, "StyleDiff.Refresh()");
         internal static readonly MemoryLabel k_MemoryLabel = new (nameof(UIElements), $"Style.{nameof(StyleDiff)}");
 
         public enum ContextType
@@ -424,7 +424,7 @@ namespace UnityEngine.UIElements
             Refresh(element, styleSheet, styleRule, ContextType.VisualElement, flags);
         }
 
-        public void RefreshRule(VisualElement element, StyleSheet styleSheet, StyleRule rule, StyleRule styleRule, StyleDiffAdditionalDataFlags flags = StyleDiffAdditionalDataFlags.All)
+        public void RefreshRule(VisualElement element, StyleSheet styleSheet, StyleRule styleRule, StyleDiffAdditionalDataFlags flags = StyleDiffAdditionalDataFlags.All)
         {
             Refresh(element, styleSheet, styleRule, ContextType.StyleSheet, flags);
         }

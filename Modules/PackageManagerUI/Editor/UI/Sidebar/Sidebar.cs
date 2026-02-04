@@ -14,14 +14,17 @@ internal class Sidebar : ScrollView
     [Serializable]
     public new class UxmlSerializedData : ScrollView.UxmlSerializedData
     {
-        public override object CreateInstance() => new Sidebar();
+        public override object CreateInstance()
+        {
+            var container = ServicesContainer.instance;
+            return new Sidebar(
+                container.Resolve<IUpmRegistryClient>(),
+                container.Resolve<IProjectSettingsProxy>(),
+                container.Resolve<IPageManager>(),
+                container.Resolve<IPackageDatabase>(),
+                container.Resolve<IPackageManagerPrefs>());
+        }
     }
-
-    private IUpmRegistryClient m_UpmRegistryClient;
-    private IProjectSettingsProxy m_SettingsProxy;
-    private IPageManager m_PageManager;
-    private IPackageDatabase m_PackageDatabase;
-    private IPackageManagerPrefs m_PackageManagerPrefs;
 
     private Dictionary<string, SidebarRow> m_ScopedRegistryRows = new();
     private SidebarRow m_CurrentlySelectedRow;
@@ -29,19 +32,24 @@ internal class Sidebar : ScrollView
 
     private readonly string k_FoldoutClassName = "sidebarFoldout";
 
-    private void ResolveDependencies()
-    {
-        var container = ServicesContainer.instance;
-        m_UpmRegistryClient = container.Resolve<IUpmRegistryClient>();
-        m_SettingsProxy = container.Resolve<IProjectSettingsProxy>();
-        m_PageManager = container.Resolve<IPageManager>();
-        m_PackageDatabase = container.Resolve<IPackageDatabase>();
-        m_PackageManagerPrefs = container.Resolve<IPackageManagerPrefs>();
-    }
+    private readonly IUpmRegistryClient m_UpmRegistryClient;
+    private readonly IProjectSettingsProxy m_SettingsProxy;
+    private readonly IPageManager m_PageManager;
+    private readonly IPackageDatabase m_PackageDatabase;
+    private readonly IPackageManagerPrefs m_PackageManagerPrefs;
 
-    public Sidebar()
+    public Sidebar(
+        IUpmRegistryClient upmRegistryClient,
+        IProjectSettingsProxy settingsProxy,
+        IPageManager pageManager,
+        IPackageDatabase packageDatabase,
+        IPackageManagerPrefs packageManagerPrefs)
     {
-        ResolveDependencies();
+        m_UpmRegistryClient = upmRegistryClient;
+        m_SettingsProxy = settingsProxy;
+        m_PageManager = pageManager;
+        m_PackageDatabase = packageDatabase;
+        m_PackageManagerPrefs = packageManagerPrefs;
     }
 
     public void OnEnable()
@@ -65,9 +73,9 @@ internal class Sidebar : ScrollView
         m_PageManager.onActivePageChanged -= OnActivePageChanged;
         m_PackageDatabase.onPackagesChanged -= OnPackageChanged;
 
-        #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-        m_PackageManagerPrefs.orderedSidebarFoldoutsExpandedStatus = Children().OfType<Foldout>().Select(i => i.value).ToArray();
-#pragma warning restore RS0030
+        #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+        m_PackageManagerPrefs.orderedSidebarFoldoutsExpandedStatus = Children().FilterByType<Foldout>().Select(i => i.value).ToArray();
+#pragma warning restore UA2001
     }
 
     private void CreateRowsAndFoldouts()
@@ -89,9 +97,9 @@ internal class Sidebar : ScrollView
 
         m_RegistriesFoldout = CreateAndAddFoldout(L10n.Tr("My Registries"));
 
-        #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-        var foldouts = Children().OfType<Foldout>().ToArray();
-#pragma warning restore RS0030
+        #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+        var foldouts = Children().FilterByType<Foldout>().ToArray();
+#pragma warning restore UA2001
         if (m_PackageManagerPrefs.orderedSidebarFoldoutsExpandedStatus?.Length == foldouts.Length)
             for (var i = 0; i < foldouts.Length; i++)
                 foldouts[i].value = m_PackageManagerPrefs.orderedSidebarFoldoutsExpandedStatus[i];
@@ -142,9 +150,9 @@ internal class Sidebar : ScrollView
     private void UpdateComplianceRelatedRow()
     {
         var nonCompliancePage = m_PageManager.GetPage(InProjectNonCompliancePage.k_Id);
-        #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+        #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
         var showNonCompliantPage = m_PackageDatabase.allPackages.Any(nonCompliancePage.ShouldInclude);
-#pragma warning restore RS0030
+#pragma warning restore UA2001
 
         UIUtils.SetElementDisplay(GetRow(InProjectNonCompliancePage.k_Id), showNonCompliantPage);
 
@@ -168,9 +176,9 @@ internal class Sidebar : ScrollView
 
     private void OnPackageChanged(PackagesChangeArgs args)
     {
-        #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-        var changedPackages = args.added.Concat(args.removed).Concat(args.updated).Concat(args.preUpdate).Concat(args.progressUpdated);
-#pragma warning restore RS0030
+        #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+        var changedPackages = args.added.Join(args.removed).Join(args.updated).Join(args.preUpdate).Join(args.progressUpdated);
+#pragma warning restore UA2001
 
         var errorsAndWarningsPage = m_PageManager.GetPage(InProjectErrorsAndWarningsPage.k_Id);
         if (changedPackages.AnyMatches(p => errorsAndWarningsPage.ShouldInclude(p)))
@@ -183,15 +191,15 @@ internal class Sidebar : ScrollView
 
     private void UpdateScopedRegistryRelatedRows()
     {
-        #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+        #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
         var scopedRegistries = m_SettingsProxy.scopedRegistries.ToArray();
-#pragma warning restore RS0030
-        #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-        var newPages = scopedRegistries.Length > 0 ? new []{ m_PageManager.GetPage(MyRegistriesPage.k_Id) }.Concat(scopedRegistries.Select(r => m_PageManager.GetPage(r))).ToArray() : Array.Empty<IPage>();
-#pragma warning restore RS0030
-        #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-        var oldRows = m_RegistriesFoldout.Children().OfType<SidebarRow>().ToDictionary(r => r.pageId);
-#pragma warning restore RS0030
+#pragma warning restore UA2001
+        #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+        var newPages = scopedRegistries.Length > 0 ? new []{ m_PageManager.GetPage(MyRegistriesPage.k_Id) }.Join(scopedRegistries.Select(r => m_PageManager.GetPage(r))).ToArray() : Array.Empty<IPage>();
+#pragma warning restore UA2001
+        #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+        var oldRows = m_RegistriesFoldout.Children().FilterByType<SidebarRow>().ToDictionary(r => r.pageId);
+#pragma warning restore UA2001
 
         m_RegistriesFoldout.Clear();
         foreach (var page in newPages)
@@ -200,16 +208,16 @@ internal class Sidebar : ScrollView
         UIUtils.SetElementDisplay(m_RegistriesFoldout, newPages.Length > 0);
 
         var activePageId = m_PageManager.activePage.id;
-        #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+        #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
         if (oldRows.ContainsKey(activePageId) && newPages.All(p => p.id != activePageId))
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             m_PageManager.activePage = m_PageManager.GetPage(PageManager.k_DefaultPageId);
     }
 
     public SidebarRow GetRow(string pageId)
     {
-        #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-        return Children().OfType<Foldout>().SelectMany(f => f.Children().OfType<SidebarRow>()).FirstOrDefault(i => i.pageId == pageId);
-#pragma warning restore RS0030
+        #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+        return Children().FilterByType<Foldout>().SelectMany(f => f.Children().FilterByType<SidebarRow>()).FirstOrDefault(i => i.pageId == pageId);
+#pragma warning restore UA2001
     }
 }

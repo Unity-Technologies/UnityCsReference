@@ -19,11 +19,10 @@ class UnityEditorMSBuildPropsTargetsGeneration
     public static void UpdateGeneratedMSBuildFileIfNeeded(BuildTarget buildTarget, MSBuildCompilationOptions compilationOptions)
     {
         ProjectGenerator.Instance.GenerateEntryPointProjectIfMissing("Main");
-        var unityNugetLocalFeed = Path.Combine(EditorApplication.applicationContentsPath, "MSBuild/sdk-nugets");
+        var unityNugetLocalFeed = Path.Combine(EditorApplication.applicationScriptingPath, "MSBuild/sdk-nugets");
         ProjectGenerator.Instance.MaintainGlobalJson("1.0.0", "global.json");
         ProjectGenerator.Instance.MaintainNugetConfig(unityNugetLocalFeed, "NuGet.config");
 
-        UpdateInstallPathFile();
         UpdateUnityEditorVersion();
         UpdateDefinesProps(buildTarget, compilationOptions);
         UpdateReferencesProps(buildTarget);
@@ -31,7 +30,7 @@ class UnityEditorMSBuildPropsTargetsGeneration
         UpdateSystemSearchPaths(buildTarget);
 
         var optimization = CompilationPipeline.codeOptimization;
-        PropsGenerator.Instance.UpdateUnityContentLocation(EditorApplication.applicationContentsPath, buildTarget.ToString(), GetCurrentDotNETRuntimeId(), optimization == CodeOptimization.Release);
+        PropsGenerator.Instance.UpdateUnityContentLocation(EditorApplication.applicationScriptingPath, buildTarget.ToString(), GetCurrentDotNETRuntimeId(), optimization == CodeOptimization.Release);
     }
 
     private static string GetCurrentDotNETRuntimeId()
@@ -68,7 +67,7 @@ class UnityEditorMSBuildPropsTargetsGeneration
         throw new NotSupportedException($"Unsupported OS platform {RuntimeInformation.OSDescription}");
     }
 
-    private static void UpdateInstallPathFile()
+    public static void UpdateInstallPathFile()
     {
         Directory.CreateDirectory(Path.Combine("Library", "MSBuild"));
 

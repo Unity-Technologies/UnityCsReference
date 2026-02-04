@@ -130,9 +130,9 @@ namespace UnityEditor
 
         public AvatarMask maskSource { get { return m_MaskSource; } set { m_MaskSource = value; } }
 
-        #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+        #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
         public AnimationEvent[] events { get { return m_AnimationEventsBlittable.Select(AnimationEventBlittable.ToAnimationEvent).ToArray(); } set { m_AnimationEventsBlittable = value.Select(AnimationEventBlittable.FromAnimationEvent).ToArray(); } }
-#pragma warning restore RS0030
+#pragma warning restore UA2001
         public ClipAnimationInfoCurve[] curves { get { return m_AdditionnalCurves; } set { m_AdditionnalCurves = value; } }
 
         public bool maskNeedsUpdating { get { return m_MaskNeedsUpdating; } }

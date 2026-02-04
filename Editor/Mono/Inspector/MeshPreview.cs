@@ -79,14 +79,14 @@ namespace UnityEditor
             Texture2D m_CheckeredTexture;
 
             public bool[] availableDisplayModes { get => m_AvailableDisplayModes; set => SetValue(ref m_AvailableDisplayModes, value); }
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             bool[] m_AvailableDisplayModes = Enumerable.Repeat(true, 7).ToArray();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
 
             public bool[] availableUVChannels { get => m_AvailableUVChannels; set => SetValue(ref m_AvailableUVChannels, value); }
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             bool[] m_AvailableUVChannels = Enumerable.Repeat(true, 8).ToArray();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
 
             public event Action changed;
 

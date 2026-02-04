@@ -219,6 +219,20 @@ namespace UnityEditor
             internal static Texture2D[] GetTopShelfImageWideLayers2x() { return topShelfImageWideLayers2x; }
             internal static void SetTopShelfImageWideLayers2x(Texture2D[] layers) { topShelfImageWideLayers2x = layers; }
 
+            internal static bool IsTargetVersionEqualOrHigher(Version requiredVersion)
+            {
+                Version requestedVersion;
+                try
+                {
+                    requestedVersion = new Version(targetOSVersionString);
+                }
+                catch (Exception)
+                {
+                    requestedVersion = minimumOsVersion;
+                }
+                return requestedVersion >= requiredVersion;
+            }
+
             [StaticAccessor("GetPlayerSettings().GetEditorOnly()", StaticAccessorType.Dot)]
             [NativeProperty("appleTVSplashScreen", TargetType.Field)]
             internal static extern Texture2D splashScreen { get; }

@@ -21,6 +21,7 @@ namespace UnityEngine.Android
         Canceled = 6,
         WaitingForWifi = 7,
         NotInstalled = 8,
+        RequiresUserConfirmation = 9,
     }
 
     // Directly matches values returned by PlayCore API

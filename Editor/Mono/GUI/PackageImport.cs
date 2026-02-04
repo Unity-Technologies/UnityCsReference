@@ -152,9 +152,9 @@ namespace UnityEditor
         {
             if (m_ImportPackageItems == null)
                 return;
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var restrictedItems = m_ImportPackageItems.Where(i => i.isRestricted).ToArray();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             if (restrictedItems.Length > 0)
             {
                 Texture2D warningIcon = EditorGUIUtility.IconContent("console.erroricon").image as Texture2D;
@@ -545,9 +545,9 @@ namespace UnityEditor
 
         private void FinishImport()
         {
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             PackageUtility.ImportPackageAssetsWithOrigin(m_AssetOrigin, m_AssetContentItems.Concat(m_ProjectSettingItems).ToArray());
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             CloseImportWindow();
         }
 

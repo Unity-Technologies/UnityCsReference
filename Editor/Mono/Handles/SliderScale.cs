@@ -25,7 +25,7 @@ namespace UnityEditorInternal
             // If constrainProportionsScaling enabled, transforms behave the same way as Cube Handle does
             if (constrainProportionsScaling)
             {
-                var value = DoAxis(id, scale.x, position, direction, rotation, size, EditorSnapSettings.scale, handleOffset, lineScale);
+                var value = DoAxis(id, scale.x, position, direction, rotation, size, snap, handleOffset, lineScale);
                 return initialScale * DoCenter(id, value, position, rotation, size, Handles.CubeHandleCap, snap);
             }
             else
@@ -73,8 +73,7 @@ namespace UnityEditorInternal
                     {
                         s_CurrentMousePosition += evt.delta;
                         var dist = 1 + HandleUtility.CalcLineTranslation(s_StartMousePosition, s_CurrentMousePosition, position, direction) / size;
-                        if (EditorSnapSettings.scaleSnapEnabled) 
-                            dist = Handles.SnapValue(dist, snap);
+                        dist = Handles.SnapScaleValue(dist, snap);
                         scale = s_StartScale * dist;
                         GUI.changed = true;
                         evt.Use();
@@ -150,7 +149,7 @@ namespace UnityEditorInternal
                     {
                         s_CurrentMousePosition += evt.delta;
                         var dist = HandleUtility.CalcLineTranslation(s_StartMousePosition, s_CurrentMousePosition, position, s_Direction) / size;
-                        value = ((EditorSnapSettings.scaleSnapEnabled ? Handles.SnapValue(dist, snap) : dist) + 1.0f) * s_StartScale;
+                        value = (Handles.SnapScaleValue(dist, snap) + 1.0f) * s_StartScale;
                         s_ScaleDrawLength = value;
                         GUI.changed = true;
                         evt.Use();

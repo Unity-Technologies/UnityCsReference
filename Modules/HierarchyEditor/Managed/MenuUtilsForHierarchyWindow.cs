@@ -14,11 +14,9 @@ namespace Unity.Hierarchy.Editor
 {
     static class MenuUtilsForHierarchyWindow
     {
-        const int kInvalidSceneHandle = 0;
-
         internal static void AddCreateGameObjectItemsToSubSceneMenu(DropdownMenu menu, Scene scene)
         {
-            AddCreateGameObjectItemsToMenu( menu,
+            AddCreateGameObjectItemsToMenu(menu,
                                             Array.Empty<Object>(),
                                             false,
                                             true,
@@ -37,7 +35,7 @@ namespace Unity.Hierarchy.Editor
                 gameObjects[i] = Selection.transforms[i].gameObject;
             }
 
-            AddCreateGameObjectItemsToMenu( menu,
+            AddCreateGameObjectItemsToMenu(menu,
                                             gameObjects,
                                             false,
                                             false,
@@ -46,7 +44,7 @@ namespace Unity.Hierarchy.Editor
                                             MenuUtils.ContextMenuOrigin.Scene);
         }
 
-        internal static void AddCreateGameObjectItemsToMenu(   DropdownMenu menu,
+        internal static void AddCreateGameObjectItemsToMenu(DropdownMenu menu,
                                                                UnityEngine.Object[] context,
                                                                bool includeCreateEmptyChild,
                                                                bool useCreateEmptyParentMenuItem,
@@ -63,7 +61,7 @@ namespace Unity.Hierarchy.Editor
             menu.AppendFromGenericMenu(genericMenu);
         }
 
-        static void BeforeCreateGameObjectMenuItemWasExecuted(  string menuPath,
+        static void BeforeCreateGameObjectMenuItemWasExecuted(string menuPath,
                                                                 UnityEngine.Object[] contextObjects,
                                                                 MenuUtils.ContextMenuOrigin origin,
                                                                 SceneHandle userData)
@@ -73,7 +71,7 @@ namespace Unity.Hierarchy.Editor
             EditorSceneManager.SetTargetSceneForNewGameObjects(userData);
         }
 
-        static void AfterCreateGameObjectMenuItemWasExecuted(   string menuPath,
+        static void AfterCreateGameObjectMenuItemWasExecuted(string menuPath,
                                                                 UnityEngine.Object[] contextObjects,
                                                                 MenuUtils.ContextMenuOrigin origin,
                                                                 SceneHandle userData)

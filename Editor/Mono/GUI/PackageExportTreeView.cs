@@ -144,9 +144,9 @@ namespace UnityEditor
             var visibleItems = m_TreeView.data.GetRows();
             foreach (var visibleItem in visibleItems)
             {
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 if (selectedIDs.Contains(visibleItem.id))
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                 {
                     var pitem = visibleItem as PackageExportTreeViewItem;
                     if (pitem != null)
@@ -319,9 +319,9 @@ namespace UnityEditor
                 if (EditorGUI.EndChangeCheck())
                 {
                     // Only change selection if we already have single selection (Keep multi-selection when toggling)
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     if (m_TreeView.GetSelection().Length <= 1 || !m_TreeView.GetSelection().Contains(pitem.id))
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                     {
                         m_TreeView.SetSelection(new int[] { pitem.id }, false);
                         m_TreeView.NotifyListenersThatSelectionChanged();

@@ -162,7 +162,6 @@ namespace Unity.Hierarchy
             return $"{Name}{ToString(Op)}{QuoteStringIfNeeded(rhs)}";
         }
 
-        [VisibleToOtherModules("UnityEditor.HierarchyModule")]
         internal static HierarchySearchFilter CreateFilter(string name, string op, string value)
         {
             return CreateFilter(name, ToOp(op), value);
@@ -332,7 +331,6 @@ namespace Unity.Hierarchy
             return Query;
         }
 
-        [VisibleToOtherModules("UnityEditor.HierarchyModule")]
         internal string BuildFilterQuery()
         {
             return string.Join(" ", Filters);

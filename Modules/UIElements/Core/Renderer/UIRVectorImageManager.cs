@@ -54,8 +54,8 @@ namespace UnityEngine.UIElements.UIR
     class VectorImageManager : IDisposable
     {
         public static List<VectorImageManager> instances = new List<VectorImageManager>(16);
-        static ProfilerMarker s_MarkerRegister = new ProfilerMarker("UIR.VectorImageManager.Register");
-        static ProfilerMarker s_MarkerUnregister = new ProfilerMarker("UIR.VectorImageManager.Unregister");
+        static ProfilerMarker s_MarkerRegister = new ProfilerMarker(ProfilerCategory.UIToolkit, "UIR.VectorImageManager.Register");
+        static ProfilerMarker s_MarkerUnregister = new ProfilerMarker(ProfilerCategory.UIToolkit, "UIR.VectorImageManager.Unregister");
 
         readonly AtlasBase m_Atlas;
 

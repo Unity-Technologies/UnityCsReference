@@ -5,8 +5,6 @@
 using System;
 using UnityEditor;
 using UnityEngine;
-using UnityEngine.UIElements;
-using UnityEngine.UIElements.HierarchyV2;
 
 namespace Unity.Hierarchy.Editor
 {

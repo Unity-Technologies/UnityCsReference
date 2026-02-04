@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using Unity.UIToolkit.Editor;
 using UnityEngine.UIElements;
 using UnityEditor;
 
@@ -13,10 +14,7 @@ namespace Unity.UI.Builder
         BuilderSelection m_Selection;
 
         VisualElement m_StyleSheetSection;
-        private BuilderNewSelectorField m_NewSelectorField;
-        private VisualElement m_NewSelectorHelpTipsContainer;
-
-        private static readonly string kNewSelectorHelpTipsContainerName = "new-selector-help-tips-container";
+        private NewSelectorField m_NewSelectorField;
 
         public VisualElement root => m_StyleSheetSection;
 
@@ -29,11 +27,8 @@ namespace Unity.UI.Builder
             m_Selection = inspector.selection;
 
             m_StyleSheetSection = m_Inspector.Q("shared-styles-controls");
-            m_NewSelectorField = m_Inspector.Q<BuilderNewSelectorField>("new-selector-field");
-            m_NewSelectorHelpTipsContainer = m_Inspector.Q<VisualElement>(kNewSelectorHelpTipsContainerName);
-
+            m_NewSelectorField = m_Inspector.Q<NewSelectorField>("new-selector-field");
             m_NewSelectorField.RegisterCallback<NewSelectorSubmitEvent>(OnCreateNewSelector);
-            m_NewSelectorHelpTipsContainer.Add(BuilderStyleSheetsNewSelectorHelpTips.Create());
         }
 
         void OnCreateNewSelector(NewSelectorSubmitEvent evt)

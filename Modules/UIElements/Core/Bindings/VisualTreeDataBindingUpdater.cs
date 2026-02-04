@@ -30,11 +30,11 @@ namespace UnityEngine.UIElements
             }
         }
 
-        static readonly ProfilerMarker s_UpdateProfilerMarker = new ProfilerMarker("UIElements.UpdateRuntimeBindings");
-        static readonly ProfilerMarker s_ProcessBindingRequestsProfilerMarker = new ProfilerMarker("Process Binding Requests");
-        static readonly ProfilerMarker s_ProcessDataSourcesProfilerMarker = new ProfilerMarker("Process Data Sources");
-        static readonly ProfilerMarker s_ShouldUpdateBindingProfilerMarker = new ProfilerMarker("Should Update Binding");
-        static readonly ProfilerMarker s_UpdateBindingProfilerMarker = new ProfilerMarker("Update Binding");
+        static readonly ProfilerMarker s_UpdateProfilerMarker = new ProfilerMarker(ProfilerCategory.UIToolkit, "UIElements.UpdateRuntimeBindings");
+        static readonly ProfilerMarker s_ProcessBindingRequestsProfilerMarker = new ProfilerMarker(ProfilerCategory.UIToolkit, "Process Binding Requests");
+        static readonly ProfilerMarker s_ProcessDataSourcesProfilerMarker = new ProfilerMarker(ProfilerCategory.UIToolkit, "Process Data Sources");
+        static readonly ProfilerMarker s_ShouldUpdateBindingProfilerMarker = new ProfilerMarker(ProfilerCategory.UIToolkit, "Should Update Binding");
+        static readonly ProfilerMarker s_UpdateBindingProfilerMarker = new ProfilerMarker(ProfilerCategory.UIToolkit, "Update Binding");
 
         DataBindingManager bindingManager => panel.dataBindingManager;
 

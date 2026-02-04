@@ -122,9 +122,9 @@ namespace UnityEditor.Search
             name = name.ToLowerInvariant();
             if (evaluatorSignatures.TryGetValue(name.ToLowerInvariant(), out var signatures))
             {
-                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 return signatures.OrderByDescending(s => s.mandatoryArgumentNumber);
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             }
             return null;
         }
@@ -158,9 +158,9 @@ namespace UnityEditor.Search
         public static void RefreshEvaluators()
         {
             var supportedSignature = MethodSignature.FromDelegate<SearchExpressionEvaluatorHandler>();
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             evaluators = ReflectionUtils.LoadAllMethodsWithAttribute<SearchExpressionEvaluatorAttribute, SearchExpressionEvaluator>((mi, attribute, handler) =>
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             {
                 var descAttr = mi.GetCustomAttribute<System.ComponentModel.DescriptionAttribute>();
                 var description = descAttr != null ? descAttr.Description : null;

@@ -4,7 +4,6 @@
 
 using System.Globalization;
 using UnityEngine.UIElements;
-using System.Linq;
 using System.Collections.Generic;
 using System;
 
@@ -15,33 +14,38 @@ namespace UnityEditor.PackageManager.UI.Internal
         [Serializable]
         public new class UxmlSerializedData : VisualElement.UxmlSerializedData
         {
-            public override object CreateInstance() => new PackageDetailsHeader();
-        }
-
-        private IResourceLoader m_ResourceLoader;
-        private IApplicationProxy m_Application;
-        private IPageManager m_PageManager;
-        private IPackageDatabase m_PackageDatabase;
-        private IPackageLinkFactory m_PackageLinkFactory;
-
-        private void ResolveDependencies()
-        {
-            var container = ServicesContainer.instance;
-            m_ResourceLoader = container.Resolve<IResourceLoader>();
-            m_Application = container.Resolve<IApplicationProxy>();
-            m_PageManager = container.Resolve<IPageManager>();
-            m_PackageDatabase = container.Resolve<IPackageDatabase>();
-            m_PackageLinkFactory = container.Resolve<IPackageLinkFactory>();
+            public override object CreateInstance()
+            {
+                var container = ServicesContainer.instance;
+                return new PackageDetailsHeader(
+                    container.Resolve<IResourceLoader>(),
+                    container.Resolve<IApplicationProxy>(),
+                    container.Resolve<IPageManager>(),
+                    container.Resolve<IPackageDatabase>(),
+                    container.Resolve<IPackageLinkFactory>());
+            }
         }
 
         private IPackage m_Package;
         private IPackageVersion m_Version;
 
-        public PackageDetailsHeader()
+        private readonly IApplicationProxy m_Application;
+        private readonly IPageManager m_PageManager;
+        private readonly IPackageDatabase m_PackageDatabase;
+        private readonly IPackageLinkFactory m_PackageLinkFactory;
+        public PackageDetailsHeader(
+            IResourceLoader resourceLoader,
+            IApplicationProxy application,
+            IPageManager pageManager,
+            IPackageDatabase packageDatabase,
+            IPackageLinkFactory packageLinkFactory)
         {
-            ResolveDependencies();
+            m_Application = application;
+            m_PageManager = pageManager;
+            m_PackageDatabase = packageDatabase;
+            m_PackageLinkFactory = packageLinkFactory;
 
-            var root = m_ResourceLoader.GetTemplate("PackageDetailsHeader.uxml");
+            var root = resourceLoader.GetTemplate("PackageDetailsHeader.uxml");
             Add(root);
             cache = new VisualElementCache(root);
 
@@ -60,11 +64,11 @@ namespace UnityEditor.PackageManager.UI.Internal
         private void CreateHelpBoxes()
         {
             helpBoxContainer.Add(new PackageSignatureHelpBox(m_Application));
-            helpBoxContainer.Add(new NonCompliantPackageHelpBox());
-            helpBoxContainer.Add(new DeprecatedVersionHelpBox());
-            helpBoxContainer.Add(new DeprecatedPackageHelpBox());
-            helpBoxContainer.Add(new DisabledPackageHelpBox());
-            helpBoxContainer.Add(new HiddenProductHelpBox());
+            helpBoxContainer.Add(new NonCompliantPackageHelpBox(m_Application));
+            helpBoxContainer.Add(new DeprecatedVersionHelpBox(m_Application));
+            helpBoxContainer.Add(new DeprecatedPackageHelpBox(m_Application));
+            helpBoxContainer.Add(new DisabledPackageHelpBox(m_Application));
+            helpBoxContainer.Add(new HiddenProductHelpBox(m_Application));
         }
 
         public void Refresh(IPackage package)
@@ -87,7 +91,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private void RefreshFeatureSetElements(VisualState visualState = null)
         {
-            var featureSets = m_PackageDatabase.GetFeaturesThatUseThisPackage(m_Package.versions.installed);
+            var featureSets = new List<IPackageVersion>(m_PackageDatabase.EnumerateDirectReverseDependencies(m_Package.versions.installed, true));
             RefreshUsedInFeatureSetMessage(featureSets);
             RefreshLockIcons(featureSets, visualState);
             RefreshQuickStart();
@@ -109,11 +113,9 @@ namespace UnityEditor.PackageManager.UI.Internal
             UIUtils.SetElementDisplay(dependencyContainer, m_Version.isInstalled && !m_Version.isDirectDependency && !m_Version.HasTag(PackageTag.Feature));
         }
 
-        private void RefreshLockIcons(IEnumerable<IPackageVersion> featureSets, VisualState visualState = null)
+        private void RefreshLockIcons(IReadOnlyList<IPackageVersion> featureSets, VisualState visualState = null)
         {
-#pragma warning disable RS0031 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            var showLockedIcon = featureSets?.Any() == true;
-#pragma warning restore RS0031
+            var showLockedIcon = featureSets.Count > 0;
             if (showLockedIcon)
             {
                 visualState ??= m_PageManager.activePage.visualStates.Get(m_Package?.uniqueId);
@@ -138,9 +140,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             if (!args.page.isActivePage)
                 return;
 
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            var visualState = args.visualStates.FirstOrDefault(vs => vs.packageUniqueId == m_Package?.uniqueId);
-#pragma warning restore RS0030
+            var visualState = args.visualStates.FirstMatch(vs => vs.packageUniqueId == m_Package?.uniqueId);
             if (visualState != null)
                 RefreshFeatureSetElements(visualState);
         }
@@ -153,13 +153,10 @@ namespace UnityEditor.PackageManager.UI.Internal
             return featureSetLink;
         }
 
-        private void RefreshUsedInFeatureSetMessage(IEnumerable<IPackageVersion> featureSets)
+        private void RefreshUsedInFeatureSetMessage(IReadOnlyList<IPackageVersion> featureSets)
         {
             usedInFeatureSetMessageContainer.Clear();
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            var featureSetsCount = featureSets?.Count() ?? 0;
-#pragma warning restore RS0030
-            var showFeatureSetMessage = featureSetsCount > 0;
+            var showFeatureSetMessage = featureSets.Count > 0;
             UIUtils.SetElementDisplay(usedInFeatureSetMessageContainer, showFeatureSetMessage);
 
             if (!showFeatureSetMessage)
@@ -180,38 +177,21 @@ namespace UnityEditor.PackageManager.UI.Internal
 
             element.Add(message);
             usedInFeatureSetMessageContainer.Add(element);
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            usedInFeatureSetMessageContainer.Add(CreateLink(featureSets.FirstOrDefault()));
-#pragma warning restore RS0030
 
-            if (featureSetsCount > 2)
+            usedInFeatureSetMessageContainer.Add(CreateLink(featureSets[0]));
+
+            if (featureSets.Count > 1)
             {
-                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                var remaining = featureSets.Skip(1);
-#pragma warning restore RS0030
-                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                remaining.Take(featureSetsCount - 2).Aggregate(usedInFeatureSetMessageContainer, (current, next) =>
-#pragma warning restore RS0030
+                for (var i = 1; i < featureSets.Count - 1; i++)
                 {
-                    var comma = new Label(", ");
-                    comma.style.marginLeft = 0;
-                    comma.style.paddingLeft = 0;
+                    var comma = new Label(", ") { style = { marginLeft = 0, paddingLeft = 0 } };
+                    usedInFeatureSetMessageContainer.Add(comma);
+                    usedInFeatureSetMessageContainer.Add(CreateLink(featureSets[i]));
+                }
 
-                    current.Add(comma);
-                    current.Add(CreateLink(next));
-                    return current;
-                });
-            }
-            if (featureSetsCount > 1)
-            {
-                var and = new Label(L10n.Tr(" and "));
-                and.style.marginLeft = 0;
-                and.style.paddingLeft = 0;
-
+                var and = new Label(L10n.Tr(" and ")) { style = { marginLeft = 0, paddingLeft = 0 } };
                 usedInFeatureSetMessageContainer.Add(and);
-                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                usedInFeatureSetMessageContainer.Add(CreateLink(featureSets.LastOrDefault()));
-#pragma warning restore RS0030
+                usedInFeatureSetMessageContainer.Add(CreateLink(featureSets[^1]));
                 usedInFeatureSetMessageContainer.Add(new Label(L10n.Tr("features.")));
             }
             else
@@ -222,17 +202,13 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private void RefreshTags()
         {
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            foreach (var tag in versionContainer.Children().OfType<PackageBaseTagLabel>())
-#pragma warning restore RS0030
+            foreach (var tag in versionContainer.Children().FilterByType<PackageBaseTagLabel>())
                 tag.Refresh(m_Version);
         }
 
         private void RefreshHelpBoxes()
         {
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            foreach (var helpBox in helpBoxContainer.Children().OfType<PackageBaseHelpBox>())
-#pragma warning restore RS0030
+            foreach (var helpBox in helpBoxContainer.Children().FilterByType<PackageBaseHelpBox>())
                 helpBox.Refresh(m_Version);
         }
 

@@ -11,11 +11,11 @@ namespace UnityEditor.PackageManager.UI.Internal
         private const string k_Id = "overview";
 
         private const string k_EmptyDescriptionClass = "empty";
-        private const int k_maxDescriptionCharacters = 10000;
+        private const int k_MaxDescriptionCharacters = 10000;
 
         protected override bool requiresUserSignIn => true;
 
-        public PackageDetailsOverviewTab(IUnityConnectProxy unityConnect, IResourceLoader resourceLoader) : base(unityConnect)
+        public PackageDetailsOverviewTab(IUnityConnectProxy unityConnect, IResourceLoader resourceLoader, IUpmCache upmCache) : base(unityConnect)
         {
             m_Id = k_Id;
             m_DisplayName = L10n.Tr("Overview");
@@ -24,12 +24,8 @@ namespace UnityEditor.PackageManager.UI.Internal
             var root = resourceLoader.GetTemplate("DetailsTabs/PackageDetailsOverviewTab.uxml");
             m_ContentContainer.Add(root);
             m_Cache = new VisualElementCache(root);
-            AddInformationCards();
-        }
 
-        private void AddInformationCards()
-        {
-            detailInformationCardsContainer.Add(new SourceInfoCard());
+            detailInformationCardsContainer.Add(new SourceInfoCard(upmCache));
             detailInformationCardsContainer.Add(new OriginalUnityVersionInfoCard());
             detailInformationCardsContainer.Add(new PurchaseDateInfoCard());
             detailInformationCardsContainer.Add(new PackageSizeInfoCard());
@@ -37,7 +33,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public override bool IsValid(IPackageVersion version)
         {
-            return version != null && version.package.product != null;
+            return version?.package.product != null;
         }
 
         protected override void RefreshContent(IPackageVersion version)
@@ -70,8 +66,8 @@ namespace UnityEditor.PackageManager.UI.Internal
             var productDescription = version.package.product?.description;
             var hasProductDescription = !string.IsNullOrEmpty(productDescription);
             var desc = hasProductDescription ? productDescription : L10n.Tr("There is no description for this package.");
-            if (desc.Length > k_maxDescriptionCharacters)
-                desc = desc.Substring(0, k_maxDescriptionCharacters);
+            if (desc.Length > k_MaxDescriptionCharacters)
+                desc = desc.Substring(0, k_MaxDescriptionCharacters);
             detailDescription.EnableInClassList(k_EmptyDescriptionClass, !hasProductDescription);
             detailDescription.text = desc;
         }

@@ -106,7 +106,14 @@ namespace UnityEngine.UIElements
         public int id
         {
             get => m_Id;
-            set => m_Id = value;
+            internal set
+            {
+                if (visualTreeAsset)
+                    visualTreeAsset.UnregisterId(this);
+                m_Id = value;
+                if (visualTreeAsset)
+                    visualTreeAsset.RegisterId(this);
+            }
         }
 
         [SerializeField]
@@ -424,6 +431,10 @@ namespace UnityEngine.UIElements
 
         private protected virtual void OnVisualTreeAssetChanged(VisualTreeAsset previousVta, VisualTreeAsset newVta)
         {
+            if (previousVta)
+                previousVta.UnregisterId(this);
+            if (newVta)
+                newVta.RegisterId(this);
         }
 
         public int IndexOf(UxmlAsset asset)
@@ -569,19 +580,6 @@ namespace UnityEngine.UIElements
     [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
     internal class UxmlObjectAsset : UxmlAsset
     {
-        public override bool HasParent()
-        {
-            return m_ParentId != 0;
-        }
-
-        [SerializeField] private int m_ParentId;
-
-        public int parentId
-        {
-            get => m_ParentId;
-            set => m_ParentId = value;
-        }
-
         [SerializeField] private int m_OrderInDocument;
 
         public int orderInDocument
@@ -625,6 +623,6 @@ namespace UnityEngine.UIElements
             return result;
         }
 
-        public override string ToString() => isField ? $"Reference: {fullTypeName} (id:{id} parent:{parentId})" : base.ToString();
+        public override string ToString() => isField ? $"Reference: {fullTypeName} (id:{id} parent:{parentAsset?.id})" : base.ToString();
     }
 }

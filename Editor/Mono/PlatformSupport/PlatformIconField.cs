@@ -85,25 +85,25 @@ namespace UnityEditor.PlatformSupport
                 kindDictionary = m_IconsFields[kindKey];
             }
 
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var groupedBySubKind = icons.GroupBy(i => i.iconSubKind);
-#pragma warning restore RS0030
+#pragma warning restore UA2001
 
             foreach (var subKindGroup in groupedBySubKind)
             {
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 var subKindIcons = subKindGroup.ToArray().Select(i => CreatePlatformIconField(i)).ToArray();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
 
                 IconFieldGroupInfo subKindKey = new IconFieldGroupInfo();
                 subKindKey.m_Kind = null;
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 subKindKey.m_Label = subKindGroup.Key;
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                 subKindKey.m_IconSlotCount = subKindIcons.Length;
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 subKindKey.m_SetIconSlots = PlayerSettings.GetNonEmptyPlatformIconCount(subKindGroup.ToArray());
-#pragma warning restore RS0030
+#pragma warning restore UA2001
 
                 if (!kindDictionary.ContainsKey(subKindKey))
                     subKindKey.m_State = false;
@@ -278,20 +278,20 @@ namespace UnityEditor.PlatformSupport
             int slotHeight = (int)((float)platformIcon.height / platformIcon.height * slotWidth);
             m_IconLayers.SetImageSize(slotWidth, slotHeight);
 
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             m_IconLayers.textures = platformIcon.GetTextures().ToList();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             EnsureMinimumNumberOfTextures();
         }
 
         internal override void DrawAt()
         {
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             m_IconLayers.textures = platformIcon.GetTextures().ToList();
-#pragma warning restore RS0030
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning restore UA2001
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             m_IconLayers.previewTextures =  platformIcon.GetPreviewTextures().ToList();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             EnsureMinimumNumberOfTextures();
 
             m_IconLayers.DoLayoutList();

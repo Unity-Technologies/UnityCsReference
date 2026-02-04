@@ -19,9 +19,9 @@ namespace UnityEditor
     {
         static class Style
         {
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             public static readonly GUIContent[] kSampleRateStrings = new[] {"8,000 Hz", "11,025 Hz", "22,050 Hz", "44,100 Hz", "48,000 Hz", "96,000 Hz", "192,000 Hz"}.Select(s => new GUIContent(s)).ToArray();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             public static readonly int[] kSampleRateValues = {8000, 11025, 22050, 44100, 48000, 96000, 192000};
 
             public static GUIContent LoadType = EditorGUIUtility.TrTextContent("Load Type");
@@ -69,9 +69,9 @@ namespace UnityEditor
         // Don't add duplicate platform groups even if there are multiple platforms in the group
         // Case UUM-399
         static IEnumerable<BuildPlatform> ValidPlatforms =>
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             BuildPlatforms.instance.GetValidPlatforms().Distinct(s_BuildPlatformGroupComparer);
-#pragma warning restore RS0030
+#pragma warning restore UA2001
 
         protected override void InitializeExtraDataInstance(Object extraData, int targetIndex)
         {
@@ -80,12 +80,12 @@ namespace UnityEditor
             if (settings != null && audioImporter != null)
             {
                 // We need to sort them so every extraDataTarget have them ordered correctly and we can use serializedProperties.
-                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 var validPlatforms = ValidPlatforms.OrderBy(platform => platform.namedBuildTarget.TargetName);
-#pragma warning restore RS0030
-                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning restore UA2001
+                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 settings.sampleSettingOverrides = new List<AudioImporterPlatformSettings>(validPlatforms.Count());
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                 foreach (BuildPlatform platform in validPlatforms)
                 {
                     var buildTargetGroup = platform.namedBuildTarget.ToBuildTargetGroup();
@@ -349,12 +349,12 @@ namespace UnityEditor
                             var newValue = (AudioCompressionFormat)EditorGUILayout.IntPopup(
                                 propertyScope.content,
                                 compressionFormatProperty.intValue,
-                                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                                 allowedFormats.Select(a => new GUIContent(a.ToString())).ToArray(),
-#pragma warning restore RS0030
-                                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning restore UA2001
+                                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                                 allowedFormats.Select(a => (int)a).ToArray());
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                             if (changed.changed)
                             {
                                 compressionFormatProperty.intValue = (int)newValue;
@@ -456,9 +456,9 @@ namespace UnityEditor
             }
 
             // We need to sort them so every extraDataTarget have them ordered correctly and we can use serializedProperties.
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             BuildPlatform[] validPlatforms = ValidPlatforms.OrderBy(platform => platform.namedBuildTarget.TargetName).ToArray();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             GUILayout.Space(10);
             int shownSettingsPage = EditorGUILayout.BeginPlatformGrouping(validPlatforms, Style.DefaultPlatform);
 

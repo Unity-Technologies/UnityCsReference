@@ -1008,6 +1008,7 @@ namespace UnityEngine
     [UsedByNativeCode]
     [StructLayout(LayoutKind.Sequential)]
     [NativeHeader("Runtime/Graphics/LightmapData.h")]
+    [NativeAsStruct]
     public sealed partial class LightmapData
     {
         internal Texture2D m_Light;
@@ -1030,7 +1031,7 @@ namespace UnityEngine
         private LightmapSettings() {}
 
         // Lightmap array.
-        public extern static LightmapData[] lightmaps {[FreeFunction][return: UnityMarshalAs(NativeType.ScriptingObjectPtr)] get; [FreeFunction(ThrowsException = true)][param: UnityMarshalAs(NativeType.ScriptingObjectPtr)] set; }
+        public extern static LightmapData[] lightmaps {[FreeFunction] get; [FreeFunction(ThrowsException = true)] set; }
 
         public extern static LightmapsMode lightmapsMode { get; [FreeFunction(ThrowsException = true)] set; }
 

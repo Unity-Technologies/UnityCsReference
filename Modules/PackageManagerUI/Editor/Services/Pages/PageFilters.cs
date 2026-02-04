@@ -4,7 +4,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
 
 namespace UnityEditor.PackageManager.UI.Internal
 {
@@ -54,12 +53,8 @@ namespace UnityEditor.PackageManager.UI.Internal
             return other != null &&
                 status == other.status &&
                 sortOption == other.sortOption &&
-                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                categories.Count == other.categories.Count && categories.SequenceEqual(other.categories) &&
-#pragma warning restore RS0030
-                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                labels.Count == other.labels.Count && labels.SequenceEqual(other.labels);
-#pragma warning restore RS0030
+                categories.IsSequenceEqual(other.categories) &&
+                labels.IsSequenceEqual(other.labels);
         }
     }
 

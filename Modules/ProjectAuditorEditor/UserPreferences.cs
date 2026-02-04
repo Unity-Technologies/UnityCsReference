@@ -158,10 +158,10 @@ namespace Unity.ProjectAuditor.Editor
 
         static UserPreferences()
         {
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var buildTargets = Enum.GetValues(typeof(BuildTarget)).Cast<BuildTarget>();
             var supportedBuildTargets = buildTargets.Where(bt =>
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                 BuildPipeline.IsBuildTargetSupported(BuildPipeline.GetBuildTargetGroup(bt), bt)).ToList();
             supportedBuildTargets.Sort((t1, t2) =>
                 string.Compare(t1.ToString(), t2.ToString(), StringComparison.Ordinal));
@@ -171,9 +171,9 @@ namespace Unity.ProjectAuditor.Editor
 
             s_SupportedBuildTargets = supportedBuildTargets.ToArray();
 
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             s_PlatformContents = s_SupportedBuildTargets
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                 .Select(t => new GUIContent((t == BuildTarget.NoTarget) ? k_UseBuildSettings : Formatting.GetModernBuildTargetName(t))).ToArray();
         }
 

@@ -67,9 +67,9 @@ namespace Unity.ProjectAuditor.Editor.AssemblyUtils
         {
             if (!string.IsNullOrEmpty(m_OutputFolder) && Directory.Exists(m_OutputFolder))
             {
-                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 foreach (var task in m_AssemblyCompilationTasks.Select(pair => pair.Value).Where(u => u.IsCompletedSuccessfully))
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                 {
                     File.Delete(task.AssemblyPath);
                     File.Delete(Path.ChangeExtension(task.AssemblyPath, ".pdb"));
@@ -108,25 +108,25 @@ namespace Unity.ProjectAuditor.Editor.AssemblyUtils
             IEnumerable<string> compiledPlayerPaths = null;
             yield return CompilePlayerAssemblies(playerAssemblies, (paths) => compiledPlayerPaths = paths, progress);
 
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var editorPaths = editorAssemblies.Select(a => AssemblyInfoProvider.GetAssemblyInfoFromAssemblyPath(a.outputPath, true)).Distinct().ToList();
             var playerPaths = compiledPlayerPaths.Select(p => AssemblyInfoProvider.GetAssemblyInfoFromAssemblyPath(p, false)).Distinct().ToList();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
 
             // If only auditing Unity code, remove all User assemblies (can't do this the other way around because User code depends on Unity code)
             if ((CodeOwnerFlags & CodeOwnerFlags.All) == CodeOwnerFlags.Unity)
             {
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 editorPaths = editorPaths.Where(p => p.IsUnityOwned).ToList();
                 playerPaths = playerPaths.Where(p => p.IsUnityOwned).ToList();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             }
 
             // Remove any duplicates
             if (editorPaths.Count > 0 && playerPaths.Count > 0)
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 editorPaths = editorPaths.Where(e => !playerPaths.Any(p => p.Name == e.Name)).ToList();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
 
             // Add Unity assemblies
             if ((CodeOwnerFlags & CodeOwnerFlags.Unity) != 0)
@@ -186,9 +186,9 @@ namespace Unity.ProjectAuditor.Editor.AssemblyUtils
             if ((CodeAnalysisFlags & CodeAnalysisFlags.Editor) != 0)
             {
                 editorAssemblies = UnityEditor.Compilation.CompilationPipeline.GetAssemblies(AssembliesType.Editor);
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 editorAssemblies = editorAssemblies.Where(a => (a.flags & AssemblyFlags.EditorAssembly) != 0).ToArray();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
 
                 if ((CodeAnalysisFlags & CodeAnalysisFlags.Tests) == 0)
                 {
@@ -223,9 +223,9 @@ namespace Unity.ProjectAuditor.Editor.AssemblyUtils
         IReadOnlyCollection<Assembly> CollectAssemblyDependencies(IReadOnlyCollection<Assembly> assemblies)
         {
             var assembliesAndDependencies = new List<Assembly>();
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             foreach (var assembly in assemblies.Where(a => AssemblyNames.Contains(a.name)))
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                 CollectAssemblyDependenciesRecursive(assembly, assembliesAndDependencies);
             return assembliesAndDependencies;
         }
@@ -235,9 +235,9 @@ namespace Unity.ProjectAuditor.Editor.AssemblyUtils
             if (!assembliesAndDependencies.Contains(assembly))
                 assembliesAndDependencies.Add(assembly);
 
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var missingDependencies = assembly.assemblyReferences.Where(d => !assembliesAndDependencies.Contains(d));
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             foreach (var dependency in missingDependencies)
                 CollectAssemblyDependenciesRecursive(dependency, assembliesAndDependencies);
         }
@@ -258,9 +258,9 @@ namespace Unity.ProjectAuditor.Editor.AssemblyUtils
 
             progress?.Clear(progressState);
 
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var paths = m_AssemblyCompilationTasks.Where(pair => pair.Value.IsCompletedSuccessfully).Select(task => task.Value.AssemblyPath);
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             onComplete.Invoke(paths);
         }
 
@@ -288,9 +288,9 @@ namespace Unity.ProjectAuditor.Editor.AssemblyUtils
                 };
 
                 // add asmdef-specific defines
-                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 var additionalDefines = new List<string>(assembly.defines.Except(assemblyBuilder.defaultDefines));
-#pragma warning restore RS0030
+#pragma warning restore UA2001
 
                 // DEVELOPMENT_BUILD
                 assemblyBuilder.flags = AssemblyBuilderFlags.None;
@@ -307,15 +307,15 @@ namespace Unity.ProjectAuditor.Editor.AssemblyUtils
                 assemblyBuilder.additionalDefines = additionalDefines.ToArray();
 
                 // add references to assemblies we need to build
-                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 assemblyBuilder.additionalReferences = assembly.assemblyReferences.Select(r => Path.Combine(m_OutputFolder, Path.GetFileName(r.outputPath))).ToArray();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
 
                 // exclude all assemblies that we are building ourselves to a Temp folder
                 assemblyBuilder.excludeReferences =
-                    #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                    #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     assemblyBuilder.defaultReferences.Where(r => r.StartsWith("Library")).ToArray();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
 
                 assemblyBuilder.referencesOptions = ReferencesOptions.UseEngineModules;
 
@@ -334,9 +334,9 @@ namespace Unity.ProjectAuditor.Editor.AssemblyUtils
             foreach (var assembly in assemblies)
             {
                 var dependencies = new List<AssemblyCompilationTask>();
-                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 foreach (var referenceName in assembly.assemblyReferences.Select(r => Path.GetFileNameWithoutExtension(r.outputPath)))
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                 {
                     dependencies.Add(m_AssemblyCompilationTasks[referenceName]);
                 }
@@ -352,9 +352,9 @@ namespace Unity.ProjectAuditor.Editor.AssemblyUtils
                 if (progress?.IsCancelled ?? false)
                     break; // compilation of assemblies will continue but we won't wait for it
 
-#pragma warning disable RS0030
+#pragma warning disable UA2001
                 var pendingTasks = m_AssemblyCompilationTasks.Select(pair => pair.Value).Where(task => !task.IsCompleted).ToArray();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                 if (pendingTasks.Length == 0)
                     break;
 

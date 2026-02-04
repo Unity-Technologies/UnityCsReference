@@ -44,9 +44,9 @@ namespace UnityEditor.StyleSheets
                 diffs.Add(prefix + "background");
             }
 
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             if (!self.scaledBackgrounds.SequenceEqual(otherState.scaledBackgrounds))
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             {
                 if (diffs == null)
                     return false;
@@ -340,12 +340,12 @@ namespace UnityEditor.StyleSheets
             foreach (var customStyle in self.customStyles)
             {
                 var matchedStyle = String.IsNullOrEmpty(customStyle.name) ?
-                    #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                    #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     otherSkin.customStyles.ElementAtOrDefault(i) :
-#pragma warning restore RS0030
-                    #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning restore UA2001
+                    #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     otherSkin.customStyles.FirstOrDefault(style => style.name == customStyle.name);
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                 if (matchedStyle == null)
                 {
                     if (diffs == null)

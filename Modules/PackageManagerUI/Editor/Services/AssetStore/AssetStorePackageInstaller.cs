@@ -2,8 +2,8 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
 using System.Collections.Generic;
-using System.Linq;
 using UnityEngine;
 
 namespace UnityEditor.PackageManager.UI.Internal
@@ -62,74 +62,63 @@ namespace UnityEditor.PackageManager.UI.Internal
             }
         }
 
-        private void RemoveAssetsAndCleanUpEmptyFolders(IEnumerable<Asset> assets)
+        private void RemoveAssetsAndCleanUpEmptyFolders(IReadOnlyCollection<Asset> assets)
         {
             const string assetsPath = "Assets";
             var foldersToRemove = new HashSet<string>();
             foreach (var asset in assets)
             {
-                var path = m_IOProxy.GetParentDirectory(asset.importedPath);
+                var path = IOUtils.GetParentDirectory(asset.importedPath);
                 // We want to add an asset's parent folders all the way up to the `Assets` folder, because we don't want to leave behind
                 // empty folders after the assets are removed process.
                 while (!foldersToRemove.Contains(path) && path.StartsWith(assetsPath) && path.Length > assetsPath.Length)
                 {
                     foldersToRemove.Add(path);
-                    path = m_IOProxy.GetParentDirectory(path);
+                    path = IOUtils.GetParentDirectory(path);
                 }
             }
             var searchInFoldersFilter = new SearchFilter
             {
-                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                folders = foldersToRemove.ToArray(),
-#pragma warning restore RS0030
+                folders = foldersToRemove.ToNewArray(),
                 searchArea = SearchFilter.SearchArea.SelectedFolders
             };
 
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            var leftOverAssetsGuids = m_AssetDatabase.FindAssets(searchInFoldersFilter).ToHashSet();
-#pragma warning restore RS0030
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            foreach (var guid in assets.Select(i => i.guid).Concat(foldersToRemove.Select(i => m_AssetDatabase.AssetPathToGUID(i))))
-#pragma warning restore RS0030
+            var leftOverAssetsGuids = new HashSet<string>(m_AssetDatabase.FindAssets(searchInFoldersFilter));
+            foreach (var guid in assets.SelectAsEnumerable(i => i.guid).Join(foldersToRemove.SelectAsEnumerable(m_AssetDatabase.AssetPathToGUID)))
                 leftOverAssetsGuids.Remove(guid);
 
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            foreach (var assetPath in leftOverAssetsGuids.Select(i => m_AssetDatabase.GUIDToAssetPath(i)))
-#pragma warning restore RS0030
+            foreach (var assetPath in leftOverAssetsGuids.SelectAsEnumerable(m_AssetDatabase.GUIDToAssetPath))
             {
-                var path = m_IOProxy.GetParentDirectory(assetPath);
+                var path = IOUtils.GetParentDirectory(assetPath);
                 // If after the removal process, there will still be some assets left behind, we want to make sure the folders containing
                 // left over assets are not removed
                 while (foldersToRemove.Contains(path))
                 {
                     foldersToRemove.Remove(path);
-                    path = m_IOProxy.GetParentDirectory(path);
+                    path = IOUtils.GetParentDirectory(path);
                 }
             }
 
             // We order the folders to be removed so that child folders always come before their parent folders
             // This way m_AssetDatabase.DeleteAssets call won't try to remove parent folders first and fail to remove child folders
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            var orderedFoldersToRemove = foldersToRemove.OrderByDescending(i => i);
-#pragma warning restore RS0030
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            var assetAndFoldersToRemove = assets.Select(i => i.importedPath).Concat(orderedFoldersToRemove).ToArray();
-#pragma warning restore RS0030
+            var orderedFoldersToRemove = foldersToRemove.ToNewArray();
+            Array.Sort(orderedFoldersToRemove, (a, b) => Comparer<string>.Default.Compare(b, a));
+            var assetAndFoldersToRemove = assets.SelectAsEnumerable(i => i.importedPath).Join(orderedFoldersToRemove).ToNewArray(assets.Count + orderedFoldersToRemove.Length);
             var pathsFailedToRemove = new List<string>();
             m_AssetDatabase.DeleteAssets(assetAndFoldersToRemove, pathsFailedToRemove);
 
-            if (pathsFailedToRemove.Count > 0)
-            {
-                var errorMessage = L10n.Tr("[Package Manager Window] Failed to remove the following asset(s) and/or folder(s):");
-                foreach (var path in pathsFailedToRemove)
-                    errorMessage += "\n" + path;
-                Debug.LogError(errorMessage);
+            if (pathsFailedToRemove.Count == 0)
+                return;
 
-                m_Application.DisplayDialog("cannotRemoveAsset",
-                    L10n.Tr("Cannot Remove"),
-                    L10n.Tr("Some assets could not be deleted.\nMake sure nothing is keeping a hook on them, like a loaded DLL for example."),
-                    L10n.Tr("OK"));
-            }
+            var errorMessage = L10n.Tr("[Package Manager Window] Failed to remove the following asset(s) and/or folder(s):");
+            foreach (var path in pathsFailedToRemove)
+                errorMessage += "\n" + path;
+            Debug.LogError(errorMessage);
+
+            m_Application.DisplayDialog("cannotRemoveAsset",
+                L10n.Tr("Cannot Remove"),
+                L10n.Tr("Some assets could not be deleted.\nMake sure nothing is keeping a hook on them, like a loaded DLL for example."),
+                L10n.Tr("OK"));
         }
 
         public void Uninstall(long productId, bool interactiveUninstall = false)
@@ -150,7 +139,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         public void Uninstall(IEnumerable<long> productIds)
         {
             var assetsToRemove = new List<Asset>();
-            foreach (var productId in productIds ?? System.Array.Empty<long>())
+            foreach (var productId in productIds ?? Array.Empty<long>())
             {
                 var importedPackage = m_AssetStoreCache.GetImportedPackage(productId);
                 if (importedPackage != null)

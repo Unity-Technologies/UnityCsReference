@@ -5,7 +5,6 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Linq;
 using UnityEngine;
 
 namespace UnityEditor.PackageManager.UI.Internal
@@ -22,32 +21,21 @@ namespace UnityEditor.PackageManager.UI.Internal
         // as part of the List function
         [SerializeField]
         private AssetOrigin m_LatestAssetOrigin;
-        public AssetOrigin latestAssetOrigin
-        {
-            get
-            {
-                if (m_LatestAssetOrigin == null)
-                    CalculateLatestAssetOrigin();
-                return m_LatestAssetOrigin;
-            }
-        }
+
+        public AssetOrigin latestAssetOrigin => m_LatestAssetOrigin;
 
         public int Count => m_ImportedAssets.Count;
 
         [SerializeField]
         private List<Asset> m_ImportedAssets;
 
-        public AssetStoreImportedPackage(List<Asset> importedAssets)
+        public AssetStoreImportedPackage(params Asset[] importedAssets)
         {
-            m_ImportedAssets = importedAssets ?? new List<Asset>();
-            CalculateLatestAssetOrigin();
-        }
+            m_ImportedAssets = new List<Asset>();
+            m_LatestAssetOrigin = null;
 
-        private void CalculateLatestAssetOrigin()
-        {
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            m_LatestAssetOrigin = m_ImportedAssets.OrderByDescending(x => x.origin.uploadId).FirstOrDefault().origin;
-#pragma warning restore RS0030
+            foreach (var asset in importedAssets)
+                AddImportedAsset(asset);
         }
 
         public void AddImportedAsset(Asset importedAsset)
@@ -56,7 +44,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 return;
 
             m_ImportedAssets.Add(importedAsset);
-            if (importedAsset.origin.uploadId > m_LatestAssetOrigin.uploadId)
+            if (m_LatestAssetOrigin == null || importedAsset.origin.uploadId > m_LatestAssetOrigin.uploadId)
                 m_LatestAssetOrigin = importedAsset.origin;
         }
 

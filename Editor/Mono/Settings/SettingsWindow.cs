@@ -112,7 +112,10 @@ namespace UnityEditor
 
         internal SettingsProvider GetCurrentProvider()
         {
-            return m_TreeView.currentProvider;
+            // doing this null check provides safety for calls made in
+            // OnDisable when the tree view may have already been destroyed
+            // we see this when switching to Play Mode
+            return m_TreeView == null ? null : m_TreeView.currentProvider;
         }
 
         public void AddItemsToMenu(GenericMenu menu)
@@ -703,12 +706,12 @@ namespace UnityEditor
 
         internal static SettingsWindow FindWindowByScope(SettingsScope scopes)
         {
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var settingsWindows = Resources.FindObjectsOfTypeAll(typeof(SettingsWindow)).Cast<SettingsWindow>();
-#pragma warning restore RS0030
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning restore UA2001
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return settingsWindows.FirstOrDefault(settingsWindow => settingsWindow.m_Scope == scopes);
-#pragma warning restore RS0030
+#pragma warning restore UA2001
         }
 
         [VisibleToOtherModules("UnityEditor.ProjectAuditorModule")]

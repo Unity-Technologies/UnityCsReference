@@ -12,19 +12,22 @@ internal class MainContainerOverlay : VisualElement
     [Serializable]
     public new class UxmlSerializedData : VisualElement.UxmlSerializedData
     {
-        public override object CreateInstance() => new MainContainerOverlay();
+        public override object CreateInstance()
+        {
+            return new MainContainerOverlay(ServicesContainer.instance.Resolve<IApplicationProxy>());
+        }
     }
 
     public ExtendedHelpBox extendedHelpBox { get; }
     public Label titleLabel { get; }
     private VisualElement m_Container;
 
-    public MainContainerOverlay()
+    public MainContainerOverlay(IApplicationProxy applicationProxy)
     {
         m_Container = new VisualElement { name = "overlayContainer" };
         Add(m_Container);
         titleLabel = new Label { name = "overlayLabel" };
-        extendedHelpBox = new ExtendedHelpBox { name = "overlayHelpBox" };
+        extendedHelpBox = new ExtendedHelpBox(applicationProxy) { name = "overlayHelpBox" };
         m_Container.Add(titleLabel);
         m_Container.Add(extendedHelpBox);
     }

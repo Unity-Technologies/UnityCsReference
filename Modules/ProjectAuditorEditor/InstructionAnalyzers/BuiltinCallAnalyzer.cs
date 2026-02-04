@@ -33,9 +33,9 @@ namespace Unity.ProjectAuditor.Editor.InstructionAnalyzers
                 registerDescriptor(descriptor);
             }
 
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var methodDescriptors = descriptors.Where(
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                 descriptor => !descriptor.Method.Equals("*") &&
                 !string.IsNullOrEmpty(descriptor.Type) &&
                 descriptor.IsSupported());
@@ -50,9 +50,9 @@ namespace Unity.ProjectAuditor.Editor.InstructionAnalyzers
                 m_Descriptors[d.Method].Add(d);
             }
 
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             m_NamespaceOrClassDescriptors = descriptors.Where(descriptor => descriptor.Method.Equals("*")).ToDictionary(d => d.Type);
-#pragma warning restore RS0030
+#pragma warning restore UA2001
         }
 
         public override ReportItemBuilder Analyze(InstructionAnalysisContext context)
@@ -109,9 +109,9 @@ namespace Unity.ProjectAuditor.Editor.InstructionAnalyzers
                 var genericInstanceMethod = callee as GenericInstanceMethod;
                 if (genericInstanceMethod != null && genericInstanceMethod.HasGenericArguments)
                 {
-                    #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                    #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     var genericTypeNames = genericInstanceMethod.GenericArguments.Select(a => a.FullName).ToArray();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                     description = $"'{descriptor.Title}<{string.Join(", ", genericTypeNames)}>' usage";
                 }
                 else

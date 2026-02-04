@@ -73,6 +73,47 @@ namespace Unity.GraphToolkit.Editor
         }
 
         /// <summary>
+        /// Creates and adds a new variable to the graph.
+        /// </summary>
+        /// <param name="name">The name of the variable.</param>
+        /// <param name="valueType">The data type of the variable.</param>
+        /// <param name="defaultValue">The default value. Must be compatible with <paramref name="valueType"/> and work with Unity serialization rules for <see cref="SerializeField"/>.</param>
+        /// <param name="kind">The kind of variable, defined by <see cref="VariableKind"/>.</param>
+        /// <returns>The newly created variable.</returns>
+        /// <remarks> If the variable is successfully created, its type is automatically added to the graph's list of supported types.</remarks>
+        public IVariable CreateVariable(string name, Type valueType, object defaultValue = null, VariableKind kind = VariableKind.Local)
+        {
+            CheckImplementation();
+            return m_Implementation.CreateVariable(name, valueType, defaultValue, kind);
+        }
+
+        /// <summary>
+        /// Creates and adds a new variable to the graph.
+        /// </summary>
+        /// <typeparam name="T">The data type of the variable.</typeparam>
+        /// <param name="name">The name of the variable.</param>
+        /// <param name="defaultValue">The default value. Must be compatible with <typeparamref name="T"/> and work with Unity serialization rules for <see cref="SerializeField"/>.</param>
+        /// <param name="kind">The kind of variable, defined by <see cref="VariableKind"/>.</param>
+        /// <returns>The newly created variable.</returns>
+        /// <remarks> If the variable is successfully created, its type is automatically added to the graph's list of supported types.</remarks>
+        public IVariable CreateVariable<T>(string name, T defaultValue = default, VariableKind kind = VariableKind.Local)
+        {
+            return CreateVariable(name, typeof(T), defaultValue, kind);
+        }
+
+        /// <summary>
+        /// Removes a variable from the Graph.
+        /// </summary>
+        /// <param name="variable">The variable to remove. Must belong to this graph.</param>
+        /// <param name="forceRemove">If true, removes the variable and all variable nodes referencing it. If false, removal fails if nodes exist.</param>
+        /// <returns>True if the variable was removed; otherwise false.</returns>
+        public bool RemoveVariable(IVariable variable, bool forceRemove = false)
+        {
+            CheckImplementation();
+            return m_Implementation.RemoveVariable(variable, forceRemove);
+        }
+
+        /// <summary>
         /// Retrieves a variable declared in the graph by index.
         /// </summary>
         /// <param name="index">The index of the variable to retrieve.</param>

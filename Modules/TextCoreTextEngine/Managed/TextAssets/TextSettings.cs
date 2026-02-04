@@ -85,6 +85,16 @@ namespace UnityEngine.TextCore.Text
         }
 
         static List<FontAsset> s_FallbackOSFontAssetInternal;
+        static FontAsset s_RuntimeDefault;
+
+        private FontAsset GetDefaultFont()
+        {
+            if (s_RuntimeDefault == null)
+            {
+                s_RuntimeDefault = GetCachedFontAsset(Font.GetDefault());
+            }
+            return s_RuntimeDefault;
+        }
 
         internal virtual List<FontAsset> GetStaticFallbackOSFontAsset()
         {
@@ -526,34 +536,7 @@ namespace UnityEngine.TextCore.Text
             if (defaultFontAsset != null)
                 return defaultFontAsset;
 
-            // No fonts are assigned; we should get the first fallback available.
-            return GetFirstAvailableFallback();
-        }
-
-        private FontAsset GetFirstAvailableFallback()
-        {
-            if (m_FallbackFontAssets != null)
-            {
-                for (int i = 0; i < m_FallbackFontAssets.Count; i++)
-                {
-                    var fa = m_FallbackFontAssets[i];
-                    if (fa != null)
-                        return fa;
-                }
-            }
-
-            var osList = fallbackOSFontAssets;
-            if (osList != null)
-            {
-                for (int i = 0; i < osList.Count; i++)
-                {
-                    var fa = osList[i];
-                    if (fa != null)
-                        return fa;
-                }
-            }
-
-            return null;
+            return GetDefaultFont();
         }
     }
 }

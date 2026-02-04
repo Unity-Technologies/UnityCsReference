@@ -230,9 +230,9 @@ namespace UnityEditor
         {
             bool anyAdded = false;
 
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             ParticleSystem[] allSystems = systems.ToArray();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             bool usingMultiEdit = (allSystems.Length > 1);
 
             bool initializeRequired = false;
@@ -518,9 +518,9 @@ namespace UnityEditor
                 bool found = false;
                 foreach (ParticleSystemUI e in m_Emitters)
                 {
-                    #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                    #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     if (e.m_ParticleSystems.FirstOrDefault(o => o.name == nextName) != null)
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                     {
                         found = true;
                         break;
@@ -541,9 +541,9 @@ namespace UnityEditor
             // ownerType == OwnerType.Inspector
             foreach (ParticleSystem ps in psUI.m_ParticleSystems)
             {
-                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 if (m_SelectedParticleSystems.FirstOrDefault(o => o == ps) != null)
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                     return true;
             }
 
@@ -995,9 +995,9 @@ namespace UnityEditor
                 ParticleSystem selectedSystem = (m_SelectedParticleSystems.Count > 0) ? m_SelectedParticleSystems[0] : null;
                 if (selectedSystem != null)
                 {
-                    #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                    #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     ParticleSystemUI psUI = m_Emitters.FirstOrDefault(o => o.m_ParticleSystems[0] == selectedSystem);
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                     if (psUI != null)
                     {
                         float width = GUIClip.visibleRect.width - 18; // -10 is effect_bg padding, -8 is inspector padding
@@ -1024,9 +1024,9 @@ namespace UnityEditor
             EntityId[] selectedEntityIds = Selection.entityIds;
             foreach (ParticleSystemUI psUI in m_Emitters)
             {
-                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 if (selectedEntityIds.Contains(psUI.m_ParticleSystems[0].gameObject.GetEntityId()))
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                     result.Add(psUI);
             }
             return result;
@@ -1290,9 +1290,9 @@ namespace UnityEditor
                             bool allowHiding = true;
                             if (moduleUi as RendererModuleUI != null)
                             {
-                                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                                 if (particleSystemUI.m_ParticleSystems.FirstOrDefault(o => o.GetComponent<ParticleSystemRenderer>() == null) == null)
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                                     allowHiding = false;
                             }
 
@@ -1325,9 +1325,9 @@ namespace UnityEditor
                             if (psRenderer != null)
                             {
                                 if (enabled)
-                                    #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                                    #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                                     psRenderer.editorEnabled = selectedEntityIds.Contains(psRenderer.gameObject.GetEntityId());
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                                 else
                                     psRenderer.editorEnabled = true;
                             }

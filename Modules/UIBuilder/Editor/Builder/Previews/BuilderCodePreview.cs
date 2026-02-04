@@ -239,9 +239,9 @@ namespace Unity.UI.Builder
             if (truncated)
                 clampedText = clampedText.Substring(0, clampedText.Length - s_TruncatedPreviewTextMessage.Length);
 
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var lineCount = clampedText.Count(x => x == '\n') + 1;
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             string lineNumbersText = "";
             for (int i = 1; i <= lineCount; ++i)
             {

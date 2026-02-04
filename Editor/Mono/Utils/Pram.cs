@@ -55,14 +55,14 @@ namespace UnityEditor.Mono.Utils
                 PramLogLevel.Trace => "--trace",
                 _ => throw new ArgumentOutOfRangeException()
             };
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var providerLoadPathArguments = ProviderLoadPaths.Select(p => $"--provider-load-path={p.InQuotes()}");
-#pragma warning restore RS0030
+#pragma warning restore UA2001
 
             return new NetCoreProgram(pramDll.ToString(SlashMode.Native),
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 providerLoadPathArguments
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                     .Append(logLevelArgument)
                     .Concat(arguments)
                     .SeparateWith(" "),
@@ -80,9 +80,9 @@ namespace UnityEditor.Mono.Utils
             CreateProgram(new[] {"app-deploy", "--environment", environment, provider, applicationId, CommandLineFormatter.PrepareFileName(applicationPath.ToString()) });
 
         public Program AppStartDetached(string provider, string applicationId, string environment, params string[] arguments) =>
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             CreateProgram(new[] {"app-start-detached", "--environment", environment, provider, applicationId, "--"}.Concat(arguments));
-#pragma warning restore RS0030
+#pragma warning restore UA2001
 
         public Program DetectEnvironment(string provider) =>
             CreateProgram(new[] {"env-detect", provider });

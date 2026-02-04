@@ -23,7 +23,7 @@ namespace UnityEngine.UIElements
         /// or if the callback is registered directly on the event's target.
         /// </summary>
         /// <remarks>
-        /// Handlers that use <see cref="TrickleDown.TrickleDown"/> are executed before those that 
+        /// Handlers that use <see cref="TrickleDown.TrickleDown"/> are executed before those that
         /// use <see cref="TrickleDown.NoTrickleDown"/>.
         /// </remarks>
         /// <seealso cref="EventBase.bubbles"/>
@@ -259,6 +259,14 @@ namespace UnityEngine.UIElements
                 }
             }
 
+            public void Clear()
+            {
+                if (m_Callbacks == EventCallbackList.EmptyList)
+                    return;
+                ReleaseCallbackList(m_Callbacks);
+                m_Callbacks = EventCallbackList.EmptyList;
+            }
+
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             private void BeginInvoke()
             {
@@ -374,6 +382,12 @@ namespace UnityEngine.UIElements
                     throw new ArgumentOutOfRangeException(nameof(propagationPhase),
                         "Propagation phases other than TrickleDown and BubbleUp are not supported");
             }
+        }
+
+        public void Clear()
+        {
+            m_BubbleUpCallbacks.Clear();
+            m_TrickleDownCallbacks.Clear();
         }
 
         public bool HasTrickleDownHandlers()

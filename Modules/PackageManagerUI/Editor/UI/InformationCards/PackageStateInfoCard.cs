@@ -12,17 +12,12 @@ internal class PackageStateInfoCard : PackageInformationCard
     protected override string titleText => L10n.Tr("Package State");
     protected override InformationCardSize cardSize => InformationCardSize.Small;
 
-    [SerializeField]
     private Button m_LinkButton;
-    [SerializeField]
     private string m_ButtonUrl;
-    [SerializeField]
     private string m_AnalyticsId;
-    [SerializeField]
     private IPackageVersion m_Version;
 
-    private IApplicationProxy m_ApplicationProxy;
-
+    private readonly IApplicationProxy m_ApplicationProxy;
     public PackageStateInfoCard(IApplicationProxy applicationProxy)
     {
         m_ApplicationProxy = applicationProxy;

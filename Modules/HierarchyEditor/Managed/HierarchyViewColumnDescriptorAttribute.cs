@@ -11,12 +11,12 @@ namespace Unity.Hierarchy.Editor
     /// Attribute used to register a new Hierarchy column. 
     /// </summary>
     [AttributeUsage(AttributeTargets.Method)]
-    internal sealed class HierarchyViewColumnDescriptorAttribute : Attribute
+    public sealed class HierarchyViewColumnDescriptorAttribute : Attribute
     {
         /// <summary>
         /// Column Id. Must be unique in the HiearchyWindow.
         /// </summary>
-        public readonly string ColumnId;
+        public string ColumnId { get; }
 
         /// <summary>
         /// Attribute constructor.

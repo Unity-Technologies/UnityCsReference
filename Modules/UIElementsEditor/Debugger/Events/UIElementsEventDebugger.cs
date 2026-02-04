@@ -169,18 +169,18 @@ namespace UnityEditor.UIElements.Experimental.Debugger
             if (panel == null)
                 return;
 
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var childrenList = m_EventsHistogramScrollView.Children().ToList();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             foreach (var child in childrenList)
                 child.RemoveFromHierarchy();
 
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var histogramValue = m_Debugger.ComputeHistogram(m_SelectedEvents?.Select(x => x.eventBase).ToList() ??
-#pragma warning restore RS0030
-                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning restore UA2001
+                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 m_Log.lines.Select(x => x.eventBase).ToList());
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             if (histogramValue == null)
                 return;
 
@@ -344,9 +344,9 @@ namespace UnityEditor.UIElements.Experimental.Debugger
 
             GlobalCallbackRegistry.CleanListeners(panel);
 
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var listeners = GlobalCallbackRegistry.s_Listeners.ToList();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             var nbListeners = 0;
             var nbCallbacks = 0;
             foreach (var eventRegistrationListener in listeners)
@@ -365,9 +365,9 @@ namespace UnityEditor.UIElements.Experimental.Debugger
                     continue;
 
                 var events = eventRegistrationListener.Value;
-                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 if (events.All(e => IsFilteredOut(e.Key)))
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                     continue;
 
                 m_RegisteredEventCallbacksDataSource.Add(new TitleInfo(text, key));
@@ -400,12 +400,12 @@ namespace UnityEditor.UIElements.Experimental.Debugger
 
             m_EventRegistrationTitle.text = k_RegisteredEventCallbacksPrefix + choiceCountString + (panel == null ? " - [No Panel Selected]" : "");
 
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var nbEvents = m_EventTypeFilter.State.Count(s => s.Key > 0);
-#pragma warning restore RS0030
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning restore UA2001
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var nbFilteredEvents = m_EventTypeFilter.State.Count(s => s.Key > 0 && s.Value);
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             var eventsRegistrationSearchContainer = rootVisualElement.MandatoryQ("eventsRegistrationSearchContainer");
             var eventsRegistrationTotals = eventsRegistrationSearchContainer.MandatoryQ<Label>("eventsRegistrationTotals");
             eventsRegistrationTotals.text =
@@ -593,9 +593,9 @@ namespace UnityEditor.UIElements.Experimental.Debugger
             EditorApplication.update += EditorUpdate;
 
             if (m_StateList != null && m_StateList.Count > 0)
-                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 m_EventTypeFilter.SetState(m_StateList
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                     .ToDictionary(c => c.key, c => c.value));
         }
 
@@ -721,9 +721,9 @@ namespace UnityEditor.UIElements.Experimental.Debugger
             if (m_SelectedEvents == null)
                 return;
 
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             ReplayEvents(m_SelectedEvents.Select(x => x.eventBase));
-#pragma warning restore RS0030
+#pragma warning restore UA2001
         }
 
         void ReplayEvents(IEnumerable<EventDebuggerEventRecord> events)
@@ -789,9 +789,9 @@ namespace UnityEditor.UIElements.Experimental.Debugger
         void SaveReplaySessionFromSelection()
         {
             var path = EditorUtility.SaveFilePanel("Save Replay File", Application.dataPath, "ReplayData.json", "json");
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             m_Debugger.SaveReplaySessionFromSelection(path, m_SelectedEvents.Select(x => x.eventBase).ToList());
-#pragma warning restore RS0030
+#pragma warning restore UA2001
         }
 
         void LoadReplaySession()
@@ -1083,9 +1083,9 @@ namespace UnityEditor.UIElements.Experimental.Debugger
             if (e.newValue != null)
                 return;
 
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             m_StateList = m_EventTypeFilter.State.Select(pair => new EventTypeFilterStateStruct {key = pair.Key, value = pair.Value}).ToList();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
 
             m_Debugger.UpdateModificationCount();
             Refresh();
@@ -1270,9 +1270,9 @@ namespace UnityEditor.UIElements.Experimental.Debugger
             if (m_MaxLogLines)
             {
                 m_StartIndex = Math.Max(0, m_Log.lines.Count - m_MaxLogLineCount);
-                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 m_EventsLog.itemsSource = m_Log.lines.Skip(m_StartIndex).Take(m_MaxLogLineCount).ToList();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             }
             else
             {
@@ -1331,9 +1331,9 @@ namespace UnityEditor.UIElements.Experimental.Debugger
 
         IList ToList()
         {
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return m_Log.lines.ToList();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
         }
 
         public void ClearLogs()

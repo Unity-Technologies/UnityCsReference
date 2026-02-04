@@ -69,15 +69,15 @@ namespace Unity.Multiplayer.PlayMode.Editor
             if (currentConfig == null)
                 return new VisualElement() { name = "no content" };
 
-            var instanceDescriptions = currentConfig.GetAllInstances();
+            var instanceItems = currentConfig.GetAllInstances();
 
-            foreach (var instanceDescription in instanceDescriptions)
+            foreach (var instanceItem in instanceItems)
             {
-                var instance = GetInstanceFromDescription(instanceDescription);
+                var instance = GetInstanceByItem(instanceItem);
                 if (instance == null)
                     continue;
 
-                var instanceView = new InstanceView(instanceDescription);
+                var instanceView = new InstanceView(instance);
                 m_ViewToInstance.Add(instanceView, instance);
                 container.Add(instanceView);
             }
@@ -96,7 +96,7 @@ namespace Unity.Multiplayer.PlayMode.Editor
 
         class InstanceView : VisualElement
         {
-            internal readonly InstanceDescription m_InstanceDescription;
+            internal readonly Instance m_Instance;
             readonly VisualElement m_StatusIndicator;
             readonly VisualElement m_DriftIndicator;
             readonly Image m_RunModeIndicator;
@@ -115,9 +115,9 @@ namespace Unity.Multiplayer.PlayMode.Editor
             const string k_LoadingClass = "loading";
             const string k_IdleClass = "idle";
 
-            internal InstanceView(InstanceDescription instance)
+            internal InstanceView(Instance instance)
             {
-                m_InstanceDescription = instance;
+                m_Instance = instance;
                 AddToClassList(k_InstanceViewClass);
                 AddToClassList(k_ActiveClass);
 
@@ -148,23 +148,31 @@ namespace Unity.Multiplayer.PlayMode.Editor
                 statusContainer.Add(roleLabel);
 
                 // Todo: this info should come from the configuration and not be branched here.
-                if (instance is EditorInstanceDescription editorInstanceDescription)
+                if (instance.Controller is MainEditorController mainEditorController)
                 {
                     instanceIcon.style.backgroundImage = EditorGUIUtility.FindTexture("UnityLogo");
                     roleLabel.style.display = EditorMultiplayerManager.enableMultiplayerRoles ? DisplayStyle.Flex : DisplayStyle.None;
                     if (EditorMultiplayerManager.enableMultiplayerRoles)
-                        roleLabel.text = editorInstanceDescription.RoleMask.ToString();
-                    // Do not show run mode for the main editor
-                    if (instance is MainEditorInstanceDescription)
-                        m_RunModeIndicator.visible = false;
+                    {
+                        roleLabel.text = mainEditorController.Settings.RoleMask.ToString();
+                    }
+                    m_RunModeIndicator.visible = false;
                 }
-
-                if (instance is LocalInstanceDescription localInstanceDescription)
+                else if (instance.Controller is CloneEditorController cloneEditorController)
                 {
-                    instanceIcon.style.backgroundImage = InternalUtilities.GetBuildProfileTypeIcon(localInstanceDescription.BuildProfile);
+                    instanceIcon.style.backgroundImage = EditorGUIUtility.FindTexture("UnityLogo");
+                    roleLabel.style.display = EditorMultiplayerManager.enableMultiplayerRoles ? DisplayStyle.Flex : DisplayStyle.None;
+                    if (EditorMultiplayerManager.enableMultiplayerRoles)
+                    {
+                        roleLabel.text = cloneEditorController.Settings.RoleMask.ToString();
+                    }
+                }
+                else if (instance.Controller is LocalPlayerController localController)
+                {
+                    instanceIcon.style.backgroundImage = InternalUtilities.GetBuildProfileTypeIcon(localController.Settings.BuildProfile);
                     roleLabel.text = "no role";
-                    if (localInstanceDescription.BuildProfile != null)
-                        roleLabel.text = MultiplayerRolesSettings.instance.GetMultiplayerRoleForBuildProfile(localInstanceDescription.BuildProfile).ToString();
+                    if (localController.Settings.BuildProfile != null)
+                        roleLabel.text = MultiplayerRolesSettings.instance.GetMultiplayerRoleForBuildProfile(localController.Settings.BuildProfile).ToString();
                 }
 
                 Add(instanceContainer);
@@ -201,29 +209,29 @@ namespace Unity.Multiplayer.PlayMode.Editor
             internal void RefreshFreeRunUI()
             {
                 // Grab the running mode and update the visual icon if it's changed.
-                var currRunMode = m_InstanceDescription.RunModeState;
+                var currRunMode = m_Instance.RunModeState;
                 m_RunModeIndicator.SetRunModeIcon(currRunMode);
 
                 // Grab the tool tip for the current mode and update if it's changed.
-                var toolTipText = GetRunModeToolTip(currRunMode, m_InstanceDescription);
+                var toolTipText = GetRunModeToolTip(currRunMode);
                 if (!m_RunModeIndicator.tooltip.Equals(toolTipText))
                     m_RunModeIndicator.tooltip = toolTipText;
 
                 // Refresh the coherence drift UI for free run instances
-                var instance = ScenarioRunner.instance.ActiveScenario?.GetInstanceByName(m_InstanceDescription.Name);
+                var instance = ScenarioRunner.instance.ActiveScenario?.GetInstanceByName(m_Instance.Name);
                 if (instance != null)
                     m_DriftIndicator.visible = instance.Drifted;
             }
 
-            private string GetRunModeToolTip(RunModeState runMode, InstanceDescription instanceDescription)
+            private string GetRunModeToolTip(RunModeState runMode)
             {
                 switch (runMode)
                 {
                     case RunModeState.ScenarioControl:
-                        if (instanceDescription.InstanceTypeName == EditorInstanceDescription.k_EditorInstanceTypeName)
+                        if (m_Instance.Controller.GetType().IsSubclassOf(typeof(EditorController<,>)))
                             return "This instance is controlled by the main editor process.\n" +
                                    "It will be activated when entering play mode.";
-                        if (instanceDescription.InstanceTypeName == LocalInstanceDescription.k_LocalInstanceTypeName)
+                        if (m_Instance.Controller is LocalPlayerController)
                             return "This instance is controlled by the main editor process.\n" +
                                    "It will build and run when entering play mode.";
 
@@ -237,13 +245,13 @@ namespace Unity.Multiplayer.PlayMode.Editor
             }
         }
 
-        private Instance GetInstanceFromDescription(InstanceDescription instanceDescription)
+        private Instance GetInstanceByItem(IInstanceItem instanceItem)
         {
             var currentConfig = PlayModeScenarioManager.ActiveScenario as OrchestratedScenario;
             if (currentConfig == null || currentConfig.Scenario == null)
                 return null;
 
-            return currentConfig.Scenario.GetInstanceByName(instanceDescription.Name);
+            return currentConfig.Scenario.GetInstanceById(instanceItem.GetId());
         }
     }
 }

@@ -109,7 +109,7 @@ internal static class MenuItemGenerator
                     "",
                     false,
                     maxPriority + k_LibraryMenuItemPriorityOffset,
-                    UIElementsSearchProvider.OpenUIElementsPicker,
+                    UIElementsProvider.OpenUIElementsPicker,
                     null
                 );
             }

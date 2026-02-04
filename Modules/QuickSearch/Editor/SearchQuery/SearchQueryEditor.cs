@@ -166,9 +166,9 @@ namespace UnityEditor.Search
             if (m_ResultView == null)
                 return;
 
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var selectedItem = m_ResultView.selection.FirstOrDefault();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             if (selectedItem == null)
                 return;
 
@@ -182,9 +182,9 @@ namespace UnityEditor.Search
             if (m_ResultView == null)
                 return GUIContent.none;
 
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var selectedItem = m_ResultView.selection.FirstOrDefault();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             if (selectedItem == null)
                 return GUIContent.Temp("No selection");
 
@@ -196,9 +196,9 @@ namespace UnityEditor.Search
             if (m_ResultView == null)
                 return string.Empty;
 
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var selectedItem = m_ResultView.selection.FirstOrDefault();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             if (selectedItem == null)
                 return query.description;
 

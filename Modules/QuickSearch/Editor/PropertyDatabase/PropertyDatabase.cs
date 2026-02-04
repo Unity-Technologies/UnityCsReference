@@ -581,9 +581,9 @@ namespace UnityEditor.Search
                 sb.AppendLine($"\t\tTop {longestStringsCount} longest strings:");
 
                 var strings = view.GetAllStrings();
-                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 foreach (var str in strings.OrderByDescending(s => s.Length).Take(longestStringsCount))
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                 {
                     sb.AppendLine($"\t\t\t{str}");
                 }
@@ -1121,13 +1121,8 @@ namespace UnityEditor.Search
                 newMemoryStoreView.MergeWith(m_FileStoreView, false);
                 newMemoryStoreView.MergeWith(m_MemoryStoreView, false);
 
-                // Write new memory store to file.
-                var tempFilePath = GetTempFilePath(m_FileStore.filePath);
-                newMemoryStoreView.SaveToFile(tempFilePath);
-
-                // Swap file store with new one, and clear the invalidated documents (since the invalid records were not saved)
-                m_FileStore.SwapFile(tempFilePath);
-                m_FileStore.ClearInvalidatedDocuments();
+                // Replace file store with content from new memory store
+                m_FileStore.ReplaceWithSerializableStore(newMemoryStoreView);
 
                 // Clear the memory store after file was swapped. If you do it before, you risk
                 // entering a state where another thread could try to read between the moment the clear is done

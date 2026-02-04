@@ -104,17 +104,17 @@ namespace Unity.GraphToolkit.Editor
         {
             var notSelectedElementRects = new List<Rect>();
             var graphView = selectedElement.GraphView;
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var ignoredModels = graphView.GetSelection().Cast<Model>().ToList();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
 
             // Consider only the visible nodes.
             var rectToFit = graphView.layout;
 
             graphView.GraphModel.GetGraphElementModels().GetAllViews(graphView, null, k_GetNotSelectedElementRectsInViewAllUIs);
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             foreach (var element in k_GetNotSelectedElementRectsInViewAllUIs.OfType<ModelView>())
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             {
                 if (selectedElement is Placemat placemat && element.layout.Overlaps(placemat.layout))
                 {
@@ -214,9 +214,9 @@ namespace Unity.GraphToolkit.Editor
         List<SnapToBordersResult> GetClosestSnapElements(Rect sourceRect)
         {
             var snapToBordersResults = GetClosestSnapElements(sourceRect, PortOrientation.Horizontal);
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return snapToBordersResults.Union(GetClosestSnapElements(sourceRect, PortOrientation.Vertical)).ToList();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
         }
 
         static Line GetSnapLine(Rect r, SnapReference reference)

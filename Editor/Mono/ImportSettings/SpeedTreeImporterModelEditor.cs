@@ -55,12 +55,12 @@ namespace UnityEditor
             public static GUIContent ApplyAndGenerate = EditorGUIUtility.TrTextContent("Apply & Generate Materials", "Apply current importer settings and generate asset materials with the new settings.");
             public static GUIContent Regenerate = EditorGUIUtility.TrTextContent("Regenerate Materials", "Regenerate materials using the current import settings.");
 
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             public static GUIContent[] ReflectionProbeUsageNames = (Enum.GetNames(typeof(ReflectionProbeUsage)).Select(x => ObjectNames.NicifyVariableName(x)).ToArray()).Select(x => new GUIContent(x)).ToArray();
-#pragma warning restore RS0030
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning restore UA2001
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             public static GUIContent[] WindQualityNames = SpeedTreeImporter.windQualityNames.Select(s => new GUIContent(s)).ToArray();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             public static GUIContent[] UnitConversionNames =
             {
                   new GUIContent("Leave As Is")
@@ -171,12 +171,12 @@ namespace UnityEditor
             m_ShowCrossFadeWidthOptions.value = m_AnimateCrossFading.hasMultipleDifferentValues || !m_AnimateCrossFading.boolValue;
             m_ShowCrossFadeWidthOptions.valueChanged.AddListener(Repaint);
 
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             m_AllAreV8 = importers.All(im => im.isV8);
-#pragma warning restore RS0030
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning restore UA2001
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             m_AllAreNotV8 = importers.All(im => !im.isV8);
-#pragma warning restore RS0030
+#pragma warning restore UA2001
 
             ResetFoldoutLists();
         }
@@ -267,12 +267,12 @@ namespace UnityEditor
                 return false;
             }
 
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var prefabs = assetTargets?.Cast<GameObject>()?.ToArray();
-#pragma warning restore RS0030
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning restore UA2001
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var importerArray = importers.ToArray();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
 
             // In tests assetTargets can become null
             for (int i = 0; i < Math.Min(importerArray.Length, prefabs?.Length ?? 0); ++i)
@@ -378,9 +378,9 @@ namespace UnityEditor
 
         bool ShouldRenderHueVariationDropdown()
         {
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             SpeedTreeImporter importer = importers.First();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
 
             if (importer.enableHueByDefault)
             {
@@ -507,15 +507,15 @@ namespace UnityEditor
                     if (GUI.Button(buttonRect, Styles.ResetLOD, EditorStyles.miniButton))
                     {
                         var dropDownMenu = new GenericMenu();
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                         foreach (var importer in targets.Cast<SpeedTreeImporter>())
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                         {
                             var menuText = String.Format("{0}: {1}",
                                 Path.GetFileNameWithoutExtension(importer.assetPath),
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                                 String.Join(" | ", importer.LODHeights.Select(height => string.Format("{0:0}%", height * 100)).ToArray()));
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                             dropDownMenu.AddItem(new GUIContent(menuText), false, OnResetLODMenuClick, importer);
                         }
                         dropDownMenu.DropDown(buttonRect);
@@ -559,12 +559,12 @@ namespace UnityEditor
                         var clickedButton = false;
 
                         // case:464019 have to re-sort the LOD array for these buttons to get the overlaps in the right order...
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                         var lodsLeft = lods.Where(lod => lod.ScreenPercent > 0.5f).OrderByDescending(x => x.LODIndex);
-#pragma warning restore RS0030
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning restore UA2001
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                         var lodsRight = lods.Where(lod => lod.ScreenPercent <= 0.5f).OrderBy(x => x.LODIndex);
-#pragma warning restore RS0030
+#pragma warning restore UA2001
 
                         var lodButtonOrder = new List<LODGUI.LODInfo>();
                         lodButtonOrder.AddRange(lodsLeft);
@@ -676,13 +676,13 @@ namespace UnityEditor
             }
 
             int totalTriCount = (primitiveCounts.Length > 0 && primitiveCounts[lodGroupIndex] != null)
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 ? primitiveCounts[lodGroupIndex].Sum()
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                 : 0;
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             int lod0TriCount = primitiveCounts[0].Sum();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             var triCountChange = lod0TriCount != 0 ? (float)totalTriCount / lod0TriCount * 100 : 0;
             string triangleChangeLabel = lodGroupIndex > 0 && lod0TriCount != 0 ? $"({triCountChange.ToString("f2")}% LOD0)" : "";
 
@@ -694,12 +694,12 @@ namespace UnityEditor
         }
         private void DrawLODGroupFoldout(Camera camera, int lodGroupIndex, ref SavedBool foldoutState, List<LODGUI.LODInfo> lodInfoList)
         {
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             GameObject[] prefabs = assetTargets?.Cast<GameObject>().ToArray(); // In tests assetTargets can become null
-#pragma warning restore RS0030
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning restore UA2001
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             SpeedTreeImporter[] importerArray = importers.ToArray();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             int numSelectedAssets = Math.Min(importerArray.Length, prefabs?.Length ?? 0);
             bool isDrawingSelectedLODGroup = m_SelectedLODRange == lodGroupIndex;
 
@@ -745,9 +745,9 @@ namespace UnityEditor
 
         private void DrawLODSettingCustomizationGUI(List<LODGUI.LODInfo> lods, int lodIndex)
         {
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             bool isBillboard = (lodIndex == lods.Count - 1) && importers.First().hasBillboard;
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             int windQuality = m_HighestWindQuality.intValue;
             if (isBillboard)
             {
@@ -804,9 +804,9 @@ namespace UnityEditor
                 EditorGUILayout.LabelField("Wind", EditorStyles.boldLabel);
                 EditorGUILayout.Popup(
                     selectedLODProp.FindPropertyRelative("windQuality"),
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     SpeedTreeImporter.windQualityNames.Take(windQuality + 1).Select(s => new GUIContent(s)).ToArray(),
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                     Styles.WindQuality);
 
 

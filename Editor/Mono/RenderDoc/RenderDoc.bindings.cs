@@ -80,6 +80,23 @@ namespace UnityEditorInternal
             }
         }
 
+        static bool s_capture = false;
+
+        [Shortcut(RenderDocUtil.captureStartEndRenderDocShortcutID, KeyCode.S, ShortcutModifiers.Alt)]
+        internal static void StartRenderDocCapture()
+        {
+            if (s_capture == false)
+            {
+                BeginCaptureRenderDoc(EditorWindow.focusedWindow);
+                s_capture = true;
+            }
+            else
+            {
+                EndCaptureRenderDoc(EditorWindow.focusedWindow);
+                s_capture = false;
+            }
+        }
+
         [RequiredByNativeCode]
         static void RenderDocLoaded()
         {

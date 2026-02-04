@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Collections.Generic;
 using UnityEditor.UIElements;
 using UnityEngine;
 using UnityEngine.UIElements;
@@ -37,7 +38,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         public Action<PageFilters> OnFiltersChanged = delegate {};
         public Action OnClose = delegate {};
 
-        protected PageFilters m_Filters = new PageFilters();
+        protected PageFilters m_Filters = new ();
         protected VisualElement m_Container;
         private long m_ChangeTimestamp;
         private bool m_DelayedUpdate;
@@ -73,7 +74,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private void OnDisable()
         {
-            if (s_Window == null)
+            if (s_Window is null)
                 return;
 
             if (m_DelayedUpdate)
@@ -119,7 +120,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public static bool ShowAtPosition(Rect rect, IPage page)
         {
-            if (s_Window != null || page == null)
+            if (s_Window is not null || page == null)
                 return false;
 
             var nowMilliSeconds = DateTime.Now.Ticks / TimeSpan.TicksPerMillisecond;
@@ -137,6 +138,16 @@ namespace UnityEditor.PackageManager.UI.Internal
             }
 
             return !justClosed;
+        }
+
+        protected static IEnumerable<Toggle> EnumerateSelectedToggle(VisualElement parent)
+        {
+            if (parent == null)
+                yield break;
+
+            foreach (var child in parent.Children())
+                if (child is Toggle { value: true } toggle)
+                    yield return toggle;
         }
 
         private VisualElementCache cache { get; set; }

@@ -187,27 +187,25 @@ namespace UnityEditorInternal
 
         internal static bool DrawWarningHelpBoxWithButton(GUIContent messageContent, GUIContent buttonContent)
         {
-            const float kButtonWidth = 70f;
-            const float kSpacing = 20f;
-            const float kButtonHeight = 18f;
+            using (new EditorGUILayout.VerticalScope(EditorStyles.helpBox))
+            {
+                const float kButtonWidth = 70f;
+                const float kButtonHeight = 20f;
 
-            // Reserve size of wrapped text
-            Rect contentRect = GUILayoutUtility.GetRect(messageContent, EditorStyles.helpBox);
-            // Reserve size of button
-            GUILayoutUtility.GetRect(1, kButtonHeight + kSpacing);
+                // Helpbox with text
+                var infoLabel = EditorGUIUtility.TempContent(messageContent.text, EditorGUIUtility.GetHelpIcon(MessageType.Warning));
+                GUIStyle labelStyle = new GUIStyle(EditorStyles.wordWrappedLabel);
+                labelStyle.padding = new RectOffset(8, 8, 6, 8);
+                Rect contentRect = GUILayoutUtility.GetRect(infoLabel, labelStyle);
+                EditorGUI.LabelField(contentRect, infoLabel, labelStyle);
 
-            // Render background box with text at full height
-            contentRect.height += kButtonHeight + kSpacing;
-            GUIContent messageWithWarningIcon = EditorGUIUtility.TempContent(messageContent.text, EditorGUIUtility.GetHelpIcon(MessageType.Warning));
-            EditorGUI.LabelField(contentRect, GUIContent.none, messageWithWarningIcon, EditorStyles.helpBox);
-
-            // Button (align center)
-            Rect buttonRect = new Rect(
-                contentRect.x + (contentRect.width - kButtonWidth) / 2f, // Center horizontally
-                contentRect.yMax - kButtonHeight - 2f,
-                kButtonWidth,
-                kButtonHeight);
-            return GUI.Button(buttonRect, buttonContent);
+                // Button (align lower right)
+                Rect buttonRectPlaceholder = GUILayoutUtility.GetRect(1, kButtonHeight);
+                Rect buttonRect = new Rect(contentRect.xMax - kButtonWidth - 8f, buttonRectPlaceholder.yMin, kButtonWidth, kButtonHeight);
+                var buttonPressed = GUI.Button(buttonRect, buttonContent);
+                GUILayout.Space(6f);
+                return buttonPressed;
+            }
         }
 
         internal static void SetTextureReadable(string metaFilePath)

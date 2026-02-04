@@ -35,9 +35,9 @@ namespace UnityEditor
             private GUIContent m_LightProbeVolumeUnsupportedNote = EditorGUIUtility.TrTextContent("The Light Probe Proxy Volume feature is unsupported by the current graphics hardware or API configuration. Simple 'Blend Probes' mode will be used instead.");
             private GUIContent m_LightProbeVolumeUnsupportedOnTreesNote = EditorGUIUtility.TrTextContent("The Light Probe Proxy Volume feature is not supported on tree rendering. Simple 'Blend Probes' mode will be used instead.");
             private GUIContent m_LightProbeCustomNote = EditorGUIUtility.TrTextContent("The Custom Provided mode requires SH properties to be sent via MaterialPropertyBlock.");
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             private GUIContent[] m_ReflectionProbeUsageOptions = (Enum.GetNames(typeof(ReflectionProbeUsage)).Select(x => ObjectNames.NicifyVariableName(x)).ToArray()).Select(x => new GUIContent(x)).ToArray();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
 
             private GUIContent probeAnchorStyle
             {
@@ -339,9 +339,9 @@ namespace UnityEditor
             public static readonly GUIContent renderingLayerMask = EditorGUIUtility.TrTextContent("Rendering Layer Mask", "Mask that can be used with SRP DrawRenderers command to filter renderers outside of the normal layering system.");
             public static readonly GUIContent rendererPriority = EditorGUIUtility.TrTextContent("Priority", "Sets the priority value that the render pipeline uses to calculate the rendering order.");
             public static readonly GUIContent rayTracingModeStyle = EditorGUIUtility.TrTextContent("Ray Tracing Mode", "Describes how the acceleration structure associated with a renderer will update for ray tracing.");
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             public static readonly GUIContent[] rayTracingModeOptions = (Enum.GetNames(typeof(RayTracingMode)).Select(x => ObjectNames.NicifyVariableName(x)).ToArray()).Select(x => new GUIContent(x)).ToArray();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             public static readonly GUIContent rayTracingGeomStyle = EditorGUIUtility.TrTextContent("Procedural Geometry", "Specifies whether to treat geometry as procedurally defined by an intersection shader or as a Mesh.");
             public static readonly GUIContent rayTracingAccelStructBuildFlagsStyle = EditorGUIUtility.TrTextContent("Acceleration Structure Build Flags", "Specifies whether this renderer overrides the default build flags that you specified when you created a RayTracingAccelerationStructure.");
             public static readonly GUIContent forceMeshLodStyle = EditorGUIUtility.TrTextContent("LOD Override", "Disable automatic LOD selection and set the LOD index to the value in the Override Level property.");
@@ -625,7 +625,7 @@ namespace UnityEditor
                 {
                     var renderer = ((Renderer)target);
 
-                    if (Selection.gameObjects.Length == 1)
+                    if (Selection.gameObjects.Length == 1 && SceneView.lastActiveSceneView != null && SceneView.lastActiveSceneView.camera != null)
                     {
                         // Add some space at the top..
                         GUILayout.Space(LODGUI.kSliderBarTopMargin);
@@ -736,9 +736,9 @@ namespace UnityEditor
 
         protected void DrawRenderingLayer()
         {
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             DrawRenderingLayer(m_RenderingLayerMask, target as Renderer, targets.ToArray());
-#pragma warning restore RS0030
+#pragma warning restore UA2001
         }
 
         internal static void DrawRenderingLayer(SerializedProperty layerMask, Renderer target, Object[] targets, bool useMiniStyle = false)

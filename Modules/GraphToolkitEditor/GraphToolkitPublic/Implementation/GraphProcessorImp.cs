@@ -44,15 +44,9 @@ namespace Unity.GraphToolkit.Editor.Implementation
             m_GraphModel = graphModel;
         }
 
-        public override BaseGraphProcessingResult ProcessGraph(Unity.GraphToolkit.Editor.GraphChangeDescription changes)
+        public override BaseGraphProcessingResult ProcessGraph(GraphChangeDescription changes)
         {
-            var result = new ErrorsAndWarningsImp(m_GraphModel);
-
-            var graphChanges = new GraphLogger();
-            graphChanges.errorsAndWarnings = result;
-            m_GraphModel.Graph.OnGraphChanged(graphChanges);
-
-            return result;
+            return m_GraphModel.CallOnGraphChanged(changes);
         }
     }
 }

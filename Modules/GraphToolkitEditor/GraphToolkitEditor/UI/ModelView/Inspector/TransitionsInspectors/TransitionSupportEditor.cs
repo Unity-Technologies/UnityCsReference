@@ -319,9 +319,9 @@ namespace Unity.GraphToolkit.Editor
             {
                 if (m_StateTransitionsInspector != null)
                 {
-                    #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                    #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     if (Enumerable.Contains(m_StateTransitionsInspector.Models, TransitionSupportModel.FromPort.NodeModel))
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                     {
                         iconUssClassName = k_IconUssName.WithUssModifier("from-state");
                     }
@@ -434,9 +434,9 @@ namespace Unity.GraphToolkit.Editor
             if (transitions.Count == 0)
                 return false;
 
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var index = m_TransitionPropertiesEditors.IndexOf(transitions.First());
-#pragma warning restore RS0030
+#pragma warning restore UA2001
 
             if (shiftUp)
                 return --index >= 0;
@@ -448,14 +448,14 @@ namespace Unity.GraphToolkit.Editor
         {
             if (transitions.Count > 0)
             {
-                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 var index = m_TransitionPropertiesEditors.IndexOf(transitions.First());
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                 RootView.Dispatch(new MoveTransitionCommand(
                     TransitionSupportModel,
-                    #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                    #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     transitions.Select(c => c.TransitionModel).ToList(),
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                     shiftUp ? --index : ++index));
             }
         }
@@ -466,12 +466,12 @@ namespace Unity.GraphToolkit.Editor
             {
                 RootView.Dispatch(new MoveTransitionCommand(
                     TransitionSupportModel,
-                    #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                    #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     transitions.Select(c => c.TransitionModel).ToList(),
-#pragma warning restore RS0030
-                    #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning restore UA2001
+                    #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     toTop ? 0 : TransitionSupportModel.Transitions.Count() - 1));
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             }
         }
 
@@ -480,9 +480,9 @@ namespace Unity.GraphToolkit.Editor
             if (transitions.Count == 0)
                 return false;
 
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var index = m_TransitionPropertiesEditors.IndexOf(transitions.First());
-#pragma warning restore RS0030
+#pragma warning restore UA2001
 
             if (toTop)
                 return index > 0;
@@ -942,9 +942,9 @@ namespace Unity.GraphToolkit.Editor
 
             RootView.Dispatch(new MoveTransitionCommand(
                 TransitionSupportModel,
-                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 m_SelectedTransitionEditors.Select(c => c.TransitionModel).ToList(),
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                 index));
 
             StopBlockHoveringOver();

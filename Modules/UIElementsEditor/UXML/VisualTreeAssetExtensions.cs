@@ -4,7 +4,10 @@
 
 using System.Collections.Generic;
 using System.IO;
+using UnityEditor;
+using UnityEngine;
 using UnityEngine.Bindings;
+using UnityEngine.Pool;
 using UnityEngine.UIElements;
 
 namespace UnityEditor.UIElements
@@ -33,7 +36,9 @@ namespace UnityEditor.UIElements
             foreach (var attribute in overriddenAttributes)
                 vea.SetAttribute(attribute.Key, attribute.Value);
 
-            return vta.AddElementToDocument(vea, parent);
+            parent ??= vta.visualTree;
+            parent.Add(vea);
+            return vea;
         }
 
         public static TemplateAsset AddTemplateInstance(
@@ -57,8 +62,10 @@ namespace UnityEditor.UIElements
             var templateAsset = new TemplateAsset(templateName, xmlns);
 
             templateAsset.SetAttribute("template", templateName);
+            parent ??= vta.visualTree;
+            parent.Add(templateAsset);
 
-            return vta.AddElementToDocument(templateAsset, parent) as TemplateAsset;
+            return templateAsset;
         }
 
         public static string GetTemplateNameFromPath(this VisualTreeAsset vta, string path)
@@ -96,6 +103,63 @@ namespace UnityEditor.UIElements
             }
 
             return false;
+        }
+
+        /// <summary>
+        /// Gets all stylesheets referenced by the root element of the VisualTreeAsset.
+        /// Fills the provided list with stylesheets. The list is not cleared before filling.
+        /// </summary>
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
+        internal static void GetAllReferencedStyleSheets(this VisualTreeAsset vta, List<StyleSheet> outStyleSheets)
+        {
+            var visualTree = vta.visualTreeNoAlloc;
+
+            if (visualTree == null)
+                return;
+
+            using var _ = HashSetPool<StyleSheet>.Get(out var sheets);
+
+            // Get stylesheets directly attached to the root element
+            var styleSheets = visualTree.stylesheets;
+            if (styleSheets != null)
+            {
+                foreach (var styleSheet in styleSheets)
+                {
+                    if (styleSheet != null)
+                        sheets.Add(styleSheet);
+                }
+            }
+
+            // Get stylesheets from paths
+            var styleSheetPaths = visualTree.GetStyleSheetPaths();
+            if (styleSheetPaths != null)
+            {
+                foreach (var sheetPath in styleSheetPaths)
+                {
+                    var sheetAsset = AssetDatabase.LoadAssetAtPath<StyleSheet>(sheetPath);
+                    if (sheetAsset == null)
+                    {
+                        sheetAsset = UnityEngine.Resources.Load<StyleSheet>(sheetPath);
+                        if (sheetAsset == null)
+                            continue;
+                    }
+                    sheets.Add(sheetAsset);
+                }
+            }
+
+            outStyleSheets.AddRange(sheets);
+        }
+
+        /// <summary>
+        /// Gets all stylesheets referenced by the root element of the VisualTreeAsset.
+        /// Returns a new list containing the stylesheets.
+        /// </summary>
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
+        internal static List<StyleSheet> GetAllReferencedStyleSheets(this VisualTreeAsset vta)
+        {
+            var result = new List<StyleSheet>();
+            vta.GetAllReferencedStyleSheets(result);
+            return result;
         }
     }
 }

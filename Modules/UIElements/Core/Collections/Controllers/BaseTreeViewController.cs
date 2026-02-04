@@ -591,7 +591,7 @@ namespace UnityEngine.UIElements
             return IsExpanded(GetIdForIndex(index));
         }
 
-        static readonly ProfilerMarker K_ExpandItemByIndex = new ProfilerMarker(ProfilerCategory.Scripts, "BaseTreeViewController.ExpandItemByIndex");
+        static readonly ProfilerMarker K_ExpandItemByIndex = new ProfilerMarker(ProfilerCategory.UIToolkit, "BaseTreeViewController.ExpandItemByIndex");
         /// <summary>
         /// Expands the item with the specified index, making his children visible. Allows to expand the whole hierarchy under that item.
         /// </summary>

@@ -6,6 +6,6 @@ namespace Unity.Multiplayer.PlayMode.Editor;
 
 class PlayerController<TController, TSettings> : InstanceController<TController, TSettings>
     where TController : PlayerController<TController, TSettings>
-    where TSettings : IBuildableInstanceDescription
+    where TSettings : new()
 {
 }

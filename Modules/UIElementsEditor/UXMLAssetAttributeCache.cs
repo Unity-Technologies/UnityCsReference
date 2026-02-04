@@ -25,7 +25,7 @@ namespace UnityEditor.UIElements
             return m_Cache.Keys;
         }
 
-        static ProfilerMarker s_RegisterMarker = new ProfilerMarker("UxmlAssetAttributeCache.LoadAssetAttributesForType");
+        static ProfilerMarker s_RegisterMarker = new ProfilerMarker(ProfilerCategory.UIToolkit, "UxmlAssetAttributeCache.LoadAssetAttributesForType");
 
         void LoadAssetAttributesForType(string fullTypeName)
         {

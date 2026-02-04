@@ -5,13 +5,17 @@
 using System.Collections.Generic;
 using UnityEngine.UIElements;
 using System;
-using System.Linq;
 
 namespace UnityEditor.PackageManager.UI.Internal
 {
     internal abstract class PackageToolBarButtonSingleAction : VisualElement, IPackageToolBarButton
     {
-        private readonly List<IPackageVersion> m_Versions = new();
+        private readonly List<IPackage> m_Packages = new();
+
+        // The version field is only used for the single select case (when m_Packages contains only one element,
+        // because sometimes the button is for a non-primary version of a package when we are not handling multi-select
+        private IPackageVersion m_Version;
+
         private readonly PackageAction m_Action;
         protected PackageToolBarButtonSingleAction(PackageAction action)
         {
@@ -30,27 +34,27 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private void SetPackageVersion(IPackageVersion version)
         {
-            m_Versions.Clear();
-            m_Versions.Add(version);
+            m_Packages.Clear();
+            m_Packages.Add(version.package);
+            m_Version = version;
         }
 
-        private void SetPackageVersions(IEnumerable<IPackageVersion> versions)
+        private void SetPackages(IEnumerable<IPackage> packages)
         {
-            m_Versions.Clear();
-            m_Versions.AddRange(versions);
+            m_Packages.Clear();
+            m_Packages.AddRange(packages);
+            m_Version = null;
         }
 
         public void Refresh(IEnumerable<IPackage> packages)
         {
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            SetPackageVersions(packages.Select(p => p.versions.primary));
-#pragma warning restore RS0030
-            if (m_Versions.Count == 0)
+            SetPackages(packages);
+            if (m_Packages.Count == 0)
                 return;
 
             // Since the refresh for multiple versions is called directly from the foldouts, we assume that the button is always visible
             // so we can skip that check and just update the state of the button directly.
-            var version = m_Versions[0];
+            var version = m_Packages[0].versions.primary;
             text = m_Action.GetMultiSelectText(version, m_Action.IsInProgress(version));
 
             var temporaryDisableCondition = m_Action.GetActiveTemporaryDisableCondition();
@@ -78,17 +82,13 @@ namespace UnityEditor.PackageManager.UI.Internal
         // Returns true if the action is triggered, false otherwise.
         protected void TriggerAction()
         {
-            switch (m_Versions.Count)
+            switch (m_Packages.Count)
             {
-                case 0:
-                    return;
-                case 1:
-                    m_Action.TriggerAction(m_Versions[0]);
+                case > 1:
+                    m_Action.TriggerAction(m_Packages);
                     break;
-                default:
-                    #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                    m_Action.TriggerAction(m_Versions.Select(v => v.package).ToArray());
-#pragma warning restore RS0030
+                case 1:
+                    m_Action.TriggerAction(m_Version ?? m_Packages[0].versions.primary);
                     break;
             }
         }

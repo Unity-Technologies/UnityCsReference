@@ -5,6 +5,7 @@
 using System;
 using UnityEditor.UIElements;
 using UnityEngine.UIElements;
+using State = UnityEditor.Overlays.DynamicPanelOverlayContainer.State;
 
 namespace UnityEditor.Overlays
 {
@@ -13,13 +14,6 @@ namespace UnityEditor.Overlays
         public const string className = "unity-overlay-actions";
         public const string toolbarToggleName = "ToolbarModeToggle";
         public const string minimizedToggleName = "MinimizedModeToggle";
-
-        public enum State
-        {
-            Default,
-            Toolbar,
-            Minimized
-        }
 
         public event Action<State> stateChanged;
 
@@ -63,16 +57,16 @@ namespace UnityEditor.Overlays
             {
                 if (m_State != State.Minimized)
                 {
-                    SetState(args.newValue ? State.Toolbar : State.Default);
+                    SetState(args.newValue ? State.Toolbar : State.Panel);
                 }
-                else 
+                else
                 {
-                    SetState(args.newValue ? State.Default : State.Toolbar);
+                    SetState(args.newValue ? State.Panel : State.Toolbar);
                 }
             });
             m_MinimizedToggle.RegisterCallback<ChangeEvent<bool>>((args) =>
             {
-                SetState(args.newValue ? State.Minimized : State.Default);
+                SetState(args.newValue ? State.Minimized : State.Panel);
             });
             RegisterCallback<GeometryChangedEvent>(DelayPickingModeSet);
         }

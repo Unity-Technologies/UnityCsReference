@@ -9,9 +9,6 @@ using uei = UnityEngine.Internal;
 
 namespace UnityEngine.Analytics
 {
-#pragma warning disable RS0030 // This [Preserve] usage will be addressed by https://jira.unity3d.com/browse/UUM-127673
-    [Preserve]
-#pragma warning restore RS0030
     [RequiredByNativeCode]
     [NativeHeader("Modules/UnityAnalytics/Public/UnityAnalytics.h")]
     [NativeHeader("Modules/UnityAnalyticsCommon/Public/UnityAnalyticsCommon.h")]

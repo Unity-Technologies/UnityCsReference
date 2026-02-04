@@ -4,7 +4,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using UnityEngine;
 using UnityEngine.UIElements;
 
@@ -215,27 +214,18 @@ namespace UnityEditor.PackageManager.UI.Internal
         private void CollapsedPackageActionsOnBeforeShowDropdown()
         {
             var newDropdownMenu = new DropdownMenu();
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            foreach (var extension in m_PackageExtensionActions.Where(a => a.visible))
-#pragma warning restore RS0030
+            foreach (var extension in m_PackageExtensionActions.Filter(a => a.visible))
             {
                 var packageActionTooltip = extension.tooltip ?? string.Empty;
                 var packageActionText = !string.IsNullOrEmpty(extension.text) ? extension.text : packageActionTooltip;
-#pragma warning disable RS0031 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                if (!extension.visibleDropdownItems.Any())
-#pragma warning restore RS0031
-                    newDropdownMenu.AppendAction(packageActionText, a => { extension.action?.Invoke(m_Window.activeSelection); }, a =>
-                    {
-                        return extension.enabled ? DropdownMenuAction.Status.Normal : DropdownMenuAction.Status.Disabled;
-                    });
+                var visibleDropdownItems = new List<PackageActionDropdownItem>(extension.dropdownItems.Filter(i => i.visible));
+                if (visibleDropdownItems.Count == 0)
+                    newDropdownMenu.AppendAction(packageActionText, a => { extension.action?.Invoke(m_Window.activeSelection); }, a => extension.enabled ? DropdownMenuAction.Status.Normal : DropdownMenuAction.Status.Disabled);
                 else
                 {
                     if (extension.action != null)
-                        newDropdownMenu.AppendAction($"{packageActionText}/{packageActionText}", a => { extension.action?.Invoke(m_Window.activeSelection); },a =>
-                        {
-                            return extension.enabled ? DropdownMenuAction.Status.Normal : DropdownMenuAction.Status.Disabled;
-                        });
-                    foreach (var item in extension.visibleDropdownItems)
+                        newDropdownMenu.AppendAction($"{packageActionText}/{packageActionText}", a => { extension.action?.Invoke(m_Window.activeSelection); },a => extension.enabled ? DropdownMenuAction.Status.Normal : DropdownMenuAction.Status.Disabled);
+                    foreach (var item in visibleDropdownItems)
                         newDropdownMenu.AppendAction($"{packageActionText}/{item.text}", a => { item.action?.Invoke(m_Window.activeSelection); }, item.statusCallback);
                 }
             }
@@ -244,10 +234,10 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private void RefreshPackageActionsBasedOnWidth()
         {
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            var childrenWidth = m_PackageExtensionActions.Sum(a => a.visible ? a.dropdownButton.estimatedWidth : 0.0f);
-#pragma warning restore RS0030
-            UIUtils.SetElementDisplay(m_ToolbarExtensionContainer, childrenWidth != 0);
+            var childrenWidth = 0.0f;
+            foreach (var action in m_PackageExtensionActions.Filter(a => a.visible))
+                childrenWidth += action.dropdownButton.estimatedWidth;
+            UIUtils.SetElementDisplay(m_ToolbarExtensionContainer, childrenWidth > 0);
             var showCollapsedButton = childrenWidth > m_ToolbarExtensionContainer.rect.width;
             if (showCollapsedButton == UIUtils.IsElementVisible(m_CollapsedPackageActions))
                 return;

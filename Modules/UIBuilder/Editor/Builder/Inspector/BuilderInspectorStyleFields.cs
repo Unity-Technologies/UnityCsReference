@@ -113,9 +113,9 @@ namespace Unity.UI.Builder
         void OnFieldFocusIn(FocusInEvent evt)
         {
             m_Inspector.highlightOverlayPainter.ClearOverlay();
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             m_Inspector.highlightOverlayPainter.AddOverlay(m_Inspector.selection.selection.First());
-#pragma warning restore RS0030
+#pragma warning restore UA2001
         }
 
         void OnFieldFocusOut(FocusOutEvent evt)
@@ -537,9 +537,9 @@ namespace Unity.UI.Builder
                     uiField.RegisterValueChangedCallback(e => OnFieldToggleButtonGroupChange(e, styleName));
 
                     // We store the ToggleButtonGroup that needs to be updated when the Flex Direction value changes
-                    #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                    #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     if (m_FlexDirectionDependentStyleNames.Contains(styleName))
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                         m_FlexAlignmentToggleButtonGroups.Add(uiField);
                 }
                 else
@@ -775,9 +775,9 @@ namespace Unity.UI.Builder
             }
 
             NotifyStyleChanges();
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             m_Inspector.StylingChanged(foldoutColorField.bindingPathArray.ToList());
-#pragma warning restore RS0030
+#pragma warning restore UA2001
         }
 
         public void RefreshStyleField(string styleName, VisualElement fieldElement)
@@ -1996,9 +1996,9 @@ namespace Unity.UI.Builder
             if (currentRule.properties.Length == 0)
                 return DropdownMenuAction.Status.Disabled;
 
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return currentRule.properties.Any(property => !property.name.StartsWith(BuilderConstants.UssVariablePrefix))
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                 ? DropdownMenuAction.Status.Normal
                 : DropdownMenuAction.Status.Disabled;
         }
@@ -2455,9 +2455,9 @@ namespace Unity.UI.Builder
 
             var list = m_StyleFields[styleName];
 
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             foreach (var item in list.Where(item => item != target))
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             {
                 RefreshStyleField(styleName, item);
             }

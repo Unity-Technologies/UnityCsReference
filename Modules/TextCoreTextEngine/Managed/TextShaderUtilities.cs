@@ -305,9 +305,9 @@ namespace UnityEngine.TextCore.Text
             float ratio_B = 1;
             float ratio_C = 1;
 
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             bool isRatioEnabled = !mat.shaderKeywords.Contains(Keyword_Ratios);
-#pragma warning restore RS0030
+#pragma warning restore UA2001
 
             if (!mat.HasProperty(ID_GradientScale) || !mat.HasProperty(ID_FaceDilate))
                 return;
@@ -396,9 +396,9 @@ namespace UnityEngine.TextCore.Text
             if (material == null || !material.HasProperty(ID_ClipRect))
                 return false;
 
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             if (material.shaderKeywords.Contains(Keyword_MASK_SOFT) || material.shaderKeywords.Contains(Keyword_MASK_HARD) || material.shaderKeywords.Contains(Keyword_MASK_TEX))
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                 return true;
 
             return false;
@@ -472,9 +472,9 @@ namespace UnityEngine.TextCore.Text
             uniformPadding = outlineThickness + faceSoftness + faceDilate;
 
             // Glow padding contribution
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             if (material.HasProperty(ID_GlowOffset) && shaderKeywords.Contains(Keyword_Glow)) // Generates GC
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             {
                 if (material.HasProperty(ID_ScaleRatio_B))
                     scaleRatio_B = material.GetFloat(ID_ScaleRatio_B);
@@ -486,9 +486,9 @@ namespace UnityEngine.TextCore.Text
             uniformPadding = Mathf.Max(uniformPadding, faceDilate + glowOffset + glowOuter);
 
             // Underlay padding contribution
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             if (material.HasProperty(ID_UnderlaySoftness) && shaderKeywords.Contains(Keyword_Underlay)) // Generates GC
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             {
                 if (material.HasProperty(ID_ScaleRatio_C))
                     scaleRatio_C = material.GetFloat(ID_ScaleRatio_C);
@@ -648,9 +648,9 @@ namespace UnityEngine.TextCore.Text
                 uniformPadding = outlineThickness + faceSoftness + faceDilate;
 
                 // Glow padding contribution
-                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 if (materials[i].HasProperty(ID_GlowOffset) && shaderKeywords.Contains(Keyword_Glow))
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                 {
                     if (materials[i].HasProperty(ID_ScaleRatio_B))
                         scaleRatio_B = materials[i].GetFloat(ID_ScaleRatio_B);
@@ -662,9 +662,9 @@ namespace UnityEngine.TextCore.Text
                 uniformPadding = Mathf.Max(uniformPadding, faceDilate + glowOffset + glowOuter);
 
                 // Underlay padding contribution
-                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 if (materials[i].HasProperty(ID_UnderlaySoftness) && shaderKeywords.Contains(Keyword_Underlay))
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                 {
                     if (materials[i].HasProperty(ID_ScaleRatio_C))
                         scaleRatio_C = materials[i].GetFloat(ID_ScaleRatio_C);

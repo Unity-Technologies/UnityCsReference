@@ -142,7 +142,8 @@ namespace UnityEngine.UIElements
                         }
                         else
                         {
-                            Debug.LogWarningFormat(styleSheet, "Unknown pseudo class \"{0}\" in StyleSheet {1}", parts[i].value, styleSheet.name);
+                            if(styleSheet != null)
+                                Debug.LogWarningFormat(styleSheet, "Unknown pseudo class \"{0}\" in StyleSheet {1}", parts[i].value, styleSheet.name);
                             allValid = false;
                         }
                     }
@@ -164,9 +165,9 @@ namespace UnityEngine.UIElements
 
         public override string ToString()
         {
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return string.Format("[{0}]", string.Join(", ", m_Selectors.Select(x => x.ToString()).ToArray()));
-#pragma warning restore RS0030
+#pragma warning restore UA2001
         }
 
         // Sort StyleSelectorPart elements in decreasing type order, then decreasing value order.

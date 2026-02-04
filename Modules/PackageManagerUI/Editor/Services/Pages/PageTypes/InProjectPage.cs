@@ -20,7 +20,7 @@ internal class InProjectPage : SimplePage
 
     [SerializeField]
     private PageFilters.Status[] m_SupportedStatusFilters = Array.Empty<PageFilters.Status>();
-    public override IReadOnlyCollection<PageFilters.Status> supportedStatusFilters => m_SupportedStatusFilters;
+    public override IReadOnlyList<PageFilters.Status> supportedStatusFilters => m_SupportedStatusFilters;
 
     public override RefreshOptions refreshOptions => RefreshOptions.UpmList | RefreshOptions.ImportedAssets | RefreshOptions.LocalInfo;
     public override PageCapability capability => PageCapability.DynamicEntitlementStatus | PageCapability.SupportLocalReordering;
@@ -30,9 +30,7 @@ internal class InProjectPage : SimplePage
     public override bool ShouldInclude(IPackage package)
     {
         return package != null
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            && !package.versions.All(v => v.HasTag(PackageTag.BuiltIn))
-#pragma warning restore RS0030
+            && !package.versions.AllMatches(v => v.HasTag(PackageTag.BuiltIn))
             && (package.progress == PackageProgress.Installing || package.versions.installed != null || package.versions.imported != null);
     }
 
@@ -49,14 +47,10 @@ internal class InProjectPage : SimplePage
     public override bool RefreshSupportedStatusFiltersOnEntitlementPackageChange()
     {
         var oldSupportedStatusFilters = m_SupportedStatusFilters;
-        #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-        m_SupportedStatusFilters = m_PackageDatabase.allPackages.Any(p => ShouldInclude(p) && p.hasEntitlements)
-#pragma warning restore RS0030
+        m_SupportedStatusFilters = m_PackageDatabase.allPackages.AnyMatches(p => ShouldInclude(p) && p.hasEntitlements)
             ? new[] { PageFilters.Status.SubscriptionBased }
             : Array.Empty<PageFilters.Status>();
 
-        #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-        return !m_SupportedStatusFilters.SequenceEqual(oldSupportedStatusFilters);
-#pragma warning restore RS0030
+        return !m_SupportedStatusFilters.IsSequenceEqual(oldSupportedStatusFilters);
     }
 }

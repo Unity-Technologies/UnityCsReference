@@ -144,8 +144,8 @@ namespace UnityEngine.UIElements
             VersionChangeType.BindingRegistration |
             VersionChangeType.DataSource;
 
-        static readonly ProfilerMarker s_UpdateProfilerMarker = new ProfilerMarker("Update Authoring");
-        static readonly ProfilerMarker s_UpdateChangeProfilerMarker = new ProfilerMarker("Update Authoring - Change");
+        static readonly ProfilerMarker s_UpdateProfilerMarker = new ProfilerMarker(ProfilerCategory.UIToolkit, "Update Authoring");
+        static readonly ProfilerMarker s_UpdateChangeProfilerMarker = new ProfilerMarker(ProfilerCategory.UIToolkit, "Update Authoring - Change");
 
         private readonly List<IVisualElementChangeProcessor> m_RegisteredProcessors = new();
         private readonly List<IVisualElementChangeProcessor> m_ProcessorRegistrationList = new();

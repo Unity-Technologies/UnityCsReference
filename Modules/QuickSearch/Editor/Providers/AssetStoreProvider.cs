@@ -17,10 +17,10 @@ namespace UnityEditor.Search.Providers
 {
     static class AssetStoreProvider
     {
-#pragma warning disable CS0649
+ #pragma warning disable CS0649
         class AssetDocumentWrapper : UnityEngine.ScriptableObject
         {
-            public SearchItem item;
+            public SearchItem item { get; set; }
         }
 
         [CustomEditor(typeof(AssetDocumentWrapper))]
@@ -481,20 +481,20 @@ namespace UnityEditor.Search.Providers
             public QueryCategoryBlock(IQuerySource source, string id, string value, QueryListBlockAttribute attr)
                  : base(source, id, value, attr)
             {
-                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 var labelValue = k_Categories.FirstOrDefault(c => (string)c.value == value);
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                 if (labelValue.displayName != null)
-                    #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                    #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     label = labelValue.displayName.Split("/").Last();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             }
 
             public override void Apply(in SearchProposition searchProposition)
             {
-                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 label = searchProposition.label.Split("/").Last();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                 base.Apply(searchProposition);
             }
 
@@ -655,9 +655,9 @@ namespace UnityEditor.Search.Providers
                  : base(source, id, value, attr)
             {
                 int valueInt = Convert.ToInt32(value);
-                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 var labelValue = k_PriceRange.FirstOrDefault(c => (int)c.value == valueInt);
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                 if (labelValue.displayName != null)
                     label = labelValue.displayName;
             }
@@ -719,9 +719,9 @@ namespace UnityEditor.Search.Providers
             var query = s_QueryEngine.ParseQuery(context.searchQuery);
             if (!query.valid)
             {
-                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 Debug.LogError(string.Join(" ", query.errors.Select(e => e.reason)));
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                 yield break;
             }
 
@@ -801,9 +801,9 @@ namespace UnityEditor.Search.Providers
             List<ISearchNode> searches = new();
             SearchUtils.GetQueryParts(query.queryGraph.root, filters, searches);
 
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var searchStr = string.Join(" ", searches.Select(s => s.searchValue)).Trim();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             s_QueryParams = new Dictionary<string, object>()
             {
                 { "q", searchStr },
@@ -821,9 +821,9 @@ namespace UnityEditor.Search.Providers
 
                 if (f.filterId == "price")
                 {
-                    #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                    #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     var queryvalue = k_PriceRange.FirstOrDefault(qv => qv.value.ToString() == f.filterValue);
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                     if (queryvalue.value == null)
                         continue;
                     s_QueryParams.Add("max_price", queryvalue.value);
@@ -1134,9 +1134,9 @@ namespace UnityEditor.Search.Providers
 
         static SearchTable GetDefaultTableConfig(SearchContext context)
         {
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return new SearchTable(k_ProviderId, new[] { new SearchColumn("Name", "label") }.Concat(FetchColumns(context, null)));
-#pragma warning restore RS0030
+#pragma warning restore UA2001
         }
 
         static string FetchDescription(SearchItem item, SearchContext context)
@@ -1152,9 +1152,9 @@ namespace UnityEditor.Search.Providers
             if (item.data == null)
             {
                 // Found page for asset:
-                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 var page = s_AssetsPage.FirstOrDefault(p => p.startIndex <= item.score && item.score < p.endIndex);
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                 if (page == null)
                 {
                     // Can this happen?
@@ -1195,12 +1195,12 @@ namespace UnityEditor.Search.Providers
                         if (error != null || detail.results.Length == 0)
                             return;
                         doc.productDetail = detail.results[0];
-                        #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                        #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                         doc.images = new[] { doc.productDetail.mainImage.big }.Concat(
-#pragma warning restore RS0030
-                            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning restore UA2001
+                            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                             doc.productDetail.images.Where(img => img.type == "screenshot").Select(imgDesc => imgDesc.imageUrl)).ToArray();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                     });
                 }
             }
@@ -1321,9 +1321,9 @@ namespace UnityEditor.Search.Providers
         {
             if (items.Count > 1)
                 return false;
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return CanShowInPackageManager(items.First());
-#pragma warning restore RS0030
+#pragma warning restore UA2001
         }
 
         static bool IsItemOwned(SearchItem item)

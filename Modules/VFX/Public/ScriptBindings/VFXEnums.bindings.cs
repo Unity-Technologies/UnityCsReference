@@ -31,33 +31,6 @@ namespace UnityEngine.VFX
         // Value, combine, extract
         Value,
 
-        Combine2f,
-        Combine3f,
-        Combine4f,
-
-        ExtractComponent,
-
-        // built-in values
-        DeltaTime,
-        TotalTime,
-        SystemSeed,
-        LocalToWorld,
-        WorldToLocal,
-        FrameIndex,
-        PlayRate,
-        UnscaledDeltaTime,
-        ManagerMaxDeltaTime,
-        ManagerFixedTimeStep,
-
-        //Game time manager access (built-in values)
-        GameDeltaTime,
-        GameUnscaledDeltaTime,
-        GameSmoothDeltaTime,
-        GameTotalTime,
-        GameUnscaledTotalTime,
-        GameTotalTimeSinceSceneLoad,
-        GameTimeScale,
-
         // float math operations
         // unary
         Sin,
@@ -83,6 +56,74 @@ namespace UnityEngine.VFX
         Max,
         Pow,
         ATan2,
+
+        // Bit wise operations
+        BitwiseLeftShift,
+        BitwiseRightShift,
+        BitwiseOr,
+        BitwiseAnd,
+        BitwiseXor,
+        BitwiseComplement,
+
+        // Cast operations
+        CastUintToFloat,
+        CastIntToFloat,
+        CastFloatToUint,
+        CastIntToUint,
+        CastFloatToInt,
+        CastUintToInt,
+
+        CastIntToBool,
+        CastUintToBool,
+        CastFloatToBool,
+        CastBoolToInt,
+        CastBoolToUint,
+        CastBoolToFloat,
+
+        // combine
+        Combine2f,
+        Combine3f,
+        Combine4f,
+        ExtractComponent,
+
+        // Flow
+        Condition,
+        Branch,
+
+        // Random
+        GenerateRandom,
+        GenerateFixedRandom,
+
+        // Logical operations
+        LogicalAnd,
+        LogicalOr,
+        LogicalNot,
+
+
+
+
+        // ------------ End of simple ops ------------------
+
+        // built-in values
+        DeltaTime,
+        TotalTime,
+        SystemSeed,
+        LocalToWorld,
+        WorldToLocal,
+        FrameIndex,
+        PlayRate,
+        UnscaledDeltaTime,
+        ManagerMaxDeltaTime,
+        ManagerFixedTimeStep,
+
+        //Game time manager access (built-in values)
+        GameDeltaTime,
+        GameUnscaledDeltaTime,
+        GameSmoothDeltaTime,
+        GameTotalTime,
+        GameUnscaledTotalTime,
+        GameTotalTimeSinceSceneLoad,
+        GameTimeScale,
 
         // matrix operations
         TRSToMatrix,
@@ -127,40 +168,9 @@ namespace UnityEngine.VFX
         BakeCurve,
         BakeGradient,
 
-        // Bit wise operations
-        BitwiseLeftShift,
-        BitwiseRightShift,
-        BitwiseOr,
-        BitwiseAnd,
-        BitwiseXor,
-        BitwiseComplement,
-
-        // Cast operations
-        CastUintToFloat,
-        CastIntToFloat,
-        CastFloatToUint,
-        CastIntToUint,
-        CastFloatToInt,
-        CastUintToInt,
-
-        CastIntToBool,
-        CastUintToBool,
-        CastFloatToBool,
-        CastBoolToInt,
-        CastBoolToUint,
-        CastBoolToFloat,
-
         // Color transformations
         RGBtoHSV,
         HSVtoRGB,
-
-        // Flow
-        Condition,
-        Branch,
-
-        // Random
-        GenerateRandom,
-        GenerateFixedRandom,
 
         // Camera operations
         ExtractMatrixFromMainCamera,
@@ -174,11 +184,6 @@ namespace UnityEngine.VFX
         GetBufferFromMainCamera,
         IsMainCameraOrthographic,
         GetOrthographicSizeFromMainCamera,
-
-        // Logical operations
-        LogicalAnd,
-        LogicalOr,
-        LogicalNot,
 
         // Noise
         ValueNoise1D,

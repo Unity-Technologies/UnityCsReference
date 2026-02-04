@@ -4,7 +4,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using UnityEngine;
 using Object = UnityEngine.Object;
 
@@ -18,15 +17,15 @@ namespace UnityEditor.PackageManager.UI.Internal
         bool IsInstallInProgress(IPackageVersion version);
 
         bool Install(IPackageVersion version);
-        bool Install(IEnumerable<IPackageVersion> versions);
+        bool Install(IReadOnlyCollection<IPackageVersion> versions);
         bool Install(string packageId);
         bool InstallFromUrl(string url);
         bool InstallFromPath(string path, out string tempPackageId);
         void Uninstall(IPackage package);
         void Uninstall(IReadOnlyCollection<IPackage> packages);
 
-        void InstallAndResetDependencies(IPackageVersion version, IEnumerable<IPackage> dependenciesToReset);
-        void ResetDependencies(IPackageVersion version, IEnumerable<IPackage> dependenciesToReset);
+        void InstallAndResetDependencies(IPackageVersion version, IReadOnlyCollection<IPackage> dependenciesToReset);
+        void ResetDependencies(IPackageVersion version, IReadOnlyCollection<IPackage> dependenciesToReset);
 
         bool Embed(IPackage package);
         void RemoveEmbedded(IPackage package);
@@ -38,7 +37,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         bool Download(IPackage package);
         bool Download(IEnumerable<IPackage> packages);
         void AbortDownload(IPackage package);
-        void AbortDownload(IEnumerable<IPackage> packages);
+        void AbortDownload(IReadOnlyCollection<IPackage> packages);
         void PauseDownload(IPackage package);
         void ResumeDownload(IPackage package);
 
@@ -52,7 +51,6 @@ namespace UnityEditor.PackageManager.UI.Internal
         private readonly IAssetStorePackageInstaller m_AssetStorePackageInstaller;
         private readonly IAssetStoreDownloadManager m_AssetStoreDownloadManager;
         private readonly IUpmClient m_UpmClient;
-        private readonly IIOProxy m_IOProxy;
         private readonly ISelectionProxy m_SelectionProxy;
         private readonly IAssetDatabaseProxy m_AssetDatabaseProxy;
 
@@ -60,14 +58,12 @@ namespace UnityEditor.PackageManager.UI.Internal
             IAssetStorePackageInstaller assetStorePackageInstaller,
             IAssetStoreDownloadManager assetStoreDownloadManager,
             IUpmClient upmClient,
-            IIOProxy ioProxy,
             ISelectionProxy selectionProxy,
             IAssetDatabaseProxy assetDatabaseProxy)
         {
             m_AssetStorePackageInstaller = RegisterDependency(assetStorePackageInstaller);
             m_AssetStoreDownloadManager = RegisterDependency(assetStoreDownloadManager);
             m_UpmClient = RegisterDependency(upmClient);
-            m_IOProxy = RegisterDependency(ioProxy);
             m_SelectionProxy = RegisterDependency(selectionProxy);
             m_AssetDatabaseProxy = RegisterDependency(assetDatabaseProxy);
         }
@@ -96,16 +92,12 @@ namespace UnityEditor.PackageManager.UI.Internal
             return true;
         }
 
-        public bool Install(IEnumerable<IPackageVersion> versions)
+        public bool Install(IReadOnlyCollection<IPackageVersion> versions)
         {
-#pragma warning disable RS0031 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            if (versions == null || !versions.Any())
-#pragma warning restore RS0031
+            if (versions == null || versions.Count == 0)
                 return false;
 
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            m_UpmClient.AddByIds(versions.Select(v => v.packageId));
-#pragma warning restore RS0030
+            m_UpmClient.AddByIds(versions.SelectToNewArray(v => v.packageId));
             return true;
         }
 
@@ -153,23 +145,17 @@ namespace UnityEditor.PackageManager.UI.Internal
         {
             if (packages == null || packages.Count == 0)
                 return;
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            m_UpmClient.RemoveByNames(packages.Select(p => p.name));
-#pragma warning restore RS0030
+            m_UpmClient.RemoveByNames(packages.SelectToNewArray(p => p.name));
         }
 
-        public void InstallAndResetDependencies(IPackageVersion version, IEnumerable<IPackage> dependenciesToReset)
+        public void InstallAndResetDependencies(IPackageVersion version, IReadOnlyCollection<IPackage> dependenciesToReset)
         {
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            m_UpmClient.AddAndResetDependencies(version.packageId, dependenciesToReset?.Select(package => package.name) ?? Array.Empty<string>());
-#pragma warning restore RS0030
+            m_UpmClient.AddAndResetDependencies(version.packageId, dependenciesToReset?.SelectToNewArray(package => package.name));
         }
 
-        public void ResetDependencies(IPackageVersion version, IEnumerable<IPackage> dependenciesToReset)
+        public void ResetDependencies(IPackageVersion version, IReadOnlyCollection<IPackage> dependenciesToReset)
         {
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            m_UpmClient.ResetDependencies(version.packageId, dependenciesToReset?.Select(package => package.name) ?? Array.Empty<string>());
-#pragma warning restore RS0030
+            m_UpmClient.ResetDependencies(version.packageId, dependenciesToReset?.SelectToNewArray(package => package.name));
         }
 
         public bool Embed(IPackage package)
@@ -206,7 +192,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public bool OpenManifest(IPackageVersion version)
         {
-            var path = m_IOProxy.PathsCombine("Packages", version.name, "package.json");
+            var path = IOUtils.PathsCombine("Packages", version.name, "package.json");
             var folderObject = m_AssetDatabaseProxy.LoadAssetAtPath<Object>(path);
             if (folderObject is null)
                 return false;
@@ -230,9 +216,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public bool Download(IEnumerable<IPackage> packages)
         {
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            return PlayModeDownload.CanBeginDownload() && m_AssetStoreDownloadManager.Download(packages.Select(p => p.product?.id ?? 0).Where(id => id > 0));
-#pragma warning restore RS0030
+            return PlayModeDownload.CanBeginDownload() && m_AssetStoreDownloadManager.Download(packages.SelectAsEnumerable(p => p.product?.id ?? 0).Filter(id => id > 0));
         }
 
         public void AbortDownload(IPackage package)
@@ -240,13 +224,9 @@ namespace UnityEditor.PackageManager.UI.Internal
             AbortDownload(new[] { package });
         }
 
-        public void AbortDownload(IEnumerable<IPackage> packages)
+        public void AbortDownload(IReadOnlyCollection<IPackage> packages)
         {
-            // We need to figure out why the IEnumerable is being altered instead of using ToArray.
-            // It will be addressed in https://jira.unity3d.com/browse/PAX-1995.
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            foreach (var package in packages.ToArray())
-#pragma warning restore RS0030
+            foreach (var package in packages)
                 m_AssetStoreDownloadManager.AbortDownload(package.product?.id);
         }
 
@@ -292,9 +272,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             if (packages == null || packages.Count == 0)
                 return;
 
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            m_AssetStorePackageInstaller.Uninstall(packages.Select(p => p.product.id));
-#pragma warning restore RS0030
+            m_AssetStorePackageInstaller.Uninstall(packages.SelectAsEnumerable(p => p.product.id));
         }
     }
 }

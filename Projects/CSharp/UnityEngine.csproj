@@ -33,135 +33,6 @@
     <Compile Include="..\..\External\CoreCLR\SourceCopiesToRemove\UnmanagedCallersOnlyAttribute.cs">
       <Link>External\CoreCLR\SourceCopiesToRemove\UnmanagedCallersOnlyAttribute.cs</Link>
     </Compile>
-    <Compile Include="..\..\External\DataModel\udm.net\AssemblyInfo.cs">
-      <Link>External\DataModel\udm.net\AssemblyInfo.cs</Link>
-    </Compile>
-    <Compile Include="..\..\External\DataModel\udm.net\Udm\Accessor.cs">
-      <Link>External\DataModel\udm.net\Udm\Accessor.cs</Link>
-    </Compile>
-    <Compile Include="..\..\External\DataModel\udm.net\Udm\BinaryHeader.cs">
-      <Link>External\DataModel\udm.net\Udm\BinaryHeader.cs</Link>
-    </Compile>
-    <Compile Include="..\..\External\DataModel\udm.net\Udm\ConstAccessor.cs">
-      <Link>External\DataModel\udm.net\Udm\ConstAccessor.cs</Link>
-    </Compile>
-    <Compile Include="..\..\External\DataModel\udm.net\Udm\ConstObjectModel.cs">
-      <Link>External\DataModel\udm.net\Udm\ConstObjectModel.cs</Link>
-    </Compile>
-    <Compile Include="..\..\External\DataModel\udm.net\Udm\ConstObjectModelEcsComponents.cs">
-      <Link>External\DataModel\udm.net\Udm\ConstObjectModelEcsComponents.cs</Link>
-    </Compile>
-    <Compile Include="..\..\External\DataModel\udm.net\Udm\ConstObjectModels.cs">
-      <Link>External\DataModel\udm.net\Udm\ConstObjectModels.cs</Link>
-    </Compile>
-    <Compile Include="..\..\External\DataModel\udm.net\Udm\ConstObjectModelsPerSchema.cs">
-      <Link>External\DataModel\udm.net\Udm\ConstObjectModelsPerSchema.cs</Link>
-    </Compile>
-    <Compile Include="..\..\External\DataModel\udm.net\Udm\ConstUTF8String.cs">
-      <Link>External\DataModel\udm.net\Udm\ConstUTF8String.cs</Link>
-    </Compile>
-    <Compile Include="..\..\External\DataModel\udm.net\Udm\ConstVector.cs">
-      <Link>External\DataModel\udm.net\Udm\ConstVector.cs</Link>
-    </Compile>
-    <Compile Include="..\..\External\DataModel\udm.net\Udm\DocumentModel.cs">
-      <Link>External\DataModel\udm.net\Udm\DocumentModel.cs</Link>
-    </Compile>
-    <Compile Include="..\..\External\DataModel\udm.net\Udm\DocumentModelSchemas.cs">
-      <Link>External\DataModel\udm.net\Udm\DocumentModelSchemas.cs</Link>
-    </Compile>
-    <Compile Include="..\..\External\DataModel\udm.net\Udm\Hash.cs">
-      <Link>External\DataModel\udm.net\Udm\Hash.cs</Link>
-    </Compile>
-    <Compile Include="..\..\External\DataModel\udm.net\Udm\IUdmInterop.cs">
-      <Link>External\DataModel\udm.net\Udm\IUdmInterop.cs</Link>
-    </Compile>
-    <Compile Include="..\..\External\DataModel\udm.net\Udm\ObjectModel.cs">
-      <Link>External\DataModel\udm.net\Udm\ObjectModel.cs</Link>
-    </Compile>
-    <Compile Include="..\..\External\DataModel\udm.net\Udm\ObjectModelDiffer.cs">
-      <Link>External\DataModel\udm.net\Udm\ObjectModelDiffer.cs</Link>
-    </Compile>
-    <Compile Include="..\..\External\DataModel\udm.net\Udm\ObjectModelEcsComponents.cs">
-      <Link>External\DataModel\udm.net\Udm\ObjectModelEcsComponents.cs</Link>
-    </Compile>
-    <Compile Include="..\..\External\DataModel\udm.net\Udm\ObjectModels.cs">
-      <Link>External\DataModel\udm.net\Udm\ObjectModels.cs</Link>
-    </Compile>
-    <Compile Include="..\..\External\DataModel\udm.net\Udm\ObjectModelsPerSchema.cs">
-      <Link>External\DataModel\udm.net\Udm\ObjectModelsPerSchema.cs</Link>
-    </Compile>
-    <Compile Include="..\..\External\DataModel\udm.net\Udm\Reference.cs">
-      <Link>External\DataModel\udm.net\Udm\Reference.cs</Link>
-    </Compile>
-    <Compile Include="..\..\External\DataModel\udm.net\Udm\Schema.cs">
-      <Link>External\DataModel\udm.net\Udm\Schema.cs</Link>
-    </Compile>
-    <Compile Include="..\..\External\DataModel\udm.net\Udm\SchemaBuilder.cs">
-      <Link>External\DataModel\udm.net\Udm\SchemaBuilder.cs</Link>
-    </Compile>
-    <Compile Include="..\..\External\DataModel\udm.net\Udm\SchemaField.cs">
-      <Link>External\DataModel\udm.net\Udm\SchemaField.cs</Link>
-    </Compile>
-    <Compile Include="..\..\External\DataModel\udm.net\Udm\SchemaFlags.cs">
-      <Link>External\DataModel\udm.net\Udm\SchemaFlags.cs</Link>
-    </Compile>
-    <Compile Include="..\..\External\DataModel\udm.net\Udm\StringBuilderStream.cs">
-      <Link>External\DataModel\udm.net\Udm\StringBuilderStream.cs</Link>
-    </Compile>
-    <Compile Include="..\..\External\DataModel\udm.net\Udm\TraverseAccessor.cs">
-      <Link>External\DataModel\udm.net\Udm\TraverseAccessor.cs</Link>
-    </Compile>
-    <Compile Include="..\..\External\DataModel\udm.net\Udm\TypeTraits.cs">
-      <Link>External\DataModel\udm.net\Udm\TypeTraits.cs</Link>
-    </Compile>
-    <Compile Include="..\..\External\DataModel\udm.net\Udm\TypeTraitsData.cs">
-      <Link>External\DataModel\udm.net\Udm\TypeTraitsData.cs</Link>
-    </Compile>
-    <Compile Include="..\..\External\DataModel\udm.net\Udm\TypeTraitsRegistry.cs">
-      <Link>External\DataModel\udm.net\Udm\TypeTraitsRegistry.cs</Link>
-    </Compile>
-    <Compile Include="..\..\External\DataModel\udm.net\Udm\UDMTypeIDAttribute.cs">
-      <Link>External\DataModel\udm.net\Udm\UDMTypeIDAttribute.cs</Link>
-    </Compile>
-    <Compile Include="..\..\External\DataModel\udm.net\Udm\UDMUnderlyingTypeIDAttribute.cs">
-      <Link>External\DataModel\udm.net\Udm\UDMUnderlyingTypeIDAttribute.cs</Link>
-    </Compile>
-    <Compile Include="..\..\External\DataModel\udm.net\Udm\UTF8String.cs">
-      <Link>External\DataModel\udm.net\Udm\UTF8String.cs</Link>
-    </Compile>
-    <Compile Include="..\..\External\DataModel\udm.net\Udm\UdmGuid.cs">
-      <Link>External\DataModel\udm.net\Udm\UdmGuid.cs</Link>
-    </Compile>
-    <Compile Include="..\..\External\DataModel\udm.net\Udm\UdmInterop.cs">
-      <Link>External\DataModel\udm.net\Udm\UdmInterop.cs</Link>
-    </Compile>
-    <Compile Include="..\..\External\DataModel\udm.net\Udm\UdmLog.cs">
-      <Link>External\DataModel\udm.net\Udm\UdmLog.cs</Link>
-    </Compile>
-    <Compile Include="..\..\External\DataModel\udm.net\Udm\UdmLogger.cs">
-      <Link>External\DataModel\udm.net\Udm\UdmLogger.cs</Link>
-    </Compile>
-    <Compile Include="..\..\External\DataModel\udm.net\Udm\UdmManager.cs">
-      <Link>External\DataModel\udm.net\Udm\UdmManager.cs</Link>
-    </Compile>
-    <Compile Include="..\..\External\DataModel\udm.net\Udm\UdmObjectId.cs">
-      <Link>External\DataModel\udm.net\Udm\UdmObjectId.cs</Link>
-    </Compile>
-    <Compile Include="..\..\External\DataModel\udm.net\Udm\UdmSchemaId.cs">
-      <Link>External\DataModel\udm.net\Udm\UdmSchemaId.cs</Link>
-    </Compile>
-    <Compile Include="..\..\External\DataModel\udm.net\Udm\UdmTypeId.cs">
-      <Link>External\DataModel\udm.net\Udm\UdmTypeId.cs</Link>
-    </Compile>
-    <Compile Include="..\..\External\DataModel\udm.net\Udm\UnityUDMInterop.cs">
-      <Link>External\DataModel\udm.net\Udm\UnityUDMInterop.cs</Link>
-    </Compile>
-    <Compile Include="..\..\External\DataModel\udm.net\Udm\UnsafeHelper.cs">
-      <Link>External\DataModel\udm.net\Udm\UnsafeHelper.cs</Link>
-    </Compile>
-    <Compile Include="..\..\External\DataModel\udm.net\Udm\Vector.cs">
-      <Link>External\DataModel\udm.net\Udm\Vector.cs</Link>
-    </Compile>
     <Compile Include="..\..\External\LibTessDotNet\Dict.cs">
       <Link>External\LibTessDotNet\Dict.cs</Link>
     </Compile>
@@ -1113,6 +984,9 @@
     <Compile Include="..\..\Modules\Hierarchy\Managed\HierarchyViewColumnDescriptor.cs">
       <Link>Modules\Hierarchy\Managed\HierarchyViewColumnDescriptor.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\Hierarchy\Managed\HierarchyViewColumnName.cs">
+      <Link>Modules\Hierarchy\Managed\HierarchyViewColumnName.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\Hierarchy\Managed\HierarchyViewColumnUtility.cs">
       <Link>Modules\Hierarchy\Managed\HierarchyViewColumnUtility.cs</Link>
     </Compile>
@@ -1127,9 +1001,6 @@
     </Compile>
     <Compile Include="..\..\Modules\Hierarchy\Managed\HierarchyViewItem.cs">
       <Link>Modules\Hierarchy\Managed\HierarchyViewItem.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\Hierarchy\Managed\HierarchyViewItemColumn.cs">
-      <Link>Modules\Hierarchy\Managed\HierarchyViewItemColumn.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\Hierarchy\Managed\HierarchyViewItemContainer.cs">
       <Link>Modules\Hierarchy\Managed\HierarchyViewItemContainer.cs</Link>
@@ -3384,6 +3255,9 @@
     <Compile Include="..\..\Modules\UIElements\Core\Native\Transform\NativeTransformUtils.bindings.cs">
       <Link>Modules\UIElements\Core\Native\Transform\NativeTransformUtils.bindings.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Native\UIAnimationBinder.bindings.cs">
+      <Link>Modules\UIElements\Core\Native\UIAnimationBinder.bindings.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\UIElements\Core\Native\UIElementsUtility.bindings.cs">
       <Link>Modules\UIElements\Core\Native\UIElementsUtility.bindings.cs</Link>
     </Compile>
@@ -4151,6 +4025,9 @@
     </Compile>
     <Compile Include="..\..\Modules\UIElements\Core\VisualElementBindableProperties.cs">
       <Link>Modules\UIElements\Core\VisualElementBindableProperties.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\VisualElementClearOptions.cs">
+      <Link>Modules\UIElements\Core\VisualElementClearOptions.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\UIElements\Core\VisualElementDataBinding.cs">
       <Link>Modules\UIElements\Core\VisualElementDataBinding.cs</Link>
@@ -5592,125 +5469,17 @@
     <Compile Include="..\..\Runtime\Export\Scripting\CustomYieldInstruction.cs">
       <Link>Runtime\Export\Scripting\CustomYieldInstruction.cs</Link>
     </Compile>
-    <Compile Include="..\..\Runtime\Export\Scripting\DataModel\LoadUdmScene.cs">
-      <Link>Runtime\Export\Scripting\DataModel\LoadUdmScene.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Runtime\Export\Scripting\DataModel\RTTI\DeserializeContext.cs">
-      <Link>Runtime\Export\Scripting\DataModel\RTTI\DeserializeContext.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Runtime\Export\Scripting\DataModel\RTTI\DocumentInstanceFactory.cs">
-      <Link>Runtime\Export\Scripting\DataModel\RTTI\DocumentInstanceFactory.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Runtime\Export\Scripting\DataModel\RTTI\DocumentReferenceRemapper.cs">
-      <Link>Runtime\Export\Scripting\DataModel\RTTI\DocumentReferenceRemapper.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Runtime\Export\Scripting\DataModel\RTTI\EcsComponentSerializer.cs">
-      <Link>Runtime\Export\Scripting\DataModel\RTTI\EcsComponentSerializer.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Runtime\Export\Scripting\DataModel\RTTI\EngineHelper.cs">
-      <Link>Runtime\Export\Scripting\DataModel\RTTI\EngineHelper.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Runtime\Export\Scripting\DataModel\RTTI\IUDMObjectIDGenerator.cs">
-      <Link>Runtime\Export\Scripting\DataModel\RTTI\IUDMObjectIDGenerator.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Runtime\Export\Scripting\DataModel\RTTI\ImmutablePureManagedObjectFactory.cs">
-      <Link>Runtime\Export\Scripting\DataModel\RTTI\ImmutablePureManagedObjectFactory.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Runtime\Export\Scripting\DataModel\RTTI\ImmutablePureManagedObjectSerializer.cs">
-      <Link>Runtime\Export\Scripting\DataModel\RTTI\ImmutablePureManagedObjectSerializer.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Runtime\Export\Scripting\DataModel\RTTI\InstanceIDToReferenceRemapper.cs">
-      <Link>Runtime\Export\Scripting\DataModel\RTTI\InstanceIDToReferenceRemapper.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Runtime\Export\Scripting\DataModel\RTTI\InstanceRegistry.cs">
-      <Link>Runtime\Export\Scripting\DataModel\RTTI\InstanceRegistry.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Runtime\Export\Scripting\DataModel\RTTI\LoadUdm.cs">
-      <Link>Runtime\Export\Scripting\DataModel\RTTI\LoadUdm.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Runtime\Export\Scripting\DataModel\RTTI\LocalIdentifierToObjectIDWrapper.cs">
-      <Link>Runtime\Export\Scripting\DataModel\RTTI\LocalIdentifierToObjectIDWrapper.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Runtime\Export\Scripting\DataModel\RTTI\NoCollisionUDMObjectIDGenerator.cs">
-      <Link>Runtime\Export\Scripting\DataModel\RTTI\NoCollisionUDMObjectIDGenerator.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Runtime\Export\Scripting\DataModel\RTTI\NullUnityObjectFactory.cs">
-      <Link>Runtime\Export\Scripting\DataModel\RTTI\NullUnityObjectFactory.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Runtime\Export\Scripting\DataModel\RTTI\PureEntityFactory.cs">
-      <Link>Runtime\Export\Scripting\DataModel\RTTI\PureEntityFactory.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Runtime\Export\Scripting\DataModel\RTTI\PureManagedObjectFactory.cs">
-      <Link>Runtime\Export\Scripting\DataModel\RTTI\PureManagedObjectFactory.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Runtime\Export\Scripting\DataModel\RTTI\PureManagedObjectSerializer.cs">
-      <Link>Runtime\Export\Scripting\DataModel\RTTI\PureManagedObjectSerializer.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Runtime\Export\Scripting\DataModel\RTTI\RTTI.cs">
-      <Link>Runtime\Export\Scripting\DataModel\RTTI\RTTI.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Runtime\Export\Scripting\DataModel\RTTI\RTTIBuilder.cs">
-      <Link>Runtime\Export\Scripting\DataModel\RTTI\RTTIBuilder.cs</Link>
-    </Compile>
     <Compile Include="..\..\Runtime\Export\Scripting\DataModel\RTTI\RTTIData.cs">
       <Link>Runtime\Export\Scripting\DataModel\RTTI\RTTIData.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Runtime\Export\Scripting\DataModel\RTTI\RTTIResolver.cs">
-      <Link>Runtime\Export\Scripting\DataModel\RTTI\RTTIResolver.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Runtime\Export\Scripting\DataModel\RTTI\ReferenceRegistry.cs">
-      <Link>Runtime\Export\Scripting\DataModel\RTTI\ReferenceRegistry.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Runtime\Export\Scripting\DataModel\RTTI\SerializeContext.cs">
-      <Link>Runtime\Export\Scripting\DataModel\RTTI\SerializeContext.cs</Link>
     </Compile>
     <Compile Include="..\..\Runtime\Export\Scripting\DataModel\RTTI\SerializeHelper.cs">
       <Link>Runtime\Export\Scripting\DataModel\RTTI\SerializeHelper.cs</Link>
     </Compile>
-    <Compile Include="..\..\Runtime\Export\Scripting\DataModel\RTTI\SerializeUtilities.cs">
-      <Link>Runtime\Export\Scripting\DataModel\RTTI\SerializeUtilities.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Runtime\Export\Scripting\DataModel\RTTI\SimpleNativeTypeObjectFactory.cs">
-      <Link>Runtime\Export\Scripting\DataModel\RTTI\SimpleNativeTypeObjectFactory.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Runtime\Export\Scripting\DataModel\RTTI\SimpleNativeTypeObjectSerializer.cs">
-      <Link>Runtime\Export\Scripting\DataModel\RTTI\SimpleNativeTypeObjectSerializer.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Runtime\Export\Scripting\DataModel\RTTI\UdmManagedSerialization.cs">
-      <Link>Runtime\Export\Scripting\DataModel\RTTI\UdmManagedSerialization.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Runtime\Export\Scripting\DataModel\RTTI\UnityObjectFactory.cs">
-      <Link>Runtime\Export\Scripting\DataModel\RTTI\UnityObjectFactory.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Runtime\Export\Scripting\DataModel\RTTI\UnityObjectSerializer.cs">
-      <Link>Runtime\Export\Scripting\DataModel\RTTI\UnityObjectSerializer.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Runtime\Export\Scripting\DataModel\SaveUdm.cs">
-      <Link>Runtime\Export\Scripting\DataModel\SaveUdm.cs</Link>
-    </Compile>
     <Compile Include="..\..\Runtime\Export\Scripting\DataModel\UDMHelper.bindings.cs">
       <Link>Runtime\Export\Scripting\DataModel\UDMHelper.bindings.cs</Link>
     </Compile>
-    <Compile Include="..\..\Runtime\Export\Scripting\DataModel\UDMReadData.bindings.cs">
-      <Link>Runtime\Export\Scripting\DataModel\UDMReadData.bindings.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Runtime\Export\Scripting\DataModel\UDMRefResolver.bindings.cs">
-      <Link>Runtime\Export\Scripting\DataModel\UDMRefResolver.bindings.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Runtime\Export\Scripting\DataModel\UDMRefResolverAssetRegistry.bindings.cs">
-      <Link>Runtime\Export\Scripting\DataModel\UDMRefResolverAssetRegistry.bindings.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Runtime\Export\Scripting\DataModel\UDMRefResolverExplicit.bindings.cs">
-      <Link>Runtime\Export\Scripting\DataModel\UDMRefResolverExplicit.bindings.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Runtime\Export\Scripting\DataModel\UDMWriteData.bindings.cs">
-      <Link>Runtime\Export\Scripting\DataModel\UDMWriteData.bindings.cs</Link>
-    </Compile>
     <Compile Include="..\..\Runtime\Export\Scripting\DataModel\UdmLogCapture.cs">
       <Link>Runtime\Export\Scripting\DataModel\UdmLogCapture.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Runtime\Export\Scripting\DataModel\UdmToUnityLogForwarder.cs">
-      <Link>Runtime\Export\Scripting\DataModel\UdmToUnityLogForwarder.cs</Link>
     </Compile>
     <Compile Include="..\..\Runtime\Export\Scripting\EnumDataUtility.cs">
       <Link>Runtime\Export\Scripting\EnumDataUtility.cs</Link>
@@ -5738,9 +5507,6 @@
     </Compile>
     <Compile Include="..\..\Runtime\Export\Scripting\GarbageCollector.bindings.cs">
       <Link>Runtime\Export\Scripting\GarbageCollector.bindings.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Runtime\Export\Scripting\ISimpleNativeType.cs">
-      <Link>Runtime\Export\Scripting\ISimpleNativeType.cs</Link>
     </Compile>
     <Compile Include="..\..\Runtime\Export\Scripting\InspectorOrderAttribute.cs">
       <Link>Runtime\Export\Scripting\InspectorOrderAttribute.cs</Link>
@@ -5784,6 +5550,9 @@
     <Compile Include="..\..\Runtime\Export\Scripting\RuntimeInitializeOnLoadAttribute.cs">
       <Link>Runtime\Export\Scripting\RuntimeInitializeOnLoadAttribute.cs</Link>
     </Compile>
+    <Compile Include="..\..\Runtime\Export\Scripting\ScriptInfoScraper.cs">
+      <Link>Runtime\Export\Scripting\ScriptInfoScraper.cs</Link>
+    </Compile>
     <Compile Include="..\..\Runtime\Export\Scripting\ScriptableObject.bindings.cs">
       <Link>Runtime\Export\Scripting\ScriptableObject.bindings.cs</Link>
     </Compile>
@@ -5816,9 +5585,6 @@
     </Compile>
     <Compile Include="..\..\Runtime\Export\Scripting\UnityAPICompatibilityVersionAttribute.cs">
       <Link>Runtime\Export\Scripting\UnityAPICompatibilityVersionAttribute.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Runtime\Export\Scripting\UnityDataModel.bindings.cs">
-      <Link>Runtime\Export\Scripting\UnityDataModel.bindings.cs</Link>
     </Compile>
     <Compile Include="..\..\Runtime\Export\Scripting\UnityEngineObject.bindings.cs">
       <Link>Runtime\Export\Scripting\UnityEngineObject.bindings.cs</Link>

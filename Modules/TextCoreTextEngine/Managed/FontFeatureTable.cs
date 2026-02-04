@@ -120,9 +120,9 @@ namespace UnityEngine.TextCore.Text
             // Sort List of Kerning Info
             if (m_GlyphPairAdjustmentRecords.Count > 1)
             {
-                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 m_GlyphPairAdjustmentRecords = m_GlyphPairAdjustmentRecords.OrderBy(s => s.firstAdjustmentRecord.glyphIndex).ThenBy(s => s.secondAdjustmentRecord.glyphIndex).ToList();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             }
         }
 
@@ -134,9 +134,9 @@ namespace UnityEngine.TextCore.Text
             // Sort List of Kerning Info
             if (m_MarkToBaseAdjustmentRecords.Count > 0)
             {
-                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 m_MarkToBaseAdjustmentRecords = m_MarkToBaseAdjustmentRecords.OrderBy(s => s.baseGlyphID).ThenBy(s => s.markGlyphID).ToList();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             }
         }
 
@@ -148,9 +148,9 @@ namespace UnityEngine.TextCore.Text
             // Sort List of Kerning Info
             if (m_MarkToMarkAdjustmentRecords.Count > 0)
             {
-                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 m_MarkToMarkAdjustmentRecords = m_MarkToMarkAdjustmentRecords.OrderBy(s => s.baseMarkGlyphID).ThenBy(s => s.combiningMarkGlyphID).ToList();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             }
         }
     }

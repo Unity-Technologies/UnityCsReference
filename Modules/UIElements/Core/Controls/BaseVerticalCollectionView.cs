@@ -172,8 +172,8 @@ namespace UnityEngine.UIElements
         }
 
         internal const string internalBindingKey = "__unity-collection-view-internal-binding";
-        static readonly ProfilerMarker k_RefreshMarker = new ("BaseVerticalCollectionView.RefreshItems");
-        static readonly ProfilerMarker k_RebuildMarker = new ("BaseVerticalCollectionView.Rebuild");
+        static readonly ProfilerMarker k_RefreshMarker = new (ProfilerCategory.UIToolkit, "BaseVerticalCollectionView.RefreshItems");
+        static readonly ProfilerMarker k_RebuildMarker = new (ProfilerCategory.UIToolkit, "BaseVerticalCollectionView.Rebuild");
 
         /// <summary>
         /// Obsolete. Use <see cref="BaseVerticalCollectionView.itemsChosen"/> instead.
@@ -743,9 +743,9 @@ namespace UnityEngine.UIElements
                 get
                 {
                     if (m_MinIndex == -1)
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                         m_MinIndex = indices.Min();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                     return m_MinIndex;
                 }
             }
@@ -755,9 +755,9 @@ namespace UnityEngine.UIElements
                 get
                 {
                     if (m_MaxIndex == -1)
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                         m_MaxIndex = indices.Max();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                     return m_MaxIndex;
                 }
             }
@@ -1182,9 +1182,9 @@ namespace UnityEngine.UIElements
         /// </remarks>
         public VisualElement GetRootElementForId(int id)
         {
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return activeItems.FirstOrDefault(t => t.id == id)?.rootElement;
-#pragma warning restore RS0030
+#pragma warning restore UA2001
         }
 
         /// <summary>
@@ -1980,9 +1980,9 @@ namespace UnityEngine.UIElements
             if (indices == null)
                 return;
 
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var count = indices.Count();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             if (count == 0)
             {
                 SetSelectionInternal(stackalloc int[0], sendNotification);

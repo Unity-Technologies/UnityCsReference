@@ -198,9 +198,9 @@ namespace UnityEditor
             }
 
             // Selection.transform does not provide correct list order, so we have to do it manually
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             selected = selected.ToList().OrderBy(g => g.GetSiblingIndex()).ToArray();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
 
             GameObject go = ObjectFactory.CreateGameObject("GameObject");
 
@@ -480,7 +480,7 @@ namespace UnityEditor
             Place(ObjectFactory.CreateGameObject("Video Player", typeof(VideoPlayer)), parent);
         }
 
-        [MenuItem("GameObject/Effects/Particle System", priority = 1)]
+        [MenuItem("GameObject/Visual Effects/Particle System", priority = 1)]
         static void CreateParticleSystem(MenuCommand menuCommand)
         {
             var parent = menuCommand.context as GameObject;
@@ -493,14 +493,14 @@ namespace UnityEditor
             Place(go, parent);
         }
 
-        [MenuItem("GameObject/Effects/Particle System Force Field", priority = 2)]
+        [MenuItem("GameObject/Visual Effects/Particle System Force Field", priority = 2)]
         static void CreateParticleSystemForceField(MenuCommand menuCommand)
         {
             var parent = menuCommand.context as GameObject;
             Place(ObjectFactory.CreateGameObject("Particle System Force Field", typeof(ParticleSystemForceField)), parent);
         }
 
-        [MenuItem("GameObject/Effects/Trail", priority = 3)]
+        [MenuItem("GameObject/Visual Effects/Trail", priority = 3)]
         static void CreateTrail(MenuCommand menuCommand)
         {
             var parent = menuCommand.context as GameObject;
@@ -509,7 +509,7 @@ namespace UnityEditor
             Place(go, parent);
         }
 
-        [MenuItem("GameObject/Effects/Line", priority = 4)]
+        [MenuItem("GameObject/Visual Effects/Line", priority = 4)]
         static void CreateLine(MenuCommand menuCommand)
         {
             var parent = menuCommand.context as GameObject;

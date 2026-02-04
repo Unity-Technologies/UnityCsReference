@@ -6,6 +6,10 @@ namespace UnityEditor.PackageManager.UI.Internal
 {
     internal abstract class PackageBaseHelpBox : ExtendedHelpBox
     {
+        protected PackageBaseHelpBox(IApplicationProxy application) : base(application)
+        {
+        }
+
         public abstract void Refresh(IPackageVersion version);
     }
 }

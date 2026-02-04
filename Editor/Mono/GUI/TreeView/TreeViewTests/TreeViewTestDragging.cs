@@ -53,12 +53,12 @@ namespace UnityEditor.TreeViewExamples
                 if (perform && validDrag)
                 {
                     // Do reparenting here
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     List<BackendData.Foo> draggedFoos = (from x in dragData.m_DraggedItems where x is FooTreeViewItem select((FooTreeViewItem)x).foo).ToList();
-#pragma warning restore RS0030
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning restore UA2001
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     var selectedIDs = (from x in dragData.m_DraggedItems where x is FooTreeViewItem select((FooTreeViewItem)x).id).ToArray();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                     int insertionIndex = GetInsertionIndex(parentItem, targetItem, dropPos);
                     m_BackendData.ReparentSelection(fooParent.foo, insertionIndex, draggedFoos);
                     m_TreeView.ReloadData();

@@ -119,13 +119,13 @@ namespace Unity.Multiplayer.PlayMode.Editor
 
             m_Message.text = $"Scenario is {stage}...";
 
-            var mainEditorCount = GetInstanceCount<MainEditorInstanceDescription>(m_ScenarioConfig);
+            var mainEditorCount = GetInstanceCount<MainEditorController>(m_ScenarioConfig);
             m_MainEditorMessage.text = mainEditorCount > 0 ? $"Activating main editor..." : string.Empty;
 
-            var editorInstanceCount = GetInstanceCount<VirtualEditorInstanceDescription>(m_ScenarioConfig);
+            var editorInstanceCount = GetInstanceCount<CloneEditorController>(m_ScenarioConfig);
             m_EditorInstanceMessage.text = editorInstanceCount > 0 ? $"Activating {editorInstanceCount} editor instance(s)..." : string.Empty;
 
-            var localInstanceCount = GetInstanceCount<LocalInstanceDescription>(m_ScenarioConfig);
+            var localInstanceCount = GetInstanceCount<LocalPlayerController>(m_ScenarioConfig);
             m_LocalInstanceMessage.text = localInstanceCount > 0 ? $"Building {localInstanceCount} local instance(s)..." : string.Empty;
 
             UpdateProgressBar(m_ProgressBar, status.OverallStatus.Progress);
@@ -216,14 +216,14 @@ namespace Unity.Multiplayer.PlayMode.Editor
             rootVisualElement.styleSheets.Add(EditorGUIUtility.LoadRequired(k_Stylesheet) as StyleSheet);
         }
 
-        private static int GetInstanceCount<T>(OrchestratedScenario scenarioConfig) where T : InstanceDescription
+        private static int GetInstanceCount<T>(OrchestratedScenario scenarioConfig) where T : InstanceController
         {
             var instanceCount = 0;
             var allInstances = scenarioConfig.GetAllInstances();
-            foreach (var instance in allInstances)
+            foreach (var instanceItem in allInstances)
             {
-                if (instance is T description &&
-                    description.RunModeState == RunModeState.ScenarioControl)
+                if (instanceItem.GetRunMode() == RunModeState.ScenarioControl &&
+                    instanceItem.IsInstanceType(typeof(T)))
                 {
                     instanceCount++;
                 }

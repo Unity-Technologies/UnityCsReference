@@ -396,6 +396,23 @@ namespace UnityEditor.Overlays
         internal event Action presetChanged;
         internal event Action overlayListChanged;
 
+        [SerializeField] bool m_PresetDirty = false;
+
+        internal event Action presetDirtyChanged;
+        internal bool presetDirty
+        {
+            get => m_PresetDirty;
+            set
+            {
+                if (m_PresetDirty != value)
+                {
+                    m_PresetDirty = value;
+                    presetDirtyChanged?.Invoke();
+                }
+            }
+        }
+
+
         public bool overlaysEnabled
         {
             get => containerWindow != null && m_OverlaysVisible;
@@ -576,12 +593,12 @@ namespace UnityEditor.Overlays
                 // Verify if the left and right dynamic panel overlay containers
                 // are direct children of the vertical overlay container group.
                 // If they are, the layout is already correct.
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 if (displaceContainer.Children().Contains(leftDynamicPanelOverlayContainer)
-#pragma warning restore RS0030
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning restore UA2001
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     && displaceContainer.Children().Contains(rightDynamicPanelOverlayContainer))
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                     return;
 
                 displaceContainer.Add(leftDynamicPanelOverlayContainer);
@@ -594,12 +611,12 @@ namespace UnityEditor.Overlays
                 // Verify if the left and right dynamic panel overlay containers
                 // are direct children of the overlay scene container.
                 // If they are, the layout is already correct.
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 if (sceneContainers.Children().Contains(leftDynamicPanelOverlayContainer)
-#pragma warning restore RS0030
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning restore UA2001
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     && sceneContainers.Children().Contains(rightDynamicPanelOverlayContainer))
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                     return;
 
                 var anchoredContainer = sceneContainers.Q<VisualElement>(k_AnchoredContainerName);
@@ -645,6 +662,16 @@ namespace UnityEditor.Overlays
             EditorWindow.windowFocusChanged += OnFocusedWindowChanged;
             OverlayPrefs.styleSheetChanged += OnPreferenceStylesheetChanged;
             AssemblyReloadEvents.beforeAssemblyReload += OnBeforeAssemblyReload;
+            presetChanged += OnPresetChanged;
+
+            foreach (var container in m_Containers)
+            {
+                if (container != null && container is DynamicPanelOverlayContainer dynamicPanelOverlayContainer)
+                {
+                    dynamicPanelOverlayContainer.resized += OnDynamicPanelChanged;
+                    dynamicPanelOverlayContainer.stateChanged += OnDynamicPanelChanged;
+                }
+            }
         }
 
         void OnDetachedFromPanel(DetachFromPanelEvent evt)
@@ -655,7 +682,24 @@ namespace UnityEditor.Overlays
             EditorWindow.windowFocusChanged -= OnFocusedWindowChanged;
             OverlayPrefs.styleSheetChanged -= OnPreferenceStylesheetChanged;
             AssemblyReloadEvents.beforeAssemblyReload -= OnBeforeAssemblyReload;
+            presetChanged -= OnPresetChanged;
+
+            foreach (var container in m_Containers)
+            {
+                if (container != null && container is DynamicPanelOverlayContainer dynamicPanelOverlayContainer)
+                {
+                    dynamicPanelOverlayContainer.resized -= OnDynamicPanelChanged;
+                    dynamicPanelOverlayContainer.stateChanged -= OnDynamicPanelChanged;
+                }
+            }
         }
+
+        void OnPresetChanged()
+        {
+            presetDirty = false;
+        }
+
+        void OnDynamicPanelChanged() => presetDirty = true;
 
         internal void OnContainerWindowDisabled()
         {
@@ -668,7 +712,7 @@ namespace UnityEditor.Overlays
                 {
                     // Ensures m_SaveData and m_DynamicPanelContainerData are refreshed.
                     OnBeforeSerialize();
-                    overlayCanvasesData.AddAndSaveCanvasData(containerWindow, new OverlayCanvasesDataContainer(m_SaveData, m_DynamicPanelContainerData));
+                    overlayCanvasesData.AddAndSaveCanvasData(containerWindow, new OverlayCanvasesDataContainer(m_SaveData, m_DynamicPanelContainerData, m_LastAppliedPresetName, presetDirty));
                 }
             }
 
@@ -805,6 +849,8 @@ namespace UnityEditor.Overlays
                     if (containerTypeWindows.Length > 1 && overlayCanvasesData.TryGetLastActiveCanvasForWindowType(containerWindow, out var lastActiveCanvas))
                     {
                         lastActiveCanvas.CopySaveData(out var lastActiveSaveData, out var lastActiveDynamicPanelContainerData);
+                        m_LastAppliedPresetName = lastActiveCanvas.m_LastAppliedPresetName;
+                        m_PresetDirty = lastActiveCanvas.m_PresetDirty;
                         m_SaveData = new List<SaveData>(lastActiveSaveData);
                         m_DynamicPanelContainerData = new List<DynamicPanelContainerData>(lastActiveDynamicPanelContainerData);
                     }
@@ -814,6 +860,8 @@ namespace UnityEditor.Overlays
                         var foundDataContainer = overlayCanvasesData.GetCanvasData(containerWindow, out var dataContainer);
                         if (foundDataContainer)
                         {
+                            m_LastAppliedPresetName = dataContainer.m_LastAppliedPresetName;
+                            m_PresetDirty = dataContainer.m_PresetDirty;
                             m_SaveData = dataContainer.m_SaveData;
                             m_DynamicPanelContainerData = dataContainer.m_DynamicPanelContainerData;
                         }
@@ -845,7 +893,10 @@ namespace UnityEditor.Overlays
             if (m_DynamicPanelContainerData == null)
                 m_DynamicPanelContainerData = new List<DynamicPanelContainerData>();
 
+            // Resetting the preset dirty value after restoring overlays as restoring overlays might change the status to dirty
+            var isPresetDirty = presetDirty;
             RestoreOverlays();
+            presetDirty = isPresetDirty;
 
             if (dynamicPanelBehavior == DynamicPanelBehavior.DisplaceWindow)
                 DisplaceWindow();
@@ -1003,7 +1054,9 @@ namespace UnityEditor.Overlays
         internal void Rebuild()
         {
             OnBeforeSerialize();
+            var isPresetDirty = presetDirty;
             RestoreOverlays();
+            presetDirty = isPresetDirty;
         }
 
         // Overlays added to the canvas through this method are considered "temporary" and will be shown in separate
@@ -1150,17 +1203,17 @@ namespace UnityEditor.Overlays
 
         internal bool TryGetOverlay(string id, out Overlay overlay)
         {
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             overlay = m_Overlays.FirstOrDefault(x => x.id == id);
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             return overlay != null;
         }
 
         internal bool TryGetOverlay<T>(string id, out T overlay) where T : Overlay
         {
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             overlay = m_Overlays.FirstOrDefault(x => x is T && x.id == id) as T;
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             return overlay != null;
         }
 
@@ -1191,9 +1244,9 @@ namespace UnityEditor.Overlays
         // used by tests
         internal SaveData FindSaveData(Overlay overlay)
         {
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var data = m_SaveData.FirstOrDefault(x => x.id == overlay.id);
-#pragma warning restore RS0030
+#pragma warning restore UA2001
 
             if (data == null)
             {
@@ -1313,9 +1366,9 @@ namespace UnityEditor.Overlays
                 overlay.ApplySaveData(data);
 #pragma warning restore 618
 
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var container = m_Containers.FirstOrDefault(x => data.containerId == x.name);
-#pragma warning restore RS0030
+#pragma warning restore UA2001
 
             // Overlays were implemented with the idea that they are always associated with an OverlayContainer. While
             // this doesn't really need to be true (floating Overlays don't need a Container), the code isn't capable
@@ -1365,9 +1418,9 @@ namespace UnityEditor.Overlays
             foreach(var o in this.overlays)
                 overlays.Add(new Tuple<SaveData, Overlay>(FindSaveData(o), o));
 
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var ordered = overlays.OrderBy(x => x.Item1.index);
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             foreach (var o in ordered)
                 RestoreOverlay(o.Item2, o.Item1);
 

@@ -4,8 +4,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
-using System.Linq;
 using UnityEngine;
 
 namespace UnityEditor.PackageManager.UI.Internal
@@ -41,10 +39,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         [SerializeField]
         protected List<string> m_Scopes;
-        public ReadOnlyCollection<string> scopes => m_Scopes.AsReadOnly();
-        #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-        public ReadOnlyCollection<string> sanitizedScopes => m_Scopes.Where(scope => !string.IsNullOrWhiteSpace(scope)).Select(s => s.Trim()).ToList().AsReadOnly();
-#pragma warning restore RS0030
+        public IReadOnlyCollection<string> scopes => m_Scopes;
         [SerializeField]
         private int m_SelectedScopeIndex;
         public int selectedScopeIndex
@@ -57,7 +52,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         {
             m_RegistryName = string.Empty;
             m_Url = string.Empty;
-            m_Scopes = new List<string>() { string.Empty };
+            m_Scopes = new List<string> { string.Empty };
             m_SelectedScopeIndex = 0;
         }
 
@@ -73,11 +68,16 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_SelectedScopeIndex = 0;
         }
 
-        public void SetScopes(IEnumerable<string> scopes)
+        public string[] GetSanitizedScopes()
         {
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            m_Scopes = scopes?.Select(s => s ?? string.Empty).ToList() ?? new List<string>();
-#pragma warning restore RS0030
+            return m_Scopes.SelectNonEmpty(s => s.Trim()).ToNewArray(m_Scopes.Count);
+        }
+
+        public void SetScopes(IEnumerable<string> newScopes)
+        {
+            m_Scopes.Clear();
+            foreach (var scope in newScopes ?? Array.Empty<string>())
+                m_Scopes.Add(scope ?? string.Empty);
             if (m_Scopes.Count == 0)
                 m_Scopes.Add(string.Empty);
             m_SelectedScopeIndex = Math.Min(m_SelectedScopeIndex, m_Scopes.Count - 1);

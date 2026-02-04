@@ -32,15 +32,15 @@ namespace UnityEditor.Presets
 
         public PresetContext(Object[] targets, Preset currentSelection, bool createNewAllowed, Action<Preset> onSelectionChanged, Action<Preset, bool> onSelectionClosed)
         {
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             Targets = targets.Where(t => t != null).ToArray();
-#pragma warning restore RS0030
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning restore UA2001
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             Target = Targets.FirstOrDefault();
-#pragma warning restore RS0030
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning restore UA2001
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             Presets = Targets.Select(t => new Preset(t)).ToArray();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             PresetProperty = null;
             PresetType = new PresetType(Target);
             CurrentSelection = currentSelection;
@@ -110,9 +110,9 @@ namespace UnityEditor.Presets
             var query = QE.ParseQuery(context.searchQuery);
             if (!query.valid)
             {
-                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 context.AddSearchQueryErrors(query.errors.Select(e => new SearchQueryError(e, context, provider)));
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                 yield break;
             }
 

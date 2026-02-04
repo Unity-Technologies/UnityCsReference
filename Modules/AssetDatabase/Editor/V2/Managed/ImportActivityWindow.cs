@@ -689,9 +689,9 @@ namespace UnityEditor
                 return revisions;
 
             //filter out preview importers
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return revisions.Where(revision => revision.artifactKey.importerType == null || !revision.artifactKey.importerType.ToString().EndsWith("PreviewImporter", StringComparison.Ordinal));
-#pragma warning restore RS0030
+#pragma warning restore UA2001
         }
 
         private void CreateSelectedItemRightSideContainers(Rect windowPosition)
@@ -801,9 +801,9 @@ namespace UnityEditor
             var menu = new GenericMenu();
             var copyItemName = "Copy";
             var selectedItems = m_ProducedFilesListView.GetSelection();
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             if (selectedItems.Count() == 0)
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             {
                 menu.AddDisabledItem(new GUIContent(copyItemName));
             }
@@ -824,9 +824,9 @@ namespace UnityEditor
             var menu = new GenericMenu();
             var copyItemName = "Copy";
             var selectedItems = m_Overview.importProcessAnalysis.treeView.GetSelection();
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             if (selectedItems.Count() == 0)
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             {
                 menu.AddDisabledItem(new GUIContent(copyItemName));
             }
@@ -847,9 +847,9 @@ namespace UnityEditor
             var menu = new GenericMenu();
             var copyItemName = "Copy";
             var selectedItems = m_ProducedFilesListView.GetSelection();
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             if (selectedItems.Count() == 0)
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             {
                 menu.AddDisabledItem(new GUIContent(copyItemName));
             }
@@ -871,9 +871,9 @@ namespace UnityEditor
             var copyItemName = "Copy";
             var revealInExplorerItemName = GetOSSpecificShowIn();
             var selectedItems = m_ProducedFilesListView.GetSelection();
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             if (selectedItems.Count() == 0)
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             {
                 menu.AddDisabledItem(new GUIContent(copyItemName));
                 menu.AddDisabledItem(new GUIContent(revealInExplorerItemName));
@@ -1847,12 +1847,12 @@ namespace UnityEditor
 
         private static MultiColumnHeaderState.Column[] CreateColumns(params Column[] columns)
         {
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var colCount = columns.Count();
-#pragma warning restore RS0030
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning restore UA2001
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return columns.Select(col =>
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             {
                 return new MultiColumnHeaderState.Column
                 {
@@ -1937,9 +1937,9 @@ namespace UnityEditor
             var previousVersions = GatherPreviousRevisionsForSelectedArtifact(selectedArtifactInfo);
 
             m_PreviousRevisionsList.AddRange(
-                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 previousVersions.Select(
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                     previousInfo => new ArtifactInfoTreeViewItem() { artifactInfo = previousInfo }));
 
             m_ItemContainers.previousRevisions.treeView.Reload();
@@ -1963,9 +1963,9 @@ namespace UnityEditor
 
             UpdateItemContainers(selectedArtifactInfo, previousArtifactInfo);
             m_DependenciesList.Clear();
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             m_DependenciesList.AddRange(selectedArtifactInfo.dependencies.Select(pair => (pair.Key, pair.Value))); //TODO: Make helper functions
-#pragma warning restore RS0030
+#pragma warning restore UA2001
 
             m_ProducedFilesList.Clear();
             var producedFiles = selectedArtifactInfo.producedFiles;
@@ -2005,17 +2005,17 @@ namespace UnityEditor
                 differences = reporter.GetAllDifferences();
                 var reimportMessages = new StringBuilder();
 
-                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 reimportMessages.AppendLine(messages.Count() > 1
-#pragma warning restore RS0030
-                    #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning restore UA2001
+                    #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     ? $"Reasons for Import ({messages.Count()})"
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                     : "Reason (1)");
 
-                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 m_ReasonsToReimportList = differences.ToList();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             }
 
             m_ItemContainers.reasonsForImport.treeView.UpdateItemList(m_ReasonsToReimportList);
@@ -2320,13 +2320,13 @@ namespace UnityEditor
 
         private List<ArtifactInfo> GetAllCurrentRevisions(IEnumerable<string> allAssetPaths)
         {
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var allGUIDs = allAssetPaths.Select(AssetDatabase.GUIDFromAssetPath).ToArray();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             var currentRevisions = AssetDatabase.GetCurrentRevisions(allGUIDs);
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return currentRevisions.ToList();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
         }
 
         private void ReloadAndSortListViews()
@@ -2818,9 +2818,9 @@ namespace UnityEditor
                 m_PrevSelectedIndices = selectedIds;
 
                 // First element is counted from 1 onwards, not 0, thus subtracting 1 to have a 0 based index
-                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 m_SelectedItem = selectedIds.Count > 0 ? selectedIds.First() - 1 : -1;
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                 SelectionChangedCallback?.Invoke(m_SelectedItem);
             }
 
@@ -2903,17 +2903,17 @@ namespace UnityEditor
                 if (m_ItemList == null || m_ItemList.Count == 0)
                     return;
 
-                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 var selectedItems = state.selectedIDs.Select(id => m_ItemList[Math.Max(0, id - 1)]).ToList();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
 
                 var rows = GetRows();
                 Sort(rows);
 
                 //Restore the selection
-                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 var prevSelectedItems = selectedItems.Select(e => m_ItemList.IndexOf(e) + 1).ToList();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                 SetSelection(prevSelectedItems);
             }
 
@@ -2962,16 +2962,16 @@ namespace UnityEditor
         public void NotifyAssetImported(string[] importedAssets, string[] assetPathsGone, string[] renamedAssets)
         {
             // Building dictionary for faster asset lookup
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var allAssetsDictionary = m_AllAssetsList
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                 .Select((asset, index) => (asset, index)) // enclosing asset index within a tuple
                 .ToDictionary(t => t.asset.artifactInfo.importStats.assetPath, t => t); // producing dictionary: asset path -> tuple
 
             // Collect guids and update entries of assets which are already in the tree list view
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var guids = importedAssets
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                 .Where(path => allAssetsDictionary.ContainsKey(path)) // Select existing assets which were reimported
                 .Select(AssetDatabase.GUIDFromAssetPath)
                 .ToArray();
@@ -2992,9 +2992,9 @@ namespace UnityEditor
             m_AllAssetsList.RemoveAll(asset => assetsToRemove.Contains(asset.artifactInfo.importStats.assetPath));
 
             var revisions = AssetDatabase.GetCurrentRevisions(
-                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 importedAssets
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                     .Where(path =>
                     !allAssetsDictionary
                         .ContainsKey(path))     // Existing assets were already updated above, thus excluding
@@ -3002,12 +3002,12 @@ namespace UnityEditor
                     .Select(AssetDatabase.GUIDFromAssetPath)
                     .ToArray());
 
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var artifactInfoTreeViewItems = new List<ArtifactInfoTreeViewItem>(revisions.Count());
-#pragma warning restore RS0030
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning restore UA2001
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             for (int i = 0; i < revisions.Count(); ++i)
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             {
                 artifactInfoTreeViewItems.Add(new ArtifactInfoTreeViewItem()
                 {
@@ -3050,9 +3050,9 @@ namespace UnityEditor
             // Handle imported assets
             if (ImportActivityWindow.m_Instance != null)
             {
-                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 string[] assetPathsGone = deletedAssets.Union(movedFromAssetPaths).ToArray();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
 
                 // Create a lambda expression that captures the desired variables and calls the method with parameters
                 EditorApplication.delayCall += () => UpdateImportedAssetsNextTick(importedAssets, assetPathsGone, movedAssets);

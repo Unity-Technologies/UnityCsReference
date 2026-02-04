@@ -2,8 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System.Linq;
-
 namespace UnityEditor.PackageManager.UI.Internal
 {
     internal interface IPackageLinkFactory : IService
@@ -113,23 +111,21 @@ namespace UnityEditor.PackageManager.UI.Internal
             {
                 try
                 {
-                    var docsFolder = m_IOProxy.PathsCombine(packageInfo.resolvedPath, "Documentation~");
+                    var docsFolder = IOUtils.PathsCombine(packageInfo.resolvedPath, "Documentation~");
                     if (!m_IOProxy.DirectoryExists(docsFolder))
-                        docsFolder = m_IOProxy.PathsCombine(packageInfo.resolvedPath, "Documentation");
+                        docsFolder = IOUtils.PathsCombine(packageInfo.resolvedPath, "Documentation");
                     if (!m_IOProxy.DirectoryExists(docsFolder))
                     {
-                        var readMeFile = m_IOProxy.PathsCombine(packageInfo.resolvedPath, "README.md");
+                        var readMeFile = IOUtils.PathsCombine(packageInfo.resolvedPath, "README.md");
                         return m_IOProxy.FileExists(readMeFile) ? readMeFile : string.Empty;
                     }
                     else
                     {
-                        var mdFiles = m_IOProxy.DirectoryGetFiles(docsFolder, "*.md", System.IO.SearchOption.TopDirectoryOnly);
-                        #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                        var docsMd = mdFiles.FirstOrDefault(d => m_IOProxy.GetFileName(d).ToLower() == "index.md")
-#pragma warning restore RS0030
-                            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                            ?? mdFiles.FirstOrDefault(d => m_IOProxy.GetFileName(d).ToLower() == "tableofcontents.md") ?? mdFiles.FirstOrDefault();
-#pragma warning restore RS0030
+                        var mdFiles = m_IOProxy.DirectoryGetFiles(docsFolder, "*.md");
+                        if (mdFiles.Length == 0)
+                            return string.Empty;
+                        var docsMd = mdFiles.FirstMatch(d => IOUtils.GetFileName(d).ToLower() == "index.md")
+                            ?? mdFiles.FirstMatch(d => IOUtils.GetFileName(d).ToLower() == "tableofcontents.md") ?? mdFiles[0];
                         if (!string.IsNullOrEmpty(docsMd))
                             return docsMd;
                     }
@@ -145,7 +141,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             {
                 try
                 {
-                    var changelogFile = m_IOProxy.PathsCombine(packageInfo.resolvedPath, "CHANGELOG.md");
+                    var changelogFile = IOUtils.PathsCombine(packageInfo.resolvedPath, "CHANGELOG.md");
                     return m_IOProxy.FileExists(changelogFile) ? changelogFile : string.Empty;
                 }
                 catch (System.IO.IOException) { }
@@ -160,14 +156,14 @@ namespace UnityEditor.PackageManager.UI.Internal
                 try
                 {
                     // Attempt preferred Markdown extension
-                    var markdownLicense = m_IOProxy.PathsCombine(packageInfo.resolvedPath, "LICENSE.md");
+                    var markdownLicense = IOUtils.PathsCombine(packageInfo.resolvedPath, "LICENSE.md");
                     if (m_IOProxy.FileExists(markdownLicense))
                     {
                         return markdownLicense;
                     }
 
                     // Follow up with GitHub preferred naming
-                    var githubLicense = m_IOProxy.PathsCombine(packageInfo.resolvedPath, "LICENSE");
+                    var githubLicense = IOUtils.PathsCombine(packageInfo.resolvedPath, "LICENSE");
                     if (m_IOProxy.FileExists(githubLicense))
                     {
                         return githubLicense;

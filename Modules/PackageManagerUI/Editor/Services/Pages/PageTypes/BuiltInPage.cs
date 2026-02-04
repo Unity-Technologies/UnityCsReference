@@ -4,7 +4,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
 
 namespace UnityEditor.PackageManager.UI.Internal
 {
@@ -23,16 +22,14 @@ namespace UnityEditor.PackageManager.UI.Internal
         // Using UpmSearchOffline here will cause scoped registry packages to disappear when user refreshes the built in page.
         public override RefreshOptions refreshOptions => RefreshOptions.UpmListOffline | RefreshOptions.UpmSearch;
 
-        public override IReadOnlyCollection<PageFilters.Status> supportedStatusFilters => Array.Empty<PageFilters.Status>();
-        public override IReadOnlyCollection<PageSortOption> supportedSortOptions => k_SupportedSortOptions;
+        public override IReadOnlyList<PageFilters.Status> supportedStatusFilters => Array.Empty<PageFilters.Status>();
+        public override IReadOnlyList<PageSortOption> supportedSortOptions => k_SupportedSortOptions;
 
         public BuiltInPage(IPackageDatabase packageDatabase) : base(packageDatabase) {}
 
         public override bool ShouldInclude(IPackage package)
         {
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            return package?.versions.All(v => v.HasTag(PackageTag.BuiltIn)) == true;
-#pragma warning restore RS0030
+            return package != null && package.versions.AllMatches(v => v.HasTag(PackageTag.BuiltIn));
         }
     }
 }

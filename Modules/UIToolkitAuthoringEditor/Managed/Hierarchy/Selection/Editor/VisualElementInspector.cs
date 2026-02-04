@@ -67,7 +67,7 @@ internal sealed class VisualElementInspector : VisualElement
             if (m_Element == null)
             {
                 m_OpenInBuilder.VisualTreeAsset = null;
-                m_StyleInspector.Element = null;
+                m_StyleInspector.Target = new StyleInspectorTarget(null);
                 m_AttributesInspector.context.Clear();
             }
             else
@@ -76,7 +76,7 @@ internal sealed class VisualElementInspector : VisualElement
                     ? m_Element.visualTreeAssetSource
                     : m_Element.GetFirstAncestorWhere(ve => ve.visualTreeAssetSource)?.visualTreeAssetSource;
                 m_OpenInBuilder.VisualTreeAsset = visualTreeAsset;
-                m_StyleInspector.Element = m_Element;
+                m_StyleInspector.Target = new StyleInspectorTarget(m_Element);
                 m_AttributesInspector.context.Set(m_Element, UxmlAttributesEditingContext.Environment.Scene, true);
             }
             NotifyPropertyChanged(ElementProperty);

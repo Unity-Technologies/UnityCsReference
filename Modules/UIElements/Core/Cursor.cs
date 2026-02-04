@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Runtime.InteropServices;
 using UnityEngine.Bindings;
 
 namespace UnityEngine.UIElements
@@ -11,11 +12,14 @@ namespace UnityEngine.UIElements
     /// <summary>
     /// Script interface for <see cref="VisualElement"/> cursor style property <see cref="IStyle.cursor"/>.
     /// </summary>
-    [Serializable]
+    [Serializable, StructLayout(LayoutKind.Sequential)]
     public partial struct Cursor : IEquatable<Cursor>
     {
         [SerializeField]
-        Texture2D m_Texture;
+        EntityId m_Texture;
+
+        int m_DefaultCursorId;
+
         [SerializeField]
         Vector2 m_Hotspot;
 
@@ -24,8 +28,8 @@ namespace UnityEngine.UIElements
         /// </summary>
         public Texture2D texture
         {
-            get => m_Texture;
-            set => m_Texture = value;
+            get => (Texture2D)Resources.EntityIdToObject(m_Texture);
+            set => m_Texture = value != null ? value.GetEntityId() : EntityId.None;
         }
 
         /// <summary>
@@ -39,7 +43,7 @@ namespace UnityEngine.UIElements
 
         // Used to support default cursor in the editor (map to MouseCursor enum)
         [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
-        internal int defaultCursorId { get; set; }
+        internal int defaultCursorId { get => m_DefaultCursorId; set => m_DefaultCursorId = value; }
 
         public override bool Equals(object obj)
         {

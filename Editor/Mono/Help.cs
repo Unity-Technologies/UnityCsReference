@@ -255,7 +255,7 @@ namespace UnityEditor
             return uri;
         }
 
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
         internal static string FindHelpNamed(string topic)
         {
             if (m_UrlCache.ContainsKey(topic))

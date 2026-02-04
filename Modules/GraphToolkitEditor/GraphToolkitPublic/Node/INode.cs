@@ -59,6 +59,11 @@ namespace Unity.GraphToolkit.Editor
         public string Tooltip { get; set; }
 
         /// <summary>
+        /// The main text displayed in the node's header.
+        /// </summary>
+        public string Title { get; set;  }
+
+        /// <summary>
         /// The highlight color of the node. The highlight is located on the upper border of nodes, and on the upper and lower borders of context nodes.
         /// </summary>
         public Color DefaultColor { get; set; }

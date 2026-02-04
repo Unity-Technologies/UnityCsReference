@@ -45,7 +45,7 @@ namespace Unity.ProjectAuditor.Editor.UI
             var header = m_Table.multiColumnHeader;
             header.canSort = true;
 
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var list = new List<GroupStats>(
                 m_Issues.GroupBy(i => i.GetCustomProperty(BuildReportFileProperty.RuntimeType)).Select(g => new GroupStats
                 {
@@ -55,7 +55,7 @@ namespace Unity.ProjectAuditor.Editor.UI
                 }));
             list.Sort((a, b) => b.size.CompareTo(a.size));
             m_GroupStats = list.Take(k_MaxGroupCount).ToArray();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
         }
 
         public override void Clear()
@@ -64,57 +64,60 @@ namespace Unity.ProjectAuditor.Editor.UI
             m_GroupStats = null;
         }
 
+        public static bool ShowAdditionalInfo(AnalysisView view)
+        {
+            var buildView = (BuildSizeView)view;
+            return (buildView.m_GroupStats?.Length > 0);
+        }
+
         protected override void DrawAdditionalInfo()
         {
-            if (m_GroupStats != null && m_GroupStats.Length > 0)
+            EditorGUILayout.Space();
+
+            m_ViewStates.info2 = Utility.BoldFoldout(m_ViewStates.info2, SizesFoldout);
+            if (m_ViewStates.info2)
             {
-                EditorGUILayout.Space();
+                EditorGUI.indentLevel++;
 
-                m_ViewStates.info2 = Utility.BoldFoldout(m_ViewStates.info2, SizesFoldout);
-                if (m_ViewStates.info2)
+                var width = 200;
+                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                var dataSize = m_GroupStats.Sum(g => g.size);
+#pragma warning restore UA2001
+                EditorGUILayout.BeginHorizontal();
+                EditorGUILayout.LabelField("Total Assets size (Uncompressed)", SharedStyles.Label, GUILayout.Width(width));
+                EditorGUILayout.LabelField(Formatting.FormatSize((ulong)dataSize), SharedStyles.Label);
+                EditorGUILayout.EndHorizontal();
+                EditorGUILayout.LabelField($"Size By Runtime Type (Top {k_MaxGroupCount})", SharedStyles.BoldLabel);
+                EditorGUI.indentLevel++;
+
+                EditorGUILayout.BeginVertical();
+
+                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                var maxGroupSize = (float)m_GroupStats.Max(g => g.size);
+#pragma warning restore UA2001
+                foreach (var group in m_GroupStats)
                 {
-                    EditorGUI.indentLevel++;
-
-                    var width = 200;
-                    #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                    var dataSize = m_GroupStats.Sum(g => g.size);
-#pragma warning restore RS0030
+                    var groupSize = group.size;
                     EditorGUILayout.BeginHorizontal();
-                    EditorGUILayout.LabelField("Total Assets size (Uncompressed)", SharedStyles.Label, GUILayout.Width(width));
-                    EditorGUILayout.LabelField(Formatting.FormatSize((ulong)dataSize), SharedStyles.Label);
-                    EditorGUILayout.EndHorizontal();
-                    EditorGUILayout.LabelField($"Size By Runtime Type (Top {k_MaxGroupCount})", SharedStyles.BoldLabel);
-                    EditorGUI.indentLevel++;
 
-                    EditorGUILayout.BeginVertical();
+                    EditorGUILayout.LabelField(string.Format("{0} ({1}):", group.assetGroup, group.count), SharedStyles.Label, GUILayout.Width(260));
 
-                    #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                    var maxGroupSize = (float)m_GroupStats.Max(g => g.size);
-#pragma warning restore RS0030
-                    foreach (var group in m_GroupStats)
+                    var rect = EditorGUILayout.GetControlRect(GUILayout.Width(width));
+                    if (m_2D.DrawStart(rect))
                     {
-                        var groupSize = group.size;
-                        EditorGUILayout.BeginHorizontal();
-
-                        EditorGUILayout.LabelField(string.Format("{0} ({1}):", group.assetGroup, group.count), SharedStyles.Label, GUILayout.Width(260));
-
-                        var rect = EditorGUILayout.GetControlRect(GUILayout.Width(width));
-                        if (m_2D.DrawStart(rect))
-                        {
-                            m_2D.DrawFilledBox(0, 1, Math.Max(1, rect.width * groupSize / maxGroupSize), rect.height - 1, k_BarColor);
-                            m_2D.DrawEnd();
-                        }
-
-                        EditorGUILayout.LabelField(string.Format("{0} / {1:0.0}%", Formatting.FormatSize((ulong)group.size), 100 * groupSize / (float)dataSize), SharedStyles.Label);
-                        EditorGUILayout.Space();
-                        EditorGUILayout.EndHorizontal();
+                        m_2D.DrawFilledBox(0, 1, Math.Max(1, rect.width * groupSize / maxGroupSize), rect.height - 1, k_BarColor);
+                        m_2D.DrawEnd();
                     }
-                    EditorGUILayout.EndVertical();
 
-                    EditorGUI.indentLevel--;
-
-                    EditorGUI.indentLevel--;
+                    EditorGUILayout.LabelField(string.Format("{0} / {1:0.0}%", Formatting.FormatSize((ulong)group.size), 100 * groupSize / (float)dataSize), SharedStyles.Label);
+                    EditorGUILayout.Space();
+                    EditorGUILayout.EndHorizontal();
                 }
+                EditorGUILayout.EndVertical();
+
+                EditorGUI.indentLevel--;
+
+                EditorGUI.indentLevel--;
             }
         }
 

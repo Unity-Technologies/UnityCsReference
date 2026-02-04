@@ -93,9 +93,9 @@ namespace UnityEditor.AnimationWindowBuiltin
             if (data?.events == null || data.events.Length == 0)
                 return null;
 
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var minTime = data.events.Min(e => e.time);
-#pragma warning restore RS0030
+#pragma warning restore UA2001
 
             var origEventsCount = events.Length;
             // Append new events to the end first,
@@ -107,9 +107,9 @@ namespace UnityEditor.AnimationWindowBuiltin
                 newEvent.time = t;
                 newEvents.Add(newEvent);
             }
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             events = events.Concat(newEvents).ToArray();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
 
             // Re-sort events by time
             var order = new int[events.Length];

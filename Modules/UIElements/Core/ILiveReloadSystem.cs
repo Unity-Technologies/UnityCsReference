@@ -9,7 +9,7 @@ using UnityEngine.Bindings;
 namespace UnityEngine.UIElements
 {
     [Flags]
-    [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+    [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
     internal enum LiveReloadTrackers
     {
         None = 0,
@@ -30,6 +30,12 @@ namespace UnityEngine.UIElements
 
         void RegisterVisualTreeAssetTracker(ILiveReloadAssetTracker<VisualTreeAsset> tracker, VisualElement owner);
         void UnregisterVisualTreeAssetTracker(VisualElement owner);
+
+        void RegisterTrackerForAsset(ILiveReloadAssetTracker<VisualTreeAsset> tracker, VisualTreeAsset asset);
+        void UnregisterTrackerForAsset(ILiveReloadAssetTracker<VisualTreeAsset> tracker, VisualTreeAsset asset);
+
+        void RegisterTrackerForAsset(ILiveReloadAssetTracker<StyleSheet> tracker, StyleSheet asset);
+        void UnregisterTrackerForAsset(ILiveReloadAssetTracker<StyleSheet> tracker, StyleSheet asset);
 
         void StartTracking(List<VisualElement> elements);
         void StopTracking(List<VisualElement> elements);

@@ -96,9 +96,9 @@ namespace UnityEditor.Search
             var selection = TaskEvaluatorManager.EvaluateMainThread(() =>
             {
                 var entityIds = UnityEditor.Selection.entityIds;
-                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 return entityIds.Select(id =>
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                 {
                     string assetPath = AssetDatabase.GetAssetPath(id);
                     return new SelectionResult(id, assetPath);
@@ -136,29 +136,29 @@ namespace UnityEditor.Search
                 if (s_EnvFunctions == null)
                 {
                     var searchExpressionEvaluators = TypeCache.GetMethodsWithAttribute<SearchExpressionEvaluatorAttribute>();
-                    #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                    #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     s_EnvFunctions = searchExpressionEvaluators.Where(mi =>
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                     {
                         // Discard self
                         if (mi.Name == "Env")
                             return false;
                         var categories = mi.GetCustomAttributes<CategoryAttribute>();
-                        #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                        #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                         return categories.Any(category => category.Category == "Env");
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                     }).ToDictionary(mi => Utils.FastToLower(mi.Name));
                 }
 
                 string[] envNames = null;
                 if (c.args.Length == 0)
-                    #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                    #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     envNames = s_EnvFunctions.Keys.ToArray();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                 else
-                    #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                    #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     envNames = c.args.Select(exp => Utils.FastToLower(exp.innerText.ToString())).ToArray();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
 
                 foreach (var envName in envNames)
                 {

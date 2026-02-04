@@ -2,12 +2,9 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System.Collections.Generic;
 using UnityEditor;
 using UnityEngine.UIElements;
 using UnityEditor.UIElements;
-using UnityEngine;
-using Unity.PlayMode.Editor;
 using UnityEngine.Assertions;
 
 namespace Unity.Multiplayer.PlayMode.Editor
@@ -20,21 +17,17 @@ namespace Unity.Multiplayer.PlayMode.Editor
     [CustomEditor(typeof(OrchestratedScenario))]
     class ScenarioConfigEditor : Editor
     {
+        internal const string k_InstancesListPropertyPath = $"{OrchestratedScenario.k_SettingsPropertyName}.{OrchestratedScenarioSettings.k_InstanceItemsPropertyName}";
         internal const string k_StylePath = "Multiplayer/UI/ScenarioConfigEditor.uss";
         internal const string k_LocalInstanceListName = "local-instance-list";
-        internal const string k_RemoteInstanceListName = "remote-instance-list";
         internal const string k_EditorInstancesContainerName = "editor-instances-container";
-        internal const string k_RemoteInstancesFoldoutName = "remote-instances-foldout";
-        internal const string k_InstallMissingPackagesButtonName = "install-missing-packages-button";
-        internal const string k_ListViewRemoveButton = "unity-list-view__remove-button";
-        internal const string k_ListViewAddButton ="unity-list-view__add-button";
         internal const string k_VirtualEditorInstanceFoldoutName = "virtual-editor-instance-foldout";
-        internal const string k_DisabledInstanceHelpBoxName = "main-multiplayer-instance-DisabledHelpBox";
-        internal const string k_DisabledInstanceHelpBoxText = "An instance is currently running. To modify any settings for editor instances, please terminate this instance in the Active Scenario Window.";
+        const string k_CloneEditorsLabel = "Additional Editor Instances";
+        const string k_CloneEditorsTooltip = "Initial Editor Instances when entering play mode. Editor Instances will only have limited authoring capabilities.";
+        const string k_LocalInstancesLabel = "Local Instances";
+        const string k_LocalInstancesTooltip = "Local Instances are builds that will run on the same machine as the editor.";
 
         internal const int MaxServerCount = 1;
-        internal const int MaxEditorInstanceCount = 3;
-        internal const int MaxLocalInstanceCount = 4;
 
         public override VisualElement CreateInspectorGUI()
         {
@@ -58,105 +51,28 @@ namespace Unity.Multiplayer.PlayMode.Editor
             return container;
         }
 
-        Foldout CreateMissingPackageHelpbox(List<string> missingPacks)
+        bool TryGetMainEditorProperty(out SerializedProperty mainEditorProperty)
         {
-            var foldout = new Foldout() { text = "Remote Instances", name = k_RemoteInstancesFoldoutName };
-            foldout.AddToClassList("missing-packages-foldout");
+            var instancesProperty = serializedObject.FindProperty($"{OrchestratedScenario.k_SettingsPropertyName}.{OrchestratedScenarioSettings.k_InstanceItemsPropertyName}");
+            mainEditorProperty = default(SerializedProperty);
 
-            var helpBox = new HelpBox("Remote server will be deployed to Unity Game Server Hosting. Make sure you have the necessary packages installed.\n\t" +
-                string.Join("\n\t", missingPacks)
-                , HelpBoxMessageType.Info);
-            var dashboardButton = new Button(() => Application.OpenURL("https://cloud.unity.com/")) { text = "Open Dashboard" };
-            var installPackages = new Button(async void () =>  await OrchestratedScenario.LoadPackagesAsync())
+            for (int i = 0; i < instancesProperty.arraySize; i++)
             {
-                name = k_InstallMissingPackagesButtonName,
-                text = "Install missing packages"
-            };
+                var instanceProperty = instancesProperty.GetArrayElementAtIndex(i);
+                if (instanceProperty.boxedValue is not IInstanceItem instanceItem)
+                    continue;
 
-            var buttonContainer = new VisualElement() { name = "missing-packages-button-container" };
-            buttonContainer.Add(dashboardButton);
-            buttonContainer.Add(installPackages);
-            helpBox.Add(buttonContainer);
-            foldout.Add(helpBox);
-            return foldout;
-        }
-
-        // We have to override the default behaviour of the list view, because we need some custom logic in it.
-        void SetupListView<TController, TSettings>(ListView listView, SerializedProperty listProperty, int maxInstanceCount, string tooltip)
-            where TController : InstanceController<TController, TSettings>
-        {
-            if (listView == null)
-            {
-                return;
-            }
-
-            // listView.showFoldoutHeader = false;
-            listView.showBoundCollectionSize = false;
-            listView.reorderable = false;
-            listView.canStartDrag += args => false;
-            listView.showAlternatingRowBackgrounds = AlternatingRowBackground.All;
-            listView.onAdd = _ =>
-            {
-                listProperty.serializedObject.Update();
-
-                if (listProperty.arraySize >= maxInstanceCount)
+                if (instanceItem.IsInstanceType(typeof(MainEditorController)))
                 {
-                    EditorUtility.DisplayDialog("Warning", $"You can't have more than {maxInstanceCount} {(maxInstanceCount>1?"instances":"instance")}", "Ok");
-                    return;
-                }
-
-                listProperty.InsertArrayElementAtIndex(listProperty.arraySize);
-                var instanceProperty = listProperty.GetArrayElementAtIndex(listProperty.arraySize - 1);
-                var instanceSettings = InstanceController<TController, TSettings>.GetDefaultSettings() as InstanceDescription;
-                Assert.IsNotNull(instanceSettings, $"Default settings for {typeof(TController).Name} returned null or is not of type InstanceDescription.");
-                instanceSettings.Name = GenerateInstanceName(listProperty);
-                instanceProperty.boxedValue = instanceSettings;
-                listProperty.serializedObject.ApplyModifiedProperties();
-                listProperty.serializedObject.Update();
-            };
-
-            RefreshListViewAddRemoveToggles<TController>(listView, listProperty);
-
-            var foldout = listView.Q<Foldout>();
-            var toggle = foldout?.Q<Toggle>();
-            if (toggle != null)
-            {
-                toggle.tooltip = tooltip;
-            }
-        }
-
-        // Mimic the naming that is used in Unity.
-        static string GenerateInstanceName(SerializedProperty instanceArrayProperty)
-        {
-            var instanceList = new List<InstanceDescription>();
-            for (var i = 0; i < instanceArrayProperty.arraySize; i++)
-            {
-                if (instanceArrayProperty.GetArrayElementAtIndex(i).boxedValue != null && instanceArrayProperty.GetArrayElementAtIndex(i).boxedValue is InstanceDescription instanceDescription)
-                    instanceList.Add(instanceDescription);
-            }
-
-            var configName = "Instance";
-            var counter = 1;
-            bool nameExists = true;
-            while (nameExists)
-            {
-                nameExists = false;
-                foreach (var c in instanceList)
-                {
-                    if (c.Name == configName)
-                    {
-                        nameExists = true;
-                        configName = "Instance" + $"({counter})";
-                        counter++;
-                        break;
-                    }
+                    mainEditorProperty = instanceProperty;
+                    return true;
                 }
             }
 
-            return configName;
+            return false;
         }
 
-        private VisualElement CreateEditorInstancesElement()
+        VisualElement CreateEditorInstancesElement()
         {
             var container = new VisualElement();
             container.AddToClassList("instances-group");
@@ -178,72 +94,35 @@ namespace Unity.Multiplayer.PlayMode.Editor
             });
 
             // Main editor instance
-            var multiplayerPlaymodeProperty = serializedObject.FindProperty("m_MainEditorInstance");
-            var mainEditorField = new PropertyField(multiplayerPlaymodeProperty);
-            content.Add(mainEditorField);
-
-            // Editor Instances List
-            var editorInstancesProperty = serializedObject.FindProperty("m_EditorInstances");
-            var additionalEditors = new PropertyField(editorInstancesProperty) { label = "Additional Editor Instances", name = k_EditorInstancesContainerName };
-            additionalEditors.AddToClassList("instances-group");
-
-            //Todo: Found no better way for now, AttachToPanelEvent is not working.
-            additionalEditors.RegisterCallback<GeometryChangedEvent>(evt =>
+            if (TryGetMainEditorProperty(out var mainEditorProperty))
             {
-                var listView = additionalEditors.Q<ListView>();
+                var mainEditorField = new PropertyField(mainEditorProperty);
+                content.Add(mainEditorField);
+            }
 
-                // Use the reorderable flag to check if the setup already happened.
-                if (listView == null || listView.reorderable == false)
-                    return;
+            var cloneEditorsList = new FilteredInstancesListProperty<CloneEditorController, CloneEditorController.InstanceSettings>
+                ((OrchestratedScenario)target, OrchestratedScenario.k_MaxCloneEditorInstances);
+            cloneEditorsList.text = k_CloneEditorsLabel;
+            cloneEditorsList.name = k_EditorInstancesContainerName;
+            cloneEditorsList.tooltip = k_CloneEditorsTooltip;
+            cloneEditorsList.AddToClassList("instances-group");
+            cloneEditorsList.viewDataKey = $"{nameof(ScenarioConfigEditor)}.{k_EditorInstancesContainerName}";
+            content.Add(cloneEditorsList);
 
-                SetupListView<CloneEditorController, VirtualEditorInstanceDescription>(listView, serializedObject.FindProperty("m_EditorInstances"), MaxEditorInstanceCount,
-                    "Initial Editor Instances when entering playmode. Editor Instances will only have limited authoring capabilities.");
-            });
-
-            content.Add(additionalEditors);
             return container;
         }
 
-        private VisualElement CreateLocalInstancesElement()
+        VisualElement CreateLocalInstancesElement()
         {
-            var container = new VisualElement();
-            container.AddToClassList("instances-group");
+            var localInstancesList = new FilteredInstancesListProperty<LocalPlayerController, LocalPlayerController.InstanceSettings>
+                ((OrchestratedScenario)target, OrchestratedScenario.k_MaxPlayerInstances);
+            localInstancesList.text = k_LocalInstancesLabel;
+            localInstancesList.name = k_LocalInstanceListName;
+            localInstancesList.tooltip = k_LocalInstancesTooltip;
+            localInstancesList.AddToClassList("instances-group");
+            localInstancesList.viewDataKey = $"{nameof(ScenarioConfigEditor)}.{k_LocalInstanceListName}";
 
-            var localInstancesProperty = serializedObject.FindProperty("m_LocalInstances");
-            var localInstanceUI = new PropertyField(localInstancesProperty) { name = k_LocalInstanceListName };
-
-            localInstanceUI.RegisterCallback<GeometryChangedEvent>(evt =>
-            {
-                var listView = localInstanceUI.Q<ListView>();
-
-                // Use the reorderable flag to check if the setup already happened.
-                if (listView == null || listView.reorderable == false)
-                    return;
-                SetupListView<LocalPlayerController, LocalInstanceDescription>(listView, serializedObject.FindProperty("m_LocalInstances"), MaxLocalInstanceCount,
-                    "Local Instances are builds that will run on the same machine as the editor.");
-            });
-
-            container.Add(localInstanceUI);
-            return container;
-        }
-
-        private void RefreshListViewAddRemoveToggles<TController>(ListView listView, SerializedProperty listProperty)
-            where TController : InstanceController
-        {
-            if (listProperty?.arraySize == 0)
-                return;
-
-            // Disable removal from the list view if a virtual instance is active.
-            var scenario = PlayModeScenarioManager.ActiveScenario as OrchestratedScenario;
-            var isFreeRunningActive = scenario != null &&
-                                      scenario.Scenario != null &&
-                                      scenario.Scenario.HasActiveFreeRunInstanceOfType<TController>();
-
-            var toolTipText  = isFreeRunningActive ? k_DisabledInstanceHelpBoxText : "";
-            listView.allowRemove = !isFreeRunningActive;
-            listView.allowAdd = !isFreeRunningActive;
-            listView.Q<Button>(k_ListViewRemoveButton).tooltip = toolTipText;
-            listView.Q<Button>(k_ListViewAddButton).tooltip = toolTipText;
+            return localInstancesList;
         }
     }
 }

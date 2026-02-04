@@ -22,7 +22,7 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
         public bool ShowDependencyView;
         public bool ShowFilters;
         public bool ShowInfoPanel;
-        public bool ShowAdditionalInfoPanel;
+        public Func<AnalysisView, bool> ShowAdditionalInfoPanel;
         public GUIContent DependencyViewGuiContent;
         public Func<ReportItem, string> GetAssemblyName;
         public Action<GenericMenu, ViewManager, ReportItem> OnContextMenu;
@@ -48,9 +48,9 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
 
         public static ViewDescriptor[] GetAll()
         {
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return s_ViewDescriptorsRegistry.Select(pair => pair.Value).ToArray();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
         }
     }
 }

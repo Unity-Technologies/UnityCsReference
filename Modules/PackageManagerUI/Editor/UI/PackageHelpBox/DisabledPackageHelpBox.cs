@@ -8,7 +8,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 {
     internal class DisabledPackageHelpBox : PackageBaseHelpBox
     {
-        public DisabledPackageHelpBox()
+        public DisabledPackageHelpBox(IApplicationProxy application) : base(application)
         {
             text = L10n.Tr("Unfortunately, this package is no longer available.");
             messageType = HelpBoxMessageType.Warning;

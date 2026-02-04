@@ -26,8 +26,7 @@ namespace Unity.Hierarchy.Editor
     [RequiredByNativeCode(Optional = true), StructLayout(LayoutKind.Sequential)]
     [NativeHeader("Modules/HierarchyEditor/Public/HierarchyGameObjectHandler.h")]
     [NativeHeader("Modules/HierarchyEditor/HierarchyGameObjectHandlerBindings.h")]
-    [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
-    internal sealed class HierarchyGameObjectHandler :
+    public sealed class HierarchyGameObjectHandler :
         HierarchyNodeTypeHandler,
         IHierarchyEntityIdConverter,
         IHierarchyEditorNodeTypeHandler,

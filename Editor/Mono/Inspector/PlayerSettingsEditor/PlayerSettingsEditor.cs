@@ -151,6 +151,7 @@ namespace UnityEditor
             public static readonly GUIContent metalForceHardShadows = EditorGUIUtility.TrTextContent("Force hard shadows on Metal*");
             public static readonly GUIContent metalAPIValidation = EditorGUIUtility.TrTextContent("Metal API Validation*", "When enabled, additional binding state validation is applied.");
             public static readonly GUIContent metalFramebufferOnly = EditorGUIUtility.TrTextContent("Metal Write-Only Backbuffer*", "Set framebufferOnly flag on backbuffer. This prevents readback from backbuffer but enables some driver optimizations.");
+            public static readonly GUIContent metalUseMetalDisplayLink = EditorGUIUtility.TrTextContent("Use MetalDisplayLink (Mac Player only)*", "CAMetalDisplayLink provides smoother frame pacing and decreases stuttering. It also makes Time.deltaTime more stable and deterministic.");
             public static readonly GUIContent framebufferDepthMemorylessMode = EditorGUIUtility.TrTextContent("Memoryless Depth*", "Memoryless mode of framebuffer depth");
             public static readonly GUIContent[] memorylessModeNames = { EditorGUIUtility.TrTextContent("Unused"), EditorGUIUtility.TrTextContent("Forced"), EditorGUIUtility.TrTextContent("Automatic") };
             public static readonly GUIContent vulkanEnableSetSRGBWrite = EditorGUIUtility.TrTextContent("SRGB Write Mode*", "If set, enables Graphics.SetSRGBWrite() for toggling sRGB write mode during the frame but may decrease performance especially on tiled GPUs.");
@@ -423,6 +424,7 @@ namespace UnityEditor
         SerializedProperty m_VertexChannelCompressionMask;
         SerializedProperty m_MetalAPIValidation;
         SerializedProperty m_MetalFramebufferOnly;
+        SerializedProperty m_MetalUseMetalDisplayLink;
         SerializedProperty m_MetalForceHardShadows;
         SerializedProperty m_FramebufferDepthMemorylessMode;
 
@@ -622,6 +624,7 @@ namespace UnityEditor
             m_VertexChannelCompressionMask  = FindPropertyAssert("VertexChannelCompressionMask");
             m_MetalAPIValidation            = FindPropertyAssert("metalAPIValidation");
             m_MetalFramebufferOnly          = FindPropertyAssert("metalFramebufferOnly");
+            m_MetalUseMetalDisplayLink      = FindPropertyAssert("metalUseMetalDisplayLink");
             m_MetalForceHardShadows         = FindPropertyAssert("iOSMetalForceHardShadows");
             m_FramebufferDepthMemorylessMode = FindPropertyAssert("framebufferDepthMemorylessMode");
 
@@ -1491,9 +1494,9 @@ namespace UnityEditor
             if (apis == null)
                 return;
             var apiToAdd = GraphicsDeviceTypeFromString(options[selected]);
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             apis = apis.Append(apiToAdd).ToArray();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             m_CurrentTarget.SetGraphicsAPIs_Internal(target, apis, true);
             OnTargetObjectChangedDirectly();
         }
@@ -1508,9 +1511,9 @@ namespace UnityEditor
             //As part of OpenGL deprection from MacOS, hide the option of adding OpenGL
             if (target == BuildTarget.StandaloneOSX)
             {
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 var availableDeviceList = availableDevices.ToList();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                 availableDeviceList.Remove(GraphicsDeviceType.OpenGLCore);
                 availableDevices = availableDeviceList.ToArray();
             }
@@ -1561,9 +1564,9 @@ namespace UnityEditor
                 return;
             }
 
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var apiList = apis.ToList();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             var removedElement = apiList[list.index];
             if (CheckRemoveFallbackGraphicsDeviceElement(removedElement, target, list))
             {
@@ -1759,9 +1762,9 @@ namespace UnityEditor
 
             var apis = m_CurrentTarget.GetGraphicsAPIs_Internal(targetPlatform);
             // only available if we include ES3
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var hasMinES3 = apis.Contains(GraphicsDeviceType.OpenGLES3);
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             if (!hasMinES3)
                 return;
 
@@ -1838,9 +1841,9 @@ namespace UnityEditor
             }
 
             GraphicsDeviceType[] devices = m_CurrentTarget.GetGraphicsAPIs_Internal(targetPlatform);
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var devicesList = (devices != null) ? devices.ToList() : new List<GraphicsDeviceType>();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             // create reorderable list for this target if needed
             if (!m_GraphicsDeviceLists.ContainsKey(targetPlatform))
             {
@@ -1978,9 +1981,9 @@ namespace UnityEditor
         private void AddColorGamutMenuSelected(object userData, string[] options, int selected)
         {
             var colorGamuts = (ColorGamut[])userData;
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var colorGamutList = m_CurrentTarget.GetColorGamuts_Internal().ToList();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             colorGamutList.Add(colorGamuts[selected]);
             m_CurrentTarget.SetColorGamuts_Internal(colorGamutList.ToArray());
             OnTargetObjectChangedDirectly();
@@ -1996,9 +1999,9 @@ namespace UnityEditor
 
         private void RemoveColorGamutElement(ReorderableList list)
         {
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var colorGamutList = m_CurrentTarget.GetColorGamuts_Internal().ToList();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             // don't allow removing the last ColorGamut
             if (colorGamutList.Count < 2)
             {
@@ -2042,9 +2045,9 @@ namespace UnityEditor
             if (m_ColorGamutList == null)
             {
                 ColorGamut[] colorGamuts = m_CurrentTarget.GetColorGamuts_Internal();
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 var colorGamutsList = (colorGamuts != null) ? colorGamuts.ToList() : new List<ColorGamut>();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                 var rlist = new ReorderableList(colorGamutsList, typeof(ColorGamut), true, true, true, true);
                 rlist.onCanRemoveCallback = CanRemoveColorGamutElement;
                 rlist.onRemoveCallback = RemoveColorGamutElement;
@@ -2164,9 +2167,9 @@ namespace UnityEditor
                 using (new EditorGUI.PropertyScope(horizontal.rect, GUIContent.none, property))
                 {
                     var values = (T[])Enum.GetValues(typeof(T));
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     var valueNames = Enum.GetNames(typeof(T)).Select(e => new GUIContent(e)).ToArray();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                     PlayerSettingsEditor.BuildEnumPopup(property, name, values, valueNames);
                 }
             }
@@ -2353,6 +2356,9 @@ namespace UnityEditor
 
                 int[] memorylessModeValues = { 0, 1, 2 };
                 BuildEnumPopup(m_FramebufferDepthMemorylessMode, SettingsContent.framebufferDepthMemorylessMode, memorylessModeValues, SettingsContent.memorylessModeNames);
+
+                if (platform.namedBuildTarget == NamedBuildTarget.Standalone)
+                    EditorGUILayout.PropertyField(m_MetalUseMetalDisplayLink, SettingsContent.metalUseMetalDisplayLink);
             }
 
             if (!IsPreset())
@@ -2980,9 +2986,9 @@ namespace UnityEditor
         {
             foreach (var target in k_WebGPUSupportedBuildTargets)
             {
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 if (m_CurrentTarget.GetGraphicsAPIs_Internal(target).Contains(GraphicsDeviceType.WebGPU))
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                 {
                     return true;
                 }
@@ -3669,9 +3675,9 @@ namespace UnityEditor
                         var GUIState = GUI.enabled;
 
 
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                         GUI.enabled = serializedScriptingDefines.Count() > 0;
-#pragma warning restore RS0030
+#pragma warning restore UA2001
 
                         if (GUILayout.Button(SettingsContent.scriptingDefineSymbolsCopyDefines, EditorStyles.miniButton))
                         {
@@ -4102,9 +4108,9 @@ namespace UnityEditor
 
         static GUIContent[] GetNiceScriptingBackendNames(ScriptingImplementation[] scriptingBackends)
         {
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return scriptingBackends.Select(s => GetNiceScriptingBackendName(s)).ToArray();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
         }
 
         static GUIContent GetNiceScriptingBackendName(ScriptingImplementation scriptingBackend)
@@ -4334,9 +4340,9 @@ namespace UnityEditor
         void InitReorderableAdditionalCompilerArgumentsList(NamedBuildTarget namedBuildTarget)
         {
             var additionalCompilerArgumentsArray = GetAdditionalCompilerArgumentsForGroup(namedBuildTarget);
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             additionalCompilerArgumentsList = additionalCompilerArgumentsArray.ToList();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
 
             additionalCompilerArgumentsReorderableList = new ReorderableList(additionalCompilerArgumentsList, typeof(string), true, true, true, true);
             additionalCompilerArgumentsReorderableList.drawElementCallback = (rect, index, isActive, isFocused) => DrawTextFieldAdditionalCompilerArguments(rect, index);
@@ -4423,18 +4429,18 @@ namespace UnityEditor
             if (m_ColorGamutList == null)
                 return;
 
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             m_ColorGamutList.list = m_CurrentTarget.GetColorGamuts_Internal().ToList();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
         }
 
         void SyncPlatformAPIsList(BuildTarget target)
         {
             if (!m_GraphicsDeviceLists.ContainsKey(target))
                 return;
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             m_GraphicsDeviceLists[target].list = m_CurrentTarget.GetGraphicsAPIs_Internal(target).ToList();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
         }
     }
 }

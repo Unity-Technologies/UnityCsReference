@@ -122,7 +122,7 @@ namespace UnityEngine.UIElements
         Row[] m_OpenRows;
         int m_1SidePadding, m_2SidePadding;
 
-        static ProfilerMarker s_MarkerTryAllocate = new ProfilerMarker("UIRAtlasAllocator.TryAllocate");
+        static ProfilerMarker s_MarkerTryAllocate = new ProfilerMarker(ProfilerCategory.UIToolkit, "UIRAtlasAllocator.TryAllocate");
 
         #region Dispose Pattern
 

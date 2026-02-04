@@ -39,18 +39,18 @@ namespace UnityEditor.Search
                 compareExprIndex++;
             }
             var compareExpr = c.args[compareExprIndex];
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var compareValueItr = compareExpr.Execute(c).FirstOrDefault(e => e != null);
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             if (compareValueItr == null)
                 c.ThrowError("Invalid comparer value", compareExpr.outerText);
             var compareValue = compareValueItr.value;
 
             if (valueSelector == null)
             {
-                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 return setExpr.Execute(c).Where(item => item != null && comparer(item.GetValue(valueSelector), compareValue));
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             }
 
             return TaskEvaluatorManager.EvaluateMainThread(setExpr.Execute(c), item =>

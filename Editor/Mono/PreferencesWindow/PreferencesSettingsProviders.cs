@@ -314,9 +314,9 @@ By default, Windows will combine these under a single taskbar item.");
         [SettingsProvider]
         internal static SettingsProvider CreateColorsProvider()
         {
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var settings = new PreferencesProvider("Preferences/Colors", GetSearchKeywordsFromGUIContentProperties<ColorsProperties>().Concat(OrderPrefs(PrefSettings.Prefs<PrefColor>()).Values.SelectMany(l => l).Select(pair => pair.Key)));
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             settings.guiHandler = searchContext => { OnGUI(searchContext, settings.ShowColors); };
             return settings;
         }
@@ -1291,12 +1291,12 @@ By default, Windows will combine these under a single taskbar item.");
                 foundScriptEditorPaths[apps] = CodeEditor.Editor.GetInstallationForPath(apps).Name;
             }
 
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             m_ScriptApps = new[] { "" }.Concat(foundScriptEditorPaths.Keys).ToArray();
-#pragma warning restore RS0030
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning restore UA2001
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             m_ScriptAppDisplayNames = new[] { "Open by file extension" }.Concat(foundScriptEditorPaths.Values).ToArray();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
 
             m_ImageApps = BuildAppPathList(m_ImageAppPath, kRecentImageAppsKey, "");
 
@@ -1488,9 +1488,9 @@ By default, Windows will combine these under a single taskbar item.");
             EditorGUILayout.PrefixLabel(label, style);
 
             int[] selected = Array.Empty<int>();
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             if (paths.Contains(selectedString))
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                 selected = new[] { Array.IndexOf(paths, selectedString) };
             GUIContent text = new GUIContent(selected.Length == 0 ? defaultString : names[selected[0]]);
             Rect r = GUILayoutUtility.GetRect(GUIContent.none, style);

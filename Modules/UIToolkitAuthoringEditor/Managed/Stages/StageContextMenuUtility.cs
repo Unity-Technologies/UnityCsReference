@@ -3,6 +3,8 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using Unity.Hierarchy;
+using Unity.Hierarchy.Editor;
 using UnityEditor;
 using UnityEngine.UIElements;
 
@@ -22,31 +24,41 @@ internal static class StageContextMenuUtility
     static readonly string k_InvertSelection = L10n.Tr("Invert Selection");
     static readonly string k_SelectChildren = L10n.Tr("Select Children");
 
-    public static void PopulateMenu(DropdownMenu menu)
+    public static void PopulateMenu(HierarchyView view, in HierarchyNode node, DropdownMenu menu, IHierarchyEditorNodeTypeHandler handler)
     {
-        PopulateEditOperations(menu);
+        PopulateEditOperations(view, in node, menu, handler);
         menu.AppendSeparator();
         PopulateElementOperations(menu);
     }
 
-    static void PopulateEditOperations(DropdownMenu menu)
+    static void PopulateEditOperations(HierarchyView view, in HierarchyNode node, DropdownMenu menu, IHierarchyEditorNodeTypeHandler handler)
     {
-        const bool disabled = false;
+        var cutMenu = k_EditFolderName + "/" + k_Cut;
+        AppendAction(menu, k_Cut, Menu.GetHotkey(cutMenu), view.OnCut, handler.CanCut(view));
+        var copyMenu = k_EditFolderName + "/" + k_Copy;
+        AppendAction(menu, k_Copy, Menu.GetHotkey(copyMenu), view.OnCopy, handler.CanCopy(view));
+        var pasteMenu = k_EditFolderName + "/" + k_Paste;
+        AppendAction(menu, k_Paste, Menu.GetHotkey(pasteMenu), view.OnPaste, handler.CanPaste(view));
 
-        AppendAction(menu, k_Cut, Menu.GetHotkey($"{k_EditFolderName}/{k_Cut}"), () => {}, disabled);
-        AppendAction(menu, k_Copy, Menu.GetHotkey($"{k_EditFolderName}/{k_Copy}"), () => {}, disabled);
-        AppendAction(menu, k_Paste, Menu.GetHotkey($"{k_EditFolderName}/{k_Paste}"), () => {}, disabled);
+        var renameMenu = k_EditFolderName + "/" + k_Rename;
+        var n = node;
+        AppendAction(menu, k_Rename, Menu.GetHotkey(renameMenu), () => { view.OnSetName(n); }, handler.CanSetName(view, node));
 
-        AppendAction(menu, k_Rename, () => {}, disabled);
-        AppendAction(menu, k_Duplicate, Menu.GetHotkey($"{k_EditFolderName}/{k_Duplicate}"), () => {}, disabled);
-        AppendAction(menu, k_Delete, Menu.GetHotkey($"{k_EditFolderName}/{k_Delete}"), () => {}, disabled);
+        var duplicateMenu = k_EditFolderName + "/" + k_Duplicate;
+        AppendAction(menu, k_Duplicate, Menu.GetHotkey(duplicateMenu), view.OnDuplicate, handler.CanDuplicate(view));
+
+        var deleteMenu = k_EditFolderName + "/" + k_Delete;
+        AppendAction(menu, k_Delete, Menu.GetHotkey(deleteMenu), view.OnDelete, handler.CanDelete(view));
 
         menu.AppendSeparator();
-
-        AppendAction(menu, k_SelectAll, Menu.GetHotkey($"{k_EditFolderName}/{k_SelectAll}"), () => {}, disabled);
-        AppendAction(menu, k_DeselectAll, Menu.GetHotkey($"{k_EditFolderName}/{k_DeselectAll}"), () => {}, disabled);
-        AppendAction(menu, k_InvertSelection, Menu.GetHotkey($"{k_EditFolderName}/{k_InvertSelection}"), () => {}, disabled);
-        AppendAction(menu, k_SelectChildren, Menu.GetHotkey($"{k_EditFolderName}/{k_SelectChildren}"), () => {}, disabled);
+        var selectAllMenu = k_EditFolderName + "/" + k_SelectAll;
+        AppendAction(menu, k_SelectAll, Menu.GetHotkey(selectAllMenu), () => { view.SelectAll(exposedOnly:true); });
+        var deselectAllMenu = k_EditFolderName + "/" + k_DeselectAll;
+        AppendAction(menu, k_DeselectAll, Menu.GetHotkey(deselectAllMenu), view.DeselectAll);
+        var invertMenu = k_EditFolderName + "/" + k_InvertSelection;
+        AppendAction(menu, k_InvertSelection, Menu.GetHotkey(invertMenu), view.ToggleSelection);
+        var selectChildrenMenu = k_EditFolderName + "/" + k_SelectChildren;
+        AppendAction(menu, k_SelectChildren, Menu.GetHotkey(selectChildrenMenu), view.SelectChildrenAndExpandRecursive);
     }
 
     static void PopulateElementOperations(DropdownMenu menu)

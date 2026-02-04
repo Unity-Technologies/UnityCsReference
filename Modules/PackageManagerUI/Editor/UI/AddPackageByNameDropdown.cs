@@ -2,9 +2,9 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
 using UnityEngine;
 using UnityEngine.UIElements;
-using System.Linq;
 
 namespace UnityEditor.PackageManager.UI.Internal
 {
@@ -16,35 +16,27 @@ namespace UnityEditor.PackageManager.UI.Internal
         private static readonly Vector2 k_WindowSizeWithError = new(320, 114);
         public override Vector2 windowSize => string.IsNullOrEmpty(errorInfoBox.text) ? k_DefaultWindowSize : k_WindowSizeWithError;
 
-        private IResourceLoader m_ResourceLoader;
-        private IUpmClient m_UpmClient;
-        private IPackageDatabase m_PackageDatabase;
-        private IPageManager m_PageManager;
-        private IPackageOperationDispatcher m_OperationDispatcher;
-        private ICustomDisplayDialog m_CustomDisplayDialog;
-
         // We save the initial values and only set the field values when `OnDropdownShown` is called because
         // if we set it too early before the VisualElement is visible, the placeholder text will not show up correctly.
         public string packageNameInitialValue { get; set; }
         public string packageVersionInitialValue { get; set; }
 
-        private void ResolveDependencies(IResourceLoader resourceLoader, IUpmClient upmClient, IPackageDatabase packageDatabase, IPageManager packageManager, IPackageOperationDispatcher packageOperationDispatcher, ICustomDisplayDialog displayDialogCustom)
+        private readonly IUpmClient m_UpmClient;
+        private readonly IPackageDatabase m_PackageDatabase;
+        private readonly IPageManager m_PageManager;
+        private readonly IPackageOperationDispatcher m_OperationDispatcher;
+        private readonly ICustomDisplayDialog m_CustomDisplayDialog;
+        public AddPackageByNameDropdown(IResourceLoader resourceLoader, IUpmClient upmClient, IPackageDatabase packageDatabase, IPageManager packageManager, IPackageOperationDispatcher packageOperationDispatcher, ICustomDisplayDialog displayDialogCustom)
         {
-            m_ResourceLoader = resourceLoader;
             m_UpmClient = upmClient;
             m_PackageDatabase = packageDatabase;
             m_PageManager = packageManager;
             m_OperationDispatcher = packageOperationDispatcher;
             m_CustomDisplayDialog = displayDialogCustom;
-        }
 
-        public AddPackageByNameDropdown(IResourceLoader resourceLoader, IUpmClient upmClient, IPackageDatabase packageDatabase, IPageManager packageManager, IPackageOperationDispatcher packageOperationDispatcher, ICustomDisplayDialog displayDialogCustom)
-        {
-            ResolveDependencies(resourceLoader, upmClient, packageDatabase, packageManager, packageOperationDispatcher, displayDialogCustom);
+            styleSheets.Add(resourceLoader.inputDropdownStyleSheet);
 
-            styleSheets.Add(m_ResourceLoader.inputDropdownStyleSheet);
-
-            var root = m_ResourceLoader.GetTemplate("AddPackageByNameDropdown.uxml");
+            var root = resourceLoader.GetTemplate("AddPackageByNameDropdown.uxml");
             Add(root);
             cache = new VisualElementCache(root);
 
@@ -112,16 +104,9 @@ namespace UnityEditor.PackageManager.UI.Internal
                 return;
             var version = packageVersionField.value.Trim();
 
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            var packageNameParts = packageName.Split('@').Where(s => !string.IsNullOrEmpty(s)).ToArray();
-#pragma warning restore RS0030
-
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            var packageNameIsolated = packageNameParts.FirstOrDefault();
-#pragma warning restore RS0030
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            var packageVersionIsolated = string.IsNullOrEmpty(version) ? packageNameParts.Length > 1 ? packageNameParts.Last() : null : version;
-#pragma warning restore RS0030
+            var packageNameParts = packageName.Split(new []{'@'}, StringSplitOptions.RemoveEmptyEntries);
+            var packageNameIsolated = packageNameParts[0];
+            var packageVersionIsolated = string.IsNullOrEmpty(version) ? packageNameParts.Length > 1 ? packageNameParts[^1] : null : version;
 
             if (packageNameParts.Length > 1 && !string.IsNullOrEmpty(version))
             {
@@ -130,9 +115,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             }
 
             var package = m_PackageDatabase.GetPackage(packageNameIsolated);
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            if (package != null && (string.IsNullOrEmpty(packageVersionIsolated) || package.versions.Any(v => v.versionString == packageVersionIsolated)))
-#pragma warning restore RS0030
+            if (package != null && (string.IsNullOrEmpty(packageVersionIsolated) || package.versions.AnyMatches(v => v.versionString == packageVersionIsolated)))
             {
                 CheckComplianceAndInstallPackage(package.compliance, packageNameIsolated, package.displayName,
                     packageVersionIsolated, package.product?.id.ToString());
@@ -144,9 +127,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 {
                     if (packageInfo != null)
                     {
-                        #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                        if (string.IsNullOrEmpty(packageVersionIsolated) || packageInfo.versions.all.Contains(packageVersionIsolated))
-#pragma warning restore RS0030
+                        if (string.IsNullOrEmpty(packageVersionIsolated) || packageInfo.versions.all.ContainsMatches(packageVersionIsolated))
                             CheckComplianceAndInstallPackage(packageInfo.compliance, packageNameIsolated,
                                 packageInfo.displayName, packageVersionIsolated, packageInfo.assetStore?.productId);
                         else

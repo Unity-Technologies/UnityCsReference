@@ -5,7 +5,6 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Linq;
 using UnityEditorInternal;
 using UnityEditor.AssetImporters;
 using UnityEngine;
@@ -103,18 +102,9 @@ namespace UnityEditor.PackageManager.UI.Internal
         }
 
         [Serializable]
-        class PackageName
-        {
-            public string completeName;
-            public string name;
-            public string organizationName;
-            public string domain;
-        }
-
-        [Serializable]
         class PackageInformation
         {
-            public PackageName packageName = new PackageName();
+            public string technicalName;
             public string displayName;
             public string version;
             public string description;
@@ -140,8 +130,8 @@ namespace UnityEditor.PackageManager.UI.Internal
         private static class Styles
         {
             public static readonly GUIContent information = EditorGUIUtility.TrTextContent("Information");
-            public static readonly GUIContent name = EditorGUIUtility.TrTextContent("Name", "Must be lowercase");
-            public static readonly GUIContent organizationName = EditorGUIUtility.TrTextContent("Organization name", "Must be lowercase and not include dots '.'");
+            public static readonly GUIContent technicalName = EditorGUIUtility.TrTextContent("Technical Name", "Must be lowercase and usually contains three parts (ex: com.companyname.packagename).");
+
             public static readonly GUIContent displayName = EditorGUIUtility.TrTextContent("Display name", "Display name used in UI.");
             public static readonly GUIContent version = EditorGUIUtility.TrTextContent("Version", "Must follow SemVer (ex: 1.0.0-preview.1).");
             public static readonly GUIContent type = EditorGUIUtility.TrTextContent("Type", "Type (optional).");
@@ -190,8 +180,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         ReorderableList m_DependenciesList;
 
         private SerializedProperty m_IsValidFile;
-        private SerializedProperty m_Name;
-        private SerializedProperty m_OrganizationName;
+        private SerializedProperty m_TechnicalName;
         private SerializedProperty m_DisplayName;
         private SerializedProperty m_Version;
         private SerializedProperty m_AuthorEnabled;
@@ -223,7 +212,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
                 var packageDescriptor = EditorGUIUtility.TrTextContent(isFeatureSet ? "Feature" : "Package");
                 return string.Format(s_LocalizedTitle, packageDescriptor,
-                    packageState != null && packageState.isValidFile ? !string.IsNullOrWhiteSpace(packageState.info.displayName) ? packageState.info.displayName.Trim() : packageState.info.packageName.completeName : s_LocalizedInvalidPackageManifest);
+                    packageState != null && packageState.isValidFile ? !string.IsNullOrWhiteSpace(packageState.info.displayName) ? packageState.info.displayName.Trim() : packageState.info.technicalName : s_LocalizedInvalidPackageManifest);
             }
         }
 
@@ -236,7 +225,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             GUI.enabled = packageState != null && packageState.isValidFile && targets.Length == 1;
             if (GUILayout.Button(Styles.viewInPackageManager, EditorStyles.miniButton))
             {
-                PackageManagerWindow.OpenAndSelectPackage(packageState.info.packageName.completeName);
+                PackageManagerWindow.OpenAndSelectPackage(packageState.info.technicalName);
             }
             GUI.enabled = previousEnabled;
         }
@@ -252,8 +241,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             warningMessages = new List<string>();
 
             m_IsValidFile = extraDataSerializedObject.FindProperty("isValidFile");
-            m_Name = extraDataSerializedObject.FindProperty("info.packageName.name");
-            m_OrganizationName = extraDataSerializedObject.FindProperty("info.packageName.organizationName");
+            m_TechnicalName = extraDataSerializedObject.FindProperty("info.technicalName");
             m_DisplayName = extraDataSerializedObject.FindProperty("info.displayName");
             m_Version = extraDataSerializedObject.FindProperty("info.version");
             m_AuthorEnabled = extraDataSerializedObject.FindProperty("info.author.enabled");
@@ -367,15 +355,15 @@ namespace UnityEditor.PackageManager.UI.Internal
         {
             using (new EditorGUILayout.VerticalScope(GUI.skin.box, GUILayout.ExpandWidth(true)))
             {
-                EditorGUILayout.PropertyField(m_Name, Styles.name);
-                m_OrganizationName.stringValue = PackageValidator.SanitizePackageTechnicalName(EditorGUILayout.TextFieldDropDown(Styles.organizationName, m_OrganizationName.stringValue.ToLower(), Connect.UnityConnect.instance.userInfo.organizationNames));
+                EditorGUILayout.PropertyField(m_TechnicalName, Styles.technicalName);
+
+                GUILayout.Space(10);
                 EditorGUILayout.PropertyField(m_DisplayName, Styles.displayName);
                 EditorGUILayout.PropertyField(m_Version, Styles.version);
                 EditorGUILayout.PropertyField(m_DocumentationUrl, Styles.documentationUrl);
                 EditorGUILayout.PropertyField(m_LicensesUrl, Styles.licensesUrl);
                 EditorGUILayout.PropertyField(m_ChangelogUrl, Styles.changelogUrl);
 
-                // Add a space separator
                 GUILayout.Space(10);
                 EditorGUILayout.PropertyField(m_AuthorEnabled, Styles.author);
                 if (m_AuthorEnabled.boolValue)
@@ -387,7 +375,6 @@ namespace UnityEditor.PackageManager.UI.Internal
                 if (isFeatureSet)
                     return;
 
-                // Add a space separator
                 GUILayout.Space(10);
                 EditorGUILayout.PropertyField(m_UnityVersionEnabled, Styles.unityVersion);
                 if (m_UnityVersionEnabled.boolValue)
@@ -405,7 +392,6 @@ namespace UnityEditor.PackageManager.UI.Internal
                         EditorGUILayout.TextField(Styles.unityRelease, m_UnityRelease.stringValue);
                     EditorGUI.showMixedValue = false;
                 }
-                // Add a space separator
                 GUILayout.Space(10);
             }
         }
@@ -436,7 +422,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                     else
                         DoPackageDescriptionLabel();
                 }
-                // Add a space separator
+
                 GUILayout.Space(10);
             }
 
@@ -445,23 +431,8 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private void PerformValidation()
         {
-            var canBuildCompleteName = true;
-            if (!PackageValidator.ValidateOrganizationName(m_OrganizationName.stringValue) && !string.IsNullOrWhiteSpace(m_OrganizationName.stringValue))
-            {
-                canBuildCompleteName = false;
-                errorMessages.Add($"Invalid Package Organization Name '{m_OrganizationName.stringValue}'");
-            }
-            if (!PackageValidator.ValidatePartialTechnicalName(m_Name.stringValue))
-            {
-                canBuildCompleteName = false;
-                errorMessages.Add($"Invalid Package Name '{m_Name.stringValue}'");
-            }
-            if (canBuildCompleteName)
-            {
-                var completePackageName = BuildCompletePackageName(packageState.info.packageName.domain, m_OrganizationName.stringValue, m_Name.stringValue);
-                if (!PackageValidator.ValidateCompleteTechnicalName(completePackageName))
-                    errorMessages.Add($"Invalid Complete Package Name '{completePackageName}'");
-            }
+            if (!PackageValidator.ValidateCompleteTechnicalName(m_TechnicalName.stringValue))
+                errorMessages.Add($"Invalid Complete Package Name '{m_TechnicalName.stringValue}'");
 
             ValidateVersion(null, m_Version.stringValue, errorMessages, warningMessages);
 
@@ -470,7 +441,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 if (!PackageValidator.ValidateUnityVersion(m_UnityMajor.stringValue, m_UnityMinor.stringValue,
                     m_UnityRelease.stringValue))
                 {
-                    var unityVersion = string.Join(".", new[] { m_UnityMajor.stringValue, m_UnityMinor.stringValue });
+                    var unityVersion = $"{m_UnityMajor.stringValue}.{m_UnityMinor.stringValue}";
                     if (!string.IsNullOrWhiteSpace(m_UnityRelease.stringValue))
                         unityVersion += "." + m_UnityRelease.stringValue.Trim();
 
@@ -554,13 +525,13 @@ namespace UnityEditor.PackageManager.UI.Internal
             if (errorMessages.Count > 0)
             {
                 EditorGUILayout.Space();
-                EditorGUILayout.HelpBox(string.Join("\n", errorMessages.ToArray()), MessageType.Error);
+                EditorGUILayout.HelpBox(string.Join("\n", errorMessages), MessageType.Error);
             }
 
             if (warningMessages.Count > 0)
             {
                 EditorGUILayout.Space();
-                EditorGUILayout.HelpBox(string.Join("\n", warningMessages.ToArray()), MessageType.Warning);
+                EditorGUILayout.HelpBox(string.Join("\n", warningMessages), MessageType.Warning);
             }
         }
 
@@ -595,30 +566,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                     if (info.TryGetValue(k_ManifestFieldDisplayName, out var displayName) && displayName is string displayNameString)
                         packageState.info.displayName = displayNameString;
 
-                    packageState.info.packageName.completeName = info[k_ManifestFieldName] as string;
-
-                    var packageNameSplit = packageState.info.packageName.completeName.Split('.');
-                    #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                    var packageNameSplitCount = packageNameSplit.Count();
-#pragma warning restore RS0030
-
-                    if (packageNameSplitCount > 2)
-                    {
-                        packageState.info.packageName.domain = packageNameSplit[0];
-                        packageState.info.packageName.organizationName = packageNameSplit[1];
-                        string domainAndOrganizationName = packageState.info.packageName.domain + "." + packageState.info.packageName.organizationName + ".";
-                        packageState.name = packageState.info.packageName.completeName.Replace(domainAndOrganizationName, "");
-                        packageState.info.packageName.name = packageState.name;
-                    }
-                    else if (packageNameSplitCount == 2)
-                    {
-                        packageState.info.packageName.organizationName = packageNameSplit[0];
-                        packageState.info.packageName.name = packageNameSplit[1];
-                    }
-                    else
-                        packageState.info.packageName.name = packageState.info.packageName.completeName;
-
-
+                    packageState.info.technicalName = info[k_ManifestFieldName] as string;
                     packageState.info.version = info[k_ManifestFieldVersion] as string;
 
                     if (info.TryGetValue(k_ManifestFieldDescription, out var description) && description is string descriptionString)
@@ -749,15 +697,15 @@ namespace UnityEditor.PackageManager.UI.Internal
                 return;
 
             var renameFolder = false;
-            var newCompletePackageName = BuildCompletePackageName(packageState.info.packageName);
-            if (!string.IsNullOrWhiteSpace(newCompletePackageName))
+            var newTechnicalName = packageState.info.technicalName?.Trim();
+            if (!string.IsNullOrEmpty(newTechnicalName))
             {
-                renameFolder = newCompletePackageName != packageState.info.packageName.completeName &&
-                               ServicesContainer.instance.Resolve<IApplicationProxy>().DisplayDialog(
+                renameFolder = newTechnicalName != json[k_ManifestFieldName] as string
+                               && ServicesContainer.instance.Resolve<IApplicationProxy>().DisplayDialog(
                                    "matchPackageFolderName",
                                    L10n.Tr("Update Folder Name to Match"),
                                    L10n.Tr("You changed the package’s technical name. Do you also want to update the package’s folder to match the technical name?"), "Update Name", "Keep Current");
-                json[k_ManifestFieldName] = newCompletePackageName;
+                json[k_ManifestFieldName] = newTechnicalName;
             }
 
             if (!string.IsNullOrWhiteSpace(packageState.info.displayName))
@@ -809,9 +757,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 if (!string.IsNullOrWhiteSpace(packageState.info.unityVersion.major) &&
                     !string.IsNullOrWhiteSpace(packageState.info.unityVersion.minor))
                 {
-                    json[k_ManifestFieldUnity] = string.Join(".",
-                        new[] { packageState.info.unityVersion.major.Trim(), packageState.info.unityVersion.minor.Trim() });
-
+                    json[k_ManifestFieldUnity] = $"{packageState.info.unityVersion.major.Trim()}.{packageState.info.unityVersion.minor.Trim()}";
                     if (!string.IsNullOrWhiteSpace(packageState.info.unityVersion.release))
                         json[k_ManifestFieldUnityRelease] = packageState.info.unityVersion.release.Trim();
                     else
@@ -859,8 +805,8 @@ namespace UnityEditor.PackageManager.UI.Internal
 
                 if (renameFolder)
                 {
-                    var packageFolder = ioProxy.GetParentDirectory(assetPath);
-                    var newPackageFolder = ioProxy.PathsCombine(ioProxy.GetParentDirectory(packageFolder), newCompletePackageName);
+                    var packageFolder = IOUtils.GetParentDirectory(assetPath);
+                    var newPackageFolder = IOUtils.PathsCombine(IOUtils.GetParentDirectory(packageFolder), packageState.info.technicalName);
                     ioProxy.Move(packageFolder, newPackageFolder);
                 }
             }
@@ -888,46 +834,6 @@ namespace UnityEditor.PackageManager.UI.Internal
             }
 
             return assetPath.EndsWith("/package.json", StringComparison.OrdinalIgnoreCase);
-        }
-
-        private static string BuildCompletePackageName(PackageName packageName)
-        {
-            return BuildCompletePackageName(packageName.domain, packageName.organizationName, packageName.name);
-        }
-
-        private static string BuildCompletePackageName(string domain, string organizationName, string name)
-        {
-            var domainTrimmed = domain?.Trim();
-            var organizationNameTrimmed = organizationName?.Trim();
-            var nameTrimmed = name?.Trim();
-
-            if (string.IsNullOrEmpty(domainTrimmed) && string.IsNullOrEmpty(organizationNameTrimmed))
-            {
-                return nameTrimmed;
-            }
-
-            if (string.IsNullOrEmpty(domainTrimmed) && !string.IsNullOrEmpty(organizationNameTrimmed))
-            {
-                return string.Join(".",
-                    new[]
-                    {
-                        organizationNameTrimmed,
-                        nameTrimmed
-                    });
-            }
-
-            if (!string.IsNullOrEmpty(domainTrimmed) && !string.IsNullOrEmpty(organizationNameTrimmed))
-            {
-                return string.Join(".",
-                    new[]
-                    {
-                        domainTrimmed,
-                        organizationNameTrimmed,
-                        nameTrimmed
-                    });
-            }
-
-            return null;
         }
 
         internal static void ValidateVersion(string packageName, string version, List<string> errorMessages, List<string> warningMessages)

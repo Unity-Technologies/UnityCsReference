@@ -270,9 +270,9 @@ namespace UnityEditor
         void DrawKeywordsList(ref Rect rect, List<string> keywords, bool clickingAddsToSelected)
         {
             rect.height = CalcVerticalSpaceForKeywords();
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var displayKeywords = keywords.Select(k => k.ToLowerInvariant()).ToList();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
 
             GUI.BeginGroup(rect);
             Rect indentRect = new Rect(4, 0, rect.width, rect.height);

@@ -149,9 +149,9 @@ namespace UnityEditor
             EditorGUILayout.PropertyField(m_Interpolate, Styles.interpolate);
             EditorGUILayout.PropertyField(m_CollisionDetection, Styles.collisionDetection);
 
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             if (targets.Any(x => (x as Rigidbody).interpolation != RigidbodyInterpolation.None))
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             {
                 if (Physics.simulationMode == SimulationMode.Update)
                     EditorGUILayout.HelpBox("The physics simulation mode is set to run per-frame. Any interpolation mode will be ignored and can be set to 'None'.", MessageType.Info);

@@ -6,6 +6,7 @@ using System;
 using UnityEditor;
 using UnityEditor.UIElements;
 using UnityEngine.Assertions;
+using UnityEngine.Pool;
 using UnityEngine.UIElements;
 
 namespace Unity.UIToolkit.Editor;
@@ -48,6 +49,9 @@ internal readonly record struct AddElementCommand
         }
 
         EditorUtility.SetDirty(VisualTreeAsset);
+        using var toSelectNodesHandle = ListPool<VisualElementAsset>.Get(out var toSelectAssets);
+        toSelectAssets.Add(vea);
+        UIToolkitStageUtility.RequestSelectionOnNextUpdate(toSelectAssets);
     }
 
     void HandlePositioning(VisualElementAsset newVea)

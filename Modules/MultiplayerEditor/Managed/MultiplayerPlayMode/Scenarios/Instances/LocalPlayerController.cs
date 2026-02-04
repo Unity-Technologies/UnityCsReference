@@ -4,25 +4,40 @@
 
 using System;
 using System.Text.RegularExpressions;
+using UnityEditor.Build.Profile;
+using UnityEngine;
 using UnityEngine.UIElements;
 
 namespace Unity.Multiplayer.PlayMode.Editor
 {
     [Serializable]
-    class LocalPlayerController : PlayerController<LocalPlayerController, LocalInstanceDescription>
+    class LocalPlayerController : PlayerController<LocalPlayerController, LocalPlayerController.InstanceSettings>
     {
-        private bool m_HasEditorInstance;
-        internal bool HasEditorInstance
+        [Serializable]
+        public struct InstanceSettings
         {
-            get => m_HasEditorInstance;
-            set => m_HasEditorInstance = value;
+            public BuildProfile BuildProfile;
+            public bool StreamLogsToMainEditor;
+            public Color LogsColor = new(0.3643f, 0.581f, 0.8679f);
+            public string Arguments = "-screen-fullscreen 0 -screen-width 1024 -screen-height 720";
+
+            // TODO: These values shouldn't be stored here.
+            // They are a per-user configuration and should be stored in EditorPrefs or similar.
+            public string DeviceID;
+            public string DeviceName;
+
+            public InstanceSettings()
+            {
+            }
         }
+
+        internal override string GetTypeNameForAnalytics() => "Local";
 
         protected internal override void SetupExecutionGraph(ExecutionGraph executionGraph)
         {
             // TODO: We need to share the build nodes between instances that share the same build profile and role.
             // The build nodes can be defined in the base PlayerController class. Move it once the graph builder is ready.
-            var buildNode = new EditorBuildNode($"{Settings.Name} - Build");
+            var buildNode = new EditorBuildNode($"LocalPlayer - Build");
             executionGraph.AddNode(buildNode, ExecutionStage.Prepare);
 
             executionGraph.ConnectConstant(buildNode.BuildPath, ScenarioFactory.GenerateBuildPath(Settings.BuildProfile));
@@ -32,7 +47,7 @@ namespace Unity.Multiplayer.PlayMode.Editor
             // TODO: UUM-50144 - There is currently a bug in windows dedicated server where screen related
             // arguments cause a crash. As a temporary workaround we detect that case and remove any
             // of those arguments that, in any case, take no effect on that platform.
-            var arguments = Settings.AdvancedConfiguration.Arguments;
+            var arguments = Settings.Arguments;
             if (InternalUtilities.IsServerProfile(Settings.BuildProfile))
             {
                 arguments = CleanupScreenArguments(arguments);
@@ -40,34 +55,25 @@ namespace Unity.Multiplayer.PlayMode.Editor
 
             if (InternalUtilities.IsAndroidBuildTarget(Settings.BuildProfile))
             {
-                var deviceRunNode = new LocalDeviceRunNode($"{Settings.Name} - Run");
+                var deviceRunNode = new LocalDeviceRunNode($"LocalPlayer - Run");
                 executionGraph.AddNode(deviceRunNode, ExecutionStage.Run);
                 executionGraph.ConnectConstant(deviceRunNode.Arguments, arguments);
-                executionGraph.ConnectConstant(deviceRunNode.StreamLogs, Settings.AdvancedConfiguration.StreamLogsToMainEditor);
-                executionGraph.ConnectConstant(deviceRunNode.LogsColor, Settings.AdvancedConfiguration.LogsColor);
-                executionGraph.ConnectConstant(deviceRunNode.DeviceName, Settings.AdvancedConfiguration.DeviceID);
+                executionGraph.ConnectConstant(deviceRunNode.StreamLogs, Settings.StreamLogsToMainEditor);
+                executionGraph.ConnectConstant(deviceRunNode.LogsColor, Settings.LogsColor);
+                executionGraph.ConnectConstant(deviceRunNode.DeviceName, Settings.DeviceID);
 
                 executionGraph.Connect(buildNode.ExecutablePath, deviceRunNode.ExecutablePath);
                 executionGraph.Connect(buildNode.BuildReport, deviceRunNode.BuildReport);
-
-                // [TODO]: We need to remove this line, since 1 instance could have multiple nodes
-                Settings.CorrespondingNodeId = deviceRunNode.Name;
-
-                Settings.SetCorrespondingNodes(buildNode, deviceRunNode);
                 return;
             }
 
-            var localRunNode = new LocalRunNode($"{Settings.Name} - Run");
+            var localRunNode = new LocalRunNode($"LocalPlayer - Run");
             executionGraph.AddNode(localRunNode, ExecutionStage.Run);
 
             executionGraph.ConnectConstant(localRunNode.Arguments, arguments);
-            executionGraph.ConnectConstant(localRunNode.StreamLogs, Settings.AdvancedConfiguration.StreamLogsToMainEditor);
-            executionGraph.ConnectConstant(localRunNode.LogsColor, Settings.AdvancedConfiguration.LogsColor);
+            executionGraph.ConnectConstant(localRunNode.StreamLogs, Settings.StreamLogsToMainEditor);
+            executionGraph.ConnectConstant(localRunNode.LogsColor, Settings.LogsColor);
             executionGraph.Connect(buildNode.ExecutablePath, localRunNode.ExecutablePath);
-
-            // [TODO]: We need to remove this line, since 1 instance could have multiple nodes
-            Settings.CorrespondingNodeId = localRunNode.Name;
-            Settings.SetCorrespondingNodes(buildNode, localRunNode);
         }
 
         private static string CleanupScreenArguments(string arguments)
@@ -79,9 +85,9 @@ namespace Unity.Multiplayer.PlayMode.Editor
             return arguments;
         }
 
-        protected internal override VisualElement CreateControllerUI()
+        protected internal override VisualElement CreateControllerUI(Instance instance)
         {
-            return new CommonInstanceStatusElement(Settings);
+            return new LocalPlayerInstanceStatusElement(instance, Settings);
         }
     }
 }

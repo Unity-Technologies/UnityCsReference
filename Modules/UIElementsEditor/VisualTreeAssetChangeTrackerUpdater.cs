@@ -26,8 +26,14 @@ namespace UnityEditor.UIElements
             public HashSet<ILiveReloadAssetTracker<VisualTreeAsset>> m_Trackers;
         }
 
+        internal struct StyleSheetToTrackMappingEntry
+        {
+            public int m_LastDirtyCount;
+            public HashSet<ILiveReloadAssetTracker<StyleSheet>> m_Trackers;
+        }
+
         private static readonly string s_Description = "UIElements.UpdateAssetsInEditor";
-        private static readonly ProfilerMarker s_ProfilerMarker = new ProfilerMarker(s_Description);
+        private static readonly ProfilerMarker s_ProfilerMarker = new ProfilerMarker(ProfilerCategory.UIToolkit, s_Description);
         public override ProfilerMarker profilerMarker => s_ProfilerMarker;
 
         private bool m_HasAnyTextAssetChanged;
@@ -59,6 +65,9 @@ namespace UnityEditor.UIElements
                 m_EditorVisualTreeAssetTracker = null;
                 m_RuntimeVisualTreeAssetTrackers.Clear();
                 m_AssetToTrackerMap.Clear();
+                m_StyleSheetToTrackerMap.Clear();
+                m_VisualTreeAssetTrackers.Clear();
+                m_StyleSheetTrackers.Clear();
             }
         }
 
@@ -99,11 +108,19 @@ namespace UnityEditor.UIElements
         // if there are multiple trackers looking at the same asset - e.g. life bars on a game).
         internal Dictionary<VisualTreeAsset, VisualTreeAssetToTrackMappingEntry> m_AssetToTrackerMap = new Dictionary<VisualTreeAsset, VisualTreeAssetToTrackMappingEntry>();
 
+        // Similar to m_AssetToTrackerMap, but for StyleSheet tracking.
+        internal Dictionary<StyleSheet, StyleSheetToTrackMappingEntry> m_StyleSheetToTrackerMap = new Dictionary<StyleSheet, StyleSheetToTrackMappingEntry>();
+
         // List to help with the Update() and avoid creating and destroying the list.
         private HashSet<ILiveReloadAssetTracker<VisualTreeAsset>> m_TrackersToRefresh = new HashSet<ILiveReloadAssetTracker<VisualTreeAsset>>();
+        private HashSet<ILiveReloadAssetTracker<StyleSheet>> m_StyleSheetTrackersToRefresh = new HashSet<ILiveReloadAssetTracker<StyleSheet>>();
 
         // Contains style sheets that were changed through code.
         private readonly HashSet<StyleSheet> m_ChangedStyleSheets = new HashSet<StyleSheet>();
+
+        // Registered trackers for each type
+        private HashSet<ILiveReloadAssetTracker<VisualTreeAsset>> m_VisualTreeAssetTrackers = new HashSet<ILiveReloadAssetTracker<VisualTreeAsset>>();
+        private HashSet<ILiveReloadAssetTracker<StyleSheet>> m_StyleSheetTrackers = new HashSet<ILiveReloadAssetTracker<StyleSheet>>();
 
         private ILiveReloadAssetTracker<StyleSheet> m_LiveReloadStyleSheetAssetTracker;
 
@@ -153,6 +170,82 @@ namespace UnityEditor.UIElements
                     StopVisualTreeAssetTracking(tracker, container.templateSource);
             }
             m_RuntimeVisualTreeAssetTrackers.Remove(rootElement);
+        }
+
+        /// <summary>
+        /// Registers a tracker for a specific VisualTreeAsset.
+        /// Multiple trackers can be registered for the same asset.
+        /// </summary>
+        public void RegisterTrackerForAsset(ILiveReloadAssetTracker<VisualTreeAsset> tracker, VisualTreeAsset asset)
+        {
+            if (tracker == null || asset == null)
+                return;
+
+            m_VisualTreeAssetTrackers.Add(tracker);
+            StartVisualTreeAssetTracking(tracker, asset);
+        }
+
+        /// <summary>
+        /// Unregisters a tracker from a specific VisualTreeAsset.
+        /// </summary>
+        public void UnregisterTrackerForAsset(ILiveReloadAssetTracker<VisualTreeAsset> tracker, VisualTreeAsset asset)
+        {
+            if (tracker == null || asset == null)
+                return;
+
+            StopVisualTreeAssetTracking(tracker, asset);
+
+            // Only remove from registered trackers if it's not tracking any other assets
+            if (!IsTrackerActive(tracker))
+                m_VisualTreeAssetTrackers.Remove(tracker);
+        }
+
+        /// <summary>
+        /// Registers a tracker for a specific StyleSheet.
+        /// Multiple trackers can be registered for the same asset.
+        /// </summary>
+        public void RegisterTrackerForAsset(ILiveReloadAssetTracker<StyleSheet> tracker, StyleSheet asset)
+        {
+            if (tracker == null || asset == null)
+                return;
+
+            m_StyleSheetTrackers.Add(tracker);
+            StartStyleSheetAssetTracking(tracker, asset);
+        }
+
+        /// <summary>
+        /// Unregisters a tracker from a specific StyleSheet.
+        /// </summary>
+        public void UnregisterTrackerForAsset(ILiveReloadAssetTracker<StyleSheet> tracker, StyleSheet asset)
+        {
+            if (tracker == null || asset == null)
+                return;
+
+            StopStyleSheetAssetTracking(tracker, asset);
+
+            // Only remove from registered trackers if it's not tracking any other assets
+            if (!IsTrackerActive(tracker))
+                m_StyleSheetTrackers.Remove(tracker);
+        }
+
+        private bool IsTrackerActive(ILiveReloadAssetTracker<VisualTreeAsset> tracker)
+        {
+            foreach (var entry in m_AssetToTrackerMap.Values)
+            {
+                if (entry.m_Trackers.Contains(tracker))
+                    return true;
+            }
+            return false;
+        }
+
+        private bool IsTrackerActive(ILiveReloadAssetTracker<StyleSheet> tracker)
+        {
+            foreach (var entry in m_StyleSheetToTrackerMap.Values)
+            {
+                if (entry.m_Trackers.Contains(tracker))
+                    return true;
+            }
+            return false;
         }
 
         public void StartTracking(List<VisualElement> elements)
@@ -241,20 +334,71 @@ namespace UnityEditor.UIElements
         public void OnStyleSheetChanged(List<StyleSheet> styleSheets)
         {
             foreach (var styleSheet in styleSheets)
-                if (m_LiveReloadStyleSheetAssetTracker.IsTrackingAsset(styleSheet))
+            {
+                // Check legacy tracker
+                if (m_LiveReloadStyleSheetAssetTracker != null && m_LiveReloadStyleSheetAssetTracker.IsTrackingAsset(styleSheet))
+                {
                     m_ChangedStyleSheets.Add(styleSheet);
+                }
+                // Check if any registered trackers are tracking this StyleSheet
+                else if (m_StyleSheetToTrackerMap.ContainsKey(styleSheet))
+                {
+                    m_ChangedStyleSheets.Add(styleSheet);
+                }
+            }
         }
 
         public void OnStyleSheetChanged(List<string> styleSheetPaths)
         {
             foreach (var styleSheetPath in styleSheetPaths)
-                if (m_LiveReloadStyleSheetAssetTracker.IsTrackingAsset(styleSheetPath))
+            {
+                // Check legacy tracker
+                if (m_LiveReloadStyleSheetAssetTracker != null && m_LiveReloadStyleSheetAssetTracker.IsTrackingAsset(styleSheetPath))
+                {
                     m_ChangedStyleSheets.Add(AssetDatabase.LoadAssetAtPath<StyleSheet>(styleSheetPath));
+                }
+                else
+                {
+                    // Check if any registered trackers are tracking this StyleSheet by path
+                    foreach (var tracker in m_StyleSheetTrackers)
+                    {
+                        if (tracker.IsTrackingAsset(styleSheetPath))
+                        {
+                            m_ChangedStyleSheets.Add(AssetDatabase.LoadAssetAtPath<StyleSheet>(styleSheetPath));
+                            break;
+                        }
+                    }
+                }
+            }
         }
 
         public void OnStyleSheetAssetsImported(HashSet<StyleSheet> changedAssets, HashSet<string> deletedAssets)
         {
-            m_LiveReloadStyleSheetAssetTracker.OnAssetsImported(changedAssets, deletedAssets);
+            // Notify legacy tracker if it exists
+            if (m_LiveReloadStyleSheetAssetTracker != null)
+            {
+                m_LiveReloadStyleSheetAssetTracker.OnAssetsImported(changedAssets, deletedAssets);
+            }
+
+            // Notify all registered StyleSheet trackers
+            foreach (var tracker in m_StyleSheetTrackers)
+            {
+                if (tracker.OnAssetsImported(changedAssets, deletedAssets))
+                    m_StyleSheetTrackersToRefresh.Add(tracker);
+            }
+
+            // Notify trackers that need refreshing
+            if (m_StyleSheetTrackersToRefresh.Count > 0)
+            {
+                foreach (var tracker in m_StyleSheetTrackersToRefresh)
+                {
+                    tracker.OnTrackedAssetChanged();
+                }
+                m_StyleSheetTrackersToRefresh.Clear();
+
+                panel.DirtyStyleSheets();
+                panel.UpdateInlineStylesRecursively();
+            }
         }
 
         private void StartVisualTreeAssetTracking([NotNull] ILiveReloadAssetTracker<VisualTreeAsset> tracker, VisualTreeAsset asset)
@@ -270,9 +414,9 @@ namespace UnityEditor.UIElements
                 {
                     m_LastDirtyCount = dirtyCount,
                     m_LastElementCount = list.Count,
-                    #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                    #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     m_LastInlinePropertiesCount = asset.inlineSheet?.rules?.Sum(r => r.properties.Length) ?? 0,
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                     m_LastAttributePropertiesDirtyCount = asset.GetAttributePropertiesDirtyCount(),
                     m_Trackers = new HashSet<ILiveReloadAssetTracker<VisualTreeAsset>>()
                 };
@@ -301,6 +445,42 @@ namespace UnityEditor.UIElements
             }
         }
 
+        private void StartStyleSheetAssetTracking([NotNull] ILiveReloadAssetTracker<StyleSheet> tracker, StyleSheet asset)
+        {
+            int dirtyCount = tracker.StartTrackingAsset(asset);
+
+            if (!m_StyleSheetToTrackerMap.TryGetValue(asset, out var trackers))
+            {
+                trackers = new StyleSheetToTrackMappingEntry()
+                {
+                    m_LastDirtyCount = dirtyCount,
+                    m_Trackers = new HashSet<ILiveReloadAssetTracker<StyleSheet>>()
+                };
+                m_StyleSheetToTrackerMap[asset] = trackers;
+            }
+
+            trackers.m_Trackers.Add(tracker);
+        }
+
+        private void StopStyleSheetAssetTracking(ILiveReloadAssetTracker<StyleSheet> tracker, StyleSheet asset)
+        {
+            if (tracker == null)
+            {
+                return;
+            }
+
+            tracker.StopTrackingAsset(asset);
+
+            if (m_StyleSheetToTrackerMap.TryGetValue(asset, out var trackers))
+            {
+                trackers.m_Trackers.Remove(tracker);
+                if (trackers.m_Trackers.Count == 0)
+                {
+                    m_StyleSheetToTrackerMap.Remove(asset);
+                }
+            }
+        }
+
         public void OnVisualTreeAssetsImported(HashSet<VisualTreeAsset> changedAssets, HashSet<string> deletedAssets)
         {
             if (panel.contextType == ContextType.Editor && m_EditorVisualTreeAssetTracker != null)
@@ -315,6 +495,13 @@ namespace UnityEditor.UIElements
                     if (tracker.OnAssetsImported(changedAssets, deletedAssets))
                         m_TrackersToRefresh.Add(tracker);
                 }
+            }
+
+            // Also notify all registered VisualTreeAsset trackers
+            foreach (var tracker in m_VisualTreeAssetTrackers)
+            {
+                if (tracker.OnAssetsImported(changedAssets, deletedAssets))
+                    m_TrackersToRefresh.Add(tracker);
             }
 
             if (m_TrackersToRefresh.Count == 0)
@@ -339,9 +526,9 @@ namespace UnityEditor.UIElements
             }
 
             if (m_RuntimeVisualTreeAssetTrackers.Count == 1)
-                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 return m_RuntimeVisualTreeAssetTrackers.Single().Value;
-#pragma warning restore RS0030
+#pragma warning restore UA2001
 
             if (m_RuntimeVisualTreeAssetTrackers.TryGetValue(ve, out var tracker))
                 return tracker;
@@ -438,9 +625,9 @@ namespace UnityEditor.UIElements
                 using var _ = ListPool<UxmlAsset>.Get(out var list);
                 list.AddRange(trackedAsset.DepthFirstTraversal());
                 var elementCount = list.Count;
-                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 var inlinePropertiesCount = trackedAsset.inlineSheet.rules.Sum(r => r.properties.Length);
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                 var attributePropertiesDirtyCount = trackedAsset.GetAttributePropertiesDirtyCount();
 
                 if (dirtyCount != trackersEntry.m_LastDirtyCount)
@@ -485,8 +672,40 @@ namespace UnityEditor.UIElements
             if ((enabledTrackers & LiveReloadTrackers.StyleSheet) == 0)
                 return;
 
-            var shouldRefreshStyles = m_ChangedStyleSheets.Count > 0 ||
-                                      m_LiveReloadStyleSheetAssetTracker.CheckTrackedAssetsDirty();
+            var shouldRefreshStyles = m_ChangedStyleSheets.Count > 0;
+
+            // Check the legacy tracker if it's being used
+            if (m_LiveReloadStyleSheetAssetTracker != null)
+            {
+                shouldRefreshStyles |= m_LiveReloadStyleSheetAssetTracker.CheckTrackedAssetsDirty();
+            }
+
+            // Check all registered StyleSheet trackers
+            foreach (var trackedStyleSheetEntry in m_StyleSheetToTrackerMap)
+            {
+                var trackedStyleSheet = trackedStyleSheetEntry.Key;
+                var trackersEntry = trackedStyleSheetEntry.Value;
+                var dirtyCount = EditorUtility.GetDirtyCount(trackedStyleSheet);
+
+                if (dirtyCount != trackersEntry.m_LastDirtyCount)
+                {
+                    trackersEntry.m_LastDirtyCount = dirtyCount;
+                    shouldRefreshStyles = true;
+
+                    foreach (var tracker in trackersEntry.m_Trackers)
+                    {
+                        // Add to list to make sure we only call each tracker only once.
+                        m_StyleSheetTrackersToRefresh.Add(tracker);
+                    }
+                }
+            }
+
+            // Notify all trackers that need refreshing
+            foreach (var tracker in m_StyleSheetTrackersToRefresh)
+            {
+                tracker.OnTrackedAssetChanged();
+            }
+            m_StyleSheetTrackersToRefresh.Clear();
 
             if (shouldRefreshStyles)
             {

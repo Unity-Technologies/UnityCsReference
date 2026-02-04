@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using Unity.Collections;
 using UnityEngine.Assertions;
 using UnityEngine.Bindings;
 using UnityEngine.Pool;
@@ -24,6 +25,9 @@ namespace UnityEngine.UIElements
     [Serializable]
     public class VisualTreeAsset : ScriptableObject
     {
+        /// <undoc/>
+        internal delegate void AuthoringIdConflictResolvedHandler(UxmlAsset asset, int oldId, int newId);
+
         [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         internal static string NoRegisteredFactoryErrorMessage = "Element '{0}' is missing a UxmlElementAttribute and has no registered factory method. Please ensure that you have the correct namespace imported.";
         internal const string TemplateAliasExistsError = $"{nameof(VisualTreeAsset)}: could not register a template alias for asset `{{0}}`, alias is already defined for asset '{{1}}'";
@@ -229,6 +233,22 @@ namespace UnityEngine.UIElements
 
         [SerializeReference] private VisualElementAsset m_VisualTree;
 
+        [NonSerialized] Dictionary<int, UxmlAsset> m_UsedIds;
+        Dictionary<int, UxmlAsset> UsedIds
+        {
+            get
+            {
+                if (m_UsedIds == null)
+                {
+                    m_UsedIds = new Dictionary<int, UxmlAsset>();
+                    CacheExistingIds();
+                }
+                return m_UsedIds;
+            }
+        }
+
+        internal event AuthoringIdConflictResolvedHandler onAuthoringIdConflictResolved;
+
         internal VisualElementAsset visualTreeNoAlloc
         {
             [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
@@ -313,14 +333,8 @@ namespace UnityEngine.UIElements
         {
             if (string.IsNullOrEmpty(fieldUxmlName))
             {
-                var newAsset = new UxmlObjectAsset(fullTypeName, false, xmlNamespace)
-                {
-                    parentId = parent.id,
-                    id = GetNextUxmlAssetId(parent.id)
-                };
-
+                var newAsset = new UxmlObjectAsset(fullTypeName, false, xmlNamespace);
                 parent.Add(newAsset);
-
                 return newAsset;
             }
 
@@ -329,18 +343,9 @@ namespace UnityEngine.UIElements
             {
                 fieldAsset = new UxmlObjectAsset(fieldUxmlName, true, xmlNamespace);
                 parent.Add(fieldAsset);
-                fieldAsset.parentId = parent.id;
-                fieldAsset.id = GetNextUxmlAssetId(parent.parentAsset?.id ?? 0);
             }
 
             return AddUxmlObject(fieldAsset, null, fullTypeName, xmlNamespace);
-        }
-
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
-        internal int GetNextUxmlAssetId(int parentId)
-        {
-            var guid = Guid.NewGuid().GetHashCode();
-            return (GetNextChildSerialNumber() + 585386304) * -1521134295 + parentId + guid;
         }
 
         private void Awake__Internal()
@@ -729,10 +734,10 @@ namespace UnityEngine.UIElements
                         Debug.LogErrorFormat("Slot '{0}' was not found. Existing slots: {1}", key,
                             context.slotInsertionPoints == null
                                 ? String.Empty
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                                 : String.Join(", ",
                                     System.Linq.Enumerable.ToArray(context.slotInsertionPoints.Keys)));
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                         ve.Add(childVe);
                     }
                     else
@@ -1173,30 +1178,127 @@ namespace UnityEngine.UIElements
         }
 
         [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
-        internal int GenerateNewId(VisualElementAsset vea)
+        internal int GenerateNewId(UxmlAsset vea)
         {
-            int parentHash;
-            if (!vea.HasParent())
-                parentHash = GetHashCode();
-            else
-                parentHash = vea.parentAsset.id;
-
-            var guid = System.Guid.NewGuid().GetHashCode();
-
-            return (GetNextChildSerialNumber() + 585386304) * -1521134295 + parentHash + guid;
+            return GenerateNewId(vea, vea.SiblingIndex(), UsedIds);
         }
 
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
-        internal VisualElementAsset AddElementToDocument(VisualElementAsset vea, VisualElementAsset parent)
+        internal static int GenerateNewId(UxmlAsset uxmlAsset, Dictionary<int, UxmlAsset> excludeIds)
         {
-            var actualParent = parent ?? visualTree;
-            actualParent.Add(vea);
+            return GenerateNewId(uxmlAsset, uxmlAsset.SiblingIndex(), excludeIds);
+        }
 
-            // Only init id the first time as needed.
-            if (vea.id == 0)
-                vea.id = GenerateNewId(vea);
+        internal static int GenerateNewId(UxmlAsset uxmlAsset, int siblingIndex, Dictionary<int, UxmlAsset> excludeIds)
+        {
+            if (uxmlAsset == null)
+                throw new NullReferenceException();
 
-            return vea;
+            if (uxmlAsset.visualTreeAsset == null)
+                throw new InvalidOperationException("Trying to generate an id for an asset that is not added to the hierarchy");
+
+            // Root
+            if (uxmlAsset == uxmlAsset.visualTreeAsset.visualTree)
+            {
+                return uxmlAsset.visualTreeAsset.contentHash == 0 ? Guid.NewGuid().GetHashCode() : uxmlAsset.visualTreeAsset.contentHash;
+            }
+
+            var typeNameHash = GetStableHashCode(uxmlAsset.fullTypeName);
+
+            var conflictIndex = 0;
+
+            unchecked
+            {
+                int newId;
+                do
+                {
+                    newId = 17;
+                    newId = (newId * 31) + uxmlAsset.parentAsset.id;
+                    newId = (newId * 31) + typeNameHash;
+                    newId = (newId * 31) + siblingIndex;
+                    newId = (newId * 31) + conflictIndex++;
+                } while (excludeIds.ContainsKey(newId) || newId == 0);
+                return newId;
+            }
+        }
+
+        private static int GetStableHashCode(string str)
+        {
+            unchecked
+            {
+                var hash = 0;
+                foreach (var c in str)
+                {
+                    hash ^= (hash * 31) + c;
+                }
+                return hash;
+            }
+        }
+
+        private bool IdExists(int id)
+        {
+            return UsedIds.ContainsKey(id);
+        }
+
+        internal void UnregisterId(UxmlAsset uxmlAsset)
+        {
+            if (m_UsedIds == null)
+                return;
+            if (m_UsedIds.TryGetValue(uxmlAsset.id, out var asset) && asset == uxmlAsset)
+            {
+                m_UsedIds.Remove(uxmlAsset.id);
+            }
+        }
+
+        internal void RegisterId(UxmlAsset uxmlAsset, int siblingIndex = -1)
+        {
+            // Invalid id, regenerate one
+            if (uxmlAsset.id == 0)
+            {
+                uxmlAsset.id = GenerateNewId(uxmlAsset, siblingIndex < 0 ? uxmlAsset.SiblingIndex() : siblingIndex, UsedIds);
+                UsedIds[uxmlAsset.id] = uxmlAsset;
+                if (uxmlAsset.hasAuthoringId)
+                {
+                    // Log/Report authoring conflict.
+                    onAuthoringIdConflictResolved?.Invoke(uxmlAsset, 0, uxmlAsset.id);
+                    uxmlAsset.hasAuthoringId = false;
+                }
+                return;
+            }
+
+            if(IdExists(uxmlAsset.id))
+            {
+                // Try to preserve the non-generated id.
+                if (uxmlAsset.hasAuthoringId)
+                {
+                    var previousEntry = m_UsedIds[uxmlAsset.id];
+                    // If the id is already used by a non-generated id, report an error
+                    if (previousEntry.hasAuthoringId)
+                    {
+                        var previousId = uxmlAsset.id;
+                        uxmlAsset.id = GenerateNewId(uxmlAsset, siblingIndex < 0 ? uxmlAsset.SiblingIndex() : siblingIndex, UsedIds);
+                        UsedIds[uxmlAsset.id] = uxmlAsset;
+                        // Log/Report authoring conflict.
+                        onAuthoringIdConflictResolved?.Invoke(uxmlAsset, previousId, uxmlAsset.id);
+                        uxmlAsset.hasAuthoringId = false;
+                    }
+                    // Assign a new id to the generated one
+                    else
+                    {
+                        previousEntry.id = GenerateNewId(previousEntry, previousEntry.SiblingIndex(), UsedIds);
+                        UsedIds[previousEntry.id] = previousEntry;
+                        UsedIds[uxmlAsset.id] = uxmlAsset;
+                    }
+                }
+                else
+                {
+                    uxmlAsset.id = GenerateNewId(uxmlAsset, siblingIndex < 0 ? uxmlAsset.SiblingIndex() : siblingIndex, UsedIds);
+                    UsedIds[uxmlAsset.id] = uxmlAsset;
+                }
+            }
+            else
+            {
+                UsedIds.Add(uxmlAsset.id, uxmlAsset);
+            }
         }
 
         [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
@@ -1206,10 +1308,6 @@ namespace UnityEngine.UIElements
             var actualIndex = index == -1 ? actualParent.childCount : index;
 
             actualParent.Insert(actualIndex, vea);
-
-            // Only init id the first time as needed.
-            if (vea.id == 0)
-                vea.id = GenerateNewId(vea);
 
             // HACK: We clear ALL stylesheets here if element is no longer at root.
             // this is fine as long as we only support one uss but when we support more
@@ -1224,14 +1322,11 @@ namespace UnityEngine.UIElements
             return vea;
         }
 
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
         internal void Swallow(VisualElementAsset parent, VisualTreeAsset other)
         {
             using var _ = ListPool<UxmlAsset>.Get(out var list);
-            list.AddRange(other.DepthFirstTraversal());
             var actualParent = parent ?? visualTree;
-
-            list.Clear();
 
             for (var i = 0; i < other.visualTree.childCount; ++i)
             {
@@ -1241,24 +1336,7 @@ namespace UnityEngine.UIElements
             for (var i = 0; i < list.Count; ++i)
             {
                 var child = list[i];
-                if (child is VisualElementAsset vea)
-                {
-                    vea.id = GenerateNewId(vea);
-                    UpdateUxmlObjectAssetsParentId(vea);
-                }
-
                 actualParent.Add(child);
-            }
-        }
-
-        static void UpdateUxmlObjectAssetsParentId(VisualElementAsset visualElementAsset)
-        {
-            using var _ = ListPool<UxmlObjectAsset>.Get(out var uxmlObjectAssets);
-            visualElementAsset.GetChildrenUxmlObjectAssets(uxmlObjectAssets);
-
-            foreach (var uxmlObjectAsset in uxmlObjectAssets)
-            {
-                uxmlObjectAsset.parentId = visualElementAsset.id;
             }
         }
 
@@ -1294,7 +1372,59 @@ namespace UnityEngine.UIElements
         {
             var xmlns = VisualTreeAssetUtilities.FindUxmlNamespaceDefinitionForTypeName(this, parent, fullTypeName);
             var vea = new VisualElementAsset(fullTypeName, xmlns);
-            return AddElementToDocument(vea, parent);
+            parent ??= visualTree;
+            parent.Add(vea);
+            return vea;
+        }
+
+        private void CacheExistingIds()
+        {
+            m_UsedIds.Clear();
+            foreach (var uxmlAsset in DepthFirstTraversal())
+            {
+                if (!m_UsedIds.TryAdd(uxmlAsset.id, uxmlAsset))
+                {
+                    // Deal with conflict, technically we shouldn't have any.
+                }
+            }
+        }
+
+        /// <summary>
+        /// Regenerates the id of the uxml asset nodes inside the provided asset so that they are deterministic
+        /// through an export => import operation.
+        /// </summary>
+        /// <param name="vta">The <see cref="VisualTreeAsset"/>.</param>
+        /// <remarks>
+        /// This will add an authoring id to the root node if it is not already present.
+        /// </remarks>
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
+        internal static void HarmonizeIds(VisualTreeAsset vta)
+        {
+            // Clear previous cache.
+            if (vta.m_UsedIds == null)
+                vta.m_UsedIds = new Dictionary<int, UxmlAsset>();
+            else
+                vta.m_UsedIds.Clear();
+
+            var root = vta.visualTree;
+            root.hasAuthoringId = true;
+            root.SetAttribute(UxmlAsset.AuthoringIdAttribute, root.id.ToString());
+            vta.RegisterId(root);
+
+            for (var i = 0; i < root.childCount; ++i)
+            {
+                HarmonizeIds(root[i], i);
+            }
+        }
+
+        private static void HarmonizeIds(UxmlAsset uxmlAsset, int siblingIndex)
+        {
+            if (uxmlAsset.hasAuthoringId)
+                uxmlAsset.visualTreeAsset.RegisterId(uxmlAsset, siblingIndex);
+            else
+                uxmlAsset.id = 0; // This will regerenate the id.
+            for(var i = 0; i < uxmlAsset.childCount; ++i)
+                HarmonizeIds(uxmlAsset[i], i);
         }
     }
 

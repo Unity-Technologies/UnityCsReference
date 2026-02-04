@@ -21,9 +21,9 @@ namespace UnityEditor.Search
             if (expressions.Length != 1 || expressions[0].startIndex != text.startIndex || expressions[0].length != text.length)
                 return null;
 
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var parameters = ParserUtils.ExtractArguments(text)
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                 .Select(paramText => ParserManager.Parse(args.With(paramText).With(SearchExpressionParserFlags.ImplicitLiterals)))
                 .ToArray();
 
@@ -48,9 +48,9 @@ namespace UnityEditor.Search
             if (!rootHasParameters)
                 return null;
 
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var parameters = ParserUtils.ExtractArguments(text)
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                 .Select(paramText => ParserManager.Parse(args.With(paramText).Without(SearchExpressionParserFlags.ImplicitLiterals)))
                 .ToArray();
 

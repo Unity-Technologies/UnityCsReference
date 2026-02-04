@@ -90,12 +90,12 @@ namespace UnityEditor
                 {
                     if (i == (m_TableTabs.Length - 1)) // last tab containing materials
                     {
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                         EntityId[] selectedIds = UnityEngine.Object.FindObjectsByType<MeshRenderer>(UnityEngine.FindObjectsSortMode.InstanceID).Where((MeshRenderer mr) => {
-#pragma warning restore RS0030
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning restore UA2001
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                             return Selection.entityIds.Contains(mr.gameObject.GetEntityId());
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                         }).SelectMany(meshRenderer => meshRenderer.sharedMaterials).Where((Material m) => {
                                 return m != null && (m.globalIlluminationFlags & MaterialGlobalIlluminationFlags.AnyEmissive) != 0;
                             }).Select(m => m.GetEntityId()).Union(Selection.entityIds).Distinct().ToArray();
@@ -180,9 +180,9 @@ namespace UnityEditor
                 }
 
                 m_TableTabs =  m_CurrentLightingExplorerExtension.GetContentTabs();
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 m_TabTitles = m_TableTabs != null ? m_TableTabs.Select(item => item.title).ToArray() : null;
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             }
         }
 
@@ -196,9 +196,9 @@ namespace UnityEditor
             if (currentSRPType == null)
                 return GetDefaultLightingExplorerExtension();
 
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var extensionType = RenderPipelineEditorUtility.GetDerivedTypesSupportedOnCurrentPipeline<ILightingExplorerExtension>().FirstOrDefault();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             if (extensionType == null)
                 return GetDefaultLightingExplorerExtension();
 

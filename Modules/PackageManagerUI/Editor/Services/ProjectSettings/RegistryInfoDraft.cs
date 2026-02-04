@@ -5,7 +5,6 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.Linq;
 using UnityEngine;
 
 namespace UnityEditor.PackageManager.UI.Internal
@@ -42,8 +41,12 @@ namespace UnityEditor.PackageManager.UI.Internal
             set => m_UserModifications.selectedScopeIndex = value;
         }
 
-        public ReadOnlyCollection<string> scopes => m_UserModifications.scopes;
-        public ReadOnlyCollection<string> sanitizedScopes => m_UserModifications.sanitizedScopes;
+        public IReadOnlyCollection<string> scopes => m_UserModifications.scopes;
+
+        public string[] GetSanitizedScopes()
+        {
+            return m_UserModifications.GetSanitizedScopes();
+        }
 
         [SerializeField]
         private string m_ErrorMessage;
@@ -126,9 +129,9 @@ namespace UnityEditor.PackageManager.UI.Internal
                 RevertChanges();
         }
 
-        public void SetScopes(IEnumerable<string> scopes)
+        public void SetScopes(IEnumerable<string> newScopes)
         {
-            m_UserModifications.SetScopes(scopes);
+            m_UserModifications.SetScopes(newScopes);
             m_Modified = true;
         }
 
@@ -139,22 +142,16 @@ namespace UnityEditor.PackageManager.UI.Internal
                 if (!m_Modified)
                     return false;
                 if (original is null)
-                    #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                    return !string.IsNullOrEmpty(m_UserModifications.name) || !string.IsNullOrEmpty(m_UserModifications.url) || !(m_UserModifications.scopes.Count == 0 || m_UserModifications.scopes.All(string.IsNullOrEmpty));
-#pragma warning restore RS0030
+                    return !string.IsNullOrWhiteSpace(m_UserModifications.name) || !string.IsNullOrWhiteSpace(m_UserModifications.url) || m_UserModifications.scopes.AnyMatches(s => !string.IsNullOrWhiteSpace(s));
 
-                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                return !original.IsEqualTo(new RegistryInfo(original.id, m_UserModifications.name, m_UserModifications.url, m_UserModifications.sanitizedScopes.ToArray(), original.isDefault, original.capabilities, original.configSource));
-#pragma warning restore RS0030
+                return !original.IsEqualTo(new RegistryInfo(original.id, m_UserModifications.name, m_UserModifications.url, m_UserModifications.GetSanitizedScopes(), original.isDefault, original.capabilities, original.configSource));
             }
         }
 
         public bool isUrlOrScopesUpdated
         {
             get => m_Modified && original is not null &&
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            !original.IsEqualTo(new RegistryInfo(original.id, original.name, m_UserModifications.url, m_UserModifications.sanitizedScopes.ToArray(), original.isDefault, original.capabilities, original.configSource));
-#pragma warning restore RS0030
+            !original.IsEqualTo(new RegistryInfo(original.id, original.name, m_UserModifications.url, m_UserModifications.GetSanitizedScopes(), original.isDefault, original.capabilities, original.configSource));
         }
 
         public void RevertChanges()
@@ -169,7 +166,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_ErrorMessage = string.Empty;
             if (string.IsNullOrEmpty(m_UserModifications.name?.Trim()))
                 AddErrorMessage(L10n.Tr("Registry name cannot be null, empty or whitespace"));
-            if (m_UserModifications.sanitizedScopes.Count == 0)
+            if (m_UserModifications.GetSanitizedScopes().Length == 0)
                 AddErrorMessage(L10n.Tr("Scope(s) cannot be empty"));
             if (!(Uri.TryCreate(m_UserModifications.url, UriKind.Absolute, out var uriResult) && (uriResult.Scheme == Uri.UriSchemeHttp || uriResult.Scheme == Uri.UriSchemeHttps)))
                 AddErrorMessage(L10n.Tr("\"URL\" must be a valid uri with a scheme matching the http|https pattern"));

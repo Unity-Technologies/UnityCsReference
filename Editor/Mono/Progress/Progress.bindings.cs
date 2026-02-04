@@ -131,6 +131,9 @@ namespace UnityEditor
         [NativeMethod(IsFreeFunction = true, IsThreadSafe = true, Name = "Editor::Progress::Report")]
         private static extern void Internal_Report_Items(int id, int currentStep, int totalSteps, string description = null);
 
+        [NativeMethod(IsFreeFunction = true, IsThreadSafe = true, Name = "Editor::Progress::IncrementProgress")]
+        private static extern void Internal_IncrementProgress(int id, int incrementStep, string description = null);
+
         public static void Report(int id, float progress)
         {
             Internal_Report(id, progress);
@@ -151,6 +154,31 @@ namespace UnityEditor
         public static void Report(int id, int currentStep, int totalSteps, string description)
         {
             Internal_Report_Items(id, currentStep, totalSteps, description);
+            if (string.IsNullOrEmpty(description))
+                SetDescription(id, description);
+        }
+
+        /// <summary>
+        /// Increments the progress by a given step amount.
+        /// </summary>
+        /// <param name="id">Progress id.</param>
+        /// <param name="incrementStep">The amount of steps to increase the progress.</param>
+        /// <remarks>This should only be used if the progress has been set in step mode by a call to <see cref="Report(int, int, int, string)"/> first.</remarks>
+        internal static void IncrementProgress(int id, int incrementStep)
+        {
+            Internal_IncrementProgress(id, incrementStep);
+        }
+
+        /// <summary>
+        /// Increments the progress by a given step amount.
+        /// </summary>
+        /// <param name="id">Progress id.</param>
+        /// <param name="incrementStep">The amount of steps to increase the progress.</param>
+        /// <param name="description">Description of the current progress.</param>
+        /// <remarks>This should only be used if the progress has been set in step mode by a call to <see cref="Report(int, int, int, string)"/> first.</remarks>
+        internal static void IncrementProgress(int id, int incrementStep, string description)
+        {
+            Internal_IncrementProgress(id, incrementStep, description);
             if (string.IsNullOrEmpty(description))
                 SetDescription(id, description);
         }
@@ -457,9 +485,9 @@ namespace UnityEditor
             // the C# Progress class has not been initialized before. Therefore,
             // we have to check if the progress already exists in our list
             // otherwise we will have duplicates.
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var currentItem = s_ProgressItems.FirstOrDefault(i => i.id == id);
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             if (currentItem != null)
                 return currentItem;
             var item = new Item(id);

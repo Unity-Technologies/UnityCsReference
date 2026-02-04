@@ -4,7 +4,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using UnityEngine;
 
 namespace UnityEditor.PackageManager.UI.Internal
@@ -55,9 +54,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         }
 
         public bool IsFetchInProgress(FetchType fetchType) => (fetchingInProgress & fetchType) != 0;
-        #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-        public FetchError GetFetchError(FetchType fetchType) => errors.FirstOrDefault(error => (error.fetchType & fetchType) != 0);
-#pragma warning restore RS0030
+        public FetchError GetFetchError(FetchType fetchType) => errors.FirstMatch(error => (error.fetchType & fetchType) != 0);
     }
 
     [Serializable]
@@ -114,16 +111,12 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public void OnBeforeSerialize()
         {
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            m_SerializedFetchStatuses = m_FetchStatuses.Values.ToArray();
-#pragma warning restore RS0030
+            m_FetchStatuses.Values.ToArray(ref m_SerializedFetchStatuses);
         }
 
         public void OnAfterDeserialize()
         {
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            m_FetchStatuses = m_SerializedFetchStatuses.ToDictionary(status => status.productId, status => status);
-#pragma warning restore RS0030
+            m_SerializedFetchStatuses.ToDictionary(status => status.productId, ref m_FetchStatuses);
         }
 
     }

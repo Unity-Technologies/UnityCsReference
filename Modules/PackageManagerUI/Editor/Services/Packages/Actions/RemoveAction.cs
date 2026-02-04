@@ -29,9 +29,7 @@ internal class RemoveAction : PackageAction
 
     protected override bool TriggerActionImplementation(IReadOnlyCollection<IPackage> packages)
     {
-        #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-        var isModules = packages.FirstOrDefault()?.versions.primary.HasTag(PackageTag.BuiltIn) == true;
-#pragma warning restore RS0030
+        var isModules = packages.AnyMatches(p => p.versions.primary.HasTag(PackageTag.BuiltIn));
         var title = string.Format(L10n.Tr(isModules ? "Disabling {0} items" : "Removing {0} items"), packages.Count);
 
         var result = 0;
@@ -50,9 +48,7 @@ internal class RemoveAction : PackageAction
             m_PackageManagerPrefs.skipMultiSelectRemoveConfirmation = true;
 
         m_OperationDispatcher.Uninstall(packages);
-        #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-        PackageManagerWindowAnalytics.SendEvent("uninstall", packages.Select(p => p.versions.primary));
-#pragma warning restore RS0030
+        PackageManagerWindowAnalytics.SendEvent("uninstall", packages);
         // After a bulk removal, we want to deselect them to avoid installing them back by accident.
         DeselectPackages(packages);
         return true;
@@ -73,9 +69,7 @@ internal class RemoveAction : PackageAction
         }
         else
         {
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            var isPartOfFeature = m_PackageDatabase.GetFeaturesThatUseThisPackage(version).Any(featureSet => featureSet.isInstalled);
-#pragma warning restore RS0030
+            var isPartOfFeature = m_PackageDatabase.IsUsedByFeature(version);
             if (isPartOfFeature || !m_PackageManagerPrefs.skipRemoveConfirmation)
             {
                 var descriptor = version.GetDescriptor();
@@ -109,9 +103,7 @@ internal class RemoveAction : PackageAction
 
         // If the user is removing a package that is part of a feature set, lock it after removing from manifest
         // Having this check condition should be more optimal once we implement caching of Feature Set Dependents for each package
-#pragma warning disable RS0031 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-        if (m_PackageDatabase.GetFeaturesThatUseThisPackage(version.package.versions.installed)?.Any() == true)
-#pragma warning restore RS0031
+        if (m_PackageDatabase.IsUsedByFeature(version.package.versions.installed))
             m_PageManager.activePage.SetPackagesUserUnlockedState(new List<string> { version.package.uniqueId }, false);
 
         // Remove
@@ -173,8 +165,8 @@ internal class RemoveAction : PackageAction
 
     private void DeselectPackages(IReadOnlyCollection<IPackage> packages)
     {
-        #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+        #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
         m_PageManager.activePage.RemoveSelection(packages.Select(p => p.uniqueId));
-#pragma warning restore RS0030
+#pragma warning restore UA2001
     }
 }

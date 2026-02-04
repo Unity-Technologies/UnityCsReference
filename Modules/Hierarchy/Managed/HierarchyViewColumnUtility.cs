@@ -2,8 +2,8 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System.Collections.Generic;
 using System;
+using System.Collections.Generic;
 using UnityEngine.Bindings;
 using UnityEngine.UIElements;
 
@@ -12,7 +12,7 @@ namespace Unity.Hierarchy
     /// <summary>
     /// Utility class to help with creating editor for HierarchyViewCell.
     /// </summary>
-    [VisibleToOtherModules("UnityEditor.HierarchyModule", "UnityEditor.UIToolkitAuthoringModule")]
+    [VisibleToOtherModules]
     class HierarchyViewColumnUtility
     {
         /// <summary>
@@ -86,6 +86,7 @@ namespace Unity.Hierarchy
             if (editor == null)
             {
                 editor = new TEditor();
+                editor.focusable = false;
                 AddToClassList(editor, classes);
                 cell.Add(editor);
             }
@@ -101,7 +102,7 @@ namespace Unity.Hierarchy
             return element;
         }
 
-        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
+        [VisibleToOtherModules]
         internal static HierarchyViewCellValueEditor<TModel, TEditor, TValue> CreateCellValueEditor<TModel, TEditor, TValue>(
                 TModel model,
                 HierarchyViewCell cell,
@@ -133,8 +134,8 @@ namespace Unity.Hierarchy
             if (col is HierarchyViewColumn hc)
                 return hc.Descriptor.Id;
 
-            if (col is HierarchyViewItemColumn)
-                return HierarchyViewItemColumn.k_HierarchyNameColumnName;
+            if (col is HierarchyViewColumnName)
+                return HierarchyViewColumnName.k_HierarchyNameColumnName;
             return null;
         }
 
@@ -143,7 +144,7 @@ namespace Unity.Hierarchy
             if (col is HierarchyViewColumn hc)
                 return hc.Descriptor.DefaultPriority;
 
-            if (col is HierarchyViewItemColumn)
+            if (col is HierarchyViewColumnName)
                 return 0;
             return 1000;
         }

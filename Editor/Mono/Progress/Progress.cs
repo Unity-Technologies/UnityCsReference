@@ -157,6 +157,16 @@ namespace UnityEditor
                 Progress.Report(id, newCurrentStep, newTotalSteps, newDescription);
             }
 
+            internal void IncrementProgress(int incrementStep)
+            {
+                Progress.IncrementProgress(id, incrementStep);
+            }
+
+            internal void IncrementProgress(int incrementStep, string newDescription)
+            {
+                Progress.IncrementProgress(id, incrementStep, newDescription);
+            }
+
             public bool Cancel()
             {
                 return Progress.Cancel(id);

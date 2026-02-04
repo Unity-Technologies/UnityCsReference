@@ -4,7 +4,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using UnityEngine;
 
 namespace UnityEditor.PackageManager.UI.Internal
@@ -17,7 +16,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         event Action<IEnumerable<long>> onUpdateChecked;
 
         void ExtraFetch(long productId);
-        void FetchPurchaseInfos(IEnumerable<long> productIds, Action doneCallback = null);
+        void FetchPurchaseInfos(IReadOnlyCollection<long> productIds, Action doneCallback = null);
         void ListPurchases(PurchasesQueryArgs queryArgs);
         void CancelListPurchases();
         void FetchProductInfo(long productId, Action doneCallback = null);
@@ -74,7 +73,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 // If a list operation is still in progress when extra fetch returns, we'll wait until the list operation results
                 // are processed, such that the extra fetch result won't be overwritten by the list result.
                 if (m_ListOperation?.isInProgress == true)
-                    m_ListOperation.onOperationFinalized += op => onProductExtraFetched?.Invoke(productId);
+                    m_ListOperation.onOperationFinalized += _ => onProductExtraFetched?.Invoke(productId);
                 else
                     onProductExtraFetched?.Invoke(productId);
             });
@@ -83,22 +82,20 @@ namespace UnityEditor.PackageManager.UI.Internal
                 FetchUpdateInfos(new[] { productId });
         }
 
-        public void FetchPurchaseInfos(IEnumerable<long> productIds, Action doneCallback = null)
+        public void FetchPurchaseInfos(IReadOnlyCollection<long> productIds, Action doneCallback = null)
         {
             FetchPurchaseInfosWithRetry(productIds, false, doneCallback);
         }
 
         private void FetchPurchaseInfosWithRetry(IEnumerable<long> productIds, bool checkHiddenPurchases, Action doneCallback)
         {
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            var productIdsWithoutPurchaseInfo = productIds?.Where(id => m_AssetStoreCache.GetPurchaseInfo(id) == null).ToList() ?? new List<long>();
-#pragma warning restore RS0030
+            var productIdsWithoutPurchaseInfo = new List<long>(productIds.Filter(id => m_AssetStoreCache.GetPurchaseInfo(id) == null));
             if (productIdsWithoutPurchaseInfo.Count == 0)
                 return;
 
             if (m_ListOperation?.isInProgress == true)
             {
-                m_ListOperation.onOperationFinalized += op => FetchPurchaseInfosWithRetry(productIdsWithoutPurchaseInfo, checkHiddenPurchases, doneCallback);
+                m_ListOperation.onOperationFinalized += _ => FetchPurchaseInfosWithRetry(productIdsWithoutPurchaseInfo, checkHiddenPurchases, doneCallback);
                 return;
             }
 
@@ -107,27 +104,23 @@ namespace UnityEditor.PackageManager.UI.Internal
             // In the case where a package not purchased, `purchaseInfo` will still be null,
             // but the generated `Package` in the end will not contain an error.
             var fetchOperation = m_OperationFactory.CreateAssetStoreListOperation();
-            var queryArgs = new PurchasesQueryArgs { productIds = productIdsWithoutPurchaseInfo, status = checkHiddenPurchases ? PageFilters.Status.Hidden : PageFilters.Status.None };
+            var queryArgs = new PurchasesQueryArgs { productIds = productIdsWithoutPurchaseInfo.ToArray(), status = checkHiddenPurchases ? PageFilters.Status.Hidden : PageFilters.Status.None };
             var fetchHiddenProductsRequired = false;
-            fetchOperation.onOperationSuccess += op =>
+            fetchOperation.onOperationSuccess += _ =>
             {
                 if (fetchOperation.result.list.Count > 0)
                     m_AssetStoreCache.SetPurchaseInfos(fetchOperation.result.list);
 
-                // If we can't find the all the purchase infos the first time, it could be be that the asset is hidden we'll do another check
+                // If we can't find the all the purchase infos the first time, it could be that the asset is hidden we'll do another check
                 if (fetchOperation.result.list.Count < productIdsWithoutPurchaseInfo.Count && !checkHiddenPurchases)
                 {
                     fetchHiddenProductsRequired = true;
-                    #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                    var productIdsFound = fetchOperation.result.list.Select(info => info.productId).ToHashSet();
-#pragma warning restore RS0030
-                    #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                    var potentiallyHiddenProductIds = productIdsWithoutPurchaseInfo.Where(id => !productIdsFound.Contains(id));
-#pragma warning restore RS0030
+                    var productIdsFound = fetchOperation.result.list.SelectToNewHashSet(info => info.productId);
+                    var potentiallyHiddenProductIds = productIdsWithoutPurchaseInfo.Filter(id => !productIdsFound.Contains(id));
                     FetchPurchaseInfosWithRetry(potentiallyHiddenProductIds, true, doneCallback);
                 }
             };
-            fetchOperation.onOperationFinalized += op =>
+            fetchOperation.onOperationFinalized += _ =>
             {
                 if (!fetchHiddenProductsRequired)
                     doneCallback?.Invoke();
@@ -139,7 +132,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         {
             CancelListPurchases();
             m_ListOperation ??= m_OperationFactory.CreateAssetStoreListOperation();
-            m_ListOperation.onOperationSuccess += op =>
+            m_ListOperation.onOperationSuccess += _ =>
             {
                 var result = m_ListOperation.result;
                 m_AssetStoreCache.SetPurchaseInfos(result.list);
@@ -206,16 +199,13 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public IEnumerable<Asset> ListImportedAssets()
         {
-            // We need to manually create the SearchFilter so that we look for assetorigins
             var filter = new SearchFilter { searchArea = SearchFilter.SearchArea.AllAssets };
             filter.ClearSearch();
             filter.originalText = "assetorigin:";
             filter.anyWithAssetOrigin = true;
 
             var guidsWithOrigin = m_AssetDatabase.FindAssets(filter);
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            return guidsWithOrigin.Select(guid =>
-#pragma warning restore RS0030
+            return guidsWithOrigin.SelectAsEnumerable(guid =>
             {
                 var assetOrigin = m_AssetDatabase.GetAssetOrigin(guid);
                 var assetPath = m_AssetDatabase.GUIDToAssetPath(guid);
@@ -231,14 +221,8 @@ namespace UnityEditor.PackageManager.UI.Internal
         public void OnPostProcessAllAssets(string[] importedAssetPaths, string[] deletedAssetPaths, string[] movedAssetPaths, string[] movedFromAssetPaths)
         {
             var addedOrUpdatedAssets = new List<Asset>();
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            var removedAssetPaths = deletedAssetPaths.Union(movedFromAssetPaths).ToHashSet();
-#pragma warning restore RS0030
-
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            var pathsToCheckForOrigin = importedAssetPaths.Union(movedAssetPaths).ToArray();
-#pragma warning restore RS0030
-            foreach (var path in pathsToCheckForOrigin)
+            var removedAssetPaths = new HashSet<string>(deletedAssetPaths.Join(movedFromAssetPaths));
+            foreach (var path in importedAssetPaths.Join(movedAssetPaths).EnumerateDistinct())
             {
                 var guid = m_AssetDatabase.AssetPathToGUID(path);
                 var assetOrigin = m_AssetDatabase.GetAssetOrigin(guid);
@@ -258,9 +242,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public void RefreshImportedAssets()
         {
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            m_AssetStoreCache.UpdateImportedAssets(ListImportedAssets(), m_AssetStoreCache.importedAssets.Select(a => a.importedPath));
-#pragma warning restore RS0030
+            m_AssetStoreCache.UpdateImportedAssets(ListImportedAssets(), m_AssetStoreCache.importedAssets.SelectAsEnumerable(a => a.importedPath));
         }
 
         public void OnBeforeSerialize()

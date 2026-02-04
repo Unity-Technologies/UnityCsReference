@@ -214,9 +214,9 @@ namespace UnityEditor.EditorTools
         {
             if (typeof(EditorTool).IsAssignableFrom(tool) || typeof(EditorToolContext).IsAssignableFrom(tool))
             {
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 var toolAttribute = tool.GetCustomAttributes(typeof(ToolAttribute), false).FirstOrDefault();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                 if (toolAttribute is ToolAttribute attrib && !string.IsNullOrEmpty(attrib.displayName))
                 {
                     string path = SanitizeToolPath(attrib.displayName);
@@ -226,9 +226,9 @@ namespace UnityEditor.EditorTools
             }
             else if (typeof(EditorToolContext).IsAssignableFrom(tool))
             {
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 var editorToolAttribute = tool.GetCustomAttributes(typeof(EditorToolContextAttribute), false).FirstOrDefault();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                 if (editorToolAttribute is EditorToolContextAttribute attrib && !string.IsNullOrEmpty(attrib.displayName))
                 {
                     string path = SanitizeToolPath(attrib.displayName);
@@ -249,26 +249,26 @@ namespace UnityEditor.EditorTools
             if (type == null)
                 return null;
 
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return (EditorToolAttribute)type.GetCustomAttributes(typeof(EditorToolAttribute), false).FirstOrDefault();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
         }
 
         internal static int GetNonBuiltinToolCount()
         {
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var globalEditorTools = GetCustomEditorToolsForType(null).Where(t => EditorToolManager.additionalContextToolTypesCache.All(tc => tc != t.editor));
-#pragma warning restore RS0030
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning restore UA2001
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return globalEditorTools.Count();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
         }
 
         internal static bool IsComponentEditor(Type type)
         {
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             if (type.GetCustomAttributes(typeof(ToolAttribute), false).FirstOrDefault() is ToolAttribute attrib)
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                 return attrib.targetType != null;
             return false;
         }
@@ -392,9 +392,9 @@ namespace UnityEditor.EditorTools
                 return !IsComponentTool(type)   // Component tool?
                     && !IsManipulationTool(GetEnumWithEditorTool(tool, EditorToolManager.GetSingleton<GameObjectToolContext>())) // Built-in tool?
                     && !IsBuiltinOverride(tool) // Built-in tool override?
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     && EditorToolManager.additionalContextToolTypesCache.Any(t => t == type); // Additional/Extra tool?
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             }
 
             return false;

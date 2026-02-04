@@ -286,9 +286,9 @@ namespace UnityEditor.IMGUI.Controls
                 if (maxWidth < a.x)
                 {
                     maxWidth = a.x + 1;
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     includeArrow |= child.children.Count() > 0;
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                 }
 
                 if (child.IsSeparator())
@@ -314,9 +314,9 @@ namespace UnityEditor.IMGUI.Controls
                 var largestChild = FindLargestChild(child);
 
                 // Compare immediate child counts - if this branch has more direct children, it becomes the new largest
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 if (largestChild.children.Count() > largest.children.Count())
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                 {
                     largest = largestChild;
                 }
@@ -330,13 +330,13 @@ namespace UnityEditor.IMGUI.Controls
             if (state.GetSelectedIndex(dataSource.mainTree) == -1)
                 return 0;
             float heigth = 0;
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             for (int i = 0; i < dataSource.mainTree.children.Count(); i++)
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             {
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2004 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 var child = dataSource.mainTree.children.ElementAt(i);
-#pragma warning restore RS0030
+#pragma warning restore UA2004
                 var content = child.content;
                 if (state.GetSelectedIndex(dataSource.mainTree) == i)
                 {

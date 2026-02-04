@@ -608,9 +608,9 @@ namespace UnityEditorInternal
                     Transform t = activeRootGameObject.transform.Find(curve.path);
                     if (t != null)
                     {
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                         if (!m_SelectionFilter.Contains(t.gameObject.GetEntityId()))
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                             return false;
                     }
                     else
@@ -1256,9 +1256,9 @@ namespace UnityEditorInternal
 
             List<AnimationWindowCurve> clipboardCurves = new List<AnimationWindowCurve>();
             foreach (AnimationWindowKeyframe keyframe in s_KeyframeClipboard)
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 if (clipboardCurves.Count == 0 || clipboardCurves.Last() != keyframe.curve)
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                     clipboardCurves.Add(keyframe.curve);
 
             // If we have equal number of target and source curves, then match by index. If not, then try to match with AnimationWindowUtility.BestMatchForPaste.
@@ -1474,9 +1474,9 @@ namespace UnityEditorInternal
 
         public List<AnimationWindowKeyframe> GetAggregateKeys(AnimationWindowHierarchyNode hierarchyNode)
         {
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             DopeLine dopeline = dopelines.FirstOrDefault(e => e.hierarchyNodeID == hierarchyNode.id);
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             if (dopeline == null)
                 return null;
             return dopeline.keys;

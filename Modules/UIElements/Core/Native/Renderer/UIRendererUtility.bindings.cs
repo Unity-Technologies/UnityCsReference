@@ -79,7 +79,7 @@ namespace UnityEngine.UIElements.UIR
             GraphicsResourcesRecreate?.Invoke(recreate);
         }
 
-        static ProfilerMarker s_MarkerRaiseEngineUpdate = new ProfilerMarker("UIR.RaiseEngineUpdate");
+        static ProfilerMarker s_MarkerRaiseEngineUpdate = new ProfilerMarker(ProfilerCategory.UIToolkit, "UIR.RaiseEngineUpdate");
 
         [RequiredByNativeCode]
         internal static void RaiseEngineUpdate()

@@ -57,9 +57,9 @@ namespace UnityEditor.IMGUI.Controls
                 return;
             }
 
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             destination.m_VisibleColumns = source.m_VisibleColumns.ToArray();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             destination.m_SortedColumns = new List<int>(source.m_SortedColumns);
 
             for (int i = 0; i < destination.m_Columns.Length; ++i)
@@ -188,9 +188,9 @@ namespace UnityEditor.IMGUI.Controls
 
         public float widthOfAllVisibleColumns
         {
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             get { return visibleColumns.Sum(t => columns[t].width); }
-#pragma warning restore RS0030
+#pragma warning restore UA2001
         }
     }
 }

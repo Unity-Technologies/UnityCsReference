@@ -4,7 +4,6 @@
 
 using System;
 using System.Collections.Generic;
-using Unity.EntitiesLike;
 
 namespace UnityEngine.UIElements
 {

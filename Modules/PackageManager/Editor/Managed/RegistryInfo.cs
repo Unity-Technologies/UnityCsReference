@@ -38,6 +38,10 @@ namespace UnityEditor.PackageManager
         private bool m_IsDefault;
 
         [SerializeField]
+        [NativeName("isUnityRegistry")]
+        private bool m_IsUnityRegistry;
+
+        [SerializeField]
         [NativeName("capabilities")]
         private SearchCapabilities m_Capabilities;
 
@@ -49,13 +53,14 @@ namespace UnityEditor.PackageManager
         [NativeName("compliance")]
         private RegistryCompliance m_Compliance;
 
-        internal RegistryInfo(string id = "", string name = "", string url = "", string[] scopes = null, bool isDefault = false, SearchCapabilities capabilities = SearchCapabilities.None, ConfigSource configSource = ConfigSource.Unknown, RegistryCompliance compliance = null)
+        internal RegistryInfo(string id = "", string name = "", string url = "", string[] scopes = null, bool isDefault = false, SearchCapabilities capabilities = SearchCapabilities.None, ConfigSource configSource = ConfigSource.Unknown, RegistryCompliance compliance = null, bool isUnityRegistry = false)
         {
             m_Id = id;
             m_Name = name;
             m_Url = url;
             m_Scopes = scopes ?? Array.Empty<string>();
             m_IsDefault = isDefault;
+            m_IsUnityRegistry = isUnityRegistry;
             m_Capabilities = capabilities;
             m_ConfigSource = configSource;
             m_Compliance = compliance ?? new RegistryCompliance();
@@ -66,6 +71,7 @@ namespace UnityEditor.PackageManager
         public string url { get { return m_Url;  } }
         internal string[] scopes { get { return m_Scopes; } }
         public bool isDefault { get { return m_IsDefault; } }
+        internal bool isUnityRegistry { get { return m_IsUnityRegistry; } }
         internal SearchCapabilities capabilities { get { return m_Capabilities; } }
         internal ConfigSource configSource { get { return m_ConfigSource; } }
         internal RegistryCompliance compliance { get { return m_Compliance; } }

@@ -13,35 +13,48 @@ namespace UnityEditor.PackageManager.UI.Internal
         [System.Serializable]
         internal new class UxmlSerializedData : VisualElement.UxmlSerializedData
         {
-            public override object CreateInstance() => new PackageDetails();
+            public override object CreateInstance()
+            {
+                var container = ServicesContainer.instance;
+                return new PackageDetails(
+                    container.Resolve<IResourceLoader>(),
+                    container.Resolve<IExtensionManager>(),
+                    container.Resolve<IApplicationProxy>(),
+                    container.Resolve<IUpmCache>(),
+                    container.Resolve<IPackageManagerPrefs>(),
+                    container.Resolve<IPackageDatabase>(),
+                    container.Resolve<IPageManager>(),
+                    container.Resolve<IUnityConnectProxy>());
+            }
         }
 
-        private IResourceLoader m_ResourceLoader;
-        private IExtensionManager m_ExtensionManager;
-        private IApplicationProxy m_Application;
-        private IUpmCache m_UpmCache;
-        private IPackageManagerPrefs m_PackageManagerPrefs;
-        private IPackageDatabase m_PackageDatabase;
-        private IPageManager m_PageManager;
-        private IUnityConnectProxy m_UnityConnectProxy;
-        private void ResolveDependencies()
-        {
-            var container = ServicesContainer.instance;
-            m_ResourceLoader = container.Resolve<IResourceLoader>();
-            m_ExtensionManager = container.Resolve<IExtensionManager>();
-            m_Application = container.Resolve<IApplicationProxy>();
-            m_UpmCache = container.Resolve<IUpmCache>();
-            m_PackageManagerPrefs = container.Resolve<IPackageManagerPrefs>();
-            m_PackageDatabase = container.Resolve<IPackageDatabase>();
-            m_PageManager = container.Resolve<IPageManager>();
-            m_UnityConnectProxy = container.Resolve<IUnityConnectProxy>();
-        }
+        private readonly IExtensionManager m_ExtensionManager;
+        private readonly IApplicationProxy m_Application;
+        private readonly IUpmCache m_UpmCache;
+        private readonly IPackageManagerPrefs m_PackageManagerPrefs;
+        private readonly IPackageDatabase m_PackageDatabase;
+        private readonly IPageManager m_PageManager;
+        private readonly IUnityConnectProxy m_UnityConnectProxy;
 
-        public PackageDetails()
+        public PackageDetails(
+            IResourceLoader resourceLoader,
+            IExtensionManager extensionManager,
+            IApplicationProxy application,
+            IUpmCache upmCache,
+            IPackageManagerPrefs packageManagerPrefs,
+            IPackageDatabase packageDatabase,
+            IPageManager pageManager,
+            IUnityConnectProxy unityConnectProxy)
         {
-            ResolveDependencies();
+            m_ExtensionManager = extensionManager;
+            m_Application = application;
+            m_UpmCache = upmCache;
+            m_PackageManagerPrefs = packageManagerPrefs;
+            m_PackageDatabase = packageDatabase;
+            m_PageManager = pageManager;
+            m_UnityConnectProxy = unityConnectProxy;
 
-            var root = m_ResourceLoader.GetTemplate("PackageDetails.uxml");
+            var root = resourceLoader.GetTemplate("PackageDetails.uxml");
             Add(root);
             root.StretchToParentSize();
             cache = new VisualElementCache(root);
@@ -151,9 +164,9 @@ namespace UnityEditor.PackageManager.UI.Internal
 
             if (selections.Count == 1)
             {
-                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 var selection = selections.FirstOrDefault();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                 var package = m_PackageDatabase.GetPackage(selection);
                 RefreshUI(package);
             }
@@ -226,12 +239,12 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private void RefreshDetailError(IPackage package, IPackageVersion version)
         {
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var error = version?.errors?.FirstOrDefault(e => !e.HasAttribute(UIError.Attribute.Clearable | UIError.Attribute.HiddenFromUI))
-#pragma warning restore RS0030
-                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning restore UA2001
+                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 ?? package?.errors?.FirstOrDefault(e => !e.HasAttribute(UIError.Attribute.Clearable | UIError.Attribute.HiddenFromUI));
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             detailError.RefreshError(error, version);
         }
 

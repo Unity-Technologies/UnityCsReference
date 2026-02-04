@@ -22,9 +22,9 @@ namespace UnityEditor.ShortcutManagement
         internal SerializableShortcutEntry(Identifier id, IEnumerable<KeyCombination> combinations)
         {
             identifier = id;
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             this.combinations = combinations.ToList();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
         }
 
         internal SerializableShortcutEntry(ShortcutEntry entry)
@@ -86,9 +86,9 @@ namespace UnityEditor.ShortcutManagement
 
         public void Add(ShortcutEntry profileEntry)
         {
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var existingEntry = m_Entries.SingleOrDefault(entry => entry.identifier.Equals(profileEntry.identifier));
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             if (existingEntry != null)
             {
                 throw new ArgumentException("This profile already contains an existing entry with matching Identifier!", nameof(profileEntry));
@@ -98,9 +98,9 @@ namespace UnityEditor.ShortcutManagement
 
         public void Remove(Identifier identifier)
         {
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var existingEntry = m_Entries.FirstOrDefault(entry => entry.identifier.Equals(identifier));
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             m_Entries.Remove(existingEntry);
         }
     }

@@ -22,6 +22,13 @@ internal class StyleSheetsWindow : EditorWindow
     StyleSheetNodeTypeHandler m_Handler;
     Dictionary<StyleSheet, HierarchyNode> m_StyleSheetNodes = new();
 
+    VisualTreeAsset m_TrackedVTA;
+    ILiveReloadSystem m_LiveReloadSystem;
+    StyleSheetsVisualTreeAssetTracker m_Tracker;
+
+    // Used for tests
+    internal int LoadedStyleSheetCount => m_StyleSheetNodes.Count;
+
     [InitializeOnLoadMethod]
     static void Initialize()
     {
@@ -48,20 +55,52 @@ internal class StyleSheetsWindow : EditorWindow
     void OnEnable()
     {
         titleContent.text = "Style Sheets";
+
+        // Create tracker instance
+        m_Tracker = new StyleSheetsVisualTreeAssetTracker(this);
+
         StageNavigationManager.instance.afterSuccessfullySwitchedToStage += PrepareUI;
     }
 
     void OnDestroy()
     {
-        m_StyleSheetNodes?.Clear();
+        if (rootVisualElement != null)
+        {
+            rootVisualElement.UnregisterCallback<AttachToPanelEvent>(OnAttachToPanel);
+            rootVisualElement.UnregisterCallback<DetachFromPanelEvent>(OnDetachFromPanel);
+        }
+
+        CleanUpLiveReload();
+        DisposeHierarchyResources();
+        m_Tracker = null;
+        StageNavigationManager.instance.afterSuccessfullySwitchedToStage -= PrepareUI;
+    }
+
+    void DisposeHierarchyResources()
+    {
         m_Hierarchy?.Dispose();
         m_HierarchyView?.Dispose();
-        StageNavigationManager.instance.afterSuccessfullySwitchedToStage -= PrepareUI;
+        m_Hierarchy = null;
+        m_HierarchyView = null;
+        m_Handler = null;
+        m_StyleSheetNodes.Clear();
     }
 
     void CreateGUI()
     {
+        rootVisualElement.RegisterCallback<AttachToPanelEvent>(OnAttachToPanel);
+        rootVisualElement.RegisterCallback<DetachFromPanelEvent>(OnDetachFromPanel);
         PrepareUI(StageUtility.GetCurrentStage());
+    }
+
+    void OnAttachToPanel(AttachToPanelEvent evt)
+    {
+        SetupLiveReload();
+    }
+
+    void OnDetachFromPanel(DetachFromPanelEvent evt)
+    {
+        CleanUpLiveReload();
     }
 
     void PrepareUI(Stage newStage)
@@ -70,12 +109,17 @@ internal class StyleSheetsWindow : EditorWindow
 
         if (newStage is not VisualElementEditingStage stage)
         {
-            // TODO: Move this style to a stylesheet
-            rootVisualElement?.Add(new Label() { text = "Enter staging mode to have access to this feature." , style = { flexGrow = 1, unityTextAlign = TextAnchor.MiddleCenter }});
+            CleanUpLiveReload();
+            DisposeHierarchyResources();
+            rootVisualElement.Add(new Label { text = "Enter staging mode to have access to this feature.", style = { flexGrow = 1, unityTextAlign = TextAnchor.MiddleCenter } });
             return;
         }
 
         var visualTree = EditorGUIUtility.Load("UIToolkitAuthoring/StyleSheets/StyleSheetsWindow.uxml") as VisualTreeAsset;
+        if (visualTree == null)
+        {
+            throw new System.InvalidOperationException("Failed to load StyleSheetsWindow.uxml. The UXML file may be missing or corrupted.");
+        }
         visualTree.CloneTree(rootVisualElement);
 
         var toolbarMenu = rootVisualElement.Q<ToolbarMenu>("add-uss-menu");
@@ -103,40 +147,6 @@ internal class StyleSheetsWindow : EditorWindow
                 command.Execute();
             });
 
-        var selector = rootVisualElement.Q<ObjectField>("stylesheet-selector");
-        selector.objectType = typeof(StyleSheet);
-        selector.RegisterValueChangedCallback(evt =>
-        {
-            // [TODO]: Remove this whole if block once the ObjectField properly retrieves only .uss/.tss files.
-            // Validate new value first
-            if (evt.newValue is StyleSheet newSheet)
-            {
-                var assetPath = AssetDatabase.GetAssetPath(newSheet);
-
-                // Check if it's a valid standalone StyleSheet asset
-                if (string.IsNullOrEmpty(assetPath) || !typeof(StyleSheet).IsAssignableFrom(AssetDatabase.GetMainAssetTypeAtPath(assetPath)))
-                {
-                    // Reject and revert to old value
-                    selector.SetValueWithoutNotify(evt.previousValue as StyleSheet);
-                    Debug.LogWarning("Only standalone .uss or .tss StyleSheet files are supported. Inline stylesheets from UXML are not supported.");
-                    return;
-                }
-            }
-
-            // Remove old stylesheet if it exists
-            if (evt.previousValue is StyleSheet oldSheet && m_StyleSheetNodes.TryGetValue(oldSheet, out var oldRootNode))
-            {
-                m_Handler.RemoveStyleSheet(oldRootNode);
-                m_StyleSheetNodes.Remove(oldSheet);
-            }
-
-            if (evt.newValue is StyleSheet sheet)
-            {
-                var rootNode = m_Handler.AddStyleSheet(sheet);
-                m_StyleSheetNodes[sheet] = rootNode;
-            }
-        });
-
         m_Hierarchy = new Hierarchy.Hierarchy();
         m_Handler = m_Hierarchy.GetOrCreateNodeTypeHandler<StyleSheetNodeTypeHandler>();
 
@@ -151,7 +161,8 @@ internal class StyleSheetsWindow : EditorWindow
                 var label = element as Label;
                 var node = m_HierarchyView.ViewModel[index];
 
-                if (m_Handler.Mappings.TryGetNode(node, out var styleNode) && styleNode.Rule != null)
+                if (m_Handler.Mappings.TryGetNode(node, out var styleNode) &&
+                    styleNode.Rule?.complexSelectors?.Length > 0)
                 {
                     label.text = $"({styleNode.Rule.complexSelectors[0].specificity})";
                 }
@@ -173,11 +184,100 @@ internal class StyleSheetsWindow : EditorWindow
         m_HierarchyView.SetSourceHierarchy(m_Hierarchy);
 
         rootVisualElement.Add(m_HierarchyView);
+
+        // Load initial data from current stage
+        UpdateFromCurrentStage();
     }
 
     void Update()
     {
         if (m_HierarchyView?.UpdateNeeded == true)
             m_HierarchyView.UpdateIncremental();
+    }
+
+    void SetupLiveReload()
+    {
+        if (rootVisualElement.panel == null)
+            return;
+
+        if (StageUtility.GetCurrentStage() is VisualElementEditingStage uiStage)
+        {
+            m_TrackedVTA = uiStage.EditedVisualTreeAsset;
+        }
+
+        m_LiveReloadSystem = (rootVisualElement.panel as Panel)?.liveReloadSystem;
+
+        if (m_LiveReloadSystem != null)
+        {
+            m_LiveReloadSystem.enable = true;
+            m_LiveReloadSystem.enabledTrackers |= LiveReloadTrackers.StyleSheet;
+            m_LiveReloadSystem.RegisterTrackerForAsset(m_Tracker, m_TrackedVTA);
+        }
+    }
+
+    void CleanUpLiveReload()
+    {
+        if (m_LiveReloadSystem != null)
+        {
+            if (m_TrackedVTA != null)
+            {
+                m_LiveReloadSystem.UnregisterTrackerForAsset(m_Tracker, m_TrackedVTA);
+                m_LiveReloadSystem.enable = false;
+                m_TrackedVTA = null;
+            }
+        }
+    }
+
+    void UpdateFromCurrentStage()
+    {
+        // Return early if UI hasn't been created yet
+        if (m_Handler == null)
+            return;
+
+        // Clear existing stylesheets
+        foreach (var node in m_StyleSheetNodes.Values)
+        {
+            m_Handler.RemoveStyleSheet(node);
+        }
+        m_StyleSheetNodes.Clear();
+
+        // Check if we're in UI editing mode
+        if (StageUtility.GetCurrentStage() is VisualElementEditingStage uiStage)
+        {
+            SetupLiveReload();
+
+            // Get all stylesheets referenced by this VTA
+            var stylesheets = m_TrackedVTA?.GetAllReferencedStyleSheets();
+
+            // Add stylesheets to the hierarchy
+            if (stylesheets != null)
+            {
+                foreach (var stylesheet in stylesheets)
+                {
+                    if (stylesheet == null) continue;
+                    var rootNode = m_Handler.AddStyleSheet(stylesheet);
+                    m_StyleSheetNodes[stylesheet] = rootNode;
+                }
+            }
+        }
+        else
+        {
+            CleanUpLiveReload();
+        }
+    }
+
+    internal class StyleSheetsVisualTreeAssetTracker : BaseLiveReloadVisualTreeAssetTracker
+    {
+        StyleSheetsWindow m_Owner;
+
+        public StyleSheetsVisualTreeAssetTracker(StyleSheetsWindow owner)
+        {
+            m_Owner = owner;
+        }
+
+        internal override void OnVisualTreeAssetChanged()
+        {
+            m_Owner.UpdateFromCurrentStage();
+        }
     }
 }

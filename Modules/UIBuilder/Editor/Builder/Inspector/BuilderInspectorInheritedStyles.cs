@@ -8,6 +8,7 @@ using System.Text;
 using UnityEditor;
 using UnityEngine;
 using System.Linq;
+using Unity.UIToolkit.Editor;
 
 namespace Unity.UI.Builder
 {
@@ -255,9 +256,9 @@ namespace Unity.UI.Builder
         bool IsClassInUXMLDoc(string className)
         {
             var vea = currentVisualElement?.GetVisualElementAsset();
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return vea != null && vea.classes != null && vea.classes.Contains(className);
-#pragma warning restore RS0030
+#pragma warning restore UA2001
         }
 
         void RefreshClassListContainer()
@@ -283,7 +284,7 @@ namespace Unity.UI.Builder
             foreach (var className in currentVisualElement.GetClasses())
             {
                 var pillText = BuilderConstants.UssSelectorClassNameSymbol + className;
-                var pill = new BuilderClassPill()
+                var pill = new ClassPill()
                 {
                     text = pillText,
                     userData = className
@@ -336,7 +337,7 @@ namespace Unity.UI.Builder
 
         void OnClassPillDoubleClick(EventBase evt)
         {
-            var pill = evt.currentTarget as BuilderClassPill;
+            var pill = evt.currentTarget as ClassPill;
             var className = pill?.userData as string;
             var selectorString = BuilderConstants.UssSelectorClassNameSymbol + className;
             var selectorElement = pill?.selectorElement;

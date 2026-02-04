@@ -60,6 +60,22 @@ namespace Unity.GraphToolkit.Editor
         public static readonly string noIconModifier = "no-icon";
 
         /// <summary>
+        /// The USS class name used when the node of this node title part is hovered on (and its title is non-empty).
+        /// </summary>
+        static readonly string k_NodeTitlePartHoverStateUssClassName = ussClassName.WithUssModifier("hovered");
+
+        /// <summary>
+        /// The USS class name used when the node of this node title part is being hovered on (and its title is empty).
+        /// </summary>
+        static readonly string k_EmptyTitleHoverStateUssClassName = ussClassName.WithUssModifier("empty-title-hovered");
+
+        /// <summary>
+        /// The USS class name used when textfield of this node title part is focused on
+        /// (this only happens if its TitleLabel is an EditableLabel).
+        /// </summary>
+        static readonly string k_TitleInFocusUssClassName = ussClassName.WithUssModifier("focused");
+
+        /// <summary>
         /// Options for configuring the title of a node.
         /// </summary>
         /// <remarks>
@@ -94,10 +110,11 @@ namespace Unity.GraphToolkit.Editor
         /// <param name="ownerElement">The owner of the part.</param>
         /// <param name="parentClassName">The class name of the parent.</param>
         /// <param name="options">The options see <see cref="Options"/>.</param>
+        /// <param name="defaultMinWidth">The default min width of the title label container</param>
         /// <returns>A new instance of <see cref="NodeTitlePart"/>.</returns>
-        public static NodeTitlePart Create(string name, GraphElementModel nodeModel, ChildView ownerElement, string parentClassName, int options = Options.Default)
+        public static NodeTitlePart Create(string name, GraphElementModel nodeModel, ChildView ownerElement, string parentClassName, int options = Options.Default, float defaultMinWidth = 0)
         {
-            return new NodeTitlePart(name, nodeModel, ownerElement, parentClassName, options);
+            return new NodeTitlePart(name, nodeModel, ownerElement, parentClassName, options, defaultMinWidth);
         }
 
         protected VisualElement m_Root;
@@ -111,7 +128,12 @@ namespace Unity.GraphToolkit.Editor
         /// </summary>
         protected DropdownField m_ModeDropdownButton;
 
+        internal const float k_ButtonWidth = 20;
+        internal const int k_MinTextFieldCharLength = 8; // The max number of characters in the textfield before the textfield takes on a size bigger than a min width of 80px
+
         bool m_Attached;
+        bool m_IsTitleAtFullWidth; // False when the title is squashed to make space for hover buttons, true otherwise.
+        bool m_NeedsTitleTextfieldResize; // True when the textfield needs to be squashed, but has to wait until a resize of the node (geometry change) has happened.
 
         /// <summary>
         /// The icon on the node.
@@ -136,8 +158,9 @@ namespace Unity.GraphToolkit.Editor
         /// <param name="ownerElement">The owner of the part.</param>
         /// <param name="parentClassName">The class name of the parent.</param>
         /// <param name="options">The options see <see cref="Options"/>.</param>
-        protected NodeTitlePart(string name, GraphElementModel model, ChildView ownerElement, string parentClassName, int options)
-            : base(name, model, ownerElement, parentClassName, options)
+        /// <param name="defaultMinWidth">The default min width of the title label container</param>
+        protected NodeTitlePart(string name, GraphElementModel model, ChildView ownerElement, string parentClassName, int options, float defaultMinWidth = 0)
+            : base(name, model, ownerElement, parentClassName, options, defaultMinWidth)
         {
             Assert.IsTrue((options & Unity.GraphToolkit.Editor.EditableTitlePart.Options.Multiline) == 0);
         }
@@ -146,6 +169,7 @@ namespace Unity.GraphToolkit.Editor
         {
             if (!m_Attached)
             {
+                m_IsTitleAtFullWidth = true;
                 (m_OwnerElement.RootView as GraphView)?.RegisterElementZoomLevelClass(m_Root, GraphViewZoomMode.Medium, ussClassName.WithUssModifier(GraphElementHelper.mediumUssModifier));
                 m_Attached = true;
             }
@@ -246,6 +270,17 @@ namespace Unity.GraphToolkit.Editor
         {
             base.PostBuildUI();
             m_Root.AddPackageStylesheet("NodeTitlePart.uss");
+
+            if (TitleLabel is EditableLabel editableLabel)
+            {
+                var textField = editableLabel.Q<TextField>();
+
+                if (textField != null)
+                {
+                    textField.RegisterCallback<FocusInEvent>(OnFocusInTitleTextField);
+                    textField.RegisterCallback<FocusOutEvent>(OnFocusOutTitleTextField);
+                }
+            }
         }
 
         List<string> m_PreviousIconClasses = new List<string>();
@@ -255,6 +290,8 @@ namespace Unity.GraphToolkit.Editor
         /// <inheritdoc />
         public override void UpdateUIFromModel(UpdateFromModelVisitor visitor)
         {
+            UpdateTitleSizeFromModel(visitor);
+
             base.UpdateUIFromModel(visitor);
 
             var nodeModel = m_Model as AbstractNodeModel;
@@ -340,6 +377,77 @@ namespace Unity.GraphToolkit.Editor
                 m_ModeDropdownButton.SetValueWithoutNotify(currentMode);
         }
 
+        void UpdateTitleSizeFromModel(UpdateFromModelVisitor visitor)
+        {
+            if (visitor.ChangeHints.HasChange(ChangeHint.Data))
+            {
+                var title = (m_Model as IHasTitle)?.Title ?? string.Empty;
+                if (title == CurrentTitle)
+                    return;
+
+                var currentTitleLength = CurrentTitle?.Length ?? 0;
+                if (title.Length == 0)
+                {
+                    // If the title is being hovered on, switch to hover styling adapted to empty titles.
+                    // The main difference is that now only the subtitle is being displayed, and the hover buttons are
+                    // hence aligned with the subtitle instead of the title.
+                    if (m_Root.ClassListContains(k_NodeTitlePartHoverStateUssClassName))
+                    {
+                        m_Root.RemoveFromClassList(k_NodeTitlePartHoverStateUssClassName);
+                        m_Root.AddToClassList(k_EmptyTitleHoverStateUssClassName);
+
+                        if (title.Length <= k_MinTextFieldCharLength && currentTitleLength <= title.Length)
+                        {
+                            // Squash the subtitle in order to make space for the buttons that appear on hover
+                            SquashSubtitle();
+                        }
+                        else
+                        {
+                            // This scenario happens when the title of the node just got erased, except the length of
+                            // that title was longer than the min size of a node. This means that the node will likely need to be downsized.
+                            // The subtitle needs to be squashed in order to make room for the hover buttons. However, it cannot be done yet
+                            // because the resolved width of the subtitle has not been computed yet (the model gets updated before the size of the node is).
+                            // The squashing of the subtitle needs to wait until a change in geometry has been triggered.
+                            m_NeedsTitleTextfieldResize = true;
+                        }
+                    }
+                }
+                else
+                {
+                    // If the title used to be empty and was being hovered on, switch to hover styling adapted to non-empty titles.
+                    // This means that now both the title and the subtitle are being displayed, and the hover buttons are aligned with the title.
+                    if (currentTitleLength == 0 && m_Root.ClassListContains(k_EmptyTitleHoverStateUssClassName))
+                    {
+                        m_Root.RemoveFromClassList(k_EmptyTitleHoverStateUssClassName);
+                        m_Root.AddToClassList(k_NodeTitlePartHoverStateUssClassName);
+
+                        StretchSubtitle();
+                    }
+
+                    if (!m_Root.ClassListContains(k_NodeTitlePartHoverStateUssClassName))
+                        return;
+
+                    if (title.Length == currentTitleLength || (title.Length <= k_MinTextFieldCharLength && currentTitleLength <= k_MinTextFieldCharLength))
+                    {
+                        // This scenario happens when no resize of the node is required. This is either because
+                        // 1. The title length has not changed;
+                        // 2. The node is already at its min width size and does not need to be resized to a greater width.
+
+                        // Squash the title in order to make space for the buttons that appear on hover.
+                        SquashTitleLabel();
+                    }
+                    else
+                    {
+                        // This scenario happens when the title got renamed to a new title that requires a resize of the node.
+                        // The title needs to be squashed in order to make room for the hover buttons. However, it cannot be done yet
+                        // because the resolved width of the title has not been computed yet (the model gets updated before the size of the node is).
+                        // The squashing of the title needs to wait until a change in geometry has been triggered.
+                        m_NeedsTitleTextfieldResize = true;
+                    }
+                }
+            }
+        }
+
         /// <summary>
         /// When handling a style change for a node, this method updates the color line based on the model's color.
         /// </summary>
@@ -373,6 +481,57 @@ namespace Unity.GraphToolkit.Editor
             return warningIcon;
         }
 
+        public void SetHoverState(bool isHovered)
+        {
+            // Note that hover buttons are hidden when the title textfield is being focused on so the title/subtitle
+            // only needs to be squashed/stretched if the node is not being hovered on.
+
+            if (isHovered)
+            {
+                var currentTitleLength = CurrentTitle?.Length ?? 0;
+                m_Root.AddToClassList(currentTitleLength > 0 ? k_NodeTitlePartHoverStateUssClassName : k_EmptyTitleHoverStateUssClassName);
+
+                if (!m_Root.ClassListContains(k_TitleInFocusUssClassName))
+                {
+                    if (currentTitleLength > 0)
+                        SquashTitleLabel();
+                    else
+                        SquashSubtitle();
+                }
+            }
+            else
+            {
+                if (m_Root.ClassListContains(k_NodeTitlePartHoverStateUssClassName))
+                {
+                    m_Root.RemoveFromClassList(k_NodeTitlePartHoverStateUssClassName);
+
+                    if (!m_Root.ClassListContains(k_TitleInFocusUssClassName))
+                        StretchTitleLabel();
+                }
+                else if (m_Root.ClassListContains(k_EmptyTitleHoverStateUssClassName))
+                {
+                    m_Root.RemoveFromClassList(k_EmptyTitleHoverStateUssClassName);
+
+                    if (!m_Root.ClassListContains(k_TitleInFocusUssClassName))
+                        StretchSubtitle();
+                }
+            }
+        }
+
+        public void UpdateUIOnCollapseStateChange()
+        {
+            if (m_Root.ClassListContains(k_NodeTitlePartHoverStateUssClassName))
+            {
+                StretchTitleLabel();
+                m_NeedsTitleTextfieldResize = true;
+            }
+            else if (m_Root.ClassListContains(k_EmptyTitleHoverStateUssClassName))
+            {
+                StretchSubtitle();
+                m_NeedsTitleTextfieldResize = true;
+            }
+        }
+
         /// <inheritdoc />
         protected override void CreateTitleLabel()
         {
@@ -390,9 +549,105 @@ namespace Unity.GraphToolkit.Editor
                 LabelContainer.Add(m_SubTitle);
             else
                 TitleContainer.Add(m_SubTitle);
+
+            TitleLabel.RegisterCallback<GeometryChangedEvent>(OnTitleLabelGeometryChanged);
         }
 
-        private void AddModeDropdown()
+        protected override void OnRename(ChangeEvent<string> e)
+        {
+            base.OnRename(e);
+
+            StretchTitleLabel();
+        }
+
+        void OnFocusInTitleTextField(FocusInEvent evt)
+        {
+            if (m_Root.ClassListContains(k_TitleInFocusUssClassName))
+                return;
+
+            m_Root.AddToClassList(k_TitleInFocusUssClassName);
+            StretchTitleLabel();
+        }
+
+        void OnFocusOutTitleTextField(FocusOutEvent evt)
+        {
+            if (!m_Root.ClassListContains(k_TitleInFocusUssClassName))
+                return;
+
+            m_Root.RemoveFromClassList(k_TitleInFocusUssClassName);
+
+            if (m_Root.ClassListContains(k_NodeTitlePartHoverStateUssClassName))
+            {
+                SquashTitleLabel();
+            }
+            else if (m_Root.ClassListContains(k_EmptyTitleHoverStateUssClassName))
+            {
+                SquashSubtitle();
+            }
+        }
+
+        void OnTitleLabelGeometryChanged(GeometryChangedEvent evt)
+        {
+            if (!m_NeedsTitleTextfieldResize || m_Root.ClassListContains(k_TitleInFocusUssClassName))
+                return;
+
+            if (m_Root.ClassListContains(k_NodeTitlePartHoverStateUssClassName))
+            {
+                SquashTitleLabel();
+                m_NeedsTitleTextfieldResize = false;
+            }
+            else if (m_Root.ClassListContains(k_EmptyTitleHoverStateUssClassName))
+            {
+                SquashSubtitle();
+                m_NeedsTitleTextfieldResize = false;
+            }
+        }
+
+        void StretchTitleLabel()
+        {
+            TitleLabel.style.width = StyleKeyword.Auto;
+            m_IsTitleAtFullWidth = true;
+        }
+
+        void StretchSubtitle()
+        {
+            if (m_SubTitle == null)
+                return;
+
+            m_SubTitle.style.width = StyleKeyword.Auto;
+            m_IsTitleAtFullWidth = true;
+        }
+
+        /// <summary>
+        /// Have the title make space for the hover buttons of this node.
+        /// </summary>
+        void SquashTitleLabel()
+        {
+            if (!m_IsTitleAtFullWidth)
+                return;
+
+            var width = TitleLabel.resolvedStyle.width - m_NodeToolbarButtonsContainer.childCount * k_ButtonWidth;
+            TitleLabel.style.width = new StyleLength(new Length(width, LengthUnit.Pixel));
+            m_IsTitleAtFullWidth = false;
+        }
+
+        /// <summary>
+        /// Have the subtitle make space for the hover buttons of this node.
+        /// </summary>
+        void SquashSubtitle()
+        {
+            if (!m_IsTitleAtFullWidth)
+                return;
+
+            if (m_SubTitle == null)
+                return;
+
+            var width = m_SubTitle.resolvedStyle.width - m_NodeToolbarButtonsContainer.childCount * k_ButtonWidth;
+            m_SubTitle.style.width = new StyleLength(new Length(width, LengthUnit.Pixel));
+            m_IsTitleAtFullWidth = false;
+        }
+
+        void AddModeDropdown()
         {
             if (m_Model is NodeModel nodeModel && nodeModel.Modes.Count > 0)
             {

@@ -11,31 +11,34 @@
 /******************************************************************************/
 using System;
 using System.Collections.Generic;
+using System.Runtime.InteropServices;
 using UnityEngine.UIElements.StyleSheets;
 using UnityEngine.UIElements.Unmanaged;
 
 namespace UnityEngine.UIElements
 {
+    [StructLayout(LayoutKind.Sequential, Size = 168)]
     internal struct InheritedData : IStyleDataGroup<InheritedData>, IEquatable<InheritedData>
     {
         public Color color;
+        public UnmanagedMaterialDefinition unityMaterial;
+        public Color unityTextOutlineColor;
         public Length fontSize;
         public Length letterSpacing;
+        public Length unityParagraphSpacing;
+        public Length wordSpacing;
         public TextShadow textShadow;
         public EditorTextRenderingMode unityEditorTextRenderingMode;
         public EntityId unityFont;
         public EntityId unityFontDefinition;
         public FontStyle unityFontStyleAndWeight;
-        public UnmanagedMaterialDefinition unityMaterial;
-        public Length unityParagraphSpacing;
         public TextAnchor unityTextAlign;
         public TextAutoSize unityTextAutoSize;
         public TextGeneratorType unityTextGenerator;
-        public Color unityTextOutlineColor;
         public float unityTextOutlineWidth;
         public Visibility visibility;
         public WhiteSpace whiteSpace;
-        public Length wordSpacing;
+        private int __dummy; // increasing group size to a multiple of 8
 
         public InheritedData GetDefault()
         {
@@ -160,12 +163,13 @@ namespace UnityEngine.UIElements
         }
     }
 
+    [StructLayout(LayoutKind.Sequential, Size = 80)]
     internal struct RareData : IStyleDataGroup<RareData>, IEquatable<RareData>
     {
         public Cursor cursor;
+        public Color unityBackgroundImageTintColor;
         public UnmanagedRefCountedList<UnmanagedFilterFunction> filter;
         public TextOverflow textOverflow;
-        public Color unityBackgroundImageTintColor;
         public OverflowClipBox unityOverflowClipBox;
         public int unitySliceBottom;
         public int unitySliceLeft;
@@ -174,6 +178,7 @@ namespace UnityEngine.UIElements
         public int unitySliceTop;
         public SliceType unitySliceType;
         public TextOverflowPosition unityTextOverflowPosition;
+        private int __dummy; // increasing group size to a multiple of 8
 
         public RareData GetDefault()
         {
@@ -274,12 +279,14 @@ namespace UnityEngine.UIElements
         }
     }
 
+    [StructLayout(LayoutKind.Sequential, Size = 88)]
     internal struct TransformData : IStyleDataGroup<TransformData>, IEquatable<TransformData>
     {
-        public Rotate rotate;
         public Scale scale;
-        public TransformOrigin transformOrigin;
+        public Rotate rotate;
         public Translate translate;
+        public TransformOrigin transformOrigin;
+        private int __dummy; // increasing group size to a multiple of 8
 
         public TransformData GetDefault()
         {
@@ -335,6 +342,7 @@ namespace UnityEngine.UIElements
         }
     }
 
+    [StructLayout(LayoutKind.Sequential, Size = 32)]
     internal struct TransitionData : IStyleDataGroup<TransitionData>, IEquatable<TransitionData>
     {
         public UnmanagedRefCountedList<TimeValue> transitionDelay;
@@ -412,23 +420,25 @@ namespace UnityEngine.UIElements
         }
     }
 
+    [StructLayout(LayoutKind.Sequential, Size = 176)]
     internal struct VisualData : IStyleDataGroup<VisualData>, IEquatable<VisualData>
     {
         public Color backgroundColor;
-        public EntityId backgroundImage;
-        public BackgroundPosition backgroundPositionX;
-        public BackgroundPosition backgroundPositionY;
-        public BackgroundRepeat backgroundRepeat;
-        public BackgroundSize backgroundSize;
         public Color borderBottomColor;
-        public Length borderBottomLeftRadius;
-        public Length borderBottomRightRadius;
         public Color borderLeftColor;
         public Color borderRightColor;
         public Color borderTopColor;
+        public BackgroundRepeat backgroundRepeat;
+        public Length borderBottomLeftRadius;
+        public Length borderBottomRightRadius;
         public Length borderTopLeftRadius;
         public Length borderTopRightRadius;
+        public EntityId backgroundImage;
+        public BackgroundPosition backgroundPositionX;
+        public BackgroundPosition backgroundPositionY;
+        public BackgroundSize backgroundSize;
         public float opacity;
+        private int __dummy; // increasing group size to a multiple of 8
 
         public VisualData GetDefault()
         {

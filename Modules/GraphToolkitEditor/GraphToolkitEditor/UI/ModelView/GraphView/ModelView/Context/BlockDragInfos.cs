@@ -59,18 +59,18 @@ namespace Unity.GraphToolkit.Editor
                 {
                     Dragging = true;
 
-                    #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                    #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     IEnumerable<BlockNodeModel> selectedBlockModels = GraphView.GetSelection().OfType<BlockNodeModel>();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
 
-                    #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                    #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     if (selectedBlockModels.Contains(DraggedBlock.Model as BlockNodeModel))
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                         SelectedBlockModels = selectedBlockModels;
                     else
-                        #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                        #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                         SelectedBlockModels = Enumerable.Repeat((BlockNodeModel)DraggedBlock.Model, 1);
-#pragma warning restore RS0030
+#pragma warning restore UA2001
 
                     SelectedBlocks = new List<ModelView>();
 
@@ -188,9 +188,9 @@ namespace Unity.GraphToolkit.Editor
                         }
                         Vector2 posInContext = context.WorldToLocal(e.mousePosition);
 
-                        #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                        #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                         if (SelectedBlockModels.All(t => t.IsCompatibleWith(HoveredContext.ContextNodeModel)))
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                             HoveredContext.BlocksDragging(posInContext, SelectedBlockModels, m_Duplicate);
                         else
                             HoveredContext.BlockDraggingRefused();
@@ -224,9 +224,9 @@ namespace Unity.GraphToolkit.Editor
                             continue;
 
                         Vector2 posInContext = context.WorldToLocal(e.mousePosition);
-                        #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                        #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                         if (SelectedBlockModels.All(t => t.IsCompatibleWith(HoveredContext.ContextNodeModel)))
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                         {
                             foreach (var block in SelectedBlocks)
                             {

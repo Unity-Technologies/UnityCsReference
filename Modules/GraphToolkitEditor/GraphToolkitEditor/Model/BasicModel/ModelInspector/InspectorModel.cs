@@ -96,13 +96,13 @@ namespace Unity.GraphToolkit.Editor
         {
             m_SectionModels.Clear();
 
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             if (inspectedModels.Count() == 1)
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             {
-                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 var inspectedModel = inspectedModels.First();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                 if (inspectedModel == null)
                     return;
 
@@ -350,13 +350,13 @@ namespace Unity.GraphToolkit.Editor
         {
             var currentTitle = m_Title;
 
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             if (!inspectedModels.Skip(1).HasAny())
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             {
-                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 var inspectedModel = inspectedModels.First();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                 if (inspectedModel is IHasTitle hasTitle)
                 {
                     m_Title = hasTitle.Title;

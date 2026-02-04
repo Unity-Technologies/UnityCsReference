@@ -49,9 +49,9 @@ namespace UnityEditor
 
         private static string NormalizeMenuItemName(string rawName)
         {
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return string.Join(kMenuItemSeparators[0], rawName.Split(kMenuItemSeparators, StringSplitOptions.None).Select(token => token.Trim()).ToArray());
-#pragma warning restore RS0030
+#pragma warning restore UA2001
         }
 
         public string menuItem;

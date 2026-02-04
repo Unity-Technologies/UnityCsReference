@@ -103,8 +103,8 @@ namespace UnityEngine.UIElements.UIR
         static EntryPool s_SharedEntryPool = new(10000);
 
         // Profiling
-        static readonly ProfilerMarker k_MarkerProcess = new("RenderTreeManager.Process");
-        static readonly ProfilerMarker k_MarkerSerialize = new("RenderChain.Serialize");
+        static readonly ProfilerMarker k_MarkerProcess = new(ProfilerCategory.UIToolkit, "RenderTreeManager.Process");
+        static readonly ProfilerMarker k_MarkerSerialize = new(ProfilerCategory.UIToolkit, "RenderChain.Serialize");
 
 
         public RenderTreeManager(BaseVisualElementPanel panel)
@@ -277,6 +277,7 @@ namespace UnityEngine.UIElements.UIR
 
             m_BlockDirtyRegistration = true; // The repaint updater is not supposed to register new changes while processing sub-trees
             m_Compositor.Update(m_RootRenderTree);
+            device.AdvanceFrame(); // Before making any changes to the buffers
             DepthFirstProcessChanges(m_RootRenderTree);
             m_BlockDirtyRegistration = false;
 

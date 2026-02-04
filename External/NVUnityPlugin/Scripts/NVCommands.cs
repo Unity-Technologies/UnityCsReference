@@ -407,9 +407,9 @@ namespace UnityEngine.NVIDIA
         /// Gets an enumerable of the DLSS feature info.
         /// </summary>
         [Obsolete("This property causes garbage collection and is inefficient. Use dlssFeatureInfosSpan and dlssFeatureInfoCount instead.", false)]
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
         public IEnumerable<DLSSDebugFeatureInfos> dlssFeatureInfos { get { return m_DlssDebugFeatures.Take((int)m_DlssFeatureValidCount); } }
-#pragma warning restore RS0030
+#pragma warning restore UA2001
 
         /// <summary>
         /// Gets a read-only view into the valid DLSS feature info entries. Accessing this and iterating it with a for loop is allocation-free.

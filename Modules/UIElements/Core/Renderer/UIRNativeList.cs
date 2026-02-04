@@ -3,36 +3,66 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Collections.Generic;
 using Unity.Collections;
 
 namespace UnityEngine.UIElements.UIR
 {
-    class NativeList<T> : IDisposable where T : struct
+    internal class NativeList<T> : IDisposable where T : struct
     {
-        readonly MemoryLabel m_MemoryLabel;
-        NativeArray<T> m_NativeArray;
-        int m_Count;
-
-        public NativeList(int initialCapacity, MemoryLabel allocLabel)
+        struct DeferredArray
         {
-            Debug.Assert(initialCapacity > 0);
-            m_MemoryLabel = allocLabel;
-            m_NativeArray = new NativeArray<T>(initialCapacity, allocLabel, NativeArrayOptions.UninitializedMemory);
+            public NativeArray<T> array;
+            public int framesRemaining;
         }
 
-        public NativeList(int initialCapacity, MemoryLabel allocLabel, Allocator allocator)
+        readonly MemoryLabel m_MemoryLabel;
+        readonly int m_MaxQueuedFrameCount;
+        NativeArray<T> m_NativeArray;
+        int m_Count;
+        List<DeferredArray> m_DeferredArrays;
+
+        public NativeList(int initialCapacity, MemoryLabel allocLabel, int maxQueuedFrameCount = 0)
         {
             Debug.Assert(initialCapacity > 0);
             m_MemoryLabel = allocLabel;
+            m_MaxQueuedFrameCount = maxQueuedFrameCount;
+            m_NativeArray = new NativeArray<T>(initialCapacity, allocLabel, NativeArrayOptions.UninitializedMemory);
+            m_DeferredArrays = maxQueuedFrameCount > 0 ? new List<DeferredArray>() : null;
+        }
+
+        public NativeList(int initialCapacity, MemoryLabel allocLabel, Allocator allocator, int maxQueuedFrameCount = 0)
+        {
+            Debug.Assert(initialCapacity > 0);
+            m_MemoryLabel = allocLabel;
+            m_MaxQueuedFrameCount = maxQueuedFrameCount;
             m_NativeArray = new NativeArray<T>(initialCapacity, allocator, NativeArrayOptions.UninitializedMemory);
+            m_DeferredArrays = maxQueuedFrameCount > 0 ? new List<DeferredArray>() : null;
         }
 
         void Expand(int newLength)
         {
             var newArray = new NativeArray<T>(newLength, m_MemoryLabel, NativeArrayOptions.UninitializedMemory);
-            var dst = newArray.Slice(0, m_Count);
-            dst.CopyFrom(m_NativeArray);
-            m_NativeArray.Dispose();
+            if (m_Count > 0)
+            {
+                var dst = newArray.Slice(0, m_Count);
+                dst.CopyFrom(m_NativeArray);
+            }
+
+            // Defer disposal if needed, otherwise dispose immediately
+            if (m_MaxQueuedFrameCount > 0 && m_DeferredArrays != null)
+            {
+                m_DeferredArrays.Add(new DeferredArray
+                {
+                    array = m_NativeArray,
+                    framesRemaining = m_MaxQueuedFrameCount
+                });
+            }
+            else
+            {
+                m_NativeArray.Dispose();
+            }
+
             m_NativeArray = newArray;
         }
 
@@ -73,6 +103,37 @@ namespace UnityEngine.UIElements.UIR
 
         public int Count => m_Count;
 
+        public void AdvanceFrame()
+        {
+            if (m_DeferredArrays == null || m_DeferredArrays.Count == 0)
+                return;
+
+            for (int i = m_DeferredArrays.Count - 1; i >= 0; --i)
+            {
+                var deferred = m_DeferredArrays[i];
+                --deferred.framesRemaining;
+
+                if (deferred.framesRemaining <= 0)
+                {
+                    // Safe to dispose now - render thread is done with this buffer
+                    if (deferred.array.IsCreated)
+                        deferred.array.Dispose();
+                    m_DeferredArrays.RemoveAt(i);
+                }
+                else
+                {
+                    // Update the counter
+                    m_DeferredArrays[i] = deferred;
+                }
+            }
+        }
+
+        // For testing
+        internal int GetDeferredArrayCount()
+        {
+            return m_DeferredArrays?.Count ?? 0;
+        }
+
         #region Dispose Pattern
 
         protected bool disposed { get; private set; }
@@ -92,6 +153,17 @@ namespace UnityEngine.UIElements.UIR
             if (disposing)
             {
                 m_NativeArray.Dispose();
+
+                // Dispose all deferred arrays immediately on disposal
+                if (m_DeferredArrays != null)
+                {
+                    foreach (var deferred in m_DeferredArrays)
+                    {
+                        if (deferred.array.IsCreated)
+                            deferred.array.Dispose();
+                    }
+                    m_DeferredArrays.Clear();
+                }
             }
             else DisposeHelper.NotifyMissingDispose(this);
 

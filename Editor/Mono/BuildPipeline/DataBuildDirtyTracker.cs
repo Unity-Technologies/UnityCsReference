@@ -97,9 +97,9 @@ namespace UnityEditor.Mono.BuildPipeline
                 return true;
             }
 
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             if (!scenes.SequenceEqual(buildData.scenes.Select(f => f.path)))
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             {
                 Console.WriteLine("Rebuilding Data files because the scene list is dirty");
                 return true;
@@ -111,25 +111,25 @@ namespace UnityEditor.Mono.BuildPipeline
                 return true;
             }
 
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             if (!assemblyNames.SequenceEqual(buildData.assemblyNames))
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             {
                 Console.WriteLine("Rebuilding Data files because the assembly list is dirty");
                 return true;
             }
 
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             if (buildData.inputFiles.Any(CheckAssetDirty))
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                 return true;
 
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var resourcePaths = ResourcesAPIInternal.GetAllPaths("").OrderBy(p => p).ToArray();
-#pragma warning restore RS0030
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning restore UA2001
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             if (!resourcePaths.SequenceEqual(buildData.resourcePaths))
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             {
                 for (int i = 0; i < resourcePaths.Length || i < buildData.resourcePaths.Length; i++)
                 {
@@ -148,13 +148,13 @@ namespace UnityEditor.Mono.BuildPipeline
                 }
             }
 
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var enabledModules = ModuleMetadata.GetModuleNames()
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                 .Where(m => ModuleMetadata.GetModuleIncludeSettingForModule(m) != ModuleIncludeSetting.ForceExclude);
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             if (!enabledModules.SequenceEqual(buildData.enabledModules))
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             {
                 Console.WriteLine($"Rebuilding Data files because enabled modules have changed");
                 return true;
@@ -183,9 +183,9 @@ namespace UnityEditor.Mono.BuildPipeline
                 inputFiles.Add(new BuildDataInputFile(scene, developmentBuild));
             foreach (var prefab in prefabs)
                 inputFiles.Add(new BuildDataInputFile(prefab, developmentBuild));
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             foreach (var assetInfo in report.packedAssets.SelectMany(a => a.contents))
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             {
                 if (assetInfo.sourceAssetPath.ToNPath().FileExists() && !assetInfo.sourceAssetPath.StartsWith("."))
                     inputFiles.Add(new BuildDataInputFile(assetInfo.sourceAssetPath, developmentBuild));
@@ -200,17 +200,17 @@ namespace UnityEditor.Mono.BuildPipeline
                 activeBuildProfile = new BuildDataInputFile(activeBuildProfilePath, developmentBuild),
                 buildOptions = report.summary.options & BuildData.BuildOptionsMask,
                 unityVersion = Application.unityVersion,
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 resourcePaths = ResourcesAPIInternal.GetAllPaths("").OrderBy(p => p).ToArray(),
-#pragma warning restore RS0030
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning restore UA2001
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 enabledModules = ModuleMetadata.GetModuleNames()
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                     .Where(m => ModuleMetadata.GetModuleIncludeSettingForModule(m) != ModuleIncludeSetting.ForceExclude)
                     .ToArray(),
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 assemblyNames = assemblyNames.OrderBy(p => p).ToArray()
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             };
             buildDataPath.ToNPath().WriteAllText(JsonUtility.ToJson(buildData));
         }
@@ -230,9 +230,9 @@ namespace UnityEditor.Mono.BuildPipeline
                     scenes = scenes,
                     activeBuildProfilePath = activeBuildProfilePath,
                     buildOptions = buildOptions,
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     assemblyNames = assemblyNames.OrderBy(p => p).ToArray()
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                 };
                 return tracker.DoCheckDirty();
             }

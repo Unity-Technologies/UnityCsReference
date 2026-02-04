@@ -80,9 +80,9 @@ namespace UnityEditor.SceneTemplate
 
         internal static IEnumerable<string> GetSceneTemplatePaths()
         {
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return GetSceneTemplates().Select(asset => AssetDatabase.GetAssetPath(asset.GetEntityId()));
-#pragma warning restore RS0030
+#pragma warning restore UA2001
         }
 
         internal static IEnumerable<SceneTemplateAsset> GetSceneTemplates()
@@ -196,9 +196,9 @@ namespace UnityEditor.SceneTemplate
             }
 
             // Check for real templateAssets:
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var sceneTemplateAssetInfos = GetSceneTemplates().Select(sceneTemplateAsset =>
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             {
                 var templateAssetPath = AssetDatabase.GetAssetPath(sceneTemplateAsset.GetEntityId());
                 return Tuple.Create(templateAssetPath, sceneTemplateAsset);

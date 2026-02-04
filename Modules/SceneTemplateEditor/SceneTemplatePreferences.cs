@@ -16,6 +16,7 @@ namespace UnityEditor.SceneTemplate
         internal enum NewDefaultSceneOverride
         {
             SceneTemplate,
+            [InspectorName("Built-in Scene")]
             DefaultBuiltin
         }
 

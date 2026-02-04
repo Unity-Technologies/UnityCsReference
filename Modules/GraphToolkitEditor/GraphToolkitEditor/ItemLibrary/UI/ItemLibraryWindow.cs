@@ -366,5 +366,16 @@ namespace Unity.GraphToolkit.ItemLibrary.Editor
             m_IgnoreFocusLost = true;
             m_ParentWindow?.Focus();
         }
+
+        public class TestAccess
+        {
+            readonly ItemLibraryWindow m_ItemLibraryWindow;
+            public TestAccess(ItemLibraryWindow itemLibraryWindow)
+            {
+                m_ItemLibraryWindow = itemLibraryWindow;
+            }
+
+            public void InvokeItemChosen(ItemLibraryItem item) => m_ItemLibraryWindow.OnItemChosen(item);
+        }
     }
 }

@@ -17,7 +17,6 @@ namespace UnityEditor.Build.Content
     [Serializable]
     [UsedByNativeCode]
     [StructLayout(LayoutKind.Sequential)]
-    [NativeType(CodegenOptions = CodegenOptions.Custom)]
     [NativeHeader("Modules/ContentBuild/Editor/SBPSupport/ContentBuildInterface.bindings.h")]
     public class PreloadInfo
     {
@@ -38,7 +37,6 @@ namespace UnityEditor.Build.Content
     [UsedByNativeCode]
     [NativeAsStruct]
     [StructLayout(LayoutKind.Sequential)]
-    [NativeType(CodegenOptions = CodegenOptions.Custom)]
     [NativeHeader("Modules/ContentBuild/Editor/SBPSupport/ContentBuildInterface.bindings.h")]
     public class AssetLoadInfo
     {
@@ -88,7 +86,6 @@ namespace UnityEditor.Build.Content
     [Serializable]
     [UsedByNativeCode]
     [StructLayout(LayoutKind.Sequential)]
-    [NativeType(CodegenOptions = CodegenOptions.Custom)]
     [NativeHeader("Modules/ContentBuild/Editor/SBPSupport/ContentBuildInterface.bindings.h")]
     public class AssetBundleInfo
     {
@@ -120,7 +117,6 @@ namespace UnityEditor.Build.Content
     [UsedByNativeCode]
     [NativeAsStruct]
     [StructLayout(LayoutKind.Sequential)]
-    [NativeType(CodegenOptions = CodegenOptions.Custom)]
     [NativeHeader("Modules/ContentBuild/Editor/SBPSupport/ContentBuildInterface.bindings.h")]
     public class SceneLoadInfo
     {
@@ -161,7 +157,6 @@ namespace UnityEditor.Build.Content
     [Serializable]
     [UsedByNativeCode]
     [StructLayout(LayoutKind.Sequential)]
-    [NativeType(CodegenOptions = CodegenOptions.Custom)]
     [NativeHeader("Modules/ContentBuild/Editor/SBPSupport/ContentBuildInterface.bindings.h")]
     public class SceneBundleInfo
     {
@@ -192,7 +187,6 @@ namespace UnityEditor.Build.Content
     [Serializable]
     [UsedByNativeCode]
     [NativeAsStruct]
-    [NativeType(CodegenOptions = CodegenOptions.Custom)]
     [StructLayout(LayoutKind.Sequential)]
     public class SerializationInfo
     {
@@ -223,7 +217,6 @@ namespace UnityEditor.Build.Content
     [UsedByNativeCode]
     [NativeAsStruct]
     [StructLayout(LayoutKind.Sequential)]
-    [NativeType(CodegenOptions = CodegenOptions.Custom)]
     [NativeHeader("Modules/ContentBuild/Editor/SBPSupport/ContentBuildInterface.bindings.h")]
     public class WriteCommand
     {

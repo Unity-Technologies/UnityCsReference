@@ -31,9 +31,9 @@ namespace Unity.GraphToolkit.Editor
         protected BaseMultipleModelViewsPart(string name, IEnumerable<Model> models, ChildView ownerElement, string parentClassName) :
             base(name, ownerElement, parentClassName)
         {
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             m_Models = models.ToList();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
         }
     }
 }

@@ -556,6 +556,7 @@ namespace UnityEditor
 
                     var shaders = ShaderUtil.GetAllShaderInfo();
                     var shaderList = new List<string>();
+                    var unnestedList = new List<string>();
                     var legacyList = new List<string>();
                     var notSupportedList = new List<string>();
                     var failedCompilationList = new List<string>();
@@ -581,16 +582,16 @@ namespace UnityEditor
                             legacyList.Add(shader.name);
                             continue;
                         }
+                        if (!shader.name.Contains('/'))
+                        {
+                            unnestedList.Add(shader.name);
+                            continue;
+                        }
                         shaderList.Add(shader.name);
                     }
 
                     shaderList.Sort();
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                    var unnestedList =  shaderList.Where(s => s.Count(c => c == '/') == 0).ToList();
-#pragma warning restore RS0030
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                    shaderList = shaderList.Where(s => s.Count(c => c == '/') > 0).ToList();
-#pragma warning restore RS0030
+                    unnestedList.Sort();
                     shaderList.AddRange(unnestedList);
 
                     legacyList.Sort();
@@ -654,9 +655,9 @@ namespace UnityEditor
                     bool found = false;
                     foreach (var e in m_SearchableElements)
                     {
-#pragma warning disable RS0031 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2002 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                         if (e.children.Any())
-#pragma warning restore RS0031
+#pragma warning restore UA2002
                             continue;
 
                         var menuItem = (ShaderDropdownItem)e;
@@ -679,9 +680,9 @@ namespace UnityEditor
                     {
                         matched[i].Sort((s2, s1) =>
                         {
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                             var order = (int)((s2 as ShaderDropdownItem)?.fullName.Count(c => c == '/') - (s1 as ShaderDropdownItem)?.fullName.Count(c => c == '/'));
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                             if (order == 0)
                                 order = s2.name.CompareTo(s1.name);
                             return order;

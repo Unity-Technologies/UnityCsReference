@@ -40,9 +40,9 @@ namespace Unity.GraphToolkit.Editor
         /// <returns>True if the inspector does not contain any field.</returns>
         public virtual bool IsEmpty()
         {
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var fieldsPart = PartList.Parts.FirstOrDefault(p => p.PartName == fieldsPartName);
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             return !(fieldsPart is FieldsInspector fieldsInspector) || fieldsInspector.IsEmpty;
         }
     }

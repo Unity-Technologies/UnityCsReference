@@ -9,7 +9,7 @@
     <EnableDefaultItems>false</EnableDefaultItems>
     <DefineConstants>$(DefineConstants);ALLOW_IMPLICIT_INTERNAL_VISIBILITY;COMBINED_ASSEMBLIES;DEBUGGER_LISTENS_FIXED_PORT;EDITOR_ONLY_NAVMESH_BUILDER_DEPRECATED;ENABLE_ACCELERATOR_CLIENT_DEBUGGING;ENABLE_ALTERNATIVE_LISTEN_PORT;ENABLE_AMD;ENABLE_AR;ENABLE_AUDIO;ENABLE_AUDIO_MANAGER_BASED_SCHEDULING;ENABLE_AUDIO_SCRIPTABLE_PIPELINE;ENABLE_CACHING;ENABLE_CLOTH;ENABLE_CLOUD_LICENSE;ENABLE_CLOUD_SERVICES;ENABLE_CLOUD_SERVICES_ADS;ENABLE_CLOUD_SERVICES_ANALYTICS;ENABLE_CLOUD_SERVICES_BUILD;ENABLE_CLOUD_SERVICES_CRASH_REPORTING;ENABLE_CLOUD_SERVICES_ENGINE_DIAGNOSTICS;ENABLE_CLOUD_SERVICES_PURCHASING;ENABLE_CLOUD_SERVICES_USE_WEBREQUEST;ENABLE_CLUSTERINPUT;ENABLE_CLUSTER_SYNC;ENABLE_CRUNCH_TEXTURE_COMPRESSION;ENABLE_DIRECTOR_AUDIO;ENABLE_DIRECTOR_TEXTURE;ENABLE_EDITOR_GAME_SERVICES;ENABLE_EDITOR_HUB_LICENSE;ENABLE_ETC_COMPRESSION;ENABLE_EVENT_QUEUE;ENABLE_GAMECENTER_API;ENABLE_GENERATE_NATIVE_PLUGINS_FOR_ASSEMBLIES_API;ENABLE_LZMA;ENABLE_MANAGED_ANIMATION_JOBS;ENABLE_MANAGED_AUDIO_JOBS;ENABLE_MANAGED_JOBS;ENABLE_MANAGED_TRANSFORM_JOBS;ENABLE_MANAGED_UNITYTLS;ENABLE_MARSHALLING_TESTS;ENABLE_MICROPHONE;ENABLE_MOVIES;ENABLE_MULTIPLE_DISPLAYS;ENABLE_NAVIGATION_OFFMESHLINK_TO_NAVMESHLINK;ENABLE_NETWORK;ENABLE_NVIDIA;ENABLE_PHYSICS;ENABLE_RUNTIME_GI;ENABLE_SCRIPTING_GC_WBARRIERS;ENABLE_TEXTURE_STREAMING;ENABLE_UNITYEVENTS;ENABLE_UNITYWEBREQUEST;ENABLE_UNITY_CLOUD_IDENTIFIERS;ENABLE_UNITY_COLLECTIONS_CHECKS;ENABLE_UNITY_CONSENT;ENABLE_UNITY_GAME_SERVICES_ANALYTICS_SUPPORT;ENABLE_VERSION_CONTROL_INTEGRATION;ENABLE_VIDEO;ENABLE_VIRTUALTEXTURING;ENABLE_VR;ENABLE_WEBCAM;ENABLE_WEBSOCKET_CLIENT;ENABLE_WEBSOCKET_HOST;ENABLE_WWW;INCLUDE_DYNAMIC_GI;PLATFORM_SUPPORTS_GAMEPAD_AUDIO;PLATFORM_SUPPORTS_MONO;PLAYERCONNECTION_LISTENS_FIXED_PORT;RENDER_SOFTWARE_CURSOR;TEXTCORE_1_0_OR_NEWER;TRACE;UNITY_ANDROID_API;UNITY_ASSEMBLIES_API;UNITY_ASSERTIONS;UNITY_CAN_SHOW_SPLASH_SCREEN;UNITY_EDITOR;UNITY_EDITOR_API;UNITY_EDITOR_LINUX;UNITY_IPHONE_API;UNITY_METRO_API;UNITY_PS4_API;UNITY_PS5_API;UNITY_STANDALONE_LINUX_API;UNITY_STANDALONE_OSX_API;UNITY_STANDALONE_WIN_API;UNITY_TINYPROFILING_INTERNAL;UNITY_TVOS_API;UNITY_UNITYADS_API;UNITY_WEBGL_API;USE_PROPERTY_DATABASE;USE_QUERY_BUILDER;USE_SEARCH_ENGINE_API;USE_SEARCH_MODULE</DefineConstants>
     <LangVersion>12.0</LangVersion>
-    <NoWarn>1701;169;649;626</NoWarn>
+    <NoWarn>1701;169;649;626;UA1002</NoWarn>
     <Nullable>disable</Nullable>
     <ImplicitUsings>disable</ImplicitUsings>
     <RootNamespace>UnityEditor</RootNamespace>
@@ -8163,44 +8163,77 @@
     <Compile Include="..\..\Modules\MultiplayerEditor\Managed\MultiplayerPlayMode\InternalBridge\WindowLayout.cs">
       <Link>Modules\MultiplayerEditor\Managed\MultiplayerPlayMode\InternalBridge\WindowLayout.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\MultiplayerEditor\Managed\MultiplayerPlayMode\PlayModeConfig\EditorInstanceDescription.cs">
-      <Link>Modules\MultiplayerEditor\Managed\MultiplayerPlayMode\PlayModeConfig\EditorInstanceDescription.cs</Link>
+    <Compile Include="..\..\Modules\MultiplayerEditor\Managed\MultiplayerPlayMode\PlayModeConfig\Deprecated\EditorInstanceDescription.cs">
+      <Link>Modules\MultiplayerEditor\Managed\MultiplayerPlayMode\PlayModeConfig\Deprecated\EditorInstanceDescription.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\MultiplayerEditor\Managed\MultiplayerPlayMode\PlayModeConfig\Deprecated\InstanceDescription.cs">
+      <Link>Modules\MultiplayerEditor\Managed\MultiplayerPlayMode\PlayModeConfig\Deprecated\InstanceDescription.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\MultiplayerEditor\Managed\MultiplayerPlayMode\PlayModeConfig\Deprecated\LocalInstanceDescription.cs">
+      <Link>Modules\MultiplayerEditor\Managed\MultiplayerPlayMode\PlayModeConfig\Deprecated\LocalInstanceDescription.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\MultiplayerEditor\Managed\MultiplayerPlayMode\PlayModeConfig\Deprecated\MainEditorInstanceDescription.cs">
+      <Link>Modules\MultiplayerEditor\Managed\MultiplayerPlayMode\PlayModeConfig\Deprecated\MainEditorInstanceDescription.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\MultiplayerEditor\Managed\MultiplayerPlayMode\PlayModeConfig\Deprecated\OrchestratedScenario.deprecated.cs">
+      <Link>Modules\MultiplayerEditor\Managed\MultiplayerPlayMode\PlayModeConfig\Deprecated\OrchestratedScenario.deprecated.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\MultiplayerEditor\Managed\MultiplayerPlayMode\PlayModeConfig\Deprecated\VirtualEditorInstanceDescription.cs">
+      <Link>Modules\MultiplayerEditor\Managed\MultiplayerPlayMode\PlayModeConfig\Deprecated\VirtualEditorInstanceDescription.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\MultiplayerEditor\Managed\MultiplayerPlayMode\PlayModeConfig\EditorPlayModeGuard.cs">
       <Link>Modules\MultiplayerEditor\Managed\MultiplayerPlayMode\PlayModeConfig\EditorPlayModeGuard.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\MultiplayerEditor\Managed\MultiplayerPlayMode\PlayModeConfig\InstanceDescription.cs">
-      <Link>Modules\MultiplayerEditor\Managed\MultiplayerPlayMode\PlayModeConfig\InstanceDescription.cs</Link>
+    <Compile Include="..\..\Modules\MultiplayerEditor\Managed\MultiplayerPlayMode\PlayModeConfig\OrchestratedScenario\InstanceItem.cs">
+      <Link>Modules\MultiplayerEditor\Managed\MultiplayerPlayMode\PlayModeConfig\OrchestratedScenario\InstanceItem.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\MultiplayerEditor\Managed\MultiplayerPlayMode\PlayModeConfig\LocalInstanceDescription.cs">
-      <Link>Modules\MultiplayerEditor\Managed\MultiplayerPlayMode\PlayModeConfig\LocalInstanceDescription.cs</Link>
+    <Compile Include="..\..\Modules\MultiplayerEditor\Managed\MultiplayerPlayMode\PlayModeConfig\OrchestratedScenario\OrchestratedScenario.cs">
+      <Link>Modules\MultiplayerEditor\Managed\MultiplayerPlayMode\PlayModeConfig\OrchestratedScenario\OrchestratedScenario.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\MultiplayerEditor\Managed\MultiplayerPlayMode\PlayModeConfig\MainEditorInstanceDescription.cs">
-      <Link>Modules\MultiplayerEditor\Managed\MultiplayerPlayMode\PlayModeConfig\MainEditorInstanceDescription.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\MultiplayerEditor\Managed\MultiplayerPlayMode\PlayModeConfig\OrchestratedScenario.cs">
-      <Link>Modules\MultiplayerEditor\Managed\MultiplayerPlayMode\PlayModeConfig\OrchestratedScenario.cs</Link>
+    <Compile Include="..\..\Modules\MultiplayerEditor\Managed\MultiplayerPlayMode\PlayModeConfig\OrchestratedScenario\OrchestratedScenarioSettings.cs">
+      <Link>Modules\MultiplayerEditor\Managed\MultiplayerPlayMode\PlayModeConfig\OrchestratedScenario\OrchestratedScenarioSettings.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\MultiplayerEditor\Managed\MultiplayerPlayMode\PlayModeConfig\ScenarioFactory.cs">
       <Link>Modules\MultiplayerEditor\Managed\MultiplayerPlayMode\PlayModeConfig\ScenarioFactory.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\MultiplayerEditor\Managed\MultiplayerPlayMode\PlayModeConfig\UI\AdbDeviceField.cs">
+      <Link>Modules\MultiplayerEditor\Managed\MultiplayerPlayMode\PlayModeConfig\UI\AdbDeviceField.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\MultiplayerEditor\Managed\MultiplayerPlayMode\PlayModeConfig\UI\BuildProfileField.cs">
+      <Link>Modules\MultiplayerEditor\Managed\MultiplayerPlayMode\PlayModeConfig\UI\BuildProfileField.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\MultiplayerEditor\Managed\MultiplayerPlayMode\PlayModeConfig\UI\CloneEditorSettingsDrawer.cs">
+      <Link>Modules\MultiplayerEditor\Managed\MultiplayerPlayMode\PlayModeConfig\UI\CloneEditorSettingsDrawer.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\MultiplayerEditor\Managed\MultiplayerPlayMode\PlayModeConfig\UI\FieldIcon.cs">
+      <Link>Modules\MultiplayerEditor\Managed\MultiplayerPlayMode\PlayModeConfig\UI\FieldIcon.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\MultiplayerEditor\Managed\MultiplayerPlayMode\PlayModeConfig\UI\FilteredInstancesListProperty.cs">
+      <Link>Modules\MultiplayerEditor\Managed\MultiplayerPlayMode\PlayModeConfig\UI\FilteredInstancesListProperty.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\MultiplayerEditor\Managed\MultiplayerPlayMode\PlayModeConfig\UI\Icons.cs">
       <Link>Modules\MultiplayerEditor\Managed\MultiplayerPlayMode\PlayModeConfig\UI\Icons.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\MultiplayerEditor\Managed\MultiplayerPlayMode\PlayModeConfig\UI\InstanceItemDrawer.cs">
+      <Link>Modules\MultiplayerEditor\Managed\MultiplayerPlayMode\PlayModeConfig\UI\InstanceItemDrawer.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\MultiplayerEditor\Managed\MultiplayerPlayMode\PlayModeConfig\UI\LaunchingScenarioWindow.cs">
       <Link>Modules\MultiplayerEditor\Managed\MultiplayerPlayMode\PlayModeConfig\UI\LaunchingScenarioWindow.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\MultiplayerEditor\Managed\MultiplayerPlayMode\PlayModeConfig\UI\LocalInstanceDescriptionDrawer.cs">
-      <Link>Modules\MultiplayerEditor\Managed\MultiplayerPlayMode\PlayModeConfig\UI\LocalInstanceDescriptionDrawer.cs</Link>
+    <Compile Include="..\..\Modules\MultiplayerEditor\Managed\MultiplayerPlayMode\PlayModeConfig\UI\LocalPlayerSettingsDrawer.cs">
+      <Link>Modules\MultiplayerEditor\Managed\MultiplayerPlayMode\PlayModeConfig\UI\LocalPlayerSettingsDrawer.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\MultiplayerEditor\Managed\MultiplayerPlayMode\PlayModeConfig\UI\MainEditorInstanceDescriptionDrawer.cs">
-      <Link>Modules\MultiplayerEditor\Managed\MultiplayerPlayMode\PlayModeConfig\UI\MainEditorInstanceDescriptionDrawer.cs</Link>
+    <Compile Include="..\..\Modules\MultiplayerEditor\Managed\MultiplayerPlayMode\PlayModeConfig\UI\MainEditorSettingsDrawer.cs">
+      <Link>Modules\MultiplayerEditor\Managed\MultiplayerPlayMode\PlayModeConfig\UI\MainEditorSettingsDrawer.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\MultiplayerEditor\Managed\MultiplayerPlayMode\PlayModeConfig\UI\MultiplayerPlayModeStatusButton.cs">
       <Link>Modules\MultiplayerEditor\Managed\MultiplayerPlayMode\PlayModeConfig\UI\MultiplayerPlayModeStatusButton.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\MultiplayerEditor\Managed\MultiplayerPlayMode\PlayModeConfig\UI\MultiplayerStatusView\CommonInstanceStatusElement.cs">
-      <Link>Modules\MultiplayerEditor\Managed\MultiplayerPlayMode\PlayModeConfig\UI\MultiplayerStatusView\CommonInstanceStatusElement.cs</Link>
+    <Compile Include="..\..\Modules\MultiplayerEditor\Managed\MultiplayerPlayMode\PlayModeConfig\UI\MultiplayerRoleMaskField.cs">
+      <Link>Modules\MultiplayerEditor\Managed\MultiplayerPlayMode\PlayModeConfig\UI\MultiplayerRoleMaskField.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\MultiplayerEditor\Managed\MultiplayerPlayMode\PlayModeConfig\UI\MultiplayerStatusView\CloneEditorInstanceStatusElement.cs">
+      <Link>Modules\MultiplayerEditor\Managed\MultiplayerPlayMode\PlayModeConfig\UI\MultiplayerStatusView\CloneEditorInstanceStatusElement.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\MultiplayerEditor\Managed\MultiplayerPlayMode\PlayModeConfig\UI\MultiplayerStatusView\EditorInstanceStatusElement.cs">
       <Link>Modules\MultiplayerEditor\Managed\MultiplayerPlayMode\PlayModeConfig\UI\MultiplayerStatusView\EditorInstanceStatusElement.cs</Link>
@@ -8211,11 +8244,17 @@
     <Compile Include="..\..\Modules\MultiplayerEditor\Managed\MultiplayerPlayMode\PlayModeConfig\UI\MultiplayerStatusView\InstanceStatusElement.cs">
       <Link>Modules\MultiplayerEditor\Managed\MultiplayerPlayMode\PlayModeConfig\UI\MultiplayerStatusView\InstanceStatusElement.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\MultiplayerEditor\Managed\MultiplayerPlayMode\PlayModeConfig\UI\MultiplayerStatusView\LocalPlayerInstanceStatusElement.cs">
+      <Link>Modules\MultiplayerEditor\Managed\MultiplayerPlayMode\PlayModeConfig\UI\MultiplayerStatusView\LocalPlayerInstanceStatusElement.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\MultiplayerEditor\Managed\MultiplayerPlayMode\PlayModeConfig\UI\MultiplayerStatusView\OrchestratedScenarioStatusElement.cs">
       <Link>Modules\MultiplayerEditor\Managed\MultiplayerPlayMode\PlayModeConfig\UI\MultiplayerStatusView\OrchestratedScenarioStatusElement.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\MultiplayerEditor\Managed\MultiplayerPlayMode\PlayModeConfig\UI\MultiplayerStatusView\PlaymodeStatusPopupContent.cs">
       <Link>Modules\MultiplayerEditor\Managed\MultiplayerPlayMode\PlayModeConfig\UI\MultiplayerStatusView\PlaymodeStatusPopupContent.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\MultiplayerEditor\Managed\MultiplayerPlayMode\PlayModeConfig\UI\MultiplayerTagField.cs">
+      <Link>Modules\MultiplayerEditor\Managed\MultiplayerPlayMode\PlayModeConfig\UI\MultiplayerTagField.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\MultiplayerEditor\Managed\MultiplayerPlayMode\PlayModeConfig\UI\PlainPropertyField.cs">
       <Link>Modules\MultiplayerEditor\Managed\MultiplayerPlayMode\PlayModeConfig\UI\PlainPropertyField.cs</Link>
@@ -8225,12 +8264,6 @@
     </Compile>
     <Compile Include="..\..\Modules\MultiplayerEditor\Managed\MultiplayerPlayMode\PlayModeConfig\UI\UIPartsFactory.cs">
       <Link>Modules\MultiplayerEditor\Managed\MultiplayerPlayMode\PlayModeConfig\UI\UIPartsFactory.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\MultiplayerEditor\Managed\MultiplayerPlayMode\PlayModeConfig\UI\VirtualEditorInstanceDescriptionDrawer.cs">
-      <Link>Modules\MultiplayerEditor\Managed\MultiplayerPlayMode\PlayModeConfig\UI\VirtualEditorInstanceDescriptionDrawer.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\MultiplayerEditor\Managed\MultiplayerPlayMode\PlayModeConfig\VirtualEditorInstanceDescription.cs">
-      <Link>Modules\MultiplayerEditor\Managed\MultiplayerPlayMode\PlayModeConfig\VirtualEditorInstanceDescription.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\MultiplayerEditor\Managed\MultiplayerPlayMode\Scenarios\Api\ExecutionState.cs">
       <Link>Modules\MultiplayerEditor\Managed\MultiplayerPlayMode\Scenarios\Api\ExecutionState.cs</Link>
@@ -8856,6 +8889,9 @@
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Common\BaseVersionList.cs">
       <Link>Modules\PackageManagerUI\Editor\Services\Common\BaseVersionList.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Common\CollectionExtensions.cs">
+      <Link>Modules\PackageManagerUI\Editor\Services\Common\CollectionExtensions.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Common\DictionaryExtensions.cs">
       <Link>Modules\PackageManagerUI\Editor\Services\Common\DictionaryExtensions.cs</Link>
     </Compile>
@@ -8873,9 +8909,6 @@
     </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Common\Icon.cs">
       <Link>Modules\PackageManagerUI\Editor\Services\Common\Icon.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Common\MatchExtensions.cs">
-      <Link>Modules\PackageManagerUI\Editor\Services\Common\MatchExtensions.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Common\ModalManager.cs">
       <Link>Modules\PackageManagerUI\Editor\Services\Common\ModalManager.cs</Link>
@@ -8930,6 +8963,9 @@
     </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Common\UIErrorCode.cs">
       <Link>Modules\PackageManagerUI\Editor\Services\Common\UIErrorCode.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Common\UniqueQueue.cs">
+      <Link>Modules\PackageManagerUI\Editor\Services\Common\UniqueQueue.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Common\ViolationExtension.cs">
       <Link>Modules\PackageManagerUI\Editor\Services\Common\ViolationExtension.cs</Link>
@@ -9266,6 +9302,9 @@
     </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Upm\UpmListOperation.cs">
       <Link>Modules\PackageManagerUI\Editor\Services\Upm\UpmListOperation.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Upm\UpmOnAssetStorePackageFactory.cs">
+      <Link>Modules\PackageManagerUI\Editor\Services\Upm\UpmOnAssetStorePackageFactory.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Upm\UpmPackOperation.cs">
       <Link>Modules\PackageManagerUI\Editor\Services\Upm\UpmPackOperation.cs</Link>
@@ -11547,6 +11586,15 @@
     <Compile Include="..\..\Modules\QuickSearch\Editor\Indexing\SearchDatabaseImporter.cs">
       <Link>Modules\QuickSearch\Editor\Indexing\SearchDatabaseImporter.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\QuickSearch\Editor\Indexing\SearchIndexArtifactGeneration.cs">
+      <Link>Modules\QuickSearch\Editor\Indexing\SearchIndexArtifactGeneration.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\QuickSearch\Editor\Indexing\SearchIndexArtifactImportContext.cs">
+      <Link>Modules\QuickSearch\Editor\Indexing\SearchIndexArtifactImportContext.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\QuickSearch\Editor\Indexing\SearchIndexArtifactImportData.cs">
+      <Link>Modules\QuickSearch\Editor\Indexing\SearchIndexArtifactImportData.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\QuickSearch\Editor\Indexing\SearchIndexArtifactImporter.cs">
       <Link>Modules\QuickSearch\Editor\Indexing\SearchIndexArtifactImporter.cs</Link>
     </Compile>
@@ -12186,6 +12234,9 @@
     <Compile Include="..\..\Modules\QuickSearch\ScriptBindings\SearchCancellationToken.bindings.cs">
       <Link>Modules\QuickSearch\ScriptBindings\SearchCancellationToken.bindings.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\QuickSearch\ScriptBindings\SearchIndexArtifactGeneration.bindings.cs">
+      <Link>Modules\QuickSearch\ScriptBindings\SearchIndexArtifactGeneration.bindings.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\SafeMode\SafeModeToolbarWindow.cs">
       <Link>Modules\SafeMode\SafeModeToolbarWindow.cs</Link>
     </Compile>
@@ -12258,11 +12309,20 @@
     <Compile Include="..\..\Modules\SchemaManagerManaged\SchemaManager.cs">
       <Link>Modules\SchemaManagerManaged\SchemaManager.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\SchemaManagerManaged\SchemaManagerNative.bindings.cs">
-      <Link>Modules\SchemaManagerManaged\SchemaManagerNative.bindings.cs</Link>
-    </Compile>
     <Compile Include="..\..\Modules\SchemaManagerManaged\SchemaManagerSchemas.cs">
       <Link>Modules\SchemaManagerManaged\SchemaManagerSchemas.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\ShaderApiReflectionEditor\Public\DataStructures\Hint.bindings.cs">
+      <Link>Modules\ShaderApiReflectionEditor\Public\DataStructures\Hint.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\ShaderApiReflectionEditor\Public\DataStructures\ReflectedFunction.bindings.cs">
+      <Link>Modules\ShaderApiReflectionEditor\Public\DataStructures\ReflectedFunction.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\ShaderApiReflectionEditor\Public\DataStructures\ReflectedParameter.bindings.cs">
+      <Link>Modules\ShaderApiReflectionEditor\Public\DataStructures\ReflectedParameter.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\ShaderApiReflectionEditor\Public\ShaderIncludeReflection.bindings.cs">
+      <Link>Modules\ShaderApiReflectionEditor\Public\ShaderIncludeReflection.bindings.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\ShaderBuildSettingsEditor\AssemblyInfo.cs">
       <Link>Modules\ShaderBuildSettingsEditor\AssemblyInfo.cs</Link>
@@ -13245,9 +13305,6 @@
     <Compile Include="..\..\Modules\UIBuilder\Editor\Builder\Draggers\BuilderViewportDragger.cs">
       <Link>Modules\UIBuilder\Editor\Builder\Draggers\BuilderViewportDragger.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\UIBuilder\Editor\Builder\Explorer\BuilderClassPill.cs">
-      <Link>Modules\UIBuilder\Editor\Builder\Explorer\BuilderClassPill.cs</Link>
-    </Compile>
     <Compile Include="..\..\Modules\UIBuilder\Editor\Builder\Explorer\BuilderExplorer.cs">
       <Link>Modules\UIBuilder\Editor\Builder\Explorer\BuilderExplorer.cs</Link>
     </Compile>
@@ -13262,9 +13319,6 @@
     </Compile>
     <Compile Include="..\..\Modules\UIBuilder\Editor\Builder\Explorer\BuilderHierarchyWindow.cs">
       <Link>Modules\UIBuilder\Editor\Builder\Explorer\BuilderHierarchyWindow.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIBuilder\Editor\Builder\Explorer\BuilderNewSelectorField.cs">
-      <Link>Modules\UIBuilder\Editor\Builder\Explorer\BuilderNewSelectorField.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\UIBuilder\Editor\Builder\Explorer\BuilderStyleSheets.cs">
       <Link>Modules\UIBuilder\Editor\Builder\Explorer\BuilderStyleSheets.cs</Link>
@@ -13376,9 +13430,6 @@
     </Compile>
     <Compile Include="..\..\Modules\UIBuilder\Editor\Builder\Inspector\BuilderStyleRow.cs">
       <Link>Modules\UIBuilder\Editor\Builder\Inspector\BuilderStyleRow.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIBuilder\Editor\Builder\Inspector\BuilderStyleSheetsNewSelectorHelpTips.cs">
-      <Link>Modules\UIBuilder\Editor\Builder\Inspector\BuilderStyleSheetsNewSelectorHelpTips.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\UIBuilder\Editor\Builder\Inspector\IBuilderInspectorSection.cs">
       <Link>Modules\UIBuilder\Editor\Builder\Inspector\IBuilderInspectorSection.cs</Link>
@@ -14355,14 +14406,26 @@
     <Compile Include="..\..\Modules\UIToolkitAuthoringEditor\Managed\Commands\CreateNewStyleSheetCommand.cs">
       <Link>Modules\UIToolkitAuthoringEditor\Managed\Commands\CreateNewStyleSheetCommand.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\UIToolkitAuthoringEditor\Managed\Commands\DuplicateElementsCommand.cs">
+      <Link>Modules\UIToolkitAuthoringEditor\Managed\Commands\DuplicateElementsCommand.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIToolkitAuthoringEditor\Managed\Commands\PasteElementsCommand.cs">
+      <Link>Modules\UIToolkitAuthoringEditor\Managed\Commands\PasteElementsCommand.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\UIToolkitAuthoringEditor\Managed\Commands\RemoveBindingCommand.cs">
       <Link>Modules\UIToolkitAuthoringEditor\Managed\Commands\RemoveBindingCommand.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIToolkitAuthoringEditor\Managed\Commands\RemoveElementsCommand.cs">
+      <Link>Modules\UIToolkitAuthoringEditor\Managed\Commands\RemoveElementsCommand.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\UIToolkitAuthoringEditor\Managed\Commands\RemoveStyleSheetCommand.cs">
       <Link>Modules\UIToolkitAuthoringEditor\Managed\Commands\RemoveStyleSheetCommand.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\UIToolkitAuthoringEditor\Managed\Commands\ReparentElementsCommand.cs">
       <Link>Modules\UIToolkitAuthoringEditor\Managed\Commands\ReparentElementsCommand.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIToolkitAuthoringEditor\Managed\Commands\SetElementNameCommand.cs">
+      <Link>Modules\UIToolkitAuthoringEditor\Managed\Commands\SetElementNameCommand.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\UIToolkitAuthoringEditor\Managed\Commands\SetInlineStylePropertyCommand.cs">
       <Link>Modules\UIToolkitAuthoringEditor\Managed\Commands\SetInlineStylePropertyCommand.cs</Link>
@@ -14390,6 +14453,9 @@
     </Compile>
     <Compile Include="..\..\Modules\UIToolkitAuthoringEditor\Managed\Controls\PanelElement\PanelElement+Panel.cs">
       <Link>Modules\UIToolkitAuthoringEditor\Managed\Controls\PanelElement\PanelElement+Panel.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIToolkitAuthoringEditor\Managed\Hierarchy\Clipboard.cs">
+      <Link>Modules\UIToolkitAuthoringEditor\Managed\Hierarchy\Clipboard.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\UIToolkitAuthoringEditor\Managed\Hierarchy\Columns\VisualElementHierarchyHandlerColumns.cs">
       <Link>Modules\UIToolkitAuthoringEditor\Managed\Hierarchy\Columns\VisualElementHierarchyHandlerColumns.cs</Link>
@@ -14538,6 +14604,15 @@
     <Compile Include="..\..\Modules\UIToolkitAuthoringEditor\Managed\Hierarchy\Selection\Editor\Controls\StylePropertyField\StyleTranslateField.cs">
       <Link>Modules\UIToolkitAuthoringEditor\Managed\Hierarchy\Selection\Editor\Controls\StylePropertyField\StyleTranslateField.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\UIToolkitAuthoringEditor\Managed\Hierarchy\Selection\Editor\Controls\StyleSheet\ClassPill.cs">
+      <Link>Modules\UIToolkitAuthoringEditor\Managed\Hierarchy\Selection\Editor\Controls\StyleSheet\ClassPill.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIToolkitAuthoringEditor\Managed\Hierarchy\Selection\Editor\Controls\StyleSheet\NewSelectorField.cs">
+      <Link>Modules\UIToolkitAuthoringEditor\Managed\Hierarchy\Selection\Editor\Controls\StyleSheet\NewSelectorField.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIToolkitAuthoringEditor\Managed\Hierarchy\Selection\Editor\Controls\StyleSheet\StyleSheetsNewSelectorHelpTips.cs">
+      <Link>Modules\UIToolkitAuthoringEditor\Managed\Hierarchy\Selection\Editor\Controls\StyleSheet\StyleSheetsNewSelectorHelpTips.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\UIToolkitAuthoringEditor\Managed\Hierarchy\Selection\Editor\Controls\TextAlignToggleField.cs">
       <Link>Modules\UIToolkitAuthoringEditor\Managed\Hierarchy\Selection\Editor\Controls\TextAlignToggleField.cs</Link>
     </Compile>
@@ -14561,6 +14636,12 @@
     </Compile>
     <Compile Include="..\..\Modules\UIToolkitAuthoringEditor\Managed\Hierarchy\Selection\Editor\OpenInBuilderElement.cs">
       <Link>Modules\UIToolkitAuthoringEditor\Managed\Hierarchy\Selection\Editor\OpenInBuilderElement.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIToolkitAuthoringEditor\Managed\Hierarchy\Selection\Editor\StyleSheetInspector.cs">
+      <Link>Modules\UIToolkitAuthoringEditor\Managed\Hierarchy\Selection\Editor\StyleSheetInspector.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIToolkitAuthoringEditor\Managed\Hierarchy\Selection\Editor\StyleSheetSelectionEditor.cs">
+      <Link>Modules\UIToolkitAuthoringEditor\Managed\Hierarchy\Selection\Editor\StyleSheetSelectionEditor.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\UIToolkitAuthoringEditor\Managed\Hierarchy\Selection\Editor\UISelectionObjectHeader.cs">
       <Link>Modules\UIToolkitAuthoringEditor\Managed\Hierarchy\Selection\Editor\UISelectionObjectHeader.cs</Link>
@@ -14592,6 +14673,9 @@
     <Compile Include="..\..\Modules\UIToolkitAuthoringEditor\Managed\Hierarchy\Selection\IVisualElementSelectionHandler.cs">
       <Link>Modules\UIToolkitAuthoringEditor\Managed\Hierarchy\Selection\IVisualElementSelectionHandler.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\UIToolkitAuthoringEditor\Managed\Hierarchy\Selection\StyleSheetSelection.cs">
+      <Link>Modules\UIToolkitAuthoringEditor\Managed\Hierarchy\Selection\StyleSheetSelection.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\UIToolkitAuthoringEditor\Managed\Hierarchy\Selection\UISelectionObject.cs">
       <Link>Modules\UIToolkitAuthoringEditor\Managed\Hierarchy\Selection\UISelectionObject.cs</Link>
     </Compile>
@@ -14609,6 +14693,9 @@
     </Compile>
     <Compile Include="..\..\Modules\UIToolkitAuthoringEditor\Managed\Hierarchy\VisualElementRemapper.cs">
       <Link>Modules\UIToolkitAuthoringEditor\Managed\Hierarchy\VisualElementRemapper.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIToolkitAuthoringEditor\Managed\Importers\TempVisualTreeAssetImporter.cs">
+      <Link>Modules\UIToolkitAuthoringEditor\Managed\Importers\TempVisualTreeAssetImporter.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\UIToolkitAuthoringEditor\Managed\Initialization\ModuleInitialization.cs">
       <Link>Modules\UIToolkitAuthoringEditor\Managed\Initialization\ModuleInitialization.cs</Link>
@@ -14673,14 +14760,14 @@
     <Compile Include="..\..\Modules\UIToolkitAuthoringEditor\Managed\Referencing\VisualElementReferenceTools.cs">
       <Link>Modules\UIToolkitAuthoringEditor\Managed\Referencing\VisualElementReferenceTools.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\UIToolkitAuthoringEditor\Managed\Search\UIElementsProvider.cs">
+      <Link>Modules\UIToolkitAuthoringEditor\Managed\Search\UIElementsProvider.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\UIToolkitAuthoringEditor\Managed\Search\UIQueryTypeListBlock.cs">
       <Link>Modules\UIToolkitAuthoringEditor\Managed\Search\UIQueryTypeListBlock.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\UIToolkitAuthoringEditor\Managed\Search\UISearchTokens.cs">
       <Link>Modules\UIToolkitAuthoringEditor\Managed\Search\UISearchTokens.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIToolkitAuthoringEditor\Managed\Search\UIToolkitLibraryWidget.cs">
-      <Link>Modules\UIToolkitAuthoringEditor\Managed\Search\UIToolkitLibraryWidget.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\UIToolkitAuthoringEditor\Managed\Settings\UIToolkitAuthoringSettings.cs">
       <Link>Modules\UIToolkitAuthoringEditor\Managed\Settings\UIToolkitAuthoringSettings.cs</Link>
@@ -14690,6 +14777,9 @@
     </Compile>
     <Compile Include="..\..\Modules\UIToolkitAuthoringEditor\Managed\Stages\StageContextMenuUtility.cs">
       <Link>Modules\UIToolkitAuthoringEditor\Managed\Stages\StageContextMenuUtility.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIToolkitAuthoringEditor\Managed\Stages\UIToolkitStageUtility.cs">
+      <Link>Modules\UIToolkitAuthoringEditor\Managed\Stages\UIToolkitStageUtility.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\UIToolkitAuthoringEditor\Managed\Stages\VisualElementEditingStage.cs">
       <Link>Modules\UIToolkitAuthoringEditor\Managed\Stages\VisualElementEditingStage.cs</Link>
@@ -14958,10 +15048,11 @@
     <Compile Include="..\..\artifacts\MonolithicEditorDlls\InternalsVisibleTo.cs">
       <Link>artifacts\MonolithicEditorDlls\InternalsVisibleTo.cs</Link>
     </Compile>
-    <Reference Include="../../artifacts/Stevedore/unity-compiler-win-x64_63fe/Unity.CompilationPipeline.Common/Unity.CompilationPipeline.Common.dll" />
-    <Reference Include="../../artifacts/Stevedore/msbu-tools-win-x64_316f/buildTools/UnityEditor.MSBuild.dll" />
-    <Reference Include="../../artifacts/Stevedore/msbu-tools-win-x64_316f/msbuild.host/Unity.BuildService.Host.dll" />
-    <Reference Include="../../artifacts/Stevedore/msbu-tools-win-x64_316f/buildTools/Unity.BuildService.dll" />
+    <Reference Include="../../artifacts/Stevedore/unity-compiler-win-x64_ca6f/Unity.CompilationPipeline.Common/Unity.CompilationPipeline.Common.dll" />
+    <Reference Include="../../artifacts/Stevedore/msbu-tools-win-x64_8e3d/buildTools/UnityEditor.MSBuild.dll" />
+    <Reference Include="../../artifacts/Stevedore/msbu-tools-win-x64_8e3d/msbuild.host/Unity.BuildService.Host.dll" />
+    <Reference Include="../../artifacts/Stevedore/msbu-tools-win-x64_8e3d/buildTools/Unity.BuildService.dll" />
+    <Reference Include="../../artifacts/Stevedore/msbu-tools-win-x64_8e3d/asmDefToCSProj/AsmDefToCSProjLib.dll" />
     <Reference Include="../../External/Unity.Cecil/builds/lib/net40/Unity.Cecil.dll" />
     <Reference Include="../../External/ExCSS/builds/builds/lib/netstandard2.0/ExCSS.Unity.dll" />
     <Reference Include="../../Tools/Bee/build/Distribution/BeeDriver2/Bee.BeeDriver2.dll" />

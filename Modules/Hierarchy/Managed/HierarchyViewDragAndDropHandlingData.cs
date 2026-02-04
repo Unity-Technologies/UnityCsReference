@@ -12,8 +12,7 @@ namespace Unity.Hierarchy
     /// <summary>
     /// Container holding the data needed to handle a drag and drop operation.
     /// </summary>
-    [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
-    internal readonly ref struct HierarchyViewDragAndDropHandlingData
+    public readonly ref struct HierarchyViewDragAndDropHandlingData
     {
         readonly DragAndDropData m_DragAndDropData;
 

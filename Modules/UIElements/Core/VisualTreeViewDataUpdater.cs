@@ -17,7 +17,7 @@ namespace UnityEngine.UIElements
         private uint m_LastVersion = 0;
 
         private static readonly string s_Description = "UIElements.UpdateViewData";
-        private static readonly ProfilerMarker s_ProfilerMarker = new ProfilerMarker(s_Description);
+        private static readonly ProfilerMarker s_ProfilerMarker = new ProfilerMarker(ProfilerCategory.UIToolkit, s_Description);
         public override ProfilerMarker profilerMarker => s_ProfilerMarker;
 
         // Only Editor panels actually do something with the ViewData of VisualElements

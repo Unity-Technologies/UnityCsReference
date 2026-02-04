@@ -12,7 +12,7 @@ namespace Unity.Hierarchy
     /// Class containing all the overridable columns properties.
     /// </summary>
     [Serializable]
-    internal sealed class HierarchyViewColumnState
+    public sealed class HierarchyViewColumnState
     {
         /// <summary>
         /// ColumnId of the column.
@@ -44,8 +44,7 @@ namespace Unity.Hierarchy
     /// Class containing all persistable configuration for a HierarchyView.
     /// </summary>
     [Serializable]
-    [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
-    internal sealed class HierarchyViewState
+    public sealed class HierarchyViewState
     {
         const int SerialVersion = 2;
         const UInt32 FileIdentifierToken = 0x68696572;

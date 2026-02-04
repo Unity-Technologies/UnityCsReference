@@ -5,7 +5,6 @@
 using System;
 using System.Collections.Generic;
 using System.Globalization;
-using System.Linq;
 using UnityEngine.UIElements;
 
 namespace UnityEditor.PackageManager.UI.Internal
@@ -225,15 +224,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
             var leftDependencies = left.dependencies ?? Array.Empty<DependencyInfo>();
             var rightDependencies = right.dependencies ?? Array.Empty<DependencyInfo>();
-            if (leftDependencies.Length != rightDependencies.Length)
-                return true;
-
-            var comparer = new DependencyInfoComparer();
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-#pragma warning disable RS0031 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            return leftDependencies.Except(rightDependencies, comparer).Any() || rightDependencies.Except(leftDependencies, comparer).Any();
-#pragma warning restore RS0030
-#pragma warning restore RS0031
+            return !leftDependencies.IsSequenceEqual(rightDependencies);
         }
 
         private void RefreshMetaDataChanges()

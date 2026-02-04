@@ -17,7 +17,7 @@ using File = NiceIO.Do_Not_Use_File_Directly_Use_FileSystem_Active_Instead;
 using Directory = NiceIO.Do_Not_Use_Directory_Directly_Use_FileSystem_Active_Instead;
 
 #nullable disable
-#pragma warning disable RS0030 // Linq usages in external code won't be changed
+#pragma warning disable UA2001 // Linq usages in external code won't be changed
 
 namespace NiceIO
 {

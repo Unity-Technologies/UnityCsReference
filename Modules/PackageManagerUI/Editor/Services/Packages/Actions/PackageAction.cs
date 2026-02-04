@@ -4,7 +4,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
 
 namespace UnityEditor.PackageManager.UI.Internal;
 
@@ -102,17 +101,13 @@ internal abstract class PackageAction
     protected virtual IEnumerable<DisableCondition> GetAllTemporaryDisableConditions() => Array.Empty<DisableCondition>();
     public virtual DisableCondition GetActiveTemporaryDisableCondition()
     {
-        #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-        return GetAllTemporaryDisableConditions().FirstOrDefault(condition => condition.active);
-#pragma warning restore RS0030
+        return GetAllTemporaryDisableConditions().FirstMatch(condition => condition.active);
     }
 
     protected virtual IEnumerable<DisableCondition> GetAllDisableConditions(IPackageVersion version) => Array.Empty<DisableCondition>();
 
     public virtual DisableCondition GetActiveDisableCondition(IPackageVersion version)
     {
-        #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-        return GetAllDisableConditions(version).FirstOrDefault(condition => condition.active);
-#pragma warning restore RS0030
+        return GetAllDisableConditions(version).FirstMatch(condition => condition.active);
     }
 }

@@ -326,9 +326,9 @@ namespace UnityEditor.IMGUI.Controls
                     var selected = m_State.GetSelectedChild(m_CurrentlyRenderedTree);
                     if (selected != null)
                     {
-#pragma warning disable RS0031 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2002 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                         if (selected.children.Any())
-#pragma warning restore RS0031
+#pragma warning restore UA2002
                         {
                             GoToChild();
                         }
@@ -359,11 +359,11 @@ namespace UnityEditor.IMGUI.Controls
                     else if (evt.keyCode == KeyCode.RightArrow)
                     {
                         var idx = m_State.GetSelectedIndex(m_CurrentlyRenderedTree);
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-#pragma warning disable RS0031 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2004 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2002 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                         if (idx > -1 && m_CurrentlyRenderedTree.children.ElementAt(idx).children.Any())
-#pragma warning restore RS0030
-#pragma warning restore RS0031
+#pragma warning restore UA2004
+#pragma warning restore UA2002
                         {
                             GoToChild();
                         }
@@ -423,13 +423,13 @@ namespace UnityEditor.IMGUI.Controls
             m_State.SetScrollState(item, GUILayout.BeginScrollView(m_State.GetScrollState(item), GUIStyle.none, GUI.skin.verticalScrollbar));
             EditorGUIUtility.SetIconSize(m_Gui.iconSize);
             Rect selectedRect = new Rect();
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             for (var i = 0; i < item.children.Count(); i++)
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             {
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2004 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 var child = item.children.ElementAt(i);
-#pragma warning restore RS0030
+#pragma warning restore UA2004
                 bool selected = m_State.GetSelectedIndex(item) == i;
 
                 if (child.IsSeparator())
@@ -438,9 +438,9 @@ namespace UnityEditor.IMGUI.Controls
                 }
                 else
                 {
-#pragma warning disable RS0031 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2002 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     m_Gui.DrawItem(child, child.displayName, child.icon, child.enabled, child.children.Any(), selected, hasSearch);
-#pragma warning restore RS0031
+#pragma warning restore UA2002
                 }
 
                 var r = GUILayoutUtility.GetLastRect();
@@ -465,9 +465,9 @@ namespace UnityEditor.IMGUI.Controls
                 {
                     m_State.SetSelectedIndex(item, i);
                     var selectedChild = m_State.GetSelectedChild(item);
-#pragma warning disable RS0031 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2002 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     if (selectedChild.children.Any())
-#pragma warning restore RS0031
+#pragma warning restore UA2002
                     {
                         GoToChild();
                     }

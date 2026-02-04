@@ -29,16 +29,14 @@ internal class ResetAction : PackageAction
     protected override bool TriggerActionImplementation(IPackageVersion version)
     {
         var packagesToUninstall = m_PackageDatabase.GetCustomizedDependencies(version, CustomizedDependencyType.Resettable);
-        if (packagesToUninstall.Length == 0)
+        if (packagesToUninstall.Count == 0)
             return false;
 
         var packageNameAndVersions = string.Join("\n\u2022 ",
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            packagesToUninstall.Select(package => $"{package.displayName} - {package.versions.recommended.version}").ToArray());
-#pragma warning restore RS0030
+            packagesToUninstall.SelectAsEnumerable(package => $"{package.displayName} - {package.versions.recommended.version}"));
 
         var title = string.Format(L10n.Tr("Resetting {0}"), version.GetDescriptor());
-        var message = packagesToUninstall.Length == 1 ?
+        var message = packagesToUninstall.Count == 1 ?
             string.Format(
                 L10n.Tr("Are you sure you want to reset this {0}?\nThe following included package will reset to the required version:\n\u2022 {1}"),
                 version.GetDescriptor(), packageNameAndVersions) :
@@ -49,12 +47,12 @@ internal class ResetAction : PackageAction
         if (!m_Application.DisplayDialog("resetPackage", title, message, L10n.Tr("Continue"), L10n.Tr("Cancel")))
             return false;
 
-        #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+        #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
         m_PageManager.activePage.SetPackagesUserUnlockedState(packagesToUninstall.Select(p => p.uniqueId), false);
-#pragma warning restore RS0030
+#pragma warning restore UA2001
         m_OperationDispatcher.ResetDependencies(version, packagesToUninstall);
 
-        PackageManagerWindowAnalytics.SendEvent("reset", version?.uniqueId);
+        PackageManagerWindowAnalytics.SendEvent("reset", version.uniqueId);
         return true;
     }
 
@@ -64,7 +62,7 @@ internal class ResetAction : PackageAction
                && version.HasTag(PackageTag.Feature)
                // We use CustomizedDependencyType.All here because we want to show the Reset action even if there are only non-resettable customized dependencies.
                // We have the `DisableIfCannotReset` condition to disable the action and show the correct tooltip in this case.
-               && m_PackageDatabase.GetCustomizedDependencies(version, CustomizedDependencyType.All).Length > 0;
+               && m_PackageDatabase.HasCustomizedDependencies(version, CustomizedDependencyType.All);
     }
 
     public override string GetTooltip(IPackageVersion version, bool isInProgress)
@@ -84,11 +82,11 @@ internal class ResetAction : PackageAction
         public DisableIfCannotReset(IPackageDatabase packageDatabase, IPackageVersion version)
         {
             var nonResettableCustomizedDependencies = packageDatabase.GetCustomizedDependencies(version, CustomizedDependencyType.NonResettable);
-            active = nonResettableCustomizedDependencies.Length > 0;
+            active = nonResettableCustomizedDependencies.Count > 0;
             if (!active)
                 return;
 
-            var anyCustomDependencies = nonResettableCustomizedDependencies.AnyMatches(p => p.versions.installed?.HasTag(PackageTag.Custom) ?? false);
+            var anyCustomDependencies = nonResettableCustomizedDependencies.AnyMatches(p => p.versions.installed.HasTag(PackageTag.Custom));
             tooltip = anyCustomDependencies ?
                 string.Format(L10n.Tr("You cannot reset this {0} because one of its included packages is customized. " +
                                       "You must remove them manually. See the list of packages in the {0} for more information."), version.GetDescriptor()) :

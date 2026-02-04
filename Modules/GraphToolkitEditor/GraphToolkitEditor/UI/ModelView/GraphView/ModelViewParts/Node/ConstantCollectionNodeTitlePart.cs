@@ -16,7 +16,7 @@ namespace Unity.GraphToolkit.Editor
         {
         }
 
-        public new static ConstantCollectionNodeTitlePart Create(string name, GraphElementModel model, ChildView ownerElement, string parentClassName, int options)
+        public static ConstantCollectionNodeTitlePart Create(string name, GraphElementModel model, ChildView ownerElement, string parentClassName, int options)
         {
             return new ConstantCollectionNodeTitlePart(name, model, ownerElement, parentClassName, options);
         }

@@ -3,11 +3,11 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using UnityEditor.Build.Player;
-using UnityEngine.Bindings;
-
+using System.Collections.Generic;
 using System.Runtime.CompilerServices;
+using UnityEditor.Build.Player;
 using UnityEngine;
+using UnityEngine.Bindings;
 [assembly: InternalsVisibleTo("Unity.ScriptableBuildPipeline.Editor")]
 [assembly: InternalsVisibleTo("Unity.ScriptableBuildPipeline.Editor.Tests")]
 
@@ -329,12 +329,11 @@ namespace UnityEditor.Build.Content
                 parameters.settings.buildFlags.HasFlag(ContentBuildFlags.DisableWriteTypeTree))
                 throw new ArgumentException("Incompatible ContentBuildFlags - ExtractTypeTree cannot be used with DisableWriteTypeTree.");
 
-            return WriteSerializedFile_Internal(outputFolder, parameters.writeCommand, parameters.settings, parameters.globalUsage, parameters.usageSet, parameters.referenceMap, parameters.preloadInfo, parameters.bundleInfo);
+            return WriteSerializedFile_Internal(outputFolder, parameters.writeCommand, parameters.settings, parameters.globalUsage, parameters.usageSet, parameters.referenceMap, parameters.preloadInfo?.preloadObjects,  parameters.bundleInfo?.bundleName, parameters.bundleInfo?.bundleAssets);
         }
 
         [NativeThrows]
-        static extern WriteResult WriteSerializedFile_Internal(string outputFolder, WriteCommand writeCommand, BuildSettings settings, BuildUsageTagGlobal globalUsage, BuildUsageTagSet usageSet, BuildReferenceMap referenceMap, PreloadInfo preloadInfo, AssetBundleInfo bundleInfo);
-
+        static extern WriteResult WriteSerializedFile_Internal(string outputFolder, WriteCommand writeCommand, BuildSettings settings, BuildUsageTagGlobal globalUsage, BuildUsageTagSet usageSet, BuildReferenceMap referenceMap, List<ObjectIdentifier> preloadObjects, string bundleName, List<AssetLoadInfo> bundleAssets);
         ///<summary>Writes Scene objects to a serialized file on disk.</summary>
         ///<remarks>Internal use only. See note on <see cref="Build.Content.ContentBuildInterface" />.</remarks>
         ///<param name="outputFolder">The location to write the file to.</param>
@@ -354,11 +353,11 @@ namespace UnityEditor.Build.Content
                 parameters.settings.buildFlags.HasFlag(ContentBuildFlags.DisableWriteTypeTree))
                 throw new ArgumentException("Incompatible ContentBuildFlags - ExtractTypeTree cannot be used with DisableWriteTypeTree.");
 
-            return WriteSceneSerializedFile_Internal(outputFolder, parameters.scenePath, parameters.writeCommand, parameters.settings, parameters.globalUsage, parameters.usageSet, parameters.referenceMap, parameters.preloadInfo, parameters.sceneBundleInfo);
+            return WriteSceneSerializedFile_Internal(outputFolder, parameters.scenePath, parameters.writeCommand, parameters.settings, parameters.globalUsage, parameters.usageSet, parameters.referenceMap, parameters.preloadInfo?.preloadObjects, parameters.sceneBundleInfo?.bundleName, parameters.sceneBundleInfo?.bundleScenes);
         }
 
         [NativeThrows]
-        static extern WriteResult WriteSceneSerializedFile_Internal(string outputFolder, string scenePath, WriteCommand writeCommand, BuildSettings settings, BuildUsageTagGlobal globalUsage, BuildUsageTagSet usageSet, BuildReferenceMap referenceMap, PreloadInfo preloadInfo, SceneBundleInfo sceneBundleInfo);
+        static extern WriteResult WriteSceneSerializedFile_Internal(string outputFolder, string scenePath, WriteCommand writeCommand, BuildSettings settings, BuildUsageTagGlobal globalUsage, BuildUsageTagSet usageSet, BuildReferenceMap referenceMap, List<ObjectIdentifier> preloadObjects, string bundleName, List<SceneLoadInfo> bundleScenes);
 
         ///<summary>Writes the current settings of internal Unity game manager classes to the 'globalgamemanagers' file on disk.</summary>
         ///<remarks>Internal use only. See note on <see cref="Build.Content.ContentBuildInterface" />.</remarks>

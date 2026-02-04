@@ -109,6 +109,7 @@ namespace UnityEditor.Overlays
         VisualElement m_CollapsedContent;
         OverlayPopup m_ModalPopup; // collapsed popup root
         VisualElement m_RootVisualElement;
+        OverlayDragger m_Dragger;
         Toggle m_ToggleElement;
         VisualElement m_ResizeTarget;
 
@@ -130,6 +131,7 @@ namespace UnityEditor.Overlays
         internal event Action maxSizeChanged;
         internal event Action defaultSizeChanged;
         internal event Action sizeOverridenChanged;
+        internal event Action sizeChanged;
         internal event Action canvasModeChanged;
 
         // Invoked in partial class OverlayPlacement.cs
@@ -239,9 +241,12 @@ namespace UnityEditor.Overlays
 
             set
             {
-                m_Folded = value;
-                UpdateHeaderFoldout();
-                foldedChanged?.Invoke(folded);
+                if (m_Folded != value)
+                {
+                    m_Folded = value;
+                    UpdateHeaderFoldout();
+                    foldedChanged?.Invoke(folded);
+                }
             }
         }
 
@@ -413,14 +418,14 @@ namespace UnityEditor.Overlays
             m_RootVisualElement.AddManipulator(new GlobalMouseBehaviourForOverlays(this));
             m_RootVisualElement.pickingMode = PickingMode.Ignore;
 
-            var dragger = new OverlayDragger(this);
+            m_Dragger = new OverlayDragger(this);
             var contextClick = new ContextualMenuManipulator(BuildContextMenu);
 
             var header = m_RootVisualElement.Q(null, k_Header);
             m_ToggleElement = m_RootVisualElement.Q<Toggle>("overlay-header__toggle");
             m_ToggleElement.RegisterValueChangedCallback(evt => folded = !evt.newValue);
             header.AddManipulator(contextClick);
-            header.AddManipulator(dragger);
+            header.AddManipulator(m_Dragger);
 
             var title = m_RootVisualElement.Q<Label>(k_HeaderTitle);
             title.text = displayName;
@@ -440,6 +445,64 @@ namespace UnityEditor.Overlays
             m_RootVisualElement.tooltip = L10n.Tr(displayName);
 
             CreateResizeTarget();
+
+            rootVisualElement.RegisterCallback<AttachToPanelEvent>(AttachToPanel);
+            rootVisualElement.RegisterCallback<DetachFromPanelEvent>(DetachFromPanel);
+        }
+
+        void AttachToPanel(AttachToPanelEvent evt)
+        {
+            containerChanged += OnContainerChanged;
+            layoutChanged += OnLayoutChanged;
+            floatingPositionChanged += OnPositionChanged;
+            collapsedChanged += OnStateChanged;
+            dockingCompleted += OnDockingCompleted;
+            displayedChanged += OnStateChanged;
+            foldedChanged += OnStateChanged;
+            sizeChanged += OnOverlayChanged;
+        }
+
+        void DetachFromPanel(DetachFromPanelEvent evt)
+        {
+            containerChanged -= OnContainerChanged;
+            layoutChanged -= OnLayoutChanged;
+            floatingPositionChanged -= OnPositionChanged;
+            collapsedChanged -= OnStateChanged;
+            dockingCompleted -= OnDockingCompleted;
+            displayedChanged -= OnStateChanged;
+            foldedChanged -= OnStateChanged;
+            sizeChanged -= OnOverlayChanged;
+        }
+
+        void OnContainerChanged(OverlayContainer _) => OnOverlayChanged();
+        void OnLayoutChanged(Layout _) => OnOverlayChanged();
+        void OnPositionChanged(Vector3 _) => OnOverlayChanged();
+        void OnStateChanged(bool _) => OnOverlayChanged();
+
+        void OnDockingCompleted(OverlayContainer container)
+        {
+            // Dirtying the preset in the floating container is handled by floatingpositionchanged events
+            // Otherwise the event is triggered everytime an overlay is brought to front for manipulation
+            // See BringToFront method
+            if (container is FloatingOverlayContainer)
+                return;
+
+            OnOverlayChanged();
+        }
+
+        void OnOverlayChanged()
+        {
+            // We are not dirtying the current preset if the event has been trigger by an overlay
+            // that is either a pop-up overlay, or if the visibility is controlled by the user
+            // or if it's currently being dragged (we will update the visibility if needed at the end of the drag)
+            if (isPopup || !userControlledVisibility || m_Dragger.active)
+                return;
+
+            // When overlays are contextual to the active view they are not taken into account in the dirtying process
+            if (SceneView.IsActiveViewOverlay(this))
+                return;
+
+            canvas.presetDirty = true;
         }
 
         // used by tests
@@ -489,6 +552,7 @@ namespace UnityEditor.Overlays
                 m_Size = value;
                 sizeOverridden = true;
                 UpdateSize();
+                sizeChanged?.Invoke();
             }
         }
 
@@ -738,7 +802,7 @@ namespace UnityEditor.Overlays
             if (m_ResizeTarget == null)
                 return;
 
-            ApplySize(m_ResizeTarget, IsResizeCompatible(), sizeOverridden);
+            ApplySize(m_ResizeTarget, IsResizeCompatible());
 
             var position = canvas.EnsureOverlapsWindow(new Rect(floatingPosition, m_Size)).position;
             UpdateSnapping(position);
@@ -747,7 +811,7 @@ namespace UnityEditor.Overlays
                 ApplyPopupSize();
         }
 
-        void ApplySize(VisualElement element, bool resizableLayout, bool sizeOverridden)
+        void ApplySize(VisualElement element, bool resizableLayout)
         {
             element.style.minWidth = resizableLayout && !IsSizeAuto(m_MinSize.x) ? m_MinSize.x : new StyleLength(StyleKeyword.Auto);
             element.style.minHeight = resizableLayout && !IsSizeAuto(m_MinSize.y) ? m_MinSize.y : new StyleLength(StyleKeyword.Auto);
@@ -884,7 +948,7 @@ namespace UnityEditor.Overlays
         void ApplyPopupSize()
         {
             var element = m_ModalPopup.Q(className: k_BoxBackground);
-            ApplySize(element, true, sizeOverridden);
+            ApplySize(element, true);
             element.style.minHeight = new StyleLength(StyleKeyword.Auto);
         }
 

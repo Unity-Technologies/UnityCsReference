@@ -64,9 +64,10 @@ namespace UnityEngine.TextCore
             Superscript,
             Underline,
             Uppercase,
+            VOffset,
             Unknown // Not a real tag, used to indicate an error
 
-            //gradient: pos, rotate , width, voffset will not be supported
+            //gradient: pos, rotate, width will not be supported
         }
 
         public enum ValueID
@@ -135,6 +136,7 @@ namespace UnityEngine.TextCore
             new TagTypeInfo ( TagType.Superscript,"sup" ),
             new TagTypeInfo ( TagType.Underline,"u"),
             new TagTypeInfo ( TagType.Uppercase,"uppercase"),//none
+            new TagTypeInfo ( TagType.VOffset,"voffset"), //<voffset=10> or <voffset=1em>
             // page
 
             };
@@ -311,6 +313,7 @@ namespace UnityEngine.TextCore
             public TagValue? value3;
             public TagValue? value4;
             public TagValue? value5;
+            public sbyte nestingLevel; // Depth for nestable tags (sub/sup)
         }
 
         public struct Segment
@@ -374,6 +377,35 @@ namespace UnityEngine.TextCore
                 return new TagValue(color, ValueID.Color);
 
             return null;
+        }
+
+        static TagValue? ParseAlphaAttribute(ReadOnlySpan<char> attributeSection)
+        {
+            attributeSection = GetAttributeSpan(attributeSection);
+
+            // Alpha format: #XX (e.g., #FF for 255, #80 for 128)
+            if (attributeSection.Length != 3 || attributeSection[0] != '#')
+                return null;
+
+            int highNibble = HexCharToInt(attributeSection[1]);
+            int lowNibble = HexCharToInt(attributeSection[2]);
+
+            if (highNibble < 0 || lowNibble < 0)
+                return null;
+
+            byte alphaValue = (byte)(highNibble * 16 + lowNibble);
+            return new TagValue(alphaValue);
+        }
+
+        static int HexCharToInt(char hex)
+        {
+            return hex switch
+            {
+                >= '0' and <= '9' => hex - '0',
+                >= 'A' and <= 'F' => hex - 'A' + 10,
+                >= 'a' and <= 'f' => hex - 'a' + 10,
+                _ => -1
+            };
         }
 
         static TagValue? ParsePaddingAttribute(ReadOnlySpan<char> value)
@@ -684,6 +716,8 @@ namespace UnityEngine.TextCore
             var input = inputStr.ToCharArray();
             var result = new List<Tag>();
             int pos = 0;
+            int subscriptDepth = 0;
+            int superscriptDepth = 0;
 
             while (true)
             {
@@ -722,6 +756,18 @@ namespace UnityEngine.TextCore
                             if (value is null)
                             {
                                 errors?.Add(new("Invalid color value", start));
+                                pos = start + 1; //malformed tag, skip the '<' character
+                                continue;
+                            }
+                        }
+
+                        if (tagType == TagType.Alpha)
+                        {
+                            value = ParseAlphaAttribute(attributeSection);
+
+                            if (value is null)
+                            {
+                                errors?.Add(new("Invalid alpha value", start));
                                 pos = start + 1; //malformed tag, skip the '<' character
                                 continue;
                             }
@@ -886,6 +932,24 @@ namespace UnityEngine.TextCore
                             }
                             value = new TagValue(parsedValue, tagUnitType);
                         }
+						
+						if (tagType == TagType.LineHeight)
+                        {
+                            var tagUnitType = ParseTagUnitType(ref attributeSection);
+
+                            if (tagUnitType == TagUnitType.Unknown)
+                                tagUnitType = TagUnitType.Pixels;
+
+                            attributeSection = GetAttributeSpan(attributeSection);
+                            float parsedValue;
+                            if (!float.TryParse(attributeSection, NumberStyles.Float, CultureInfo.InvariantCulture, out parsedValue))
+                            {
+                                errors?.Add(new("Invalid line-height value", start));
+                                pos = start + 1;
+                                continue;
+                            }
+                            value = new TagValue(parsedValue, tagUnitType);
+                        }
 
                         if (tagType == TagType.Indent)
                         {
@@ -899,6 +963,32 @@ namespace UnityEngine.TextCore
                             if (!float.TryParse(attributeSection, NumberStyles.Float, CultureInfo.InvariantCulture, out parsedValue))
                             {
                                 // Handle parse error, e.g. skip or log
+                                errors?.Add(new("Invalid numerical value", start));
+                                pos = start + 1;
+                                continue;
+                            }
+                            value = new TagValue(parsedValue, tagUnitType);
+                        }
+						
+
+                        if (tagType == TagType.VOffset)
+                        {
+                            var tagUnitType = ParseTagUnitType(ref attributeSection);
+
+                            if (tagUnitType == TagUnitType.Percentage)
+                            {
+                                errors?.Add(new($"Invalid {tagUnitType} value", start));
+                                pos = start + 1;
+                                continue;
+                            }
+
+                            if (tagUnitType == TagUnitType.Unknown)
+                                tagUnitType = TagUnitType.Pixels;
+
+                            attributeSection = GetAttributeSpan(attributeSection);
+                            float parsedValue;
+                            if (!float.TryParse(attributeSection, NumberStyles.Float, CultureInfo.InvariantCulture, out parsedValue))
+                            {
                                 errors?.Add(new("Invalid numerical value", start));
                                 pos = start + 1;
                                 continue;
@@ -1016,7 +1106,16 @@ namespace UnityEngine.TextCore
                             value = new TagValue(gradientAssetName, ValueID.Gradient);
                         }
 
-                        result.Add(new Tag { tagType = tagType, start = start, end = end, isClosing = isClosing, value = value, value2 = value2 });
+                        sbyte nestingLevel = 0;
+                        if (tagType == TagType.Subscript || tagType == TagType.Superscript)
+                        {
+                            if (tagType == TagType.Superscript)
+                                nestingLevel = (sbyte)++superscriptDepth;
+                            else
+                                nestingLevel = (sbyte)++subscriptDepth;
+                        }
+
+                        result.Add(new Tag { tagType = tagType, start = start, end = end, isClosing = isClosing, value = value, value2 = value2, nestingLevel = nestingLevel });
 
                         if (tagType == TagType.NoParse)
                         {
@@ -1044,6 +1143,14 @@ namespace UnityEngine.TextCore
                     if (SpanToEnum(input.AsSpan(start + 2, end - start - 2), out TagType tagType, out string? error, out var _))
                     {
                         result.Add(new Tag { tagType = tagType, start = start, end = end, isClosing = isClosing });
+
+                        if (tagType == TagType.Subscript || tagType == TagType.Superscript)
+                        {
+                            if (tagType == TagType.Superscript)
+                                superscriptDepth = Math.Max(0, superscriptDepth - 1);
+                            else
+                                subscriptDepth = Math.Max(0, subscriptDepth - 1);
+                        }
                     }
                     else
                     {
@@ -1188,12 +1295,20 @@ namespace UnityEngine.TextCore
 
             }
 
-            //The order in the resulting list is important: we cannot iterate only adding lastTagOfType
+            // Build a set of all active tag indices - only the innermost tag of each type matters
+            Span<bool> activeTagIndices = stackalloc bool[allTags.Count];
+            for (int tagTypeIndex = 0; tagTypeIndex < lastTagOfType.Length; tagTypeIndex++)
+            {
+                int? currentIndex = lastTagOfType[tagTypeIndex];
+                if (currentIndex.HasValue)
+                    activeTagIndices[currentIndex.Value] = true;
+            }
+
+            // The order in the resulting list is important: iterate in original order
             int currentTagIndex = 0;
             foreach (var tag in allTags)
             {
-                var lastTag = lastTagOfType[(int)tag.tagType];
-                if (lastTag.HasValue && currentTagIndex == lastTag.Value)
+                if (activeTagIndices[currentTagIndex])
                     applicableTags.Add(tag);
 
                 currentTagIndex++;
@@ -1283,9 +1398,11 @@ namespace UnityEngine.TextCore
                         break;
                     case TagType.Subscript:
                         textSpan.fontStyle |= TextCore.Text.FontStyles.Subscript;
+                        textSpan.subscriptNestingLevel = segment.tags[i].nestingLevel;
                         break;
                     case TagType.Superscript:
                         textSpan.fontStyle |= TextCore.Text.FontStyles.Superscript;
+                        textSpan.superscriptNestingLevel = segment.tags[i].nestingLevel;
                         break;
                     case TagType.AllCaps:
                     case TagType.Uppercase:
@@ -1303,7 +1420,7 @@ namespace UnityEngine.TextCore
                         textSpan.color = segment.tags[i].value!.ColorValue;
                         break;
                     case TagType.Alpha:
-                        //TODO tgs.color.a = segment.state.tags[i].value.NumericalValue;
+                        textSpan.color.a = (byte)segment.tags[i].value!.NumericalValue;
                         break;
                     case TagType.Mark:
                         textSpan.fontStyle |= TextCore.Text.FontStyles.Highlight;
@@ -1361,7 +1478,7 @@ namespace UnityEngine.TextCore
 
                     case TagType.Sprite:
                         if (segment.tags[i].value?.ID == ValueID.AssetID)
-                            textSpan.spriteID = (int)segment.tags[i].value!.NumericalValue;
+                            textSpan.spriteID = EntityId.From((int)segment.tags[i].value!.NumericalValue);
                         if (segment.tags[i].value2?.ID == ValueID.GlyphMetrics)
                             textSpan.spriteMetrics = segment.tags[i].value2!.GlyphMetricsValue;
                         if (segment.tags[i].value3?.ID == ValueID.Tint)
@@ -1449,7 +1566,9 @@ namespace UnityEngine.TextCore
                         Enum.TryParse<HorizontalAlignment>(segment.tags[i].value!.StringValue, true, out textSpan.alignment);
                         break;
                     case TagType.LineHeight:
-                        //TODO : Add support for lineheight
+                        float lineHeightMult = segment.tags[i].value!.unit == TagUnitType.Pixels ? (pixelsPerPoint * 64.0f) : 64.0f;
+                        textSpan.lineHeight = (int)(segment.tags[i].value!.NumericalValue * lineHeightMult);
+                        textSpan.lineHeightUnitType = segment.tags[i].value!.unit;
                         break;
                     case TagType.Margin:
                     case TagType.MarginLeft:
@@ -1472,6 +1591,11 @@ namespace UnityEngine.TextCore
                         textSpan.indentUnitType = segment.tags[i].value!.unit;
                         break;
 
+                    case TagType.VOffset:
+                        float vOffsetMult = segment.tags[i].value!.unit == TagUnitType.Pixels ? (pixelsPerPoint * 64.0f) : 64.0f;
+                        textSpan.vOffset = (int)(segment.tags[i].value!.NumericalValue * vOffsetMult);
+                        textSpan.vOffsetUnitType = segment.tags[i].value!.unit;
+                        break;
 
                     case TagType.NoParse://Noparse should not be reach here/Should be trimmed
                     case TagType.Unknown:

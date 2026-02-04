@@ -11,8 +11,6 @@ namespace UnityEditor.PackageManager.UI.Internal
     {
         private const string k_AllowedCharsInTechnicalName = @"a-z\d\-\._";
         private static readonly Regex k_CompleteTechnicalNameRegEx = new Regex(@"^([a-z\d][" + k_AllowedCharsInTechnicalName + "]{0,213})$");
-        private static readonly Regex k_PartialTechnicalNameRegEx = new Regex(@"^([" + k_AllowedCharsInTechnicalName + "]{1,113})$");
-        private static readonly Regex k_OrganizationNameRegEx = new Regex(@"^([a-z\d][a-z\d\-_]{0,99})$");
         private static readonly Regex k_AllowedSemverRegEx = new Regex(@"^(?<major>0|[1-9]\d*)\.(?<minor>0|[1-9]\d*)\.(?<patch>0|[1-9]\d*)(?:-((?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?$");
         private static readonly Regex k_UnityMajorVersionRegEx = new Regex(@"^([1-9][0-9]{3})$");
         private static readonly Regex k_UnityMinorVersionRegEx = new Regex(@"^([0-9])$");
@@ -37,16 +35,6 @@ namespace UnityEditor.PackageManager.UI.Internal
         public static bool ValidateCompleteTechnicalName(string completeName)
         {
             return !string.IsNullOrEmpty(completeName) && k_CompleteTechnicalNameRegEx.IsMatch(completeName);
-        }
-
-        public static bool ValidatePartialTechnicalName(string name)
-        {
-            return !string.IsNullOrEmpty(name) && k_PartialTechnicalNameRegEx.IsMatch(name);
-        }
-
-        public static bool ValidateOrganizationName(string organizationName)
-        {
-            return !string.IsNullOrEmpty(organizationName) && k_OrganizationNameRegEx.IsMatch(organizationName);
         }
 
         public static bool ValidateVersion(string version, out string major, out string minor, out string patch)

@@ -4,7 +4,6 @@
 
 using System;
 using System.Text;
-using UnityEngine.Bindings;
 using UnityEngine.UIElements;
 
 namespace Unity.Hierarchy
@@ -12,8 +11,7 @@ namespace Unity.Hierarchy
     /// <summary>
     /// UI element control that displays a hierarchy item.
     /// </summary>
-    [VisibleToOtherModules("UnityEditor.HierarchyModule", "UnityEditor.UIToolkitAuthoringModule")]
-    internal sealed class HierarchyViewItem : VisualElement
+    public sealed class HierarchyViewItem : VisualElement
     {
         const string k_UnityListViewItem = "unity-list-view__item";
         const string k_UnityTreeViewItem = "unity-tree-view__item";

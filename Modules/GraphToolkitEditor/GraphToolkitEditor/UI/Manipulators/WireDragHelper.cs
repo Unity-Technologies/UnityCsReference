@@ -359,12 +359,12 @@ namespace Unity.GraphToolkit.Editor
             // Let the first wire handle the batch command for all wires
             if (isFirstWire)
             {
-                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 var affectedWires = (OriginalWire != null
-#pragma warning restore RS0030
-                    #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning restore UA2001
+                    #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     ? Enumerable.Repeat(OriginalWire, 1)
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                     : Array.Empty<Wire>())
                         .Concat(otherWires);
 
@@ -381,15 +381,15 @@ namespace Unity.GraphToolkit.Editor
 
                     if (OriginalWire == null)
                     {
-                        #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                        #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                         DropWiresOutside(Enumerable.Repeat(m_WireCandidate, 1), Enumerable.Repeat(DraggedPort, 1), mousePosition);
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                     }
                     else
                     {
-                        #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                        #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                         DropWiresOutside(affectedWires.Append(m_WireCandidate), Enumerable.Repeat(DraggedPort, 1).Concat(otherPorts), mousePosition);
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                     }
                 }
             }
@@ -420,16 +420,16 @@ namespace Unity.GraphToolkit.Editor
         protected virtual void DropWiresOutside(IEnumerable<AbstractWire> wires,
             IEnumerable<PortModel> portModels, Vector2 worldPosition)
         {
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var wiresToConnect = wires
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                 .Zip(portModels, (e, p) => new { wire = e, port = p })
                 .Select(e => (e.wire.WireModel, e.port.Direction == PortDirection.Input ? WireSide.From : WireSide.To))
                 .ToList();
 
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var wiresToDelete = wires.Where(w => w.Model is IGhostWireModel).Select(w => w.WireModel).ToList();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
 
             CreateNodesFromWires(GraphView, wiresToConnect, worldPosition, wiresToDelete);
         }
@@ -457,29 +457,29 @@ namespace Unity.GraphToolkit.Editor
                     view.Dispatch(CreateNodeCommand.OnWireSide(variableItem, wires, localPosition, blackboardSection, index));
                 }
 
-                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 var allWiresToDelete = wires.Where(w => w.model is IGhostWireModel).Select(w => w.model).ToList();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                 if (wiresToDelete != null)
                     allWiresToDelete.AddRange(wiresToDelete);
 
                 if (allWiresToDelete.Count > 0)
                 {
-                    #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                    #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     foreach (var modelView in allWiresToDelete.Select(wireModel => wireModel.GetView(view)))
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                     {
                         if (modelView is GraphElement element)
                             view.RemoveElement(element);
                     }
                 }
             };
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var portModels = wires.Select(e => e.model.GetOtherPort(e.side)).ToList();
-#pragma warning restore RS0030
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning restore UA2001
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             switch (portModels.First().Direction)
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             {
                 case PortDirection.Output:
                     ItemLibraryService.ShowOutputToGraphNodes(view, portModels, worldPosition, createNode);
@@ -501,9 +501,9 @@ namespace Unity.GraphToolkit.Editor
         /// <param name="newPort">The new port to which the wires are moved.</param>
         protected virtual void MoveWires(IEnumerable<AbstractWire> wires, Port newPort)
         {
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var wiresToMove = wires.Select(e => e.WireModel).ToList();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             GraphView.Dispatch(new MoveWireCommand(newPort.PortModel, wiresToMove));
         }
 
@@ -538,9 +538,9 @@ namespace Unity.GraphToolkit.Editor
 
         internal void GetCompatiblePorts(Predicate<PortModel> compatiblePortsFilter = null)
         {
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             m_AllPorts = GraphView.GraphModel.GetPortModels().ToList();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             m_CompatiblePorts = GraphView.GraphModel.GetCompatiblePorts(m_AllPorts, DraggedPort);
 
             // Filter compatible ports

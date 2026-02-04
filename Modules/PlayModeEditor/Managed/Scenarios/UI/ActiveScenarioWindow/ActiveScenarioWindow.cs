@@ -48,7 +48,7 @@ class ActiveScenarioWindow : EditorWindow
         Refresh();
     }
 
-    void Refresh()
+    internal void Refresh()
     {
         var activeScenario = PlayModeScenarioManager.ActiveScenario;
 

@@ -17,32 +17,38 @@ namespace UnityEditor
     /*UCBP-PUBLIC*/ internal static class LoadableReferenceEditorUtility
     {
         /// <summary>
-        /// Gets the GUID and local file identifier from a LoadableReference.
+        /// Deconstructs a LoadableReference into its component parts: GUID, local file identifier, and file identifier type.
         /// </summary>
         /// <remarks>
         /// This method will return false if the LoadableReference contains a runtime handle.
         /// Runtime handles are only interpretable by the ContentLoadManager and cannot be converted to GUID/local file identifier.
+        /// This method provides the complete inverse of <see cref="CreateLoadableReference(GUID, FileIdentifierType, long)"/>,
+        /// returning all three components that were used to construct the LoadableReference.
         /// </remarks>
-        /// <param name="loadableRef">The LoadableReference to extract information from.</param>
+        /// <param name="loadableRef">The LoadableReference to deconstruct.</param>
         /// <param name="guid">The GUID of the asset file containing the referenced object.</param>
         /// <param name="localId">The local file identifier of the object within the asset.</param>
+        /// <param name="fileType">The file identifier type indicating whether this is a source asset, primary artifact, or non-asset reference.</param>
         /// <returns>
-        /// True if the LoadableReference represents an asset reference and the GUID and local identifier were successfully retrieved;
+        /// True if the LoadableReference represents an asset reference and all components were successfully retrieved;
         /// false if the LoadableReference is a runtime handle.
         /// </returns>
+        /// <seealso cref="CreateLoadableReference(GUID, FileIdentifierType, long)"/>
         /// <seealso cref="AssetDatabase.TryGetGUIDAndLocalFileIdentifier"/>
-        public static bool TryGetGUIDAndLocalFileIdentifier(LoadableReference loadableRef, out GUID guid, out long localId)
+        public static bool TryDeconstructLoadableReference(LoadableReference loadableRef, out GUID guid, out long localId, out FileIdentifierType fileType)
         {
-            // If this is a runtime handle (has ObjectIdHash), we cannot extract GUID/lfid
+            // If this is a runtime handle (has ObjectIdHash), we cannot extract GUID/lfid/type
             if (loadableRef.m_ObjectIdHash.isValid)
             {
                 guid = new GUID();
                 localId = 0;
+                fileType = FileIdentifierType.NonAsset;
                 return false;
             }
 
             guid = loadableRef.m_GUID;
             localId = loadableRef.m_LocalIdentifierInFile;
+            fileType = loadableRef.m_FileIdentifierType;
             return true;
         }
 

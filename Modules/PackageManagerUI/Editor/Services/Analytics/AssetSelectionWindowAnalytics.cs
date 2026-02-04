@@ -26,14 +26,13 @@ namespace UnityEditor.PackageManager.UI.Internal
         private Data m_Data;
         private AssetSelectionWindowAnalytics(SelectionWindowData windowData, string action)
         {
-            var productId = windowData.assets.Count > 0 ? windowData.assets[0].origin.productId : 0;
             m_Data = new Data
             {
                 window_type = "removeWindow",
                 action = action,
-                product_id = productId,
-                num_selected_assets = windowData.selectedAssets.Count,
-                num_total_assets = windowData.assets.Count
+                product_id = windowData.productId,
+                num_selected_assets = windowData.numSelectedAssets,
+                num_total_assets = windowData.numTotalAssets
             };
         }
 

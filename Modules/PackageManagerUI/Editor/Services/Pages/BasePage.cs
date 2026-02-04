@@ -60,17 +60,17 @@ namespace UnityEditor.PackageManager.UI.Internal
         {
             get
             {
-                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 m_Filters ??= new PageFilters { sortOption = supportedSortOptions?.FirstOrDefault() ?? PageSortOption.NameAsc };
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                 return m_Filters;
             }
             protected set => m_Filters = value;
         }
 
         public abstract PageCapability capability { get; }
-        public abstract IReadOnlyCollection<PageFilters.Status> supportedStatusFilters { get; }
-        public abstract IReadOnlyCollection<PageSortOption> supportedSortOptions { get; }
+        public abstract IReadOnlyList<PageFilters.Status> supportedStatusFilters { get; }
+        public abstract IReadOnlyList<PageSortOption> supportedSortOptions { get; }
 
         [SerializeField]
         private bool m_IsActive;
@@ -114,9 +114,9 @@ namespace UnityEditor.PackageManager.UI.Internal
             newFilters.categories = new List<string>();
             newFilters.labels = new List<string>();
             if (resetSortOptionToDefault)
-                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 newFilters.sortOption = supportedSortOptions.FirstOrDefault();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             return UpdateFilters(newFilters);
         }
 
@@ -135,12 +135,12 @@ namespace UnityEditor.PackageManager.UI.Internal
         {
             var addList = new List<IPackage>();
             var updateList = new List<IPackage>();
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            var removeList = args.removed.Where(p => visualStates.Contains(p.uniqueId)).ToList();
-#pragma warning restore RS0030
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            foreach (var package in args.added.Concat(args.updated))
-#pragma warning restore RS0030
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            var removeList = args.removed.Filter(p => visualStates.Contains(p.uniqueId)).ToList();
+#pragma warning restore UA2001
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            foreach (var package in args.added.Join(args.updated))
+#pragma warning restore UA2001
             {
                 if (ShouldInclude(package))
                 {
@@ -228,18 +228,18 @@ namespace UnityEditor.PackageManager.UI.Internal
             added ??= Array.Empty<IPackage>();
             updated ??= Array.Empty<IPackage>();
             removed ??= Array.Empty<IPackage>();
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            if (!added.Concat(updated).Concat(removed).Any(p => p.hasEntitlements))
-#pragma warning restore RS0030
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            if (!added.Join(updated).Join(removed).Any(p => p.hasEntitlements))
+#pragma warning restore UA2001
                 return;
 
             if (!RefreshSupportedStatusFiltersOnEntitlementPackageChange())
                 return;
 
             // For now, this will only happens if the last entitlement package is removed and the Subscription Based filter was selected
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            if (!supportedStatusFilters.Contains(filters.status) && filters.status != PageFilters.Status.None)
-#pragma warning restore RS0030
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            if (!supportedStatusFilters.ContainsMatches(filters.status) && filters.status != PageFilters.Status.None)
+#pragma warning restore UA2001
             {
                 var newFilters = filters.Clone();
                 newFilters.status = PageFilters.Status.None;
@@ -281,9 +281,9 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public IEnumerable<VisualState> GetSelectedVisualStates()
         {
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            return m_Selection.Select(s => visualStates.Get(s)).Where(v => v != null);
-#pragma warning restore RS0030
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            return m_Selection.Select(s => visualStates.Get(s)).Filter(v => v != null);
+#pragma warning restore UA2001
         }
 
         public virtual bool SetNewSelection(IPackage package, bool isExplicitUserSelection = false)
@@ -350,9 +350,9 @@ namespace UnityEditor.PackageManager.UI.Internal
             var newSelectionToAdd = new List<string>();
             if (invalidSelectionsToRemove.Count == selection.Count)
             {
-                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 var firstVisible = visualStates.FirstOrDefault(v => v.visible && !selection.Contains(v.packageUniqueId));
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                 if (firstVisible != null)
                     newSelectionToAdd.Add(firstVisible.packageUniqueId);
             }

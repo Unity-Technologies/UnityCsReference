@@ -3,7 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using System.Linq;
+using System.Collections.Generic;
 using UnityEditor.UIElements;
 using UnityEngine;
 using UnityEngine.UIElements;
@@ -177,17 +177,11 @@ namespace UnityEditor.PackageManager.UI.Internal
             get
             {
                 var styleSheet = FindResolvedStyleSheetFromType(StyleSheetType.PackageManagerWindow);
-                if (styleSheet == null)
+                if (styleSheet is null)
                 {
-                    #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                    var styleSheetsToResolve = StyleSheetPath.packageManagerComponents.Select(p =>
-#pragma warning restore RS0030
-                    {
-                        var styleSheet = Load<StyleSheet>(p);
-                        if (styleSheet == null)
-                            throw new ResourceLoaderException($"Unable to load styleSheet {p}");
-                        return styleSheet;
-                    }).Concat(new[] { packageManagerCommonStyleSheet }).ToArray();
+                    var styleSheetsToResolve = StyleSheetPath.packageManagerComponents
+                        .SelectAsEnumerable(p => Load<StyleSheet>(p) ?? throw new ResourceLoaderException($"Unable to load styleSheet {p}"))
+                        .Join(packageManagerCommonStyleSheet);
                     styleSheet = ResolveStyleSheets(StyleSheetType.PackageManagerWindow, styleSheetsToResolve);
                 }
                 return styleSheet;
@@ -247,25 +241,20 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private StyleSheet ResolveStyleSheets(StyleSheetType styleSheetType, params string[] styleSheetPaths)
         {
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            return ResolveStyleSheets(styleSheetType, styleSheetPaths.Select(p =>
-#pragma warning restore RS0030
-            {
-                var styleSheet = Load<StyleSheet>(p);
-                if (styleSheet == null)
-                    throw new ResourceLoaderException($"Unable to load styleSheet {p}");
-                return styleSheet;
-            }).ToArray());
+            var styleSheets = styleSheetPaths.SelectAsEnumerable(p =>
+                Load<StyleSheet>(p) ?? throw new ResourceLoaderException($"Unable to load styleSheet {p}"));
+            return ResolveStyleSheets(styleSheetType, styleSheets);
         }
 
-        private StyleSheet ResolveStyleSheets(StyleSheetType styleSheetType, params StyleSheet[] styleSheets)
+        private StyleSheet ResolveStyleSheets(StyleSheetType styleSheetType, IEnumerable<StyleSheet> styleSheets)
         {
             var styleSheet = ScriptableObject.CreateInstance<StyleSheet>();
             styleSheet.hideFlags = HideFlags.HideAndDontSave;
             styleSheet.isDefaultStyleSheet = true;
 
             var resolver = new StyleSheets.StyleSheetResolver();
-            resolver.AddStyleSheets(styleSheets);
+            foreach (var sheet in styleSheets)
+                resolver.AddStyleSheets(sheet);
             resolver.ResolveTo(styleSheet);
 
             styleSheet.name = styleSheetType + lightOrDarkTheme;
@@ -317,9 +306,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public void Reset()
         {
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            foreach (var styleSheetId in s_ResolvedDarkStyleSheetIds.Concat(s_ResolvedLightStyleSheetIds).Where(id => id != EntityId.None))
-#pragma warning restore RS0030
+            foreach (var styleSheetId in s_ResolvedDarkStyleSheetIds.Join(s_ResolvedLightStyleSheetIds).Filter(id => id != EntityId.None))
                 UnityEngine.Object.DestroyImmediate(UnityEngine.Object.FindObjectFromInstanceID(styleSheetId));
 
             for (var i = 0; i < (int)StyleSheetType.Count; i++)

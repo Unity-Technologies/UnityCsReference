@@ -12,6 +12,8 @@ namespace Unity.Multiplayer.PlayMode.Editor
 {
     abstract class InstanceController : ScriptableObject
     {
+        const string k_CustomTypeName = "Custom";
+
         protected internal virtual void SetupExecutionGraph(ExecutionGraph graph) { }
 
         protected internal virtual Task<Scenario.ValidationResult> ValidateForRunningAsync(CancellationToken cancellationToken)
@@ -19,7 +21,9 @@ namespace Unity.Multiplayer.PlayMode.Editor
             return Task.FromResult(new Scenario.ValidationResult(true, string.Empty));
         }
 
-        protected internal virtual VisualElement CreateControllerUI() => null;
+        protected internal virtual VisualElement CreateControllerUI(Instance instance) => null;
+
+        internal virtual string GetTypeNameForAnalytics() => k_CustomTypeName;
 
         internal static new T CreateInstance<T>() where T : InstanceController
         {
@@ -31,6 +35,7 @@ namespace Unity.Multiplayer.PlayMode.Editor
 
     abstract class InstanceController<TController, TSettings> : InstanceController
         where TController : InstanceController<TController, TSettings>
+        where TSettings : new()
     {
         [SerializeField] TSettings m_Settings;
         internal protected TSettings Settings
@@ -45,9 +50,6 @@ namespace Unity.Multiplayer.PlayMode.Editor
             return controller;
         }
 
-        internal static TSettings GetDefaultSettings()
-        {
-            return Activator.CreateInstance<TSettings>();
-        }
+        internal static TSettings GetDefaultSettings() => new();
     }
 }

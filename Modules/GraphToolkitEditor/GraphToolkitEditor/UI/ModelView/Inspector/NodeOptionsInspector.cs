@@ -70,9 +70,9 @@ namespace Unity.GraphToolkit.Editor
 
             m_MutableFieldInfos.Clear();
 
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var targets = GetInspectedObjects().ToList();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
 
             var inspectorOrderFields = new SortedDictionary<int, List<BaseModelPropertyField>>();
 
@@ -166,16 +166,16 @@ namespace Unity.GraphToolkit.Editor
                     }
 
                     // If multiple models are inspected, we only want to display the node options that are present in all models.
-                    #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                    #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     foreach (var id in nodeOptionsDict.Keys.ToList())
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                     {
-                        #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                        #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                         var otherOptions = nodeModel.NodeOptions.Where(o =>
-#pragma warning restore RS0030
-                            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning restore UA2001
+                            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                             id == o.Id && o.PortModel.DataTypeHandle == nodeOptionsDict[id].First().PortModel.DataTypeHandle).ToList();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                         if (otherOptions.HasAny())
                             nodeOptionsDict[id].AddRange(otherOptions);
                         else
@@ -184,9 +184,9 @@ namespace Unity.GraphToolkit.Editor
                 }
             }
 
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return nodeOptionsDict.Values.ToList();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
         }
 
         /// <inheritdoc />
@@ -217,9 +217,9 @@ namespace Unity.GraphToolkit.Editor
 
             var isInspectorModelView = OwnerRootView is ModelInspectorView;
 
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             foreach (var oldNCurrent in nodeModel.NodeOptions.Zip(m_MutableFieldInfos, (a, b) => new { old = b, current = a }))
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             {
                 if (oldNCurrent.current.PortModel.Title != oldNCurrent.old.name)
                     return true;

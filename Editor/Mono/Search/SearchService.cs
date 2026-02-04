@@ -247,9 +247,9 @@ namespace UnityEditor.SearchService
 
         List<TEngine> engines { get; } = new List<TEngine>();
 
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
         IEnumerable<ISearchEngineBase> ISearchApi.engines => engines.Cast<ISearchEngineBase>();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
 
         public string activeSearchEngineName { get; private set; }
 
@@ -284,9 +284,9 @@ namespace UnityEditor.SearchService
             var activeEngineIndex = engines.FindIndex(engine => engine.name == actualActiveEngineName);
             if (activeEngineIndex < 0)
             {
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 var defaultEngine = GetDefaultEngine() ?? engines.First();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                 SetActiveSearchEngine(defaultEngine.name);
                 return defaultEngine;
             }
@@ -421,9 +421,9 @@ namespace UnityEditor.SearchService
         void RegisterAllEngines()
         {
             var types = TypeCache.GetTypesWithAttribute<TAttribute>();
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var instantiatedEngines = types.Select(type => Activator.CreateInstance(type));
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             foreach (var instantiatedEngine in instantiatedEngines)
             {
                 if (instantiatedEngine is TEngine typedEngine)

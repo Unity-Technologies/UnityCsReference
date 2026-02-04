@@ -43,6 +43,7 @@ namespace Unity.PlayMode.Editor
             rootVisualElement.Add(splitView);
 
             m_DetailView = new DetailView();
+            m_DetailView.viewDataKey = $"{nameof(PlayModeScenariosWindow)}.{nameof(DetailView)}";
 
             m_PlayModeListView = new PlayModeListView();
             m_PlayModeListView.OnConfigSelected += SelectConfig;

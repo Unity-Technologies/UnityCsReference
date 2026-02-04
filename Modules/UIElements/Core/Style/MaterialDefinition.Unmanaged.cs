@@ -4,12 +4,14 @@
 
 using System;
 using System.Collections.Generic;
+using System.Runtime.InteropServices;
 using Unity.Collections;
 using UnityEngine.Bindings;
 using UnityEngine.UIElements.Unmanaged;
 
 namespace UnityEngine.UIElements;
 
+[StructLayout(LayoutKind.Sequential)]
 struct UnmanagedMaterialPropertyValue : IEquatable<UnmanagedMaterialPropertyValue>
 {
     public int name; // Note: this cannot be serialized (see docs for Shader.PropertyToID)
@@ -45,12 +47,15 @@ struct UnmanagedMaterialPropertyValue : IEquatable<UnmanagedMaterialPropertyValu
     public void SetColor(Color c) { packedValue = new Vector4(c.r, c.g, c.b, c.a); }
 }
 
+// Forcing size to 16 bytes to synchronize with the size of the equivalent struct in native.
+// See "Modules/UIElements/Core/Native/Style/InheritedTypes.h"
+[StructLayout(LayoutKind.Sequential, Size = 16)]
 struct UnmanagedMaterialDefinition : IEquatable<UnmanagedMaterialDefinition>
 {
     public static readonly UnmanagedMaterialDefinition Empty = new();
 
-    public EntityId material;
     public UnmanagedRefCountedList<UnmanagedMaterialPropertyValue> propertyValues;
+    public EntityId material;
 
     public UnmanagedMaterialDefinition(MaterialDefinition definition)
     {

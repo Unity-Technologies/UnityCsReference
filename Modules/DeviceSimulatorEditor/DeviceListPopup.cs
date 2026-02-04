@@ -116,9 +116,9 @@ namespace UnityEditor.DeviceSimulation
             m_SelectedDeviceIndexInFilteredList = -1;
             if (string.IsNullOrEmpty(m_SearchContent))
             {
-                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 m_FilteredDevices = m_DeviceList.Select((device, index) => new IndexedDevice(index, device.deviceInfo)).ToList();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                 m_SelectedDeviceIndexInFilteredList = m_SelectedDeviceIndex;
                 return;
             }

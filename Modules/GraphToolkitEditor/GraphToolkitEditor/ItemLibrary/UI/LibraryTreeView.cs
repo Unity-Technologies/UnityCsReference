@@ -88,9 +88,9 @@ namespace Unity.GraphToolkit.ItemLibrary.Editor
 
             itemsChosen += obj =>
             {
-                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 var first = obj.FirstOrDefault();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                 if (first is IItemView itemView) // do not notify if the item chosen is a category and not an item
                     OnItemChosen(itemView.Item);
             };
@@ -155,9 +155,9 @@ namespace Unity.GraphToolkit.ItemLibrary.Editor
             if (ViewMode == ResultsViewMode.Hierarchy)
             {
                 m_FavoriteCategoryView.ClearItems();
-                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 foreach (var favoriteItem in m_Library.CurrentFavorites.Where(f => m_Results.Contains(f)))
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                 {
                     IItemView itemViewToAdd = null;
                     if (selectedItemView != null && selectedItemView.IsInCategory(m_FavoriteCategoryView))
@@ -225,9 +225,9 @@ namespace Unity.GraphToolkit.ItemLibrary.Editor
 
             // force selection callback if first viewmodel was already selected
             if (firstItemWasSelected)
-                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 OnModelViewSelectionChange?.Invoke(m_VisibleItems.Take(1).ToList());
-#pragma warning restore RS0030
+#pragma warning restore UA2001
         }
 
         void OnKeyDownEvent(KeyDownEvent evt)
@@ -525,9 +525,9 @@ namespace Unity.GraphToolkit.ItemLibrary.Editor
 
             void RemoveCustomClassIfFound(VisualElement visualElement)
             {
-                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 var customClass = visualElement.GetClasses()
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                     .FirstOrDefault(c => c.StartsWith(customItemClassName));
                 if (customClass != null)
                     visualElement.RemoveFromClassList(customClass);
@@ -590,9 +590,9 @@ namespace Unity.GraphToolkit.ItemLibrary.Editor
             if (!selectedItems.HasAny())
                 m_ItemChosenCallback(null);
             else
-                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 OnModelViewSelectionChange?.Invoke(selectedItems
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                     .OfType<ITreeItemView>()
                     .ToList());
         }

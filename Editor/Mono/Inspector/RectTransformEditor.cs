@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
 using UnityEngine;
 using System.Collections.Generic;
 using UnityEditorInternal;
@@ -11,6 +12,40 @@ using System.Globalization;
 
 namespace UnityEditor
 {
+    [InitializeOnLoad]
+    static class RectTransformEditorUtility
+    {
+        const string k_RectTransformWirePrefix = "Scene/RectTransform Wire";
+        internal static readonly PrefColor rectTransformWire = new PrefColor(k_RectTransformWirePrefix, 1f, 1f, 1f, 1);
+
+        internal static Color rectInParentSpaceColor { get; private set; }
+        internal static Color parentColor { get; private set; }
+        internal static Color siblingColor { get; private set; }
+        internal static Color anchorColor { get; private set; }
+        internal static Color anchorLineColor { get; private set; }
+
+        static RectTransformEditorUtility()
+        {
+            UpdateColors();
+            PrefSettings.settingChanged += OnSettingChanged;
+        }
+
+        static void OnSettingChanged(string name, Type type)
+        {
+            if(name.Equals(k_RectTransformWirePrefix))
+                UpdateColors();
+        }
+
+        static void UpdateColors()
+        {
+            rectInParentSpaceColor = new Color(rectTransformWire.Color.r, rectTransformWire.Color.g, rectTransformWire.Color.b, 0.4f);
+            parentColor = new Color(rectTransformWire.Color.r, rectTransformWire.Color.g, rectTransformWire.Color.b, 0.6f);
+            siblingColor = new Color(rectTransformWire.Color.r, rectTransformWire.Color.g, rectTransformWire.Color.b, 0.2f);
+            anchorColor = new Color(rectTransformWire.Color.r, rectTransformWire.Color.g, rectTransformWire.Color.b, 1);
+            anchorLineColor = new Color(rectTransformWire.Color.r, rectTransformWire.Color.g, rectTransformWire.Color.b, 0.6f);
+        }
+    }
+
     [CustomEditor(typeof(RectTransform))]
     [CanEditMultipleObjects]
     internal class RectTransformEditor : Editor
@@ -25,12 +60,9 @@ namespace UnityEditor
         private static Color kShadowColor = new Color(0, 0, 0, 0.5f);
         private const float kDottedLineSize = 5f;
         private static float kDropdownSize = 49;
-        private static Color kRectInParentSpaceColor = new Color(1, 1, 1, 0.4f);
-        private static Color kParentColor = new Color(1, 1, 1, 0.6f);
-        private static Color kSiblingColor = new Color(1, 1, 1, 0.2f);
-        private static Color kAnchorColor = new Color(1, 1, 1, 1);
-        private static Color kAnchorLineColor = new Color(1, 1, 1, 0.6f);
+
         private static Vector3[] s_Corners = new Vector3[4];
+
 
         // Statics
 
@@ -185,9 +217,9 @@ namespace UnityEditor
             if (!sceneView.drawGizmos || !EditorGUIUtility.IsGizmosAllowedForObject(target))
                 return;
 
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             if (SceneView.activeEditors.Contains(this) || SceneView.activeEditors.Contains(target))
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                 return;
 
             RectTransform gui = target as RectTransform;
@@ -291,27 +323,27 @@ namespace UnityEditor
             EditorGUILayout.Space();
 
             // Rotation
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             m_RotationGUI.RotationField(targets.Any(x => ((x as RectTransform).drivenProperties & DrivenTransformProperties.Rotation) != 0));
-#pragma warning restore RS0030
+#pragma warning restore UA2001
 
             // Scale
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             s_ScaleDisabledMask[0] = targets.Any(x => ((x as RectTransform).drivenProperties & DrivenTransformProperties.ScaleX) != 0);
-#pragma warning restore RS0030
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning restore UA2001
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             s_ScaleDisabledMask[1] = targets.Any(x => ((x as RectTransform).drivenProperties & DrivenTransformProperties.ScaleY) != 0);
-#pragma warning restore RS0030
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning restore UA2001
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             s_ScaleDisabledMask[2] = targets.Any(x => ((x as RectTransform).drivenProperties & DrivenTransformProperties.ScaleZ) != 0);
-#pragma warning restore RS0030
+#pragma warning restore UA2001
 
             Transform t = target as Transform;
             if (t != null)
             {
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 if (m_ConstrainProportionsScale.Initialize(serializedObject.targetObjects) && !s_ScaleDisabledMask.All(x => x))
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                 {
                     //AxisModified values [-1;2] : [none, x, y, z]
                     int axisModified = -1;
@@ -415,18 +447,18 @@ namespace UnityEditor
             rect.height = EditorGUIUtility.singleLineHeight * 2;
             Rect rect2;
 
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             bool anyStretchX = targets.Any(x => (x as RectTransform).anchorMin.x != (x as RectTransform).anchorMax.x);
-#pragma warning restore RS0030
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning restore UA2001
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             bool anyStretchY = targets.Any(x => (x as RectTransform).anchorMin.y != (x as RectTransform).anchorMax.y);
-#pragma warning restore RS0030
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning restore UA2001
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             bool anyNonStretchX = targets.Any(x => (x as RectTransform).anchorMin.x == (x as RectTransform).anchorMax.x);
-#pragma warning restore RS0030
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning restore UA2001
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             bool anyNonStretchY = targets.Any(x => (x as RectTransform).anchorMin.y == (x as RectTransform).anchorMax.y);
-#pragma warning restore RS0030
+#pragma warning restore UA2001
 
             rect2 = GetColumnRect(rect, 0);
             if (anyNonStretchX || anyWithoutParent || anyDrivenX)
@@ -639,14 +671,14 @@ namespace UnityEditor
 
         void FloatFieldLabelAbove(Rect position, FloatGetter getter, FloatSetter setter, DrivenTransformProperties driven, GUIContent label)
         {
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             using (new EditorGUI.DisabledScope(targets.Any(x => ((x as RectTransform).drivenProperties & driven) != 0)))
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             {
                 float value = getter(target as RectTransform);
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 EditorGUI.showMixedValue = targets.Select(x => getter(x as RectTransform)).Distinct().Count() >= 2;
-#pragma warning restore RS0030
+#pragma warning restore UA2001
 
                 EditorGUI.BeginChangeCheck();
 
@@ -700,14 +732,14 @@ namespace UnityEditor
 
         void FloatField(Rect position, FloatGetter getter, FloatSetter setter, DrivenTransformProperties driven, GUIContent label)
         {
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             using (new EditorGUI.DisabledScope(targets.Any(x => ((x as RectTransform).drivenProperties & driven) != 0)))
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             {
                 float value = getter(target as RectTransform);
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 EditorGUI.showMixedValue = targets.Select(x => getter(x as RectTransform)).Distinct().Count() >= 2;
-#pragma warning restore RS0030
+#pragma warning restore UA2001
 
                 EditorGUI.BeginChangeCheck();
                 float newValue = EditorGUI.FloatField(position, label, value);
@@ -793,7 +825,7 @@ namespace UnityEditor
                     m_ChangingBottom.faded);
             }
 
-            Color rectInParentSpaceColor = kRectInParentSpaceColor;
+            Color rectInParentSpaceColor = RectTransformEditorUtility.rectInParentSpaceColor;
             rectInParentSpaceColor.a *= alpha;
             Handles.color = rectInParentSpaceColor;
             DrawRect(rectInParentSpace, parentSpace, true);
@@ -935,12 +967,12 @@ namespace UnityEditor
 
         void AllAnchorsSceneGUI(RectTransform gui, RectTransform guiParent, Transform parentSpace, Transform transform)
         {
-            Handles.color = kParentColor;
+            Handles.color = RectTransformEditorUtility.parentColor;
             // Draw parent rect
             DrawRect(guiParent.rect, parentSpace, false);
 
             // Draw sibling rects and anchors
-            Handles.color = kSiblingColor;
+            Handles.color = RectTransformEditorUtility.siblingColor;
             foreach (Transform tr in parentSpace)
             {
                 if (!tr.gameObject.activeInHierarchy)
@@ -958,7 +990,7 @@ namespace UnityEditor
             }
 
             // Draw anchors for RectTransform itself
-            Handles.color = kAnchorColor;
+            Handles.color = RectTransformEditorUtility.anchorColor;
             AnchorsSceneGUI(gui, guiParent, parentSpace, true);
         }
 
@@ -1173,7 +1205,7 @@ namespace UnityEditor
             if (alpha <= 0)
                 return;
 
-            Color col = kAnchorColor;
+            Color col = RectTransformEditorUtility.anchorColor;
             col.a *= alpha;
             GUI.color = col;
 
@@ -1202,10 +1234,10 @@ namespace UnityEditor
             if (guiParent == null || alpha <= 0)
                 return;
 
-            Color col = kAnchorLineColor;
+            Color col = RectTransformEditorUtility.anchorLineColor;
             col.a *= alpha;
             Handles.color = col;
-            col = kAnchorColor;
+            col = RectTransformEditorUtility.anchorColor;
             col.a *= alpha;
             GUI.color = col;
 
@@ -1252,7 +1284,7 @@ namespace UnityEditor
             if (guiParent == null || alpha <= 0)
                 return;
 
-            Color col = kAnchorColor;
+            Color col = RectTransformEditorUtility.anchorColor;
             col.a *= alpha;
             GUI.color = col;
 
@@ -1296,7 +1328,7 @@ namespace UnityEditor
             if (guiParent == null || alpha <= 0)
                 return;
 
-            Color col = kAnchorLineColor;
+            Color col = RectTransformEditorUtility.anchorLineColor;
             col.a *= alpha;
             Handles.color = col;
 

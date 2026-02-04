@@ -3,7 +3,6 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using System.Linq;
 using System.Collections.Generic;
 using System.Text;
 
@@ -15,7 +14,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         public int startIndex;
         public long limit;
         public string searchText;
-        public List<long> productIds;
+        public long[] productIds;
 
         public override bool isFilterSet => base.isFilterSet || !string.IsNullOrEmpty(searchText);
 
@@ -47,15 +46,11 @@ namespace UnityEditor.PackageManager.UI.Internal
             if (!string.IsNullOrEmpty(orderBy))
                 stringBuilder.Append($"&{orderBy}");
             if (labels?.Count > 0)
-                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                stringBuilder.Append($"&tagging={string.Join(",", labels.Select(label => Uri.EscapeDataString(label)).ToArray())}");
-#pragma warning restore RS0030
+                stringBuilder.Append($"&tagging={string.Join(",", labels.SelectAsEnumerable(Uri.EscapeDataString))}");
             if (categories?.Count > 0)
-                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                stringBuilder.Append($"&categories={string.Join(",", categories.Select(cat => Uri.EscapeDataString(cat)).ToArray())}");
-#pragma warning restore RS0030
-            if (productIds?.Count > 0)
-                stringBuilder.Append($"&ids={string.Join(",", productIds.ToArray())}");
+                stringBuilder.Append($"&categories={string.Join(",", categories.SelectAsEnumerable(Uri.EscapeDataString))}");
+            if (productIds?.Length > 0)
+                stringBuilder.Append($"&ids={string.Join(",", productIds)}");
             return stringBuilder.ToString();
         }
 
@@ -106,10 +101,6 @@ namespace UnityEditor.PackageManager.UI.Internal
         public string searchText => queryArgs?.searchText;
         public int startIndex => queryArgs?.startIndex ?? 0;
 
-        #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-        public IEnumerable<long> productIds => list.Select(p => p.productId);
-#pragma warning restore RS0030
-
         public List<Category> categories = new();
 
         public AssetStorePurchases(PurchasesQueryArgs queryArgs = null)
@@ -128,9 +119,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
             foreach (var category in purchases.categories)
             {
-                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                var matchingCategory = categories.FirstOrDefault(c => c.name == category.name);
-#pragma warning restore RS0030
+                var matchingCategory = categories.FirstMatch(c => c.name == category.name);
                 if (matchingCategory != null)
                     matchingCategory.count += category.count;
                 else
@@ -146,7 +135,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             var purchases = new AssetStorePurchases();
             purchases.total = (long)rawList["total"];
 
-            var results = rawList.GetList<Dictionary<string, object>>("results") ?? Array.Empty<Dictionary<string, object>>();
+            var results = rawList.GetEnumerable<Dictionary<string, object>>("results") ?? Array.Empty<Dictionary<string, object>>();
             foreach (var item in results)
             {
                 var purchase = ParsePurchaseInfo(item);
@@ -154,7 +143,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                     purchases.list.Add(purchase);
             }
 
-            var categories = rawList.GetList<Dictionary<string, object>>("category") ?? Array.Empty<Dictionary<string, object>>();
+            var categories = rawList.GetEnumerable<Dictionary<string, object>>("category") ?? Array.Empty<Dictionary<string, object>>();
             foreach (var item in categories)
             {
                 var categoryName = item.GetString("name");

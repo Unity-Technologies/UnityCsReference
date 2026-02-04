@@ -4,7 +4,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using UnityEditorInternal;
 using UnityEngine.UIElements;
 
@@ -17,6 +16,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         internal const int k_LabelColumnId = 0;
         internal const int k_LocationColumnId = 1;
         internal const int k_VersionColumnId = 2;
+        internal const int k_NumColumns = 3;
         private const int k_MinColumnWidth = 70;
 
         private static readonly string k_LabelColumnTitle = L10n.Tr("Asset name");
@@ -25,19 +25,16 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private MultiColumnListView m_ListView;
 
-        private IList<Asset> assets => m_ListView.itemsSource as IList<Asset>;
+        private readonly List<Asset> m_Assets = new ();
 
         public override bool IsValid(IPackageVersion version)
         {
             return version?.importedAssets?.Count > 0;
         }
 
-        private readonly IIOProxy m_IOProxy;
         private readonly IPackageManagerPrefs m_PackageManagerPrefs;
-        public PackageDetailsImportedAssetsTab(IUnityConnectProxy unityConnect, IIOProxy iOProxy,
-            IPackageManagerPrefs packageManagerPrefs) : base(unityConnect)
+        public PackageDetailsImportedAssetsTab(IUnityConnectProxy unityConnect, IPackageManagerPrefs packageManagerPrefs) : base(unityConnect)
         {
-            m_IOProxy = iOProxy;
             m_PackageManagerPrefs = packageManagerPrefs;
 
             m_Id = k_Id;
@@ -56,17 +53,21 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_ContentContainer.Add(m_ListView);
             AddColumnsAndRestoreSorting();
 
+            m_ListView.itemsSource = m_Assets;
             m_ListView.columnSortingChanged += OnColumnSortingChanged;
         }
 
         protected override void RefreshContent(IPackageVersion version)
         {
-            SortAssetsAndRefreshItems(version.importedAssets);
+            m_Assets.Clear();
+            if (version.importedAssets?.Count > 0)
+                m_Assets.AddRange(version.importedAssets);
+            SortAssetsAndRefreshItems();
         }
 
         private void AddColumnsAndRestoreSorting()
         {
-            var columns = new Column[3];
+            var columns = new Column[k_NumColumns];
             columns[k_LabelColumnId] = new Column
             {
                 name = "label",
@@ -86,9 +87,9 @@ namespace UnityEditor.PackageManager.UI.Internal
                 bindCell = (ve, index) =>
                 {
                     var image = ve.Q<Image>();
-                    image.image = InternalEditorUtility.GetIconForFile(assets[index].importedPath);
+                    image.image = InternalEditorUtility.GetIconForFile(m_Assets[index].importedPath);
                     var label = ve.Q<Label>();
-                    var labelText = m_IOProxy.GetFileName(assets[index].importedPath);
+                    var labelText = IOUtils.GetFileName(m_Assets[index].importedPath);
                     label.text = labelText;
                     ve.tooltip = labelText;
                 },
@@ -107,7 +108,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 },
                 bindCell = (ve, index) =>
                 {
-                    ((Label)ve).text = m_IOProxy.GetParentDirectory(assets[index].importedPath);
+                    ((Label)ve).text = IOUtils.GetParentDirectory(m_Assets[index].importedPath);
                 },
                 stretchable = true,
                 minWidth = k_MinColumnWidth
@@ -124,7 +125,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 },
                 bindCell = (ve, index) =>
                 {
-                    var versionString = assets[index].origin.packageVersion;
+                    var versionString = m_Assets[index].origin.packageVersion;
                     if (!string.IsNullOrEmpty(versionString))
                     {
                         ((Label)ve).text = versionString;
@@ -151,25 +152,13 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private void OnColumnSortingChanged()
         {
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            m_PackageManagerPrefs.importedAssetsSortedColumns = m_ListView.sortedColumns.Select(c => new SortedColumn(c)).ToArray();
-#pragma warning restore RS0030
-            SortAssetsAndRefreshItems(assets);
+            m_PackageManagerPrefs.importedAssetsSortedColumns = m_ListView.sortedColumns.SelectAsEnumerable(c => new SortedColumn(c)).ToNewArray(k_NumColumns);
+            SortAssetsAndRefreshItems();
         }
 
-        private void SortAssetsAndRefreshItems(IEnumerable<Asset> assets)
+        private void SortAssetsAndRefreshItems()
         {
-#pragma warning disable RS0031 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            if (m_ListView.sortedColumns?.Any() != true)
-#pragma warning restore RS0031
-                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                m_ListView.itemsSource = assets != null ? assets.ToArray() : Array.Empty<Asset>();
-#pragma warning restore RS0030
-            else
-                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                m_ListView.itemsSource = assets.OrderBy(a => a, new AssetComparer(m_IOProxy, m_ListView.sortedColumns)).ToArray();
-#pragma warning restore RS0030
-
+            m_Assets.Sort(new AssetComparer(m_PackageManagerPrefs.importedAssetsSortedColumns));
             m_ListView.RefreshItems();
         }
 
@@ -182,33 +171,39 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private class AssetComparer : IComparer<Asset>
         {
-            private IEnumerable<SortColumnDescription> m_SortColumnDescriptions;
-            private IIOProxy m_IOProxy;
+            private readonly SortedColumn[] m_SortedColumns;
 
-            public AssetComparer(IIOProxy ioProxy, IEnumerable<SortColumnDescription> sortColumnDescriptions)
+            public AssetComparer(SortedColumn[] sortedColumns)
             {
-                m_SortColumnDescriptions = sortColumnDescriptions;
-                m_IOProxy = ioProxy;
+                m_SortedColumns = sortedColumns ?? Array.Empty<SortedColumn>();
             }
 
             public int Compare(Asset x, Asset y)
             {
-                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                return m_SortColumnDescriptions.Select(c => CompareByColumn(c, x, y)).FirstOrDefault(result => result != 0);
-#pragma warning restore RS0030
+                if (x == null || y == null)
+                    return 0;
+
+                foreach (var c in m_SortedColumns)
+                {
+                    var result = CompareByColumn(c, x, y);
+                    if (result != 0)
+                        return result;
+                }
+                // Because we are using unstable sort, we want to add a final fallback sort metric on a unique property
+                // to make the sort result stable
+                return string.CompareOrdinal(x.importedPath, y.importedPath);
             }
 
-            private int CompareByColumn(SortColumnDescription description, Asset x, Asset y)
+            private int CompareByColumn(SortedColumn column, Asset x, Asset y)
             {
                 var result = 0;
-                if (description.column.index == k_LabelColumnId)
-                    result = string.Compare(m_IOProxy.GetFileName(x.importedPath), m_IOProxy.GetFileName(y.importedPath));
-                else if (description.column.index == k_LocationColumnId)
-                    result = string.Compare(m_IOProxy.GetParentDirectory(x.importedPath), m_IOProxy.GetParentDirectory(y.importedPath));
+                if (column.columnIndex == k_LabelColumnId)
+                    result = string.CompareOrdinal(IOUtils.GetFileName(x.importedPath), IOUtils.GetFileName(y.importedPath));
+                else if (column.columnIndex == k_LocationColumnId)
+                    result = string.CompareOrdinal(IOUtils.GetParentDirectory(x.importedPath), IOUtils.GetParentDirectory(y.importedPath));
                 else
-                    result = string.Compare(x.origin.packageVersion, y.origin.packageVersion);
-
-                return description.direction == SortDirection.Ascending ? result : -result;
+                    result = string.CompareOrdinal(x.origin.packageVersion, y.origin.packageVersion);
+                return column.sortDirection == SortDirection.Ascending ? result : -result;
             }
         }
     }

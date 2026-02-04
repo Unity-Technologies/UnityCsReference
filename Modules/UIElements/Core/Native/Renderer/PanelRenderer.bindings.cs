@@ -15,6 +15,7 @@ namespace UnityEngine.UIElements
     /// <summary>
     /// Defines a component that connects <see cref="VisualElement"/> to <see cref="GameObject"/>.
     /// </summary>
+    [AddComponentMenu("UI Toolkit/Panel Renderer (UI Toolkit)")]
     [NativeHeader("Modules/UIElements/Core/Native/Renderer/PanelRenderer.h")]
     public sealed class PanelRenderer : Renderer, IPanelComponent
     {
@@ -308,26 +309,12 @@ namespace UnityEngine.UIElements
         internal volatile List<CommandList>[] commandLists;
         internal volatile bool skipRendering;
 
-
-        internal extern void AddDrawCallData(int safeFrameIndex, int cmdListIndex, Material mat, uint textureSlotCount, uint forceRenderType);
-        internal extern void ResetDrawCallData();
+        internal extern void AddDrawCallData(int safeFrameIndex, Material mat, uint textureSlotCount, uint forceRenderType, IntPtr serializedCommandsPtr, int commandCount, CommandListState state);
+        internal extern void ResetDrawCallData(int safeFrameIndex);
+        internal extern void ResetAllDrawCallData();
 
         // This will dirty the hierarchy flag of affected PanelRenderers if a hierarchy change occurred
         extern static internal bool CheckHierarchyChanges();
-
-        // This call can be removed once UITK_USE_NATIVE_PANEL_RENDERER is implemented
-        [RequiredByNativeCode]
-        static void OnPanelRendererNodeExecute(PanelRenderer renderer, int safeFrameIndex, int cmdListIndex)
-        {
-            if (renderer.skipRendering)
-                return;
-
-            var commandLists = renderer.commandLists;
-            var cmdList = commandLists != null ? commandLists[safeFrameIndex] : null;
-            if (cmdList != null && cmdListIndex < cmdList.Count)
-                cmdList[cmdListIndex]?.Execute();
-        }
-
         #endregion
 
         #region Lifecycle
@@ -502,6 +489,21 @@ namespace UnityEngine.UIElements
                 parentUI.RemoveChild(this);
             else
                 panelSettings?.DetachPanelComponent(this);
+        }
+
+        internal void ReactToHierarchyChanges()
+        {
+            if (!enabled)
+                return;
+
+            if (hasHierarchyChanged || requiresReinsertion)
+            {
+                SetupFromHierarchy();
+                SetupRootClassList();
+                AddRootVisualElementToTree();
+                hasHierarchyChanged = false;
+                requiresReinsertion = false;
+            }
         }
 
         // If this PanelRenderer has PanelRenderer children (1st level only, 2nd level would be the child's
@@ -793,6 +795,23 @@ namespace UnityEngine.UIElements
             }
         }
         #endregion
+
+        #region Animation
+        internal extern UIAnimationBinder GetAnimationBinder();
+
+
+        [RequiredByNativeCode]
+        internal void ConnectToAnimationBinder()
+        {
+            UIAnimationBinder binder = GetAnimationBinder();
+
+            if(binder != null)
+            {
+                RegisterUIReloadCallback((pr, root) => binder.RegisterRootDocument(root, false)); 
+            }
+        }
+
+        #endregion
     }
 
     [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
@@ -810,6 +829,8 @@ namespace UnityEngine.UIElements
         }
     }
 
+    [RequiredByNativeCode]
+    [StructLayout(LayoutKind.Sequential)]
     internal struct CommandListState
     {
         public IntPtr vertexDeclPtr;

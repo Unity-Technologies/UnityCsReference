@@ -420,9 +420,9 @@ namespace UnityEditor.Search
 
         public MemoryDataStore(IEnumerable<T> initialData)
         {
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             m_Data = initialData.ToList();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
         }
 
         public void Add(T item)
@@ -676,18 +676,18 @@ namespace UnityEditor.Search
 
         public IEnumerable<IPropertyDatabaseRecord> EnumerateAll(bool enumerateInvalid = false)
         {
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return EnumerateAllSerializableRecords(enumerateInvalid).Cast<IPropertyDatabaseRecord>();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
         }
 
         public IEnumerable<PropertyDatabaseRecord> EnumerateAllSerializableRecords(bool enumerateInvalid = false)
         {
             using (LockRead())
             {
-                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 return m_MemoryDataStore.Where(p => p.IsValid() || enumerateInvalid).ToList();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             }
         }
 
@@ -716,9 +716,9 @@ namespace UnityEditor.Search
 
         public void MergeWith(IEnumerable<PropertyDatabaseRecord> records, bool overrideWithInvalid)
         {
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var newRecordsList = records.ToList();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             var newRecordsCount = newRecordsList.Count;
 
             using (LockWrite())
@@ -873,7 +873,15 @@ namespace UnityEditor.Search
             return new PropertyDatabaseFileStoreView(filePath, this, m_InvalidatedDocumentKeys, m_InvalidatedDocumentKeyHiWords, m_InvalidatedDocumentKeyMasks);
         }
 
-        public void SwapFile(string filePathToSwap)
+        public void ReplaceWithSerializableStore(IPropertyDatabaseSerializableStore serializableStore)
+        {
+            using (var view = serializableStore.GetSerializableStoreView())
+            {
+                ReplaceWithSerializableStore(view);
+            }
+        }
+
+        public void ReplaceWithSerializableStore(IPropertyDatabaseSerializableStoreView serializableStoreView)
         {
             using (LockWrite())
             {
@@ -881,8 +889,14 @@ namespace UnityEditor.Search
                 {
                     NotifyFileStoreAboutToChange();
 
-                    RetriableOperation<IOException>.Execute(() => File.Copy(filePathToSwap, filePath, true));
-                    RetriableOperation<IOException>.Execute(() => File.Delete(filePathToSwap));
+                    // This method can be called before any actual data has been stored, so we need to create the file if it does not exist yet.
+                    if (!File.Exists(filePath))
+                    {
+                        CreateDefaultStore(filePath);
+                    }
+
+                    using var view = GetView() as PropertyDatabaseFileStoreView;
+                    view.ReplaceWithSerializableStoreWithoutNotify(serializableStoreView);
                 }
                 finally
                 {
@@ -937,9 +951,18 @@ namespace UnityEditor.Search
             using (LockUpgradeableRead())
                 m_FileStoreAboutToChange?.Invoke();
         }
+
+        static void CreateDefaultStore(string filePath)
+        {
+            using (var fs = File.Open(filePath, FileMode.CreateNew, FileAccess.ReadWrite, FileShare.ReadWrite | FileShare.Delete))
+            {
+                var bw = new BinaryWriter(fs);
+                bw.Write(PropertyDatabase.version);
+            }
+        }
     }
 
-    // This needs to be a class, since it registers a itself for changes and the event modifies the filestream.
+    // This needs to be a class, since it registers itself for changes and the event modifies the filestream.
     // With a struct only the copy would get modified.
     class PropertyDatabaseFileStoreView : IPropertyDatabaseSerializableStoreView, IBinarySearchRangeData<PropertyDatabaseRecordKey>
     {
@@ -1012,6 +1035,22 @@ namespace UnityEditor.Search
         {
             // Cannot add anything in this store
             throw new NotSupportedException();
+        }
+
+        public void ReplaceWithSerializableStoreWithoutNotify(IPropertyDatabaseSerializableStoreView serializableStoreView)
+        {
+            using (LockWrite())
+            {
+                ClearWithoutNotify();
+                using (serializableStoreView.LockRead())
+                {
+                    for (var i = 0; i < serializableStoreView.length; ++i)
+                    {
+                        var databaseRecord = serializableStoreView[i];
+                        databaseRecord.ToBinary(m_Bw);
+                    }
+                }
+            }
         }
 
         public bool TryLoad(in PropertyDatabaseRecordKey recordKey, out PropertyDatabaseRecord data, bool loadInvalid = false)
@@ -1162,9 +1201,9 @@ namespace UnityEditor.Search
 
         public IEnumerable<IPropertyDatabaseRecord> EnumerateAll(bool enumerateInvalid = false)
         {
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return EnumerateAllSerializableRecords(enumerateInvalid).Cast<IPropertyDatabaseRecord>();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
         }
 
         public IEnumerable<PropertyDatabaseRecord> EnumerateAllSerializableRecords(bool enumerateInvalid = false)
@@ -1187,6 +1226,15 @@ namespace UnityEditor.Search
         {
             using (LockWrite())
             {
+                ClearWithoutNotify();
+                m_Store.NotifyFileStoreChanged();
+            }
+        }
+
+        public void ClearWithoutNotify()
+        {
+            using (LockWrite())
+            {
                 if (m_Fs == null)
                     return;
                 m_Fs.SetLength(sizeof(int));
@@ -1194,7 +1242,6 @@ namespace UnityEditor.Search
                 m_Bw.Write(PropertyDatabase.version);
                 m_Fs.Flush(true);
                 m_Store.ClearInvalidatedDocuments();
-                m_Store.NotifyFileStoreChanged();
             }
         }
 
@@ -1311,9 +1358,9 @@ namespace UnityEditor.Search
             var documentKeyHiWord = PropertyDatabaseDocumentKeyHiWordRange.ToHiWord(documentKey);
             if (m_InvalidatedDocumentKeyHiWords.Contains(documentKeyHiWord))
                 return false;
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             if (m_InvalidatedDocumentKeyMasks.Any(mask => PropertyDatabaseDocumentKeyMaskRange.DocumentKeyMatchesMask(documentKey, mask)))
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                 return false;
             return true;
         }
@@ -1638,9 +1685,9 @@ namespace UnityEditor.Search
         {
             using (LockRead())
             {
-                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 return m_MemoryDataStore.Where(p => p.valid || enumerateInvalid).Cast<IPropertyDatabaseRecord>().ToList();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             }
         }
 

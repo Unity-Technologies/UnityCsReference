@@ -109,9 +109,9 @@ namespace UnityEditor.Search
 
         internal bool HasToggle(string toggle, StringComparison stringComparison)
         {
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return toggles.Any(s => s.value.Equals(toggle, stringComparison));
-#pragma warning restore RS0030
+#pragma warning restore UA2001
         }
 
         static IQueryNode GetNodeAtPosition(IQueryNode root, int position)

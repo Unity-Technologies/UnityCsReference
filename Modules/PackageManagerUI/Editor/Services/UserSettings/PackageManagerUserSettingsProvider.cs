@@ -15,6 +15,11 @@ namespace UnityEditor.PackageManager.UI.Internal
     internal class PackageManagerUserSettingsProvider : SettingsProvider
     {
         public const string k_PackageManagerUserSettingsPath = "Preferences/Package Manager";
+        public static readonly string[] k_Keywords = new []
+        {
+            L10n.Tr("cache"), L10n.Tr("assetstore"), L10n.Tr("packages"), "UPM_CACHE_ROOT", "ASSETSTORE_CACHE_PATH"
+        };
+
         private const string k_UserSettingsStylesheet = "StyleSheets/PackageManager/PackageManagerUserSettings.uss";
         private const string k_CommonStylesheet = "StyleSheets/Extensions/base/common.uss";
         private const string k_DarkStylesheet = "StyleSheets/Extensions/base/dark.uss";
@@ -26,8 +31,6 @@ namespace UnityEditor.PackageManager.UI.Internal
         private static readonly string k_ChangeLocation = L10n.Tr("Change Location");
         private static readonly string k_ResetToDefaultLocation = L10n.Tr("Reset to Default Location");
 
-        private VisualElement m_RootVisualElement;
-
         [NonSerialized]
         private CachePathConfig m_CurrentAssetStoreConfig = new CachePathConfig();
         private string currentAssetStoreNormalizedPath => m_CurrentAssetStoreConfig?.path.NormalizePath() ?? string.Empty;
@@ -36,41 +39,40 @@ namespace UnityEditor.PackageManager.UI.Internal
         private CacheRootConfig m_CurrentPackagesConfig = new CacheRootConfig();
         private string currentPackagesNormalizedPath => m_CurrentPackagesConfig?.path.NormalizePath() ?? string.Empty;
 
-        private IResourceLoader m_ResourceLoader;
-        private IAssetStoreCachePathProxy m_AssetStoreCachePathProxy;
-        private IUpmCacheRootClient m_UpmCacheRootClient;
-        private IApplicationProxy m_ApplicationProxy;
-        private IClientProxy m_ClientProxy;
-        private IAssetStoreDownloadManager m_AssetStoreDownloadManager;
-        private void ResolveDependencies()
+        private readonly IAssetStoreCachePathProxy m_AssetStoreCachePathProxy;
+        private readonly IUpmCacheRootClient m_UpmCacheRootClient;
+        private readonly IApplicationProxy m_ApplicationProxy;
+        private readonly IClientProxy m_ClientProxy;
+        private readonly IAssetStoreDownloadManager m_AssetStoreDownloadManager;
+        public PackageManagerUserSettingsProvider(
+            IResourceLoader resourceLoader,
+            IAssetStoreCachePathProxy assetStoreCachePathProxy,
+            IUpmCacheRootClient upmCacheRootClient,
+            IApplicationProxy applicationProxy,
+            IClientProxy clientProxy,
+            IAssetStoreDownloadManager assetStoreDownloadManager)
+            : base(k_PackageManagerUserSettingsPath, SettingsScope.User, k_Keywords)
         {
-            var container = ServicesContainer.instance;
-            m_ResourceLoader = container.Resolve<IResourceLoader>();
-            m_AssetStoreCachePathProxy = container.Resolve<IAssetStoreCachePathProxy>();
-            m_UpmCacheRootClient = container.Resolve<IUpmCacheRootClient>();
-            m_ApplicationProxy = container.Resolve<IApplicationProxy>();
-            m_AssetStoreDownloadManager = container.Resolve<IAssetStoreDownloadManager>();
-            m_ClientProxy = container.Resolve<IClientProxy>();
-        }
+            m_AssetStoreCachePathProxy = assetStoreCachePathProxy;
+            m_UpmCacheRootClient = upmCacheRootClient;
+            m_ApplicationProxy = applicationProxy;
+            m_ClientProxy = clientProxy;
+            m_AssetStoreDownloadManager = assetStoreDownloadManager;
 
-        private PackageManagerUserSettingsProvider(string path, IEnumerable<string> keywords = null) : base(path, SettingsScope.User, keywords)
-        {
-            activateHandler = (text, element) =>
+            activateHandler = (_, element) =>
             {
-                ResolveDependencies();
-
                 // Create a child to make sure all the style sheets are not added to the root.
-                m_RootVisualElement = new ScrollView();
-                m_RootVisualElement.StretchToParentSize();
-                m_RootVisualElement.AddStyleSheetPath(k_UserSettingsStylesheet);
-                m_RootVisualElement.AddStyleSheetPath(EditorGUIUtility.isProSkin ? k_DarkStylesheet : k_LightStylesheet);
-                m_RootVisualElement.AddStyleSheetPath(k_CommonStylesheet);
-                m_RootVisualElement.styleSheets.Add(m_ResourceLoader.packageManagerCommonStyleSheet);
+                VisualElement scrollView = new ScrollView();
+                scrollView.StretchToParentSize();
+                scrollView.AddStyleSheetPath(k_UserSettingsStylesheet);
+                scrollView.AddStyleSheetPath(EditorGUIUtility.isProSkin ? k_DarkStylesheet : k_LightStylesheet);
+                scrollView.AddStyleSheetPath(k_CommonStylesheet);
+                scrollView.styleSheets.Add(resourceLoader.packageManagerCommonStyleSheet);
 
-                element.Add(m_RootVisualElement);
+                element.Add(scrollView);
 
-                var root = m_ResourceLoader.GetTemplate(k_PackageManagerUserSettingsTemplate);
-                m_RootVisualElement.Add(root);
+                var root = resourceLoader.GetTemplate(k_PackageManagerUserSettingsTemplate);
+                scrollView.Add(root);
                 m_Cache = new VisualElementCache(root);
 
                 DisplayPackagesCacheSetting();
@@ -337,14 +339,14 @@ namespace UnityEditor.PackageManager.UI.Internal
         [SettingsProvider]
         public static SettingsProvider CreateUserSettingsProvider()
         {
-            return new PackageManagerUserSettingsProvider(k_PackageManagerUserSettingsPath, new List<string>
-            {
-                L10n.Tr("cache"),
-                L10n.Tr("assetstore"),
-                L10n.Tr("packages"),
-                L10n.Tr("UPM_CACHE_ROOT"),
-                L10n.Tr("ASSETSTORE_CACHE_PATH")
-            });
+            var container = ServicesContainer.instance;
+            return new PackageManagerUserSettingsProvider(
+                container.Resolve<IResourceLoader>(),
+                container.Resolve<IAssetStoreCachePathProxy>(),
+                container.Resolve<IUpmCacheRootClient>(),
+                container.Resolve<IApplicationProxy>(),
+                container.Resolve<IClientProxy>(),
+                container.Resolve<IAssetStoreDownloadManager>());
         }
 
         private VisualElementCache m_Cache;

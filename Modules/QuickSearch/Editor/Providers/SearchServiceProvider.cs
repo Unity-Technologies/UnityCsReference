@@ -51,17 +51,17 @@ namespace UnityEditor.Search
                 var token = options.tokens[0][0];
                 if (token == '#')
                 {
-                    #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                    #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     foreach (var c in PropertySelectors.Enumerate(context.searchView.results.Take(10)))
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                         yield return new SearchProposition(category: category, label: $"{token}{c.content.text ?? c.path}", $"{c.selector}\t", $"Property ({c.selector})");
                 }
 
                 if (token == '@')
                 {
-                    #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                    #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     foreach (var s in SelectorManager.selectors.Where(s => s.printable))
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                         yield return new SearchProposition(category: category, label: $"{token}{s.label}", help: s.description ?? "Selector", replacement: $"@{s.label}\t");
                 }
             }
@@ -101,7 +101,7 @@ namespace UnityEditor.Search
     [ExcludeFromPreset]
     class SearchServiceItem : ScriptableObject, IDisposable
     {
-        public SearchItem item;
+        public SearchItem item { get; set; }
         private volatile bool m_Disposed;
 
         protected virtual void Dispose(bool disposing)
@@ -139,7 +139,7 @@ namespace UnityEditor.Search
     [CustomEditor(typeof(SearchServiceItem))]
     class SearchServiceItemEditor : Editor
     {
-        public SearchItem item;
+        public SearchItem item { get; set; }
 
         internal void OnEnable()
         {

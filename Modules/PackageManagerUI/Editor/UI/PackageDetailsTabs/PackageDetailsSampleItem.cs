@@ -3,7 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System.IO;
-using System.Linq;
+using System.Text;
 using UnityEngine;
 using UnityEngine.UIElements;
 
@@ -42,44 +42,44 @@ namespace UnityEditor.PackageManager.UI.Internal
         private void OnImportButtonClicked()
         {
             var previousImports = m_Sample.previousImports;
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            var previousImportPaths = previousImports.Aggregate(string.Empty,
-#pragma warning restore RS0030
-                (current, next) => current + next.Replace(@"\", "/").Replace(Application.dataPath, "Assets") + "\n");
-
-            var warningMessage = string.Empty;
-            if (previousImports.Count > 1)
+            if (previousImports.Count > 0)
             {
-                warningMessage = L10n.Tr("Different versions of the sample are already imported at") + "\n\n"
-                    + previousImportPaths + "\n" + L10n.Tr("They will be deleted when you update.");
-            }
-            else if (previousImports.Count == 1)
-            {
-                if (m_Sample.isImported)
+                var previousImportPathsStringBuilder = new StringBuilder();
+                foreach (var path in previousImports)
                 {
-                    warningMessage = L10n.Tr("The sample is already imported at") + "\n\n"
-                        + previousImportPaths + "\n" + L10n.Tr("Importing again will override all changes you have made to it.");
+                    previousImportPathsStringBuilder.Append(path.Replace(@"\", "/").Replace(Application.dataPath, "Assets"));
+                    previousImportPathsStringBuilder.Append('\n');
+                }
+
+                string warningMessage;
+                if (previousImports.Count > 1)
+                {
+                    warningMessage = L10n.Tr("Different versions of the sample are already imported at") + "\n\n"
+                        + previousImportPathsStringBuilder + "\n" + L10n.Tr("They will be deleted when you update.");
                 }
                 else
                 {
-                    warningMessage = L10n.Tr("A different version of the sample is already imported at") + "\n\n"
-                        + previousImportPaths + "\n" + L10n.Tr("It will be deleted when you update.");
+                    if (m_Sample.isImported)
+                    {
+                        warningMessage = L10n.Tr("The sample is already imported at") + "\n\n"
+                            + previousImportPathsStringBuilder + "\n" + L10n.Tr("Importing again will override all changes you have made to it.");
+                    }
+                    else
+                    {
+                        warningMessage = L10n.Tr("A different version of the sample is already imported at") + "\n\n"
+                            + previousImportPathsStringBuilder + "\n" + L10n.Tr("It will be deleted when you update.");
+                    }
                 }
+
+                if (!m_Application.DisplayDialog("importPackageSample",
+                        L10n.Tr("Importing package sample"),
+                        warningMessage + L10n.Tr(" Are you sure you want to continue?"),
+                        L10n.Tr("Yes"), L10n.Tr("No")))
+                    return;
             }
 
-            if (!string.IsNullOrEmpty(warningMessage) &&
-                !m_Application.DisplayDialog("importPackageSample",
-                    L10n.Tr("Importing package sample"),
-                    warningMessage + L10n.Tr(" Are you sure you want to continue?"),
-                    L10n.Tr("Yes"), L10n.Tr("No")))
-            {
-                return;
-            }
-
-            if (previousImports.Count < 1)
-                PackageManagerWindowAnalytics.SendEvent("importSample", m_Version.uniqueId);
-            else
-                PackageManagerWindowAnalytics.SendEvent("reimportSample", m_Version.uniqueId);
+            var eventName = previousImports.Count == 0 ? "importSample" : "reimportSample";
+            PackageManagerWindowAnalytics.SendEvent(eventName, m_Version.uniqueId);
 
             if (m_Sample.Import(Sample.ImportOptions.OverridePreviousImports))
             {
@@ -111,13 +111,10 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private void PingSampleInProjectBrowser()
         {
-            var importRelativePath = GetRelativePath(m_Sample.importPath);
-            if (m_Application.PingObjectInProjectBrowser(importRelativePath))
+            if (m_Application.PingObjectInProjectBrowser(GetRelativePath(m_Sample.importPath)))
                 return;
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            importRelativePath = GetRelativePath(m_Sample.previousImports?.Last());
-#pragma warning restore RS0030
-            m_Application.PingObjectInProjectBrowser(importRelativePath);
+            if (m_Sample.previousImports?.Count > 0)
+                m_Application.PingObjectInProjectBrowser(GetRelativePath(m_Sample.previousImports[^1]));
         }
 
         private string GetRelativePath(string path)

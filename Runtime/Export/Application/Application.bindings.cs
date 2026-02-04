@@ -171,6 +171,7 @@ namespace UnityEngine
         extern static internal bool isHumanControllingUs
         {
             [FreeFunction("::IsHumanControllingUs")]
+            [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
             get;
         }
 

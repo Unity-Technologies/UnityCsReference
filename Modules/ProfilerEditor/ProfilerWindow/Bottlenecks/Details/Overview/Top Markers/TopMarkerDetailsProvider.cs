@@ -4,7 +4,6 @@
 
 using System;
 using System.Collections.Generic;
-using Unity.EntitiesLike;
 using UnityEditor;
 using UnityEditor.Profiling;
 using UnityEngine.UIElements;

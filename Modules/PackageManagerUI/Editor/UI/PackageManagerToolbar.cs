@@ -4,7 +4,6 @@
 
 using UnityEngine.UIElements;
 using UnityEditor.UIElements;
-using System.Linq;
 using UnityEngine;
 using System;
 
@@ -15,40 +14,55 @@ namespace UnityEditor.PackageManager.UI.Internal
         [Serializable]
         public new class UxmlSerializedData : VisualElement.UxmlSerializedData
         {
-            public override object CreateInstance() => new PackageManagerToolbar();
+            public override object CreateInstance()
+            {
+                var container = ServicesContainer.instance;
+                return new PackageManagerToolbar(
+                    container.Resolve<IResourceLoader>(),
+                    container.Resolve<IApplicationProxy>(),
+                    container.Resolve<IUnityConnectProxy>(),
+                    container.Resolve<IPackageDatabase>(),
+                    container.Resolve<IPackageOperationDispatcher>(),
+                    container.Resolve<IPageManager>(),
+                    container.Resolve<IUpmClient>(),
+                    container.Resolve<IAssetStoreDownloadManager>(),
+                    container.Resolve<IProjectSettingsProxy>(),
+                    container.Resolve<IDropdownHandler>());
+            }
         }
 
-        private IResourceLoader m_ResourceLoader;
-        private IApplicationProxy m_Application;
-        private IUnityConnectProxy m_UnityConnect;
-        private IPackageDatabase m_PackageDatabase;
-        private IPackageOperationDispatcher m_OperationDispatcher;
-        private IPageManager m_PageManager;
-        private IUpmClient m_UpmClient;
-        private IAssetStoreDownloadManager m_AssetStoreDownloadManager;
-        private IProjectSettingsProxy m_SettingsProxy;
-        private IIOProxy m_IOProxy;
-        private IDropdownHandler m_DropdownHandler;
-
-        private void ResolveDependencies()
+        private readonly IResourceLoader m_ResourceLoader;
+        private readonly IApplicationProxy m_Application;
+        private readonly IUnityConnectProxy m_UnityConnect;
+        private readonly IPackageDatabase m_PackageDatabase;
+        private readonly IPackageOperationDispatcher m_OperationDispatcher;
+        private readonly IPageManager m_PageManager;
+        private readonly IUpmClient m_UpmClient;
+        private readonly IAssetStoreDownloadManager m_AssetStoreDownloadManager;
+        private readonly IProjectSettingsProxy m_SettingsProxy;
+        private readonly IDropdownHandler m_DropdownHandler;
+        public PackageManagerToolbar(
+            IResourceLoader resourceLoader,
+            IApplicationProxy application,
+            IUnityConnectProxy unityConnect,
+            IPackageDatabase packageDatabase,
+            IPackageOperationDispatcher operationDispatcher,
+            IPageManager pageManager,
+            IUpmClient upmClient,
+            IAssetStoreDownloadManager assetStoreDownloadManager,
+            IProjectSettingsProxy settingsProxy,
+            IDropdownHandler dropdownHandler)
         {
-            var container = ServicesContainer.instance;
-            m_ResourceLoader = container.Resolve<IResourceLoader>();
-            m_Application = container.Resolve<IApplicationProxy>();
-            m_UnityConnect = container.Resolve<IUnityConnectProxy>();
-            m_PackageDatabase = container.Resolve<IPackageDatabase>();
-            m_OperationDispatcher = container.Resolve<IPackageOperationDispatcher>();
-            m_PageManager = container.Resolve<IPageManager>();
-            m_UpmClient = container.Resolve<IUpmClient>();
-            m_AssetStoreDownloadManager = container.Resolve<IAssetStoreDownloadManager>();
-            m_SettingsProxy = container.Resolve<IProjectSettingsProxy>();
-            m_IOProxy = container.Resolve<IIOProxy>();
-            m_DropdownHandler = container.Resolve<IDropdownHandler>();
-        }
-
-        public PackageManagerToolbar()
-        {
-            ResolveDependencies();
+            m_ResourceLoader = resourceLoader;
+            m_Application = application;
+            m_UnityConnect = unityConnect;
+            m_PackageDatabase = packageDatabase;
+            m_OperationDispatcher = operationDispatcher;
+            m_PageManager = pageManager;
+            m_UpmClient = upmClient;
+            m_AssetStoreDownloadManager = assetStoreDownloadManager;
+            m_SettingsProxy = settingsProxy;
+            m_DropdownHandler = dropdownHandler;
 
             var root = m_ResourceLoader.GetTemplate("PackageManagerToolbar.uxml");
             Add(root);
@@ -90,9 +104,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private void RefreshInProgressSpinner(bool? showSpinner = null)
         {
-#pragma warning disable RS0031 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            if (showSpinner ?? (m_AssetStoreDownloadManager.IsAnyDownloadInProgress() || m_UpmClient.packageIdsOrNamesInstalling.Any()))
-#pragma warning restore RS0031
+            if (showSpinner ?? (m_AssetStoreDownloadManager.IsAnyDownloadInProgress() || m_UpmClient.packageIdsOrNamesInstalling.Count > 0))
                 inProgressSpinner.Start();
             else
                 inProgressSpinner.Stop();
@@ -127,11 +139,9 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private void UpdateFilterMenuText(PageFilters filters)
         {
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            var filtersSet = new[] { filters.status.GetDisplayName() }.Concat(filters.categories).Concat(filters.labels)
-#pragma warning restore RS0030
-                .Where(s => !string.IsNullOrEmpty(s)).ToArray();
-            filtersMenu.text = filtersSet.Length > 0 ? string.Format(L10n.Tr("Filters ({0})"), string.Join(", ", filtersSet)) : L10n.Tr("Filters");
+            var filtersSet = string.Join(", ",
+                new[] { filters.status.GetDisplayName() }.Join(filters.categories, filters.labels).Filter(s => !string.IsNullOrEmpty(s)));
+            filtersMenu.text = string.IsNullOrEmpty(filtersSet) ? L10n.Tr("Filters") : string.Format(L10n.Tr("Filters ({0})"), filtersSet);
         }
 
         private void UpdateSortMenuText(PageSortOption sortOption)
@@ -292,13 +302,13 @@ namespace UnityEditor.PackageManager.UI.Internal
 
                 try
                 {
-                    if (m_IOProxy.GetFileName(path) != "package.json")
+                    if (IOUtils.GetFileName(path) != "package.json")
                     {
                         Debug.Log(L10n.Tr("[Package Manager Window] Please select a valid package.json file in a package folder."));
                         return;
                     }
 
-                    if (!m_OperationDispatcher.InstallFromPath(m_IOProxy.GetParentDirectory(path), out var tempPackageId))
+                    if (!m_OperationDispatcher.InstallFromPath(IOUtils.GetParentDirectory(path), out var tempPackageId))
                         return;
 
                     PackageManagerWindowAnalytics.SendEvent("addFromDisk");

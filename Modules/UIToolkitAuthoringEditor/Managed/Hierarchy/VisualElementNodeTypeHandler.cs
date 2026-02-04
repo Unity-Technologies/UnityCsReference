@@ -5,7 +5,9 @@
 using System;
 using System.Buffers;
 using System.Collections.Generic;
+using System.IO;
 using System.Text;
+using System.Text.RegularExpressions;
 using Unity.Hierarchy;
 using Unity.Hierarchy.Editor;
 using Unity.Properties;
@@ -13,7 +15,6 @@ using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEditor.Search;
 using UnityEngine;
-using UnityEngine.Assertions;
 using UnityEngine.Pool;
 using UnityEngine.UIElements;
 
@@ -26,8 +27,11 @@ internal abstract class VisualElementNodeTypeHandler :
     IHierarchyEntityIdConverter,
     IHierarchyEditorNodeTypeHandler
 {
+    static string s_BatchModeCopyBuffer;
+    public const string NodeTypeName = "VisualElement";
     protected const string VisualElementDisabledUssClass = "unity-disabled";
 
+    public static Regex elementNameRegex { get; } = new (@"^[a-zA-Z0-9\-_]+$", RegexOptions.Compiled);
     public const string DraggedVisualElementKey = "VisualElementHandler__DraggedVisualElements";
 
     // Used for tests
@@ -57,6 +61,7 @@ internal abstract class VisualElementNodeTypeHandler :
     public const string HierarchyItemElementNameClassName = HierarchyItemClassName + "__element-name";
     public const string HierarchyItemElementTypeNameClassName = HierarchyItemClassName + "__element-type-name";
     public const string HierarchyItemUssClassName = HierarchyItemClassName + "__element-uss-class";
+    public const string HierarchyItemTemplatePath = HierarchyItemClassName + "__template-path";
     public const string HierarchyItemDisabledClassName = HierarchyItemClassName + "__disabled";
 
     private const string k_StyleSheetPath = "UIToolkitAuthoring/Hierarchy/VisualElementNodeTypeHandler.uss";
@@ -215,6 +220,43 @@ internal abstract class VisualElementNodeTypeHandler :
         CreateChildren,
     }
 
+    protected static string SystemCopyBuffer
+    {
+        get
+        {
+            if (Application.isBatchMode || !Application.isHumanControllingUs)
+                return s_BatchModeCopyBuffer;
+            return GUIUtility.systemCopyBuffer;
+        }
+        set
+        {
+            if (Application.isBatchMode || !Application.isHumanControllingUs)
+                s_BatchModeCopyBuffer = value;
+            else
+                GUIUtility.systemCopyBuffer = value;
+        }
+    }
+
+    protected static bool IsSystemCopyBufferUxml()
+    {
+        var buffer = SystemCopyBuffer;
+        if (string.IsNullOrWhiteSpace(buffer))
+            return false;
+
+        var trimmedBuffer = buffer.Trim();
+        return trimmedBuffer.StartsWith("<") && trimmedBuffer.EndsWith(">");
+    }
+
+    protected static bool IsSystemCopyBufferUss()
+    {
+        var buffer = SystemCopyBuffer;
+        if (string.IsNullOrWhiteSpace(buffer))
+            return false;
+
+        var trimmedBuffer = buffer.Trim();
+        return trimmedBuffer.EndsWith("}");
+    }
+
     private readonly Mappings m_Mappings = new();
     private readonly List<Panel> m_RegisteredPanels = new();
     private readonly QueryEngine<VisualElement> m_QueryEngine;
@@ -226,6 +268,8 @@ internal abstract class VisualElementNodeTypeHandler :
 
     private UIHierarchyDisplayOptions m_DisplayOptions;
     private bool m_EnableUIStages;
+
+    internal List<VisualElementAsset> m_NodesToSelect;
 
     protected IVisualElementSelectionHandler SelectionHandler => m_SelectionHandler;
 
@@ -283,10 +327,11 @@ internal abstract class VisualElementNodeTypeHandler :
 
     #region HierarchyNodeTypeHandler
 
+
     /// <inheritdoc cref="HierarchyNodeTypeHandler.GetNodeTypeName"/>>
     public sealed override string GetNodeTypeName()
     {
-        return "VisualElement";
+        return NodeTypeName;
     }
 
     /// <inheritdoc cref="HierarchyNodeTypeHandler.SearchBegin"/>>
@@ -339,6 +384,7 @@ internal abstract class VisualElementNodeTypeHandler :
             item.EnableInClassList(HierarchyItemDisabledClassName, false);
             item.LeftCustomContainer.Clear();
             item.parent.Q(className: HierarchyItemElementTypeNameClassName)?.RemoveFromHierarchy();
+            item.Q(className: HierarchyItemTemplatePath)?.RemoveFromHierarchy();
             UnsetStageNodeNavigation(item);
         }
     }
@@ -362,7 +408,14 @@ internal abstract class VisualElementNodeTypeHandler :
         return CanCut(view, in selection);
     }
 
-    bool IHierarchyEditorNodeTypeHandler.OnCut(HierarchyView view) => !isReadonly;
+    bool IHierarchyEditorNodeTypeHandler.OnCut(HierarchyView view)
+    {
+        if (isReadonly)
+            return false;
+
+        using var memoryOwner = GetSelection(view, out var selection);
+        return OnCut(view, in selection);
+    }
 
     bool IHierarchyEditorNodeTypeHandler.CanCopy(HierarchyView view)
     {
@@ -373,7 +426,14 @@ internal abstract class VisualElementNodeTypeHandler :
         return CanCopy(view, in selection);
     }
 
-    bool IHierarchyEditorNodeTypeHandler.OnCopy(HierarchyView view) => !isReadonly;
+    bool IHierarchyEditorNodeTypeHandler.OnCopy(HierarchyView view)
+    {
+        if (isReadonly)
+            return false;
+
+        using var memoryOwner = GetSelection(view, out var selection);
+        return OnCopy(view, in selection);
+    }
 
     bool IHierarchyEditorNodeTypeHandler.CanPaste(HierarchyView view)
     {
@@ -384,7 +444,14 @@ internal abstract class VisualElementNodeTypeHandler :
         return CanPaste(view, in selection);
     }
 
-    bool IHierarchyEditorNodeTypeHandler.OnPaste(HierarchyView view) => !isReadonly;
+    bool IHierarchyEditorNodeTypeHandler.OnPaste(HierarchyView view)
+    {
+        if (isReadonly)
+            return false;
+
+        using var memoryOwner = GetSelection(view, out var selection);
+        return OnPaste(view, in selection);
+    }
 
     bool IHierarchyEditorNodeTypeHandler.CanPasteAsChild(HierarchyView view)
     {
@@ -395,7 +462,14 @@ internal abstract class VisualElementNodeTypeHandler :
         return CanPasteAsChild(view, in selection);
     }
 
-    bool IHierarchyEditorNodeTypeHandler.OnPasteAsChild(HierarchyView view, bool keepWorldPos) => !isReadonly;
+    bool IHierarchyEditorNodeTypeHandler.OnPasteAsChild(HierarchyView view, bool keepWorldPos)
+    {
+        if (isReadonly)
+            return false;
+
+        using var memoryOwner = GetSelection(view, out var selection);
+        return OnPasteAsChild(view, in selection);
+    }
 
     bool IHierarchyEditorNodeTypeHandler.CanSetName(HierarchyView view, in HierarchyNode node)
     {
@@ -408,13 +482,26 @@ internal abstract class VisualElementNodeTypeHandler :
     bool IHierarchyEditorNodeTypeHandler.OnSetName(HierarchyView view, in HierarchyNode node, string name)
     {
         if (!m_Mappings.TryGetValue(node, out var element))
+        {
+            CommandList.SetDirty();
             return false;
+        }
 
         if (!ValidateName(name))
+        {
+            CommandList.SetDirty();
             return false;
+        }
 
+        var elementVea = element.visualElementAsset;
+        if (elementVea == null)
+        {
+            CommandList.SetDirty();
+            return false;
+        }
+        new SetElementNameCommand(elementVea, name).Execute();
         element.name = name;
-        return OnSetName(view, in node, element, name);
+        return true;
     }
 
     string IHierarchyEditorNodeTypeHandler.GetDisplayName(HierarchyView view, in HierarchyNode node)
@@ -434,7 +521,14 @@ internal abstract class VisualElementNodeTypeHandler :
         return CanDuplicate(view, in selection);
     }
 
-    bool IHierarchyEditorNodeTypeHandler.OnDuplicate(HierarchyView view) => !isReadonly;
+    bool IHierarchyEditorNodeTypeHandler.OnDuplicate(HierarchyView view)
+    {
+        if (isReadonly)
+            return false;
+
+        using var memoryOwner = GetSelection(view, out var selection);
+        return OnDuplicate(view, in selection);
+    }
 
     bool IHierarchyEditorNodeTypeHandler.CanDelete(HierarchyView view)
     {
@@ -445,7 +539,14 @@ internal abstract class VisualElementNodeTypeHandler :
         return CanDelete(view, in selection);
     }
 
-    bool IHierarchyEditorNodeTypeHandler.OnDelete(HierarchyView view) => !isReadonly;
+    bool IHierarchyEditorNodeTypeHandler.OnDelete(HierarchyView view)
+    {
+        if (isReadonly)
+            return false;
+
+        using var memoryOwner = GetSelection(view, out var selection);
+        return OnDelete(view, in selection);
+    }
 
     bool IHierarchyEditorNodeTypeHandler.CanFindReferences(HierarchyView view)
     {
@@ -487,7 +588,7 @@ internal abstract class VisualElementNodeTypeHandler :
             return;
 
         if (m_Mappings.TryGetValue(item.Node, out var element))
-            PopulateContextMenu(in item.Node, element, menu);
+            PopulateContextMenu(view, in item.Node, element, menu);
     }
 
     bool IHierarchyEditorNodeTypeHandler.AcceptParent(HierarchyView view, in HierarchyNode parent)
@@ -611,7 +712,10 @@ internal abstract class VisualElementNodeTypeHandler :
     /// </summary>
     /// <param name="name">The new name.</param>
     /// <returns><see langword="true"/> if the name is valid; <see langword="false"/> otherwise.</returns>
-    protected virtual bool ValidateName(string name) => true;
+    protected virtual bool ValidateName(string name)
+    {
+        return elementNameRegex.IsMatch(name);
+    }
 
     /// <summary>
     /// Action to execute when renaming a node.
@@ -648,12 +752,28 @@ internal abstract class VisualElementNodeTypeHandler :
     protected virtual bool CanCopy(HierarchyView view, in SelectionContext selection) => false;
 
     /// <summary>
+    /// Executes the copy operation on the selected nodes.
+    /// </summary>
+    /// <param name="view">The <see cref="HierarchyView"/>.</param>
+    /// <param name="selection">The selection.</param>
+    /// <returns><see langword="true"/> if action is executed, <see langword="false"/> otherwise.</returns>
+    protected virtual bool OnCopy(HierarchyView view, in SelectionContext selection) => false;
+
+    /// <summary>
     /// Determines if selected nodes can be cut.
     /// </summary>
     /// <param name="view">The <see cref="HierarchyView"/>.</param>
     /// <param name="selection">The selection.</param>
     /// <returns><see langword="true"/> if action is supported, <see langword="false"/> otherwise.</returns>
     protected virtual bool CanCut(HierarchyView view, in SelectionContext selection) => false;
+
+    /// <summary>
+    /// Executes the cut operation on the selected nodes.
+    /// </summary>
+    /// <param name="view">The <see cref="HierarchyView"/>.</param>
+    /// <param name="selection">The selection.</param>
+    /// <returns><see langword="true"/> if action is executed, <see langword="false"/> otherwise.</returns>
+    protected virtual bool OnCut(HierarchyView view, in SelectionContext selection) => false;
 
     /// <summary>
     /// Determines if selected nodes can be deleted.
@@ -664,12 +784,28 @@ internal abstract class VisualElementNodeTypeHandler :
     protected virtual bool CanDelete(HierarchyView view, in SelectionContext selection) => false;
 
     /// <summary>
+    /// Executes the delete operation on the selected nodes.
+    /// </summary>
+    /// <param name="view">The <see cref="HierarchyView"/>.</param>
+    /// <param name="selection">The selection.</param>
+    /// <returns><see langword="true"/> if action is executed, <see langword="false"/> otherwise.</returns>
+    protected virtual bool OnDelete(HierarchyView view, in SelectionContext selection) => false;
+
+    /// <summary>
     /// Determines if selected nodes can be duplicated.
     /// </summary>
     /// <param name="view">The <see cref="HierarchyView"/>.</param>
     /// <param name="selection">The selection.</param>
     /// <returns><see langword="true"/> if action is supported, <see langword="false"/> otherwise.</returns>
     protected virtual bool CanDuplicate(HierarchyView view, in SelectionContext selection) => false;
+
+    /// <summary>
+    /// Executes the duplicate operation on the selected nodes.
+    /// </summary>
+    /// <param name="view">The <see cref="HierarchyView"/>.</param>
+    /// <param name="selection">The selection.</param>
+    /// <returns><see langword="true"/> if action is executed, <see langword="false"/> otherwise.</returns>
+    protected virtual bool OnDuplicate(HierarchyView view, in SelectionContext selection) => false;
 
     /// <summary>
     /// Determines if copied nodes can be pasted.
@@ -680,12 +816,28 @@ internal abstract class VisualElementNodeTypeHandler :
     protected virtual bool CanPaste(HierarchyView view, in SelectionContext selection) => false;
 
     /// <summary>
+    /// Executes the paste operation on the selected nodes.
+    /// </summary>
+    /// <param name="view">The <see cref="HierarchyView"/>.</param>
+    /// <param name="selection">The selection.</param>
+    /// <returns><see langword="true"/> if action is executed, <see langword="false"/> otherwise.</returns>
+    protected virtual bool OnPaste(HierarchyView view, in SelectionContext selection) => false;
+
+    /// <summary>
     /// Determines if copied nodes can be pasted as child.
     /// </summary>
     /// <param name="view">The <see cref="HierarchyView"/>.</param>
     /// <param name="selection">The selection.</param>
     /// <returns><see langword="true"/> if action is supported, <see langword="false"/> otherwise.</returns>
     protected virtual bool CanPasteAsChild(HierarchyView view, in SelectionContext selection) => false;
+
+    /// <summary>
+    /// Executes the paste on child operation on the selected nodes.
+    /// </summary>
+    /// <param name="view">The <see cref="HierarchyView"/>.</param>
+    /// <param name="selection">The selection.</param>
+    /// <returns><see langword="true"/> if action is executed, <see langword="false"/> otherwise.</returns>
+    protected virtual bool OnPasteAsChild(HierarchyView view, in SelectionContext selection) => false;
 
     /// <summary>
     /// Determines if a double click operation can be performed on the <see cref="HierarchyNode"/>.
@@ -769,10 +921,21 @@ internal abstract class VisualElementNodeTypeHandler :
 
     protected virtual void BindNavigation(HierarchyViewItem item, VisualElement container)
     {
+        if (container.visualElementAsset is TemplateAsset subDocument)
+        {
+            var nameElement = item.Q(className: "hierarchy-item__name");
+            var index = nameElement.parent.IndexOf(nameElement);
+            var path = AssetDatabase.GetAssetPath(subDocument.ResolveTemplate());
+            var filename = Path.GetFileName(path);
+            var label = new Label(filename){ tooltip = path };
+            label.AddToClassList(HierarchyItemTemplatePath);
+            nameElement.parent.Insert(index + 1, label);
+        }
     }
 
     protected virtual void UnbindNavigation(HierarchyViewItem item, VisualElement container)
     {
+        item.Q(className:HierarchyItemTemplatePath)?.RemoveFromHierarchy();
     }
 
     protected void SetStageNodeNavigation(HierarchyViewItem item, VisualElement container)
@@ -790,7 +953,6 @@ internal abstract class VisualElementNodeTypeHandler :
             {
                 using var _ = ListPool<TemplateAsset>.Get(out var subDocumentPath);
                 GenerateSubDocumentPath(container, subDocumentPath);
-
 
                 var rootVisualTreeAsset = GetRootVisualTreeAsset(container);
                 if (!VisualTreeAssetEditingContext.ValidateSubDocumentIsPartOrMainAssetHierarchy(rootVisualTreeAsset, NoAllocHelpers.CreateSpan(subDocumentPath)))
@@ -933,7 +1095,7 @@ internal abstract class VisualElementNodeTypeHandler :
     /// <param name="node">The hierarchy node.</param>
     /// <param name="element">The <see cref="VisualElement"/>.</param>
     /// <param name="menu">The <see cref="DropdownMenu"/> to populate with.</param>
-    protected virtual void PopulateContextMenu(in HierarchyNode node, VisualElement element, DropdownMenu menu)
+    protected virtual void PopulateContextMenu(HierarchyView view, in HierarchyNode node, VisualElement element, DropdownMenu menu)
     {
     }
 
@@ -1042,6 +1204,11 @@ internal abstract class VisualElementNodeTypeHandler :
         return m_Mappings.TryGetValue(element, out node);
     }
 
+    protected bool TryGetSelectionObject(HierarchyNode node, out EntityId entityId)
+    {
+        return m_Mappings.TryGetSelectionHandle(node, out entityId);
+    }
+
 
     public bool GetEnabled(HierarchyView view, in HierarchyNode node)
     {
@@ -1061,6 +1228,17 @@ internal abstract class VisualElementNodeTypeHandler :
         {
             Hierarchy.SetDirty();
         }
+    }
+
+    internal void RequestSelectionOnNextUpdate(IList<VisualElementAsset> assets)
+    {
+        m_NodesToSelect ??= new List<VisualElementAsset>();
+        m_NodesToSelect.AddRange(assets);
+    }
+
+    protected List<VisualElementAsset> GetDelayedSelectionRequests()
+    {
+        return m_NodesToSelect;
     }
 
     #region IVisualElementChangeProcessor
@@ -1268,15 +1446,13 @@ internal abstract class VisualElementNodeTypeHandler :
             VisualElement rootParent = null;
             for (var i = 0; i < children.Length; ++i)
             {
-                if (!TryGetElementFromNode(children[i], out var element))
+                if (!TryGetElementFromNode(children[i], out var element) || element.panel == null)
                 {
                     continue;
                 }
 
                 if (rootParent == null)
                     rootParent = element.hierarchy.parent;
-                if (rootParent != element.hierarchy.parent)
-                    Debug.LogWarning("Weird Case detected");
             }
 
             if (rootParent == null)

@@ -4,6 +4,7 @@
 
 using System;
 using System.Globalization;
+using System.Runtime.InteropServices;
 using UnityEngine;
 using UnityEngine.UIElements.StyleSheets;
 
@@ -27,7 +28,7 @@ namespace UnityEngine.UIElements
     /// <summary>
     /// Represents a time value.
     /// </summary>
-    [Serializable]
+    [Serializable, StructLayout(LayoutKind.Sequential)]
     public partial struct TimeValue : IEquatable<TimeValue>
     {
         /// <summary>

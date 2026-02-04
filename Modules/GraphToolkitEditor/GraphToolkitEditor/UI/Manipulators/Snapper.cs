@@ -21,9 +21,9 @@ namespace Unity.GraphToolkit.Editor
 
         void InitSnappingStrategies()
         {
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             foreach (var snappingStrategy in GraphViewSettings.UserSettings.SnappingStrategiesStates.Keys.Where(snappingStrategy => typeof(SnapStrategy).IsAssignableFrom(snappingStrategy)))
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             {
                 m_SnappingStrategies.Add((SnapStrategy)Activator.CreateInstance(snappingStrategy));
             }
@@ -42,9 +42,9 @@ namespace Unity.GraphToolkit.Editor
         public void BeginSnap(GraphElement selectedElement)
         {
             UpdateSnappingStrategies();
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             foreach (var snapStrategy in m_SnappingStrategies.Where(snapStrategy => snapStrategy.Enabled))
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             {
                 snapStrategy.BeginSnap(selectedElement);
             }
@@ -54,9 +54,9 @@ namespace Unity.GraphToolkit.Editor
         {
             Vector2 snappedPosition = sourceRect.position;
 
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             foreach (var snapStrategy in m_SnappingStrategies.Where(snapStrategy => snapStrategy.Enabled))
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             {
                 AdjustSnappedPosition(ref snappedPosition, sourceRect, selectedElement, snapStrategy);
             }
@@ -66,9 +66,9 @@ namespace Unity.GraphToolkit.Editor
 
         public void EndSnap()
         {
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             foreach (var snapStrategy in m_SnappingStrategies.Where(snapStrategy => snapStrategy.Enabled))
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             {
                 snapStrategy.EndSnap();
             }
@@ -76,9 +76,9 @@ namespace Unity.GraphToolkit.Editor
 
         public void PauseSnap(bool isPaused)
         {
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             foreach (var snapStrategy in m_SnappingStrategies.Where(snapStrategy => snapStrategy.Enabled))
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             {
                 snapStrategy.PauseSnap(isPaused);
             }
@@ -94,9 +94,9 @@ namespace Unity.GraphToolkit.Editor
 
         void EnableStrategy(Type strategyType, bool isEnabled)
         {
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             m_SnappingStrategies.First(s => s.GetType() == strategyType).Enabled = isEnabled;
-#pragma warning restore RS0030
+#pragma warning restore UA2001
         }
 
         static void AdjustSnappedPosition(ref Vector2 snappedPosition, Rect sourceRect, GraphElement selectedElement, SnapStrategy snapStrategy)

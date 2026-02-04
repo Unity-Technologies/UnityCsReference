@@ -79,9 +79,9 @@ namespace UnityEditor
 
         public static UnityType FindTypeByNameCaseInsensitive(string name)
         {
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return ms_types.FirstOrDefault(t => string.Equals(name, t.name, StringComparison.OrdinalIgnoreCase));
-#pragma warning restore RS0030
+#pragma warning restore UA2001
         }
 
         public static ReadOnlyCollection<UnityType> GetTypes()

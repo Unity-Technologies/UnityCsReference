@@ -288,16 +288,16 @@ namespace UnityEditor.Search
             {
                 CheckDisposed();
                 if (filterId != null)
-                    #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                    #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     return m_Providers.Where(p => p.filterId == filterId);
-#pragma warning restore RS0030
+#pragma warning restore UA2001
 
                 if (m_Providers.Count == 1)
                     return m_Providers;
 
-                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 return m_Providers.Where(p => !p.isExplicitProvider || useExplicitProvidersAsNormalProviders);
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             }
         }
 
@@ -495,22 +495,22 @@ namespace UnityEditor.Search
         public void SetFilter(string providerId, bool isEnabled)
         {
             CheckDisposed();
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var provider = m_Providers.FirstOrDefault(p => p.id == providerId);
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             if (!isEnabled && provider != null)
             {
-                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 SetProviders(m_Providers.Where(p => p != provider).ToList());
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             }
             else if (isEnabled && provider == null)
             {
                 provider = SearchService.GetProvider(providerId);
                 if (provider != null)
-                    #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                    #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     SetProviders(m_Providers.Concat(new[] { provider }).ToList());
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             }
         }
 
@@ -522,9 +522,9 @@ namespace UnityEditor.Search
         public bool IsEnabled(string providerId)
         {
             CheckDisposed();
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return m_Providers.Any(p => p.id == providerId);
-#pragma warning restore RS0030
+#pragma warning restore UA2001
         }
 
         /// <summary>
@@ -556,15 +556,15 @@ namespace UnityEditor.Search
 
             searchQueryOffset = searchText.Length - rawSearchQuery.Length;
             searchQuery = searchQuery.TrimEnd();
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var tokens = Utils.Simplify(searchQuery).ToLowerInvariant().Split(' ').ToArray();
-#pragma warning restore RS0030
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning restore UA2001
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             searchWords = tokens.Where(t => t.IndexOf(':') == -1).ToArray();
-#pragma warning restore RS0030
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning restore UA2001
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             textFilters = tokens.Where(t => t.IndexOf(':') != -1).ToArray();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
         }
 
         internal IList<SearchProvider> GetProviders()
@@ -598,9 +598,9 @@ namespace UnityEditor.Search
 
         private static List<SearchProvider> FilterProviders(IEnumerable<SearchProvider> providers)
         {
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return providers.OrderBy(p => p.priority).Distinct().ToList();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
         }
 
         private void UpdateProviders(Action updateOperation)
@@ -620,9 +620,9 @@ namespace UnityEditor.Search
             sessionId = System.Threading.Interlocked.Increment(ref s_NextSessionId);
 
             if (options.HasAny(SearchFlags.Debug))
-                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 UnityEngine.Debug.Log($"[{sessionId}] Start search session {String.Join(", ", providers.Select(p=>p.id))} -> {searchText}");
-#pragma warning restore RS0030
+#pragma warning restore UA2001
 
             foreach (var p in m_Providers)
             {
@@ -641,9 +641,9 @@ namespace UnityEditor.Search
                 p.OnDisable();
 
             if (options.HasAny(SearchFlags.Debug))
-                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 UnityEngine.Debug.Log($"[{sessionId}] End search session {string.Join(", ", providers.Select(p => p.id))}");
-#pragma warning restore RS0030
+#pragma warning restore UA2001
         }
 
         /// <summary>
@@ -667,9 +667,9 @@ namespace UnityEditor.Search
         {
             CheckDisposed();
             var validContextHashOptiopns = options & ~SearchFlags.OpenGlobal;
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return m_Providers.Select(p => p.id.GetHashCode()).Aggregate((int)validContextHashOptiopns, (h1, h2) => (h1 ^ h2).GetHashCode());
-#pragma warning restore RS0030
+#pragma warning restore UA2001
         }
 
         /// <summary>
@@ -722,9 +722,9 @@ namespace UnityEditor.Search
             {
                 CheckDisposed();
                 // Return a new list since the list can be modified asynchronously
-                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 return m_QueryErrors.Where(error => error.type == errorType).ToList();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             }
         }
 
@@ -744,9 +744,9 @@ namespace UnityEditor.Search
             {
                 CheckDisposed();
                 // Return a new list since the list can be modified asynchronously
-                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 return m_QueryErrors.Where(error => error.provider.id == providerId).ToList();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             }
         }
 
@@ -782,9 +782,9 @@ namespace UnityEditor.Search
             }
             if (m_SerializedProviders.Count == 0)
                 m_SerializedProviders = null;
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             providerIds = ids.Distinct().ToArray();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
         }
 
         void ISerializationCallbackReceiver.OnAfterDeserialize()
@@ -792,9 +792,9 @@ namespace UnityEditor.Search
             if (m_SerializedSearchViewInstanceID != EntityId.None)
                 searchView = UnityEngine.Object.FindObjectFromInstanceID(m_SerializedSearchViewInstanceID) as ISearchView;
 
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             m_Providers = FilterProviders(providerIds.Select(id => SearchService.GetProvider(id)).Concat(m_SerializedProviders));
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             if (m_SerializedProviders.Count == 0)
                 m_SerializedProviders = null;
 

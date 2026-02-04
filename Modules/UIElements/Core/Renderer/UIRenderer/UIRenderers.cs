@@ -86,7 +86,7 @@ namespace UnityEngine.UIElements.UIR
         public int indexCount;
         public Action callback; // Immediate render command only
 
-        static ProfilerMarker s_ImmediateOverheadMarker = new ProfilerMarker("UIR.ImmediateOverhead");
+        static ProfilerMarker s_ImmediateOverheadMarker = new ProfilerMarker(ProfilerCategory.UIToolkit, "UIR.ImmediateOverhead");
 
         public RenderChainCommand()
         {

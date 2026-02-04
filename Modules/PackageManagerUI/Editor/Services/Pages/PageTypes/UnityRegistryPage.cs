@@ -4,7 +4,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using UnityEngine;
 
 namespace UnityEditor.PackageManager.UI.Internal
@@ -22,40 +21,30 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         [SerializeField]
         private PageFilters.Status[] m_SupportedStatusFilters = { PageFilters.Status.UpdateAvailable };
-        public override IReadOnlyCollection<PageFilters.Status> supportedStatusFilters => m_SupportedStatusFilters;
+        public override IReadOnlyList<PageFilters.Status> supportedStatusFilters => m_SupportedStatusFilters;
 
         public UnityRegistryPage(IPackageDatabase packageDatabase) : base(packageDatabase) {}
 
         public override bool ShouldInclude(IPackage package)
         {
             return package?.isDiscoverable == true
-                   #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                   && package.versions.Any(v => v.availableRegistry == RegistryType.UnityRegistry)
-#pragma warning restore RS0030
-                   #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                   && !package.versions.All(v => v.HasTag(PackageTag.BuiltIn));
-#pragma warning restore RS0030
+                   && package.versions.AnyMatches(v => v.availableRegistry == RegistryType.UnityRegistry)
+                   && !package.versions.AllMatches(v => v.HasTag(PackageTag.BuiltIn));
         }
 
         public override string GetGroupName(IPackage package)
         {
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            return package.versions.All(v => v.HasTag(PackageTag.Feature)) ? L10n.Tr("Features") : L10n.Tr("Packages");
-#pragma warning restore RS0030
+            return package.versions.AllMatches(v => v.HasTag(PackageTag.Feature)) ? L10n.Tr("Features") : L10n.Tr("Packages");
         }
 
         public override bool RefreshSupportedStatusFiltersOnEntitlementPackageChange()
         {
             var oldSupportedStatusFilters = m_SupportedStatusFilters;
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            m_SupportedStatusFilters = m_PackageDatabase.allPackages.Any(p => ShouldInclude(p) && p.hasEntitlements)
-#pragma warning restore RS0030
+            m_SupportedStatusFilters = m_PackageDatabase.allPackages.AnyMatches(p => ShouldInclude(p) && p.hasEntitlements)
                 ? new[] { PageFilters.Status.UpdateAvailable, PageFilters.Status.SubscriptionBased }
                 : new[] { PageFilters.Status.UpdateAvailable };
 
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            return !m_SupportedStatusFilters.SequenceEqual(oldSupportedStatusFilters);
-#pragma warning restore RS0030
+            return !m_SupportedStatusFilters.IsSequenceEqual(oldSupportedStatusFilters);
         }
     }
 }

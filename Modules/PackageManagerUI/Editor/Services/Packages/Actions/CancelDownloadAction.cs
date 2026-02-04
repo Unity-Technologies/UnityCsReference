@@ -3,7 +3,6 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System.Collections.Generic;
-using System.Linq;
 
 namespace UnityEditor.PackageManager.UI.Internal;
 
@@ -24,9 +23,7 @@ internal class CancelDownloadAction : PackageAction
     protected override bool TriggerActionImplementation(IReadOnlyCollection<IPackage> packages)
     {
         m_OperationDispatcher.AbortDownload(packages);
-        #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-        PackageManagerWindowAnalytics.SendEvent("abortDownload", packages.Select(p => p.versions.primary));
-#pragma warning restore RS0030
+        PackageManagerWindowAnalytics.SendEvent("abortDownload", packages);
         return true;
     }
 

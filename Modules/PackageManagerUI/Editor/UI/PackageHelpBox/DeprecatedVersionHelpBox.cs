@@ -8,7 +8,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 {
     internal class DeprecatedVersionHelpBox : PackageBaseHelpBox
     {
-        public DeprecatedVersionHelpBox()
+        public DeprecatedVersionHelpBox(IApplicationProxy application) : base(application)
         {
             messageType = HelpBoxMessageType.Error;
             analyticsId = "deprecated-version-help-box";

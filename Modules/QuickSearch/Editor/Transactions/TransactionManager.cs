@@ -140,6 +140,8 @@ namespace UnityEditor.Search
     {
         Task m_CurrentTask;
 
+        public bool HasPendingTasks => m_CurrentTask != null && !TaskHelper.IsTaskFinished(m_CurrentTask);
+
         public TransactionWriter(string fileName, int headerSize, ManualResetEventSlim readerSynchronizationEvent)
             : base(fileName, headerSize, readerSynchronizationEvent)
         {}
@@ -162,12 +164,17 @@ namespace UnityEditor.Search
 
         public override void Close()
         {
+            WaitForTaskComplete();
+            m_CurrentTask = null;
+            base.Close();
+        }
+
+        public void WaitForTaskComplete()
+        {
             if (m_CurrentTask != null && !TaskHelper.IsTaskFinished(m_CurrentTask))
             {
                 m_CurrentTask.Wait();
             }
-            m_CurrentTask = null;
-            base.Close();
         }
 
         public override void SyncWithReader()
@@ -465,6 +472,8 @@ namespace UnityEditor.Search
 
         public bool Initialized => m_Initialized;
 
+        public bool HasPendingTransaction => m_Writer?.HasPendingTasks ?? false;
+
         public TransactionManager(string filePath)
         {
             m_FilePath = filePath;
@@ -601,6 +610,11 @@ namespace UnityEditor.Search
             sb.AppendLine($"\tTransaction count: {nbTransaction}");
             sb.AppendLine($"\tFile size: {Utils.FormatBytes(HeaderSize + transactionsSize)}");
             return sb.ToString();
+        }
+
+        public void WaitForPendingTransactions()
+        {
+            m_Writer?.WaitForTaskComplete();
         }
 
         void FixHeader()

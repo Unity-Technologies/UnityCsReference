@@ -291,9 +291,9 @@ namespace UnityEditor.SceneTemplate
 
         bool AreAllFilteredDependenciesCloned()
         {
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return m_FilteredItems.Where(sp =>
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             {
                 var depProperty = sp.FindPropertyRelative(SceneTemplateUtils.DependencyPropertyName);
                 return SceneTemplateProjectSettings.Get().GetDependencyInfo(depProperty.objectReferenceValue).supportsModification;
@@ -320,9 +320,9 @@ namespace UnityEditor.SceneTemplate
                 // If there is any value that is not set to Clone, set everything to Clone. Otherwise,
                 // set everything to Reference.
                 var selectedItems = GetSelectedDependencies();
-                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 var allClone = selectedItems.Select(item => item.FindPropertyRelative(SceneTemplateUtils.InstantiationModePropertyName))
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                     .All(instantiationModeProperty => instantiationModeProperty.enumValueIndex == (int)TemplateInstantiationMode.Clone);
 
                 var newEnumValue = allClone ? TemplateInstantiationMode.Reference : TemplateInstantiationMode.Clone;
@@ -361,16 +361,16 @@ namespace UnityEditor.SceneTemplate
 
         IEnumerable<SerializedProperty> GetSelectedDependencies()
         {
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return listView.selectedIndices.Select(indice => m_FilteredItems[indice]);
-#pragma warning restore RS0030
+#pragma warning restore UA2001
         }
 
         static void OnDoubleClick(IEnumerable<object> objs)
         {
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var obj = objs.FirstOrDefault();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             var property = obj as SerializedProperty;
             if (property == null)
                 return;

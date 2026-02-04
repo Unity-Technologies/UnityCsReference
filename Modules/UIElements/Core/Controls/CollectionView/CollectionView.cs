@@ -533,6 +533,7 @@ namespace UnityEngine.UIElements.HierarchyV2
             item.element.EnableInClassList(BaseVerticalCollectionView.itemAlternativeBackgroundUssClassName, useAlternateUss);
             item.isLastItem = index == itemsSource.Count - 1;
             item.SetSelected(m_Selection.ContainsIndex(index));
+            item.ClearHoverState();
             item.element.style.height = fixedItemHeight;
             item.index = index;
             m_IndexToItemDictionary.Add(index, item);
@@ -608,6 +609,23 @@ namespace UnityEngine.UIElements.HierarchyV2
             m_VerticalScroller.style.display = rangeEstimate > height - m_HorizontalScroller.worldBound.height ? DisplayStyle.Flex : DisplayStyle.None;
             SetScrollingParameters(m_ScrollValue, maxScrollRange);
             BindVisibleItems(true);
+            ApplyHoverStateFromPointerPosition();
+        }
+
+        void ApplyHoverStateFromPointerPosition()
+        {
+            if (panel is not BaseVisualElementPanel basePanel)
+                return;
+
+            var elementUnderPointer = basePanel.GetTopElementUnderPointer(PointerId.mousePointerId);
+            if (elementUnderPointer == null)
+                return;
+
+            var element = elementUnderPointer.GetFirstAncestorWhere(p => p.ClassListContains(MultiColumnController.rowContainerUssClassName));
+            if (element == null)
+                return;
+
+            element.pseudoStates |= PseudoStates.Hover;
         }
 
         void ClearAllItems()
@@ -1283,34 +1301,23 @@ namespace UnityEngine.UIElements.HierarchyV2
             }
             else if (count < 16)
             {
-                Span<int> ints = stackalloc int[count];
-                var i = 0;
-                foreach (var index in indices)
-                    ints[i++] = index;
+                Span<int> selectedIndices = stackalloc int[count];
+                for (var i = 0; i < indices.Count; i++)
+                {
+                    selectedIndices[i] = indices[i];
+                }
 
-                SetSelectionInternal(ints, sendNotification);
+                SetSelectionInternal(selectedIndices, sendNotification);
             }
             else
             {
-                // if indices collection is bigger than what can be safely stackalloc-ed, get a pooled array of the correct size
-                // using ArrayPool<byte> instead of <int> to allow arrays to be reused for any non blittable type
-                var buffer = ArrayPool<byte>.Shared.Rent(count * sizeof(int));
-                try
+                using var selectedIndices = new RentSpanUnmanaged<int>(count);
+                for (var i = 0; i < indices.Count; i++)
                 {
-                    var span = MemoryMarshal.Cast<byte, int>(buffer);
-                    var spanLength = 0;
-                    foreach (var index in indices)
-                    {
-                        span[spanLength++] = index;
-                    }
-                    span = span[..spanLength];
+                    selectedIndices.Span[i] = indices[i];
+                }
 
-                    SetSelectionInternal(span, sendNotification);
-                }
-                finally
-                {
-                    ArrayPool<byte>.Shared.Return(buffer);
-                }
+                SetSelectionInternal(selectedIndices, sendNotification);
             }
 
             SaveViewData();

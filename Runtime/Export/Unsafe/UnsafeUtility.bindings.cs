@@ -36,19 +36,19 @@ namespace Unity.Collections.LowLevel.Unsafe
             }
         }
 
+        [Obsolete("Use GCHandle.Alloc with GCHandle.AddrOfPinnedObject instead.")]
         unsafe public static void* PinGCObjectAndGetAddress(System.Object target, out ulong gcHandle)
         {
             if (target == null)
                 throw new ArgumentNullException(nameof(target));
-
             return PinSystemObjectAndGetAddress(target, out gcHandle);
         }
 
+        [Obsolete("Use GCHandle.Alloc with GCHandle.AddrOfPinnedObject instead.")]
         unsafe public static void* PinGCArrayAndGetDataAddress(System.Array target, out ulong gcHandle)
         {
             if (target == null)
                 throw new ArgumentNullException(nameof(target));
-
             return PinSystemArrayAndGetAddress(target, out gcHandle);
         }
 
@@ -58,11 +58,18 @@ namespace Unity.Collections.LowLevel.Unsafe
         [ThreadSafe]
         unsafe private static extern void* PinSystemObjectAndGetAddress(System.Object target, out ulong gcHandle);
 
+        [Obsolete("Use GCHandle.Free instead.")]
         [ThreadSafe]
         unsafe public static extern void ReleaseGCObject(ulong gcHandle);
 
-        [ThreadSafe, NativeThrows]
-        unsafe public static extern void CopyObjectAddressToPtr(object target, void* dstPtr);
+        [Obsolete("The garbage collector cannot track object references stored in unmanaged memory, leading to undefined behavior.")]
+        unsafe public static void CopyObjectAddressToPtr(object target, void* dstPtr)
+        {
+            if (target == null)
+                throw new ArgumentNullException(nameof(target));
+            ClassAsRef<object>(dstPtr) = target;
+        }
+
 
         public static unsafe bool IsBlittable<T>() where T : struct
         {

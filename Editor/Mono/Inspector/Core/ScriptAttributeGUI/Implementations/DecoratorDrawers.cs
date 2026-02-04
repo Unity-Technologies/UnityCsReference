@@ -48,9 +48,9 @@ namespace UnityEditor
             float fullTextHeight = EditorStyles.boldLabel.CalcHeight(GUIContent.Temp((attribute as HeaderAttribute).header), 1.0f);
             int lines = 1;
             if ((attribute as HeaderAttribute).header != null)
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 lines = (attribute as HeaderAttribute).header.Count(a => a == '\n') + 1;
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             float eachLineHeight = fullTextHeight / lines;
             return EditorGUIUtility.singleLineHeight * 1.5f + (eachLineHeight * (lines - 1));
         }

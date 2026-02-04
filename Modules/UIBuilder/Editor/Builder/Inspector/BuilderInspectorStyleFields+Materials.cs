@@ -26,9 +26,7 @@ namespace Unity.UI.Builder
             SetUpContextualMenuOnStyleField(materialDefinitionStyleField);
 
             materialDefinitionStyleField.RegisterCallback<MaterialSelectedEvent, MaterialDefinitionStyleField>(OnMaterialSelected, materialDefinitionStyleField);
-            materialDefinitionStyleField.RegisterCallback<MaterialPropertyAddedEvent, MaterialDefinitionStyleField>(OnMaterialPropertyAdded, materialDefinitionStyleField);
-            materialDefinitionStyleField.RegisterCallback<MaterialPropertyChangedEvent, MaterialDefinitionStyleField>(OnMaterialPropertyChanged, materialDefinitionStyleField);
-            materialDefinitionStyleField.RegisterCallback<MaterialPropertyRemovedEvent, MaterialDefinitionStyleField>(OnMaterialPropertyRemoved, materialDefinitionStyleField);
+            materialDefinitionStyleField.RegisterCallback<MaterialDefinitionChangedEvent, MaterialDefinitionStyleField>(OnMaterialDefinitionChanged, materialDefinitionStyleField);
         }
 
         public void RefreshStyleField(MaterialDefinitionStyleField materialDefinitionStyleField)
@@ -46,63 +44,32 @@ namespace Unity.UI.Builder
             m_Inspector.UpdateFieldStatus(materialDefinitionStyleField, prop);
         }
 
+        void ApplyMaterialDefinitionChange(MaterialDefinition newMaterialDefinition, bool refreshField, VisualElement elementTarget)
+        {
+            Undo.RegisterCompleteObjectUndo(styleSheet, BuilderConstants.ChangeUIStyleValueUndoMessage);
+
+            var styleProperty = GetOrCreateStylePropertyByStyleName(MaterialConstants.Material);
+            styleProperty.SetMaterialDefinition(styleSheet, newMaterialDefinition);
+
+            s_StyleChangeList.Clear();
+            s_StyleChangeList.Add(MaterialConstants.Material);
+            NotifyStyleChanges(s_StyleChangeList, refreshField);
+
+            if (!refreshField)
+            {
+                // Required to update the override status in the inspector.
+                m_Inspector.UpdateFieldStatus(elementTarget, styleProperty);
+            }
+        }
+
         void OnMaterialSelected(MaterialSelectedEvent evt, MaterialDefinitionStyleField materialStyleField)
         {
-            Undo.RegisterCompleteObjectUndo(styleSheet, BuilderConstants.ChangeUIStyleValueUndoMessage);
-            var styleProperty = GetOrCreateStylePropertyByStyleName(MaterialConstants.Material);
-
-            var matDef = new MaterialDefinition(evt.material);
-            styleProperty.SetMaterialDefinition(styleSheet, matDef);
-
-            s_StyleChangeList.Clear();
-            s_StyleChangeList.Add(MaterialConstants.Material);
-            NotifyStyleChanges(s_StyleChangeList, true);
-            m_Inspector.UpdateFieldStatus(evt.elementTarget, styleProperty);
+            ApplyMaterialDefinitionChange(new MaterialDefinition(evt.material), true, evt.elementTarget);
         }
 
-        void OnMaterialPropertyAdded(MaterialPropertyAddedEvent evt, MaterialDefinitionStyleField materialStyleField)
+        void OnMaterialDefinitionChanged(MaterialDefinitionChangedEvent evt, MaterialDefinitionStyleField materialStyleField)
         {
-            Undo.RegisterCompleteObjectUndo(styleSheet, BuilderConstants.ChangeUIStyleValueUndoMessage);
-
-            var styleProperty = GetOrCreateStylePropertyByStyleName(MaterialConstants.Material);
-            var manip = styleProperty.GetManipulator(styleSheet);
-            manip.AddMaterialPropertyValue(evt.materialPropertyValue);
-
-            s_StyleChangeList.Clear();
-            s_StyleChangeList.Add(MaterialConstants.Material);
-            NotifyStyleChanges(s_StyleChangeList, true);
-        }
-
-        void OnMaterialPropertyChanged(MaterialPropertyChangedEvent evt, MaterialDefinitionStyleField materialStyleField)
-        {
-            Undo.RegisterCompleteObjectUndo(styleSheet, BuilderConstants.ChangeUIStyleValueUndoMessage);
-
-            var styleProperty = GetOrCreateStylePropertyByStyleName(MaterialConstants.Material);
-            var manip = styleProperty.GetManipulator(styleSheet);
-            manip.SetMaterialPropertyValue(evt.propertyIndex, evt.materialPropertyValue);
-
-            s_StyleChangeList.Clear();
-            s_StyleChangeList.Add(MaterialConstants.Material);
-            NotifyStyleChanges(s_StyleChangeList, false);
-        }
-
-        void OnMaterialPropertyRemoved(MaterialPropertyRemovedEvent evt, MaterialDefinitionStyleField materialStyleField)
-        {
-            Undo.RegisterCompleteObjectUndo(styleSheet, BuilderConstants.ChangeUIStyleValueUndoMessage);
-
-            // Remove duplicates, and sort indices in descending order
-            var uniqueIndices = new HashSet<int>(evt.indices);
-            var sortedIndices = new List<int>(uniqueIndices);
-            sortedIndices.Sort((a, b) => b.CompareTo(a)); // Sort in descending order
-
-            var styleProperty = GetOrCreateStylePropertyByStyleName(MaterialConstants.Material);
-            var manip = styleProperty.GetManipulator(styleSheet);
-            foreach (var index in sortedIndices)
-                manip.RemoveValue(index + 1); // +1 to skip the material itself
-
-            s_StyleChangeList.Clear();
-            s_StyleChangeList.Add(MaterialConstants.Material);
-            NotifyStyleChanges(s_StyleChangeList, true);
+            ApplyMaterialDefinitionChange(evt.newMaterialDefinition, evt.refreshField, evt.elementTarget);
         }
     }
 }

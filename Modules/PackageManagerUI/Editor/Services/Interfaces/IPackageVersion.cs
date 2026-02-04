@@ -107,7 +107,6 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         bool isFromAssetStore { get; }
 
-
         string GetDescriptor(bool isFirstLetterCapitalized = false);
 
         bool MatchesSearchText(string searchText);

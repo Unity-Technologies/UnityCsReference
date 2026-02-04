@@ -5,7 +5,6 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.Bindings;
 
 namespace Unity.Hierarchy
 {
@@ -13,8 +12,7 @@ namespace Unity.Hierarchy
     /// Container holding the data needed to start a drag and drop operation.
     /// </summary>
     /// <remarks>Do not keep a reference to this class or any of its data past the scope of <see cref="IHierarchyEditorNodeTypeHandler.OnStartDrag(in HierarchyViewDragAndDropSetupData)"/>.</remarks>
-    [VisibleToOtherModules]
-    internal readonly ref struct HierarchyViewDragAndDropSetupData
+    public readonly ref struct HierarchyViewDragAndDropSetupData
     {
         readonly Dictionary<string, object> m_GenericData;
 

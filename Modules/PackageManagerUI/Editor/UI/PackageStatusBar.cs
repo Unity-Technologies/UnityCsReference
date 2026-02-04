@@ -13,7 +13,17 @@ namespace UnityEditor.PackageManager.UI.Internal
         [Serializable]
         public new class UxmlSerializedData : VisualElement.UxmlSerializedData
         {
-            public override object CreateInstance() => new PackageStatusBar();
+            public override object CreateInstance()
+            {
+                var container = ServicesContainer.instance;
+                return new PackageStatusBar(
+                    container.Resolve<IResourceLoader>(),
+                    container.Resolve<IApplicationProxy>(),
+                    container.Resolve<IBackgroundFetchHandler>(),
+                    container.Resolve<IPageRefreshHandler>(),
+                    container.Resolve<IPageManager>(),
+                    container.Resolve<IUnityConnectProxy>());
+            }
         }
 
         // The internal modifier is used (instead of private) to give our test project access to these properties/methods
@@ -21,28 +31,26 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private enum StatusType { Normal, Loading, Error }
 
-        private IResourceLoader m_ResourceLoader;
-        private IApplicationProxy m_Application;
-        private IBackgroundFetchHandler m_BackgroundFetchHandler;
-        private IPageRefreshHandler m_PageRefreshHandler;
-        private IPageManager m_PageManager;
-        private IUnityConnectProxy m_UnityConnect;
-        private void ResolveDependencies()
+        private readonly IApplicationProxy m_Application;
+        private readonly IBackgroundFetchHandler m_BackgroundFetchHandler;
+        private readonly IPageRefreshHandler m_PageRefreshHandler;
+        private readonly IPageManager m_PageManager;
+        private readonly IUnityConnectProxy m_UnityConnect;
+        public PackageStatusBar(
+            IResourceLoader resourceLoader,
+            IApplicationProxy application,
+            IBackgroundFetchHandler backgroundFetchHandler,
+            IPageRefreshHandler pageRefreshHandler,
+            IPageManager pageManager,
+            IUnityConnectProxy unityConnect)
         {
-            var container = ServicesContainer.instance;
-            m_ResourceLoader = container.Resolve<IResourceLoader>();
-            m_Application = container.Resolve<IApplicationProxy>();
-            m_BackgroundFetchHandler = container.Resolve<IBackgroundFetchHandler>();
-            m_PageRefreshHandler = container.Resolve<IPageRefreshHandler>();
-            m_PageManager = container.Resolve<IPageManager>();
-            m_UnityConnect = container.Resolve<IUnityConnectProxy>();
-        }
+            m_Application = application;
+            m_BackgroundFetchHandler = backgroundFetchHandler;
+            m_PageRefreshHandler = pageRefreshHandler;
+            m_PageManager = pageManager;
+            m_UnityConnect = unityConnect;
 
-        public PackageStatusBar()
-        {
-            ResolveDependencies();
-
-            var root = m_ResourceLoader.GetTemplate("PackageStatusBar.uxml");
+            var root = resourceLoader.GetTemplate("PackageStatusBar.uxml");
             Add(root);
             cache = new VisualElementCache(root);
 

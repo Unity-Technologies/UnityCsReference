@@ -3,7 +3,6 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using System.Linq;
 using System.Collections.Generic;
 
 namespace UnityEditor.PackageManager.UI.Internal
@@ -14,7 +13,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         public long productId;
         public string purchasedTime;
         public string displayName;
-        public List<string> tags;
+        public string[] tags;
         public bool isHidden;
 
         public bool Equals(AssetStorePurchaseInfo other)
@@ -24,10 +23,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 other.purchasedTime == purchasedTime &&
                 other.displayName == displayName &&
                 other.isHidden == isHidden &&
-                other.tags?.Count == tags?.Count &&
-                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                other.tags?.SequenceEqual(tags) != false;
-#pragma warning restore RS0030
+                (other.tags ?? Array.Empty<string>()).IsSequenceEqual(tags ?? Array.Empty<string>());
         }
     }
 
@@ -45,9 +41,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                     productId = (long)rawInfo["packageId"],
                     purchasedTime = rawInfo.GetString("grantTime"),
                     displayName = rawInfo.GetString("displayName"),
-                    #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                    tags = rawInfo.GetList<string>("tagging")?.ToList(),
-#pragma warning restore RS0030
+                    tags = rawInfo.GetNewArray<string>("tagging"),
                     isHidden = rawInfo.Get("isHidden", false)
                 };
             }

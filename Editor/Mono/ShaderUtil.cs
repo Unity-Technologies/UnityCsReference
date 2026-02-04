@@ -7,6 +7,7 @@ using System.Linq;
 using UnityEditor.Rendering;
 using UnityEngine;
 using UnityEngine.Assertions;
+using UnityEngine.Bindings;
 using UnityEngine.Rendering;
 using DebuggerDisplayAttribute = System.Diagnostics.DebuggerDisplayAttribute;
 
@@ -229,9 +230,6 @@ namespace UnityEditor
             public string PreprocessedCode { get; }
         }
 
-        //
-        // Experimental reflection information and raw compiled data access.  Used for Tiny shader export.
-        //
         public struct VariantCompileInfo
         {
             public bool Success { get; }
@@ -253,6 +251,7 @@ namespace UnityEditor
             public ConstantInfo[] Fields { get; }
         }
 
+        [NativeHeader("Editor/Src/Shaders/Public/Reflection/ConstantInfo.h")]
         [DebuggerDisplay("{ConstantType} {Name} ({DataType} {Columns}x{Rows})")]
         public struct ConstantInfo
         {
@@ -314,18 +313,18 @@ namespace UnityEditor
         {
             FetchCachedMessages(shader);
             var errors = GetShaderMessages(shader);
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return errors.Any(x => x.severity == ShaderCompilerMessageSeverity.Error);
-#pragma warning restore RS0030
+#pragma warning restore UA2001
         }
 
         public static bool ShaderHasWarnings(Shader shader)
         {
             FetchCachedMessages(shader);
             var errors = GetShaderMessages(shader);
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return errors.Any(x => x.severity == ShaderCompilerMessageSeverity.Warning);
-#pragma warning restore RS0030
+#pragma warning restore UA2001
         }
 
         internal static extern bool PassHasShaderStage(Shader s, int subshaderIndex, int passIndex, ShaderType shaderType);

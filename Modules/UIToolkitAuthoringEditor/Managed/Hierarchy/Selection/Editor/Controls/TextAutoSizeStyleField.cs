@@ -60,6 +60,16 @@ namespace Unity.UIToolkit.Editor
             m_MinSizeField = this.Q<StyleLengthField>(s_MinSizeFieldName);
             m_MaxSizeField = this.Q<StyleLengthField>(s_MaxSizeFieldName);
 
+            // Remove "initial" keyword from the options popup
+            m_MinSizeField.RegisterCallback<AttachToPanelEvent>(e =>
+            {
+                m_MinSizeField.schedule.Execute(() => RemoveInitialKeywordFromField(m_MinSizeField));
+            });
+            m_MaxSizeField.RegisterCallback<AttachToPanelEvent>(e =>
+            {
+                m_MaxSizeField.schedule.Execute(() => RemoveInitialKeywordFromField(m_MaxSizeField));
+            });
+
             m_AutoSizeToggle.RegisterValueChangedCallback(e =>
             {
                 UpdateTextAutoSizeField();
@@ -81,6 +91,16 @@ namespace Unity.UIToolkit.Editor
 
             // Initialize visibility based on initial mode
             UpdateIntegerFieldsVisibility(TextAutoSizeMode.None);
+        }
+
+        void RemoveInitialKeywordFromField(StyleLengthField field)
+        {
+            var lengthField = field.valueField;
+            var popup = lengthField.optionsPopup;
+            if (popup != null && popup.choices.Contains("initial"))
+            {
+                popup.choices.Remove("initial");
+            }
         }
 
         public override void SetValueWithoutNotify(TextAutoSize newValue)

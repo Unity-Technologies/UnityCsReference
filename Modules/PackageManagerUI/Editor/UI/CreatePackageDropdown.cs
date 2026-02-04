@@ -16,21 +16,14 @@ internal class CreatePackageDropdown : DropdownContent
 
     public override Vector2 windowSize => string.IsNullOrEmpty(errorInfoBox.text) ? k_DefaultWindowSize : k_WindowSizeWithError;
 
-    private IResourceLoader m_ResourceLoader;
-    private IPackageCreator m_PackageCreator;
-    private void ResolveDependencies(IResourceLoader resourceLoader, IPackageCreator packageCreator)
-    {
-        m_ResourceLoader = resourceLoader;
-        m_PackageCreator = packageCreator;
-    }
-
+    private readonly IPackageCreator m_PackageCreator;
     public CreatePackageDropdown(IResourceLoader resourceLoader, IPackageCreator packageCreator)
     {
-        ResolveDependencies(resourceLoader, packageCreator);
+        m_PackageCreator = packageCreator;
 
-        styleSheets.Add(m_ResourceLoader.inputDropdownStyleSheet);
+        styleSheets.Add(resourceLoader.inputDropdownStyleSheet);
 
-        var root = m_ResourceLoader.GetTemplate("CreatePackageDropdown.uxml");
+        var root = resourceLoader.GetTemplate("CreatePackageDropdown.uxml");
         Add(root);
         cache = new VisualElementCache(root);
 

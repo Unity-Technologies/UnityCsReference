@@ -60,9 +60,9 @@ namespace Unity.GraphToolkit.Editor
         {
             if (!m_DependenciesByNode.TryGetValue(parent.Guid, out var link))
                 return null;
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return link.Values.ToList();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
         }
 
         // for tests only
@@ -70,9 +70,9 @@ namespace Unity.GraphToolkit.Editor
         {
             if (!m_PortalDependenciesByNode.TryGetValue(parent.Guid, out var link))
                 return null;
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return link.Values.ToList();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
         }
 
         public void Remove(Hash128 a, Hash128 b)
@@ -121,23 +121,23 @@ namespace Unity.GraphToolkit.Editor
         {
             if (m_Preferences?.GetBool(BoolPref.DependenciesLogging) ?? false)
             {
-                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 Log("Dependencies :" + String.Join("\r\n", m_DependenciesByNode.Select(n =>
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                 {
-                    #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                    #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     var s = String.Join(",", n.Value.Select(p => p.Key));
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                     return $"{n.Key}: {s}";
                 })));
 
-                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 Log("Portal Dependencies :" + String.Join("\r\n", m_PortalDependenciesByNode.Select(n =>
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                 {
-                    #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                    #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     var s = String.Join(",", n.Value.Select(p => p.Key));
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                     return $"{n.Key}: {s}";
                 })));
             }
@@ -408,9 +408,9 @@ namespace Unity.GraphToolkit.Editor
             List<GraphElementModel> changedModels = new List<GraphElementModel>();
 
             bool anyWire = false;
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             foreach (var wireModel in entryPoints.OfType<WireModel>())
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             {
                 if (!wireModel.CreateDependency(out var dependency, out var parentGuid))
                     continue;
@@ -428,9 +428,9 @@ namespace Unity.GraphToolkit.Editor
 
             if (!topMostModels.HasAny())
             {
-                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 foreach (var nodeModel in entryPoints.OfType<AbstractNodeModel>())
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                 {
                     topMostModels.Add(nodeModel);
                 }
@@ -476,9 +476,9 @@ namespace Unity.GraphToolkit.Editor
             foreach (var portalModel in model.GraphModel.GetLinkedPortals(model))
             {
                 m_PortalDependenciesByNode[portalModel.Guid] =
-                    #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                    #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     model.GraphModel.GetPortalDependencies(portalModel)
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                         .ToDictionary(p => p.Guid, p => (IDependency)new PortalNodesDependency { DependentNode = p });
             }
             LogDependencies();

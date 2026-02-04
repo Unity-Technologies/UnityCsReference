@@ -63,9 +63,9 @@ namespace Unity.ProjectAuditor.Editor.AssemblyUtils
             {
                 if (m_CompilationStatus != CompilationStatus.Compiled)
                     return false;
-                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 return m_Messages.All(message => message.Type != CompilerMessageType.Error);
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             }
         }
 
@@ -94,13 +94,13 @@ namespace Unity.ProjectAuditor.Editor.AssemblyUtils
             {
                 case AssemblyBuilderStatus.NotStarted:
                     // check if all dependencies are built
-                    #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                    #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     if (m_Dependencies.All(dep => dep.IsCompleted))
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                     {
-                        #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                        #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                         if (m_Dependencies.All(dep => dep.IsCompletedSuccessfully))
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                         {
                             m_StopWatch = Stopwatch.StartNew();
                             m_Builder.Build(); // all references are built, we can kick off this builder
@@ -114,9 +114,9 @@ namespace Unity.ProjectAuditor.Editor.AssemblyUtils
                             {
                                 AssemblyName = m_AssemblyName,
                                 AssemblyPath = AssemblyPath,
-                                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                                 DependentAssemblyNames = m_Dependencies.Select(d => d.m_AssemblyName).ToArray(),
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                                 DurationInMs = 0,
                                 Messages = m_Messages,
                                 Status = m_CompilationStatus,
@@ -134,9 +134,9 @@ namespace Unity.ProjectAuditor.Editor.AssemblyUtils
                     {
                         AssemblyName = m_AssemblyName,
                         AssemblyPath = AssemblyPath,
-                        #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                        #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                         DependentAssemblyNames = m_Dependencies.Select(d => d.m_AssemblyName).ToArray(),
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                         DurationInMs = m_StopWatch.ElapsedMilliseconds,
                         Messages = m_Messages,
                         Status = m_CompilationStatus,

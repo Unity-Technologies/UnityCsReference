@@ -3,7 +3,6 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using System.Linq;
 using UnityEditor.UIElements;
 using UnityEngine.UIElements;
 
@@ -14,7 +13,15 @@ namespace UnityEditor.PackageManager.UI.Internal
         [Serializable]
         public new class UxmlSerializedData : VisualElement.UxmlSerializedData
         {
-            public override object CreateInstance() => new PackageSearchBar();
+            public override object CreateInstance()
+            {
+                var container = ServicesContainer.instance;
+                return new PackageSearchBar(
+                    container.Resolve<IUnityConnectProxy>(),
+                    container.Resolve<IPageManager>(),
+                    container.Resolve<IUpmRegistryClient>(),
+                    container.Resolve<IProjectSettingsProxy>());
+            }
         }
 
         private SearchFieldDelayArgs m_SearchFieldDelayArgs;
@@ -23,26 +30,20 @@ namespace UnityEditor.PackageManager.UI.Internal
         private const int k_SearchFieldTextLimit = 500;
         public static readonly string k_SearchPlaceholderText = L10n.Tr("Search {0}");
 
-        private IUpmRegistryClient m_UpmRegistryClient;
-        private IProjectSettingsProxy m_SettingsProxy;
-        private IUnityConnectProxy m_UnityConnect;
-        private IPageManager m_PageManager;
-        private void ResolveDependencies()
+        private readonly IUnityConnectProxy m_UnityConnect;
+        private readonly IPageManager m_PageManager;
+        private readonly IUpmRegistryClient m_UpmRegistryClient;
+        private readonly IProjectSettingsProxy m_SettingsProxy;
+        public PackageSearchBar(IUnityConnectProxy unityConnect, IPageManager pageManager, IUpmRegistryClient upmRegistryClient, IProjectSettingsProxy settingsProxy)
         {
-            var container = ServicesContainer.instance;
-            m_UpmRegistryClient = container.Resolve<IUpmRegistryClient>();
-            m_SettingsProxy = container.Resolve<IProjectSettingsProxy>();
-            m_UnityConnect = container.Resolve<IUnityConnectProxy>();
-            m_PageManager = container.Resolve<IPageManager>();
-        }
+            m_UnityConnect = unityConnect;
+            m_PageManager = pageManager;
+            m_UpmRegistryClient = upmRegistryClient;
+            m_SettingsProxy = settingsProxy;
 
-        public PackageSearchBar()
-        {
             m_SearchField = new ToolbarSearchField();
             m_SearchField.textInputField.maxLength = k_SearchFieldTextLimit;
             Add(m_SearchField);
-
-            ResolveDependencies();
 
             focusable = true;
             m_SearchFieldDelayArgs = null;
@@ -130,7 +131,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private void OnRegistriesModified()
         {
-            if (m_SettingsProxy.registries?.Count <= 1)
+            if (m_SettingsProxy.scopedRegistries == null || m_SettingsProxy.scopedRegistries.Count == 0)
                 m_PageManager.GetPage(MyRegistriesPage.k_Id).searchText = string.Empty;
         }
 
@@ -149,10 +150,8 @@ namespace UnityEditor.PackageManager.UI.Internal
             searchTextField.Q<TextElement>().MarkDirtyRepaint();
         }
 
-        private ToolbarSearchField m_SearchField;
-        #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-        public TextField searchTextField => m_SearchField.Children().OfType<TextField>().FirstOrDefault();
-#pragma warning restore RS0030
+        private readonly ToolbarSearchField m_SearchField;
+        public TextField searchTextField => m_SearchField.Q<TextField>();
     }
 
     internal class SearchFieldDelayArgs

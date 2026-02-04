@@ -9,6 +9,7 @@ using System.Threading.Tasks;
 using Unity.BuildService;
 using UnityEditor.Compilation;
 using UnityEditor.MSBuild;
+using Unity.AsmDefToCSProj;
 using Unity.Scripting;
 using UnityEngine;
 
@@ -41,12 +42,13 @@ class MsBuildCompilation
 
     public void Initialize(bool createInitCsprojs, MSBuildCompilationOptions compilationOptions)
     {
+        UnityEditorMSBuildPropsTargetsGeneration.UpdateInstallPathFile();
+        EnsureCompilerClientInitialized();
+
         if (createInitCsprojs)
             ProjectGenerator.Instance.GenerateUnityProjectIfMissing(Path.Combine("Assets", "Runtime", "Runtime.csproj"));
 
         UnityEditorMSBuildPropsTargetsGeneration.UpdateGeneratedMSBuildFileIfNeeded(EditorUserBuildSettings.activeBuildTarget, compilationOptions);
-
-        EnsureCompilerClientInitialized();
     }
 
     private void EnsureCompilerClientInitialized()
@@ -290,7 +292,29 @@ class MsBuildCompilation
             allAssemblyJsonPaths[i] = ConvertPath(m_AllAssemblyJsonPaths[i]);
         }
 
-        // AsmDefToCSProj block removed: DLL not available in reference source
+        var context = new ConversionContext()
+        {
+            RootFolder = ".",
+            allAssemblyReferenceJsons = allAssemblyReferenceJsons,
+            allAssemblyReferenceJsonContents = m_AllAssemblyReferenceJsonContents,
+            allAssemblyJsonPaths = allAssemblyJsonPaths,
+            allAssemblyJsonContents = m_AllAssemblyJsonContents,
+            allAssemblyJsonGuids = m_AllAssemblyJsonGuids,
+            allScriptPaths = allScripts,
+            errors = new List<string>(),
+            warnings = new List<string>()
+        };
+        AsmDefConverter.Convert(context);
+
+        foreach (var error in context.errors)
+        {
+            UnityEngine.Debug.LogError(error);
+        }
+
+        foreach (var warning in context.warnings)
+        {
+            UnityEngine.Debug.LogWarning(warning);
+        }
     }
 
     private string ConvertPath(string path)

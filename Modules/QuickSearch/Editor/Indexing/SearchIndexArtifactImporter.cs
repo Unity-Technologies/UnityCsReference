@@ -43,7 +43,7 @@ namespace UnityEditor.Search
                 indexer.IndexDocument(ctx.assetPath, false);
                 indexer.Finish(removedDocuments: null);
 
-                var indexArtifactExtension = $"{(int)options:X}.index".ToLowerInvariant();
+                var indexArtifactExtension = GetArtifactPathSuffix((int)options);
 
                 using (var memoryStream = new MemoryStream())
                 {
@@ -61,6 +61,12 @@ namespace UnityEditor.Search
             {
                 ctx.LogImportError($"Failed to build search index for {ctx.assetPath}\n{ex}");
             }
+        }
+
+        // Keep in sync with GetArtifactPathSuffix in SearchIndexArtifactStorage.cpp
+        public static string GetArtifactPathSuffix(int importerHashCode)
+        {
+            return $"{importerHashCode:X}.index".ToLowerInvariant();
         }
 
         public static Type GetIndexImporterType(int hash)

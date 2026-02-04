@@ -99,7 +99,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             }
 
             page ??= m_PageManager.activePage;
-            if (!m_PageRefreshHandler.IsInitialFetchingDone(page) || m_PackageDatabase.isEmpty)
+            if (!m_PageRefreshHandler.IsInitialFetchingDone(page) || m_PackageDatabase.allPackages.Count == 0)
                 m_PageRefreshHandler.Refresh(page);
 
             if (m_PageRefreshHandler.IsRefreshInProgress(RefreshOptions.UpmSearch | RefreshOptions.UpmSearchOffline | RefreshOptions.UpmList | RefreshOptions.UpmListOffline))

@@ -114,7 +114,7 @@ namespace UnityEditor
             public GUIContent m_FilterByLabel = EditorGUIUtility.TrIconContent("FilterByLabel", "Search by Label");
             public GUIContent m_FilterByType = EditorGUIUtility.TrIconContent("FilterByType", "Search by Type");
             public GUIContent m_FilterByImportLog = EditorGUIUtility.TrIconContent("d_console.erroricon.inactive.sml", "Search by Import Log Type");
-            public GUIContent m_CreateDropdownContent = EditorGUIUtility.TrIconContent("d_Toolbar Plus More", "Create new Asset");
+            public GUIContent m_CreateDropdownContent = EditorGUIUtility.TrIconContent("Toolbar Plus More", "Create new Asset");
             public GUIContent m_SaveFilterContent = EditorGUIUtility.TrIconContent("Favorite", "Save search");
             public GUIContent m_PackageContentDefault = new GUIContent("", "");
             public GUIContent m_PackagesContentNotVisible = EditorGUIUtility.TrIconContent("PBrowserPackagesNotVisible", "Number of hidden packages, click to display packages.");
@@ -466,9 +466,9 @@ namespace UnityEditor
                 }
             }
 
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             m_SearchFilter.folders = validFolders.ToArray();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
         }
 
         private void ResetViews()
@@ -928,9 +928,9 @@ namespace UnityEditor
 
             // Toggle clicked element
             element.selected = !element.selected;
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             string[] selectedDisplayNames = m_ObjectTypes.m_ListElements.Where(x => x.selected).SelectMany(x => x.types).ToArray();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
 
             m_SearchFilter.classNames = selectedDisplayNames;
             m_SearchFieldText = m_SearchFilter.FilterToSearchFieldString();
@@ -951,9 +951,9 @@ namespace UnityEditor
 
             // Toggle clicked element
             element.selected = !element.selected;
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             m_SearchFilter.assetLabels = (from item in m_AssetLabels.m_ListElements where item.selected select item.text).ToArray();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
 
             m_SearchFieldText = m_SearchFilter.FilterToSearchFieldString();
 
@@ -974,9 +974,9 @@ namespace UnityEditor
             // Toggle clicked element
             element.selected = !element.selected;
 
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             m_SearchFilter.importLogFlags = element.selected ? (UnityEditor.AssetImporters.ImportLogFlags)Enum.Parse(typeof(UnityEditor.AssetImporters.ImportLogFlags), element.types.First()) : ImportLogFlags.None;
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             m_SearchFieldText = m_SearchFilter.FilterToSearchFieldString();
 
             TopBarSearchSettingsChanged();
@@ -1489,9 +1489,9 @@ namespace UnityEditor
             }
 
             // Set them as folders in search filter (so search in folder works correctly)
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             m_SearchFilter.folders = ProjectWindowUtil.GetBaseFolders(folders.ToArray());
-#pragma warning restore RS0030
+#pragma warning restore UA2001
 
             // Keep for debugging
             // Debug.Log ("Search folders: " + DebugUtils.ListToString(new List<string>(m_SearchFilter.folders)));

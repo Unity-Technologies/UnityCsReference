@@ -21,6 +21,10 @@ namespace UnityEngine.LightTransport
         public ProbeBakeRequestOutput outputTypes { get; set; }
         public ulong positionOffset { get; set; }
         public ulong positionLength { get; set; }
+        public uint directSampleCount { get; set; }
+        public uint indirectSampleCount { get; set; }
+        public uint environmentSampleCount { get; set; }
+        public uint maxBounces { get; set; }
         public string bakeOutputFolderPath { get; set; }
         public string postProcessOutputFolderPath { get; set; }
         public bool ignoreDirectEnvironment { get; set; }
@@ -94,6 +98,13 @@ namespace UnityEngine.LightTransport
                     ignoreDirectEnvironment = request.ignoreDirectEnvironment,
                     ignoreIndirectEnvironment = request.ignoreIndirectEnvironment,
                     pushoff = request.pushoff,
+                    sampleCount = new()
+                    {
+                        directSampleCount = request.directSampleCount,
+                        indirectSampleCount = request.indirectSampleCount,
+                        environmentSampleCount = request.environmentSampleCount
+                    },
+                    maxBounces = request.maxBounces,
                 };
 
                 PostProcessProbeRequest postProcessRequest = new()

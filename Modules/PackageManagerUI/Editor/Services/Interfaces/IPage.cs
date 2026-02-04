@@ -50,8 +50,8 @@ namespace UnityEditor.PackageManager.UI.Internal
         PageFilters filters { get; }
         PageCapability capability { get; }
 
-        IReadOnlyCollection<PageFilters.Status> supportedStatusFilters { get; }
-        IReadOnlyCollection<PageSortOption> supportedSortOptions { get; }
+        IReadOnlyList<PageFilters.Status> supportedStatusFilters { get; }
+        IReadOnlyList<PageSortOption> supportedSortOptions { get; }
 
         RefreshOptions refreshOptions { get; }
 

@@ -8,21 +8,19 @@ using Unity.Scripting.LifecycleManagement;
 using UnityEditor;
 using UnityEditor.UIElements;
 using UnityEngine;
-using UnityEngine.Bindings;
 using UnityEngine.Pool;
 using UnityEngine.UIElements;
 using CellValueEditorGOBool = Unity.Hierarchy.HierarchyViewCellValueEditor<UnityEngine.GameObject, UnityEngine.UIElements.Toggle, bool>;
 using CellValueEditorSceneBool = Unity.Hierarchy.HierarchyViewCellValueEditor<UnityEngine.SceneManagement.Scene, UnityEngine.UIElements.Toggle, bool>;
+using Object = UnityEngine.Object;
 
 namespace Unity.Hierarchy.Editor
 {
     /// <summary>
     /// Utility class containing Column definition for Object Active state in Scene.
-    /// User can derive from this class to implement their own CellDescriptor for other object type that can be displayed in hierarchy (ex: Entity).
     /// Note that cells in this column have ClearCellContent=false. Which means the cell is not Clear after Unbind. Cell will contain a Toggle for editing.
     /// </summary>
-    [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
-    internal sealed partial class HierarchyWindowColumnActive
+    internal sealed class HierarchyWindowColumnActive
     {
         /// <summary>
         /// Column Id for Active property of objects in a scene.
@@ -47,39 +45,40 @@ namespace Unity.Hierarchy.Editor
         internal static void CreateGameObjectCellDesc_Active(HierarchyViewCellDescriptor desc)
         {
             desc.ClearCellContent = false;
-            desc.BindCell = cell =>
-            {
-                var go = HierarchyWindowColumnUtility.GetGameObject(cell);
-                var cellValueEditor = HierarchyWindowColumnUtility.BindCellToValueEditor(go, cell, cellGOPool);
-                HierarchyWindowColumnUtility.BindPropertyPath(cellValueEditor.Element as BindableElement, cell, new SerializedObject(go), "m_IsActive");
-            };
+            desc.BindCell = cell => HierarchyWindowColumnUtility.BindCellToValueEditor(HierarchyWindowColumnUtility.GetGameObject(cell), cell, cellGOPool);
+            desc.UnbindCell = cell => HierarchyWindowColumnUtility.UnbindCellFromValueEditor(cell, cellGOPool);
+        }
 
-            desc.UnbindCell = cell =>
+        // internal for tests
+        internal static void SetGameObjectsActive(HierarchyViewCell cell, bool value)
+        {
+            using var selectedGameObjects = HierarchyWindowColumnUtility.GetTargetGameObjects(cell, out var length);
+            var targets = selectedGameObjects.Span[..length].ToArray();
+            Undo.RecordObjects(targets, value ? "Activate GameObjects" : "Deactivate GameObjects");
+            foreach (var go in targets)
             {
-                HierarchyWindowColumnUtility.UnbindPropertyPath(cell);
-                HierarchyWindowColumnUtility.UnbindCellFromValueEditor(cell, cellGOPool);
-            };
+                go.SetActive(value);
+            }
         }
 
         static CellValueEditorGOBool CreateGOCellValueEditor_Active()
         {
-            var editor = new CellValueEditorGOBool(
-                    getModelValue: ed => ed.Model && ed.Model.activeSelf,
-                    setModelValue: (ed, value) => ed.Model.SetActive(value),
-                    isDefaultValue: (ed, value) => value == true);
-            return editor;
+            return new CellValueEditorGOBool(
+                getModelValue: ed => ed.Model && ed.Model.activeSelf,
+                setModelValue: (ed, value) => SetGameObjectsActive(ed.Cell, value),
+                isDefaultValue: (ed, value) => value == true);
         }
+
         [AutoStaticsCleanupOnCodeReload]
         internal static HierarchyViewColumnContextPool<CellValueEditorGOBool> s_CellGOPool = null;
-        internal static HierarchyViewColumnContextPool<CellValueEditorGOBool> cellGOPool { get => s_CellGOPool ??= new(CreateGOCellValueEditor_Active); }
+        internal static HierarchyViewColumnContextPool<CellValueEditorGOBool> cellGOPool => s_CellGOPool ??= new(CreateGOCellValueEditor_Active);
     }
 
     /// <summary>
     /// Utility class containing Column definition for GameObject and Scene Visibility in Scene.
-    /// User can derive from this class to implement their own CellDescriptor for other object type that can be displayed in hierarchy (ex: Entity).
     /// Note that cells in this column have ClearCellContent=false. Which means the cell is not Clear after Unbind. Cell will contain a Toggle for editing.
     /// </summary>
-    internal sealed partial class HierarchyWindowColumnVisibility
+    internal sealed class HierarchyWindowColumnVisibility
     {
         /// <summary>
         /// Column Id for object Visibility in Scene.
@@ -143,12 +142,17 @@ namespace Unity.Hierarchy.Editor
             editor.Element.EnableInClassList("is-visible", value);
         }
 
+        // internal for tests
+        internal static void SetSceneVisibility(UnityEngine.SceneManagement.Scene scene)
+        {
+            SceneVisibilityManager.instance.ToggleScene(scene, SceneVisibilityManager.instance.GetSceneVisibilityState(scene));
+        }
+
         static CellValueEditorSceneBool CreateSceneCellValueEditor_Visibility()
         {
             var editor = new CellValueEditorSceneBool(
                     getModelValue: ed => SceneVisibilityManager.instance.GetSceneVisibilityState(ed.Model) != SceneVisibilityManager.SceneVisState.AllHidden,
-                    setModelValue: (ed, value) => SceneVisibilityManager.instance.ToggleScene(ed.Model,
-                                        SceneVisibilityManager.instance.GetSceneVisibilityState(ed.Model)),
+                    setModelValue: (ed, value) => SetSceneVisibility(ed.Model),
                     isDefaultValue: (ed, value) => !ed.Element.showMixedValue && value,
                     onSetEditorValue: OnSetSceneVisibilityEditor);
             return editor;
@@ -195,11 +199,23 @@ namespace Unity.Hierarchy.Editor
             editor.Element.EnableInClassList("is-visible", value);
         }
 
+        // internal for tests
+        internal static void SetGameObjectsVisibility(HierarchyViewCell cell, bool value)
+        {
+            using var selectedGameObjects = HierarchyWindowColumnUtility.GetTargetGameObjects(cell, out var length);
+            var targets = selectedGameObjects.Span[..length].ToArray();
+
+            if (value)
+                SceneVisibilityManager.instance.Show(targets, true);
+            else
+                SceneVisibilityManager.instance.Hide(targets, true);
+        }
+
         static CellValueEditorGOBool CreateGOCellValueEditor_Visibility()
         {
             var editor = new CellValueEditorGOBool(
                     getModelValue: ed => ed.Model && !SceneVisibilityManager.instance.IsHidden(ed.Model),
-                    setModelValue: (ed, value) => SceneVisibilityManager.instance.ToggleVisibility(ed.Model, true),
+                    setModelValue: (ed, value) => SetGameObjectsVisibility(ed.Cell, value),
                     isDefaultValue: (ed, value) => !ed.Element.showMixedValue && value,
                     onSetEditorValue: OnSetGOVisibilityEditor);
             return editor;
@@ -227,10 +243,9 @@ namespace Unity.Hierarchy.Editor
 
     /// <summary>
     /// Utility class containing Column definition for GameObject and Scene Pickable ability in Scene.
-    /// User can derive from this class to implement their own CellDescriptor for other object type that can be displayed in hierarchy (ex: Entity).
     /// Note that cells in this column have ClearCellContent=false. Which means the cell is not Clear after Unbind. Cell will contain a Toggle for editing.
     /// </summary>
-    internal sealed partial class HierarchyWindowColumnPicking
+    internal sealed class HierarchyWindowColumnPicking
     {
         /// <summary>
         /// Column Id for object Pickability in Scene.
@@ -294,25 +309,28 @@ namespace Unity.Hierarchy.Editor
             editor.Element.EnableInClassList("is-pickable", value);
         }
 
+        // internal for tests
+        internal static void SetScenePicking(UnityEngine.SceneManagement.Scene scene)
+        {
+            var pickingState = SceneVisibilityManager.instance.GetScenePickingState(scene);
+            if (pickingState == SceneVisibilityManager.ScenePickingState.Mixed ||
+                pickingState == SceneVisibilityManager.ScenePickingState.PickingDisabledAll)
+            {
+                SceneVisibilityManager.instance.EnablePicking(scene);
+            }
+            else
+            {
+                SceneVisibilityManager.instance.DisablePicking(scene);
+            }
+        }
+
         static CellValueEditorSceneBool CreateSceneCellValueEditor_Picking()
         {
             var editor = new CellValueEditorSceneBool(
                 getModelValue: ed =>
                     SceneVisibilityManager.instance.GetScenePickingState(ed.Model) is
                     SceneVisibilityManager.ScenePickingState.PickingEnabledAll or SceneVisibilityManager.ScenePickingState.Mixed,
-                setModelValue: (ed, value) =>
-                {
-                    var pickingState = SceneVisibilityManager.instance.GetScenePickingState(ed.Model);
-                    if (pickingState == SceneVisibilityManager.ScenePickingState.Mixed ||
-                        pickingState == SceneVisibilityManager.ScenePickingState.PickingDisabledAll)
-                    {
-                        SceneVisibilityManager.instance.EnablePicking(ed.Model);
-                    }
-                    else
-                    {
-                        SceneVisibilityManager.instance.DisablePicking(ed.Model);
-                    }
-                },
+                setModelValue: (ed, value) => SetScenePicking(ed.Model),
                 isDefaultValue: (ed, value) => !ed.Element.showMixedValue && value,
                 onSetEditorValue: OnSetScenePickingEditor);
             return editor;
@@ -358,11 +376,23 @@ namespace Unity.Hierarchy.Editor
             editor.Element.EnableInClassList("is-pickable", value);
         }
 
+        // internal for tests
+        internal static void SetGameObjectsPicking(HierarchyViewCell cell, bool value)
+        {
+            using var selectedGameObjects = HierarchyWindowColumnUtility.GetTargetGameObjects(cell, out var length);
+            var targets = selectedGameObjects.Span[..length].ToArray();
+
+            if (value)
+                SceneVisibilityManager.instance.EnablePicking(targets, true);
+            else
+                SceneVisibilityManager.instance.DisablePicking(targets, true);
+        }
+
         static CellValueEditorGOBool CreateGOCellValueEditor_Picking()
         {
             var editor = new CellValueEditorGOBool(
                     getModelValue: ed => ed.Model && !SceneVisibilityManager.instance.IsPickingDisabled(ed.Model),
-                    setModelValue: (ed, value) => SceneVisibilityManager.instance.TogglePicking(ed.Model, true),
+                    setModelValue: (ed, value) => SetGameObjectsPicking(ed.Cell, value),
                     isDefaultValue: (ed, value) => !ed.Element.showMixedValue && value,
                     onSetEditorValue: OnSetGOPickingEditor);
             return editor;
@@ -389,10 +419,9 @@ namespace Unity.Hierarchy.Editor
 
     /// <summary>
     /// Utility class containing Column definition for GameObject Tag
-    /// User can derive from this class to implement their own CellDescriptor for other object type that can be displayed in hierarchy (ex: Entity).
     /// Note that cells in this column have ClearCellContent=false. Which means the cell is not Clear after Unbind. Cell will contain a TagField for editing.
     /// </summary>
-    internal sealed partial class HierarchyWindowColumnTag
+    internal sealed class HierarchyWindowColumnTag
     {
         /// <summary>
         /// Column Id for object Tag
@@ -417,25 +446,28 @@ namespace Unity.Hierarchy.Editor
         internal static void CreateGameObjectCellDesc_Tag(HierarchyViewCellDescriptor desc)
         {
             desc.ClearCellContent = false;
-            desc.BindCell = cell =>
-            {
-                var go = HierarchyWindowColumnUtility.GetGameObject(cell);
-                var cellValueEditor = HierarchyWindowColumnUtility.BindCellToValueEditor(go, cell, cellGOPool);
-                HierarchyWindowColumnUtility.BindPropertyPath(cellValueEditor.Element, cell, new SerializedObject(go), "m_TagString");
-            };
+            desc.BindCell = cell => HierarchyWindowColumnUtility.BindCellToValueEditor(HierarchyWindowColumnUtility.GetGameObject(cell), cell, cellGOPool);
+            desc.UnbindCell = cell => HierarchyWindowColumnUtility.UnbindCellFromValueEditor(cell, cellGOPool);
+        }
 
-            desc.UnbindCell = cell =>
+        // internal for tests
+        internal static void SetGameObjectsTag(HierarchyViewCell cell, string value)
+        {
+            using var selectedGameObjects = HierarchyWindowColumnUtility.GetTargetGameObjects(cell, out var length);
+            var targets = selectedGameObjects.Span[..length].ToArray();
+
+            Undo.RecordObjects(targets, "Change Tag");
+            foreach (var go in targets)
             {
-                HierarchyWindowColumnUtility.UnbindPropertyPath(cell);
-                HierarchyWindowColumnUtility.UnbindCellFromValueEditor(cell, cellGOPool);
-            };
+                go.tag = value;
+            }
         }
 
         static HierarchyViewCellValueEditor<GameObject, TagField, string> CreateGOCellValueEditor_Tag()
         {
             var editor = new HierarchyViewCellValueEditor<GameObject, TagField, string>(
                     getModelValue: ed => ed.Model.tag,
-                    setModelValue: (ed, value) => ed.Model.tag = value,
+                    setModelValue: (ed, value) => SetGameObjectsTag(ed.Cell, value),
                     isDefaultValue: (ed, value) => string.IsNullOrEmpty(value) || value == "Untagged");
             return editor;
         }
@@ -446,10 +478,9 @@ namespace Unity.Hierarchy.Editor
 
     /// <summary>
     /// Utility class containing Column definition for GameObject Layer
-    /// User can derive from this class to implement their own CellDescriptor for other object type that can be displayed in hierarchy (ex: Entity).
     /// Note that cells in this column have ClearCellContent=false. Which means the cell is not Clear after Unbind. Cell will contain a LayerField for editing.
     /// </summary>
-    internal sealed partial class HierarchyWindowColumnLayer
+    internal sealed class HierarchyWindowColumnLayer
     {
         /// <summary>
         /// Column Id for object Layer
@@ -480,13 +511,22 @@ namespace Unity.Hierarchy.Editor
                 => HierarchyWindowColumnUtility.UnbindCellFromValueEditor(cell, cellGOPool);
         }
 
+        // internal for tests
+        internal static bool SetGameObjectsLayer(HierarchyViewCell cell, int value)
+        {
+            using var selectedGameObjects = HierarchyWindowColumnUtility.GetTargetGameObjects(cell, out var length);
+            var targets = selectedGameObjects.Span[..length];
+
+            return SceneModeUtility.SetLayer(targets, value, targets.Length == 1 ? targets[0].name : "Selected GameObjects");
+        }
+
         static HierarchyViewCellValueEditor<GameObject, LayerField, int> CreateGOCellValueEditor_Layer()
         {
             var editor = new HierarchyViewCellValueEditor<GameObject, LayerField, int>(
                     getModelValue: ed => ed.Model.layer,
                     setModelValue: (ed, value) =>
                     {
-                        if (!SceneModeUtility.SetLayer(ed.Model, value, ed.Model.name))
+                        if (!SetGameObjectsLayer(ed.Cell, value))
                             ed.Element.SetValueWithoutNotify(ed.Model.layer);
                     },
                     isDefaultValue: (ed, value) => value == 0);
@@ -500,10 +540,9 @@ namespace Unity.Hierarchy.Editor
 
     /// <summary>
     /// Utility class containing Column definition for GameObject Is Static property.
-    /// User can derive from this class to implement their own CellDescriptor for other object type that can be displayed in hierarchy (ex: Entity).
     /// Note that cells in this column have ClearCellContent=false. Which means the cell is not Clear after Unbind. Cell will contain a Toggle for editing.
     /// </summary>
-    internal sealed partial class HierarchyWindowColumnStatic
+    internal sealed class HierarchyWindowColumnStatic
     {
         /// <summary>
         /// Column Id for object Static
@@ -538,13 +577,28 @@ namespace Unity.Hierarchy.Editor
                 => HierarchyWindowColumnUtility.UnbindCellFromValueEditor(cell, cellGOPool);
         }
 
+        // internal for tests
+        internal static bool SetGameObjectsStatic(HierarchyViewCell cell, bool value)
+        {
+            using var selectedGameObjects = HierarchyWindowColumnUtility.GetTargetGameObjects(cell, out var length);
+            // SetStaticFlags takes Span<Object> and Span are invariant (ie. Span<GameObject> are not Span<Object>). We need to copy
+            using var targets = new RentSpan<Object>(length);
+            var count = 0;
+            foreach (var gameObject in selectedGameObjects.Span[..length])
+            {
+                targets.Span[count++] = gameObject;
+            }
+
+            return SceneModeUtility.SetStaticFlags(targets.Span, int.MaxValue, value);
+        }
+
         static CellValueEditorGOBool CreateGOCellValueEditor_Static()
         {
             var editor = new CellValueEditorGOBool(
                     getModelValue: ed => ed.Model && ed.Model.isStatic,
                     setModelValue: (ed, value) =>
                     {
-                        if (!SceneModeUtility.SetStaticFlags(ed.Model, int.MaxValue, value))
+                        if (!SetGameObjectsStatic(ed.Cell, value))
                             ed.Element.SetValueWithoutNotify(ed.Model.isStatic);
                     },
                     isDefaultValue: (ed, value) => value == false);

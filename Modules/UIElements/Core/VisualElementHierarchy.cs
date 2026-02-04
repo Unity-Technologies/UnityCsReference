@@ -279,17 +279,25 @@ namespace UnityEngine.UIElements
         }
 
         /// <summary>
-        /// Remove all child elements from this element's contentContainer
+        /// Removed all child elements from this element's `contentContainer`.
         /// </summary>
         public void Clear()
         {
+            Clear(VisualElementClearOptions.None);
+        }
+
+        /// <summary>
+        /// Removes all child elements from this element's `contentContainer`.
+        /// </summary>
+        public void Clear(VisualElementClearOptions options)
+        {
             if (contentContainer == this)
             {
-                hierarchy.Clear();
+                hierarchy.Clear(options);
             }
             else
             {
-                contentContainer?.Clear();
+                contentContainer?.Clear(options);
             }
         }
 
@@ -553,8 +561,17 @@ namespace UnityEngine.UIElements
                 m_Owner = element;
             }
 
+            void ValidateElementCanBeModified()
+            {
+                if (m_Owner.elementPanel != null && m_Owner.elementPanel.duringLayoutPhase)
+                    throw new InvalidOperationException(k_InvalidHierarchyChangeMsg);
+
+                if (m_Owner.resourcesReleased)
+                    throw new InvalidOperationException("Cannot modify an element which has released its resources");
+            }
+
             /// <summary>
-            /// Add an element to this element's contentContainer
+            /// Adds an element to this element's `contentContainer`.
             /// </summary>
             public void Add(VisualElement child)
             {
@@ -578,14 +595,17 @@ namespace UnityEngine.UIElements
                 if (child == m_Owner)
                     throw new ArgumentException("Cannot insert element as its own child");
 
-                if (m_Owner.elementPanel != null && m_Owner.elementPanel.duringLayoutPhase)
-                    throw new InvalidOperationException(k_InvalidHierarchyChangeMsg);
+                ValidateElementCanBeModified();
+
+                if (child.resourcesReleased)
+                    throw new InvalidOperationException("Cannot insert an element which has released its resources");
 
                 child.RemoveFromHierarchy();
 
                 if (ReferenceEquals(m_Owner.m_Children, s_EmptyList))
                 {
-                    //TODO: Trigger a release on finalizer or something, this means we'll need to make the pool thread-safe as well
+                    // This list will be released if the element is cleared of its children
+                    // Which we now recommend doing in contexts where many VisualElements are created/finalized
                     m_Owner.m_Children = VisualElementListPool.Get();
                 }
 
@@ -649,8 +669,7 @@ namespace UnityEngine.UIElements
             /// </remarks>
             public void RemoveAt(int index)
             {
-                if (m_Owner.elementPanel != null && m_Owner.elementPanel.duringLayoutPhase)
-                    throw new InvalidOperationException(k_InvalidHierarchyChangeMsg);
+                ValidateElementCanBeModified();
 
                 if (index < 0 || index >= childCount)
                     throw new ArgumentOutOfRangeException("Index out of range: " + index);
@@ -688,12 +707,37 @@ namespace UnityEngine.UIElements
             }
 
             /// <summary>
-            /// Remove all child elements from this element's contentContainer
+            /// Removes all child elements from this element's <see cref="contentContainer"/>.
             /// </summary>
+            /// <remarks>
+            /// Only the child elements are removed, not the element itself.
+            /// Only the immediate children are removed. To remove all descendants, use the <see cref="Clear(VisualElementClearOptions)"/> overload with the <see cref="VisualElementClearOptions.Recursive"/> flag.
+            /// </remarks>
             public void Clear()
             {
-                if (m_Owner.elementPanel != null && m_Owner.elementPanel.duringLayoutPhase)
-                    throw new InvalidOperationException(k_InvalidHierarchyChangeMsg);
+                Clear(VisualElementClearOptions.None);
+            }
+
+            /// <summary>
+            /// Removes all child elements from this element's <see cref="contentContainer"/>, using the specified options. Use this method to reduce memory usage.
+            /// </summary>
+            /// <param name="options">Allows which actions are performed when clearing the children.</param>
+            /// <remarks>
+            /// Only the child elements are removed, not the element itself.
+            ///
+            /// Using default options, only the immediate children are removed and no additional action is performed.
+            ///
+            /// To remove all descendants from their parent, specify the <see cref="VisualElementClearOptions.Recursive"/> flag.
+            ///
+            /// To invoke the <see cref="VisualElement.ReleaseResources"/> method on all descendants, specify the <see cref="VisualElementClearOptions.RecursiveReleaseResources"/> flag.
+            /// This flag implies that the hierarchy is cleared recursively, because an element must have no children when it is released.
+            ///
+            /// You can use the combination of these flags to clear a large number of elements from the hierarchy and immediately release resources to reduce memory usage. For more information, refer to <see cref="VisualElement.ReleaseResources"/>.
+            /// It also removes internal parent and child relationships between elements, which can help with garbage collection speed and troubleshooting memory leaks.
+            /// </remarks>
+            public void Clear(VisualElementClearOptions options)
+            {
+                ValidateElementCanBeModified();
 
                 if (childCount > 0)
                 {
@@ -708,20 +752,79 @@ namespace UnityEngine.UIElements
                             WorldSpaceDataStore.ClearWorldSpaceData(child);
                     }
 
-                    ReleaseChildList();
-                    m_Owner.layoutNode.Clear();
+                    // About the clearNativeData flag:
+                    // We can sometimes skip this operation if we know the native side will be recycled
+                    static void ClearInternal(Hierarchy hierarchy, bool clearNativeData = true)
+                    {
+                        hierarchy.ReleaseChildList();
 
-                    if (m_Owner.requireMeasureFunction)
-                        m_Owner.AssignMeasureFunction();
+                        if (!clearNativeData)
+                            return;
+                        hierarchy.m_Owner.layoutNode.Clear();
 
+                        if (hierarchy.m_Owner.requireMeasureFunction)
+                            hierarchy.m_Owner.AssignMeasureFunction();
+                    }
+
+                    ClearInternal(this, clearNativeData: true);
+
+                    var elementAndDescendants = VisualElementListPool.Get();
                     foreach (VisualElement e in elements)
                     {
                         e.InvokeHierarchyChanged(HierarchyChangeType.RemovedFromParent);
-                        e.hierarchy.SetParent(null);
-                        e.m_LogicalParent = null;
+
+                        // In the simple case, we use the standard process
+                        if ((options & VisualElementClearOptions.Recursive) == 0 || e.hierarchy.childCount == 0)
+                        {
+                            e.hierarchy.SetParent(null);
+                        }
+                        // If we need to clear recursively, we gather all descendants first
+                        // to avoid multiple traversals of the same hierarchy
+                        else
+                        {
+                            elementAndDescendants.Clear();
+                            elementAndDescendants.Add(e);
+                            e.GatherAllChildren(elementAndDescendants);
+
+                            // Note: list is updated automatically if callbacks modify hierarchy
+                            e.hierarchy.SetParent(null, elementAndDescendants);
+                        }
+
                         m_Owner.elementPanel?.OnVersionChanged(e, VersionChangeType.Hierarchy);
                         m_Owner.OnChildRemoved(e);
+
+                        if ((options & VisualElementClearOptions.Recursive) == 0)
+                            continue;
+
+                        bool releaseResources = (options & VisualElementClearOptions.RecursiveReleaseResources) == VisualElementClearOptions.RecursiveReleaseResources;
+
+                        ClearInternal(e.hierarchy, clearNativeData:!releaseResources);
+
+                        if (releaseResources)
+                        {
+                            e.ReleaseResourcesNoChecks();
+                        }
+
+                        // We skip the first element because it's 'e' which is already handled above
+                        // This path is specialized because we know the panel is already detached from all these elements
+                        for (int i = 1; i < elementAndDescendants.Count; i++)
+                        {
+                            var descendant = elementAndDescendants[i];
+
+                            ClearInternal(descendant.hierarchy, clearNativeData:!releaseResources);
+
+                            var oldParent = descendant.hierarchy.parent;
+                            descendant.m_PhysicalParent = null;
+                            descendant.m_LogicalParent = null;
+                            oldParent?.OnChildRemoved(descendant);
+
+                            if (releaseResources)
+                            {
+                                descendant.ReleaseResourcesNoChecks();
+                            }
+                        }
                     }
+                    VisualElementListPool.Release(elementAndDescendants);
 
                     if (m_Owner.imguiContainerDescendantCount > 0)
                     {
@@ -804,8 +907,7 @@ namespace UnityEngine.UIElements
 
             private void MoveChildElement(VisualElement child, int currentIndex, int nextIndex)
             {
-                if (m_Owner.elementPanel != null && m_Owner.elementPanel.duringLayoutPhase)
-                    throw new InvalidOperationException(k_InvalidHierarchyChangeMsg);
+                ValidateElementCanBeModified();
 
                 child.InvokeHierarchyChanged(HierarchyChangeType.RemovedFromParent);
                 RemoveChildAtIndex(currentIndex);
@@ -873,6 +975,7 @@ namespace UnityEngine.UIElements
                 return m_Owner.m_Children;
             }
 
+            // Please keep in sync with version below
             private void SetParent(VisualElement value)
             {
                 m_Owner.m_PhysicalParent = value;
@@ -883,14 +986,25 @@ namespace UnityEngine.UIElements
                     Debug.LogError("Modifying the parent of a VisualElement while it’s already being modified is not allowed and can cause undefined behavior. Did you change the hierarchy during an AttachToPanelEvent or DetachFromPanelEvent?");
             }
 
+            // Please keep in sync with version above
+            // This call potentially saves an additional walkdown of the hierarchy when the caller already has the list of descendants
+            private void SetParent(VisualElement value, List<VisualElement> selfAndDescendants)
+            {
+                m_Owner.m_PhysicalParent = value;
+                m_Owner.m_LogicalParent = value;
+                m_Owner.DirtyNextParentWithEventInterests();
+                m_Owner.SetPanelBatched(value?.elementPanel, selfAndDescendants);
+                if (m_Owner.m_PhysicalParent != value)
+                    Debug.LogError("Modifying the parent of a VisualElement while it’s already being modified is not allowed and can cause undefined behavior. Did you change the hierarchy during an AttachToPanelEvent or DetachFromPanelEvent?");
+            }
+
             /// <summary>
             /// Reorders child elements from this VisualElement contentContainer.
             /// </summary>
             /// <param name="comp">Sorting criteria.</param>
             public void Sort(Comparison<VisualElement> comp)
             {
-                if (m_Owner.elementPanel != null && m_Owner.elementPanel.duringLayoutPhase)
-                    throw new InvalidOperationException(k_InvalidHierarchyChangeMsg);
+                ValidateElementCanBeModified();
 
                 if (childCount > 1)
                 {

@@ -236,9 +236,9 @@ namespace UnityEditor.Toolbars
             m_FloatField.name = "SceneViewScaleSnapSize";
             m_FloatField.RegisterValueChangedCallback((evt) => EditorSnapSettingsData.instance.snapSettings.scale = evt.newValue);
             m_FloatField.SetValueWithoutNotify(EditorSnapSettingsData.instance.snapSettings.scale);
-            m_FloatField.tooltip = L10n.Tr("Incremental scale snap size");
+            m_FloatField.tooltip = L10n.Tr("Scale snap multiplier");
             Add(m_FloatField);
-            
+
             EditorToolbarUtility.SetupChildrenAsButtonStrip(this);
             SceneViewToolbarStyles.AddStyleSheets(this);
 

@@ -21,8 +21,8 @@ namespace UnityEngine.UIElements
         public static event Action<Panel> onCreateAuthoringPanel;
         public static event Action<Panel> onWillDestroyAuthoringPanel;
 
-        public static readonly ProfilerMarker s_PreUpdatePanelRenderersMarker = new ProfilerMarker("UIElements.PreUpdatePanelRenderers");
-        public static readonly ProfilerMarker s_UpdatePanelRenderersMarker = new ProfilerMarker("UIElements.UpdatePanelRenderers");
+        public static readonly ProfilerMarker s_PreUpdatePanelRenderersMarker = new ProfilerMarker(ProfilerCategory.UIToolkit, "UIElements.PreUpdatePanelRenderers");
+        public static readonly ProfilerMarker s_UpdatePanelRenderersMarker = new ProfilerMarker(ProfilerCategory.UIToolkit, "UIElements.UpdatePanelRenderers");
 
         static UIElementsRuntimeUtility()
         {
@@ -222,6 +222,12 @@ namespace UnityEngine.UIElements
                 if (overlayPanel.sortingPriority >= maxPriority)
                     return;
 
+                // Filter out transient panels (Shader graph preview Manager for example)
+                if (overlayPanel is RuntimePanel runtimePanel && runtimePanel.panelSettings != null && runtimePanel.panelSettings.isTransient)
+                {
+                    continue;
+                }
+
                 if (overlayPanel.targetDisplay == displayIndex && overlayPanel.targetTexture == null)
                 {
                     RenderPanel(overlayPanel);
@@ -376,17 +382,7 @@ namespace UnityEngine.UIElements
                 // We need to re-sort the panel renderers
                 foreach (var panelRenderer in s_AllPanelRenderers)
                 {
-                    if (!panelRenderer.enabled)
-                        continue;
-
-                    if (panelRenderer.hasHierarchyChanged || panelRenderer.requiresReinsertion)
-                    {
-                        panelRenderer.SetupFromHierarchy();
-                        panelRenderer.SetupRootClassList();
-                        panelRenderer.AddRootVisualElementToTree();
-                        panelRenderer.hasHierarchyChanged = false;
-                        panelRenderer.requiresReinsertion = false;
-                    }
+                    panelRenderer.ReactToHierarchyChanges();
                 }
             }
         }

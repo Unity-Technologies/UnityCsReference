@@ -446,9 +446,9 @@ namespace UnityEditor.Search
             };
 
             var providers = searchContext.providers;
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             evt.providerDatas = providers.Select(provider => new ProviderData()
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             {
                 id = provider.id,
                 avgTime = (long)searchContext.searchElapsedTime,
@@ -480,9 +480,9 @@ namespace UnityEditor.Search
             report.showPackageIndexes = SearchSettings.showPackageIndexes;
             report.debounceMs = SearchSettings.debounceMs;
             report.savedSearchesSortOrder = SearchSettings.savedSearchesSortOrder.ToString();
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             report.savedSearchesCount = SearchQueryAsset.savedQueries.Count() + SearchQuery.userQueries.Count();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             report.sessionQueryCount = sessionQueryCount;
             report.sessionQuerySearchExecutionCount = sessionQuerySearchExecutionCount;
             report.sessionSearchOpenWindow = sessionSearchOpenWindow;
@@ -492,15 +492,15 @@ namespace UnityEditor.Search
 
             report.useQueryBuilder = SearchSettings.queryBuilder;
 
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var allIndexes = SearchDatabase.Enumerate(SearchDatabase.IndexLocation.assets).ToArray();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             report.indexCount = allIndexes.Length;
             if (allIndexes.Length > 0)
             {
-                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 var maxSize = allIndexes.Max(index => index.indexSize);
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                 report.maxIndexSize = maxSize / 1048576f;
             }
             else

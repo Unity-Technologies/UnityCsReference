@@ -79,16 +79,16 @@ namespace UnityEditor.IMGUI.Controls
             if (columnIndices.Length > state.maximumNumberOfSortedColumns)
                 throw new ArgumentException("The maximum number of sorted columns is " + state.maximumNumberOfSortedColumns + ". Trying to set " + columnIndices.Length + " columns.");
 
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             if (columnIndices.Length != columnIndices.Distinct().Count())
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                 throw new ArgumentException("Duplicate column indices are not allowed", "columnIndices");
 
             bool changed = false;
 
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             if (!columnIndices.SequenceEqual(state.sortedColumns))
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             {
                 state.sortedColumns = columnIndices;
                 changed = true;
@@ -167,9 +167,9 @@ namespace UnityEditor.IMGUI.Controls
                 if (state.visibleColumns[i] == columnIndex)
                     return i;
             }
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             string visibleIndices = string.Join(", ", state.visibleColumns.Select(t => t.ToString()).ToArray());
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             throw new ArgumentException(string.Format("Invalid columnIndex: {0}. The index is not part of the current visible columns: {1}", columnIndex, visibleIndices), "columnIndex");
         }
 
@@ -539,9 +539,9 @@ namespace UnityEditor.IMGUI.Controls
                 var column = state.columns[i];
                 var menuText = !string.IsNullOrEmpty(column.contextMenuText) ? column.contextMenuText : column.headerContent.text;
                 if (column.allowToggleVisibility)
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     menu.AddItem(new GUIContent(menuText), state.visibleColumns.Contains(i), ToggleVisibility, i);
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                 else
                     menu.AddDisabledItem(new GUIContent(menuText));
             }
@@ -628,9 +628,9 @@ namespace UnityEditor.IMGUI.Controls
                 return;
 
             // Sum
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             float totalAutoResizeWidth = autoResizeColumns.Sum(x => x.width);
-#pragma warning restore RS0030
+#pragma warning restore UA2001
 
             // Distribute
             foreach (var column in autoResizeColumns)

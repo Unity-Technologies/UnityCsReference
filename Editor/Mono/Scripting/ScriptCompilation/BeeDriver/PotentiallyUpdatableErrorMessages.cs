@@ -17,9 +17,9 @@ namespace UnityEditor.Scripting.ScriptCompilation
         public static bool IsAnyPotentiallyUpdatable(CompilerMessage[] messages, NodeFinishedMessage nodeResult,
             ObjectsFromDisk dataFromBuildProgram)
         {
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var matches = messages
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                                     .Select(m => MicrosoftCSharpCompilerOutputParser.sCompilerOutput.Match(m.message))
                                     .Where(m => m.Success && IsPotentiallyUpdatableDiagnostic(m))
                                     .ToArray();
@@ -30,24 +30,24 @@ namespace UnityEditor.Scripting.ScriptCompilation
             var localizedCompilerMessages = Helpers.LocalizeCompilerMessages(dataFromBuildProgram);
             var compilerMessageParser = GetCompilerMessageParser();
 
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var typeNames = matches.Select(m => MissingTypeNameFor(m, compilerMessageParser));
-#pragma warning restore RS0030
+#pragma warning restore UA2001
 
             var assemblyData = Helpers.FindOutputDataAssemblyInfoFor(nodeResult, dataFromBuildProgram);
             var lines = new NPath(assemblyData.MovedFromExtractorFile).ReadAllLines();
 
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return typeNames.Any(t => lines.Contains(t));
-#pragma warning restore RS0030
+#pragma warning restore UA2001
 
             CompilerMessageParser GetCompilerMessageParser()
             {
                 if (!localizedCompilerMessages) return EnglishMessageParser;
 
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 return AlternativeLanguageMessageParser.TargetLanguages.Any(l => l == LocalizationDatabase.currentEditorLanguage)
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                     ? AlternativeLanguageMessageParser
                     : EnglishMessageParser;
             }

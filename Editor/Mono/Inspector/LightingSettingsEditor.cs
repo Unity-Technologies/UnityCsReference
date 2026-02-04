@@ -162,7 +162,14 @@ namespace UnityEditor
             };
 
             // must match PVRDenoiserType
-            public static readonly int[] denoiserTypeValues = { (int)LightingSettings.DenoiserType.Optix, (int)LightingSettings.DenoiserType.OpenImage, (int)LightingSettings.DenoiserType.None };
+#pragma warning disable 618 // Optix denoiser is obsolete.
+            public static readonly int[] denoiserTypeValues =
+            {
+                (int)LightingSettings.DenoiserType.Optix,
+                (int)LightingSettings.DenoiserType.OpenImage,
+                (int)LightingSettings.DenoiserType.None
+            };
+#pragma warning restore 618
             public static readonly GUIContent[] denoiserTypeStrings =
             {
                 EditorGUIUtility.TrTextContent("Optix"),
@@ -224,7 +231,7 @@ namespace UnityEditor
             public static readonly GUIContent realtimeLightsLabel = EditorGUIUtility.TrTextContent("Realtime Lighting", "Precompute Realtime indirect lighting for realtime lights and static objects. In this mode realtime lights, ambient lighting, materials of static objects (including emission) will generate indirect lighting at runtime. Only static objects are blocking and bouncing light, dynamic objects receive indirect lighting via light probes.");
             public static readonly GUIContent realtimeEnvironmentLighting = EditorGUIUtility.TrTextContent("Realtime Environment Lighting", "Specifies the Global Illumination mode that should be used for handling ambient light in the Scene. This property is not editable unless both Realtime Global Illumination and Baked Global Illumination are enabled for the scene.");
             public static readonly GUIContent mixedLightsLabel = EditorGUIUtility.TrTextContent("Mixed Lighting", "Bake Global Illumination for mixed lights and static objects. May bake both direct and/or indirect lighting based on settings. Only static objects are blocking and bouncing light, dynamic objects receive baked lighting via light probes.");
-            public static readonly GUIContent generalLightmapLabel = EditorGUIUtility.TrTextContent("Lightmapping Settings", "Settings that apply to both Global Illumination modes (Precomputed Realtime and Baked).");
+            public static readonly GUIContent bakedLightingLabel = EditorGUIUtility.TrTextContent("Baked Lighting Settings", "Settings that apply to both Global Illumination modes (Precomputed Realtime and Baked).");
             public static readonly GUIContent internalLabel = EditorGUIUtility.TrTextContent("Internal Settings", "Internal only settings. ");
             public static readonly GUIContent forceWhiteAlbedo = EditorGUIUtility.TrTextContent("Force White Albedo", "Force white albedo during lighting calculations.");
             public static readonly GUIContent forceUpdates = EditorGUIUtility.TrTextContent("Force Updates", "Force continuous updates of runtime indirect lighting calculations.");
@@ -249,6 +256,7 @@ namespace UnityEditor
             public static readonly GUIContent useRealtimeGI = EditorGUIUtility.TrTextContent("Realtime Global Illumination", "Precomputed Realtime Global Illumination using Enlighten. Provides diffuse Realtime Global Illumination for static geometry via low resolution lightmaps and via Light Probes for dynamic geometry.");
             public static readonly GUIContent bakedGIDisabledInfo = EditorGUIUtility.TrTextContent("All Baked and Mixed lights in the Scene are currently being overridden to Realtime light modes. Enable Baked Global Illumination to allow the use of Baked and Mixed light modes.");
             public static readonly GUIContent bakeBackend = EditorGUIUtility.TrTextContent("Lightmapper", "Specifies which baking system will be used to generate baked lightmaps.");
+            public static readonly GUIContent generalBakingSettings = EditorGUIUtility.TrTextContent("General Settings", "Specifies general settings for baked lighting.");
             public static readonly GUIContent directSampleCount = EditorGUIUtility.TrTextContent("Direct Samples", "Controls the number of samples the lightmapper will use for direct lighting calculations. Increasing this value may improve the quality of lightmaps but increases the time required for baking to complete.");
             public static readonly GUIContent indirectSampleCount = EditorGUIUtility.TrTextContent("Indirect Samples", "Controls the number of samples the lightmapper will use for indirect lighting calculations. Increasing this value may improve the quality of lightmaps but increases the time required for baking to complete.");
             public static readonly GUIContent bounces = EditorGUIUtility.TrTextContent("Max Bounces", "The maximum number of bounces the Lightmapper computes for indirect lighting.");
@@ -515,14 +523,16 @@ namespace UnityEditor
             bool bakedGISupported = SupportedRenderingFeatures.IsLightmapBakeTypeSupported(LightmapBakeType.Baked);
             bool realtimeGISupported = SupportedRenderingFeatures.IsLightmapBakeTypeSupported(LightmapBakeType.Realtime);
             bool lightmapperSupported = SupportedRenderingFeatures.IsLightmapperSupported(m_BakeBackend.intValue);
+            if (Lightmapping.UnifiedBaker)
+                lightmapperSupported = true;
 
             if (!bakedGISupported && !realtimeGISupported)
                 return;
 
             if (compact)
-                m_ShowGeneralLightingSettings.value = EditorGUILayout.BeginFoldoutHeaderGroup(m_ShowGeneralLightingSettings.value, Styles.generalLightmapLabel);
+                m_ShowGeneralLightingSettings.value = EditorGUILayout.BeginFoldoutHeaderGroup(m_ShowGeneralLightingSettings.value, Styles.bakedLightingLabel);
             else
-                m_ShowGeneralLightingSettings.value = EditorGUILayout.FoldoutTitlebar(m_ShowGeneralLightingSettings.value, Styles.generalLightmapLabel, true);
+                m_ShowGeneralLightingSettings.value = EditorGUILayout.FoldoutTitlebar(m_ShowGeneralLightingSettings.value, Styles.bakedLightingLabel, true);
 
             bool enableRealtimeGI = (m_EnableRealtimeGI.boolValue && !m_EnableRealtimeGI.hasMultipleDifferentValues);
             bool enableBakedGI = (m_EnabledBakedGI.boolValue && !m_EnabledBakedGI.hasMultipleDifferentValues);
@@ -541,12 +551,12 @@ namespace UnityEditor
                             if (lightmapperSupported)
                             {
                                 EditorGUI.indentLevel++;
-
-                                EditorGUILayout.PropertyField(m_PVREnvironmentIS, Styles.environmentImportanceSampling);
-
+                                if (!Lightmapping.UnifiedBaker)
+                                    EditorGUILayout.PropertyField(m_PVREnvironmentIS, Styles.environmentImportanceSampling);
                                 MultiEditableLogarithmicIntSlider(m_PVRDirectSampleCount, Styles.directSampleCount, 1, maxDirectSamples, 1, 1 << 30);
                                 MultiEditableLogarithmicIntSlider(m_PVRSampleCount, Styles.indirectSampleCount, 1, maxIndirectSamples, 1, 1 << 30);
-                                MultiEditableLogarithmicIntSlider(m_PVREnvironmentSampleCount, Styles.environmentSampleCount, 1, maxEnvironmentSamples, 1, 1 << 30);
+                                if (!Lightmapping.UnifiedBaker)
+                                    MultiEditableLogarithmicIntSlider(m_PVREnvironmentSampleCount, Styles.environmentSampleCount, 1, maxEnvironmentSamples, 1, 1 << 30);
 
                                 maxDirectSamples = (int)Mathf.ClosestPowerOfTwo(Math.Max(maxDirectSamples, m_PVRDirectSampleCount.intValue));
                                 maxIndirectSamples = (int)Mathf.ClosestPowerOfTwo(Math.Max(maxIndirectSamples, m_PVRSampleCount.intValue));
@@ -771,22 +781,25 @@ namespace UnityEditor
                 if (EditorGUI.EndChangeCheck())
                     EditorUserSettings.SetConfigValue(m_UseHardwareRayTracingConfigKey, useHardwareRayTracing.ToString());
 
-                EditorGUILayout.PropertyField(m_ExportTrainingData, Styles.exportTrainingData);
-
-                if (m_ExportTrainingData.boolValue && !m_ExportTrainingData.hasMultipleDifferentValues)
+                if (!Lightmapping.UnifiedBaker)
                 {
-                    EditorGUI.indentLevel++;
-                    EditorGUILayout.PropertyField(m_TrainingDataDestination, Styles.trainingDataDestination);
-                    EditorGUI.indentLevel--;
+                    EditorGUILayout.PropertyField(m_ExportTrainingData, Styles.exportTrainingData);
+
+                    if (m_ExportTrainingData.boolValue && !m_ExportTrainingData.hasMultipleDifferentValues)
+                    {
+                        EditorGUI.indentLevel++;
+                        EditorGUILayout.PropertyField(m_TrainingDataDestination, Styles.trainingDataDestination);
+                        EditorGUI.indentLevel--;
+                    }
+
+                    EditorGUILayout.PropertyField(m_FilterMode, Styles.filterMode);
                 }
 
-                EditorGUILayout.PropertyField(m_FilterMode, Styles.filterMode);
-                if (enableRealtimeGI)
-                {
-                    EditorGUILayout.Slider(m_BounceScale, 0.0f, 10.0f, Styles.bounceScale);
-                }
+                    if (enableRealtimeGI)
+                        EditorGUILayout.Slider(m_BounceScale, 0.0f, 10.0f, Styles.bounceScale);
 
-                Lightmapping.concurrentJobsType = (Lightmapping.ConcurrentJobsType)EditorGUILayout.IntPopup(Styles.concurrentJobs, (int)Lightmapping.concurrentJobsType, Styles.concurrentJobsTypeStrings, Styles.concurrentJobsTypeValues);
+                if (enableRealtimeGI || !Lightmapping.UnifiedBaker)
+                    Lightmapping.concurrentJobsType = (Lightmapping.ConcurrentJobsType)EditorGUILayout.IntPopup(Styles.concurrentJobs, (int)Lightmapping.concurrentJobsType, Styles.concurrentJobsTypeStrings, Styles.concurrentJobsTypeValues);
 
                 EditorGUILayout.BeginHorizontal();
                 GUILayout.Space(EditorGUI.indent + 4);
@@ -798,16 +811,19 @@ namespace UnityEditor
                     Lightmapping.ClearDiskCache();
                 }
 
-                if (GUILayout.Button("Print state to console", GUILayout.Width(Styles.buttonWidth)))
+                if (!Lightmapping.UnifiedBaker)
                 {
-                    Lightmapping.PrintStateToConsole();
+                    if (GUILayout.Button("Print state to console", GUILayout.Width(Styles.buttonWidth)))
+                    {
+                        Lightmapping.PrintStateToConsole();
+                    }
+
+                    if (GUILayout.Button("Reset albedo/emissive", GUILayout.Width(Styles.buttonWidth)))
+                        GIDebugVisualisation.ResetRuntimeInputTextures();
+
+                    if (GUILayout.Button("Reset environment", GUILayout.Width(Styles.buttonWidth)))
+                        DynamicGI.UpdateEnvironment();
                 }
-
-                if (GUILayout.Button("Reset albedo/emissive", GUILayout.Width(Styles.buttonWidth)))
-                    GIDebugVisualisation.ResetRuntimeInputTextures();
-
-                if (GUILayout.Button("Reset environment", GUILayout.Width(Styles.buttonWidth)))
-                    DynamicGI.UpdateEnvironment();
 
                 EditorGUILayout.EndVertical();
                 EditorGUILayout.EndHorizontal();
@@ -952,8 +968,10 @@ namespace UnityEditor
 
         static bool DenoiserSupported(LightingSettings.DenoiserType denoiserType)
         {
+#pragma warning disable 618 // Suppress obsolete warning for Optix denoiser
             if (denoiserType == LightingSettings.DenoiserType.Optix && !Lightmapping.IsOptixDenoiserSupported())
                 return false;
+#pragma warning restore 618
             if (denoiserType == LightingSettings.DenoiserType.OpenImage && !Lightmapping.IsOpenImageDenoiserSupported())
                 return false;
 
@@ -977,21 +995,33 @@ namespace UnityEditor
             var rect = EditorGUILayout.GetControlRect();
             EditorGUI.BeginProperty(rect, Styles.bakeBackend, m_BakeBackend);
             EditorGUI.BeginChangeCheck();
-            rect = EditorGUI.PrefixLabel(rect, Styles.bakeBackend);
+            if (!Lightmapping.UnifiedBaker)
+                rect = EditorGUI.PrefixLabel(rect, Styles.bakeBackend);
+            else
+            {
+                rect = EditorGUI.PrefixLabel(rect, Styles.generalBakingSettings);
+            }
 
             int index = Math.Max(0, Array.IndexOf(Styles.bakeBackendValues, m_BakeBackend.intValue));
 
-            if (EditorGUI.DropdownButton(rect, Styles.bakeBackendStrings[index], FocusType.Passive))
+            if (!Lightmapping.UnifiedBaker)
             {
-                var menu = new GenericMenu();
-
-                for (int i = Styles.bakeBackendValues.Length - 1; i >= 0; i--)
+                if (EditorGUI.DropdownButton(rect, Styles.bakeBackendStrings[index], FocusType.Passive))
                 {
-                    int value = Styles.bakeBackendValues[i];
-                    bool selected = (value == m_BakeBackend.intValue);
-                    menu.AddItem(Styles.bakeBackendStrings[i], selected, OnBakeBackedSelected, value);
+                    var menu = new GenericMenu();
+
+                    for (int i = Styles.bakeBackendValues.Length - 1; i >= 0; i--)
+                    {
+                        int value = Styles.bakeBackendValues[i];
+                        bool selected = (value == m_BakeBackend.intValue);
+                        menu.AddItem(Styles.bakeBackendStrings[i], selected, OnBakeBackedSelected, value);
+                    }
+                    menu.DropDown(rect);
                 }
-                menu.DropDown(rect);
+            }
+            else
+            {
+                m_BakeBackend.intValue = 3; // Force the unified backend
             }
 
             if (EditorGUI.EndChangeCheck())

@@ -1018,7 +1018,7 @@ namespace UnityEditor
 
             public bool occlusionCulling
             {
-                get => m_OcclusionCulling;  
+                get => m_OcclusionCulling;
                 set => m_OcclusionCulling = value;
             }
         }
@@ -1397,9 +1397,9 @@ namespace UnityEditor
             rootVisualElement.RegisterCallback<MouseEnterWindowEvent>(e => m_SceneViewMotion.viewportsUnderMouse = true);
             rootVisualElement.RegisterCallback<MouseLeaveWindowEvent>(e => m_SceneViewMotion.viewportsUnderMouse = false);
 
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             m_OrientationGizmo = overlayCanvas.overlays.FirstOrDefault(x => x is SceneOrientationGizmo) as SceneOrientationGizmo;
-#pragma warning restore RS0030
+#pragma warning restore UA2001
 
             titleContent = GetLocalizedTitleContent();
 
@@ -1883,6 +1883,11 @@ namespace UnityEditor
                 lastActiveSceneView.overlayCanvas.Remove(overlay);
         }
 
+        internal static bool IsActiveViewOverlay<T>(T overlay) where T : Overlay
+        {
+            return s_ActiveViewOverlays.Contains(overlay);
+        }
+
         static void MoveOverlaysToActiveView(SceneView previous, SceneView active)
         {
             if (previous != null)
@@ -2219,9 +2224,9 @@ namespace UnityEditor
             if (!Handles.IsCameraDrawModeSupported(m_Camera, mode.drawMode))
                 return false;
             return (onValidateCameraMode == null ||
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 onValidateCameraMode.GetInvocationList().All(validate => ((Func<CameraMode, bool>)validate)(mode)));
-#pragma warning restore RS0030
+#pragma warning restore UA2001
         }
 
         public bool IsCameraDrawModeEnabled(CameraMode mode)
@@ -2229,9 +2234,9 @@ namespace UnityEditor
             if (!Handles.IsCameraDrawModeEnabled(m_Camera, mode.drawMode))
                 return false;
             return (onValidateCameraMode == null ||
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 onValidateCameraMode.GetInvocationList().All(validate => ((Func<CameraMode, bool>)validate)(mode)));
-#pragma warning restore RS0030
+#pragma warning restore UA2001
         }
 
         internal bool IsSceneCameraDeferred()
@@ -3900,9 +3905,9 @@ namespace UnityEditor
                 case EventCommandNames.InvertSelection:
                     if (execute)
                     {
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                         Selection.objects = FindObjectsByType<GameObject>(FindObjectsSortMode.InstanceID).Except(Selection.gameObjects).Where(SceneVisibilityManager.instance.IsSelectable).ToArray();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                     }
                     Event.current.Use();
                     break;
@@ -3912,13 +3917,13 @@ namespace UnityEditor
                         List<GameObject> gameObjects = new List<GameObject>(Selection.gameObjects);
                         foreach (var gameObject in Selection.gameObjects)
                         {
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                             gameObjects.AddRange(gameObject.transform.GetComponentsInChildren<Transform>(true).Select(t => t.gameObject));
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                         }
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                         Selection.objects = gameObjects.Distinct().Cast<Object>().ToArray();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                     }
                     Event.current.Use();
                     break;
@@ -3934,9 +3939,9 @@ namespace UnityEditor
                                 gameObjects.Add(root);
                             }
                         }
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                         Selection.objects = gameObjects.Distinct().Cast<Object>().ToArray();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                     }
                     Event.current.Use();
                     break;
@@ -4145,15 +4150,15 @@ namespace UnityEditor
                         m_Cache[type] = null;
                     else
                     {
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                         var param = Expression.Parameter(typeof(Editor), "a");
-#pragma warning restore RS0030
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning restore UA2001
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                         onSceneGui = m_Cache[type] = Expression.Lambda<Action<Editor>>(
-#pragma warning restore RS0030
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning restore UA2001
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                             Expression.Call(Expression.Convert(param, type), method),
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                             param
                         ).Compile();
                     }
@@ -4389,7 +4394,7 @@ namespace UnityEditor
             HandleUtility.ignoreRaySnapObjects = null;
             Tools.vertexDragging = false;
             Tools.handleOffset = Vector3.zero;
-            
+
             var gridSettings = GridSettings.instance;
             gridSettings.rotation = Quaternion.identity;
             gridSettings.position = Vector3.zero;

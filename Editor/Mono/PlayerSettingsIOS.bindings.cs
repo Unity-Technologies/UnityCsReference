@@ -267,12 +267,12 @@ namespace UnityEditor
             }
             set
             {
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 SetOrAddDeviceRequirementForVariantNameImpl(m_PlayerSettings, m_VariantName, index, value.values.Keys.ToArray(),
-#pragma warning restore RS0030
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning restore UA2001
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     value.values.Values.ToArray());
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             }
         }
 
@@ -283,12 +283,12 @@ namespace UnityEditor
 
         public void Add(iOSDeviceRequirement requirement)
         {
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             SetOrAddDeviceRequirementForVariantNameImpl(m_PlayerSettings, m_VariantName, -1, requirement.values.Keys.ToArray(),
-#pragma warning restore RS0030
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning restore UA2001
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 requirement.values.Values.ToArray());
-#pragma warning restore RS0030
+#pragma warning restore UA2001
         }
     }
 

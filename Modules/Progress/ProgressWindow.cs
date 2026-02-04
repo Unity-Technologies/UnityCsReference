@@ -150,9 +150,9 @@ namespace UnityEditor
             m_ContainedItems = new HashSet<int>();
             m_ItemsNeedingExpansion = new HashSet<int>();
             m_RemovedItemsExpandedState = new Dictionary<int, bool>();
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             OperationsAdded(Progress.EnumerateItems().ToArray());
-#pragma warning restore RS0030
+#pragma warning restore UA2001
 
             Progress.added += OperationsAdded;
             Progress.removed += OperationsRemoved;
@@ -223,9 +223,9 @@ namespace UnityEditor
         internal static void ClearInactive()
         {
             // When using synchronous progresses, calling remove will alter the progress items immediately.
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var finishedItems = Progress.EnumerateItems().Where(item => item.finished).ToList();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             foreach (var item in finishedItems)
             {
                 item.Remove();
@@ -234,9 +234,9 @@ namespace UnityEditor
 
         void UpdateDismissAllButton()
         {
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             m_DismissAllBtn.SetEnabled(Progress.EnumerateItems().Any(item => item.finished));
-#pragma warning restore RS0030
+#pragma warning restore UA2001
         }
 
         void OperationsAdded(Progress.Item[] items)
@@ -283,18 +283,18 @@ namespace UnityEditor
         {
             //using (new EditorPerformanceTracker("ProgressWindow.OperationsUpdated"))
             {
-                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 var itemsToBeReinserted = items
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                     .Where(item => item.lastUpdates.HasAny(Progress.Updates.StatusChanged | Progress.Updates.PriorityChanged));
 
                 // The items must me reinserted in a specific order, otherwise we end up
                 // with the wrong insertion order or even with duplicates if not careful. To prevent any
                 // issues, we must reinsert all siblings together, avoiding reinserting with their parents.
                 var needsRebuild = false;
-                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 var siblingGroups = itemsToBeReinserted.GroupBy(item => item.parentId, item => item.id);
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                 foreach (var siblings in siblingGroups)
                 {
                     ReinsertAllItems(siblings);
@@ -317,9 +317,9 @@ namespace UnityEditor
             if (item.parentId == -1)
             {
                 var rootIds = m_TreeView.GetRootIds();
-                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 return rootIds?.Select(id => m_TreeView.GetItemDataForId<Progress.Item>(id)).ToList();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             }
 
             if (!m_ContainedItems.Contains(newParentId))
@@ -334,15 +334,15 @@ namespace UnityEditor
 
                 itemIds.Add(item.id);
                 newParentId = -1;
-                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 return m_TreeView.GetRootIds()?.Select(id => m_TreeView.GetItemDataForId<Progress.Item>(id)).ToList();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             }
 
             var childrenIds = m_TreeView.viewController.GetChildrenIds(newParentId);
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return childrenIds?.Select(id => m_TreeView.GetItemDataForId<Progress.Item>(id)).ToList();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
         }
 
         static int GetInsertionIndex(List<Progress.Item> items, Progress.Item itemToInsert)
@@ -364,9 +364,9 @@ namespace UnityEditor
 
         void ReinsertAllItems(IEnumerable<int> itemIds)
         {
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var treeViewItemsWithChildren = itemIds.Select(id => GetExistingTreeViewItemFromId(id)).ToList();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
 
             // Remove all items first
             foreach (var treeViewItem in treeViewItemsWithChildren)
@@ -392,12 +392,12 @@ namespace UnityEditor
             var childrenIds = m_TreeView.viewController.GetChildrenIds(itemId);
             if (childrenIds != null)
             {
-                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 var childrenItems = childrenIds.Select(id => GetExistingTreeViewItemFromId(id));
-#pragma warning restore RS0030
-                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning restore UA2001
+                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 treeViewItem.AddChildren(childrenItems.ToList());
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             }
 
             return treeViewItem;
@@ -480,9 +480,9 @@ namespace UnityEditor
             // Calling ToList is needed here, as GetAllItems uses an internal stacked enumerator that is a member
             // of the viewController. If the iteration does not complete all the way, it messes with all other calls
             // to GetAllItems!
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var allIds = m_TreeView.viewController.GetAllItemIds().ToList();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             return allIds.Contains(progressId);
         }
 

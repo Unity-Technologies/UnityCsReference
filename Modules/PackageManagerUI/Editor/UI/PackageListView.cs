@@ -15,27 +15,34 @@ namespace UnityEditor.PackageManager.UI.Internal
         [Serializable]
         public new class UxmlSerializedData : ListView.UxmlSerializedData
         {
-            public override object CreateInstance() => new PackageListView();
-        }
-
-        private IPackageDatabase m_PackageDatabase;
-        private IPageManager m_PageManager;
-        private IAssetStoreCache m_AssetStoreCache;
-        private IBackgroundFetchHandler m_BackgroundFetchHandler;
-        private void ResolveDependencies()
-        {
-            var container = ServicesContainer.instance;
-            m_PackageDatabase = container.Resolve<IPackageDatabase>();
-            m_PageManager = container.Resolve<IPageManager>();
-            m_AssetStoreCache = container.Resolve<IAssetStoreCache>();
-            m_BackgroundFetchHandler = container.Resolve<IBackgroundFetchHandler>();
+            public override object CreateInstance()
+            {
+                var container = ServicesContainer.instance;
+                return new PackageListView(
+                    container.Resolve<IPackageDatabase>(),
+                    container.Resolve<IPageManager>(),
+                    container.Resolve<IAssetStoreCache>(),
+                    container.Resolve<IBackgroundFetchHandler>());
+            }
         }
 
         private Dictionary<string, PackageItem> m_PackageItemsLookup;
 
-        public PackageListView()
+        private readonly IPackageDatabase m_PackageDatabase;
+        private readonly IPageManager m_PageManager;
+        private readonly IAssetStoreCache m_AssetStoreCache;
+        private readonly IBackgroundFetchHandler m_BackgroundFetchHandler;
+
+        public PackageListView(
+            IPackageDatabase packageDatabase,
+            IPageManager pageManager,
+            IAssetStoreCache assetStoreCache,
+            IBackgroundFetchHandler backgroundFetchHandler)
         {
-            ResolveDependencies();
+            m_PackageDatabase = packageDatabase;
+            m_PageManager = pageManager;
+            m_AssetStoreCache = assetStoreCache;
+            m_BackgroundFetchHandler = backgroundFetchHandler;
 
             m_PackageItemsLookup = new Dictionary<string, PackageItem>();
 
@@ -67,14 +74,14 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private void SyncListViewSelectionToPageManager(IEnumerable<object> items)
         {
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var selections = items.Select(item =>
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             {
                 var visualState = item as VisualState;
                 var package = m_PackageDatabase.GetPackage(visualState?.packageUniqueId);
                 return package?.uniqueId;
-            }).Where(s => !string.IsNullOrEmpty(s)).ToArray();
+            }).Filter(s => !string.IsNullOrEmpty(s)).ToArray();
             m_PageManager.activePage.SetNewSelection(selections, true);
         }
 
@@ -139,9 +146,9 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private VisualState GetVisualStateByIndex(int index)
         {
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return (itemsSource as List<VisualState>)?.ElementAtOrDefault(index);
-#pragma warning restore RS0030
+#pragma warning restore UA2001
         }
 
         private void OnSelectionChanged(PageSelectionChangeArgs args)
@@ -163,12 +170,12 @@ namespace UnityEditor.PackageManager.UI.Internal
                 return;
 
             selection ??= page.GetSelection();
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            var oldSelectedVisualStates = selectedItems.OfType<VisualState>().ToArray();
-#pragma warning restore RS0030
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            var oldSelectedVisualStates = selectedItems.FilterByType<VisualState>().ToArray();
+#pragma warning restore UA2001
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             if (oldSelectedVisualStates.Length == selection.Count && oldSelectedVisualStates.All(v => selection.Contains(v.packageUniqueId)))
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                 return;
 
             var newSelectionIndices = new List<int>();
@@ -202,9 +209,9 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public void OnVisualStateChange(IEnumerable<VisualState> visualStates)
         {
-#pragma warning disable RS0031 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2002 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             if (!visualStates.Any())
-#pragma warning restore RS0031
+#pragma warning restore UA2002
                 return;
 
             foreach (var state in visualStates)
@@ -216,9 +223,9 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public void OnListRebuild(IPage page)
         {
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             UpdateItemsSource(page.visualStates.ToList(), true);
-#pragma warning restore RS0030
+#pragma warning restore UA2001
 
             m_PageManager.activePage.UpdateSelectionIfCurrentSelectionIsInvalid();
             ScrollToSelection();
@@ -226,9 +233,9 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public void OnListUpdate(ListUpdateArgs args)
         {
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var rebuildCalled = UpdateItemsSource(args.page.visualStates.ToList(), args.added.Count > 0 || args.removed.Count > 0);
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             if (!rebuildCalled)
             {
                 foreach (var package in args.updated)
@@ -264,23 +271,23 @@ namespace UnityEditor.PackageManager.UI.Internal
                     evt.StopPropagation();
                     break;
                 case KeyCode.PageUp:
-#pragma warning disable RS0031 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2002 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     if (!selectedIndices.Any()) return;
-#pragma warning restore RS0031
-                    #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning restore UA2002
+                    #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     index = Mathf.Max(0, selectedIndices.Max() - (virtualizationController.visibleItemCount - 1));
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                     HandleSelectionAndScroll(index, evt.shiftKey);
                     evt.StopPropagation();
                     break;
                 case KeyCode.PageDown:
-#pragma warning disable RS0031 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2002 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     if (!selectedIndices.Any()) return;
-#pragma warning restore RS0031
+#pragma warning restore UA2002
                     index = Mathf.Min(viewController.itemsSource.Count - 1,
-                        #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                        #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                         selectedIndices.Max() + (virtualizationController.visibleItemCount - 1));
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                     HandleSelectionAndScroll(index, evt.shiftKey);
                     evt.StopPropagation();
                     break;

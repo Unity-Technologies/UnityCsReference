@@ -930,7 +930,7 @@ namespace UnityEngine.UIElements
         protected ProfilerMarker m_MarkerTickScheduledActionsPreLayout;
         protected ProfilerMarker m_MarkerTickScheduledActionsPostLayout;
         ProfilerMarker m_MarkerPanelChangeReceiver;
-        static ProfilerMarker s_MarkerPickAll = new ProfilerMarker("UIElements.PickAll");
+        static ProfilerMarker s_MarkerPickAll = new ProfilerMarker(ProfilerCategory.UIToolkit, "UIElements.PickAll");
 
         public sealed override VisualElement visualTree
         {
@@ -1187,13 +1187,13 @@ namespace UnityEngine.UIElements
         void CreateMarkers()
         {
             string panelName = string.IsNullOrEmpty(m_PanelName) ? "Panel" : m_PanelName;
-            m_MarkerPrepareRepaint = new ProfilerMarker($"{panelName}.PrepareRepaint");
-            m_MarkerRender = new ProfilerMarker($"{panelName}.Render");
-            m_MarkerValidateLayout = new ProfilerMarker($"{panelName}.ValidateLayout");
-            m_MarkerTickScheduledActions = new ProfilerMarker($"{panelName}.TickScheduledActions");
-            m_MarkerTickScheduledActionsPreLayout = new ProfilerMarker($"{panelName}.TickScheduledActionsPreLayout");
-            m_MarkerTickScheduledActionsPostLayout = new ProfilerMarker($"{panelName}.TickScheduledActionsPostLayout");
-            m_MarkerPanelChangeReceiver = new ProfilerMarker($"{panelName}.ExecutePanelChangeReceiverCallback");
+            m_MarkerPrepareRepaint = new ProfilerMarker(ProfilerCategory.UIToolkit, $"{panelName}.PrepareRepaint");
+            m_MarkerRender = new ProfilerMarker(ProfilerCategory.UIToolkit, $"{panelName}.Render");
+            m_MarkerValidateLayout = new ProfilerMarker(ProfilerCategory.UIToolkit, $"{panelName}.ValidateLayout");
+            m_MarkerTickScheduledActions = new ProfilerMarker(ProfilerCategory.UIToolkit, $"{panelName}.TickScheduledActions");
+            m_MarkerTickScheduledActionsPreLayout = new ProfilerMarker(ProfilerCategory.UIToolkit, $"{panelName}.TickScheduledActionsPreLayout");
+            m_MarkerTickScheduledActionsPostLayout = new ProfilerMarker(ProfilerCategory.UIToolkit, $"{panelName}.TickScheduledActionsPostLayout");
+            m_MarkerPanelChangeReceiver = new ProfilerMarker(ProfilerCategory.UIToolkit, $"{panelName}.ExecutePanelChangeReceiverCallback");
         }
 
         [Obsolete("Use the non-static TimeSinceStartupFunc instead")]

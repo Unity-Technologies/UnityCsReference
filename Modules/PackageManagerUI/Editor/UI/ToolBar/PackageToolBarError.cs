@@ -2,25 +2,16 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System.Linq;
 using UnityEngine.UIElements;
 
 namespace UnityEditor.PackageManager.UI.Internal
 {
     internal class PackageToolBarError : VisualElement
     {
-        public PackageToolBarError()
-        {
-        }
-
         public bool Refresh(IPackage package, IPackageVersion version)
         {
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            var operationError = version?.errors?.FirstOrDefault(e => e.HasAttribute(UIError.Attribute.Clearable))
-#pragma warning restore RS0030
-                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                ?? package?.errors?.FirstOrDefault(e => e.HasAttribute(UIError.Attribute.Clearable));
-#pragma warning restore RS0030
+            var operationError = version?.errors?.FirstMatch(e => e.HasAttribute(UIError.Attribute.Clearable))
+                ?? package?.errors?.FirstMatch(e => e.HasAttribute(UIError.Attribute.Clearable));
             if (operationError == null)
             {
                 ClearError();

@@ -3,13 +3,11 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using System.Linq;
 using System.Reflection;
 using UnityEngine;
 using UnityEngine.Scripting;
 using UnityEditor.UIElements;
 using UnityEditor.PackageManager.UI.Internal;
-using UnityEngine.Bindings;
 
 namespace UnityEditor.PackageManager.UI
 {
@@ -73,7 +71,6 @@ namespace UnityEditor.PackageManager.UI
             m_Root = new PackageManagerWindowRoot(
                 container.Resolve<IResourceLoader>(),
                 container.Resolve<IExtensionManager>(),
-                container.Resolve<ISelectionProxy>(),
                 container.Resolve<IPackageManagerPrefs>(),
                 container.Resolve<IPackageDatabase>(),
                 container.Resolve<IPageManager>(),
@@ -198,12 +195,16 @@ namespace UnityEditor.PackageManager.UI
             instance.m_Root.OpenCreatePackageDropdown();
         }
 
+        private static T FindWindow<T>() where T : EditorWindow
+        {
+            var windows = Resources.FindObjectsOfTypeAll<T>();
+            return windows?.Length > 0 ? windows[0] : null;
+        }
+
         [UsedByNativeCode]
         public static void OpenAndSelectPackage(string packageToSelect, string pageId = null)
         {
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            var isWindowAlreadyVisible = Resources.FindObjectsOfTypeAll<PackageManagerWindow>()?.FirstOrDefault() != null;
-#pragma warning restore RS0030
+            var isWindowAlreadyVisible = FindWindow<PackageManagerWindow>() is not null;
 
             SelectPackageStatic(packageToSelect, pageId);
             if (!isWindowAlreadyVisible)
@@ -223,21 +224,16 @@ namespace UnityEditor.PackageManager.UI
                 return;
             }
 
-
             // There is a flickering effect on the project browser if we don't repaint it before showing the modal.
             // https://jira.unity3d.com/browse/UUM-113810
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            Resources.FindObjectsOfTypeAll<ProjectBrowser>().FirstOrDefault()?.RepaintImmediately();
-#pragma warning restore RS0030
+            FindWindow<ProjectBrowser>()?.RepaintImmediately();
             var version = package.versions.installed;
             modalManager.ShowExportModal(version);
         }
 
         public static void OpenAndSelectPage(string pageId, string searchText = null)
         {
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            var isWindowAlreadyVisible = Resources.FindObjectsOfTypeAll<PackageManagerWindow>()?.FirstOrDefault() != null;
-#pragma warning restore RS0030
+            var isWindowAlreadyVisible = FindWindow<PackageManagerWindow>() is not null;
 
             SelectPageStatic(pageId, searchText);
             if (!isWindowAlreadyVisible)

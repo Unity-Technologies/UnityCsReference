@@ -114,13 +114,13 @@ namespace UnityEditor.SceneTemplate
             {
                 EditorApplication.delayCall += () =>
                 {
-#pragma warning disable RS0031 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2002 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     if (!titlePropertyField.Children().Any())
-#pragma warning restore RS0031
+#pragma warning restore UA2002
                         return;
-                    #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                    #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     if (titlePropertyField.Children().First() is TextField titlePropertyFieldTextField)
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                     {
                         titlePropertyFieldTextField.maxLength = 1024;
                         m_TitleTextFieldReady = true;
@@ -138,13 +138,13 @@ namespace UnityEditor.SceneTemplate
             {
                 EditorApplication.delayCall += () =>
                 {
-#pragma warning disable RS0031 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2002 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     if (!description.Children().Any())
-#pragma warning restore RS0031
+#pragma warning restore UA2002
                         return;
-                    #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                    #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     var descriptionTextField = description.Children().First() as TextField;
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                     if (descriptionTextField != null)
                     {
                         descriptionTextField.AddToClassList(Styles.classWrappingText);
@@ -273,9 +273,9 @@ namespace UnityEditor.SceneTemplate
             toggle.AddToClassList(Styles.classInspectorFoldoutHeader);
             var titleElement = new Label(title);
             titleElement.AddToClassList(Styles.classInspectorFoldoutHeaderText);
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             toggle.Children().First().Add(titleElement);
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             foldout.Add(element);
 
             foldout.RegisterValueChangedCallback(e =>
@@ -405,9 +405,9 @@ namespace UnityEditor.SceneTemplate
             snapshotHeaderRowElement.Add(snapshotHeaderLabel);
 
             // Snapshot button with dropdown
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var cameraNames = Camera.allCameras.Select(c => new SnapshotTargetInfo { Name = c.name, OnSnapshotAction = TakeSnapshotFromCamera }).ToList();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             cameraNames.Add(new SnapshotTargetInfo()); // Separator
             cameraNames.Add(new SnapshotTargetInfo { Name = L10n.Tr("Game View"), OnSnapshotAction = (info, callback) => TakeSnapshotFromGameView(callback) });
             var snapshotTargetPopup = new PopupField<SnapshotTargetInfo>(L10n.Tr("View"), cameraNames, Camera.allCameras.Length == 0 ? 1 : 0);
@@ -441,9 +441,9 @@ namespace UnityEditor.SceneTemplate
         internal void TakeSnapshot(string targetName, Action onFinishedCallback)
         {
             var snapshotTargetPopup = Root.Q<PopupField<SnapshotTargetInfo>>(k_SnapshotTargetPopupName);
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var targetInfo = snapshotTargetPopup.choices.FirstOrDefault((info => info.Name == targetName));
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             targetInfo?.OnSnapshotAction?.Invoke(targetInfo, onFinishedCallback);
         }
 
@@ -453,9 +453,9 @@ namespace UnityEditor.SceneTemplate
             if (!sceneTemplateAsset)
                 return;
 
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var camera = Camera.allCameras.FirstOrDefault(c => c.name == targetInfo.Name);
-#pragma warning restore RS0030
+#pragma warning restore UA2001
 
             if (!camera)
             {

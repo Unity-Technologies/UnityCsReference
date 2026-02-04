@@ -858,6 +858,8 @@ namespace UnityEditor.Build
         [RequiredByNativeCode]
         internal static void InitializeBuildCallbacks(BuildCallbacks findFlags)
         {
+            using var _ = new ScopeTraceProfileBlock($"InitializeBuildCallbacks:{findFlags}");
+
             if (findFlags == previousFlags
                 //Fix for UUM-109242 Some callback implementations may cache data tied to the active target in their constructor.
                 //This ensures that we rebuild the callback cache if we did not have a domain reload but the targets are different.
@@ -1305,9 +1307,9 @@ namespace UnityEditor.Build
         {
             var snippet = new ShaderSnippetData(shaderType, passType, passName, passIdentifier);
 
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var dataList = data.ToList();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             if (processors.shaderProcessors != null)
             {
                 foreach (IPreprocessShaders abtc in processors.shaderProcessors)
@@ -1321,9 +1323,9 @@ namespace UnityEditor.Build
         [RequiredByNativeCode]
         internal static ShaderCompilerData[] OnPreprocessComputeShaders(ComputeShader shader, string kernelName, ShaderCompilerData[] data)
         {
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var dataList = data.ToList();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             if (processors.computeShaderProcessors != null)
             {
                 foreach (IPreprocessComputeShaders abtc in processors.computeShaderProcessors)
@@ -1391,9 +1393,9 @@ namespace UnityEditor.Build
                 }
             }
 
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             if (!filteredAssemblies.All(x => startAssemblies.Contains(x)))
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             {
                 throw new Exception("New Assembly names are in the list. Only filtering are allowed");
             }

@@ -14,9 +14,9 @@ namespace UnityEditor.Search
         [SearchExpressionEvaluator(SearchExpressionType.Iterable | SearchExpressionType.Literal | SearchExpressionType.Variadic)]
         public static IEnumerable<SearchItem> ToNumber(SearchExpressionContext c)
         {
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return c.args.SelectMany(e => e.Execute(c)).Select(item =>
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             {
                 SearchExpression.TryConvertToDouble(item, out var value);
                 return SearchExpression.CreateItem(value);
@@ -31,9 +31,9 @@ namespace UnityEditor.Search
             var skipCount = 0;
             if (SearchExpression.GetFormatString(c.args[0], out var formatStr))
                 skipCount++;
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var items = c.args.Skip(skipCount).SelectMany(e => e.Execute(c));
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             var dataSet = SearchExpression.ProcessValues(items, null, item => SearchExpression.FormatItem(c.search, item, formatStr));
             return dataSet;
         }
@@ -42,9 +42,9 @@ namespace UnityEditor.Search
         [SearchExpressionEvaluator(SearchExpressionType.Iterable | SearchExpressionType.Literal | SearchExpressionType.Variadic)]
         public static IEnumerable<SearchItem> ToBoolean(SearchExpressionContext c)
         {
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return c.args.SelectMany(e => e.Execute(c)).Select(item => SearchExpression.CreateItem(SearchExpression.IsTrue(item)));
-#pragma warning restore RS0030
+#pragma warning restore UA2001
         }
     }
 }

@@ -32,9 +32,9 @@ namespace UnityEditor.EditorTools
         public EditorTypeAssociation(Type editor, Type attributeType)
         {
             this.editor = editor;
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var attrib = editor.GetCustomAttributes(attributeType, false).FirstOrDefault() as ToolAttribute;
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             targetBehaviour = attrib?.targetType ?? typeof(NullTargetKey);
             targetContext = attrib?.targetContext;
             variantGroup = attrib?.variantGroup;
@@ -197,9 +197,9 @@ namespace UnityEditor.EditorTools
             {
                 if (s_AvailableEditorTypeAssociations == null)
                 {
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     Type[] editorTools = TypeCache.GetTypesWithAttribute(m_AttributeType)
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                         .Where(x => !x.IsAbstract)
                         .ToArray();
                     int len = editorTools.Length;

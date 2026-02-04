@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Runtime.InteropServices;
 
 namespace UnityEngine.UIElements
 {
@@ -62,6 +63,7 @@ namespace UnityEngine.UIElements
     /// <summary>
     /// Determines how intermediate values are calculated for a transition.
     /// </summary>
+    [StructLayout(LayoutKind.Sequential)]
     public partial struct EasingFunction : IEquatable<EasingFunction>
     {
         /// <summary>

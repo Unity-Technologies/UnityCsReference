@@ -413,9 +413,9 @@ namespace UnityEditor.Search
             if (viewState.tableConfig == null)
                 throw new NotSupportedException("This result view cannot set columns");
 
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             viewState.tableConfig.columns = columns.ToArray();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
 
             m_SearchView.resultView.Refresh(RefreshFlags.DisplayModeChanged);
         }
@@ -513,9 +513,9 @@ namespace UnityEditor.Search
             // Execute default action
             var item = selection.First();
             if (item.provider.actions.Count > actionIndex)
-                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 ExecuteAction(item.provider.actions.Skip(actionIndex).First(), selection.ToArray(), true);
-#pragma warning restore RS0030
+#pragma warning restore UA2001
         }
 
         public void ExecuteAction(SearchAction action, SearchItem[] items, bool endSearch = true)
@@ -573,12 +573,12 @@ namespace UnityEditor.Search
         void UpdateAvailableProviders()
         {
             var contextProviders = context.GetProviders();
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var availableProviders = context.options.HasAny(SearchFlags.AllProvidersAvailable) ? contextProviders.Concat(SearchService.Providers).Distinct() : contextProviders;
-#pragma warning restore RS0030
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning restore UA2001
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             m_AvailableProviders = SearchUtils.SortProvider(availableProviders).ToList();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
         }
 
         void HandleSaveActiveSearchQuery(ISearchEvent evt)
@@ -626,9 +626,9 @@ namespace UnityEditor.Search
 
             try
             {
-                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 selectCallback?.Invoke(selection?.FirstOrDefault(), selection == null || selection.Count == 0);
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             }
             catch
             {
@@ -714,19 +714,19 @@ namespace UnityEditor.Search
                 SelectGroup(null);
 
             context.SetFilter(providerId, toggledEnabled);
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             if (toggledEnabled && provider == null && !context.providers.Any(p => p.id == providerId))
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             {
                 // Provider that are not stored in the SearchService, might only exists in the m_AvailableProviders (local providers created directly in the context).
-                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 var localProvider = m_AvailableProviders.FirstOrDefault(p => p.id == providerId);
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                 if (localProvider != null)
                 {
-                    #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                    #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     var newProviderList = context.GetProviders().Concat(new[] { localProvider }).ToArray();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                     context.SetProviders(newProviderList);
                 }
             }
@@ -975,12 +975,12 @@ namespace UnityEditor.Search
 
         void ISearchWindow.AddProvidersToMenu(GenericMenu menu)
         {
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var allEnabledProviders = m_AvailableProviders.Where(p => context.IsEnabled(p.id));
-#pragma warning restore RS0030
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning restore UA2001
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var singleProviderEnabled = allEnabledProviders.Count() == 1 ? allEnabledProviders.First() : null;
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             foreach (var p in m_AvailableProviders)
             {
                 var filterContent = new GUIContent($"{p.name} ({p.filterId})");
@@ -1371,9 +1371,9 @@ namespace UnityEditor.Search
                         else if (!firstOpen && !docked)
                         {
                             var newWindow = this;
-                            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                             var existingWindow = Resources.FindObjectsOfTypeAll<SearchWindow>().FirstOrDefault(w => w != newWindow);
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                             if (existingWindow)
                             {
                                 var cascadedWindowPosition = existingWindow.position.position;

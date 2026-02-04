@@ -393,9 +393,9 @@ namespace UnityEditor
             }
 
             var options = names.ToArray();
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var enabled = Enumerable.Repeat(true, options.Length).ToArray();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             EditorUtility.DisplayCustomMenu(r, options, enabled, null, MenuSelection, selectableScripts);
         }
 
@@ -884,9 +884,9 @@ namespace UnityEditor
         {
             var provider = new AssetSettingsProvider(
                 "Project/Script Execution Order",
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 () => Editor.CreateEditor(Resources.FindObjectsOfTypeAll(typeof(MonoManager)).First()),
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                 SettingsProvider.GetSearchKeywordsFromGUIContentProperties<Content>());
             return provider;
         }

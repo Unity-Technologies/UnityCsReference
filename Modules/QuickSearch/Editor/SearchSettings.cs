@@ -285,20 +285,20 @@ namespace UnityEditor.Search
 
 
             var searches = ReadSetting<object[]>(settings, nameof(recentSearches));
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             recentSearches = searches != null ? searches.Cast<string>().ToList() : new List<string>();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
 
             var favoriteItems = ReadSetting<object[]>(settings, nameof(searchItemFavorites));
             if (favoriteItems != null)
-                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 searchItemFavorites.UnionWith(favoriteItems.Cast<string>());
-#pragma warning restore RS0030
+#pragma warning restore UA2001
 
             var expandedObjects = ReadSetting<object[]>(settings, nameof(expandedQueries));
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             expandedQueries = expandedObjects != null ? expandedObjects.Select(Convert.ToInt32).ToArray() : Array.Empty<int>();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
 
             scopes = ReadProperties<string>(settings, nameof(scopes));
             providers = ReadProviderSettings(settings, nameof(providers));
@@ -331,9 +331,9 @@ namespace UnityEditor.Search
                 [nameof(providers)] = providers,
                 [nameof(objectSelectors)] = objectSelectors,
                 [nameof(recentSearches)] = recentSearches,
-                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 [nameof(searchItemFavorites)] = searchItemFavorites.ToList(),
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                 [nameof(savedSearchesSortOrder)] = (int)savedSearchesSortOrder,
                 [nameof(showSavedSearchPanel)] = showSavedSearchPanel,
                 [nameof(hideTabs)] = hideTabs,
@@ -372,18 +372,18 @@ namespace UnityEditor.Search
         internal static string ConvertIgnoredProperties(string currentIgnoredPropertiesStr)
         {
             var currentIgnored = currentIgnoredPropertiesStr.Split(";");
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var newIgnored = GetIgnoredPropertiesStr(k_IgnoredProperties.Concat(currentIgnored));
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             return newIgnored;
         }
 
         internal static string GetIgnoredPropertiesStr(IEnumerable<string> properties = null)
         {
             properties = properties ?? k_IgnoredProperties;
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return string.Join(";", properties.Distinct().OrderBy(prop => prop));
-#pragma warning restore RS0030
+#pragma warning restore UA2001
         }
 
         public void RegisterIgnoredPropertiesCustomDependencies()
@@ -465,9 +465,9 @@ namespace UnityEditor.Search
         {
             recentSearches.Insert(0, search);
             ApplyRecentSearchCapacity();
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             recentSearches = recentSearches.Distinct().ToList();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
         }
 
         void ApplyRecentSearchCapacity()
@@ -906,19 +906,19 @@ namespace UnityEditor.Search
             var settings = new SettingsProvider(settingsPreferencesKey, SettingsScope.User)
             {
                 guiHandler = DrawSearchSettings,
-                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 keywords = new[] { "quick", "search",  }
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                     .Concat(SettingsProvider.GetSearchKeywordsFromGUIContentProperties<Content>()) // If you change this or add a new class, please update the test SearchSettingsTests.ContentClass_OnlyHasGUIContent
-                    #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                    #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     .Concat(SearchService.OrderedObjectSelectors.Select(s => s.displayName))
-#pragma warning restore RS0030
-                    #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning restore UA2001
+                    #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     .Concat(SearchService.OrderedProviders.Select(p => p.name))
-#pragma warning restore RS0030
-                    #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning restore UA2001
+                    #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     .Concat(GetOrderedApis().Select(api => api.displayName))
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             };
             return settings;
         }
@@ -967,9 +967,9 @@ namespace UnityEditor.Search
                 {
                     try
                     {
-                        #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                        #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                         var items = searchEngines.Select(se => new GUIContent(se.name,
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                             searchEngines.Count == 1 ?
                             $"Search engine for {searchContextName}" :
                             $"Set search engine for {searchContextName}")).ToArray();
@@ -1007,9 +1007,9 @@ namespace UnityEditor.Search
 
         static IEnumerable<ISearchApi> GetOrderedApis()
         {
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return UnityEditor.SearchService.SearchService.searchApis.OrderBy(api => api.displayName);
-#pragma warning restore RS0030
+#pragma warning restore UA2001
         }
 
         static void DrawAdvancedObjectSelectorsSettings()
@@ -1080,9 +1080,9 @@ namespace UnityEditor.Search
 
         internal static void DecreaseObjectSelectorPriority(AdvancedObjectSelector selector, IEnumerable<AdvancedObjectSelector> allSelectors)
         {
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var sortedPickers = allSelectors.OrderBy(p => p.priority).ToList();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             for (int i = 1, end = sortedPickers.Count; i < end; ++i)
             {
                 var cp = sortedPickers[i];
@@ -1105,9 +1105,9 @@ namespace UnityEditor.Search
 
         internal static void IncreaseObjectSelectorPriority(AdvancedObjectSelector selector, IEnumerable<AdvancedObjectSelector> allSelectors)
         {
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var sortedPickers = allSelectors.OrderBy(p => p.priority).ToList();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             for (int i = 0, end = sortedPickers.Count - 1; i < end; ++i)
             {
                 var cp = sortedPickers[i];
@@ -1130,12 +1130,12 @@ namespace UnityEditor.Search
 
         static List<UnityEditor.SearchService.ISearchEngineBase> OrderSearchEngines(IEnumerable<UnityEditor.SearchService.ISearchEngineBase> engines)
         {
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var defaultEngine = engines.First(engine => engine is UnityEditor.SearchService.LegacySearchEngineBase);
-#pragma warning restore RS0030
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning restore UA2001
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var overrides = engines.Where(engine => !(engine is UnityEditor.SearchService.LegacySearchEngineBase));
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             var orderedSearchEngines = new List<UnityEditor.SearchService.ISearchEngineBase> { defaultEngine };
             orderedSearchEngines.AddRange(overrides);
             return orderedSearchEngines;
@@ -1346,9 +1346,9 @@ namespace UnityEditor.Search
                 using (new EditorGUI.DisabledScope(p.actions.Count < 2))
                 {
                     EditorGUI.BeginChangeCheck();
-                    #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                    #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     var items = p.actions.Select(a => new GUIContent(
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                         string.IsNullOrEmpty(a.displayName) ? a.content.text : a.displayName,
                         a.content.image,
                         p.actions.Count == 1 ?
@@ -1400,9 +1400,9 @@ namespace UnityEditor.Search
 
         private static void LowerProviderPriority(SearchProvider provider)
         {
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var sortedProviderList = SearchService.Providers.Where(p => !p.isExplicitProvider).OrderBy(p => p.priority).ToList();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             for (int i = 1, end = sortedProviderList.Count; i < end; ++i)
             {
                 var cp = sortedProviderList[i];
@@ -1425,9 +1425,9 @@ namespace UnityEditor.Search
 
         private static void UpperProviderPriority(SearchProvider provider)
         {
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var sortedProviderList = SearchService.Providers.Where(p => !p.isExplicitProvider).OrderBy(p => p.priority).ToList();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             for (int i = 0, end = sortedProviderList.Count - 1; i < end; ++i)
             {
                 var cp = sortedProviderList[i];

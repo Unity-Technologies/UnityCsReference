@@ -66,9 +66,9 @@ namespace Unity.UI.Builder
 
             var selectedElements = selection.selection;
 
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             if (!selectedElements.Contains(clickedElement))
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             {
                 // Removed just clicked element
                 var clickedStyleSheetIndex = (int)clickedElement.GetProperty(BuilderConstants.ElementLinkedStyleSheetIndexVEPropertyName);
@@ -77,9 +77,9 @@ namespace Unity.UI.Builder
             else
             {
                 // Removed selected elements
-                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 var styleSheetIndexes = selectedElements.Where(x => BuilderSharedStyles.IsStyleSheetElement(x) &&
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                     string.IsNullOrEmpty(x.GetProperty(BuilderConstants.ExplorerItemLinkedUXMLFileName) as string))
                     .Select(x => (int)x.GetProperty(BuilderConstants.ElementLinkedStyleSheetIndexVEPropertyName))
                     .OrderByDescending(x => x)

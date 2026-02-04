@@ -412,9 +412,9 @@ namespace UnityEditor.Experimental.GraphView
         {
             m_ContainerLayers.Add(index, layer);
 
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             int indexOfLayer = m_ContainerLayers.OrderBy(t => t.Key).Select(t => t.Value).ToList().IndexOf(layer);
-#pragma warning restore RS0030
+#pragma warning restore UA2001
 
             contentViewContainer.Insert(indexOfLayer, layer);
         }
@@ -425,9 +425,9 @@ namespace UnityEditor.Experimental.GraphView
 
             m_ContainerLayers.Add(index, newLayer);
 
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             int indexOfLayer = m_ContainerLayers.OrderBy(t => t.Key).Select(t => t.Value).ToList().IndexOf(newLayer);
-#pragma warning restore RS0030
+#pragma warning restore UA2001
 
             contentViewContainer.Insert(indexOfLayer, newLayer);
         }
@@ -514,30 +514,30 @@ namespace UnityEditor.Experimental.GraphView
 
         public GraphElement GetElementByGuid(string guid)
         {
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return allGraphElements.ToList().FirstOrDefault(e => e.viewDataKey == guid);
-#pragma warning restore RS0030
+#pragma warning restore UA2001
         }
 
         public Node GetNodeByGuid(string guid)
         {
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return nodes.ToList().FirstOrDefault(e => e.viewDataKey == guid);
-#pragma warning restore RS0030
+#pragma warning restore UA2001
         }
 
         public Port GetPortByGuid(string guid)
         {
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return ports.ToList().FirstOrDefault(e => e.viewDataKey == guid);
-#pragma warning restore RS0030
+#pragma warning restore UA2001
         }
 
         public Edge GetEdgeByGuid(string guid)
         {
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return graphElements.ToList().OfType<Edge>().FirstOrDefault(e => e.viewDataKey == guid);
-#pragma warning restore RS0030
+#pragma warning restore UA2001
         }
 
         public void SetupZoom(float minScaleSetup, float maxScaleSetup)
@@ -692,9 +692,9 @@ namespace UnityEditor.Experimental.GraphView
 
         private bool ClearSelectionNoUndoRecord()
         {
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var prevSelection = selection.OfType<GraphElement>().ToArray();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
 
             bool selectionWasNotEmpty = selection.Count != 0;
             selection.Clear();
@@ -1051,9 +1051,9 @@ namespace UnityEditor.Experimental.GraphView
 
         public static void CollectElements(IEnumerable<GraphElement> elements, HashSet<GraphElement> collectedElementSet, Func<GraphElement, bool> conditionFunc)
         {
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             foreach (var element in elements.Where(e => e != null && !collectedElementSet.Contains(e) && conditionFunc(e)))
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             {
                 var collectibleElement = element as ICollectibleElement;
                 collectibleElement?.CollectElements(collectedElementSet, conditionFunc);
@@ -1066,9 +1066,9 @@ namespace UnityEditor.Experimental.GraphView
             CollectElements(elements, elementsToCopySet, e => e.IsCopiable());
 
             // Also collect hovering list of nodes
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             foreach (var placemat in elements.OfType<Placemat>())
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             {
                 placemat.ActOnGraphElementsOver(
                     el =>
@@ -1086,9 +1086,9 @@ namespace UnityEditor.Experimental.GraphView
         {
             var elementsToCopySet = new HashSet<GraphElement>();
 
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             CollectCopyableGraphElements(selection.OfType<GraphElement>(), elementsToCopySet);
-#pragma warning restore RS0030
+#pragma warning restore UA2001
 
             string data = SerializeGraphElements(elementsToCopySet);
 
@@ -1126,9 +1126,9 @@ namespace UnityEditor.Experimental.GraphView
         {
             var elementsToCopySet = new HashSet<GraphElement>();
 
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             CollectCopyableGraphElements(selection.OfType<GraphElement>(), elementsToCopySet);
-#pragma warning restore RS0030
+#pragma warning restore UA2001
 
             string serializedData = SerializeGraphElements(elementsToCopySet);
 
@@ -1139,9 +1139,9 @@ namespace UnityEditor.Experimental.GraphView
         {
             get
             {
-                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 return selection.Cast<GraphElement>().Any(e => e != null && (e.capabilities & Capabilities.Deletable) != 0);
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             }
         }
 
@@ -1228,9 +1228,9 @@ namespace UnityEditor.Experimental.GraphView
 
         public virtual List<Port> GetCompatiblePorts(Port startPort, NodeAdapter nodeAdapter)
         {
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return ports.ToList().Where(nap =>
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                 nap.direction != startPort.direction &&
                 nap.node != startPort.node &&
                 nodeAdapter.GetAdapter(nap.source, startPort.source) != null)
@@ -1268,9 +1268,9 @@ namespace UnityEditor.Experimental.GraphView
 
             if (graphElement is Scope scopeElement)
             {
-                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 foreach (var child in scopeElement.containedElements.ToList())
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                 {
                     child.SetContainingScope(null);
                 }
@@ -1298,15 +1298,15 @@ namespace UnityEditor.Experimental.GraphView
         {
             var elementsToRemoveSet = new HashSet<GraphElement>();
 
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             CollectDeletableGraphElements(selection.OfType<GraphElement>(), elementsToRemoveSet);
-#pragma warning restore RS0030
+#pragma warning restore UA2001
 
             var previouslyCollapsedElements = new HashSet<GraphElement>();
             // For each collapsed placemat, expand and keep list of elements over the expanded placemat
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             foreach (var placemat in elementsToRemoveSet.OfType<Placemat>().Where(p => p.Collapsed))
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             {
                 previouslyCollapsedElements.UnionWith(placemat.CollapsedElements);
                 placemat.Collapsed = false;
@@ -1336,9 +1336,9 @@ namespace UnityEditor.Experimental.GraphView
             }
 
             // Notify the ends of connections that the connection is going way.
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             foreach (var connection in elementsToRemoveList.OfType<Edge>())
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             {
                 if (connection.output != null)
                     connection.output.Disconnect(connection);
@@ -1376,9 +1376,9 @@ namespace UnityEditor.Experimental.GraphView
             if (contentViewContainer.childCount == 0)
                 return EventPropagation.Continue;
 
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             List<GraphElement> childrenList = graphElements.ToList().Where(e => e.IsSelectable() && !(e is Edge)).OrderByDescending(e => e.controlid).ToList();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             return FramePrevNext(childrenList);
         }
 
@@ -1387,9 +1387,9 @@ namespace UnityEditor.Experimental.GraphView
             if (contentViewContainer.childCount == 0)
                 return EventPropagation.Continue;
 
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             List<GraphElement> childrenList = graphElements.ToList().Where(e => e.IsSelectable() && !(e is Edge)).OrderBy(e => e.controlid).ToList();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             return FramePrevNext(childrenList);
         }
 
@@ -1397,9 +1397,9 @@ namespace UnityEditor.Experimental.GraphView
         {
             if (this.contentViewContainer.childCount == 0)
                 return EventPropagation.Continue;
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             List<GraphElement> list = graphElements.ToList().Where(predicate).ToList();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             list.Reverse();
             return this.FramePrevNext(list);
         }
@@ -1408,9 +1408,9 @@ namespace UnityEditor.Experimental.GraphView
         {
             if (this.contentViewContainer.childCount == 0)
                 return EventPropagation.Continue;
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return this.FramePrevNext(graphElements.ToList().Where(predicate).ToList());
-#pragma warning restore RS0030
+#pragma warning restore UA2001
         }
 
         // TODO: Do we limit to GraphElements or can we tab through ISelectable's?
@@ -1458,9 +1458,9 @@ namespace UnityEditor.Experimental.GraphView
                     rectToFit = graphElement.ChangeCoordinatesTo(contentViewContainer, graphElement.rect);
                 }
 
-                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 rectToFit = selection.Cast<GraphElement>()
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                     .Aggregate(rectToFit, (current, currentGraphElement) =>
                     {
                         VisualElement currentElement = currentGraphElement;

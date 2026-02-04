@@ -295,9 +295,9 @@ namespace UnityEditor.Search
             m_ShowMoreGroup.Clear();
             if (showMore && m_HiddenGroups.Count > 0)
             {
-                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 var moreSelectedGroup = hiddenSelectedGroup ?? m_HiddenGroups.FirstOrDefault();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                 var expandedTab = new SearchGroupTab(this, moreSelectedGroup, ViewModel);
 
                 expandedTab.groupNameLabel.text = expandedTab.name;
@@ -493,9 +493,9 @@ namespace UnityEditor.Search
 
             if (!m_ViewModel.state.isSimplePicker)
             {
-                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 var dbs = SearchDatabase.EnumerateAll().ToList();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                 if (dbs.Count > 1)
                 {
                     filterMenu.AddSeparator(string.Empty);

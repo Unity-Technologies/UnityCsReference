@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Runtime.InteropServices;
 using Unity.Properties;
 using UnityEngine.Bindings;
 
@@ -12,8 +13,7 @@ namespace UnityEngine.UIElements
     /// <summary>
     /// The filter parameter declaration for a <see cref="FilterFunctionDefinition"/>.
     /// </summary>
-    [Serializable]
-
+    [Serializable, StructLayout(LayoutKind.Sequential)]
     public struct FilterParameterDeclaration
     {
         [SerializeField, DontCreateProperty]

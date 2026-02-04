@@ -4,7 +4,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using UnityEditor.PackageManager.Requests;
 using UnityEditor.Scripting.ScriptCompilation;
 using UnityEngine;
@@ -23,7 +22,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         bool isAddOrRemoveInProgress { get; }
         bool isEmbedInProgress { get; }
-        IEnumerable<string> packageIdsOrNamesInstalling { get; }
+        IReadOnlyCollection<string> packageIdsOrNamesInstalling { get; }
 
         bool IsAnyExperimentalPackagesInUse();
         bool IsRemoveInProgress(string packageName);
@@ -31,10 +30,10 @@ namespace UnityEditor.PackageManager.UI.Internal
         void AddById(string packageId, bool isUnlisted);
         bool AddByPath(string path, out string tempPackageId);
         void AddByUrl(string url);
-        void AddByIds(IEnumerable<string> versionIds);
-        void RemoveByNames(IEnumerable<string> packagesNames);
-        void AddAndResetDependencies(string packageId, IEnumerable<string> dependencyPackagesNames);
-        void ResetDependencies(string packageId, IEnumerable<string> dependencyPackagesNames);
+        void AddByIds(string[] versionIds);
+        void RemoveByNames(string[] packagesNames);
+        void AddAndResetDependencies(string packageId, string[] dependencyPackagesNames);
+        void ResetDependencies(string packageId, string[] dependencyPackagesNames);
         void List(bool offlineMode = false);
         void RemoveByName(string packageName);
         void RemoveEmbeddedByName(string packageName);
@@ -112,16 +111,12 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public bool IsAnyExperimentalPackagesInUse()
         {
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            return PackageInfo.GetAllRegisteredPackages().Any(info => SemVersionParser.TryParse(info.version, out var parsedVersion) && parsedVersion?.GetExpOrPreOrReleaseTag() == PackageTag.Experimental);
-#pragma warning restore RS0030
+            return PackageInfo.GetAllRegisteredPackages().AnyMatches(info => SemVersionParser.TryParse(info.version, out var parsedVersion) && parsedVersion?.GetExpOrPreOrReleaseTag() == PackageTag.Experimental);
         }
 
         public void OnBeforeSerialize()
         {
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            m_SerializedInProgressExtraFetchOperations = m_ExtraFetchOperations?.Values.Where(i => i.isInProgress).ToArray() ?? Array.Empty<UpmSearchOperation>();
-#pragma warning restore RS0030
+            m_SerializedInProgressExtraFetchOperations = m_ExtraFetchOperations.Values.Filter(i => i.isInProgress).ToNewArray(m_ExtraFetchOperations.Count) ?? Array.Empty<UpmSearchOperation>();
         }
 
         public void OnAfterDeserialize()
@@ -138,28 +133,16 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public bool isEmbedInProgress => m_EmbedOperation?.isInProgress == true;
 
-        public IEnumerable<string> packageIdsOrNamesInstalling
-        {
-            get
-            {
-                if (m_AddAndRemoveOperation?.isInProgress == true)
-                    foreach (var id in m_AddAndRemoveOperation.packageIdsToAdd)
-                        yield return id;
-            }
-        }
+        public IReadOnlyCollection<string> packageIdsOrNamesInstalling => m_AddAndRemoveOperation is not { isInProgress: true } ? Array.Empty<string>() : m_AddAndRemoveOperation.packageIdsToAdd;
 
         public bool IsRemoveInProgress(string packageName)
         {
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            return m_AddAndRemoveOperation?.isInProgress == true && m_AddAndRemoveOperation.packagesNamesToRemove.Contains(packageName);
-#pragma warning restore RS0030
+            return m_AddAndRemoveOperation?.isInProgress == true && m_AddAndRemoveOperation.packagesNamesToRemove.ContainsMatches(packageName);
         }
 
         public bool IsAddInProgress(string packageId)
         {
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            return m_AddAndRemoveOperation?.isInProgress == true && m_AddAndRemoveOperation.packageIdsToAdd.Contains(packageId);
-#pragma warning restore RS0030
+            return m_AddAndRemoveOperation?.isInProgress == true && m_AddAndRemoveOperation.packageIdsToAdd.ContainsMatches(packageId);
         }
 
         public void AddById(string packageId, bool isUnlisted)
@@ -216,7 +199,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             SetupAddAndRemoveOperation();
         }
 
-        public void AddByIds(IEnumerable<string> versionIds)
+        public void AddByIds(string[] versionIds)
         {
             if (isAddOrRemoveInProgress)
                 return;
@@ -225,7 +208,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             SetupAddAndRemoveOperation();
         }
 
-        public void RemoveByNames(IEnumerable<string> packagesNames)
+        public void RemoveByNames(string[] packagesNames)
         {
             if (isAddOrRemoveInProgress)
                 return;
@@ -233,7 +216,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             SetupAddAndRemoveOperation();
         }
 
-        public void AddAndResetDependencies(string packageId, IEnumerable<string> dependencyPackagesNames)
+        public void AddAndResetDependencies(string packageId, string[] dependencyPackagesNames)
         {
             if (isAddOrRemoveInProgress)
                 return;
@@ -241,7 +224,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             SetupAddAndRemoveOperation();
         }
 
-        public void ResetDependencies(string packageId, IEnumerable<string> dependencyPackagesNames)
+        public void ResetDependencies(string packageId, string[] dependencyPackagesNames)
         {
             if (isAddOrRemoveInProgress)
                 return;
@@ -251,15 +234,9 @@ namespace UnityEditor.PackageManager.UI.Internal
 
        private void SetupAddAndRemoveOperation()
         {
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            var progressUpdates = addAndRemoveOperation.packageIdsToReset.Select(idOrName => (idOrName, PackageProgress.Resetting))
-#pragma warning restore RS0030
-                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                .Concat(addAndRemoveOperation.packageIdsToAdd.Select(idOrName => (idOrName, PackageProgress.Installing)))
-#pragma warning restore RS0030
-                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                .Concat(addAndRemoveOperation.packagesNamesToRemove.Select(name => (name, PackageProgress.Removing)));
-#pragma warning restore RS0030
+            var progressUpdates = addAndRemoveOperation.packageIdsToReset.SelectAsEnumerable(idOrName => (idOrName, PackageProgress.Resetting))
+                .Join(addAndRemoveOperation.packageIdsToAdd.SelectAsEnumerable(idOrName => (idOrName, PackageProgress.Installing)))
+                .Join(addAndRemoveOperation.packagesNamesToRemove.SelectAsEnumerable(name => (name, PackageProgress.Removing)));
             onPackagesProgressChange?.Invoke(progressUpdates);
 
             if (addAndRemoveOperation.isSpecialInstall)
@@ -285,12 +262,8 @@ namespace UnityEditor.PackageManager.UI.Internal
                 if (addAndRemoveOperation.isSpecialInstall)
                     onSpecialInstallFinalize?.Invoke(addAndRemoveOperation.packageIdOrName, mainPackageInfo?.name ?? string.Empty);
 
-                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                var allIdOrNames = addAndRemoveOperation.packageIdsToAdd.Concat(addAndRemoveOperation.packageIdsToReset).Concat(addAndRemoveOperation.packagesNamesToRemove);
-#pragma warning restore RS0030
-                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                onPackagesProgressChange?.Invoke(allIdOrNames.Select(idOrName => (idOrName, PackageProgress.None)));
-#pragma warning restore RS0030
+                var allIdOrNames = addAndRemoveOperation.packageIdsToAdd.Join(addAndRemoveOperation.packageIdsToReset).Join(addAndRemoveOperation.packagesNamesToRemove);
+                onPackagesProgressChange?.Invoke(allIdOrNames.SelectAsEnumerable(idOrName => (idOrName, PackageProgress.None)));
             };
             addAndRemoveOperation.logErrorInConsole = true;
         }
@@ -460,9 +433,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             }
 
             if (successCallback != null)
-                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                operation.onProcessResult += request => successCallback.Invoke(request.Result.FirstOrDefault());
-#pragma warning restore RS0030
+                operation.onProcessResult += request => successCallback.Invoke(request.Result.Length > 0 ? request.Result[0] : null);
             if (errorCallback != null)
                 operation.onOperationError += (_, error) => errorCallback.Invoke(error);
             if (doneCallback != null)
@@ -471,9 +442,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private void OnProcessExtraFetchResult(SearchRequest request, long timestamp, long productId = 0)
         {
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            var packageInfo = request.Result.FirstOrDefault();
-#pragma warning restore RS0030
+            var packageInfo = request.Result.Length > 0 ? request.Result[0] : null;
             if (productId > 0)
             {
                 m_UpmCache.SetProductSearchPackageInfo(productId, packageInfo, timestamp);

@@ -440,9 +440,9 @@ namespace UnityEditor.Search.Providers
             if (ft >= 0)
                 token = token.Substring(0, ft);
             var dbs = SearchDatabase.EnumerateAll();
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return dbs.Where(db => !db.settings.options.disabled).SelectMany(db => db.index.GetKeywords()
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                 .Where(kw => kw.StartsWith(token, StringComparison.OrdinalIgnoreCase)))
                 .Select(kw => new SearchProposition(category: null, label: kw));
         }
@@ -469,9 +469,9 @@ namespace UnityEditor.Search.Providers
             foreach (var f in QueryListBlockAttribute.GetPropositions(typeof(QueryBundleFilterBlock)))
                 yield return f;
 
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             if (SearchDatabase.EnumerateAll().Any(db => db.index?.settings?.options.extended ?? false))
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             {
                 foreach (var f in QueryListBlockAttribute.GetPropositions(typeof(QueryIsFilterBlock)))
                     yield return f;
@@ -536,15 +536,15 @@ namespace UnityEditor.Search.Providers
         {
             if (context.selection.Count > 1)
             {
-                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 var selectedObjects = context.selection.Select(i => GetObject(i));
-#pragma warning restore RS0030
-                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning restore UA2001
+                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 var paths = context.selection.Select(i => GetAssetPath(i)).ToArray();
-#pragma warning restore RS0030
-                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning restore UA2001
+                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 Utils.StartDrag(selectedObjects.ToArray(), paths, item.GetLabel(context, true));
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             }
             else
                 Utils.StartDrag(new[] { GetObject(item) }, new[] { GetAssetPath(item) }, item.GetLabel(context, true));
@@ -622,9 +622,9 @@ namespace UnityEditor.Search.Providers
         public static int GetResultLimit(string query)
         {
             var parsedQuery = queryEngine.ParseQuery(query);
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var resultsLimit = parsedQuery.toggles.Any(t => t.value.Equals(k_NoResultsLimitToggle, StringComparison.InvariantCultureIgnoreCase)) ? int.MaxValue : 2999;
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             return resultsLimit;
         }
 
@@ -681,7 +681,6 @@ namespace UnityEditor.Search.Providers
             var searchTask = System.Threading.Tasks.Task.Run(() =>
             {
                 // Search index
-                using var immutableScope = db.GetImmutableScope();
                 foreach (var r in index.Search(query, context, provider, patternMatchLimit: resultsLimit))
                 {
                     if (linkedTokenSource.IsCancellationRequested)
@@ -865,9 +864,9 @@ namespace UnityEditor.Search.Providers
         // We have our own OpenPropertyEditorsOnSelection so we don't have to worry about global selection
         private static void OpenPropertyEditorsOnSelection(IEnumerable<SearchItem> items)
         {
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var objs = items.Select(i => i.ToObject()).Where(o => o).ToArray();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             if (objs.Length == 0)
                 return;
             if (objs.Length == 1)
@@ -925,9 +924,9 @@ namespace UnityEditor.Search.Providers
                     enabled = items => items.Count >= 1,
                     execute = items =>
                     {
-                        #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                        #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                         var paths = items.Select(GetAssetPath).Where(path => !string.IsNullOrEmpty(path)).ToArray();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                         if (paths.Length == 1)
                         {
                             EditorGUIUtility.systemCopyBuffer = paths[0];
@@ -946,9 +945,9 @@ namespace UnityEditor.Search.Providers
                     enabled = items => items.Count >= 1,
                     execute = items =>
                     {
-                        #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                        #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                         var guids = items.Select(item => AssetDatabase.AssetPathToGUID(GetAssetPath(item))).Where(path => !string.IsNullOrEmpty(path)).ToArray();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                         if (guids.Length == 1)
                         {
                             EditorGUIUtility.systemCopyBuffer = guids[0];
@@ -1025,9 +1024,9 @@ namespace UnityEditor.Search.Providers
         {
             if (items.Count != 1)
                 return false;
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var singleItem = items.Last();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             var info = GetInfo(singleItem);
             if (info.gid.identifierType != (int)IdentifierType.kImportedAsset)
                 return false;

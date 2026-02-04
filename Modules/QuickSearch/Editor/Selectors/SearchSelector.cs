@@ -69,16 +69,16 @@ namespace UnityEditor.Search
         public SelectorMatch(SearchSelector selector, IEnumerable<SelectorGroup> groups)
         {
             this.selector = selector;
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             this.groups = groups.ToArray();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
         }
 
         public override string ToString()
         {
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return $"{selector.pattern} | {string.Join("| ", groups.Select(g => g.ToString()))}";
-#pragma warning restore RS0030
+#pragma warning restore UA2001
         }
     }
 
@@ -91,9 +91,9 @@ namespace UnityEditor.Search
         internal string path => groups[0].value;
 
         internal string this[int index] => groups[index + 1].value;
-        #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+        #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
         internal string this[string captureName] => groups.FirstOrDefault(g => string.Equals(captureName, g.name, StringComparison.OrdinalIgnoreCase)).value;
-#pragma warning restore RS0030
+#pragma warning restore UA2001
 
         internal SearchSelectorArgs(SelectorMatch match, SearchItem current)
         {
@@ -157,9 +157,9 @@ namespace UnityEditor.Search
                 if (!match.Success)
                     continue;
 
-                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 yield return new SelectorMatch(e, match.Groups.Cast<Group>().Select(g => new SelectorGroup(g.Name, g.Value)));
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             }
         }
 
@@ -183,9 +183,9 @@ namespace UnityEditor.Search
                 MethodSignature.FromDelegate<SearchSelectorHandler1>(),
                 MethodSignature.FromDelegate<SearchSelectorHandler2>()
             };
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             selectors = ReflectionUtils.LoadAllMethodsWithAttribute(generator, supportedSignatures, ReflectionUtils.AttributeLoaderBehavior.DoNotThrowOnValidation)
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                 .Where(s => s.valid)
                 .OrderBy(s => s.priority)
                 .ThenBy(s => string.IsNullOrEmpty(s.provider))

@@ -140,6 +140,11 @@ namespace Unity.Profiling
         public static ProfilerCategory U2D => new ProfilerCategory(ProfilerUnsafeUtility.CategoryU2D);
 
         /// <summary>
+        /// UI Toolkit.
+        /// </summary>
+        public static ProfilerCategory UIToolkit => new ProfilerCategory(ProfilerUnsafeUtility.CategoryUIToolkit);
+
+        /// <summary>
         /// Utility operator that simplifies usage of the ProfilerCategory with ProfilerUnsafeUtility.
         /// </summary>
         /// <param name="category"></param>

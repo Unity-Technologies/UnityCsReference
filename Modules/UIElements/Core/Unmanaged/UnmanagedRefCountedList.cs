@@ -17,7 +17,14 @@ namespace UnityEngine.UIElements.Unmanaged;
 /// The ref counting allows the Copy() and CopyFrom() methods to be O(1) and non-allocating,
 /// at the cost of an extra 4 bytes and a bit of housekeeping on assignation.
 /// </summary>
+/// <remarks>
+/// This struct always has size 8 regardless of if it's compiled for an x64 arch or not. This is
+/// required to keep aligned with the native version that may or may not be compiled under the same
+/// constaints than the managed side, so we need to keep the largest common size for predictability.
+/// </remarks>
 /// <typeparam name="T"></typeparam>
+// See "Modules/UIElements/Core/Native/Unmanaged/UnmanagedRefCountedList.h"
+[StructLayout(LayoutKind.Sequential, Size = 8)]
 internal readonly unsafe struct UnmanagedRefCountedList<T>
     where T : unmanaged
 {

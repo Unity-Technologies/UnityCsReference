@@ -41,7 +41,10 @@ namespace UnityEditor.PackageManager.UI.Internal
             [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags analyticsId_UxmlAttributeFlags;
 #pragma warning restore 649
 
-            public override object CreateInstance() => new ExtendedHelpBox();
+            public override object CreateInstance()
+            {
+                return new ExtendedHelpBox(ServicesContainer.instance.Resolve<IApplicationProxy>());
+            }
 
             public override void Deserialize(object obj)
             {
@@ -165,7 +168,13 @@ namespace UnityEditor.PackageManager.UI.Internal
         private Button m_ReadMoreButton;
 
         private Button m_CustomLinkButton;
-        VisualElement m_CustomLinkContainer;
+        private VisualElement m_CustomLinkContainer;
+
+        protected readonly IApplicationProxy m_Application;
+        public ExtendedHelpBox(IApplicationProxy application)
+        {
+            m_Application = application;
+        }
 
         private void OnReadMoreUrlChanged()
         {
@@ -213,7 +222,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             if (string.IsNullOrEmpty(readMoreUrl))
                 return;
 
-            ServicesContainer.instance.Resolve<IApplicationProxy>().OpenURL(readMoreUrl);
+            m_Application.OpenURL(readMoreUrl);
             PackageManagerReadMoreClickedAnalytics.SendEvent(analyticsId, readMoreUrl);
         }
 

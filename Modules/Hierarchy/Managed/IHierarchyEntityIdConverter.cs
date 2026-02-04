@@ -11,7 +11,7 @@ namespace Unity.Hierarchy
     /// <summary>
     /// Interface that <see cref="HierarchyNodeTypeHandler"/> should implement if the type can be mapped to <see cref="EntityId"/>.
     /// </summary>
-    [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
+    [VisibleToOtherModules]
     internal interface IHierarchyEntityIdConverter
     {
         /// <summary>
@@ -50,9 +50,9 @@ namespace Unity.Hierarchy
     }
 
     /// <summary>
-    /// Extension methods on <see cref="Hierarchy"/> for <see cref="IHierarchyEntityIdConverter"/>.
+    /// Extension methods on <see cref="Hierarchy"/>.
     /// </summary>
-    internal static partial class HierarchyExtensions
+    public static partial class HierarchyExtensions
     {
         /// <summary>
         /// Get the hierarchy node corresponding to the given entity id.

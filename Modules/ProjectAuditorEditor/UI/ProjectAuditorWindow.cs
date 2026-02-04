@@ -34,9 +34,9 @@ namespace Unity.ProjectAuditor.Editor.UI
             Valid
         }
 
-        #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+        #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
         static readonly string[] AreaNames = Enum.GetNames(typeof(Areas)).Where(a => a != "None" && a != "All").ToArray();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
         static ProjectAuditorWindow s_Instance;
 
         public static ProjectAuditorWindow Instance
@@ -216,9 +216,9 @@ namespace Unity.ProjectAuditor.Editor.UI
             if (m_Report != null && !m_Report.IsValid())
             {
                 IssueCategory[] categories = (IssueCategory[])Enum.GetValues(typeof(IssueCategory));
-                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 var requestedModules = categories.SelectMany(m_ProjectAuditor.GetModules).Distinct().ToArray();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                 m_Report.PostSerializeLayoutUpdate(requestedModules);
             }
 
@@ -275,20 +275,20 @@ namespace Unity.ProjectAuditor.Editor.UI
                     supportedCategories.AddRange(GetTabCategories(tab));
                 }
 
-                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 var categories = supportedCategories.Distinct();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
 
                 // Get all the ViewDescriptors that match the supported categories, and sort them by MenuOrder
-                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 var viewDescriptors = ViewDescriptor.GetAll()
                     .Where(descriptor => categories.Contains(descriptor.Category)).ToArray();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                 Array.Sort(viewDescriptors, (a, b) => a.MenuOrder.CompareTo(b.MenuOrder));
 
-                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 m_ViewManager = new ViewManager(viewDescriptors.Select(d => d.Category).ToArray()); // view manager needs sorted categories
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             }
 
             m_ViewManager.OnActiveViewChanged += i =>
@@ -933,7 +933,7 @@ namespace Unity.ProjectAuditor.Editor.UI
                 DescriptionWithIcon = true,
                 ShowFilters = true,
                 ShowInfoPanel = true,
-                ShowAdditionalInfoPanel = true,
+                ShowAdditionalInfoPanel = BuildSizeView.ShowAdditionalInfo,
                 OnOpenIssue = EditorInterop.FocusOnAssetInProjectWindow,
                 Type = typeof(BuildSizeView),
                 AnalyticsEventId = (int)AnalyticsReporter.UIButton.BuildFiles
@@ -1012,10 +1012,10 @@ namespace Unity.ProjectAuditor.Editor.UI
                 {
                     m_ViewManager.PendingModuleNames.Remove(moduleName);
 
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     var remainingModules = m_ProjectAuditor.GetModules().Where(m => m_ViewManager.PendingModuleNames.Contains(m.Name));
                     var remainingCategories = remainingModules.SelectMany(m => m.Categories).ToHashSet();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                     m_ViewManager.PendingCategories = remainingCategories;
 
                     var summaryView = m_ViewManager.GetView(IssueCategory.Metadata);
@@ -1064,7 +1064,7 @@ namespace Unity.ProjectAuditor.Editor.UI
                 m_ProjectAuditor = new ProjectAuditor();
 
             // a module might report more categories than requested so we need to make sure we clean up the views accordingly
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var modules = categories.SelectMany(m_ProjectAuditor.GetModules).ToArray();
             var actualCategories = modules.SelectMany(m => m.Categories).Distinct().ToArray();
 
@@ -1072,7 +1072,7 @@ namespace Unity.ProjectAuditor.Editor.UI
                 .Select(c => m_ViewManager.GetView(c))
                 .Where(v => v != null)
                 .ToArray();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
 
             foreach (var view in views)
             {
@@ -1104,10 +1104,10 @@ namespace Unity.ProjectAuditor.Editor.UI
                 {
                     m_ViewManager.PendingModuleNames.Remove(moduleName);
 
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     var remainingModules = m_ProjectAuditor.GetModules().Where(m => m_ViewManager.PendingModuleNames.Contains(m.Name));
                     var remainingCategories = remainingModules.SelectMany(m => m.Categories).ToHashSet();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                     m_ViewManager.PendingCategories = remainingCategories;
 
                     var summaryView = m_ViewManager.GetView(IssueCategory.Metadata);
@@ -1238,9 +1238,9 @@ namespace Unity.ProjectAuditor.Editor.UI
 
         IssueCategory[] GetTabCategories(TabId tabId)
         {
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return GetTabCategories(m_Tabs.First(t => t.id == tabId));
-#pragma warning restore RS0030
+#pragma warning restore UA2001
         }
 
         IssueCategory[] GetTabCategories(Tab tab)
@@ -1302,9 +1302,9 @@ namespace Unity.ProjectAuditor.Editor.UI
                                         var selectedAsmNames = selection.selection;
 
                                         payload["numSelected"] = selectedAsmNames.Count.ToString();
-                                        #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                                        #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                                         payload["numUnityAssemblies"] = selectedAsmNames.Count(assemblyName => assemblyName.Contains("Unity")).ToString();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
 
                                         AnalyticsReporter.SendEventWithKeyValues(AnalyticsReporter.UIButton.AssemblySelectApply, selectEvent, payload);
                                     });
@@ -1449,7 +1449,8 @@ namespace Unity.ProjectAuditor.Editor.UI
                         using (new EditorGUILayout.VerticalScope(GUILayout.MaxWidth(350)))
                         {
                             GUILayout.Space(k_SpacingHeight);
-                            UserPreferences.SharedPreferencesGUI();
+                            using (new EditorGUI.DisabledScope(RulesPackageInstallRequest != null))
+                                UserPreferences.SharedPreferencesGUI();
                             GUILayout.Space(k_SpacingHeight);
                         }
                         GUILayout.FlexibleSpace();
@@ -1747,24 +1748,24 @@ namespace Unity.ProjectAuditor.Editor.UI
             if (m_Report == null || m_ViewManager.HasPendingCategory(IssueCategory.Assembly))
                 return;
 
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var assemblyNames = m_Report.FindByCategory(IssueCategory.Assembly).Select(i => new System.Tuple<string, bool>(i.Description, i.GetCustomPropertyBool(AssemblyProperty.ReadOnly)));
             var allAssemblies = assemblyNames.GroupBy(i => i.Item1).Select(g => g.First()).OrderBy(i => i.Item1).ToArray();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
 
             var codeOwnerFlags = m_Report.SessionInfo.CodeOwnerFlags;
             bool allowPackages = (m_Report.SessionInfo.CodeAnalysisFlags & CodeAnalysisFlags.Packages) != 0;
             bool allowUnityCode = (codeOwnerFlags & CodeOwnerFlags.Unity) != 0;
             bool allowUserCode = (codeOwnerFlags & CodeOwnerFlags.User) != 0;
 
-#pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             // update list of assembly names
             if (m_Report.IsForCurrentProject())
                 allAssemblies = allAssemblies.Where(a => !AssemblyInfoProvider.FilterAssembly(a.Item1, allowPackages, allowUnityCode, allowUserCode)).ToArray();
 
             m_AssemblyNames = allAssemblies.Select(a => a.Item1).ToArray();
             m_AssemblyReadOnlyFlags = allAssemblies.Select(a => a.Item2).ToArray();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
         }
 
         void UpdateAssemblySelection(bool forceRefresh = false)
@@ -1784,10 +1785,10 @@ namespace Unity.ProjectAuditor.Editor.UI
                 }
                 else if (m_AssemblySelectionSummary != "None")
                 {
-                    #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                    #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     var assemblies = Formatting.SplitStrings(m_AssemblySelectionSummary)
                         .Where(assemblyName => Array.IndexOf(m_AssemblyNames, assemblyName) != -1);
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                     m_AssemblySelection.selection.AddRange(assemblies);
                 }
             }
@@ -2094,7 +2095,7 @@ namespace Unity.ProjectAuditor.Editor.UI
         {
             public static readonly int MinWindowWidth = 410;
             public static readonly int MinWindowHeight = 640;
-            public static readonly int FilterOptionsLeftLabelWidth = 100;
+            public static readonly int FilterOptionsLeftLabelWidth = 94;
             public static readonly int FilterOptionsEnumWidth = 50;
         }
 
@@ -2125,13 +2126,13 @@ namespace Unity.ProjectAuditor.Editor.UI
             public static readonly GUIContent PreferencesMenuItem = EditorGUIUtility.TrTextContent("Preferences", $"Open User Preferences for {ProjectAuditor.DisplayName}");
 
             public static readonly GUIContent AssemblyFilter =
-                new GUIContent("Assembly : ", "Select assemblies to examine");
+                new GUIContent("Assembly: ", "Select assemblies to examine");
 
             public static readonly GUIContent AssemblyFilterSelect =
                 new GUIContent("Select", "Select assemblies to examine");
 
             public static readonly GUIContent AreaFilter =
-                new GUIContent("Areas : ", "Select performance areas to display");
+                new GUIContent("Areas: ", "Select performance areas to display");
 
             public static readonly GUIContent AreaFilterSelect =
                 new GUIContent("Select", "Select performance areas to display");

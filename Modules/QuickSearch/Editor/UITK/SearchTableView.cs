@@ -149,9 +149,9 @@ namespace UnityEditor.Search
         float ITableView.GetRowHeight() => m_ListView.fixedItemHeight;
         IEnumerable<SearchItem> ITableView.GetRows() => m_ViewModel.results;
         SearchTable ITableView.GetSearchTable() => tableConfig;
-        #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+        #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
         void ITableView.SetSelection(IEnumerable<SearchItem> items) => m_ViewModel.SetSelection(items.Select(e => m_ViewModel.results.IndexOf(e)).Where(i => i != -1).ToArray());
-#pragma warning restore RS0030
+#pragma warning restore UA2001
         void ITableView.OnItemExecuted(SearchItem item) => m_ViewModel.ExecuteSelection();
         void ITableView.SetDirty() => Refresh();
         int ITableView.GetColumnIndex(string name) => GetColumnIndex(name);
@@ -305,9 +305,9 @@ namespace UnityEditor.Search
         {
             evt.menu.ClearItems();
 
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var visibleColumnCount = m_ListView.columns.visibleList.Count();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             if (viewColumns.Count > 1)
             {
                 for (int i = 0; i < viewColumns.Count; ++i)
@@ -418,9 +418,9 @@ namespace UnityEditor.Search
             {
                 var providers = m_ViewModel.context.GetProviders();
                 // TODO: the currentGroup might be an invalid value and we might try to get the DefaultTableConfig from the wrong provider.
-                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 var provider = providers.Count == 1 ? providers.FirstOrDefault() : SearchService.GetProvider(m_ViewModel.currentGroup);
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                 if (provider?.tableConfig != null)
                     return provider.tableConfig(context);
             }
@@ -450,9 +450,9 @@ namespace UnityEditor.Search
                 return;
 
             var oldColumns = tableConfig.columns ?? Array.Empty<SearchColumn>();
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var uniqueColumns = newColumns.Where(newColumn => oldColumns.All(c => c.selector != newColumn.selector)).ToList();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             if (uniqueColumns.Count == 0)
                 return;
 
@@ -465,9 +465,9 @@ namespace UnityEditor.Search
             var columnAdded = searchColumns.Count - columnCountBefore;
             if (columnAdded > 0)
             {
-                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 var firstColumn = uniqueColumns.First();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                 var e = SearchAnalytics.GenericEvent.Create(null, SearchAnalytics.GenericEventType.QuickSearchTableAddColumn, firstColumn.name);
                 e.intPayload1 = columnAdded;
                 e.message = firstColumn.provider;
@@ -511,9 +511,9 @@ namespace UnityEditor.Search
 
             foreach (var sc in tableConfig.columns)
             {
-                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 if (!clear && columns.Any(x => string.Equals(x.name, sc.path, StringComparison.Ordinal)))
-#pragma warning restore RS0030
+#pragma warning restore UA2001
                     continue;
 
                 // FIXME: Each call to Add here does a Rebuild of the table view
@@ -552,14 +552,14 @@ namespace UnityEditor.Search
 
             var fields = new HashSet<SearchField>();
             foreach (var e in items ?? GetElements())
-                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 fields.UnionWith(e.GetFields().Where(f => f.value != null));
-#pragma warning restore RS0030
+#pragma warning restore UA2001
 
             if (fields.Count > 0)
-                #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 currentTableConfig.columns = fields.Select(f => ItemSelectors.CreateColumn(f.label, f.name, options: options)).ToArray();
-#pragma warning restore RS0030
+#pragma warning restore UA2001
 
             tableConfig = currentTableConfig;
             UpdateItemHeight();
@@ -567,9 +567,9 @@ namespace UnityEditor.Search
 
         internal void SetupColumns(IList<SearchField> fields)
         {
-            #pragma warning disable RS0030 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var searchColumns = tableConfig?.columns != null ? new List<SearchColumn>(tableConfig.columns.Where(c =>
-#pragma warning restore RS0030
+#pragma warning restore UA2001
             {
                 var fp = fields.IndexOf(new SearchField(c.selector));
                 if (fp != -1)
