@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.IO;
 using JetBrains.Annotations;
 using UnityEditor.Modules;
 using UnityEngine;
@@ -59,6 +60,8 @@ namespace UnityEditor.Build.Profile
         [VisibleToOtherModules("UnityEditor.BuildProfileModule")]
         internal static void CreateInstance(string platformId, string assetPath)
         {
+            ValidateFileNameLength(assetPath);
+
             var (buildTarget, subtarget) = BuildProfileModuleUtil.GetBuildTargetAndSubtarget(platformId);
             var moduleName = BuildProfileModuleUtil.GetModuleName(buildTarget);
             var buildProfile = CreateInstance<BuildProfile>();
@@ -71,6 +74,19 @@ namespace UnityEditor.Build.Profile
             buildProfile.OnEnable();
             // Notify the UI of creation so that the new build profile can be selected
             onBuildProfileCreated?.Invoke(buildProfile);
+        }
+
+        /// <summary>
+        /// Validates if the provided path name length is supported by the Asset database.
+        /// Throws an ArgumentException if the platform is not valid.
+        /// </summary>
+        /// <param name="assetPath">The path to the build profile to be created.</param>
+        static void ValidateFileNameLength(string assetPath)
+        {
+            var byteCount = System.Text.Encoding.UTF8.GetByteCount(Path.GetFileName(assetPath));
+            // File name length is limited by the asset database
+            if (byteCount > BuildProfileModuleUtil.k_MaxAssetFileNameLength)
+                throw new ArgumentException($"Build profile name is too long ({byteCount}) - max supported is {BuildProfileModuleUtil.k_MaxAssetFileNameLength} bytes.");
         }
 
         void TryCreatePlatformSettings()

@@ -44,7 +44,6 @@ namespace UnityEditor.Search.Providers
             SearchMonitor.sceneChanged += InvalidateScene;
             SearchMonitor.documentsInvalidated += Refresh;
             SearchMonitor.objectChanged += OnObjectChanged;
-            SearchMonitor.gameObjectChanged += OnGameObjectChanged;
 
             supportsSyncViewSearch = true;
 
@@ -242,29 +241,6 @@ namespace UnityEditor.Search.Providers
                             InvalidateObject(e.instanceIds[idIndex]);
                     }
                     break;
-                }
-            }
-        }
-
-        void OnGameObjectChanged(in NativeArray<GameObjectChangeTrackerEvent> events)
-        {
-            if (m_SceneQueryEngine == null)
-                return;
-
-            for (var i = 0; i < events.Length; ++i)
-            {
-                var e = events[i];
-                switch (e.EventType)
-                {
-                    case GameObjectChangeTrackerEventType.CreatedOrChanged:
-                    case GameObjectChangeTrackerEventType.ChangedParent:
-                    case GameObjectChangeTrackerEventType.ChangedScene:
-                    case GameObjectChangeTrackerEventType.Destroyed:
-                        InvalidateObject(e.InstanceId);
-                        InvalidateScene();
-                        break;
-
-                    // Other events are not relevant for us since they do not affect properties.
                 }
             }
         }

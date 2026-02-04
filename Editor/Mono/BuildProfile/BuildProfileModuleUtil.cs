@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Text;
 using UnityEditor.Modules;
 using UnityEngine;
@@ -24,6 +25,12 @@ namespace UnityEditor.Build.Profile
         const string k_BuyProUrl = "https://store.unity.com/products/unity-pro";
         const string k_ConsoleModuleUrl = "https://unity3d.com/platform-installation";
         const string k_LastRunnableBuildPathSeparator = "_";
+        // The asset database supports file name length to max. 250 symbols
+        // Leave 3 symbols for the GenerateUniqueAssetPath() that adds " 1"(2,3...) in case
+        // an asset with such name already exists.
+        public const int k_MaxAssetFileNameLength = 247;
+        // For UI cases where the extension `.asset` is not taken into consideration
+        public const int k_MaxAssetFileNameLengthWithoutExtension = k_MaxAssetFileNameLength - 6;
         static readonly string k_NoModuleLoaded = L10n.Tr("No {0} module loaded.");
         static readonly string k_EditorWillNeedToBeReloaded = L10n.Tr("Note: Editor will need to be restarted to load any newly installed modules");
         static readonly string k_BuildProfileRecompileReason = L10n.Tr("Active build profile scripting defines changes.");
@@ -448,6 +455,7 @@ namespace UnityEditor.Build.Profile
             return string.IsNullOrEmpty(assetPath) ? string.Empty : $"{baseKey}{k_LastRunnableBuildPathSeparator}{assetPath}";
         }
 
+        /// <summary>
         /// On the next editor update recompile scripts.
         /// </summary>
         public static void RequestScriptCompilation(BuildProfile profile)

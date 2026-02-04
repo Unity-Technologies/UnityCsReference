@@ -17,6 +17,7 @@ namespace UnityEditor.Build.Profile
     internal class BuildProfileRenameOverlay
     {
         static readonly string k_ErrorMessage = $"A file name can't contain any of the following characters:\t{BuildProfileModuleUtil.GetFilenameInvalidCharactersStr()}";
+        static readonly string k_LengthErrorMessage = string.Format(L10n.Tr("Build profile name is too long (maximum {0} bytes)"), BuildProfileModuleUtil.k_MaxAssetFileNameLengthWithoutExtension);
 
         TextField m_TextField;
         Rect? m_ErrorRect = null;
@@ -54,6 +55,20 @@ namespace UnityEditor.Build.Profile
                 var targetIndex = Mathf.Max(m_TextField.cursorIndex - 1, 0);
                 m_TextField.cursorIndex = targetIndex;
                 m_TextField.selectIndex = targetIndex;
+            }
+            else if (System.Text.Encoding.UTF8.GetByteCount(newValue) > BuildProfileModuleUtil.k_MaxAssetFileNameLengthWithoutExtension)
+            {
+                TooltipView.Show(k_LengthErrorMessage, errorRect);
+
+                if (!string.IsNullOrEmpty(previousValue))
+                {
+                    m_TextField.SetValueWithoutNotify(previousValue);
+
+                    // The cursor should be kept in place when adding too much
+                    var targetIndex = Mathf.Max(m_TextField.cursorIndex - 1, 0);
+                    m_TextField.cursorIndex = targetIndex;
+                    m_TextField.selectIndex = targetIndex;
+                }
             }
             else
             {
