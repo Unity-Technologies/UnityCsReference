@@ -154,7 +154,7 @@ namespace UnityEngine.LowLevelPhysics2D
         public static FragmentResult Fragment(FragmentGeometry target, ReadOnlySpan<Vector2> fragmentPoints, Allocator allocator) => PhysicsDestructor_Fragment(target, fragmentPoints, allocator);
 
         /// <summary>
-        /// Fragment the specified mask geometry geometry using the specified fragment points, after the target geometry has the mask (carving) geometry removed from it.
+        /// Fragment the specified mask geometry using the specified fragment points, after the target geometry has the mask (carving) geometry removed from it.
         ///
         /// The target geometry is first clipped with the mask geometry using a <see cref="LowLevelPhysics2D.PhysicsComposer.Operation.NOT"/> operation. The resulting target geometry is returned in <see cref="LowLevelPhysics2D.PhysicsDestructor.FragmentResult.unbrokenGeometry"/>.
         /// The mask geometry is then clipped with the original target geometry using an <see cref="LowLevelPhysics2D.PhysicsComposer.Operation.AND"/> operation. If the clipped mask produces no geometry then no results are returned in <see cref="LowLevelPhysics2D.PhysicsDestructor.FragmentResult.brokenGeometry"/>.
@@ -166,7 +166,7 @@ namespace UnityEngine.LowLevelPhysics2D
         /// See <see cref="LowLevelPhysics2D.PhysicsDestructor.FragmentResult"/>.
         /// </summary>
         /// <param name="target">The target geometry to fragment. There must be at least a single geometry element. Any target polygons with a non-zero radius will be ignored.</param>
-        /// <param name="mask">The mask geomety that will be used to clip the target geometry. There must be at least a single geometry element. Any mask polygons with a non-zero radius will be ignored.</param>
+        /// <param name="mask">The mask geometry that will be used to clip the target geometry. There must be at least a single geometry element. Any mask polygons with a non-zero radius will be ignored.</param>
         /// <param name="fragmentPoints">The world-space fragment points used to define fragment regions. The number of fragment points must be greater than 1.</param>
         /// <param name="allocator">The memory allocator to use for the results. This can only be <see cref="Unity.Collections.Allocator.Temp"/>, <see cref="Unity.Collections.Allocator.TempJob"/> or <see cref="Unity.Collections.Allocator.Persistent"/>.</param>
         /// <returns>The fragment results. The transform returned here is the one provided in the target geometry. These results must be disposed of after use otherwise leaks will occur.</returns>

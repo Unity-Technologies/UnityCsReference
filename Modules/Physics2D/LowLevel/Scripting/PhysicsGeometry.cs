@@ -617,7 +617,7 @@ namespace UnityEngine.LowLevelPhysics2D
         /// The geometry normal stored in a <see cref="LowLevelPhysics2D.PhysicsShape.ShapeArray"/>.
         /// </summary>
         /// <remarks>
-        /// This is exposed directly as a field rather than a propeelerty as it is extremely unlikely to ever change and causes usability issues as a property.
+        /// This is exposed directly as a field rather than a property as it is extremely unlikely to ever change and causes usability issues as a property.
         /// </remarks>
         public PhysicsShape.ShapeArray normals;
 
@@ -1053,7 +1053,7 @@ namespace UnityEngine.LowLevelPhysics2D
         /// Create a default ChainSegment.
         /// </summary>
         /// <param name="segmentGeometry">The segment geometry.</param>
-        /// <param name="ghost1">The 'ghost' vertex preceeding <see cref="LowLevelPhysics2D.SegmentGeometry.point1"/>.</param>
+        /// <param name="ghost1">The 'ghost' vertex preceding <see cref="LowLevelPhysics2D.SegmentGeometry.point1"/>.</param>
         /// <param name="ghost2">The 'ghost' vertex following <see cref="LowLevelPhysics2D.SegmentGeometry.point2"/>.</param>
         public ChainSegmentGeometry(SegmentGeometry segmentGeometry, Vector2 ghost1, Vector2 ghost2)
         {
@@ -1208,7 +1208,7 @@ namespace UnityEngine.LowLevelPhysics2D
         /// <summary>
         /// Create the geometry of a Chain using the specified vertices.
         /// </summary>
-        /// <param name="vertices">The vertices that will creat the ChainSegment shapes.</param>
+        /// <param name="vertices">The vertices that will create the ChainSegment shapes.</param>
         /// <exception cref="System.ArgumentOutOfRangeException">Thrown if the number of vertices is less than 4.</exception>
         public unsafe ChainGeometry(NativeArray<Vector2> vertices)
         {
@@ -1224,7 +1224,7 @@ namespace UnityEngine.LowLevelPhysics2D
         /// <summary>
         /// Create the geometry of a chain using the specified vertices.
         /// </summary>
-        /// <param name="vertices">The vertices that will creat the ChainSegment shapes.</param>
+        /// <param name="vertices">The vertices that will create the ChainSegment shapes.</param>
         /// <exception cref="System.ArgumentOutOfRangeException">Thrown if the number of vertices is less than 4.</exception>
         public unsafe ChainGeometry(ReadOnlySpan<Vector2> vertices)
         {

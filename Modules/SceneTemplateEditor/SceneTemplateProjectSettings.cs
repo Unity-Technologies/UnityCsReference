@@ -116,6 +116,7 @@ namespace UnityEditor.SceneTemplate
         internal enum NewSceneOverride
         {
             NewSceneDialog,
+            [InspectorName("Built-in Scene")]
             BuiltinScene
         }
 

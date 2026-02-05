@@ -101,7 +101,7 @@ namespace UnityEngine.LowLevelPhysics2D
         public float lowerTranslationLimit { readonly get => m_LowerTranslationLimit; set => m_LowerTranslationLimit = value; }
 
         /// <summary>
-        /// The upper trasnlation limit of this joint.
+        /// The upper translation limit of this joint.
         /// Must be greater than or equal to the minimum length.
         /// </summary>
         public float upperTranslationLimit { readonly get => m_UpperTranslationLimit; set => m_UpperTranslationLimit = value; }

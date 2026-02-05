@@ -1081,9 +1081,10 @@ namespace UnityEngine.LowLevelPhysics2D
         /// This is provided as convenience only and should not be used when performance is important as all the properties defined in the definition are accessed sequentially.
         /// You should try to only use the specific properties you need rather than using this feature.
         /// 
-        /// The following properties are not read/written and will be at their defaults:
+        /// The following properties are not read and will be at their defaults:
         /// 
-        ///- <see cref="LowLevelPhysics2D.PhysicsShapeDefinition.updateContactsOnCreate"/>
+        ///- <see cref="LowLevelPhysics2D.PhysicsShapeDefinition.startMassUpdate"/>
+        ///- <see cref="LowLevelPhysics2D.PhysicsShapeDefinition.startStaticContacts"/>
         /// </summary>
         public PhysicsShapeDefinition definition { get => PhysicsShape_ReadDefinition(this); set => PhysicsShape_WriteDefinition(this, value, false); }
 
@@ -1124,7 +1125,7 @@ namespace UnityEngine.LowLevelPhysics2D
         /// Set the shape density.
         /// See <see cref="LowLevelPhysics2D.PhysicsBody.massConfiguration"/>.
         /// </summary>
-        /// <param name="density">The desity to set.</param>
+        /// <param name="density">The density to set.</param>
         /// <param name="updateBodyMass">Whether to update the body mass configuration. Not doing so is faster, especially when setting multiple shapes.</param>
         public readonly void SetDensity(float density, bool updateBodyMass) => PhysicsShape_SetDensity(this, density, updateBodyMass);
 
@@ -1205,8 +1206,8 @@ namespace UnityEngine.LowLevelPhysics2D
         public readonly Color32 customColor { get => PhysicsShape_GetCustomColor(this); set => PhysicsShape_SetCustomColor(this, value); }
 
         /// <summary>
-        /// The surface material for the shape comprising of many properties such as friciton, bounciness, rolling resistance etc.
-        /// Setting the surface material overrides any individual settings for friciton, bounciness, rolling resistance etc.
+        /// The surface material for the shape comprising of many properties such as friction, bounciness, rolling resistance etc.
+        /// Setting the surface material overrides any individual settings for friction, bounciness, rolling resistance etc.
         /// </summary>
         public readonly SurfaceMaterial surfaceMaterial { get => PhysicsShape_GetSurfaceMaterial(this); set => PhysicsShape_SetSurfaceMaterial(this, value); }
 
@@ -1243,7 +1244,7 @@ namespace UnityEngine.LowLevelPhysics2D
         /// <summary>
         /// Controls whether this shape produces contact events which can be retrieved after the simulation has completed.
         /// Any contact events can be used to call the assigned <see cref="LowLevelPhysics2D.PhysicsShape.callbackTarget"/>.
-        /// A contact event is produced if either shapes involved have theit contactEvents enabled.
+        /// A contact event is produced if either shapes involved have their contactEvents enabled.
         /// A contact event will produce a <see cref="LowLevelPhysics2D.PhysicsCallbacks.IContactCallback"/> to the <see cref="LowLevelPhysics2D.PhysicsShape.callbackTarget"/> for both shapes involved.
         /// </summary>
         public readonly bool contactEvents { get => PhysicsShape_GetContactEvents(this); set => PhysicsShape_SetContactEvents(this, value); }
@@ -1479,7 +1480,6 @@ namespace UnityEngine.LowLevelPhysics2D
         /// <summary>
         /// Draw the PhysicsShape that visually represents its current state in the world.
         /// This is only used in the Unity Editor or in a Development Player.
-        /// See <see cref="LowLevelPhysics2D.PhysicsWorld.DrawResults"/>, <see cref="LowLevelPhysics2D.PhysicsWorld.drawOptions"/> and <see cref="LowLevelPhysics2D.PhysicsWorld.drawResults"/>.
         /// </summary>
         public readonly void Draw() => PhysicsShape_Draw(this);
 

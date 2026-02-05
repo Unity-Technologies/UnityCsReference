@@ -492,7 +492,7 @@ namespace UnityEngine.LowLevelPhysics2D
         /// The number of discovered unique islands is defined by the size of the returned array.
         /// </summary>
         /// <param name="allocator">The memory allocator to use for the results. This can only be <see cref="Unity.Collections.Allocator.Temp"/>, <see cref="Unity.Collections.Allocator.TempJob"/> or <see cref="Unity.Collections.Allocator.Persistent"/>.</param>
-        /// <returns>A NativeArray containing a series of ranges where each range is aunique connected island where the range indicates both the start and end indices of the original polygon indices.</returns>
+        /// <returns>A NativeArray containing a series of ranges where each range is a uniquely connected island where the range indicates both the start and end indices of the original polygon indices.</returns>
         public readonly NativeArray<RangeInt> GetGeometryIslands(Allocator allocator) => PhysicsComposer_GetGeometryIslands(this, allocator).ToNativeArray<RangeInt>();
 
         /// <summary>

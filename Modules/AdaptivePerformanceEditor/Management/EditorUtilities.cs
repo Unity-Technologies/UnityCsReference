@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Reflection;
 using System.Text.RegularExpressions;
 using UnityEditor.Build.Profile;
 using UnityEditor.PackageManager;
@@ -203,6 +204,102 @@ namespace UnityEditor.AdaptivePerformance.Editor
             }
 
             return copyObject == null? null : ScriptableObject.Instantiate(copyObject);
+        }
+
+        internal static List<AdaptivePerformanceScaler> CloneCustomScalersFromProjectSettings(IAdaptivePerformanceSettings settings)
+        {
+            var copyObjects = new List<AdaptivePerformanceScaler>();
+            for (int i = 0; i < settings.ScalerProfiles.Length; i++)
+            {
+                for (int j = 0; j < settings.ScalerProfiles[i].AddedScalers.Count; j++)
+                {
+                    if (settings.ScalerProfiles[i].AddedScalers[j] == null) continue;
+                    var clone = ScriptableObject.Instantiate(settings.ScalerProfiles[i].AddedScalers[j]);
+                    clone.hideFlags = HideFlags.HideInHierarchy;
+                    settings.ScalerProfiles[i].AddedScalers[j] = clone;
+                    copyObjects.Add(clone);
+                }
+            }
+            return copyObjects;
+        }
+
+        internal static bool AddCustomScalerToProviderSetting(IAdaptivePerformanceSettings providerSettings)
+        {
+            Type ti = typeof(AdaptivePerformanceScaler);
+            List<AdaptivePerformanceScaler> addedScalers = new List<AdaptivePerformanceScaler>();
+            AppDomain currentDomain = AppDomain.CurrentDomain;
+            foreach (Assembly asm in currentDomain.GetAssemblies())
+            {
+                if (asm.GetName().Name == "UnityEngine.AdaptivePerformanceModule")
+                {
+                    continue;
+                }
+
+                Type[] types;
+                try
+                {
+                #pragma warning disable RS0030 // Only for editor use.
+                    types = asm.GetTypes();
+                #pragma warning restore RS0030
+                }
+                catch (ReflectionTypeLoadException ex)
+                {
+                    Debug.LogWarning($"Unable to scan assembly {asm.FullName} for Adaptive Performance scalers. {ex.Message}");
+                    continue;
+                }
+
+                foreach (Type t in types)
+                {
+                    if (t == null)
+                        continue;
+
+                    if (ti.IsAssignableFrom(t) && !t.IsAbstract)
+                    {
+                        addedScalers.Add((AdaptivePerformanceScaler)ScriptableObject.CreateInstance(t));
+                    }
+                }
+            }
+
+            if (addedScalers.Count == 0) return false;
+            for (int j = 0; j < providerSettings.ScalerProfiles.Length; j++)
+            {
+                // Only assign the scanned scalers when no scaler is assigned via UI. Mixing them is a bad idea.
+                // Since scripting settings will take control in this use case, all profiles will essentially own the same scaler instance.
+                // Only the settings will be swapped like in the default scaler case.
+                if (providerSettings.ScalerProfiles[j].AddedScalers.Count != 0)
+                {
+                    return false;
+                }
+            }
+
+            if (providerSettings.AddedScalerViaScan != null && providerSettings.AddedScalerViaScan.Count > 0)
+            {
+                for (int i = 0; i < providerSettings.AddedScalerViaScan.Count; i++)
+                {
+                    var existingScaler = providerSettings.AddedScalerViaScan[i];
+                    if (existingScaler == null)
+                    {
+                        continue;
+                    }
+
+                    AssetDatabase.RemoveObjectFromAsset(existingScaler);
+                    ScriptableObject.DestroyImmediate(existingScaler, true);
+                }
+
+                providerSettings.AddedScalerViaScan.Clear();
+            }
+
+            providerSettings.AddedScalerViaScan = addedScalers;
+
+            for (int i = 0; i < addedScalers.Count; i++)
+            {
+                addedScalers[i].hideFlags = HideFlags.HideInHierarchy;
+                AssetDatabase.AddObjectToAsset(addedScalers[i], providerSettings);
+            }
+
+            EditorUtility.SetDirty(providerSettings);
+            AssetDatabase.SaveAssetIfDirty(providerSettings);
+            return true;
         }
 
         internal static AdaptivePerformanceGeneralSettings GetSettingsOrBuildProfilesSettings(BuildTargetGroup targetGroup = BuildTargetGroup.Unknown)

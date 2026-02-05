@@ -108,7 +108,7 @@ namespace UnityEditor
             public GUIContent m_FilterByLabel = EditorGUIUtility.TrIconContent("FilterByLabel", "Search by Label");
             public GUIContent m_FilterByType = EditorGUIUtility.TrIconContent("FilterByType", "Search by Type");
             public GUIContent m_FilterByImportLog = EditorGUIUtility.TrIconContent("d_console.erroricon.inactive.sml", "Search by Import Log Type");
-            public GUIContent m_CreateDropdownContent = EditorGUIUtility.TrIconContent("d_Toolbar Plus More", "Create new Asset");
+            public GUIContent m_CreateDropdownContent = EditorGUIUtility.TrIconContent("Toolbar Plus More", "Create new Asset");
             public GUIContent m_SaveFilterContent = EditorGUIUtility.TrIconContent("Favorite", "Save search");
             public GUIContent m_PackageContentDefault = new GUIContent("", "");
             public GUIContent m_PackagesContentNotVisible = EditorGUIUtility.TrIconContent("PBrowserPackagesNotVisible", "Number of hidden packages, click to display packages.");

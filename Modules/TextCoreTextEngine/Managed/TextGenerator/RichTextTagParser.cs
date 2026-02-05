@@ -883,6 +883,62 @@ namespace UnityEngine.TextCore
                             }
                             value = new TagValue(parsedValue, tagUnitType);
                         }
+						
+						if (tagType == TagType.LineHeight)
+                        {
+                            var tagUnitType = ParseTagUnitType(ref attributeSection);
+
+                            if (tagUnitType == TagUnitType.Unknown)
+                                tagUnitType = TagUnitType.Pixels;
+
+                            attributeSection = GetAttributeSpan(attributeSection);
+                            float parsedValue;
+                            if (!float.TryParse(attributeSection, NumberStyles.Float, CultureInfo.InvariantCulture, out parsedValue))
+                            {
+                                errors?.Add(new("Invalid line-height value", start));
+                                pos = start + 1;
+                                continue;
+                            }
+                            value = new TagValue(parsedValue, tagUnitType);
+                        }
+
+                        if (tagType == TagType.Indent)
+                        {
+                            var tagUnitType = ParseTagUnitType(ref attributeSection);
+
+                            if (tagUnitType == TagUnitType.Unknown)
+                                tagUnitType = TagUnitType.Pixels;
+
+                            attributeSection = GetAttributeSpan(attributeSection);
+                            float parsedValue;
+                            if (!float.TryParse(attributeSection, NumberStyles.Float, CultureInfo.InvariantCulture, out parsedValue))
+                            {
+                                // Handle parse error, e.g. skip or log
+                                errors?.Add(new("Invalid numerical value", start));
+                                pos = start + 1;
+                                continue;
+                            }
+                            value = new TagValue(parsedValue, tagUnitType);
+                        }
+
+                        if (tagType == TagType.Indent)
+                        {
+                            var tagUnitType = ParseTagUnitType(ref attributeSection);
+
+                            if (tagUnitType == TagUnitType.Unknown)
+                                tagUnitType = TagUnitType.Pixels;
+
+                            attributeSection = GetAttributeSpan(attributeSection);
+                            float parsedValue;
+                            if (!float.TryParse(attributeSection, NumberStyles.Float, CultureInfo.InvariantCulture, out parsedValue))
+                            {
+                                // Handle parse error, e.g. skip or log
+                                errors?.Add(new("Invalid numerical value", start));
+                                pos = start + 1;
+                                continue;
+                            }
+                            value = new TagValue(parsedValue, tagUnitType);
+                        }
 
                         if (tagType == TagType.Font)
                         {
@@ -1426,7 +1482,9 @@ namespace UnityEngine.TextCore
                         Enum.TryParse<HorizontalAlignment>(segment.tags[i].value!.StringValue, true, out textSpan.alignment);
                         break;
                     case TagType.LineHeight:
-                        //TODO : Add support for lineheight
+                        float lineHeightMult = segment.tags[i].value!.unit == TagUnitType.Pixels ? (pixelsPerPoint * 64.0f) : 64.0f;
+                        textSpan.lineHeight = (int)(segment.tags[i].value!.NumericalValue * lineHeightMult);
+                        textSpan.lineHeightUnitType = segment.tags[i].value!.unit;
                         break;
                     case TagType.Margin:
                     case TagType.MarginLeft:
@@ -1441,6 +1499,12 @@ namespace UnityEngine.TextCore
                             TagType.MarginRight => MarginDirection.Right,
                             _ => MarginDirection.Both
                         };
+                        break;
+
+                    case TagType.Indent:
+                        float indentMult = segment.tags[i].value!.unit == TagUnitType.Pixels ? (pixelsPerPoint * 64.0f) : 64.0f;
+                        textSpan.indent = (int)(segment.tags[i].value!.NumericalValue * indentMult);
+                        textSpan.indentUnitType = segment.tags[i].value!.unit;
                         break;
 
 

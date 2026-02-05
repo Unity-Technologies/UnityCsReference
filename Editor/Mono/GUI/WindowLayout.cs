@@ -1605,8 +1605,12 @@ namespace UnityEditor
 
             foreach (EditorWindow w in windows)
             {
-                // skip EditorWindows that belong to "dont save me" container
-                if (!w || !w.m_Parent || ignoredViews.Contains(w.m_Parent))
+                // skip invalid windows and EditorWindows that belong to "dont save me" container
+                if (!w || ignoredViews.Contains(w.m_Parent))
+                    continue;
+
+                // warn about windows that have invalid parent
+                if (!w.m_Parent)
                 {
                     if (reportErrors && w)
                         Debug.LogWarning($"Cannot save invalid window {w.titleContent.text} {w} to layout.");

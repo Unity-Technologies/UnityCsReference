@@ -63,7 +63,7 @@ namespace UnityEngine.LowLevelPhysics2D
         public float springTargetAngle { readonly get => m_SpringTargetAngle; set => m_SpringTargetAngle = value; }
 
         /// <summary>
-        /// The spring stiffness frequncy, in cycles per second.
+        /// The spring stiffness frequency, in cycles per second.
         /// </summary>
         public float springFrequency { readonly get => m_SpringFrequency; set => m_SpringFrequency = Mathf.Max(0f, value); }
 

@@ -8,6 +8,7 @@ using System.Collections.Generic;
 using System.Reflection;
 //using UnityEditor;
 using UnityEngine;
+using UnityEngine.Bindings;
 
 namespace UnityEngine.AdaptivePerformance
 {
@@ -80,8 +81,47 @@ namespace UnityEngine.AdaptivePerformance
             set { m_Name = value; }
         }
 
+        /// <summary>
+        /// List of custom scalers added to the provider settings via the scaler profile UI.
+        /// </summary>
+        public List<AdaptivePerformanceScaler>  AddedScalers
+        {
+            get { return m_AddedScalers; }
+            set { m_AddedScalers = value; }
+        }
+
+        [SerializeField]
+        List<AdaptivePerformanceScaler> m_AddedScalers = new List<AdaptivePerformanceScaler>();
+
         [SerializeField, Tooltip("Name of the scaler profile.")]
         string m_Name = "Default Scaler Profile";
+
+        internal void EnableAddedScalers()
+        {
+            for(int i = 0; i < m_AddedScalers.Count; i++)
+            {
+                if (m_AddedScalers[i])
+                {
+                    m_AddedScalers[i].InitializeScaler();
+                }
+                else
+                {
+                    APLog.Debug("Null scaler is added to the scaler list");
+                }
+            }
+        }
+
+        internal void RemoveAllAddedScalersFromIndexer()
+        {
+            foreach (var scaler in m_AddedScalers)
+            {
+                if (scaler)
+                {
+                    scaler.RemoveScaler();
+                }
+            }
+
+        }
     }
 
     /// <summary>
@@ -488,6 +528,63 @@ namespace UnityEngine.AdaptivePerformance
             get { return m_AdaptiveLayerCulling; }
             set { m_AdaptiveLayerCulling = value; }
         }
+
+        private List<AdaptivePerformanceScalerSettingsBase> m_DefaultScalerSettings = null;
+        
+        /// <summary>
+        /// Returns the list of default scaler settings.
+        /// </summary>
+        public List<AdaptivePerformanceScalerSettingsBase> DefaultScalerSettings
+        {
+            get
+            {
+                if (m_DefaultScalerSettings == null || m_DefaultScalerSettings.Count == 0)
+                {
+                    m_DefaultScalerSettings = new List<AdaptivePerformanceScalerSettingsBase>
+                    {
+                        AdaptiveFramerate,
+                        AdaptiveBatching,
+                        AdaptiveLOD,
+                        AdaptiveLut,
+                        AdaptiveMSAA,
+                        AdaptiveResolution,
+                        AdaptiveShadowCascade,
+                        AdaptiveShadowDistance,
+                        AdaptiveShadowmapResolution,
+                        AdaptiveShadowQuality,
+                        AdaptiveTransparency,
+                        AdaptiveSorting,
+                        AdaptiveViewDistance,
+                        AdaptivePhysics,
+                        AdaptiveLayerCulling,
+                        AdaptiveDecals
+                    };
+                }
+                return m_DefaultScalerSettings;
+            }
+        }
+
+        internal static readonly List<Type> k_DefaultScalerNames = new List<Type>
+        {
+            typeof(UnityEngine.AdaptivePerformance.AdaptiveFramerate),
+            typeof(UnityEngine.AdaptivePerformance.AdaptiveBatching),
+            typeof(UnityEngine.AdaptivePerformance.AdaptiveLOD),
+            typeof(UnityEngine.AdaptivePerformance.AdaptiveLut),
+            typeof(UnityEngine.AdaptivePerformance.AdaptiveMSAA),
+            typeof(UnityEngine.AdaptivePerformance.AdaptiveResolution),
+            typeof(UnityEngine.AdaptivePerformance.AdaptiveShadowCascade),
+            typeof(UnityEngine.AdaptivePerformance.AdaptiveShadowDistance),
+            typeof(UnityEngine.AdaptivePerformance.AdaptiveShadowmapResolution),
+            typeof(UnityEngine.AdaptivePerformance.AdaptiveShadowQuality),
+            typeof(UnityEngine.AdaptivePerformance.AdaptiveTransparency),
+            typeof(UnityEngine.AdaptivePerformance.AdaptiveSorting),
+            typeof(UnityEngine.AdaptivePerformance.AdaptiveViewDistance),
+            typeof(UnityEngine.AdaptivePerformance.AdaptivePhysics),
+            typeof(UnityEngine.AdaptivePerformance.AdaptiveLayerCulling),
+            typeof(UnityEngine.AdaptivePerformance.AdaptiveDecals)
+        };
+
+
     }
     /// <summary>
     /// Settings of indexer system.
@@ -692,6 +789,88 @@ namespace UnityEngine.AdaptivePerformance
             get { return m_ScalerSettings; }
             set { m_ScalerSettings = value; }
         }
+        /// <summary>
+        /// List of created scaler profiles for this provider.
+        /// </summary>
+        public AdaptivePerformanceScalerProfile[] ScalerProfiles
+        {
+            get { return m_scalerProfileList; }
+        }
+
+        /// <summary>
+        /// The currently active scaler profile.
+        /// Only one scaler profile is active at a time.
+        /// </summary>
+        public AdaptivePerformanceScalerProfile ActiveScalerProfile
+        {
+            get
+            {
+                if(m_ActiveScalerProfile == null && m_scalerProfileList.Length > 0)
+                    return m_scalerProfileList[0];
+                return m_ActiveScalerProfile;
+            }
+            set
+            {
+                m_ActiveScalerProfile = value;
+            }
+        }
+
+        /// <summary>
+        /// This is to contain the scalers via scanning the users assembly for backward compatibility
+        /// </summary>
+        [VisibleToOtherModules("UnityEditor.AdaptivePerformanceModule")]
+        internal List<AdaptivePerformanceScaler> AddedScalerViaScan
+        {
+            get { return m_AddedScalerViaScan; }
+            set { m_AddedScalerViaScan = value; }
+        }
+
+        [SerializeField]
+        List<AdaptivePerformanceScaler> m_AddedScalerViaScan = new List<AdaptivePerformanceScaler>();
+
+
+        [SerializeField]
+        AdaptivePerformanceScalerProfile m_ActiveScalerProfile;
+        /// <summary>
+        /// Add a new scaler profile with default scaler settings.
+        /// </summary>
+        /// <param name="name"></param>
+        public void AddScalerProfileWithDefaultScalers(string name = "")
+        {
+            foreach (var profile in ScalerProfiles)
+            {
+                if (profile.Name == name)
+                {
+                    Debug.LogWarning($"{profile.Name} already exists in the profile list");
+                    return;
+                }
+            }
+            Array.Resize(ref m_scalerProfileList, m_scalerProfileList.Length + 1);
+            m_scalerProfileList[^1] = new AdaptivePerformanceScalerProfile();
+            if (!String.IsNullOrEmpty(name))
+            {
+                m_scalerProfileList[^1].Name = name;
+            }
+        }
+        /// <summary>
+        /// Delete a scaler profile at the given index.
+        /// </summary>
+        /// <param name="index"></param>
+        public void DeleteScalerProfileAt(int index)
+        {
+            if (index >= ScalerProfiles.Length || index < 0) return;
+            AdaptivePerformanceScalerProfile[] modifiedList = new AdaptivePerformanceScalerProfile[ScalerProfiles.Length - 1];
+            int j = 0;
+            for (int i = 0; i < ScalerProfiles.Length; i++)
+            {
+                if (i != index)
+                {
+                    modifiedList[j] = ScalerProfiles[i];
+                    j++;
+                }
+            }
+            m_scalerProfileList = modifiedList;
+        }
 
         /// <summary>
         /// Load a scaler profile from the settings. Unity update the values of all scalers in the profile to new ones.
@@ -710,6 +889,13 @@ namespace UnityEngine.AdaptivePerformance
                 APLog.Debug("No scaler profiles available. Can not load and apply profile. Add more profiles in the Adaptive Performance settings.");
                 return;
             }
+
+            if (ActiveScalerProfile != null && ActiveScalerProfile.Name == scalerProfileName)
+            {
+                APLog.Debug("The " +ActiveScalerProfile.Name + " scaler profile is already loaded.");
+                return;
+            }
+
             if (m_scalerProfileList.Length == 1)
                 APLog.Debug("Only default scaler profile available. Reset all scalers to default profile.");
 
@@ -728,7 +914,22 @@ namespace UnityEngine.AdaptivePerformance
                 }
                 if (scalerProfile.Name == scalerProfileName)
                 {
+                    if (ActiveScalerProfile != null)
+                    {
+                        ActiveScalerProfile.RemoveAllAddedScalersFromIndexer();
+                    }
+
                     scalerSettings.ApplySettings(scalerProfile);
+                    // If a scaler profile has custom scaler, prioritize using them and remove the scanned ones.
+                    if (scalerProfile.AddedScalers != null && scalerProfile.AddedScalers.Count > 0)
+                    {
+                        scalerProfile.EnableAddedScalers();
+                        for (int j = 0; j < AddedScalerViaScan.Count; j++)
+                        {
+                            AddedScalerViaScan[j].RemoveScaler();
+                        }
+                    }
+                    ActiveScalerProfile = scalerProfile;
                     break;
                 }
             }

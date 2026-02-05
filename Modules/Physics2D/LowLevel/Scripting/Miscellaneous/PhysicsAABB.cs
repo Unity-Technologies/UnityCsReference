@@ -97,7 +97,7 @@ namespace UnityEngine.LowLevelPhysics2D
         public readonly bool Overlap(Vector2 point) => OverlapPoint(point);
 
         /// <summary>
-        /// Create a union of the the specified AABB and this AABB where resulting AABB completely encapsules both AABB.
+        /// Create a union of the specified AABB and this AABB where resulting AABB completely encapsulates both AABB.
         /// </summary>
         /// <param name="aabb">The AABB to create a union with.</param>
         /// <returns>The results of the union.</returns>

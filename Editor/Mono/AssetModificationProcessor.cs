@@ -161,6 +161,14 @@ namespace UnityEditor
                 MethodInfo method = assetModificationProcessorClass.GetMethod(methodName, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static);
                 if (method != null)
                 {
+                    if (ContainsNullOrWhiteSpaceString(assetsThatShouldBeSaved))
+                    {
+                        int originalCount = assetsThatShouldBeSaved.Length;
+                        assetsThatShouldBeSaved = Array.FindAll(assetsThatShouldBeSaved, s => !string.IsNullOrWhiteSpace(s));
+                        int skippedCount = originalCount - assetsThatShouldBeSaved.Length;
+                        Debug.LogWarning($"OnWillSaveAssets: Skipped {skippedCount} null or empty path(s).");
+                    }
+
                     object[] args = { assetsThatShouldBeSaved };
                     if (!CheckArguments(args, method))
                         continue;
@@ -609,6 +617,11 @@ namespace UnityEditor
             }
 
             return true;
+        }
+
+        internal static bool ContainsNullOrWhiteSpaceString(string[] stringArray)
+        {
+            return Array.Exists(stringArray, string.IsNullOrWhiteSpace);
         }
     }
 }

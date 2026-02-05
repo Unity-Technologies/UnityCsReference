@@ -43,7 +43,6 @@ namespace UnityEngine.AdaptivePerformance
             }
 
             Holder.Instance = apm;
-            InstallScalers();
             DontDestroyOnLoad(m_ManagerGameObject);
 
             var settings = apm.Settings;
@@ -57,6 +56,7 @@ namespace UnityEngine.AdaptivePerformance
                 return;
             }
             settings.LoadScalerProfile(scalerProfiles[settings.defaultScalerProfilerIndex]);
+            InstallScalers(settings.ScalerProfiles[settings.defaultScalerProfilerIndex], settings);
         }
         public void Deinitialize()
         {
@@ -68,17 +68,25 @@ namespace UnityEngine.AdaptivePerformance
             m_ManagerGameObject = null;
         }
 
-        void InstallScalers()
+        void InstallScalers(AdaptivePerformanceScalerProfile profile, IAdaptivePerformanceSettings settings)
         {
-            Type ti = typeof(AdaptivePerformanceScaler);
-            foreach (Assembly asm in AppDomain.CurrentDomain.GetAssemblies())
+
+            foreach (var scalerName in AdaptivePerformanceScalerSettings.k_DefaultScalerNames)
             {
-                foreach (Type t in asm.GetTypes())
+                ScriptableObject.CreateInstance(scalerName);
+            }
+            // prioritize scalers added from UI.
+            if (profile.AddedScalers != null && profile.AddedScalers.Count > 0)
+            {
+                profile.EnableAddedScalers();
+            }
+            // Applies to all profiles like the old way.
+            // if the scalers are added via scanning the dir, do not add the custom scalers from UI.
+            else if (settings.AddedScalerViaScan != null && settings.AddedScalerViaScan.Count > 0)
+            {
+                for (int i = 0; i < settings.AddedScalerViaScan.Count; i++)
                 {
-                    if (ti.IsAssignableFrom(t) && !t.IsAbstract)
-                    {
-                        ScriptableObject.CreateInstance(t);
-                    }
+                    settings.AddedScalerViaScan[i].InitializeScaler();
                 }
             }
         }

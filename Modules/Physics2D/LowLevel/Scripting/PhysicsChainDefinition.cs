@@ -34,7 +34,7 @@ namespace UnityEngine.LowLevelPhysics2D
         public static PhysicsChainDefinition defaultDefinition => PhysicsChain_GetDefaultDefinition(true);
 
         /// <summary>
-        /// The surface material for the shape comprising of many properties such as friciton, bounciness, rolling resistance etc.
+        /// The surface material for the shape comprising of many properties such as friction, bounciness, rolling resistance etc.
         /// </summary>
         public PhysicsShape.SurfaceMaterial surfaceMaterial { readonly get => m_SurfaceMaterial; set => m_SurfaceMaterial = value; }
 

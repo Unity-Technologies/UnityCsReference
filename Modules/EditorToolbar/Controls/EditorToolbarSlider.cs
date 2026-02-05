@@ -23,6 +23,9 @@ namespace UnityEditor.Toolbars
         Label m_ValueLabel;
         bool m_InEditMode;
 
+        ContextualMenuManipulator m_MenuManipulator;
+        internal ContextualMenuManipulator menuManipulator => m_MenuManipulator;
+
         internal EditorToolbarContent content => m_Content;
 
         public string text
@@ -75,7 +78,7 @@ namespace UnityEditor.Toolbars
 
             RegisterCallback<PropertyChangedEvent>(OnPropertyChanged);
             RegisterCallback<GeometryChangedEvent>(OnGeometryChanged);
-            this.AddManipulator(new ContextualMenuManipulator((evt) => PopulateContextMenu(evt.menu)));
+            this.AddManipulator(m_MenuManipulator = new ContextualMenuManipulator((evt) => PopulateContextMenu(evt.menu)));
             dragContainer.RegisterCallback<MouseDownEvent>(OnMouseDown, TrickleDown.TrickleDown);
         }
 

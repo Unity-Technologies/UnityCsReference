@@ -131,7 +131,7 @@ namespace UnityEditor.AdaptivePerformance.Basic.Editor
                     return;
                 }
             }
-
+            EditorUtilities.AddCustomScalerToProviderSetting(settings);
             EditorUtilities.AddToPreloadedAssetList(settings);
         }
 

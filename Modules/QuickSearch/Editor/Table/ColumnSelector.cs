@@ -51,11 +51,10 @@ namespace UnityEditor.Search
                 {
                     icon = column.content.image as Texture2D,
                     displayName = displayName,
-                    tooltip = column.content.tooltip,
+                    tooltip = string.IsNullOrEmpty(column.content.tooltip) ? path : column.content.tooltip,
                     userData = column
                 };
 
-                m_ColumnIndexes[newItem.id] = column;
                 var parent = rootItem;
                 if (prefix != null)
                 {
@@ -65,6 +64,8 @@ namespace UnityEditor.Search
 
                 if (FindItem(name, parent) == null)
                     parent.AddChild(newItem);
+
+                m_ColumnIndexes[newItem.id] = column;
             }
 
             rootItem.SortChildren(SortColumnProviders);

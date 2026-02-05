@@ -17,7 +17,7 @@ namespace UnityEngine.LowLevelPhysics2D
     public struct PhysicsPlane
     {
         /// <summary>
-        /// The plane normal. This must be normalised for the plane be valid.
+        /// The plane normal. This must be normalized for the plane be valid.
         /// </summary>
         /// <remarks>
         /// This is exposed directly as a field rather than a property as it is extremely unlikely to ever change and causes usability issues as a property.
@@ -33,7 +33,7 @@ namespace UnityEngine.LowLevelPhysics2D
         public float offset;
 
         /// <summary>
-        /// Check if the plane is valid. To be valid, the <see cref="LowLevelPhysics2D.PhysicsPlane.normal"/> must be normalised.
+        /// Check if the plane is valid. To be valid, the <see cref="LowLevelPhysics2D.PhysicsPlane.normal"/> must be normalized.
         /// </summary>
         public readonly bool isValid => PhysicsPlane_IsValid(this);
 

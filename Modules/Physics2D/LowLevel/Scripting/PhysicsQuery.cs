@@ -55,7 +55,7 @@ namespace UnityEngine.LowLevelPhysics2D
         public static PhysicsShape.ContactManifold SegmentAndCircle(SegmentGeometry geometryA, PhysicsTransform transformA, CircleGeometry geometryB, PhysicsTransform transformB) => PhysicsQuery_SegmentAndCircle(geometryA, transformA, geometryB, transformB);
 
         /// <summary>
-        /// Check the intersection between Polyon and Circle geometries.
+        /// Check the intersection between Polygon and Circle geometries.
         /// </summary>
         /// <param name="geometryA">The first geometry to use.</param>
         /// <param name="transformA">The transform used to specify where the first geometry is positioned.</param>

@@ -59,6 +59,10 @@ namespace UnityEditor.Search
                 if (ancestor is SearchFieldElement searchField && searchField.addNewBlockIcon != null)
                 {
                     m_Icon.image = searchField.addNewBlockIcon;
+                    m_Icon.style.width = searchField.addNewBlockIcon.width;
+                    m_Icon.style.height = searchField.addNewBlockIcon.height;
+                    m_Icon.style.minHeight = searchField.addNewBlockIcon.height;
+                    m_Icon.style.minWidth = searchField.addNewBlockIcon.width;
                     break;
                 }
                 ancestor = ancestor.parent;

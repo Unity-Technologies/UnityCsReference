@@ -3,7 +3,9 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System.Collections.Generic;
+using UnityEditor.UIElements;
 using UnityEngine;
+using UnityEditor;
 
 namespace UnityEditor.AdaptivePerformance.Editor
 {
@@ -13,11 +15,13 @@ namespace UnityEditor.AdaptivePerformance.Editor
         readonly EnterDelegate EnterCB;
         private string m_NewProfileName = "New Scaler Profile";
         private bool m_NeedsFocus = true;
+        private List<string> existingProfileNames = new List<string>();
+        static string s_WarningPopup = L10n.Tr("Warning");
+        static string s_WarningPopupOption = L10n.Tr("Ok");
 
         public EnterNamePopup(SerializedProperty profiles, EnterDelegate cb)
         {
             EnterCB = cb;
-            List<string> existingProfileNames = new List<string>();
             for (int i = 0; i < profiles.arraySize; i++)
             {
                 string profileName = profiles.GetArrayElementAtIndex(i).FindPropertyRelative("m_Name").stringValue;
@@ -49,6 +53,20 @@ namespace UnityEditor.AdaptivePerformance.Editor
             GUI.enabled = m_NewProfileName.Length != 0;
             if (GUILayout.Button("Save") || hitEnter)
             {
+                m_NewProfileName = m_NewProfileName.Trim();
+
+                if (existingProfileNames.Contains(m_NewProfileName))
+                {
+                    EditorUtility.DisplayDialog(s_WarningPopup, L10n.Tr("The Adaptive Performance Scaler Profile named " + m_NewProfileName + " already exists. Please rename and try again."), s_WarningPopupOption);
+                    return;
+                }
+
+                if (string.IsNullOrEmpty(m_NewProfileName))
+                {
+                    EditorUtility.DisplayDialog(s_WarningPopup, L10n.Tr("The Adaptive Performance Scaler Profile name is empty or contains white space only. Trailing white spaces are removed. Please rename and try again."), s_WarningPopupOption);
+                    return;
+                }
+
                 EnterCB(m_NewProfileName);
                 editorWindow.Close();
             }

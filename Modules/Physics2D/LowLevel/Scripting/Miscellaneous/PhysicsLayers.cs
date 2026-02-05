@@ -129,7 +129,7 @@ namespace UnityEngine.LowLevelPhysics2D
         }
 
         /// <summary>
-        /// Indivates an invalid layer ordinal. This is typically used when retrieving a layer ordinal but a name could not be found.
+        /// Indicates an invalid layer ordinal. This is typically used when retrieving a layer ordinal but a name could not be found.
         /// </summary>
         public const int InvalidLayerOrdinal = -1;
 

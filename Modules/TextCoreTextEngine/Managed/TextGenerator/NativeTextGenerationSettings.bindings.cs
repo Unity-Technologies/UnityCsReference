@@ -75,6 +75,10 @@ namespace UnityEngine.TextCore
                 margin = 0,
                 marginDirection = MarginDirection.Both,
                 marginUnitType = RichTextTagParser.TagUnitType.Pixels,
+                lineHeight = 0,
+                lineHeightUnitType = RichTextTagParser.TagUnitType.Pixels,
+                indent = 0,
+                indentUnitType = RichTextTagParser.TagUnitType.Pixels,
                 linkID = -1
             };
         }
@@ -210,6 +214,10 @@ namespace UnityEngine.TextCore
         public int margin;
         public MarginDirection marginDirection;
         public RichTextTagParser.TagUnitType marginUnitType;
+        public int lineHeight;           // Encoded in Fixed Point. 0 means use default line height.
+        public RichTextTagParser.TagUnitType lineHeightUnitType;
+        public int indent;          // Encoded in Fixed Point.
+        public RichTextTagParser.TagUnitType indentUnitType;
 
         public override string ToString()
         {

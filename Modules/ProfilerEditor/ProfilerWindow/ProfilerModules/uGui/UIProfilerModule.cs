@@ -11,7 +11,7 @@ using UnityEngine.Profiling;
 namespace UnityEditorInternal.Profiling
 {
     [Serializable]
-    [ProfilerModuleMetadata("UI", typeof(LocalizationResource), IconPath = "Profiler.UI")]
+    [ProfilerModuleMetadata("UI (Canvas)", typeof(LocalizationResource), IconPath = "Profiler.UI")]
     internal class UIProfilerModule : ProfilerModuleBase
     {
         const int k_DefaultOrderIndex = 10;

@@ -1478,7 +1478,12 @@ namespace UnityEditorInternal
             {
                 AnimationWindowCurve curve = state.filteredCurves.Find(c => changedCurve.curveId == c.GetHashCode());
                 if (curve != null)
+                {
+                    curve.Clear();
+                    curve.FromAnimationCurve(changedCurve.curve);
+
                     curves.Add(curve);
+                }
                 else
                     Debug.LogError("Could not match ChangedCurve data to destination curves.");
             }
