@@ -46,10 +46,12 @@ namespace UnityEngine.LowLevelPhysics2D
         /// Create a rotation with the specified direction.
         /// </summary>
         /// <param name="direction">The direction to use. This cannot be zero length.</param>
-        public PhysicsRotate(Vector2 direction) { this = PhysicsRotate_CreateDirection(in direction); }
+        public PhysicsRotate(Vector2 direction) { this.direction = direction.normalized; }
 
         /// <summary>
         /// Create a rotation with the specified angle.
+        /// 
+        /// NOTE: This cannot be used by Burst as the constructor makes an engine call to ensure the resultant direction is deterministic.
         /// </summary>
         /// <param name="angle">The rotation angle specified, in radians.</param>
         /// <returns>The rotation represented by the specified angle.</returns>
@@ -164,7 +166,7 @@ namespace UnityEngine.LowLevelPhysics2D
         /// <summary>
         /// Create a normalized rotation.
         /// </summary>
-        public readonly PhysicsRotate Normalized() => PhysicsRotate_CreateDirection(in direction);
+        public readonly PhysicsRotate Normalized() => PhysicsRotate_Normalize(in direction);
 
         /// <summary>
         /// Is the rotation normalized? If not, it should be normalized using <see cref="LowLevelPhysics2D.PhysicsRotate.Normalized"/>.

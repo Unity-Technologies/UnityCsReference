@@ -86,27 +86,23 @@ namespace UnityEngine.LowLevelPhysics2D
         public bool preSolveCallbacks { readonly get => m_PreSolveCallbacks; set => m_PreSolveCallbacks = value; }
 
         /// <summary>
-        /// Normally shapes onSstatic bodies don't create contacts when they are added to the world.
+        /// Normally shapes on Static bodies don't create contacts when they are added to the world.
         /// This overrides that behavior and causes contact creation.
         /// This significantly slows down Static body creation which can be important when there are many Static shapes.
         /// This is implicitly always true for Triggers, Dynamic bodies and Kinematic bodies.
+        ///
+        /// See <see cref="PhysicsShape.startStaticContacts"/>.
         /// </summary>
         public bool startStaticContacts { readonly get => m_StartStaticContacts; set => m_StartStaticContacts = value; }
 
         /// <summary>
         /// Should the body update its mass properties when this shape is created.
         /// Disabling this improves performance when multiple shapes are being added to the same body.
-        /// The mass of a body can then be explicitly updated by calling <see cref="LowLevelPhysics2D.PhysicsBody.ApplyMassFromShapes"/>
+        /// The mass of a body can then be explicitly updated by calling <see cref="PhysicsBody.ApplyMassFromShapes"/>
+        ///
+        /// See <see cref="PhysicsShape.startMassUpdate"/>.
         /// </summary>
         public bool startMassUpdate { readonly get => m_StartMassUpdate; set => m_StartMassUpdate = value; }
-
-        /// <summary>
-        /// The surface material for the shape comprising of many properties such as friction, bounciness, rolling resistance etc.
-        /// </summary>
-        /// <remarks>
-        /// This is exposed directly as a field rather than a property as it is extremely unlikely to ever change and causes usability issues as a property.
-        /// </remarks>
-        public PhysicsShape.SurfaceMaterial surfaceMaterial;
 
         /// <summary>
         /// The contact filter used to control which contacts this shape can participate in.
@@ -117,9 +113,12 @@ namespace UnityEngine.LowLevelPhysics2D
         public PhysicsShape.ContactFilter contactFilter;
 
         /// <summary>
-        /// The mover data used for the shape mover.
+        /// The surface material for the shape comprising of many properties such as friction, bounciness, rolling resistance etc.
         /// </summary>
-        public PhysicsShape.MoverData moverData;
+        /// <remarks>
+        /// This is exposed directly as a field rather than a property as it is extremely unlikely to ever change and causes usability issues as a property.
+        /// </remarks>
+        public PhysicsShape.SurfaceMaterial surfaceMaterial;
 
         #region Internal
 
@@ -134,5 +133,10 @@ namespace UnityEngine.LowLevelPhysics2D
         [SerializeField] bool m_StartMassUpdate;
 
         #endregion
+
+        /// <summary>
+        /// The mover data used for the shape mover.
+        /// </summary>
+        public PhysicsShape.MoverData moverData;
     }
 }

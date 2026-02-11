@@ -87,6 +87,7 @@ namespace UnityEngine.UIElements.UIR
         float m_IndexToVertexCountRatio;
         List<List<AllocToFree>> m_DeferredFrees;
         List<List<AllocToUpdate>> m_Updates;
+        List<MeshHandle> m_MeshesPendingFree;
         CommandListManager m_CommandListManager;
         UInt32[] m_Fences;
         MaterialPropertyBlock m_ConstantProps; // Properties that are constant throughout the evaluation of the commands
@@ -94,6 +95,7 @@ namespace UnityEngine.UIElements.UIR
         uint m_FrameIndex;
         uint m_NextUpdateID = 1; // For the current frame only, 0 is not an accepted value here
         DrawStatistics m_DrawStats;
+        bool m_RenderingInProgress;
 
         readonly LinkedPool<MeshHandle> m_MeshHandles = new LinkedPool<MeshHandle>(() => new MeshHandle(), mh => {});
         readonly DrawParams m_DrawParams = new DrawParams();
@@ -151,6 +153,7 @@ namespace UnityEngine.UIElements.UIR
 
             m_DeferredFrees = new List<List<AllocToFree>>((int)k_MaxQueuedFrameCount);
             m_Updates = new List<List<AllocToUpdate>>((int)k_MaxQueuedFrameCount);
+            m_MeshesPendingFree = new();
             for (int i = 0; i < k_MaxQueuedFrameCount; i++)
             {
                 m_DeferredFrees.Add(new List<AllocToFree>());
@@ -277,6 +280,7 @@ namespace UnityEngine.UIElements.UIR
 
         public MeshHandle Allocate(uint vertexCount, uint indexCount, out NativeSlice<Vertex> vertexData, out NativeSlice<UInt16> indexData, out UInt16 indexOffset)
         {
+            Debug.Assert(!m_RenderingInProgress);
             MeshHandle meshHandle = m_MeshHandles.Get();
             meshHandle.triangleCount = indexCount / 3;
             Allocate(meshHandle, vertexCount, indexCount, out vertexData, out indexData, false);
@@ -286,6 +290,7 @@ namespace UnityEngine.UIElements.UIR
 
         public void Update(MeshHandle mesh, uint vertexCount, out NativeSlice<Vertex> vertexData)
         {
+            Debug.Assert(!m_RenderingInProgress);
             Debug.Assert(mesh.allocVerts.size >= (uint)vertexCount);
             if (mesh.allocTime == m_FrameIndex)
             {
@@ -310,6 +315,7 @@ namespace UnityEngine.UIElements.UIR
 
         public void Update(MeshHandle mesh, uint vertexCount, uint indexCount, out NativeSlice<Vertex> vertexData, out NativeSlice<UInt16> indexData, out UInt16 indexOffset)
         {
+            Debug.Assert(!m_RenderingInProgress);
             Debug.Assert(mesh.allocVerts.size >= (uint)vertexCount);
             Debug.Assert(mesh.allocIndices.size >= (uint)indexCount);
             if (mesh.allocTime == m_FrameIndex)
@@ -364,6 +370,8 @@ namespace UnityEngine.UIElements.UIR
 
         void Allocate(MeshHandle meshHandle, uint vertexCount, uint indexCount, out NativeSlice<Vertex> vertexData, out NativeSlice<UInt16> indexData, bool shortLived)
         {
+            Debug.Assert(!m_RenderingInProgress);
+
             s_MarkerAllocate.Begin();
 
             Page page = null;
@@ -529,6 +537,13 @@ namespace UnityEngine.UIElements.UIR
 
         public void Free(MeshHandle mesh)
         {
+            if (m_RenderingInProgress)
+            {
+                // Defer mesh free until frame rendering completes
+                m_MeshesPendingFree.Add(mesh);
+                return;
+            }
+
             if (mesh.updateAllocID != 0) // Is there an update over this mesh
             {
                 int activeUpdateIndex = (int)(mesh.updateAllocID - 1); // -1 since 1 is the first update id in a frame
@@ -568,6 +583,8 @@ namespace UnityEngine.UIElements.UIR
 
         public void OnFrameRenderingBegin()
         {
+            m_RenderingInProgress = true;
+
             m_DrawStats = new DrawStatistics();
             m_DrawStats.currentFrameIndex = (int)m_FrameIndex;
 
@@ -1266,6 +1283,8 @@ namespace UnityEngine.UIElements.UIR
 
         public void AdvanceFrame()
         {
+            m_RenderingInProgress = false;
+
             s_MarkerAdvanceFrame.Begin();
 
             m_FrameIndex++;
@@ -1325,6 +1344,13 @@ namespace UnityEngine.UIElements.UIR
                 }
             }
             queueToUpdate.Clear();
+
+            foreach (var mesh in m_MeshesPendingFree)
+            {
+                Free(mesh);
+            }
+
+            m_MeshesPendingFree.Clear();
 
             PruneUnusedPages();
 

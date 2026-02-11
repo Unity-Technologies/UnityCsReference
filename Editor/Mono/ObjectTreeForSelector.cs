@@ -354,5 +354,14 @@ namespace UnityEditor
         {
             m_TreeView.GrabKeyboardFocus();
         }
+
+        internal void SetSelectionAndNotify(EntityId[] selection, bool doubleClicked)
+        {
+            m_TreeView.SetSelection(selection, false, false);
+            if (doubleClicked)
+                OnItemDoubleClicked(selection.Length > 0 ? selection[0] : EntityId.None);
+            else
+                OnItemSelectionChanged(selection);
+        }
     }
 } // namespace

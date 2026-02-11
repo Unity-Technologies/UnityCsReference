@@ -7,3 +7,4 @@ using System.Runtime.CompilerServices;
 [assembly: InternalsVisibleTo("Unity.VectorGraphics")]
 [assembly: InternalsVisibleTo("Unity.VectorGraphics.Editor")]
 [assembly: InternalsVisibleTo("Unity.VectorGraphics.Editor.Tests")]
+[assembly: InternalsVisibleTo("Unity.Modules.VectorGraphics.Tests.Editor")]

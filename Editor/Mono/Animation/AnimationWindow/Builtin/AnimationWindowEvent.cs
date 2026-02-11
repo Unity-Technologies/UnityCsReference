@@ -48,6 +48,7 @@ namespace UnityEditor.AnimationWindowBuiltin
         }
     }
 
+    [HelpURL("script-AnimationWindowEvent")]
     internal class AnimationWindowEvent : ScriptableObject
     {
         public GameObject root;

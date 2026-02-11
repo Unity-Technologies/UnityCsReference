@@ -2712,15 +2712,18 @@ namespace UnityEditor
             {
                 Undo.FlushTrackedObjects();
 
-                // Make sure all instance are unpacked so the merge code can delete GameObjects that are not matched
-                TransformVisitor visitor = new TransformVisitor();
-                visitor.VisitAll(plainGameObject.transform, (transform, userdata) => {
-                    GameObject go = transform.gameObject;
-                    if (IsOutermostPrefabInstanceRoot(go))
-                    {
-                        UnpackPrefabInstance(go, PrefabUnpackMode.Completely, InteractionMode.UserAction);
-                    }
-                }, null);
+                if (!settings.gameObjectsNotMatchedBecomesOverride)
+                {
+                    // Make sure all instance are unpacked so the merge code can delete GameObjects that are not matched
+                    TransformVisitor visitor = new TransformVisitor();
+                    visitor.VisitAll(plainGameObject.transform, (transform, userdata) => {
+                        GameObject go = transform.gameObject;
+                        if (IsOutermostPrefabInstanceRoot(go))
+                        {
+                            UnpackPrefabInstance(go, PrefabUnpackMode.Completely, InteractionMode.UserAction);
+                        }
+                    }, null);
+                }
 
                 Undo.SetCurrentGroupName(undoActionName);
                 Undo.RegisterFullObjectHierarchyUndo(plainGameObject, undoActionName);

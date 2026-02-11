@@ -20,7 +20,7 @@ namespace UnityEngine.LowLevelPhysics2D
         /// <summary>
         /// Create an identity transform.
         /// </summary>
-        public PhysicsTransform() { this = identityTransform; }
+        public PhysicsTransform() { position = Vector2.zero; rotation = PhysicsRotate.identity; }
 
         /// <summary>
         /// Create a transformation with the specified translation and no rotation.
@@ -97,21 +97,20 @@ namespace UnityEngine.LowLevelPhysics2D
         /// <summary>
         /// The identity transformation i.e. a transformation with no translation or rotation.
         /// </summary>
-        public static PhysicsTransform identity { [MethodImpl(MethodImplOptionsEx.AggressiveInlining)] get => identityTransform; }
-        private static readonly PhysicsTransform identityTransform = new() { position = Vector2.zero, rotation = PhysicsRotate.identity };
+        public static PhysicsTransform identity { [MethodImpl(MethodImplOptionsEx.AggressiveInlining)] get => new(); }
 
         /// <summary>
         /// Implicit conversion of a <see cref="UnityEngine.Vector2"/> that represents a translation transformation with no rotation.
         /// </summary>
         /// <param name="position">The translation for the transformation.</param>
-        [MethodImpl(MethodImplOptionsEx.AggressiveInlining)] public static implicit operator PhysicsTransform(Vector2 position) { return new PhysicsTransform { position = position, rotation = PhysicsRotate.identity }; }
+        [MethodImpl(MethodImplOptionsEx.AggressiveInlining)] public static implicit operator PhysicsTransform(Vector2 position) => new(position: position, rotation: PhysicsRotate.identity);
 
         /// <summary>
         /// Implicit conversion of a <see cref="LowLevelPhysics2D.PhysicsRotate"/> that represents a rotation transformation with no translation.
         /// </summary>
         /// <param name="rotation">The translation for the transformation.</param>
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
-        public static implicit operator PhysicsTransform(PhysicsRotate rotation) { return new PhysicsTransform { position = Vector2.zero, rotation = rotation }; }
+        public static implicit operator PhysicsTransform(PhysicsRotate rotation) => new(position: Vector2.zero, rotation: rotation);
 
         /// <undoc/>
         public override readonly string ToString() => $"position={position}, rotation={rotation}";

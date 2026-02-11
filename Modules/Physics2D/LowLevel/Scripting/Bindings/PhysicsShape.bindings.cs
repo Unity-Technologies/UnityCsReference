@@ -68,6 +68,8 @@ namespace UnityEngine.LowLevelPhysics2D
         [NativeMethod(Name = "PhysicsShape::GetContactFilterCallbacks", IsThreadSafe = true)] extern internal static bool PhysicsShape_GetContactFilterCallbacks(PhysicsShape shape);
         [NativeMethod(Name = "PhysicsShape::SetPreSolveCallbacks", IsThreadSafe = true)] extern internal static void PhysicsShape_SetPreSolveCallbacks(PhysicsShape shape, bool flag);
         [NativeMethod(Name = "PhysicsShape::GetPreSolveCallbacks", IsThreadSafe = true)] extern internal static bool PhysicsShape_GetPreSolveCallbacks(PhysicsShape shape);
+        [NativeMethod(Name = "PhysicsShape::GetStartStaticContacts", IsThreadSafe = true)] extern internal static bool PhysicsShape_GetStartStaticContacts(PhysicsShape shape);
+        [NativeMethod(Name = "PhysicsShape::GetStartMassUpdate", IsThreadSafe = true)] extern internal static bool PhysicsShape_GetStartMassUpdate(PhysicsShape shape);
         [NativeMethod(Name = "PhysicsShape::OverlapPoint", IsThreadSafe = true)] extern internal static bool PhysicsShape_OverlapPoint(PhysicsShape shape, Vector2 point);
         [NativeMethod(Name = "PhysicsShape::ClosestPoint", IsThreadSafe = true)] extern internal static Vector2 PhysicsShape_ClosestPoint(PhysicsShape shape, Vector2 point);
         [NativeMethod(Name = "PhysicsShape::CastRay", IsThreadSafe = true)] extern internal static PhysicsQuery.CastResult PhysicsShape_CastRay(PhysicsShape shape, PhysicsQuery.CastRayInput input);

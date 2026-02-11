@@ -237,7 +237,6 @@ namespace UnityEditor
             serializedObject.Update();
 
             GUILayout.Space(10);
-            GUILayout.BeginVertical(EditorStyles.inspectorDefaultMargins);
 
             using (new EditorGUI.DisabledScope(true))
             {
@@ -436,7 +435,6 @@ namespace UnityEditor
                 if (newProjectOverlayIcons || newHierarchyOverlayIcons || newOtherOverlayIcons)
                     DrawOverlayDescriptions();
             }
-            GUILayout.EndVertical();
         }
 
         [SettingsProvider]

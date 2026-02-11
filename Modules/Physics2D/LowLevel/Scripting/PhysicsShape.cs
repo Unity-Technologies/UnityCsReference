@@ -706,7 +706,7 @@ namespace UnityEngine.LowLevelPhysics2D
             /// Controls the amount this shape can push against a mover.
             /// To effectively set no limit, use <see cref="System.Single.MaxValue"/>.
             /// </summary>
-            public float pushLimit { readonly get => m_PushLimit; set => m_PushLimit = value; }
+            public float pushLimit { readonly get => m_PushLimit; set => m_PushLimit = Mathf.Max(0.0f, value); }
 
             /// <summary>
             /// Controls if this shape can clip the mover velocity.
@@ -715,8 +715,8 @@ namespace UnityEngine.LowLevelPhysics2D
 
             #region Internal
 
-            float m_PushLimit;
-            bool m_ClipVelocity;
+            [SerializeField][Min(0f)] float m_PushLimit;
+            [SerializeField] bool m_ClipVelocity;
 
             #endregion
         }
@@ -1077,14 +1077,9 @@ namespace UnityEngine.LowLevelPhysics2D
         public static void DestroyBatch(ReadOnlySpan<PhysicsShape> shapes, bool updateBodyMass) => PhysicsShape_DestroyBatch(shapes, updateBodyMass);
 
         /// <summary>
-        /// Get/Set a shape definition by accessing all of its properties.
+        /// Get/Set a shape definition by accessing all of its current properties.
         /// This is provided as convenience only and should not be used when performance is important as all the properties defined in the definition are accessed sequentially.
         /// You should try to only use the specific properties you need rather than using this feature.
-        /// 
-        /// The following properties are not read and will be at their defaults:
-        /// 
-        ///- <see cref="LowLevelPhysics2D.PhysicsShapeDefinition.startMassUpdate"/>
-        ///- <see cref="LowLevelPhysics2D.PhysicsShapeDefinition.startStaticContacts"/>
         /// </summary>
         public PhysicsShapeDefinition definition { get => PhysicsShape_ReadDefinition(this); set => PhysicsShape_WriteDefinition(this, value, false); }
 
@@ -1270,6 +1265,25 @@ namespace UnityEngine.LowLevelPhysics2D
         /// A pre-solve callback will call the <see cref="LowLevelPhysics2D.PhysicsShape.callbackTarget"/> for both shapes involved if they implement <see cref="LowLevelPhysics2D.PhysicsCallbacks.IPreSolveCallback"/>.
         /// </summary>
         public readonly bool preSolveCallbacks { get => PhysicsShape_GetPreSolveCallbacks(this); set => PhysicsShape_SetPreSolveCallbacks(this, value); }
+
+        /// <summary>
+        /// Normally shapes on Static bodies don't create contacts when they are added to the world.
+        /// This overrides that behavior and causes contact creation.
+        /// This significantly slows down Static body creation which can be important when there are many Static shapes.
+        /// This is implicitly always true for Triggers, Dynamic bodies and Kinematic bodies.
+        ///
+        /// See <see cref="PhysicsShapeDefinition.startStaticContacts"/>.
+        /// </summary>
+        public readonly bool startStaticContacts => PhysicsShape_GetStartStaticContacts(this);
+
+        /// <summary>
+        /// Should the body update its mass properties when this shape is created.
+        /// Disabling this improves performance when multiple shapes are being added to the same body.
+        /// The mass of a body can then be explicitly updated by calling <see cref="PhysicsBody.ApplyMassFromShapes"/>
+        ///
+        /// See <see cref="PhysicsShapeDefinition.startMassUpdate"/>.
+        /// </summary>
+        public readonly bool startMassUpdate => PhysicsShape_GetStartMassUpdate(this);
 
         /// <summary>
         /// Check if a point intersects the shape.

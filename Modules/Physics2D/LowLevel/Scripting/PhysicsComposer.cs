@@ -454,6 +454,11 @@ namespace UnityEngine.LowLevelPhysics2D
         public readonly void RemoveLayer(LayerHandle layerHandle) => PhysicsComposer_RemoveLayer(this, layerHandle);
 
         /// <summary>
+        /// Remove all layers from the Physics Composer.
+        /// </summary>
+        public readonly void ClearLayers() => PhysicsComposer_ClearLayers(this);
+
+        /// <summary>
         /// Get/Set if Delaunay tessellation is to be used.
         /// </summary>
         public readonly bool useDelaunay { get => PhysicsComposer_GetDelaunay(this); set => PhysicsComposer_SetDelaunay(this, value); }

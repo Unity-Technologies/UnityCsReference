@@ -69,7 +69,7 @@ namespace UnityEngine.TextCore
                 cspace = 0,
                 cspaceUnitType = RichTextTagParser.TagUnitType.Pixels,
                 spriteColor = this.color,
-                spriteID = -1,
+                spriteID = EntityId.None,
                 spriteScale = 0,
                 spriteTint = false,
                 margin = 0,
@@ -79,6 +79,10 @@ namespace UnityEngine.TextCore
                 lineHeightUnitType = RichTextTagParser.TagUnitType.Pixels,
                 indent = 0,
                 indentUnitType = RichTextTagParser.TagUnitType.Pixels,
+                vOffset = 0,
+                vOffsetUnitType = RichTextTagParser.TagUnitType.Pixels,
+                subscriptNestingLevel = 0,
+                superscriptNestingLevel = 0,
                 linkID = -1
             };
         }
@@ -207,7 +211,7 @@ namespace UnityEngine.TextCore
         public Color32 highlightColor;
         public Vector4 highlightPadding;
         public GlyphMetrics spriteMetrics;
-        public int spriteID;
+        public EntityId spriteID;
         public bool spriteTint;
         public int spriteScale;
         public Color32 spriteColor;
@@ -218,6 +222,10 @@ namespace UnityEngine.TextCore
         public RichTextTagParser.TagUnitType lineHeightUnitType;
         public int indent;          // Encoded in Fixed Point.
         public RichTextTagParser.TagUnitType indentUnitType;
+        public int vOffset;         // Encoded in Fixed Point.
+        public RichTextTagParser.TagUnitType vOffsetUnitType;
+        public sbyte subscriptNestingLevel;
+        public sbyte superscriptNestingLevel;
 
         public override string ToString()
         {
