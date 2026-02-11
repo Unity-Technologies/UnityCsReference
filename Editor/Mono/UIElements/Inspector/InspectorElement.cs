@@ -413,6 +413,8 @@ namespace UnityEditor.UIElements
             m_Editor = value;
             m_Rebind = true;
 
+            // We need to set the handler cache for any custom property drawers that may be created during Bind (UUM-132087).
+            ScriptAttributeUtility.propertyHandlerCache = value.propertyHandlerCache;
             this.Bind(m_Editor.serializedObject);
         }
 
