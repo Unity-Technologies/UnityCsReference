@@ -78,5 +78,17 @@ namespace UnityEngine.Rendering
         {
             return GetEnabledKeywords(this);
         }
+
+        public override string ToString()
+        {
+            var shaderKeywords = GetEnabledKeywords(this);
+            Array.Sort(shaderKeywords, ShaderKeywordComparer);
+            return string.Join(' ', shaderKeywords);
+        }
+
+        private static int ShaderKeywordComparer(ShaderKeyword kw1, ShaderKeyword kw2)
+        {
+            return string.Compare(kw1.name, kw2.name);
+        }
     }
 }

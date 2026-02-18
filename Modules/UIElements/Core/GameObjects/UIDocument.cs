@@ -884,7 +884,7 @@ namespace UnityEngine.UIElements
 
                 foreach (var companion in companions)
                 {
-                    if (companion != this && companion.isActiveAndEnabled)
+                    if (companion != null && companion != this && companion.isActiveAndEnabled)
                     {
                         companion.enabled = false;
                         disabledCompanions.Add(companion);

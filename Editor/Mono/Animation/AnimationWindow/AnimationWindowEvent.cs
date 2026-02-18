@@ -55,11 +55,13 @@ namespace UnityEditor
         }
     }
 
-    internal class AnimationWindowEvent : ScriptableObject
+    [HelpURL("script-AnimationWindowEvent")]
+    class AnimationWindowEvent : ScriptableObject
     {
         public GameObject root;
         public AnimationClip clip;
-        public AnimationClipInfoProperties clipInfo;
+        // Only used within AnimationClipEditor.
+        [NonSerialized] public AnimationClipInfoProperties clipInfo;
         public int eventIndex;
 
         static public AnimationWindowEvent CreateAndEdit(GameObject root, AnimationClip clip, float time)
