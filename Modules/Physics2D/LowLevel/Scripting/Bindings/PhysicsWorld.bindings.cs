@@ -133,7 +133,7 @@ namespace UnityEngine.LowLevelPhysics2D
         [NativeMethod(Name = "PhysicsWorld::SetDrawElementDepth", IsThreadSafe = true)] extern internal static void PhysicsWorld_SetElementDepth(PhysicsWorld world, float elementDepth);
         [NativeMethod(Name = "PhysicsWorld::GetDrawElementDepth", IsThreadSafe = true)] extern internal static float PhysicsWorld_GetElementDepth(PhysicsWorld world);
         [NativeMethod(Name = "PhysicsWorld::GetDrawResults", IsThreadSafe = true)] extern internal static PhysicsWorld.DrawResults PhysicsWorld_GetDrawResults(PhysicsWorld world);
-        [NativeMethod(Name = "PhysicsWorld::ClearDraw", IsThreadSafe = true)] extern internal static void PhysicsWorld_ClearDraw(PhysicsWorld world, bool clearWorldDraw, bool clearTimedDraw);
+        [NativeMethod(Name = "PhysicsWorld::ClearDraw", IsThreadSafe = true)] extern internal static void PhysicsWorld_ClearDraw(PhysicsWorld world, bool clearWorldDraw, bool clearCustomDraw, bool clearTimedDraw);
         [NativeMethod(Name = "PhysicsWorld::Draw", IsThreadSafe = true)] extern internal static void PhysicsWorld_Draw(PhysicsWorld world, PhysicsAABB viewAABB);
         [NativeMethod(Name = "PhysicsWorld::DrawCircleGeometry", IsThreadSafe = true)] extern internal static void PhysicsWorld_DrawCircleGeometry(PhysicsWorld world, CircleGeometry geometry, PhysicsTransform transform, Color color, float lifetime, PhysicsWorld.DrawFillOptions drawFillOptions);
         [NativeMethod(Name = "PhysicsWorld::DrawCapsuleGeometry", IsThreadSafe = true)] extern internal static void PhysicsWorld_DrawCapsuleGeometry(PhysicsWorld world, CapsuleGeometry geometry, PhysicsTransform transform, Color color, float lifetime, PhysicsWorld.DrawFillOptions drawFillOptions);

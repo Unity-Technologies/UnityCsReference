@@ -112,7 +112,10 @@ namespace UnityEditor
 
         internal SettingsProvider GetCurrentProvider()
         {
-            return m_TreeView.currentProvider;
+            // doing this null check provides safety for calls made in
+            // OnDisable when the tree view may have already been destroyed
+            // we see this when switching to Play Mode
+            return m_TreeView == null ? null : m_TreeView.currentProvider;
         }
 
         public void AddItemsToMenu(GenericMenu menu)

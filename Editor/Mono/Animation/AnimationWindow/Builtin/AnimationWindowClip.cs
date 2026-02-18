@@ -9,10 +9,11 @@ using UnityEditorInternal;
 
 namespace UnityEditor.AnimationWindowBuiltin
 {
+    [Serializable]
     class AnimationWindowClip : IAnimationWindowClip, IEquatable<AnimationWindowClip>
     {
-        AnimationClip m_Clip;
-        GameObject m_RootGameObject;
+        [SerializeField] AnimationClip m_Clip;
+        [SerializeField] GameObject m_RootGameObject;
 
         public string name => m_Clip.name;
         public int id => m_Clip.GetInstanceID();

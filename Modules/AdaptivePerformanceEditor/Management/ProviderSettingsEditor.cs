@@ -424,9 +424,10 @@ namespace UnityEditor.AdaptivePerformance.Editor
                         GUIContent content = new GUIContent(currentSetting.ScalerProfiles[i].Name);
                         EditorGUI.indentLevel++;
                         EditorGUILayout.BeginHorizontal();
+                        Rect foldoutRect = EditorGUILayout.GetControlRect();
                         var style = new GUIStyle(EditorStyles.foldout);
                         style.clipping = TextClipping.Ellipsis;
-                        m_FoldoutState[i] = EditorGUILayout.Foldout(m_FoldoutState[i], content, true, style);
+                        m_FoldoutState[i] = EditorGUI.Foldout(foldoutRect, m_FoldoutState[i], content, true, style);
                         GUILayout.FlexibleSpace();
                         GUIStyle menuButton = "WindowMenuButton";
 

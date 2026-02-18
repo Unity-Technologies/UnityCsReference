@@ -46,9 +46,7 @@ namespace UnityEditor
 
         private const string k_WarningImmutableSelectionFormat = "The operation \"{0}\" cannot be executed because the selection or package is read-only.";
 
-        private const string k_WarningRootFolderDeletionFormat = "The operation \"{0}\" cannot be executed because the selection is a root folder.";
-
-        private const string k_ImmutableSelectionActionFormat = " The operation \"{0}\" is not allowed in an immutable package.";
+        private const string k_WarningRootFolderDeletionFormat = "The operation \"{0}\" cannot be executed because the selection is a root folder or an immutable asset.";
 
         // Alive ProjectBrowsers
         private static List<ProjectBrowser> s_ProjectBrowsers = new List<ProjectBrowser>();
@@ -1715,6 +1713,32 @@ namespace UnityEditor
                 && !CanDeleteSelectedAssets();
         }
 
+        bool ValidateCommandEvents()
+        {
+            var evt = Event.current;
+            EventType eventType = evt.type;
+            // We are only checking this on the ValidateCommand event as we will not use it, and so the ExecuteCommand event won't be triggered.
+            if (eventType == EventType.ValidateCommand)
+            {
+                // Check if event made on immutable package
+                if (ShouldDiscardCommandsEventsForImmutablePackages())
+                {
+                    Debug.LogFormat(LogType.Warning, LogOption.NoStacktrace, null, k_WarningImmutableSelectionFormat, evt.commandName);
+                    return false;
+                }
+
+                // Check if event is "delete on root folder" or "delete an immutable asset".
+                // Note that if the folder is in favorite, there is no need for root check.
+                // Because we only remove it from the favorite list, not delete the asset.
+                if (!SelectionIsFavorite() && ShouldDiscardCommandsEventsForRootFolders())
+                {
+                    Debug.LogFormat(LogType.Warning, LogOption.NoStacktrace, null, k_WarningRootFolderDeletionFormat, evt.commandName);
+                    return false;
+                }
+            }
+            return true;
+        }
+
         void HandleCommandEventsForTreeView()
         {
             // Handle all event for tree view
@@ -1730,21 +1754,6 @@ namespace UnityEditor
 
                 // Only one type can be selected at a time (and savedfilters can only be single-selected)
                 ItemType itemType = GetItemType(instanceIDs[0]);
-
-                // Check if event made on immutable package
-                if (itemType == ItemType.Asset)
-                {
-                    if (ShouldDiscardCommandsEventsForImmutablePackages())
-                    {
-                        EditorUtility.DisplayDialog(L10n.Tr("Invalid Operation"), L10n.Tr(string.Format(k_ImmutableSelectionActionFormat, Event.current.commandName)), L10n.Tr("OK"));
-                        return;
-                    }
-                    if (ShouldDiscardCommandsEventsForRootFolders())
-                    {
-                        EditorUtility.DisplayDialog(L10n.Tr("Invalid Operation"), L10n.Tr("Deleting a root folder is not allowed."), L10n.Tr("OK"));
-                        return;
-                    }
-                }
 
                 if (evt.commandName == EventCommandNames.Delete || evt.commandName == EventCommandNames.SoftDelete)
                 {
@@ -1829,27 +1838,12 @@ namespace UnityEditor
 
         void HandleCommandEvents()
         {
-            // Check if event made on immutable package
-            if (ShouldDiscardCommandsEventsForImmutablePackages())
-            {
-                Debug.LogFormat(LogType.Warning, LogOption.NoStacktrace, null, k_WarningImmutableSelectionFormat, Event.current.commandName);
-                return;
-            }
-            // Check if event is delete on root folder
-            // Note that if the folder is in favorite, there is no need for root check.
-            // Because we only remove it from the favorite list, not delete the asset.
-            if (!SelectionIsFavorite() && ShouldDiscardCommandsEventsForRootFolders())
-            {
-                Debug.LogFormat(LogType.Warning, LogOption.NoStacktrace, null, k_WarningRootFolderDeletionFormat, Event.current.commandName);
-                return;
-            }
-
             var evt = Event.current;
             EventType eventType = evt.type;
+
             if (eventType == EventType.ExecuteCommand || eventType == EventType.ValidateCommand || evt.keyCode == KeyCode.Escape)
             {
                 bool execute = eventType == EventType.ExecuteCommand;
-
                 if (evt.commandName == EventCommandNames.Delete || evt.commandName == EventCommandNames.SoftDelete)
                 {
                     evt.Use();
@@ -2119,11 +2113,16 @@ namespace UnityEditor
             if (m_ViewMode == ViewMode.TwoColumns)
                 useTreeViewSelectionInsteadOfMainSelection = GUIUtility.keyboardControl == m_TreeViewKeyboardControlID;
 
-            // Handle command events AFTER tree and list view since commands events should be handled by text fields first (rename overlay + search field)
-            // Let folder/filters tree view try to handle command events first if it has keyboard focus
-            if (m_ViewMode == ViewMode.TwoColumns && GUIUtility.keyboardControl == m_TreeViewKeyboardControlID)
-                HandleCommandEventsForTreeView();
-            HandleCommandEvents();
+            // Checking first if the command is valid
+            // They might be invalid when trying to target root folders, immutable assets or package assets
+            if (ValidateCommandEvents())
+            {
+                // Handle command events AFTER tree and list view since commands events should be handled by text fields first (rename overlay + search field)
+                // Let folder/filters tree view try to handle command events first if it has keyboard focus
+                if (m_ViewMode == ViewMode.TwoColumns && GUIUtility.keyboardControl == m_TreeViewKeyboardControlID)
+                    HandleCommandEventsForTreeView();
+                HandleCommandEvents();
+            }
         }
 
         void HandleContextClickInListArea(Rect listRect)
@@ -2996,7 +2995,7 @@ namespace UnityEditor
                 m_ListArea.Frame(instanceID, frame, ping);
             }
         }
-        
+
         static bool IsBuiltinResource(string resPath)
         {
             return string.Equals(resPath, "resources/unity_builtin_extra", StringComparison.OrdinalIgnoreCase) ||

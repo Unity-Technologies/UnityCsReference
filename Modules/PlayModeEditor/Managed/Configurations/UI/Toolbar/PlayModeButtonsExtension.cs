@@ -57,8 +57,6 @@ namespace Unity.PlayMode.Editor
                 m_OriginalButtons[i] = buttonsStrip.ElementAt(i);
             }
 
-            Assert.AreEqual(3, m_OriginalButtons.Length);
-
             foreach (var button in m_OriginalButtons)
                 button.style.display = DisplayStyle.None;
 

@@ -250,5 +250,7 @@ using System.Runtime.CompilerServices;
 [assembly: InternalsVisibleTo("Unity.Hierarchy.PerformanceTests")]
 [assembly: InternalsVisibleTo("Unity.Modules.AssetBundle.AssetBundles.Tests.Runtime")]
 [assembly: InternalsVisibleTo("Unity.Modules.Core.EditorUtils.Tests.Editor")]
+[assembly: InternalsVisibleTo("Unity.Modules.Umpe.Tests.Editor")]
+
 [assembly: InternalsVisibleTo("Unity.Modules.SceneTemplateEditor.Tests.Editor")]
 

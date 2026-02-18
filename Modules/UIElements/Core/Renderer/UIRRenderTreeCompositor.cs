@@ -300,7 +300,13 @@ namespace UnityEngine.UIElements.UIR
 
                     // Store the texel offsets in "pixels" since we do not know the texture size yet.
                     // They will be converted to UVs once rendered.
-                    op.parent.drawSourceTexOffsets = new Vector4(readMargins.left, readMargins.top, readMargins.right, readMargins.bottom);
+                    // Scale by DPI to convert from points to physical pixels.
+                    float scale = op.renderTree.rootRenderData.owner.scaledPixelsPerPoint;
+                    op.parent.drawSourceTexOffsets = new Vector4(
+                        readMargins.left * scale,
+                        readMargins.top * scale,
+                        readMargins.right * scale,
+                        readMargins.bottom * scale);
                 }
                 else
                 {
@@ -314,11 +320,18 @@ namespace UnityEngine.UIElements.UIR
 
             if (op.parent != null)
             {
+                int width = op.bounds.width;
+                int height = op.bounds.height;
+
+                // Request a texture size that accounts for the scaling (DPI) of the render tree
+                float scale = op.renderTree.rootRenderData.owner.scaledPixelsPerPoint;
+                width = Mathf.CeilToInt(width * scale);
+                height = Mathf.CeilToInt(height * scale);
+
                 RenderTreeAtlas.AtlasBlock block;
-                if (RenderTreeAtlas.ReserveSize(op.bounds.width, op.bounds.height, out block))
+                if (RenderTreeAtlas.ReserveSize(width, height, out block))
                 {
                     op.dstAtlasBlock = block;
-
                     if (op.parent.type == DrawOperationType.RenderTree)
                     {
                         op.renderTree.quadRect = op.bounds;
@@ -434,19 +447,15 @@ namespace UnityEngine.UIElements.UIR
 
                         bool readsGamma = QualitySettings.activeColorSpace == ColorSpace.Gamma || forceGamma;
 
-                        if (op.FilterPass.prepareMaterialPropertyBlockCallback != null || op.FilterPass.applySettingsCallback != null)
-                        {
-                            if (op.FilterPass.prepareMaterialPropertyBlockCallback != null)
-                                op.FilterPass.prepareMaterialPropertyBlockCallback(m_Block, op.filter);
-                            if (op.FilterPass.applySettingsCallback != null)
-                                op.FilterPass.applySettingsCallback(m_Block, new FilterPassContext
-                                {
-                                    filterFunction = op.filter,
-                                    filterPassIndex = op.FilterPassIndex,
-                                    readsGamma = readsGamma,
-                                    writesGamma = QualitySettings.activeColorSpace == ColorSpace.Gamma || forceGamma && isLastFilterPass,
-                                });
-                        }
+                        if (op.FilterPass.applySettingsCallback != null)
+                            op.FilterPass.applySettingsCallback(m_Block, new FilterPassContext
+                            {
+                                filterFunction = op.filter,
+                                filterPassIndex = op.FilterPassIndex,
+                                readsGamma = readsGamma,
+                                writesGamma = QualitySettings.activeColorSpace == ColorSpace.Gamma || forceGamma && isLastFilterPass,
+                                scaledPixelsPerPoint = op.visualElement.scaledPixelsPerPoint,
+                            });
 #pragma warning restore 618
                         else
                             ApplyEffectParameters(op.FilterPass, op.filter, op.visualElement, readsGamma);

@@ -119,7 +119,7 @@ namespace UnityEditor.Search.Providers
             m_QueryEngine.AddFilter<int>("id", GetId);
             m_QueryEngine.AddFilter("path", GetPath);
             m_QueryEngine.AddFilter<string>("is", OnIsFilter, new[] {":"});
-            m_QueryEngine.AddFilter<MissingReferenceFilter>("missing", OnMissing, new[] { ":" });
+            m_QueryEngine.AddFilter<MissingReferenceFilter>("missing", OnMissing, new[] { "=", ":" });
             m_QueryEngine.AddFilter<string>("t", OnTypeFilter, new[] {"=", ":"});
             var refFilter = m_QueryEngine.SetFilter<int>("ref", GetReferences, new[] { "=", ":" });
             SetupReferenceFilterTypeParsers(refFilter);

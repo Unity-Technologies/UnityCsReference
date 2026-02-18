@@ -2390,7 +2390,7 @@ namespace UnityEngine.LowLevelPhysics2D
         /// Clear all the custom drawn items that have a lifetime.
         /// This is only used in the Unity Editor or in a Development Player.
         /// </summary>
-        public readonly void ClearDraw() => PhysicsWorld_ClearDraw(this, clearWorldDraw: false, clearTimedDraw: true);
+        public readonly void ClearDraw() => PhysicsWorld_ClearDraw(this, clearWorldDraw: false, clearCustomDraw: true, clearTimedDraw: true);
 
         /// <summary>
         /// Draw the specified Circle Geometry.
@@ -2586,10 +2586,7 @@ namespace UnityEngine.LowLevelPhysics2D
         /// <param name="drawAABB">The draw region to use to draw the world. A default PhysicsAABB will draw everything.</param>
         internal readonly void Draw(PhysicsAABB drawAABB) => PhysicsWorld_Draw(this, drawAABB);
 
-        /// <summary>
-        /// Draw all the worlds.
-        /// </summary>
-        /// <param name="drawAABB">The draw region to use to draw the world. A default PhysicsAABB will draw everything.</param>
+        /// <undoc/>
         internal static void DrawAllWorlds(PhysicsAABB drawAABB) => PhysicsWorld_DrawAllWorlds(drawAABB);
 
         /// <summary>

@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
 using UnityEngine;
 
 namespace UnityEditor.AnimationWindowBuiltin
@@ -49,11 +50,12 @@ namespace UnityEditor.AnimationWindowBuiltin
     }
 
     [HelpURL("script-AnimationWindowEvent")]
-    internal class AnimationWindowEvent : ScriptableObject
+    class AnimationWindowEvent : ScriptableObject
     {
         public GameObject root;
         public AnimationClip clip;
-        public AnimationClipInfoProperties clipInfo;
+        // Only used within AnimationClipEditor.
+        [NonSerialized] public AnimationClipInfoProperties clipInfo;
         public int eventIndex;
 
         static public AnimationWindowEvent CreateAndEdit(GameObject root, AnimationClip clip, float time)

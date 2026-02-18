@@ -283,7 +283,7 @@ namespace UnityEngine.TextCore.Text
             s_PermanentCache.RemoveFromCache(this);
         }
 
-        public void RemoveFromPermanentCacheATG()
+        public virtual void RemoveFromPermanentCacheATG()
         {
             if (IsCachedPermanentATG)
             {

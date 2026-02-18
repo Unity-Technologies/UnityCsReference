@@ -4950,9 +4950,6 @@
     <Compile Include="..\..\Modules\ClothEditor\ClothInspector.cs">
       <Link>Modules\ClothEditor\ClothInspector.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\ClothEditor\ScriptBindings\ClothUtilities.bindings.cs">
-      <Link>Modules\ClothEditor\ScriptBindings\ClothUtilities.bindings.cs</Link>
-    </Compile>
     <Compile Include="..\..\Modules\CloudServicesSettingsEditor\Ads\ScriptBindings\AdvertisementSettings.bindings.cs">
       <Link>Modules\CloudServicesSettingsEditor\Ads\ScriptBindings\AdvertisementSettings.bindings.cs</Link>
     </Compile>
@@ -11372,6 +11369,12 @@
     </Compile>
     <Compile Include="..\..\Modules\UMPE\Editor\UMPE.bindings.cs">
       <Link>Modules\UMPE\Editor\UMPE.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UMPE\LocalPackages\com.unity.standaloneapp\Editor\StandaloneApp.cs">
+      <Link>Modules\UMPE\LocalPackages\com.unity.standaloneapp\Editor\StandaloneApp.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UMPE\LocalPackages\com.unity.standaloneapp\Editor\StandaloneWindow.cs">
+      <Link>Modules\UMPE\LocalPackages\com.unity.standaloneapp\Editor\StandaloneWindow.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\UnityConnectEditor\Analytics\EditorGameServicesAnalytics.cs">
       <Link>Modules\UnityConnectEditor\Analytics\EditorGameServicesAnalytics.cs</Link>

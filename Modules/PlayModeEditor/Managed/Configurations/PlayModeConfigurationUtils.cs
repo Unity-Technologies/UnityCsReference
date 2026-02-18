@@ -61,7 +61,7 @@ namespace Unity.PlayMode.Editor
             if (s_AllConfigs == null)
             {
                 s_AllConfigs = new List<PlayModeConfiguration>();
-                var guids = AssetDatabase.FindAssets($"t:{nameof(PlayModeConfiguration)}");
+                var guids = AssetDatabase.FindAssets($"t:{typeof(PlayModeConfiguration).FullName}");
                 foreach (var guid in guids)
                 {
                     var path = AssetDatabase.GUIDToAssetPath(guid);

@@ -195,7 +195,7 @@ namespace UnityEngine.LowLevelPhysics2D
         /// This is only used in the Unity Editor or in a Development Player.
         /// See <see cref="LowLevelPhysics2D.PhysicsWorld.drawThickness"/>.
         /// </summary>
-        public float drawThickness { readonly get => m_DrawThickness; set => m_DrawThickness = Mathf.Clamp(value, 1f, 10f); }
+        public float drawThickness { readonly get => m_DrawThickness; set => m_DrawThickness = Mathf.Clamp(value, 1f, 5f); }
 
         /// <summary>
         /// Controls the draw fill alpha. This is used to scale the interior fill alpha and is only used when <see cref="LowLevelPhysics2D.PhysicsWorld.DrawFillOptions.Outline"/> is used so that the interior color can be distinguished from the outline color by transparency.
@@ -266,7 +266,7 @@ namespace UnityEngine.LowLevelPhysics2D
         [SerializeField] [Min(0.0f)] float m_MaximumLinearSpeed;
         [SerializeField] PhysicsWorld.DrawOptions m_DrawOptions;
         [SerializeField] PhysicsWorld.DrawFillOptions m_DrawFillOptions;
-        [SerializeField] [Range(1f, 10f)] float m_DrawThickness;
+        [SerializeField] [Range(1f, 5f)] float m_DrawThickness;
         [SerializeField] [Range(0f, 1f)] float m_DrawFillAlpha;
         [SerializeField] [Range(0.001f, 10f)] float m_DrawPointScale;
         [SerializeField] [Range(0.001f, 10f)] float m_DrawNormalScale;

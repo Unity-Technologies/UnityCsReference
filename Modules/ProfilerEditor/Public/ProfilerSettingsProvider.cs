@@ -21,6 +21,8 @@ namespace UnityEditor.Profiling
             public static readonly GUIContent k_DefaultRecordState = EditorGUIUtility.TrTextContent("Default recording state", "Recording state in which the profiler should start the first time, or when not remembering state.");
             public static readonly GUIContent k_DefaultTargetMode = EditorGUIUtility.TrTextContent("Default editor target mode on start", "Default profiler recording target mode, which is set on editor start.");
             public static readonly GUIContent k_TargetFps = EditorGUIUtility.TrTextContent("Target Frames Per Second (Highlights Module)", "The target frames per second used by the Highlights module.");
+            public static readonly GUIContent k_ShouldOverrideScreenshotIntervalText = EditorGUIUtility.TrTextContent("Override default screenshot frame interval", "Enable to set a non-default interval on the Editor/connected player. See Profiler.SetScreenshotCaptureFrameInterval docs for more info.");
+            public static readonly GUIContent k_ScreenshotFrameInterval = EditorGUIUtility.TrTextContent("Rate at which Profiler captures screenshots", "Can also be controlled via script. See Profiler.SetScreenshotCaptureFrameInterval docs.");
             public static readonly string OnlyRelativePaths = L10n.Tr("Only relative paths are allowed");
             public static readonly string OKButton = L10n.Tr("OK");
             public static readonly string InvalidPathWindow = L10n.Tr("Invalid Path");
@@ -141,6 +143,24 @@ namespace UnityEditor.Profiling
             {
                 ProfilerUserSettings.targetFramesPerSecond = m_TargetFramesPerSecond;
             }
+
+            EditorGUI.BeginChangeCheck();
+            var overrideScreenshots = EditorGUILayout.Toggle(Content.k_ShouldOverrideScreenshotIntervalText,
+                ProfilerUserSettings.shouldOverrideScreenshotInterval);
+            if (EditorGUI.EndChangeCheck())
+            {
+                ProfilerUserSettings.shouldOverrideScreenshotInterval = overrideScreenshots;
+            }
+
+            EditorGUI.BeginDisabledGroup(!overrideScreenshots);
+            EditorGUI.BeginChangeCheck();
+            var overrideScreenshotsRate = EditorGUILayout.IntField(Content.k_ScreenshotFrameInterval,
+                ProfilerUserSettings.screenshotFrameInterval);
+            if (EditorGUI.EndChangeCheck())
+            {
+                ProfilerUserSettings.screenshotFrameInterval = overrideScreenshotsRate;
+            }
+            EditorGUI.EndDisabledGroup();
         }
 
         private void ValidateConnectionId()

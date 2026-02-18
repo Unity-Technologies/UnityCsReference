@@ -652,18 +652,21 @@ namespace UnityEditor
             using (new EditorGUI.DisabledScope(overrideMode != null))
             {
                 GUILayout.BeginHorizontal();
-                    var refreshMode = EditorSettings.refreshImportMode;
-                    var parallelImportEnabledOld = refreshMode == AssetDatabase.RefreshImportMode.OutOfProcessPerQueue;
-                    var parallelImportEnabledNew = EditorGUILayout.Toggle(Content.parallelImport, parallelImportEnabledOld);
+                var refreshMode = EditorSettings.refreshImportMode;
+                var parallelImportEnabledOld = refreshMode == AssetDatabase.RefreshImportMode.OutOfProcessPerQueue;
+                var parallelImportEnabledNew = EditorGUILayout.Toggle(Content.parallelImport, parallelImportEnabledOld);
 
-                    if (parallelImportEnabledOld != parallelImportEnabledNew)
-                        EditorSettings.refreshImportMode = parallelImportEnabledNew ? AssetDatabase.RefreshImportMode.OutOfProcessPerQueue : AssetDatabase.RefreshImportMode.InProcess;
-                    if (GUILayout.Button(Content.parallelImportLearnMore, EditorStyles.linkLabel))
-                    {
-                        // Known issue with Docs redirect - versioned pages might not open offline docs
-                        var help = Help.FindHelpNamed("ParallelImport");
-                        Help.BrowseURL(help);
-                    }
+                if (parallelImportEnabledOld != parallelImportEnabledNew)
+                {
+                    EditorSettings.refreshImportMode = parallelImportEnabledNew ? AssetDatabase.RefreshImportMode.OutOfProcessPerQueue : AssetDatabase.RefreshImportMode.InProcess;
+                    AssetDatabase.RefreshSettings();
+                }
+                if (GUILayout.Button(Content.parallelImportLearnMore, EditorStyles.linkLabel))
+                {
+                    // Known issue with Docs redirect - versioned pages might not open offline docs
+                    var help = Help.FindHelpNamed("ParallelImport");
+                    Help.BrowseURL(help);
+                }
                 GUILayout.EndHorizontal();
             }
 
@@ -685,7 +688,10 @@ namespace UnityEditor
                 newCount = Mathf.Clamp(newCount, minWorkerCount, maxWorkerCount);
 
                 if (oldCount != newCount)
+                {
                     EditorUserSettings.desiredImportWorkerCount = newCount;
+                    AssetDatabase.RefreshSettings();
+                }
             }
 
             var overrideStandbyCount = GetCommandLineOverride(kStandbyWorkerCountKeyArgs);
@@ -704,6 +710,7 @@ namespace UnityEditor
                 if (oldCount != newCount)
                 {
                     EditorUserSettings.standbyImportWorkerCount = newCount;
+                    AssetDatabase.RefreshSettings();
                 }
             }
 
@@ -722,6 +729,7 @@ namespace UnityEditor
                 if (oldSeconds != newSeconds)
                 {
                     EditorUserSettings.idleImportWorkerShutdownDelayMilliseconds = (int)(newSeconds * 1000.0f);
+                    AssetDatabase.RefreshSettings();
                 }
             }
 
