@@ -1198,7 +1198,7 @@ namespace UnityEngine.UIElements
             for (var i = requests.Count - 1; i >= 0; --i)
             {
                 var request = requests[i];
-                if (bindingId != request.bindingId)
+                if (bindingId != request.bindingId || !request.shouldProcess)
                     continue;
                 binding = request.binding;
                 return true;

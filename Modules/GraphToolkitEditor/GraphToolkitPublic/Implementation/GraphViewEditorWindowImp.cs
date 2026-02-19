@@ -17,42 +17,23 @@ namespace Unity.GraphToolkit.Editor.Implementation
             public override IEnumerable<string> ElementIds => new[] { SaveButton.id, ShowInProjectWindowButton.id };
         }
 
-        static List<GraphViewEditorWindowImp> s_OpenedWindows;
-
         public static GraphViewEditorWindowImp GetOpenedWindow(GraphObjectImp graphObject)
         {
-            BuildOpenedWindows();
-            for (int i = s_OpenedWindows.Count - 1; i >= 0; --i)
+            for (int i = OpenedWindows.Count - 1; i >= 0; --i)
             {
-                var window = s_OpenedWindows[i];
+                var window = OpenedWindows[i];
                 if (window.GraphTool.ToolState.GraphObject == graphObject)
                 {
-                    return window;
+                    return window as GraphViewEditorWindowImp;
                 }
             }
 
             return null;
         }
 
-        static void BuildOpenedWindows()
-        {
-            if (s_OpenedWindows != null)
-                return;
-            s_OpenedWindows = new List<GraphViewEditorWindowImp>();
-            var allWindows = Resources.FindObjectsOfTypeAll<GraphViewEditorWindowImp>();
-            foreach (var window in allWindows)
-            {
-                if (window.GraphTool != null && window.GraphTool.ToolState.GraphObject != null)
-                {
-                    s_OpenedWindows.Add(window);
-                }
-            }
-        }
-
         public static void ShowGraph(GraphObjectImp graphObject)
         {
-            BuildOpenedWindows();
-            foreach (var window in s_OpenedWindows)
+            foreach (var window in OpenedWindows)
             {
                 if (window?.GraphTool?.ToolState?.GraphObject == graphObject)
                 {
@@ -67,28 +48,8 @@ namespace Unity.GraphToolkit.Editor.Implementation
 
         protected override void OnEnable()
         {
-            BuildOpenedWindows();
             PublicGraphFactory.EnsureStaticConstructorIsCalled();
-            s_OpenedWindows.Add(this);
             base.OnEnable();
-        }
-
-        protected override void OnDisable()
-        {
-            base.OnDisable();
-            s_OpenedWindows?.Remove(this);
-        }
-
-        protected override void OnFocus()
-        {
-            base.OnFocus();
-
-            BuildOpenedWindows();
-            if (s_OpenedWindows.Count > 0 && s_OpenedWindows[^1] != this)
-            {
-                s_OpenedWindows.Remove(this);
-                s_OpenedWindows.Add(this);
-            }
         }
 
         protected override GraphTool CreateGraphTool()

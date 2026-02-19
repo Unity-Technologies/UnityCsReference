@@ -51,7 +51,7 @@ namespace UnityEngine
 
             public LayoutCache(EntityId entityId)
             {
-                id = (long)entityId.GetRawData();
+                id = (long)EntityId.ToULong(entityId);
                 layoutGroups.Push(topLevel);
             }
 

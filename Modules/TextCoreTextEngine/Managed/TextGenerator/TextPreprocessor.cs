@@ -24,10 +24,14 @@ namespace UnityEngine.TextCore
                 return;
             }
 
-            // Replace style tags first if we have a defaultStyleSheet
             if (textSettings?.defaultStyleSheet != null && RichTextTagParser.ContainsStyleTags(text))
             {
                 text = ReplaceStyleTags(text, textSettings);
+            }
+
+            if (RichTextTagParser.ContainsNobrTags(text))
+            {
+                text = ReplaceNobrTags(text);
             }
 
             if (flags == PreProcessFlags.None)
@@ -127,7 +131,7 @@ namespace UnityEngine.TextCore
                     charToProcess = c.ToString();
                 }
 
-                bool isWhitespace = charToProcess.Length == 1 && char.IsWhiteSpace(charToProcess[0]);
+                bool isWhitespace = charToProcess.Length == 1 && char.IsWhiteSpace(charToProcess[0]) && charToProcess[0] != k_NonBreakingSpace;
 
                 if (collapseWhiteSpaces && isWhitespace)
                 {
@@ -161,7 +165,7 @@ namespace UnityEngine.TextCore
             {
                 int lastCharToKeep = sb.Length - 1;
 
-                while (lastCharToKeep >= 0 && char.IsWhiteSpace(sb[lastCharToKeep]) && sb[lastCharToKeep] != '\n')
+                while (lastCharToKeep >= 0 && char.IsWhiteSpace(sb[lastCharToKeep]) && sb[lastCharToKeep] != '\n' && sb[lastCharToKeep] != k_NonBreakingSpace)
                 {
                     lastCharToKeep--;
                 }
@@ -284,6 +288,55 @@ namespace UnityEngine.TextCore
                 // If we got here, it was a '<' but not a valid style tag.
                 // Append the '<' and move forward by 1 so we don't process it again.
                 sb.Append(k_LessThan);
+                readIndex++;
+            }
+
+            return sb.ToString();
+        }
+
+        const char k_Space = ' ';
+        const char k_NonBreakingSpace = '\u00A0';
+        internal const string k_NobrOpenTag = "<nobr>";
+        const string k_NobrCloseTag = "</nobr>";
+
+        internal static string ReplaceNobrTags(string text)
+        {
+            if (string.IsNullOrEmpty(text))
+                return text;
+
+            ReadOnlySpan<char> source = text.AsSpan();
+            ReadOnlySpan<char> nobrOpen = k_NobrOpenTag.AsSpan();
+            ReadOnlySpan<char> nobrClose = k_NobrCloseTag.AsSpan();
+
+            StringBuilder sb = new StringBuilder(text.Length);
+            int nobrDepth = 0;
+            int readIndex = 0;
+
+            while (readIndex < source.Length)
+            {
+                ReadOnlySpan<char> remaining = source.Slice(readIndex);
+
+                if (remaining.StartsWith(nobrOpen, StringComparison.OrdinalIgnoreCase))
+                {
+                    nobrDepth++;
+                    readIndex += nobrOpen.Length;
+                    continue;
+                }
+
+                if (remaining.StartsWith(nobrClose, StringComparison.OrdinalIgnoreCase))
+                {
+                    if (nobrDepth > 0)
+                        nobrDepth--;
+                    readIndex += nobrClose.Length;
+                    continue;
+                }
+
+                char c = source[readIndex];
+                if (nobrDepth > 0 && c == k_Space)
+                    sb.Append(k_NonBreakingSpace);
+                else
+                    sb.Append(c);
+
                 readIndex++;
             }
 

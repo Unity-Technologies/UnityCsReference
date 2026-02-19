@@ -207,7 +207,7 @@ namespace UnityEditor.Search
         {
             var fileIdHint = Utils.GetFileIDHint(obj);
             if (fileIdHint == 0)
-                fileIdHint = (ulong)obj.GetEntityId().GetRawData();
+                fileIdHint = EntityId.ToULong(obj.GetEntityId());
             return fileIdHint * 1181783497276652981UL + assetHash;
         }
 

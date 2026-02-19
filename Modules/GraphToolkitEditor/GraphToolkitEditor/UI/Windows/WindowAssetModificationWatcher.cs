@@ -4,7 +4,6 @@
 
 using System.IO;
 using UnityEditor;
-using UnityEngine;
 
 namespace Unity.GraphToolkit.Editor
 {
@@ -12,29 +11,31 @@ namespace Unity.GraphToolkit.Editor
     {
         static bool AssetAtPathHasGraphObject(string path)
         {
-            return GraphObjectFactory.KnowsExtension(Path.GetExtension(path)) || AssetDatabase.LoadAssetAtPath<GraphObject>(path) != null;
+            return GraphObjectFactory.KnowsExtension(Path.GetExtension(path))
+                || AssetDatabase.LoadAssetAtPath<GraphObject>(path) != null;
         }
 
         static AssetDeleteResult OnWillDeleteAsset(string assetPath, RemoveAssetOptions options)
         {
             // Avoid calling FindObjectsOfTypeAll if the deleted asset does not contain a graph object.
-            if (AssetAtPathHasGraphObject(assetPath))
-            {
-                GraphObjectFactory.OnAssetDeleted(assetPath);
-                var guid = AssetDatabase.GUIDFromAssetPath(assetPath);
-                var windows = Resources.FindObjectsOfTypeAll<GraphViewEditorWindow>();
-                foreach (var window in windows)
-                {
-                    if (WindowAssetPostprocessingWatcher.IsWindowDisplayingGraphAsset(window, guid))
-                    {
-                        // Unload graph *before* it is deleted.
-                        window.GraphTool.Dispatch(new UnloadGraphCommand());
+            if (GraphViewEditorWindow.OpenedWindows.Count == 0
+                || !AssetAtPathHasGraphObject(assetPath))
+                return AssetDeleteResult.DidNotDelete;
 
-                        // Remove log entries in the console related to that asset.
-                        ConsoleWindowHelper.RemoveLogEntries(window.WindowID.ToString());
-                    }
+            GraphObjectFactory.OnAssetDeleted(assetPath);
+            var guid = AssetDatabase.GUIDFromAssetPath(assetPath);
+            foreach (var window in GraphViewEditorWindow.OpenedWindows)
+            {
+                if (WindowAssetPostprocessingWatcher.IsWindowDisplayingGraphAsset(window, guid))
+                {
+                    // Unload graph *before* it is deleted.
+                    window.GraphTool.Dispatch(new UnloadGraphCommand());
+
+                    // Remove log entries in the console related to that asset.
+                    ConsoleWindowHelper.RemoveLogEntries(window.WindowID.ToString());
                 }
             }
+
             return AssetDeleteResult.DidNotDelete;
         }
     }

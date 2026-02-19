@@ -309,7 +309,7 @@ internal static class UdmManagedSerialization
         {
             ref EntityId instanceID = ref UnsafeHelper.As<byte, EntityId>(ref runtimePtr);
             ref Reference modelReference = ref UnsafeHelper.As<byte, Reference>(ref modelPtr);
-            modelReference = new Reference { UdmObjectId = instanceID.GetRawData()};
+            modelReference = new Reference { UdmObjectId = EntityId.ToULong(instanceID)};
         }
     }
 

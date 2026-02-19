@@ -134,7 +134,7 @@ namespace UnityEngine.SceneManagement
 
         internal EntityId ToEntityId() => m_Value;
 
-        public ulong GetRawData() => m_Value.GetRawData();
+        public ulong GetRawData() => EntityId.ToULong(m_Value);
         public static SceneHandle FromRawData(ulong rawdata) => new() { m_Value = EntityId.From(rawdata) };
     }
 

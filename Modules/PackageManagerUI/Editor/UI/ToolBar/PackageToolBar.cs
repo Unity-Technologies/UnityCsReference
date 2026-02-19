@@ -91,6 +91,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         {
             m_BuiltInToolBarButtons = new IPackageToolBarButton[]
             {
+                new PackageToolBarSimpleButton(new UpdateAction(m_OperationDispatcher, m_Application, m_PackageDatabase, m_PageManager)),
                 new PackageToolBarSimpleButton(new LocateAction(m_IOProxy, m_Application)),
                 new PackageToolBarSimpleButton(new SignInAction(m_UnityConnect, m_Application)),
                 new PackageToolBarSimpleButton(new ExportAction(m_ModalManager)),

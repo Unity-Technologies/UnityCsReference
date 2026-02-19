@@ -370,7 +370,7 @@ namespace UnityEditor
             Vector3 state = new Vector3(0, (int)GetCurrentPlayState(), ParticleSystemEditorUtils.playbackTime);
             SessionState.SetVector3(k_SimulationStateId + rootEntityId, state);
             Debug.Assert(UnsafeUtility.SizeOf<EntityId>() == sizeof(int), "Update SessionState.SetInt to SessionState.SetULong when EntityId size changes");
-            SessionState.SetInt(k_SimulationStateId + rootEntityId + "instanceID", (int)rootEntityId.GetRawData());
+            SessionState.SetInt(k_SimulationStateId + rootEntityId + "instanceID", (int)EntityId.ToULong(rootEntityId));
         }
 
         void TryRestorePlayState(ParticleSystem particleSystem)

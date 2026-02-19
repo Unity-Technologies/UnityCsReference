@@ -36,5 +36,6 @@ namespace Unity.Profiling.Editor
         DateTimeOfRecording,
         DeviceModel,
         DeviceSystemVersion,
+        FramesSinceScreenshotRequested,
     }
 }

@@ -58,7 +58,7 @@ namespace UnityEngine.UIElements
         {
             base.SetValueWithoutNotify(newValue);
             // Update the integer field when the value changes
-            m_IntegerField.SetValueWithoutNotify((int)newValue.GetRawData());
+            m_IntegerField.SetValueWithoutNotify((int)EntityId.ToULong(newValue));
         }
     }
 }

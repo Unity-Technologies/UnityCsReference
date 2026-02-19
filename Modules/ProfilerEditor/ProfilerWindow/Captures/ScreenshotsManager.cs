@@ -316,6 +316,9 @@ namespace Unity.Profiling.Editor.UI
 
         internal bool WriteOutMostRecentScreenshot(string filePath, int frameIndex)
         {
+            if (frameIndex > ProfilerDriver.lastFrameIndex || frameIndex < ProfilerDriver.firstFrameIndex || frameIndex < 0)
+                return false;
+
             using (var frameData = ProfilerDriver.GetRawFrameDataView(frameIndex, 0))
             {
                 var texInfo = frameData.GetFrameMetaData<int>(ProfilerDriver.profilerInternalSessionMetaDataGuid,
@@ -347,8 +350,12 @@ namespace Unity.Profiling.Editor.UI
                     var framesSinceLast = frameData.GetFrameMetaData<int>(ProfilerDriver.profilerInternalSessionMetaDataGuid,
                         (int)ProfilingSessionMetaDataEntry.FramesSinceLastScreenshot);
 
-                    if (framesSinceLast.Length == 1)
-                        return WriteOutMostRecentScreenshot(filePath, frameIndex - framesSinceLast[0]);
+                    if (framesSinceLast.Length == 1 && framesSinceLast[0] >= 0)
+                    {
+                        var prevFrameToTry = frameIndex - framesSinceLast[0];
+                        if (prevFrameToTry < frameIndex)
+                            return WriteOutMostRecentScreenshot(filePath, prevFrameToTry);
+                    }
                 }
             }
 

@@ -68,7 +68,7 @@ namespace Unity.Multiplayer.PlayMode.Editor
                 else
                 {
                     Debug.Assert(sizeof(int)==UnsafeUtility.SizeOf<EntityId>(), "EntityId is not the same size as int, update this code to use ulong");
-                    SessionState.SetInt(k_CurrentWindowIdKey, (int)value.GetEntityId().GetRawData());
+                    SessionState.SetInt(k_CurrentWindowIdKey, (int)EntityId.ToULong(value.GetEntityId()));
                     SessionState.SetBool(k_CurrentWindowSetKey, true);
                 }
             }

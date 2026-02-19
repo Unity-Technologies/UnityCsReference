@@ -5045,9 +5045,6 @@
     <Compile Include="..\..\Modules\ClothEditor\ClothInspector.cs">
       <Link>Modules\ClothEditor\ClothInspector.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\ClothEditor\ScriptBindings\ClothUtilities.bindings.cs">
-      <Link>Modules\ClothEditor\ScriptBindings\ClothUtilities.bindings.cs</Link>
-    </Compile>
     <Compile Include="..\..\Modules\CloudServicesSettingsEditor\Ads\ScriptBindings\AdvertisementSettings.bindings.cs">
       <Link>Modules\CloudServicesSettingsEditor\Ads\ScriptBindings\AdvertisementSettings.bindings.cs</Link>
     </Compile>

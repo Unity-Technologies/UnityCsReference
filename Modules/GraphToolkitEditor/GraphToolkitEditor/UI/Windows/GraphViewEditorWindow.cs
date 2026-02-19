@@ -37,6 +37,8 @@ Would you like to save these changes?
         static readonly MethodInfo k_CreateWindowMethod;
         static int s_EnabledWindowCount;
 
+        static List<GraphViewEditorWindow> s_OpenedWindows = new();
+
         List<RootView> m_Views;
         bool m_AttachedOnce;
         bool m_HasMultipleWindowsForSameGraph;
@@ -291,6 +293,8 @@ Would you like to save these changes?
 
         // internal for testing
         internal ShortcutBlocker ShortcutBlocker { get; private set; }
+
+        static internal IReadOnlyList<GraphViewEditorWindow> OpenedWindows => s_OpenedWindows;
 
         static GraphViewEditorWindow()
         {
@@ -853,6 +857,7 @@ Would you like to save these changes?
             }
 
             CreateOverlayContents();
+            s_OpenedWindows.Add(this);
         }
 
         void CreateAndSetupGraphView()
@@ -1005,6 +1010,7 @@ Would you like to save these changes?
                 //Maybe it will be restored later. Currently, this code will make sure the StateCache is written to disk when a domain reload occurs.
                 PersistedState.Flush();
             }
+            s_OpenedWindows.Remove(this);
         }
 
         protected virtual void OnDestroy()

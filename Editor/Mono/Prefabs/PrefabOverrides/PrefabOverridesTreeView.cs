@@ -245,7 +245,8 @@ namespace UnityEditor
                 if (noOverridesItemId == 0)
                 {
                     Debug.Assert(sizeof(int)==UnsafeUtility.SizeOf<EntityId>(), "EntityId is not the same size as int, update this code to use ulong");
-                    noOverridesItemId = (int)EntityId.AllocateNextLowestEntityId().GetRawData();
+                    var allocatedEntityId = EntityId.AllocateNextLowestEntityId();
+                    noOverridesItemId = (int)EntityId.ToULong(allocatedEntityId);
                     SessionState.SetInt("NoOverridesItemId", noOverridesItemId);
                 }
                 hiddenRoot.AddChild(new TreeViewItem { id = EntityId.From(noOverridesItemId), depth = 0, displayName = "No Overrides" });

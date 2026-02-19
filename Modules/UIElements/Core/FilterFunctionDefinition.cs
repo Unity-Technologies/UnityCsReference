@@ -221,6 +221,9 @@ namespace UnityEngine.UIElements
 
         /// <summary>Indicates if the shader must return a color in the gamma color space.</summary>
         public bool writesGamma { get; internal set; }
+
+        /// <summary>The DPI scaling factor of the render tree.</summary>
+        public float scaledPixelsPerPoint { get; internal set; }
     }
 
     /// <summary>

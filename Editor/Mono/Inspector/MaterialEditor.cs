@@ -243,7 +243,7 @@ namespace UnityEditor
             public void OnDisable()
             {
                 Debug.Assert(UnsafeUtility.SizeOf<EntityId>() == sizeof(int), "EntityId size has changed, please update the code to use ulong instead of int below");
-                SessionState.SetInt("PreviewReflectionProbe", (int)(m_SelectedReflectionProbe ? m_SelectedReflectionProbe.GetEntityId() : EntityId.None).GetRawData());
+                SessionState.SetInt("PreviewReflectionProbe", (int)EntityId.ToULong(m_SelectedReflectionProbe ? m_SelectedReflectionProbe.GetEntityId() : EntityId.None));
             }
 
             public override void OnGUI(Rect rc)

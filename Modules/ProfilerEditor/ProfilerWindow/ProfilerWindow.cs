@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
 using System.Text;
+using System.Text.RegularExpressions;
 using Unity.Profiling;
 using Unity.Profiling.Editor;
 using Unity.Profiling.Editor.UI;
@@ -1237,26 +1238,29 @@ namespace UnityEditor
             var prodName = Application.productName;
 
             // Sanitise the product name
+            var prodNameSanitised = new StringBuilder(Regex.Replace(prodName, @"(\.\.|[/\\])", "_"));
             var invalidChars = Path.GetInvalidFileNameChars();
-            var prodNameSanitised = new StringBuilder(prodName);
+            foreach (var t in invalidChars)
+                prodNameSanitised.Replace(t, '_');
+            invalidChars = Path.GetInvalidPathChars();
             foreach (var t in invalidChars)
                 prodNameSanitised.Replace(t, '_');
 
             var filePath = $"{ProfilerUserSettings.AbsoluteProfilerCaptureStoragePath}/{prodNameSanitised}_{dateString}.data";
-            if (filePath.Length != 0)
+
+            EditorPrefs.SetString(kProfilerRecentSaveLoadProfilePath, filePath);
+            if (ProfilerDriver.SaveProfile(filePath))
             {
-                EditorPrefs.SetString(kProfilerRecentSaveLoadProfilePath, filePath);
-                if (ProfilerDriver.SaveProfile(filePath))
-                {
-                    // Saving the .data was successful, now save the bottleneck data and screenshot
-                    m_BottlenecksChartViewController.SaveHighlightsInfo(filePath);
-                    // If we fail to find screenshot data, try once with the previous frame,
-                    // in case the last one was cut short mid-write.
-                    if (!m_ScreenshotsManager.WriteOutMostRecentScreenshot(filePath, ProfilerDriver.lastFrameIndex))
-                        m_ScreenshotsManager.WriteOutMostRecentScreenshot(filePath, ProfilerDriver.lastFrameIndex - 1);
-                    CurrentLoadedCaptureFile = filePath;
-                    m_CaptureDataService.SetCapturesFolderDirty();
-                }
+                // Saving the .data was successful, now save the bottleneck data and screenshot
+                // Make sure we're up to date, ready to write out the highlights file.
+                m_BottlenecksChartViewController.ReloadData();
+                m_BottlenecksChartViewController.SaveHighlightsInfo(filePath);
+                // If we fail to find screenshot data, try once with the previous frame,
+                // in case the last one was cut short mid-write.
+                if (!m_ScreenshotsManager.WriteOutMostRecentScreenshot(filePath, ProfilerDriver.lastFrameIndex))
+                    m_ScreenshotsManager.WriteOutMostRecentScreenshot(filePath, ProfilerDriver.lastFrameIndex - 1);
+                CurrentLoadedCaptureFile = filePath;
+                m_CaptureDataService.SetCapturesFolderDirty();
             }
         }
 
@@ -1276,6 +1280,7 @@ namespace UnityEditor
 
             var profilerHasFrames = ProfilerHasAnyFrames();
             if (showWarning && !keepExistingData && profilerHasFrames && path != CurrentLoadedCaptureFile &&
+                !File.Exists(CurrentLoadedCaptureFile) && // No need to show warning if the data won't be lost
                 !EditorUtility.DisplayDialog("Load Profiler Capture",
                     "Loading Capture will clear currently loaded data. Continue?", "OK", "Cancel"))
                 return;
@@ -2188,7 +2193,9 @@ namespace UnityEditor
             SetCurrentFrameRangeDontPause(frameRange);
         }
 
-        // Ideally we wouldn't need this method. However, the current IMGUI tangle means setting the current frame can occur an unpredictable number of times per frame. We want to ensure we only invoke this event once for the selected frame. Fully transitioning to UIToolkit (especially on the toolbar) should simplify this.
+        // Ideally we wouldn't need this method. However, the current IMGUI tangle means setting the current frame can
+        // occur an unpredictable number of times per frame. We want to ensure we only invoke this event once for the
+        // selected frame. Fully transitioning to UIToolkit (especially on the toolbar) should simplify this.
         Range? m_LastReportedSelectedFrameRange;
         void InvokeSelectedFrameIndexChangedEventIfNecessary(int newFrame)
         {

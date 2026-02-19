@@ -802,8 +802,8 @@ namespace UnityEditor
             // is impossible to untangle at this point without changing way too much code.
             // Checking if the EntityId is lower than 2^32 relies on the fact that entity allocation
             // never returns a valid entity with an even version number (higher 32 bits).
-            return (int)entityId.GetRawData() >= k_FavoritesStartUniqueId
-                   && entityId.GetRawData() <= UInt32.MaxValue
+            return (int)EntityId.ToULong(entityId) >= k_FavoritesStartUniqueId
+                   && EntityId.ToULong(entityId) <= UInt32.MaxValue
                    && entityId != ProjectBrowser.kPackagesFolderInstanceId;
         }
 

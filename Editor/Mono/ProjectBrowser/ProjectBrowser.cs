@@ -51,9 +51,7 @@ namespace UnityEditor
 
         private const string k_WarningImmutableSelectionFormat = "The operation \"{0}\" cannot be executed because the selection or package is read-only.";
 
-        private const string k_WarningRootFolderDeletionFormat = "The operation \"{0}\" cannot be executed because the selection is a root folder.";
-
-        private const string k_ImmutableSelectionActionFormat = " The operation \"{0}\" is not allowed in an immutable package.";
+        private const string k_WarningRootFolderDeletionFormat = "The operation \"{0}\" cannot be executed because the selection is a root folder or an immutable asset.";
 
         // Alive ProjectBrowsers
         private static List<ProjectBrowser> s_ProjectBrowsers = new List<ProjectBrowser>();
@@ -397,7 +395,7 @@ namespace UnityEditor
 
         static internal ItemType GetItemType(EntityId entityId)
         {
-            if (SavedSearchFilters.IsSavedFilter((int)entityId.GetRawData()))
+            if (SavedSearchFilters.IsSavedFilter((int)EntityId.ToULong(entityId)))
                 return ItemType.SavedFilter;
 
             return ItemType.Asset;
@@ -1503,7 +1501,7 @@ namespace UnityEditor
                 ItemType type = GetItemType(selectionID);
                 if (type == ItemType.SavedFilter)
                 {
-                    SearchFilter filter = SavedSearchFilters.GetFilter((int)selectionID.GetRawData());
+                    SearchFilter filter = SavedSearchFilters.GetFilter((int)EntityId.ToULong(selectionID));
 
                     // Check if the filter is valid (the root of filters are not an actual filter)
                     if (ValidateFilter(selectionID, filter))
@@ -1537,7 +1535,7 @@ namespace UnityEditor
 
                 if (type == ItemType.SavedFilter)
                 {
-                    SearchFilter filter = SavedSearchFilters.GetFilter((int)firstTreeViewInstanceID.GetRawData());
+                    SearchFilter filter = SavedSearchFilters.GetFilter((int)EntityId.ToULong(firstTreeViewInstanceID));
 
                     // Check if the filter is valid (the root of filters are not an actual filter)
                     if (ValidateFilter(firstTreeViewInstanceID, filter))
@@ -1546,7 +1544,7 @@ namespace UnityEditor
                         EnsureValidFolders();
                         float previewSize = filter.GetState() == SearchFilter.State.FolderBrowsing ?
                             m_LastFoldersGridSize :
-                            SavedSearchFilters.GetPreviewSize((int)firstTreeViewInstanceID.GetRawData());
+                            SavedSearchFilters.GetPreviewSize((int)EntityId.ToULong(firstTreeViewInstanceID));
                         if (previewSize > 0f)
                             m_ListArea.gridSize = Mathf.Clamp((int)previewSize, m_ListArea.minGridSize, m_ListArea.maxGridSize);
                         SyncFilterGUI();
@@ -1573,7 +1571,7 @@ namespace UnityEditor
                     {
                         if (EditorUtility.DisplayDialog("Folder not found", "The folder '" + folderPath + "' might have been deleted or belong to another project. Do you want to delete the favorite?", "Delete", "Cancel"))
                         {
-                            SavedSearchFilters.RemoveSavedFilter((int)savedFilterID.GetRawData());
+                            SavedSearchFilters.RemoveSavedFilter((int)EntityId.ToULong(savedFilterID));
                             GUIUtility.ExitGUI(); // exit gui since we are iterating items we just reloaded
                         }
 
@@ -1647,7 +1645,7 @@ namespace UnityEditor
 
         static void DeleteFilter(EntityId filterEntityId)
         {
-            if (SavedSearchFilters.GetRootInstanceID() == (int)filterEntityId.GetRawData())
+            if (SavedSearchFilters.GetRootInstanceID() == (int)EntityId.ToULong(filterEntityId))
             {
                 string title = "Cannot Delete";
                 EditorUtility.DisplayDialog(title, "Deleting the 'Filters' root is not allowed", "OK");
@@ -1657,7 +1655,7 @@ namespace UnityEditor
                 string title = "Delete selected favorite?";
                 if (EditorUtility.DisplayDialog(title, "You cannot undo this action.", "Delete", "Cancel"))
                 {
-                    SavedSearchFilters.RemoveSavedFilter((int)filterEntityId.GetRawData());
+                    SavedSearchFilters.RemoveSavedFilter((int)EntityId.ToULong(filterEntityId));
                 }
             }
         }
@@ -1725,6 +1723,32 @@ namespace UnityEditor
                 && !CanDeleteSelectedAssets();
         }
 
+        bool ValidateCommandEvents()
+        {
+            var evt = Event.current;
+            EventType eventType = evt.type;
+            // We are only checking this on the ValidateCommand event as we will not use it, and so the ExecuteCommand event won't be triggered.
+            if (eventType == EventType.ValidateCommand)
+            {
+                // Check if event made on immutable package
+                if (ShouldDiscardCommandsEventsForImmutablePackages())
+                {
+                    Debug.LogFormat(LogType.Warning, LogOption.NoStacktrace, null, k_WarningImmutableSelectionFormat, evt.commandName);
+                    return false;
+                }
+
+                // Check if event is "delete on root folder" or "delete an immutable asset".
+                // Note that if the folder is in favorite, there is no need for root check.
+                // Because we only remove it from the favorite list, not delete the asset.
+                if (!SelectionIsFavorite() && ShouldDiscardCommandsEventsForRootFolders())
+                {
+                    Debug.LogFormat(LogType.Warning, LogOption.NoStacktrace, null, k_WarningRootFolderDeletionFormat, evt.commandName);
+                    return false;
+                }
+            }
+            return true;
+        }
+
         void HandleCommandEventsForTreeView()
         {
             // Handle all event for tree view
@@ -1740,21 +1764,6 @@ namespace UnityEditor
 
                 // Only one type can be selected at a time (and savedfilters can only be single-selected)
                 ItemType itemType = GetItemType(entityIds[0]);
-
-                // Check if event made on immutable package
-                if (itemType == ItemType.Asset)
-                {
-                    if (ShouldDiscardCommandsEventsForImmutablePackages())
-                    {
-                        EditorUtility.DisplayDialog(L10n.Tr("Invalid Operation"), L10n.Tr(string.Format(k_ImmutableSelectionActionFormat, Event.current.commandName)), L10n.Tr("OK"));
-                        return;
-                    }
-                    if (ShouldDiscardCommandsEventsForRootFolders())
-                    {
-                        EditorUtility.DisplayDialog(L10n.Tr("Invalid Operation"), L10n.Tr("Deleting a root folder is not allowed."), L10n.Tr("OK"));
-                        return;
-                    }
-                }
 
                 if (evt.commandName == EventCommandNames.Delete || evt.commandName == EventCommandNames.SoftDelete)
                 {
@@ -2129,11 +2138,15 @@ namespace UnityEditor
             if (m_ViewMode == ViewMode.TwoColumns)
                 useTreeViewSelectionInsteadOfMainSelection = GUIUtility.keyboardControl == m_TreeViewKeyboardControlID;
 
-            // Handle command events AFTER tree and list view since commands events should be handled by text fields first (rename overlay + search field)
-            // Let folder/filters tree view try to handle command events first if it has keyboard focus
-            if (m_ViewMode == ViewMode.TwoColumns && GUIUtility.keyboardControl == m_TreeViewKeyboardControlID)
-                HandleCommandEventsForTreeView();
-            HandleCommandEvents();
+            // They might be invalid when trying to target root folders, immutable assets or package assets
+            if (ValidateCommandEvents())
+            {
+                // Handle command events AFTER tree and list view since commands events should be handled by text fields first (rename overlay + search field)
+                // Let folder/filters tree view try to handle command events first if it has keyboard focus
+                if (m_ViewMode == ViewMode.TwoColumns && GUIUtility.keyboardControl == m_TreeViewKeyboardControlID)
+                    HandleCommandEventsForTreeView();
+                HandleCommandEvents();
+            }
         }
 
         void HandleContextClickInListArea(Rect listRect)
@@ -2215,10 +2228,10 @@ namespace UnityEditor
             isFolderTreeViewContextClicked = true;
             Event evt = Event.current;
             System.Diagnostics.Debug.Assert(evt.type == EventType.ContextClick);
-            if (SavedSearchFilters.IsSavedFilter((int)clickedItemID.GetRawData()))
+            if (SavedSearchFilters.IsSavedFilter((int)EntityId.ToULong(clickedItemID)))
             {
                 // Context click with a selected Filter
-                if ((int)clickedItemID.GetRawData() != SavedSearchFilters.GetRootInstanceID())
+                if ((int)EntityId.ToULong(clickedItemID) != SavedSearchFilters.GetRootInstanceID())
                     SavedFiltersContextMenu.Show(clickedItemID);
             }
             else
@@ -2390,17 +2403,17 @@ namespace UnityEditor
                         if (treeViewSelection.Length == 1)
                         {
                             EntityId entityId = treeViewSelection[0];
-                            bool isRootFilter = SavedSearchFilters.GetRootInstanceID() == (int)entityId.GetRawData();
+                            bool isRootFilter = SavedSearchFilters.GetRootInstanceID() == (int)EntityId.ToULong(entityId);
 
                             // Ask if filter should be overwritten
-                            if (SavedSearchFilters.IsSavedFilter((int)entityId.GetRawData()) && !isRootFilter)
+                            if (SavedSearchFilters.IsSavedFilter((int)EntityId.ToULong(entityId)) && !isRootFilter)
                             {
                                 createNewFilter = false;
                                 string title = "Overwrite Filter?";
-                                string text = "Do you want to overwrite '" + SavedSearchFilters.GetName((int)entityId.GetRawData()) + "' or create a new filter?";
+                                string text = "Do you want to overwrite '" + SavedSearchFilters.GetName((int)EntityId.ToULong(entityId)) + "' or create a new filter?";
                                 int result = EditorUtility.DisplayDialogComplex(title, text, "Overwrite", "Cancel", "Create");
                                 if (result == 0)
-                                    SavedSearchFilters.UpdateExistingSavedFilter((int)entityId.GetRawData(), m_SearchFilter, listAreaGridSize);
+                                    SavedSearchFilters.UpdateExistingSavedFilter((int)EntityId.ToULong(entityId), m_SearchFilter, listAreaGridSize);
                                 else if (result == 2)
                                     createNewFilter = true;
                             }

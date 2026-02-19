@@ -151,18 +151,7 @@ namespace UnityEngine
 
         public override int GetHashCode()
         {
-            // We only want the lower bits, which is the Index
-            uint a = (uint)m_Data;
-
-            // Same Int hash as in the engine
-            a = (a + 0x7ed55d16) + (a << 12);
-            a = (a ^ 0xc761c23c) ^ (a >> 19);
-            a = (a + 0x165667b1) + (a << 5);
-            a = (a + 0xd3a2646c) ^ (a << 9);
-            a = (a + 0xfd7046c5) + (a << 3);
-            a = (a ^ 0xb55a4f09) ^ (a >> 16);
-
-            return (int)a;
+            return (int)m_Data;
         }
 
         public bool IsValid()
@@ -170,6 +159,7 @@ namespace UnityEngine
             return this != EntityId.None;
         }
 
+        [Obsolete("EntityId will not be representable by an int in the future. This equals will be removed in a future version.", false)]
         public bool Equals(int other) => m_Data == (int)other;
 
         [Obsolete("EntityId will not be representable by an int in the future. This casting operator will be removed in a future version.", false)]
@@ -205,7 +195,11 @@ namespace UnityEngine
             return res;
         }
 
+        [Obsolete("Please use EntityId.ToULong(EntityId) instead.", false)]
         public ulong GetRawData() => (ulong)m_Data;
+
+        public static EntityId FromULong(ulong input) => new EntityId { m_Data = (int)input };
+        public static ulong ToULong(EntityId entityId) => (ulong)entityId.m_Data;
     }
 
     internal static class EntityIdExtensions

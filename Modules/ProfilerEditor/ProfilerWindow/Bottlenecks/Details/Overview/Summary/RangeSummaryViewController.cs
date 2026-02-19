@@ -28,8 +28,8 @@ namespace Unity.Profiling.Editor.UI
             bool rangeIsWholeCapture = false) : base(dataService, settingsService, profilerWindow, responder, detailsBinder)
         {
             m_RangeIsWholeCapture = rangeIsWholeCapture;
-            m_RangeDescriptor = (rangeIsWholeCapture) ? "capture" : "selection";
-            m_NoDataText = (rangeIsWholeCapture) ?
+            m_RangeDescriptor = rangeIsWholeCapture ? "capture" : "selection";
+            m_NoDataText = rangeIsWholeCapture ?
                 "Record a new capture or load an existing one to see its details here." :
                 "Select a frame from the charts above to see its details here.";
         }

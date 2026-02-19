@@ -1142,18 +1142,15 @@ namespace UnityEngine.UIElements
             RegisterCallback<CustomStyleResolvedEvent>(OnRootCustomStyleResolved);
             MarkSingleLineHeightDirty();
 
-            if (evt.destinationPanel.contextType == ContextType.Player)
-            {
-                m_ContentAndVerticalScrollContainer.RegisterCallback<PointerMoveEvent>(OnPointerMove);
-                contentContainer.RegisterCallback<PointerDownEvent>(OnPointerDown, TrickleDown.TrickleDown);
-                contentContainer.RegisterCallback<PointerCancelEvent>(OnPointerCancel);
-                contentContainer.RegisterCallback<PointerUpEvent>(OnPointerUp, TrickleDown.TrickleDown);
+            m_ContentAndVerticalScrollContainer.RegisterCallback<PointerMoveEvent>(OnPointerMove);
+            contentContainer.RegisterCallback<PointerDownEvent>(OnPointerDown, TrickleDown.TrickleDown);
+            contentContainer.RegisterCallback<PointerCancelEvent>(OnPointerCancel);
+            contentContainer.RegisterCallback<PointerUpEvent>(OnPointerUp, TrickleDown.TrickleDown);
 
-                contentContainer.RegisterCallback<PointerCaptureEvent>(OnPointerCapture);
-                contentContainer.RegisterCallback<PointerCaptureOutEvent>(OnPointerCaptureOut);
+            contentContainer.RegisterCallback<PointerCaptureEvent>(OnPointerCapture);
+            contentContainer.RegisterCallback<PointerCaptureOutEvent>(OnPointerCaptureOut);
 
-                evt.destinationPanel.visualTree.RegisterCallback<PointerUpEvent>(OnRootPointerUp, TrickleDown.TrickleDown);
-            }
+            evt.destinationPanel.visualTree.RegisterCallback<PointerUpEvent>(OnRootPointerUp, TrickleDown.TrickleDown);
         }
 
         private void OnDetachFromPanel(DetachFromPanelEvent evt)
@@ -1170,18 +1167,15 @@ namespace UnityEngine.UIElements
             m_AttachedRootVisualContainer = null;
             UnregisterCallback<CustomStyleResolvedEvent>(OnRootCustomStyleResolved);
 
-            if (evt.originPanel.contextType == ContextType.Player)
-            {
-                m_ContentAndVerticalScrollContainer.UnregisterCallback<PointerMoveEvent>(OnPointerMove);
-                contentContainer.UnregisterCallback<PointerDownEvent>(OnPointerDown, TrickleDown.TrickleDown);
-                contentContainer.UnregisterCallback<PointerCancelEvent>(OnPointerCancel);
-                contentContainer.UnregisterCallback<PointerUpEvent>(OnPointerUp, TrickleDown.TrickleDown);
+            m_ContentAndVerticalScrollContainer.UnregisterCallback<PointerMoveEvent>(OnPointerMove);
+            contentContainer.UnregisterCallback<PointerDownEvent>(OnPointerDown, TrickleDown.TrickleDown);
+            contentContainer.UnregisterCallback<PointerCancelEvent>(OnPointerCancel);
+            contentContainer.UnregisterCallback<PointerUpEvent>(OnPointerUp, TrickleDown.TrickleDown);
 
-                contentContainer.UnregisterCallback<PointerCaptureEvent>(OnPointerCapture);
-                contentContainer.UnregisterCallback<PointerCaptureOutEvent>(OnPointerCaptureOut);
+            contentContainer.UnregisterCallback<PointerCaptureEvent>(OnPointerCapture);
+            contentContainer.UnregisterCallback<PointerCaptureOutEvent>(OnPointerCaptureOut);
 
-                evt.originPanel.visualTree.UnregisterCallback<PointerUpEvent>(OnRootPointerUp, TrickleDown.TrickleDown);
-            }
+            evt.originPanel.visualTree.UnregisterCallback<PointerUpEvent>(OnRootPointerUp, TrickleDown.TrickleDown);
         }
 
         void OnPointerCapture(PointerCaptureEvent evt)
@@ -1293,6 +1287,7 @@ namespace UnityEngine.UIElements
         private Vector2 m_HighBounds;
         private float m_LastVelocityLerpTime;
         private bool m_StartedMoving;
+        internal bool m_TouchDraggingAllowed = true;
         private bool m_TouchPointerMoveAllowed;
         private bool m_TouchStoppedVelocity;
         VisualElement m_CapturedTarget;
@@ -1549,7 +1544,12 @@ namespace UnityEngine.UIElements
 
         void OnPointerDown(PointerDownEvent evt)
         {
-            if (evt.pointerType == PointerType.mouse || !evt.isPrimary)
+            if (evt.pointerType == PointerType.mouse || !m_TouchDraggingAllowed)
+                return;
+
+            var isXRPointer = evt.pointerType == PointerType.tracked;
+
+            if (!evt.isPrimary && !isXRPointer)
                 return;
 
             if (evt.pointerId != PointerId.invalidPointerId)
@@ -1576,7 +1576,12 @@ namespace UnityEngine.UIElements
 
         void OnPointerMove(PointerMoveEvent evt)
         {
-            if (evt.pointerType == PointerType.mouse || !evt.isPrimary || !m_TouchPointerMoveAllowed)
+            if (evt.pointerType == PointerType.mouse || !m_TouchDraggingAllowed || !m_TouchPointerMoveAllowed)
+                return;
+
+            var isXRPointer = evt.pointerType == PointerType.tracked;
+
+            if (!evt.isPrimary && !isXRPointer)
                 return;
 
             if (evt.isHandledByDraggable)
@@ -1586,18 +1591,49 @@ namespace UnityEngine.UIElements
                 return;
             }
 
+            // Calculate the movement delta based on the current pointer position.
             Vector2 position = evt.position;
             var delta = position - m_PointerStartPosition;
+
+            // Apply XR-specific transformations.
+            if (isXRPointer)
+            {
+                // Handle large, unreasonable deltas caused by coordinate system jumps (e.g., UI layer exit/re-entry).
+                const float maxReasonableDelta = 10f; // Maximum allowed delta in meters per frame.
+                if (delta.sqrMagnitude > maxReasonableDelta * maxReasonableDelta)
+                {
+                    // Reset tracking and zero out the delta for this frame, but keep scrolling state active.
+                    m_PointerStartPosition = position;
+                    m_StartPosition = scrollOffset;
+                    delta = Vector2.zero;
+                }
+
+                // Scale the delta from world space (meters) to pixel space.
+                // XR needs amplification: 1 meter of controller movement = 100 pixels of scroll.
+                const float xrScrollScale = 100f;
+                delta *= xrScrollScale;
+
+                // Invert the Y-axis for natural scrolling behavior in XR.
+                delta.y = -delta.y;
+            }
+
+            // Restrict movement based on the ScrollView's mode (horizontal, vertical, or both).
             if (mode == ScrollViewMode.Horizontal)
                 delta.y = 0;
             else if (mode == ScrollViewMode.Vertical)
                 delta.x = 0;
 
+            // Check if the movement exceeds the threshold to start scrolling.
             if (!m_TouchStoppedVelocity && !m_StartedMoving && delta.sqrMagnitude < ScrollThresholdSquared)
                 return;
 
-            var scrollResult = ComputeTouchScrolling(evt.position);
+            // Compute the new scroll position using the processed delta.
+            // For XR: delta is already scaled and Y-inverted
+            // For touch: delta is raw from pointer movement
+            var scrollPosition = m_PointerStartPosition + delta;
+            var scrollResult = ComputeTouchScrolling(scrollPosition);
 
+            // If the scroll is not forwarded, handle the event and capture the pointer.
             if (scrollResult != TouchScrollingResult.Forward)
             {
                 evt.isHandledByDraggable = true;

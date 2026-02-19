@@ -277,7 +277,7 @@ internal static class EcsComponentSerializer
 
             PureManagedObjectRtti rtti = (PureManagedObjectRtti)RttiResolver.GetOrAddRTTI(type);
 
-            var objectModel = serializeContext.Document.CreateObjectModel(rtti.Schema, gameObjectInstanceID.GetRawData());
+            var objectModel = serializeContext.Document.CreateObjectModel(rtti.Schema, EntityId.ToULong(gameObjectInstanceID));
             if (!typeIndex.IsZeroSized)
             {
                 var componentDataRawRO = (byte*)serializeContext.EntityManager.GetComponentDataRawRO(gameObjectInstanceID, typeIndex);

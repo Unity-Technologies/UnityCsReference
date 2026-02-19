@@ -66,7 +66,7 @@ namespace UnityEngine.LowLevelPhysics2D
                 // Dispose of all the drawers.
                 foreach (var drawerGroup in s_DrawerGroups)
                 {
-                    drawerGroup.Dispose();
+                    drawerGroup?.Dispose();
                 }
 
                 s_DrawerGroups = null;
@@ -105,11 +105,7 @@ namespace UnityEngine.LowLevelPhysics2D
 
         /// <undoc/>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static bool IsCameraTypeValid(Camera camera)
-        {
-            var cameraType = camera.cameraType;
-            return cameraType == CameraType.Game || cameraType == CameraType.SceneView;
-        }
+        static bool IsCameraTypeValid(Camera camera) => (camera.cameraType & (CameraType.Game | CameraType.SceneView)) != 0;
 
         /// <undoc/>
         static void BIRP_RenderAllWorlds(Camera camera)
@@ -164,23 +160,24 @@ namespace UnityEngine.LowLevelPhysics2D
             if (s_DrawerGroups == null || s_RendererCommandBuffer == null)
                 throw new NullReferenceException("PhysicsWorldRenderer is not ready.");
 
-            // Fetch the drawer group.
-            ref DrawerGroup drawerGroup = ref s_DrawerGroups[physicsWorld.m_Index1 - 1];
+            // Fetch/Initialize the drawer group.
+            var drawerGroup = s_DrawerGroups[physicsWorld.m_Index1 - 1];
+            drawerGroup ??= s_DrawerGroups[physicsWorld.m_Index1 - 1] = new DrawerGroup();
 
             // Draw the drawer group.
             drawerGroup.Draw(rendererCommandBuffer: s_RendererCommandBuffer, drawResults: ref drawResults, thickness: thickness, fillAlpha: fillAlpha, transformPlane: transformPlane, drawCapacity: drawCapacity);
         }
 
         /// <undoc/>
-        struct DrawerGroup : IDisposable
+        class DrawerGroup : IDisposable
         {
             BaseDrawer[] m_Drawers;
 
             /// <undoc/>
-            public readonly bool IsValid => m_Drawers != null;
+            public bool isValid => m_Drawers != null;
 
             /// <undoc/>
-            public void Draw(CommandBuffer rendererCommandBuffer, ref PhysicsWorld.DrawResults drawResults, float thickness, float fillAlpha, PhysicsWorld.TransformPlane transformPlane, int drawCapacity)
+            public DrawerGroup()
             {
                 // Create the drawers.
                 m_Drawers ??= new BaseDrawer[]
@@ -191,7 +188,11 @@ namespace UnityEngine.LowLevelPhysics2D
                     new LineDrawer(),
                     new PointDrawer()
                 };
+            }
 
+            /// <undoc/>
+            public void Draw(CommandBuffer rendererCommandBuffer, ref PhysicsWorld.DrawResults drawResults, float thickness, float fillAlpha, PhysicsWorld.TransformPlane transformPlane, int drawCapacity)
+            {
                 // Draw all the drawers.
                 foreach (var drawer in m_Drawers)
                     drawer.Draw(rendererCommandBuffer: rendererCommandBuffer, drawResults: ref drawResults, thickness: thickness, fillAlpha: fillAlpha, transformPlane: transformPlane, drawCapacity: drawCapacity);
@@ -200,7 +201,7 @@ namespace UnityEngine.LowLevelPhysics2D
             /// <undoc/>
             public void Dispose()
             {
-                if (!IsValid)
+                if (!isValid)
                     return;
 
                 foreach(var drawer in m_Drawers)
@@ -524,7 +525,6 @@ namespace UnityEngine.LowLevelPhysics2D
                     // Set up the material property block.
                     m_ShaderMaterialPropertyBlock.SetBuffer(m_ElementBufferShaderProperty, m_ElementBuffer);
                     m_ShaderMaterialPropertyBlock.SetInteger(m_TransformPlaneShaderProperty, (int)transformPlane);
-                    m_ShaderMaterialPropertyBlock.SetFloat(m_ThicknessShaderProperty, thickness);
 
                     // Draw to the renderer command buffer.
                     rendererCommandBuffer.DrawMeshInstancedIndirect(GetMesh(), 0, m_ShaderMaterial, 0, m_GraphicsBuffer, 0, m_ShaderMaterialPropertyBlock);

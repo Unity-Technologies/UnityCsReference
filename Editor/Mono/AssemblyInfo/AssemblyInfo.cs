@@ -263,4 +263,5 @@ using UnityEngine;
 [assembly: InternalsVisibleTo("Unity.Modules.GI.Analytics.Tests.Editor")]
 [assembly: InternalsVisibleTo("Unity.CrossModule.AssetLoading.Tests.Editor")]
 [assembly: InternalsVisibleTo("Unity.Modules.SceneTemplateEditor.Tests.Editor")]
+[assembly: InternalsVisibleTo("Unity.Modules.Core.InspectorWindow.Tests.Editor")]
 

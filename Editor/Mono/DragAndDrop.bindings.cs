@@ -144,7 +144,7 @@ namespace UnityEditor
                 {
                     Debug.LogWarning("Using int based drop handlers is deprecated. Please use EntityId based ones instead.");
                     Debug.Assert(sizeof(int)==UnsafeUtility.SizeOf<EntityId>(), "EntityId is not the same size as int, update this code to use ulong");
-                    args[0] = e.GetRawData();
+                    args[0] = EntityId.ToULong(e);
                 }
                 if (dropHandler.Method.GetParameters()[0].ParameterType == typeof(EntityId) && args[0] is int number)
                     args[0] = EntityId.From(number);
